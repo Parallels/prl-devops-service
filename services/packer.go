@@ -45,6 +45,20 @@ func NewPackerService() *PackerService {
 	return globalPackerService
 }
 
+func (s *PackerService) Init(path string) error {
+	stdout, err := helpers.ExecuteWithNoOutput(helpers.Command{
+		Command:          s.executable,
+		WorkingDirectory: path,
+		Args:             []string{"init", "."},
+	})
+	if err != nil {
+		println(stdout)
+		buildError := fmt.Errorf("There was an error init packer folder %v, error: %v", path, err.Error())
+		return buildError
+	}
+	return nil
+}
+
 func (s *PackerService) Build(path string, variableFile string) error {
 	stdout, err := helpers.ExecuteWithNoOutput(helpers.Command{
 		Command:          s.executable,

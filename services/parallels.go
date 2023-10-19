@@ -472,8 +472,15 @@ func (s *ParallelsService) CreatePackerVirtualMachine(template data_models.Virtu
 
 	overrideFileContent := helpers.ToHCL(overrideFile, 0)
 	helper.WriteToFile(overrideFileContent, overrideFilePath)
-	err = packer.Build(scriptPath, overrideFilePath)
-	if err != nil {
+	if err = packer.Init(scriptPath); err != nil {
+		cleanError := helpers.RemoveFolder(repoPath)
+		if cleanError != nil {
+			return nil, cleanError
+		}
+		return nil, err
+	}
+
+	if err = packer.Build(scriptPath, overrideFilePath); err != nil {
 		cleanError := helpers.RemoveFolder(repoPath)
 		if cleanError != nil {
 			return nil, cleanError
