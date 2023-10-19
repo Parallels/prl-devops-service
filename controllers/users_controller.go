@@ -1,11 +1,10 @@
 package controllers
 
 import (
-	"Parallels/pd-api-service/data/models"
+	data_models "Parallels/pd-api-service/data/models"
 	"Parallels/pd-api-service/helpers"
+	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/services"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"net/http"
 
@@ -36,16 +35,17 @@ func ListUsers() http.HandlerFunc {
 			return
 		}
 
-		var jsonData []byte
-
-		if users == nil {
-			// Marshal an empty slice to JSON
-			jsonData, err = json.Marshal(make([]models.User, 0))
-		} else {
-			// Marshal the users slice to JSON
-			jsonData, err = json.Marshal(users)
+		responseUsers := make([]models.User, 0)
+		for _, user := range users {
+			responseUsers = append(responseUsers, models.User{
+				ID:       user.ID,
+				Username: user.Username,
+				Name:     user.Name,
+				Email:    user.Email,
+			})
 		}
 
+		jsonData, err := json.Marshal(responseUsers)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -94,8 +94,15 @@ func GetUserByID() http.HandlerFunc {
 			return
 		}
 
+		resultUser := models.User{
+			ID:       user.ID,
+			Username: user.Username,
+			Name:     user.Name,
+			Email:    user.Email,
+		}
+
 		// Marshal the user struct to JSON
-		jsonData, err := json.Marshal(user)
+		jsonData, err := json.Marshal(resultUser)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -111,16 +118,12 @@ func GetUserByID() http.HandlerFunc {
 
 func CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var user models.User
+		var user data_models.User
 		err := json.NewDecoder(r.Body).Decode(&user)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
-		// Hash the password with SHA-256
-		hashedPassword := sha256.Sum256([]byte(user.Password))
-		user.Password = hex.EncodeToString(hashedPassword[:])
 
 		// Set the ID to 0 to ensure that a new ID is generated
 		user.ID = helpers.GenerateId()

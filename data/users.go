@@ -2,6 +2,8 @@ package data
 
 import (
 	"Parallels/pd-api-service/data/models"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -45,6 +47,10 @@ func (j *JsonDatabase) CreateUser(user *models.User) error {
 	if u, _ := j.GetUser(user.Username); u != nil {
 		return fmt.Errorf("User already exists")
 	}
+
+	// Hash the password with SHA-256
+	hashedPassword := sha256.Sum256([]byte(user.Password))
+	user.Password = hex.EncodeToString(hashedPassword[:])
 
 	j.data.Users = append(j.data.Users, *user)
 	j.save()

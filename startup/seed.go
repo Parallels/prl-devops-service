@@ -4,6 +4,10 @@ import (
 	"Parallels/pd-api-service/common"
 	"Parallels/pd-api-service/data/models"
 	"Parallels/pd-api-service/services"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"strings"
 )
 
 func SeedVirtualMachineTemplateDefaults() {
@@ -48,4 +52,50 @@ func SeedVirtualMachineTemplateDefaults() {
 			common.Logger.Info("Ubuntu 23.04 template added")
 		}
 	}
+}
+
+func SeedAdminUser() error {
+	db := services.GetServices().JsonDatabase
+	prlctl := services.GetServices().ParallelsService
+	err := db.Connect()
+	if err != nil {
+		common.Logger.Error("Error connecting to database: %s", err.Error())
+		return err
+	}
+
+	defer db.Disconnect()
+
+	info := prlctl.GetInfo()
+	if info == nil {
+		common.Logger.Error("Error getting Parallels info")
+		return err
+	}
+	if info.License.State != "valid" {
+		common.Logger.Error("Parallels license is not active")
+		panic(errors.New("Parallels license is not active"))
+	}
+
+	key := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(info.License.Key, "-", ""), "*", ""))
+	hid := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(info.HardwareID, "-", ""), "{", ""), "}", ""))
+
+	encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", key, hid)))
+
+	if exists, _ := db.GetUser("root"); exists != nil {
+		return nil
+	}
+
+	if err := db.CreateUser(&models.User{
+		ID:       hid,
+		Name:     "Root",
+		Username: "root",
+		Email:    "root@localhost",
+		Password: encoded,
+	}); err != nil {
+		common.Logger.Error("Error adding admin user: %s", err.Error())
+		return err
+	}
+
+	db.Disconnect()
+
+	return nil
 }

@@ -6,3 +6,4 @@ data.json
 *.sql
 /out/*
 .local/*
+__debug_*

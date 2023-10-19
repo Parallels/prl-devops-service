@@ -10,8 +10,12 @@ install() {
   <string>root</string>
   <key>Label</key>
   <string>com.parallels.api-service</string>
-  <key>Program</key>
-  <string>$1/pd-api-service</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$1/pd-api-service</string>
+    <string>--port</string>
+    <string>$2</string>
+  </array>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
@@ -32,4 +36,4 @@ install() {
   echo "Done"
 }
 
-install $1
+install $1 $2
