@@ -21,7 +21,13 @@ func main() {
 	versionSvc.License = "MIT"
 	versionSvc.Minor = 1
 	versionSvc.Major = 0
-	versionSvc.Build = 18
+	versionSvc.Build = 19
+
+	if helper.GetFlagSwitch("version", false) {
+		println(versionSvc.String())
+		os.Exit(0)
+	}
+
 	versionSvc.PrintAnsiHeader()
 	services.InitServices()
 
