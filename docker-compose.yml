@@ -1,0 +1,28 @@
+version: '3.9'
+name: micro_service
+services:
+  users.service:
+    build: .
+    ports:
+      - "5041:80"
+    environment:
+      MYSQL_HOST: ''
+      MYSQL_PORT: 3306
+      MYSQL_USER: ''
+      MYSQL_PASSWORD: ''
+      MYSQL_DATABASE: ''
+      PORT: 80
+  users.with-proxy.service:
+    extra_hosts:
+      - "parallels.internal:host-gateway"
+      - "db.parallels.internal:host-gateway"
+    build: .
+    ports:
+      - "5541:80"
+    environment:
+      MYSQL_HOST: ''
+      MYSQL_PORT: 3306
+      MYSQL_USER: ''
+      MYSQL_PASSWORD: ''
+      MYSQL_DATABASE: ''
+      PORT: 80

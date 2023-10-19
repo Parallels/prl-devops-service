@@ -1,0 +1,8 @@
+*.exe
+*.override.yml
+pd-api-service
+pd-api-service.exe
+data.json
+*.sql
+/out/*
+.local/*
