@@ -51,7 +51,7 @@ func GetTokenController() restapi.Controller {
 		if user == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "User not found",
-				Code:    http.StatusInternalServerError,
+				Code:    http.StatusUnauthorized,
 			})
 			return
 		}
@@ -61,7 +61,7 @@ func GetTokenController() restapi.Controller {
 		if hashedPassword != user.Password {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "Invalid Password",
-				Code:    http.StatusInternalServerError,
+				Code:    http.StatusUnauthorized,
 			})
 			return
 		}
@@ -86,7 +86,7 @@ func GetTokenController() restapi.Controller {
 		key := []byte(services.GetServices().HardwareSecret)
 		tokenString, err := token.SignedString(key)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(w, models.NewFromErrorWithCode(err, 401))
 			return
 		}
 
@@ -124,7 +124,7 @@ func ValidateTokenController() restapi.Controller {
 		})
 
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(w, models.NewFromErrorWithCode(err, 401))
 			return
 		}
 
