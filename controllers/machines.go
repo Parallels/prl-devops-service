@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"Parallels/pd-api-service/models"
+	"Parallels/pd-api-service/restapi"
 	"Parallels/pd-api-service/services"
 	"encoding/json"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 )
 
 // LoginUser is a public function that logs in a user
-func GetMachinesController() http.HandlerFunc {
+func GetMachinesController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().ParallelsService
 
@@ -36,7 +37,7 @@ func GetMachinesController() http.HandlerFunc {
 	}
 }
 
-func GetMachineController() http.HandlerFunc {
+func GetMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().ParallelsService
 
@@ -63,7 +64,7 @@ func GetMachineController() http.HandlerFunc {
 	}
 }
 
-func StartMachineController() http.HandlerFunc {
+func StartMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().ParallelsService
 
@@ -87,7 +88,7 @@ func StartMachineController() http.HandlerFunc {
 	}
 }
 
-func StopMachineController() http.HandlerFunc {
+func StopMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().ParallelsService
 
@@ -100,7 +101,6 @@ func StopMachineController() http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		result := models.VirtualMachineOperationResponse{
 			ID:        id,
@@ -112,7 +112,7 @@ func StopMachineController() http.HandlerFunc {
 	}
 }
 
-func RestartMachineController() http.HandlerFunc {
+func RestartMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().ParallelsService
 
@@ -125,7 +125,6 @@ func RestartMachineController() http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		result := models.VirtualMachineOperationResponse{
 			ID:        id,
@@ -136,7 +135,7 @@ func RestartMachineController() http.HandlerFunc {
 	}
 }
 
-func SuspendMachineController() http.HandlerFunc {
+func SuspendMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().ParallelsService
 
@@ -149,7 +148,6 @@ func SuspendMachineController() http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		result := models.VirtualMachineOperationResponse{
 			ID:        id,
@@ -160,7 +158,7 @@ func SuspendMachineController() http.HandlerFunc {
 	}
 }
 
-func ResumeMachineController() http.HandlerFunc {
+func ResumeMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().ParallelsService
 
@@ -173,12 +171,11 @@ func ResumeMachineController() http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 	}
 }
 
-func ResetMachineController() http.HandlerFunc {
+func ResetMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().ParallelsService
 
@@ -191,7 +188,6 @@ func ResetMachineController() http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		result := models.VirtualMachineOperationResponse{
 			ID:        id,
@@ -202,7 +198,7 @@ func ResetMachineController() http.HandlerFunc {
 	}
 }
 
-func PauseMachineController() http.HandlerFunc {
+func PauseMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().ParallelsService
 
@@ -215,7 +211,6 @@ func PauseMachineController() http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		result := models.VirtualMachineOperationResponse{
 			ID:        id,
@@ -227,7 +222,7 @@ func PauseMachineController() http.HandlerFunc {
 	}
 }
 
-func DeleteMachineController() http.HandlerFunc {
+func DeleteMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().ParallelsService
 
@@ -240,12 +235,11 @@ func DeleteMachineController() http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 	}
 }
 
-func StatusMachineController() http.HandlerFunc {
+func StatusMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().ParallelsService
 
@@ -263,13 +257,12 @@ func StatusMachineController() http.HandlerFunc {
 			Status: status,
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(result)
 	}
 }
 
-func CreateMachine() http.HandlerFunc {
+func CreateMachine() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// svc := services.ParallelsService{}
 		// downloadSvc := services.DownloadService{}
@@ -337,7 +330,7 @@ func CreateMachine() http.HandlerFunc {
 		}
 
 		svc := services.GetServices().ParallelsService
-		vm, err := svc.CreateVirtualMachine(*template)
+		vm, err := svc.CreateVirtualMachine(*template, request.DesiredState)
 		if err != nil {
 			ReturnApiError(w, models.NewFromError(err))
 			return
@@ -350,7 +343,6 @@ func CreateMachine() http.HandlerFunc {
 			CurrentState: vm.State,
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
 	}

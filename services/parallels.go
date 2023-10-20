@@ -1,6 +1,7 @@
 package services
 
 import (
+	"Parallels/pd-api-service/common"
 	data_models "Parallels/pd-api-service/data/models"
 	"Parallels/pd-api-service/helpers"
 	"Parallels/pd-api-service/models"
@@ -419,10 +420,10 @@ func (s *ParallelsService) GetInfo() *models.ParallelsDesktopInfo {
 	return s.Info
 }
 
-func (s *ParallelsService) CreateVirtualMachine(template data_models.VirtualMachineTemplate) (*models.ParallelsVM, error) {
+func (s *ParallelsService) CreateVirtualMachine(template data_models.VirtualMachineTemplate, desiredState string) (*models.ParallelsVM, error) {
 	switch template.Type {
 	case data_models.VirtualMachineTemplateTypePacker:
-		return s.CreatePackerVirtualMachine(template)
+		return s.CreatePackerVirtualMachine(template, desiredState)
 	}
 
 	// _, err := commands.Execute("prlctl", "set", id, "--bootorder", bootOrder)
@@ -433,7 +434,8 @@ func (s *ParallelsService) CreateVirtualMachine(template data_models.VirtualMach
 	return nil, nil
 }
 
-func (s *ParallelsService) CreatePackerVirtualMachine(template data_models.VirtualMachineTemplate) (*models.ParallelsVM, error) {
+func (s *ParallelsService) CreatePackerVirtualMachine(template data_models.VirtualMachineTemplate, desiredState string) (*models.ParallelsVM, error) {
+	common.Logger.Info("Creating Packer Virtual Machine %s", template.Name)
 	existVm, err := s.findVm(template.Name)
 	if existVm != nil || err != nil {
 		return nil, fmt.Errorf("Machine %v with ID %v already exists and is %s", template.Name, existVm.ID, existVm.State)
@@ -442,8 +444,11 @@ func (s *ParallelsService) CreatePackerVirtualMachine(template data_models.Virtu
 	git := globalServices.GitService
 	repoPath, err := git.Clone("https://github.com/Parallels/packer-examples", "packer-examples")
 	if err != nil {
+		common.Logger.Error("Error cloning packer-examples repository: %s", err.Error())
 		return nil, err
 	}
+
+	common.Logger.Info("Cloned packer-examples repository to %s", repoPath)
 
 	packer := globalServices.PackerService
 	scriptPath := fmt.Sprintf("%s/%s", repoPath, template.PackerFolder)
@@ -472,25 +477,35 @@ func (s *ParallelsService) CreatePackerVirtualMachine(template data_models.Virtu
 
 	overrideFileContent := helpers.ToHCL(overrideFile, 0)
 	helper.WriteToFile(overrideFileContent, overrideFilePath)
+	common.Logger.Info("Created override file")
+
+	common.Logger.Info("Initializing packer repository")
 	if err = packer.Init(scriptPath); err != nil {
 		cleanError := helpers.RemoveFolder(repoPath)
 		if cleanError != nil {
+			common.Logger.Error("Error removing folder %s: %s", repoPath, cleanError.Error())
+			return nil, cleanError
+		}
+		return nil, err
+	}
+	common.Logger.Info("Initialized packer repository")
+
+	common.Logger.Info("Building packer machine")
+	if err = packer.Build(scriptPath, overrideFilePath); err != nil {
+		cleanError := helpers.RemoveFolder(repoPath)
+		if cleanError != nil {
+			common.Logger.Error("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		return nil, err
 	}
 
-	if err = packer.Build(scriptPath, overrideFilePath); err != nil {
-		cleanError := helpers.RemoveFolder(repoPath)
-		if cleanError != nil {
-			return nil, cleanError
-		}
-		return nil, err
-	}
+	common.Logger.Info("Built packer machine")
 
 	users, err := GetSystemUsers()
 	if err != nil {
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
+			common.Logger.Error("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		return nil, err
@@ -509,46 +524,99 @@ func (s *ParallelsService) CreatePackerVirtualMachine(template data_models.Virtu
 	}
 
 	if !userExists {
+		common.Logger.Error("User %s does not exist", template.Owner)
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
+			common.Logger.Error("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		return nil, errors.New("User does not exist")
 	}
 
-	err = helpers.CreateDirIfNotExist(fmt.Sprintf("/Users/%s/Parallels", template.Owner))
+	userFolder := fmt.Sprintf("/Users/%s/Parallels", template.Owner)
+	if template.Owner == "root" {
+		userFolder = "/var/root"
+	}
+
+	err = helpers.CreateDirIfNotExist(userFolder)
 	if err != nil {
+		common.Logger.Error("Error creating user folder %s: %s", userFolder, err.Error())
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
+			common.Logger.Error("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		return nil, err
 	}
 
-	destinationFolder := fmt.Sprintf("/Users/%s/Parallels/%s.pvm", template.Owner, template.Name)
+	common.Logger.Info("Created user folder %s", userFolder)
+
+	destinationFolder := fmt.Sprintf("%s/%s.pvm", userFolder, template.Name)
 	sourceFolder := fmt.Sprintf("%s/out/%s.pvm", scriptPath, template.Name)
 	err = helpers.MoveFolder(sourceFolder, destinationFolder)
 	if err != nil {
+		common.Logger.Error("Error moving folder %s to %s: %s", sourceFolder, destinationFolder, err.Error())
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
+			common.Logger.Error("Error removing folder %s: %s", repoPath, cleanError.Error())
+			return nil, cleanError
+		}
+		if helper.DirectoryExists(sourceFolder) {
+			if cleanError := helpers.RemoveFolder(sourceFolder); cleanError != nil {
+				common.Logger.Error("Error removing destination folder %s: %s", repoPath, cleanError.Error())
+				return nil, cleanError
+			}
+		}
+		return nil, err
+	}
+
+	if template.Owner != "root" {
+		_, err = commands.ExecuteWithNoOutput("sudo", "chown", "-R", template.Owner, destinationFolder)
+		if err != nil {
+			common.Logger.Error("Error changing owner of folder %s to %s: %s", destinationFolder, template.Owner, err.Error())
+			if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
+				common.Logger.Error("Error removing folder %s: %s", repoPath, cleanError.Error())
+				return nil, cleanError
+			}
+			return nil, err
+		}
+	}
+
+	common.Logger.Info("Moved folder %s to %s", sourceFolder, destinationFolder)
+	_, err = commands.ExecuteWithNoOutput("sudo", "-u", template.Owner, s.executable, "register", destinationFolder)
+	if err != nil {
+		common.Logger.Error("Error registering VM %s: %s", destinationFolder, err.Error())
+		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
+			common.Logger.Error("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		return nil, err
 	}
 
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", template.Owner, s.executable, "register", destinationFolder)
-	if err != nil {
-		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
-			return nil, cleanError
-		}
-		return nil, err
-	}
+	common.Logger.Info("Registered VM %s", destinationFolder)
 
 	existVm, err = s.findVm(template.Name)
 	if existVm == nil || err != nil {
+		common.Logger.Error("Error finding VM %s: %s", template.Name, err.Error())
+		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
+			common.Logger.Error("Error removing folder %s: %s", repoPath, cleanError.Error())
+			return nil, cleanError
+		}
 		return nil, fmt.Errorf("Something went wrong with creating machine %v, it does not exist, err: %v", template.Name, err.Error())
 	}
 
 	if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
+		common.Logger.Error("Error removing folder %s: %s", repoPath, cleanError.Error())
 		return nil, cleanError
 	}
 
+	switch desiredState {
+	case "running":
+		if err := s.StartVm(existVm.ID); err != nil {
+			common.Logger.Error("Error starting VM %s: %s", existVm.ID, err.Error())
+			return nil, err
+		}
+	default:
+		common.Logger.Info("Desired state is %s, not starting VM %s", desiredState, existVm.ID)
+	}
+
+	common.Logger.Info("Created VM %s", existVm.ID)
 	return existVm, nil
 }

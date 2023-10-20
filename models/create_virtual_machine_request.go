@@ -6,12 +6,13 @@ import (
 )
 
 type CreateVirtualMachineRequest struct {
-	Template string `json:"template"`
-	Owner    string `json:"owner"`
-	Name     string `json:"name"`
-	Memory   int    `json:"memory"`
-	Cpu      int    `json:"cpu"`
-	Disk     int    `json:"disk"`
+	Template     string `json:"template"`
+	Owner        string `json:"owner"`
+	Name         string `json:"name"`
+	Memory       int    `json:"memory"`
+	Cpu          int    `json:"cpu"`
+	Disk         int    `json:"disk"`
+	DesiredState string `json:"desiredState"`
 }
 
 func (r *CreateVirtualMachineRequest) Validate() error {
@@ -41,6 +42,11 @@ func (r *CreateVirtualMachineRequest) Validate() error {
 	if r.Disk <= 0 {
 		common.Logger.Info("Disk is less than 0, setting to 20480")
 		r.Disk = 20480
+	}
+
+	if r.DesiredState == "" {
+		common.Logger.Info("DesiredState is empty, setting to 'running'")
+		r.DesiredState = "running"
 	}
 
 	return nil

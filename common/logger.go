@@ -1,5 +1,5 @@
 package common
 
-import "github.com/cjlapao/common-go/log"
+import log "github.com/cjlapao/common-go-logger"
 
-var Logger = log.Get()
+var Logger = log.Get().WithTimestamp()

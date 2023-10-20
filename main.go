@@ -1,12 +1,8 @@
 package main
 
 import (
-	"Parallels/pd-api-service/constants"
 	"Parallels/pd-api-service/services"
 	"Parallels/pd-api-service/startup"
-	"fmt"
-	"log"
-	"net/http"
 	"os"
 
 	"github.com/cjlapao/common-go/helper"
@@ -17,11 +13,11 @@ var versionSvc = version.Get()
 
 func main() {
 	versionSvc.Author = "Carlos Lapao"
-	versionSvc.Name = "POC Parallels Desktop API Service"
+	versionSvc.Name = "Parallels Desktop API Service"
 	versionSvc.License = "MIT"
 	versionSvc.Minor = 1
 	versionSvc.Major = 0
-	versionSvc.Build = 20
+	versionSvc.Build = 24
 
 	if helper.GetFlagSwitch("version", false) {
 		println(versionSvc.String())
@@ -41,13 +37,27 @@ func main() {
 		port = "8080"
 	}
 
-	r := startup.InitControllers()
+	listener := startup.InitControllers()
+	listener.Options.HttpPort = port
+
 	// Seeding defaults
-	startup.SeedVirtualMachineTemplateDefaults()
-	startup.SeedAdminUser()
+	err := startup.SeedVirtualMachineTemplateDefaults()
+	if err != nil {
+		panic(err)
+	}
+	err = startup.SeedDefaultRolesAndClaims()
+	if err != nil {
+		panic(err)
+	}
+
+	err = startup.SeedAdminUser()
+	if err != nil {
+		panic(err)
+	}
 
 	// Serve the API
-	services.GetServices().Logger.Info("Serving API on port %s", port)
-	services.GetServices().Logger.Info("Api Prefix %s", constants.API_PREFIX)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), r))
+	// services.GetServices().Logger.Info("Serving API on port %s", port)
+	// services.GetServices().Logger.Info("Api Prefix %s", constants.API_PREFIX)
+	// log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), r))
+	listener.Start(versionSvc.Name, versionSvc.String())
 }

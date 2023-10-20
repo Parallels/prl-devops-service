@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 )
 
@@ -11,4 +12,9 @@ func GenerateId() string {
 		panic(err)
 	}
 	return hex.EncodeToString(bytes)
+}
+
+func Sha256Hash(input string) string {
+	hashedPassword := sha256.Sum256([]byte(input))
+	return hex.EncodeToString(hashedPassword[:])
 }

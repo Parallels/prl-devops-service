@@ -9,6 +9,9 @@ import (
 
 type Data struct {
 	Users                   []models.User                   `json:"users"`
+	Claims                  []models.UserClaim              `json:"claims"`
+	Roles                   []models.UserRole               `json:"roles"`
+	ApiKeys                 []models.ApiKey                 `json:"api_keys"`
 	VirtualMachineTemplates []models.VirtualMachineTemplate `json:"virtual_machine_templates"`
 }
 

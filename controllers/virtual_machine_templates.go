@@ -3,6 +3,7 @@ package controllers
 import (
 	data_modules "Parallels/pd-api-service/data/models"
 	"Parallels/pd-api-service/models"
+	"Parallels/pd-api-service/restapi"
 	"Parallels/pd-api-service/services"
 	"encoding/json"
 	"fmt"
@@ -12,13 +13,13 @@ import (
 )
 
 // LoginUser is a public function that logs in a user
-func GetVirtualMachinesTemplatesController() http.HandlerFunc {
+func GetVirtualMachinesTemplatesController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().JsonDatabase
 
 		err := svc.Connect()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			ReturnApiError(w, models.NewFromError(err))
 			return
 		}
 
@@ -31,26 +32,24 @@ func GetVirtualMachinesTemplatesController() http.HandlerFunc {
 		}
 
 		if result == nil {
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			result = make([]data_modules.VirtualMachineTemplate, 0)
 			json.NewEncoder(w).Encode(result)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(result)
 	}
 }
 
-func GetVirtualMachineTemplateController() http.HandlerFunc {
+func GetVirtualMachineTemplateController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().JsonDatabase
 
 		err := svc.Connect()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			ReturnApiError(w, models.NewFromError(err))
 			return
 		}
 
@@ -73,7 +72,6 @@ func GetVirtualMachineTemplateController() http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(result)
 	}

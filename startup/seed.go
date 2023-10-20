@@ -2,20 +2,18 @@ package startup
 
 import (
 	"Parallels/pd-api-service/common"
+	"Parallels/pd-api-service/constants"
 	"Parallels/pd-api-service/data/models"
+	"Parallels/pd-api-service/helpers"
 	"Parallels/pd-api-service/services"
-	"encoding/base64"
-	"errors"
-	"fmt"
-	"strings"
 )
 
-func SeedVirtualMachineTemplateDefaults() {
+func SeedVirtualMachineTemplateDefaults() error {
 	svc := services.GetServices().JsonDatabase
 	err := svc.Connect()
 	if err != nil {
 		common.Logger.Error("Error connecting to database: %s", err.Error())
-		return
+		return err
 	}
 
 	defer svc.Disconnect()
@@ -43,20 +41,23 @@ func SeedVirtualMachineTemplateDefaults() {
 
 	if err := ubuntu2304Template.Validate(); err != nil {
 		common.Logger.Error("Error validating Ubuntu 23.04 template: %s", err.Error())
+		return err
 	} else {
 		if err := svc.AddVirtualMachineTemplate(&ubuntu2304Template); err != nil {
 			if err.Error() != "Machine Template already exists" {
 				common.Logger.Error("Error adding Ubuntu 23.04 template: %s", err.Error())
+				return err
 			}
 		} else {
 			common.Logger.Info("Ubuntu 23.04 template added")
 		}
 	}
+
+	return nil
 }
 
-func SeedAdminUser() error {
+func SeedDefaultRolesAndClaims() error {
 	db := services.GetServices().JsonDatabase
-	prlctl := services.GetServices().ParallelsService
 	err := db.Connect()
 	if err != nil {
 		common.Logger.Error("Error connecting to database: %s", err.Error())
@@ -65,31 +66,197 @@ func SeedAdminUser() error {
 
 	defer db.Disconnect()
 
-	info := prlctl.GetInfo()
-	if info == nil {
-		common.Logger.Error("Error getting Parallels info")
+	if exists, _ := db.GetRole(constants.USER_ROLE); exists == nil {
+		if err := db.CreateRole(&models.UserRole{
+			ID:   helpers.GenerateId(),
+			Name: constants.USER_ROLE,
+		}); err != nil {
+			common.Logger.Error("Error adding role: %s", err.Error())
+			return err
+		}
+	}
+
+	if exists, _ := db.GetRole(constants.SUPER_USER_ROLE); exists == nil {
+		if err := db.CreateRole(&models.UserRole{
+			ID:   helpers.GenerateId(),
+			Name: constants.SUPER_USER_ROLE,
+		}); err != nil {
+			common.Logger.Error("Error adding role: %s", err.Error())
+			return err
+		}
+	}
+
+	if exists, _ := db.GetClaim(constants.READ_ONLY_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.READ_ONLY_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	if exists, _ := db.GetClaim(constants.CREATE_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.CREATE_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	if exists, _ := db.GetClaim(constants.DELETE_CLAIM); exists == nil {
+
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.DELETE_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	if exists, _ := db.GetClaim(constants.LIST_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.LIST_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	// VMS
+	if exists, _ := db.GetClaim(constants.CREATE_VM_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.CREATE_VM_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	if exists, _ := db.GetClaim(constants.UPDATE_VM_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.UPDATE_VM_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	if exists, _ := db.GetClaim(constants.UPDATE_VM_STATES_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.UPDATE_VM_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	if exists, _ := db.GetClaim(constants.DELETE_VM_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.DELETE_VM_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	if exists, _ := db.GetClaim(constants.LIST_VM_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.LIST_VM_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	// TEMPLATES
+	if exists, _ := db.GetClaim(constants.LIST_TEMPLATE_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.LIST_TEMPLATE_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	if exists, _ := db.GetClaim(constants.CREATE_TEMPLATE_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.CREATE_TEMPLATE_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	if exists, _ := db.GetClaim(constants.DELETE_TEMPLATE_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.DELETE_TEMPLATE_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	if exists, _ := db.GetClaim(constants.UPDATE_TEMPLATE_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.CREATE_TEMPLATE_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+
+	db.Disconnect()
+
+	return nil
+}
+
+func SeedAdminUser() error {
+	db := services.GetServices().JsonDatabase
+	err := db.Connect()
+	if err != nil {
+		common.Logger.Error("Error connecting to database: %s", err.Error())
 		return err
 	}
-	if info.License.State != "valid" {
-		common.Logger.Error("Parallels license is not active")
-		panic(errors.New("Parallels license is not active"))
-	}
 
-	key := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(info.License.Key, "-", ""), "*", ""))
-	hid := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(info.HardwareID, "-", ""), "{", ""), "}", ""))
-
-	encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", key, hid)))
+	defer db.Disconnect()
 
 	if exists, _ := db.GetUser("root"); exists != nil {
 		return nil
 	}
 
-	if err := db.CreateUser(&models.User{
-		ID:       hid,
+	suRole, err := db.GetRole(constants.SUPER_USER_ROLE)
+	if err != nil {
+		return err
+	}
+	claims, err := db.GetClaims()
+	if err != nil {
+		return err
+	}
+
+	if _, err := db.CreateUser(&models.User{
+		ID:       services.GetServices().HardwareId,
 		Name:     "Root",
 		Username: "root",
 		Email:    "root@localhost",
-		Password: encoded,
+		Password: services.GetServices().HardwareSecret,
+		Roles: []models.UserRole{
+			*suRole,
+		},
+		Claims: claims,
 	}); err != nil {
 		common.Logger.Error("Error adding admin user: %s", err.Error())
 		return err
