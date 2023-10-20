@@ -115,6 +115,23 @@ func (j *JsonDatabase) UpdateUser(key models.User) error {
 	return errors.New("User not found")
 }
 
+func (j *JsonDatabase) UpdateRootPassword(newPassword string) error {
+	if !j.IsConnected() {
+		return errors.New("the database is not connected")
+	}
+
+	for i, user := range j.data.Users {
+		if user.Email == "root@localhost" {
+			j.data.Users[i].Password = helpers.Sha256Hash(newPassword)
+			j.data.Users[i].UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
+			j.save()
+			return nil
+		}
+	}
+
+	return errors.New("User not found")
+}
+
 func (j *JsonDatabase) RemoveUser(id string) error {
 	if !j.IsConnected() {
 		return errors.New("the database is not connected")

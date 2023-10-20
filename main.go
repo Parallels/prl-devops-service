@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Parallels/pd-api-service/common"
 	"Parallels/pd-api-service/services"
 	"Parallels/pd-api-service/startup"
 	"os"
@@ -17,7 +18,7 @@ func main() {
 	versionSvc.License = "MIT"
 	versionSvc.Minor = 1
 	versionSvc.Major = 0
-	versionSvc.Build = 24
+	versionSvc.Build = 25
 
 	if helper.GetFlagSwitch("version", false) {
 		println(versionSvc.String())
@@ -26,6 +27,28 @@ func main() {
 
 	versionSvc.PrintAnsiHeader()
 	services.InitServices()
+
+	if helper.GetFlagSwitch("update-root-pass", false) {
+		common.Logger.Info("Updating root password")
+		rootPassword := helper.GetFlagValue("password", "")
+		if rootPassword != "" {
+			db := services.GetServices().JsonDatabase
+			if db != nil {
+				err := db.UpdateRootPassword(rootPassword)
+				if err != nil {
+					panic(err)
+				}
+			} else {
+				panic("No database connection")
+			}
+		} else {
+			panic("No password provided")
+		}
+		common.Logger.Info("Root password updated")
+		os.Exit(0)
+	} else {
+		common.Logger.Info("Not updating root password")
+	}
 
 	port := helper.GetFlagValue("port", "")
 
@@ -56,8 +79,5 @@ func main() {
 	}
 
 	// Serve the API
-	// services.GetServices().Logger.Info("Serving API on port %s", port)
-	// services.GetServices().Logger.Info("Api Prefix %s", constants.API_PREFIX)
-	// log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), r))
 	listener.Start(versionSvc.Name, versionSvc.String())
 }
