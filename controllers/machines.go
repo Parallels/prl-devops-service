@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"Parallels/pd-api-service/common"
 	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/restapi"
 	"Parallels/pd-api-service/services"
@@ -16,11 +17,26 @@ import (
 func GetMachinesController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		svc := services.GetServices().ParallelsService
-
-		result, err := svc.GetVms()
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
+		filter := ""
+		var err error
+		result := make([]models.ParallelsVM, 0)
+		if r.Header.Get("X-Filter") != "" {
+			filter = r.Header.Get("X-Filter")
+		}
+		if filter == "" {
+			common.Logger.Info("Getting unfiltered machines")
+			result, err = svc.GetVms()
+			if err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+		} else {
+			common.Logger.Info("Getting filtered machines")
+			result, err = svc.GetFilteredVm(filter)
+			if err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
 		}
 
 		if result == nil {

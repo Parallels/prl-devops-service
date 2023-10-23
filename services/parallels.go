@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/cjlapao/common-go/commands"
@@ -142,6 +144,48 @@ func (s *ParallelsService) GetVm(id string) (*models.ParallelsVM, error) {
 	}
 
 	return vm, nil
+}
+
+func (s *ParallelsService) GetFilteredVm(filter string) ([]models.ParallelsVM, error) {
+	filterParts := strings.Split(filter, "=")
+	if len(filterParts) != 2 {
+		return nil, errors.New("Invalid filter")
+	}
+	vms, err := s.GetVms()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(vms) == 0 {
+		return nil, errors.New("No VMs found")
+	}
+
+	if !hasProperty(vms[0], filterParts[0]) {
+		return nil, errors.New("Invalid filter property")
+	}
+
+	common.Logger.Info("Getting filtered VMs for property %s with value %s", filterParts[0], filterParts[1])
+	filteredMachines := make([]models.ParallelsVM, 0)
+
+	for _, vm := range vms {
+		value, err := getPropertyAsString(vm, filterParts[0])
+		if err != nil {
+			continue
+		}
+
+		// Match filterParts[1] using a regex expression
+		exp, err := regexp.Compile(filterParts[1])
+		if err != nil {
+			return nil, err
+		}
+
+		matched := exp.MatchString(value)
+		if matched {
+			filteredMachines = append(filteredMachines, vm)
+		}
+	}
+
+	return filteredMachines, nil
 }
 
 func (s *ParallelsService) StartVm(id string) error {
@@ -619,4 +663,31 @@ func (s *ParallelsService) CreatePackerVirtualMachine(template data_models.Virtu
 
 	common.Logger.Info("Created VM %s", existVm.ID)
 	return existVm, nil
+}
+
+func hasProperty(obj interface{}, propertyName string) bool {
+	value := reflect.ValueOf(obj)
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	}
+	if value.Kind() != reflect.Struct {
+		return false
+	}
+	_, ok := value.Type().FieldByName(propertyName)
+	return ok
+}
+
+func getPropertyAsString(obj interface{}, propertyName string) (string, error) {
+	value := reflect.ValueOf(obj)
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	}
+	if value.Kind() != reflect.Struct {
+		return "", errors.New("obj is not a struct")
+	}
+	field := value.FieldByName(propertyName)
+	if !field.IsValid() {
+		return "", fmt.Errorf("property %s not found", propertyName)
+	}
+	return fmt.Sprintf("%v", field.Interface()), nil
 }
