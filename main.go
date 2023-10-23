@@ -18,7 +18,7 @@ func main() {
 	versionSvc.License = "MIT"
 	versionSvc.Minor = 1
 	versionSvc.Major = 0
-	versionSvc.Build = 25
+	versionSvc.Build = 26
 
 	if helper.GetFlagSwitch("version", false) {
 		println(versionSvc.String())
