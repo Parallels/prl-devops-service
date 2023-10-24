@@ -55,9 +55,13 @@ func RegisterControllers() {
 	listener.AddAuthorizedControllerWithClaims(controllers.ResetMachineController(), "/machines/{id}/reset", []string{constants.UPDATE_VM_STATES_CLAIM}, "GET")
 	listener.AddAuthorizedControllerWithClaims(controllers.PauseMachineController(), "/machines/{id}/pause", []string{constants.UPDATE_VM_STATES_CLAIM}, "GET")
 	listener.AddAuthorizedControllerWithClaims(controllers.StatusMachineController(), "/machines/{id}/status", []string{constants.LIST_VM_CLAIM}, "GET")
+	listener.AddAuthorizedControllerWithClaims(controllers.SetMachineController(), "/machines/{id}/set", []string{constants.UPDATE_VM_CLAIM}, "POST")
+	listener.AddAuthorizedControllerWithClaims(controllers.ExecuteCommandOnMachineController(), "/machines/{id}/execute", []string{constants.EXECUTE_COMMAND_VM_CLAIM}, "POST")
 
 	// Templates Controller
 	listener.AddAuthorizedControllerWithClaims(controllers.GetVirtualMachinesTemplatesController(), "/templates/virtual_machines", []string{constants.LIST_TEMPLATE_CLAIM}, "GET")
 	listener.AddAuthorizedControllerWithClaims(controllers.GetVirtualMachineTemplateController(), "/templates/virtual_machines/{name}", []string{constants.LIST_VM_CLAIM}, "GET")
 
+	// Remote Machines Catalog Controller
+	listener.AddAuthorizedControllerWithClaims(controllers.PushRemoteMachineController(), "/catalog/push", []string{constants.UPDATE_VM_CLAIM}, "POST")
 }

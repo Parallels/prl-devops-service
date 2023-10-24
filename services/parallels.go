@@ -11,6 +11,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/cjlapao/common-go/commands"
@@ -18,6 +19,58 @@ import (
 )
 
 var globalParallelsService *ParallelsService
+
+type ParallelsVirtualMachineState string
+
+const (
+	ParallelsVirtualMachineStateStopped   ParallelsVirtualMachineState = "stopped"
+	ParallelsVirtualMachineStateRunning   ParallelsVirtualMachineState = "running"
+	ParallelsVirtualMachineStateSuspended ParallelsVirtualMachineState = "suspended"
+	ParallelsVirtualMachineStatePaused    ParallelsVirtualMachineState = "paused"
+	ParallelsVirtualMachineStateUnknown   ParallelsVirtualMachineState = "unknown"
+)
+
+type ParallelsVirtualMachineDesiredState string
+
+const (
+	ParallelsVirtualMachineDesiredStateStop    ParallelsVirtualMachineDesiredState = "stop"
+	ParallelsVirtualMachineDesiredStateStart   ParallelsVirtualMachineDesiredState = "start"
+	ParallelsVirtualMachineDesiredStatePause   ParallelsVirtualMachineDesiredState = "pause"
+	ParallelsVirtualMachineDesiredStateSuspend ParallelsVirtualMachineDesiredState = "suspend"
+	ParallelsVirtualMachineDesiredStateResume  ParallelsVirtualMachineDesiredState = "resume"
+	ParallelsVirtualMachineDesiredStateReset   ParallelsVirtualMachineDesiredState = "reset"
+	ParallelsVirtualMachineDesiredStateRestart ParallelsVirtualMachineDesiredState = "restart"
+	ParallelsVirtualMachineDesiredStateUnknown ParallelsVirtualMachineDesiredState = "unknown"
+)
+
+func (s ParallelsVirtualMachineState) String() string {
+	return string(s)
+}
+
+func (s ParallelsVirtualMachineDesiredState) String() string {
+	return string(s)
+}
+
+func ParallelsVirtualMachineDesiredStateFromString(s string) ParallelsVirtualMachineDesiredState {
+	switch s {
+	case "stop":
+		return ParallelsVirtualMachineDesiredStateStop
+	case "start":
+		return ParallelsVirtualMachineDesiredStateStart
+	case "pause":
+		return ParallelsVirtualMachineDesiredStatePause
+	case "suspend":
+		return ParallelsVirtualMachineDesiredStateSuspend
+	case "resume":
+		return ParallelsVirtualMachineDesiredStateResume
+	case "reset":
+		return ParallelsVirtualMachineDesiredStateReset
+	case "restart":
+		return ParallelsVirtualMachineDesiredStateRestart
+	default:
+		return ParallelsVirtualMachineDesiredStateUnknown
+	}
+}
 
 type ParallelsService struct {
 	executable       string
@@ -188,7 +241,7 @@ func (s *ParallelsService) GetFilteredVm(filter string) ([]models.ParallelsVM, e
 	return filteredMachines, nil
 }
 
-func (s *ParallelsService) StartVm(id string) error {
+func (s *ParallelsService) SetVmState(id string, desiredState ParallelsVirtualMachineDesiredState) error {
 	vm, err := s.findVm(id)
 	if err != nil {
 		return err
@@ -197,159 +250,93 @@ func (s *ParallelsService) StartVm(id string) error {
 		return errors.New("VM not found")
 	}
 
-	if vm.State == "running" {
-		return nil
+	if vm.User == "" {
+		vm.User = "root"
 	}
 
-	if vm.State != "stopped" {
-		return errors.New("VM is not stopped")
+	switch desiredState {
+	case ParallelsVirtualMachineDesiredStateStart:
+		if vm.State == ParallelsVirtualMachineStateRunning.String() {
+			return nil
+		}
+		if vm.State != ParallelsVirtualMachineStateStopped.String() {
+			return errors.New("VM is not stopped")
+		}
+	case ParallelsVirtualMachineDesiredStateStop:
+		if vm.State == ParallelsVirtualMachineStateStopped.String() {
+			return nil
+		}
+		if vm.State != ParallelsVirtualMachineStateRunning.String() {
+			return errors.New("VM is not running")
+		}
+	case ParallelsVirtualMachineDesiredStatePause:
+		if vm.State == ParallelsVirtualMachineStatePaused.String() {
+			return nil
+		}
+		if vm.State != ParallelsVirtualMachineStateRunning.String() {
+			return errors.New("VM is not running")
+		}
+	case ParallelsVirtualMachineDesiredStateSuspend:
+		if vm.State == ParallelsVirtualMachineStateSuspended.String() {
+			return nil
+		}
+		if vm.State != ParallelsVirtualMachineStateRunning.String() {
+			return errors.New("VM is not running")
+		}
+	case ParallelsVirtualMachineDesiredStateResume:
+		if vm.State != ParallelsVirtualMachineStatePaused.String() &&
+			vm.State != ParallelsVirtualMachineStateSuspended.String() {
+			return errors.New("VM is not paused or suspended")
+		}
+	case ParallelsVirtualMachineDesiredStateReset:
+		if vm.State == ParallelsVirtualMachineStateStopped.String() {
+			return nil
+		}
+	case ParallelsVirtualMachineDesiredStateRestart:
+		if vm.State == ParallelsVirtualMachineStateStopped.String() {
+			return nil
+		}
+		if vm.State != ParallelsVirtualMachineStateRunning.String() {
+			return errors.New("VM is not running")
+		}
+	default:
+		return errors.New("Invalid desired state")
 	}
 
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "start", id)
+	_, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, desiredState.String(), id)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (s *ParallelsService) StartVm(id string) error {
+	return s.SetVmState(id, ParallelsVirtualMachineDesiredStateStart)
 }
 
 func (s *ParallelsService) StopVm(id string) error {
-	vm, err := s.findVm(id)
-	if err != nil {
-		return err
-	}
-	if vm == nil {
-		return errors.New("VM not found")
-	}
-
-	if vm.State == "stopped" {
-		return nil
-	}
-
-	if vm.State != "running" {
-		return errors.New("VM is not running")
-	}
-
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "stop", id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.SetVmState(id, ParallelsVirtualMachineDesiredStateStop)
 }
 
 func (s *ParallelsService) RestartVm(id string) error {
-
-	vm, err := s.findVm(id)
-	if err != nil {
-		return err
-	}
-	if vm == nil {
-		return errors.New("VM not found")
-	}
-
-	if vm.State != "running" {
-		return errors.New("VM is not running")
-	}
-
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "restart", id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.SetVmState(id, ParallelsVirtualMachineDesiredStateRestart)
 }
 
 func (s *ParallelsService) SuspendVm(id string) error {
-	vm, err := s.findVm(id)
-	if err != nil {
-		return err
-	}
-	if vm == nil {
-		return errors.New("VM not found")
-	}
-
-	if vm.State == "suspended" {
-		return nil
-	}
-
-	if vm.State != "running" {
-		return errors.New("VM is not running")
-	}
-
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "suspend", id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.SetVmState(id, ParallelsVirtualMachineDesiredStateSuspend)
 }
 
 func (s *ParallelsService) ResumeVm(id string) error {
-	vm, err := s.findVm(id)
-	if err != nil {
-		return err
-	}
-	if vm == nil {
-		return errors.New("VM not found")
-	}
-
-	if vm.State != "suspended" && vm.State != "paused" {
-		return errors.New("VM is not running")
-	}
-
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "resume", id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.SetVmState(id, ParallelsVirtualMachineDesiredStateResume)
 }
 
 func (s *ParallelsService) ResetVm(id string) error {
-	vm, err := s.findVm(id)
-	if err != nil {
-		return err
-	}
-	if vm == nil {
-		return errors.New("VM not found")
-	}
-
-	if vm.State == "stopped" {
-		return nil
-	}
-
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "reset", id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.SetVmState(id, ParallelsVirtualMachineDesiredStateReset)
 }
 
 func (s *ParallelsService) PauseVm(id string) error {
-	vm, err := s.findVm(id)
-	if err != nil {
-		return err
-	}
-	if vm == nil {
-		return errors.New("VM not found")
-	}
-
-	if vm.State == "paused" {
-		return nil
-	}
-
-	if vm.State != "running" {
-		return errors.New("VM is not running")
-	}
-
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "pause", id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.SetVmState(id, ParallelsVirtualMachineDesiredStatePause)
 }
 
 func (s *ParallelsService) DeleteVm(id string) error {
@@ -393,53 +380,6 @@ func (s *ParallelsService) VmStatus(id string) (string, error) {
 	return strings.ReplaceAll(statusParts[3], "\n", ""), nil
 }
 
-func (s *ParallelsService) SetCpuSize(id string, size int) error {
-	vm, err := s.findVm(id)
-	if err != nil {
-		return err
-	}
-	if vm == nil {
-		return errors.New("VM not found")
-	}
-
-	var cpuCount string
-	if size == 0 {
-		cpuCount = "auto"
-	} else {
-		cpuCount = fmt.Sprintf("%d", size)
-	}
-
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "set", id, "--cpus", cpuCount)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *ParallelsService) SetMemorySize(id string, size int) error {
-	vm, err := s.findVm(id)
-	if err != nil {
-		return err
-	}
-	if vm == nil {
-		return errors.New("VM not found")
-	}
-
-	var memSize string
-	if size == 0 {
-		memSize = "auto"
-	} else {
-		memSize = fmt.Sprintf("%d", size)
-	}
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "set", id, "--memSize", memSize)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (s *ParallelsService) GetInfo() *models.ParallelsDesktopInfo {
 	if s.Info != nil {
 		return s.Info
@@ -464,10 +404,62 @@ func (s *ParallelsService) GetInfo() *models.ParallelsDesktopInfo {
 	return s.Info
 }
 
-func (s *ParallelsService) CreateVirtualMachine(template data_models.VirtualMachineTemplate, desiredState string) (*models.ParallelsVM, error) {
+func (s *ParallelsService) ConfigVmSetRequest(id string, setOperations *models.VirtualMachineSetRequest) error {
+	vm, err := s.findVm(id)
+	if err != nil {
+		return err
+	}
+	if vm == nil {
+		return errors.New("VM not found")
+	}
+
+	for _, op := range setOperations.Operations {
+		op.Owner = vm.User
+		switch op.Group {
+		case "state":
+			common.Logger.Info("Setting machine state to %s", op.Operation)
+			if err := s.SetVmState(vm.ID, ParallelsVirtualMachineDesiredStateFromString(op.Operation)); err != nil {
+				op.Error = err
+			}
+		case "machine":
+			common.Logger.Info("Setting machine property %s to %s", op.Operation, op.Value)
+			if err := s.SetVmMachineOperation(vm, op); err != nil {
+				op.Error = err
+			}
+		case "cpu":
+			common.Logger.Info("Setting cpu property %s to %s", op.Operation, op.Value)
+			if err := s.SetVmCpu(vm, op); err != nil {
+				op.Error = err
+			}
+		case "memory":
+			common.Logger.Info("Setting memory property %s to %s", op.Operation, op.Value)
+			if err := s.SetVmMemory(vm, op); err != nil {
+				op.Error = err
+			}
+		case "network":
+			common.Logger.Info("Setting network property %s to %s", op.Operation, op.Value)
+		case "device":
+			common.Logger.Info("Setting device property %s to %s", op.Operation, op.Value)
+		case "shared_folder":
+			common.Logger.Info("Setting shared_folder property %s to %s", op.Operation, op.Value)
+		case "rosetta":
+			common.Logger.Info("Setting rosetta property %s to %s", op.Operation, op.Value)
+			if err := s.SetVmRosettaEmulation(vm, op); err != nil {
+				op.Error = err
+			}
+
+		default:
+			return fmt.Errorf("Invalid group %s", op.Group)
+		}
+	}
+
+	return nil
+}
+
+func (s *ParallelsService) CreateVm(template data_models.VirtualMachineTemplate, desiredState string) (*models.ParallelsVM, error) {
 	switch template.Type {
 	case data_models.VirtualMachineTemplateTypePacker:
-		return s.CreatePackerVirtualMachine(template, desiredState)
+		return s.CreatePackerTemplateVm(template, desiredState)
 	}
 
 	// _, err := commands.Execute("prlctl", "set", id, "--bootorder", bootOrder)
@@ -478,7 +470,7 @@ func (s *ParallelsService) CreateVirtualMachine(template data_models.VirtualMach
 	return nil, nil
 }
 
-func (s *ParallelsService) CreatePackerVirtualMachine(template data_models.VirtualMachineTemplate, desiredState string) (*models.ParallelsVM, error) {
+func (s *ParallelsService) CreatePackerTemplateVm(template data_models.VirtualMachineTemplate, desiredState string) (*models.ParallelsVM, error) {
 	common.Logger.Info("Creating Packer Virtual Machine %s", template.Name)
 	existVm, err := s.findVm(template.Name)
 	if existVm != nil || err != nil {
@@ -690,4 +682,166 @@ func getPropertyAsString(obj interface{}, propertyName string) (string, error) {
 		return "", fmt.Errorf("property %s not found", propertyName)
 	}
 	return fmt.Sprintf("%v", field.Interface()), nil
+}
+
+// Config Region
+
+func (s *ParallelsService) SetVmMachineOperation(vm *models.ParallelsVM, op *models.VirtualMachineSetOperation) error {
+	args := make([]string, 0)
+	switch op.Operation {
+	case "clone":
+		args = append(args, []string{
+			"sudo",
+			"-u",
+			vm.User,
+		}...)
+		args = append(args, s.executable, "clone", op.Value, "--name", vm.Name)
+	}
+	// _, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "set", id, "--memSize", size)
+	// if err != nil {
+	// 	return err
+	// }
+
+	return nil
+}
+
+func (s *ParallelsService) SetVmCpu(vm *models.ParallelsVM, op *models.VirtualMachineSetOperation) error {
+	if vm.State != "stopped" {
+		return errors.New("VM is not stopped")
+	}
+	cmd := "sudo"
+	args := make([]string, 0)
+	// Setting the owner in the command
+	if op.Owner != "root" {
+		args = append(args, "-u", op.Owner)
+	}
+	switch op.Operation {
+	case "set":
+		if op.Value != "auto" {
+			_, err := strconv.Atoi(op.Value)
+			if err != nil {
+				return err
+			}
+		}
+		args = append(args, s.executable, "set", vm.ID, "--cpus", op.Value)
+	case "set_type":
+		if op.Value != "x86" && op.Value != "arm" {
+			return fmt.Errorf("Invalid CPU type %s", op.Value)
+		}
+		args = append(args, s.executable, "set", vm.ID, "--cpu-type", op.Value)
+	default:
+		return fmt.Errorf("Invalid operation %s", op.Operation)
+	}
+
+	_, err := commands.ExecuteWithNoOutput(cmd, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *ParallelsService) SetVmMemory(vm *models.ParallelsVM, op *models.VirtualMachineSetOperation) error {
+	if vm.State != "stopped" {
+		return errors.New("VM is not stopped")
+	}
+	cmd := "sudo"
+	args := make([]string, 0)
+	// Setting the owner in the command
+	if op.Owner != "root" {
+		args = append(args, "-u", op.Owner)
+	}
+
+	switch op.Operation {
+	case "set":
+		if op.Value != "auto" {
+			_, err := strconv.Atoi(op.Value)
+			if err != nil {
+				return err
+			}
+		}
+		args = append(args, s.executable, "set", vm.ID, "--memSize", op.Value)
+	default:
+		return fmt.Errorf("Invalid operation %s", op.Operation)
+	}
+
+	_, err := commands.ExecuteWithNoOutput(cmd, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *ParallelsService) SetVmRosettaEmulation(vm *models.ParallelsVM, op *models.VirtualMachineSetOperation) error {
+	if vm.State != "stopped" {
+		return errors.New("VM is not stopped")
+	}
+	cmd := "sudo"
+	args := make([]string, 0)
+	// Setting the owner in the command
+	if op.Owner != "root" {
+		args = append(args, "-u", op.Owner)
+	}
+
+	switch op.Operation {
+	case "set":
+		if op.Value != "on" && op.Value != "off" && op.Value != "true" && op.Value != "false" {
+			return fmt.Errorf("Invalid value %s", op.Value)
+		}
+
+		if op.Value == "on" || op.Value == "true" {
+			args = append(args, s.executable, "set", vm.ID, "--rosetta-linux", "on")
+		}
+		if op.Value == "off" || op.Value == "false" {
+			args = append(args, s.executable, "set", vm.ID, "--rosetta-linux", "off")
+		}
+	default:
+		return fmt.Errorf("Invalid operation %s", op.Operation)
+	}
+
+	_, err := commands.ExecuteWithNoOutput(cmd, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *ParallelsService) ExecuteCommandOnVm(id string, r *models.VirtualMachineExecuteCommandRequest) (*models.VirtualMachineExecuteCommandResponse, error) {
+	response := &models.VirtualMachineExecuteCommandResponse{}
+	vm, err := s.findVm(id)
+	if err != nil {
+		return nil, err
+	}
+	if vm == nil {
+		return nil, errors.New("VM not found")
+	}
+
+	if vm.State != "running" {
+		return nil, errors.New("VM is not running")
+	}
+
+	cmd := helpers.Command{
+		Command: "sudo",
+	}
+	args := make([]string, 0)
+	// Setting the owner in the command
+	if vm.User != "root" {
+		args = append(args, "-u", vm.User)
+	}
+	args = append(args, s.executable, "exec", vm.ID, r.Command)
+	cmd.Args = args
+
+	common.Logger.Info("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
+	stdout, stderr, exitCode, cmdError := helpers.ExecuteWithOutput(cmd)
+	response.Stdout = stdout
+	response.Stderr = stderr
+	response.ExitCode = exitCode
+	if cmdError != nil {
+		response.Error = cmdError.Error()
+	}
+
+	common.Logger.Info("Command %s %s executed with exit code %v", cmd.Command, strings.Join(cmd.Args, " "), exitCode)
+	return response, nil
 }

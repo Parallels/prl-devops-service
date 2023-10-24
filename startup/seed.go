@@ -32,10 +32,10 @@ func SeedVirtualMachineTemplateDefaults() error {
 		Addons: []string{
 			"developer",
 		},
-		Specs: map[string]int{
-			"memory": 2048,
-			"cpu":    2,
-			"disk":   20480,
+		Specs: map[string]string{
+			"memory": "2048",
+			"cpu":    "2",
+			"disk":   "20480",
 		},
 	}
 
@@ -172,6 +172,15 @@ func SeedDefaultRolesAndClaims() error {
 		if err := db.CreateClaim(&models.UserClaim{
 			ID:   helpers.GenerateId(),
 			Name: constants.LIST_VM_CLAIM,
+		}); err != nil {
+			common.Logger.Error("Error adding claim: %s", err.Error())
+			return err
+		}
+	}
+	if exists, _ := db.GetClaim(constants.EXECUTE_COMMAND_VM_CLAIM); exists == nil {
+		if err := db.CreateClaim(&models.UserClaim{
+			ID:   helpers.GenerateId(),
+			Name: constants.EXECUTE_COMMAND_VM_CLAIM,
 		}); err != nil {
 			common.Logger.Error("Error adding claim: %s", err.Error())
 			return err

@@ -13,7 +13,7 @@ type VirtualMachineTemplate struct {
 	RemoteUrl    string                     `json:"remote_url"`
 	Variables    map[string]string          `json:"variables"`
 	Addons       []string                   `json:"addons"`
-	Specs        map[string]int             `json:"specs"`
+	Specs        map[string]string          `json:"specs"`
 	Defaults     map[string]string          `json:"defaults"`
 }
 
@@ -39,10 +39,10 @@ func (m *VirtualMachineTemplate) Validate() error {
 	}
 
 	if m.Specs == nil {
-		m.Specs = make(map[string]int)
-		m.Specs["memory"] = 2048
-		m.Specs["cpu"] = 2
-		m.Specs["disk"] = 20480
+		m.Specs = make(map[string]string)
+		m.Specs["memory"] = "2048"
+		m.Specs["cpu"] = "2"
+		m.Specs["disk"] = "20480"
 	}
 
 	if m.Defaults == nil {

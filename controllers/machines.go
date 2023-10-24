@@ -278,6 +278,75 @@ func StatusMachineController() restapi.Controller {
 	}
 }
 
+func SetMachineController() restapi.Controller {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request models.VirtualMachineSetRequest
+		svc := services.GetServices().ParallelsService
+		http_helper.MapRequestBody(r, &request)
+		if err := request.Validate(); err != nil {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		params := mux.Vars(r)
+		id := params["id"]
+
+		if err := svc.ConfigVmSetRequest(id, &request); err != nil {
+			ReturnApiError(w, models.NewFromError(err))
+			return
+		}
+
+		result := models.VirtualMachineSetResponse{
+			Operations: make([]models.VirtualMachineSetOperationResponse, 0),
+		}
+		for _, op := range request.Operations {
+			rOp := models.VirtualMachineSetOperationResponse{
+				Group:     op.Group,
+				Operation: op.Operation,
+			}
+			if op.Error != nil {
+				rOp.Status = "Error"
+				rOp.Error = op.Error.Error()
+			} else {
+				rOp.Status = "Success"
+			}
+
+			result.Operations = append(result.Operations, rOp)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(result)
+	}
+}
+
+func ExecuteCommandOnMachineController() restapi.Controller {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request models.VirtualMachineExecuteCommandRequest
+		svc := services.GetServices().ParallelsService
+		http_helper.MapRequestBody(r, &request)
+		if request.Command == "" {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: "Invalid request body: command cannot be empty",
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		params := mux.Vars(r)
+		id := params["id"]
+
+		if response, err := svc.ExecuteCommandOnVm(id, &request); err != nil {
+			ReturnApiError(w, models.NewFromError(err))
+			return
+		} else {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(response)
+		}
+	}
+}
+
 func CreateMachine() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// svc := services.ParallelsService{}
@@ -346,7 +415,7 @@ func CreateMachine() restapi.Controller {
 		}
 
 		svc := services.GetServices().ParallelsService
-		vm, err := svc.CreateVirtualMachine(*template, request.DesiredState)
+		vm, err := svc.CreateVm(*template, request.DesiredState)
 		if err != nil {
 			ReturnApiError(w, models.NewFromError(err))
 			return
@@ -361,5 +430,49 @@ func CreateMachine() restapi.Controller {
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
+	}
+}
+
+func PushRemoteMachineController() restapi.Controller {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request models.PushRemoteMachineRequest
+		// svc := services.GetServices().ParallelsService
+		http_helper.MapRequestBody(r, &request)
+		if request.LocalPath == "" {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: "Invalid request body: local path cannot be empty",
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		manifest := services.NewManifestService()
+		result, err := manifest.GenerateManifest(request.Name, request.LocalPath)
+		if err != nil {
+			ReturnApiError(w, models.NewFromError(err))
+			return
+		}
+
+		// params := mux.Vars(r)
+		// id := params["id"]
+
+		// bucket := aws.S3Bucket{
+		// 	Name:      "carlos-pd-machines",
+		// 	Region:    "us-east-2",
+		// 	AccessKey: "AKIA56JTTF6DLXWTRFUJ",
+		// 	SecretKey: "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",
+		// }
+		// svc := aws.NewAwsS3Service(bucket)
+
+		// if err := svc.UploadFile("/Users/cjlapao/poc-api-service"); err != nil {
+		// 	ReturnApiError(w, models.NewFromError(err))
+		// 	return
+		// } else {
+		// 	w.WriteHeader(http.StatusOK)
+		// 	json.NewEncoder(w).Encode("ok")
+		// }
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(result)
 	}
 }

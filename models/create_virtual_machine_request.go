@@ -9,9 +9,9 @@ type CreateVirtualMachineRequest struct {
 	Template     string `json:"template"`
 	Owner        string `json:"owner"`
 	Name         string `json:"name"`
-	Memory       int    `json:"memory"`
-	Cpu          int    `json:"cpu"`
-	Disk         int    `json:"disk"`
+	Memory       string `json:"memory"`
+	Cpu          string `json:"cpu"`
+	Disk         string `json:"disk"`
 	DesiredState string `json:"desiredState"`
 }
 
@@ -24,9 +24,9 @@ func (r *CreateVirtualMachineRequest) Validate() error {
 		return errors.New("Name cannot be empty")
 	}
 
-	if r.Memory <= 0 {
+	if r.Memory == "" {
 		common.Logger.Info("Memory is less than 0, setting to 2048")
-		r.Memory = 2048
+		r.Memory = "2048"
 	}
 
 	if r.Owner == "" {
@@ -34,14 +34,14 @@ func (r *CreateVirtualMachineRequest) Validate() error {
 		r.Owner = "root"
 	}
 
-	if r.Cpu <= 0 {
+	if r.Cpu == "" {
 		common.Logger.Info("CPU is less than 0, setting to 2")
-		r.Cpu = 2
+		r.Cpu = "2"
 	}
 
-	if r.Disk <= 0 {
+	if r.Disk == "" {
 		common.Logger.Info("Disk is less than 0, setting to 20480")
-		r.Disk = 20480
+		r.Disk = "20480"
 	}
 
 	if r.DesiredState == "" {

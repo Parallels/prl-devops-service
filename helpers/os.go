@@ -2,7 +2,10 @@ package helpers
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -45,6 +48,35 @@ func ExecuteWithNoOutput(command Command) (string, error) {
 	}
 
 	return stdOut.String(), nil
+}
+
+func ExecuteWithOutput(command Command) (stdout string, stderr string, exitCode int, err error) {
+	cmd := exec.Command(command.Command, command.Args...)
+	if command.WorkingDirectory != "" {
+		cmd.Dir = command.WorkingDirectory
+	}
+
+	var stdOut, stdIn, stdErr bytes.Buffer
+
+	cmd.Stdout = &stdOut
+	cmd.Stderr = &stdErr
+	cmd.Stdin = &stdIn
+
+	if err := cmd.Run(); err != nil {
+		if stdErr.String() != "" {
+			stderr = strings.TrimSuffix(stdErr.String(), "\n")
+			stdout = strings.TrimSuffix(stdOut.String(), "\n")
+			return stdout, stderr, cmd.ProcessState.ExitCode(), fmt.Errorf("%v, err: %v", stdErr.String(), err.Error())
+		} else {
+			stderr = ""
+			stdout = strings.TrimSuffix(stdOut.String(), "\n")
+			return stdout, stderr, cmd.ProcessState.ExitCode(), fmt.Errorf("%v, err: %v", stdErr.String(), err.Error())
+		}
+	}
+
+	stderr = ""
+	stdout = strings.TrimSuffix(stdOut.String(), "\n")
+	return stdout, stderr, cmd.ProcessState.ExitCode(), nil
 }
 
 func RemoveFolder(path string) error {
@@ -150,4 +182,28 @@ func ToHCL(m map[string]interface{}, indent int) string {
 		result = result[:len(result)-1]
 	}
 	return result
+}
+
+func IsDirectory(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+	return fileInfo.IsDir(), nil
+}
+
+func GetFileChecksum(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := sha1.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	checksum := hex.EncodeToString(hash.Sum(nil))
+	return checksum, nil
 }
