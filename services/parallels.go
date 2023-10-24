@@ -497,11 +497,29 @@ func (s *ParallelsService) CreatePackerTemplateVm(template data_models.VirtualMa
 		overrideFile["hostname"] = template.Hostname
 	}
 	overrideFile["create_vagrant_box"] = false
-	overrideFile["machine_specs"] = map[string]interface{}{
-		"memory":    template.Specs["memory"],
-		"cpus":      template.Specs["cpu"],
-		"disk_size": fmt.Sprintf("%d", template.Specs["disk"]),
+	overrideFile["machine_specs"] = map[string]interface{}{}
+	if template.Specs["memory"] != "" {
+		memory, err := strconv.Atoi(template.Specs["memory"])
+		if err != nil {
+			memory = 2048
+		}
+		overrideFile["machine_specs"].(map[string]interface{})["memory"] = memory
 	}
+	if template.Specs["cpu"] != "" {
+		cpu, err := strconv.Atoi(template.Specs["cpu"])
+		if err != nil {
+			cpu = 2
+		}
+		overrideFile["machine_specs"].(map[string]interface{})["cpus"] = cpu
+	}
+	if template.Specs["disk"] != "" {
+		disk, err := strconv.Atoi(template.Specs["disk"])
+		if err != nil {
+			disk = 40960
+		}
+		overrideFile["machine_specs"].(map[string]interface{})["disk_size"] = disk
+	}
+
 	template.Addons = append(template.Addons, "parallels-tools")
 	if len(template.Addons) > 0 {
 		overrideFile["addons"] = template.Addons
