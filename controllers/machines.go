@@ -459,8 +459,8 @@ func PushRemoteMachineController() restapi.Controller {
 		// bucket := aws.S3Bucket{
 		// 	Name:      "carlos-pd-machines",
 		// 	Region:    "us-east-2",
-		// 	AccessKey: "AKIA56JTTF6DLXWTRFUJ",
-		// 	SecretKey: "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",
+		// 	AccessKey: "x",
+		// 	SecretKey: "x",
 		// }
 		// svc := aws.NewAwsS3Service(bucket)
 
