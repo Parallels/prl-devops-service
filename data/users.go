@@ -5,14 +5,24 @@ import (
 	"Parallels/pd-api-service/data/models"
 	"Parallels/pd-api-service/helpers"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 )
 
+var (
+	ErrUserNotFound              = errors.New("user not found")
+	ErrUserAlreadyExists         = errors.New("user already exists")
+	ErrUserEmailCannotBeEmpty    = errors.New("user email cannot be empty")
+	ErrUserUsernameCannotBeEmpty = errors.New("user username cannot be empty")
+	ErrUserNameCannotBeEmpty     = errors.New("user Name cannot be empty")
+	ErrUserIDCannotBeEmpty       = errors.New("user ID cannot be empty")
+	ErrRoleIDCannotBeEmpty       = errors.New("role ID cannot be empty")
+	ErrClaimIDCannotBeEmpty      = errors.New("claim ID cannot be empty")
+)
+
 func (j *JsonDatabase) GetUsers() ([]models.User, error) {
 	if !j.IsConnected() {
-		return nil, errors.New("the database is not connected")
+		return nil, ErrDatabaseNotConnected
 	}
 
 	return j.data.Users, nil
@@ -20,7 +30,7 @@ func (j *JsonDatabase) GetUsers() ([]models.User, error) {
 
 func (j *JsonDatabase) GetUser(idOrEmail string) (*models.User, error) {
 	if !j.IsConnected() {
-		return nil, errors.New("the database is not connected")
+		return nil, ErrDatabaseNotConnected
 	}
 
 	for _, user := range j.data.Users {
@@ -29,36 +39,36 @@ func (j *JsonDatabase) GetUser(idOrEmail string) (*models.User, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("User not found")
+	return nil, ErrUserNotFound
 }
 
 func (j *JsonDatabase) CreateUser(user *models.User) (*models.User, error) {
 	if !j.IsConnected() {
-		return nil, errors.New("the database is not connected")
+		return nil, ErrDatabaseNotConnected
 	}
 	if user.ID == "" {
 		user.ID = helpers.GenerateId()
 	}
 	if user.Email == "" {
-		return nil, errors.New("User email cannot be empty")
+		return nil, ErrUserEmailCannotBeEmpty
 	}
 	if user.Username == "" {
-		return nil, errors.New("User username cannot be empty")
+		return nil, ErrUserUsernameCannotBeEmpty
 	}
 	if user.Name == "" {
-		return nil, errors.New("User Name cannot be empty")
+		return nil, ErrUserNameCannotBeEmpty
 	}
 
 	if u, _ := j.GetUser(user.ID); u != nil {
-		return nil, fmt.Errorf("User already exists")
+		return nil, ErrUserAlreadyExists
 	}
 
 	if u, _ := j.GetUser(user.Email); u != nil {
-		return nil, fmt.Errorf("User already exists")
+		return nil, ErrUserAlreadyExists
 	}
 
 	if u, _ := j.GetUser(user.Username); u != nil {
-		return nil, fmt.Errorf("User already exists")
+		return nil, ErrUserAlreadyExists
 	}
 
 	if len(user.Roles) == 0 {
@@ -66,7 +76,7 @@ func (j *JsonDatabase) CreateUser(user *models.User) (*models.User, error) {
 		if err != nil {
 			return nil, err
 		}
-		user.Roles = []models.UserRole{
+		user.Roles = []models.Role{
 			*userRole,
 		}
 	}
@@ -76,7 +86,7 @@ func (j *JsonDatabase) CreateUser(user *models.User) (*models.User, error) {
 		if err != nil {
 			return nil, err
 		}
-		user.Claims = []models.UserClaim{
+		user.Claims = []models.Claim{
 			*readonlyClaim,
 		}
 	}
@@ -94,7 +104,7 @@ func (j *JsonDatabase) CreateUser(user *models.User) (*models.User, error) {
 
 func (j *JsonDatabase) UpdateUser(key models.User) error {
 	if !j.IsConnected() {
-		return errors.New("the database is not connected")
+		return ErrDatabaseNotConnected
 	}
 
 	for i, user := range j.data.Users {
@@ -112,12 +122,12 @@ func (j *JsonDatabase) UpdateUser(key models.User) error {
 		}
 	}
 
-	return errors.New("User not found")
+	return ErrUserNotFound
 }
 
 func (j *JsonDatabase) UpdateRootPassword(newPassword string) error {
 	if !j.IsConnected() {
-		return errors.New("the database is not connected")
+		return ErrDatabaseNotConnected
 	}
 
 	for i, user := range j.data.Users {
@@ -129,12 +139,12 @@ func (j *JsonDatabase) UpdateRootPassword(newPassword string) error {
 		}
 	}
 
-	return errors.New("User not found")
+	return ErrUserNotFound
 }
 
 func (j *JsonDatabase) RemoveUser(id string) error {
 	if !j.IsConnected() {
-		return errors.New("the database is not connected")
+		return ErrDatabaseNotConnected
 	}
 
 	if id == "" {
@@ -150,20 +160,20 @@ func (j *JsonDatabase) RemoveUser(id string) error {
 		}
 	}
 
-	return errors.New("User not found")
+	return ErrUserNotFound
 }
 
 func (j *JsonDatabase) AddRoleToUser(userId string, roleId string) error {
 	if !j.IsConnected() {
-		return errors.New("the database is not connected")
+		return ErrDatabaseNotConnected
 	}
 
 	if userId == "" {
-		return errors.New("User ID cannot be empty")
+		return ErrUserIDCannotBeEmpty
 	}
 
 	if roleId == "" {
-		return errors.New("Role ID cannot be empty")
+		return ErrRoleIDCannotBeEmpty
 	}
 
 	user, err := j.GetUser(userId)
@@ -194,15 +204,15 @@ func (j *JsonDatabase) AddRoleToUser(userId string, roleId string) error {
 
 func (j *JsonDatabase) RemoveRoleFromUser(userId string, roleId string) error {
 	if !j.IsConnected() {
-		return errors.New("the database is not connected")
+		return ErrDatabaseNotConnected
 	}
 
 	if userId == "" {
-		return errors.New("User ID cannot be empty")
+		return ErrUserIDCannotBeEmpty
 	}
 
 	if roleId == "" {
-		return errors.New("Role ID cannot be empty")
+		return ErrRoleIDCannotBeEmpty
 	}
 
 	user, err := j.GetUser(userId)
@@ -232,15 +242,15 @@ func (j *JsonDatabase) RemoveRoleFromUser(userId string, roleId string) error {
 
 func (j *JsonDatabase) AddClaimToUser(userId string, claimId string) error {
 	if !j.IsConnected() {
-		return errors.New("the database is not connected")
+		return ErrDatabaseNotConnected
 	}
 
 	if userId == "" {
-		return errors.New("User ID cannot be empty")
+		return ErrUserIDCannotBeEmpty
 	}
 
 	if claimId == "" {
-		return errors.New("Claim ID cannot be empty")
+		return ErrClaimIDCannotBeEmpty
 	}
 
 	user, err := j.GetUser(userId)
@@ -271,15 +281,15 @@ func (j *JsonDatabase) AddClaimToUser(userId string, claimId string) error {
 
 func (j *JsonDatabase) RemoveClaimFromUser(userId string, claimId string) error {
 	if !j.IsConnected() {
-		return errors.New("the database is not connected")
+		return ErrDatabaseNotConnected
 	}
 
 	if userId == "" {
-		return errors.New("User ID cannot be empty")
+		return ErrUserIDCannotBeEmpty
 	}
 
 	if claimId == "" {
-		return errors.New("Claim ID cannot be empty")
+		return ErrClaimIDCannotBeEmpty
 	}
 
 	user, err := j.GetUser(userId)

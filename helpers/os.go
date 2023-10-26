@@ -17,6 +17,10 @@ type Command struct {
 	Args             []string
 }
 
+func (c *Command) String() string {
+	return fmt.Sprintf("%s %s", c.Command, strings.Join(c.Args, " "))
+}
+
 func CreateDirIfNotExist(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0755)

@@ -8,6 +8,7 @@ type VirtualMachineTemplate struct {
 	Owner        string                     `json:"owner"`
 	Hostname     string                     `json:"hostname"`
 	Type         VirtualMachineTemplateType `json:"type"`
+	Connection   string                     `json:"connection"`
 	Description  string                     `json:"description"`
 	PackerFolder string                     `json:"packer_folder"`
 	RemoteUrl    string                     `json:"remote_url"`
@@ -23,11 +24,11 @@ func (m *VirtualMachineTemplate) Validate() error {
 	}
 
 	if m.Name == "" {
-		return errors.New("Name cannot be empty")
+		return errors.New("name cannot be empty")
 	}
 
 	if m.Type == -1 {
-		return errors.New("Type cannot be empty")
+		return errors.New("type cannot be empty")
 	}
 
 	if m.Type == VirtualMachineTemplateTypePacker && m.PackerFolder == "" {

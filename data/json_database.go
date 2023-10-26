@@ -7,12 +7,17 @@ import (
 	"os"
 )
 
+var (
+	ErrDatabaseNotConnected = errors.New("the database is not connected")
+)
+
 type Data struct {
-	Users                   []models.User                   `json:"users"`
-	Claims                  []models.UserClaim              `json:"claims"`
-	Roles                   []models.UserRole               `json:"roles"`
-	ApiKeys                 []models.ApiKey                 `json:"api_keys"`
-	VirtualMachineTemplates []models.VirtualMachineTemplate `json:"virtual_machine_templates"`
+	Users                   []models.User                          `json:"users"`
+	Claims                  []models.Claim                         `json:"claims"`
+	Roles                   []models.Role                          `json:"roles"`
+	ApiKeys                 []models.ApiKey                        `json:"api_keys"`
+	VirtualMachineTemplates []models.VirtualMachineTemplate        `json:"virtual_machine_templates"`
+	ManifestsCatalog        []models.CatalogVirtualMachineManifest `json:"catalog_manifests"`
 }
 
 type JsonDatabase struct {

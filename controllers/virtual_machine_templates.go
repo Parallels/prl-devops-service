@@ -4,7 +4,7 @@ import (
 	data_modules "Parallels/pd-api-service/data/models"
 	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/services"
+	"Parallels/pd-api-service/service_provider"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,7 +15,7 @@ import (
 // LoginUser is a public function that logs in a user
 func GetVirtualMachinesTemplatesController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().JsonDatabase
+		svc := service_provider.Get().JsonDatabase
 
 		err := svc.Connect()
 		if err != nil {
@@ -45,7 +45,7 @@ func GetVirtualMachinesTemplatesController() restapi.Controller {
 
 func GetVirtualMachineTemplateController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().JsonDatabase
+		svc := service_provider.Get().JsonDatabase
 
 		err := svc.Connect()
 		if err != nil {

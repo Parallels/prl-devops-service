@@ -4,7 +4,7 @@ import (
 	"Parallels/pd-api-service/common"
 	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/services"
+	"Parallels/pd-api-service/service_provider"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,10 +16,10 @@ import (
 // LoginUser is a public function that logs in a user
 func GetMachinesController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 		filter := ""
 		var err error
-		result := make([]models.ParallelsVM, 0)
+		var result []models.ParallelsVM
 		if r.Header.Get("X-Filter") != "" {
 			filter = r.Header.Get("X-Filter")
 		}
@@ -55,7 +55,7 @@ func GetMachinesController() restapi.Controller {
 
 func GetMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -82,7 +82,7 @@ func GetMachineController() restapi.Controller {
 
 func StartMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -106,7 +106,7 @@ func StartMachineController() restapi.Controller {
 
 func StopMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -130,7 +130,7 @@ func StopMachineController() restapi.Controller {
 
 func RestartMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -153,7 +153,7 @@ func RestartMachineController() restapi.Controller {
 
 func SuspendMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -176,7 +176,7 @@ func SuspendMachineController() restapi.Controller {
 
 func ResumeMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -193,7 +193,7 @@ func ResumeMachineController() restapi.Controller {
 
 func ResetMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -216,7 +216,7 @@ func ResetMachineController() restapi.Controller {
 
 func PauseMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -240,7 +240,7 @@ func PauseMachineController() restapi.Controller {
 
 func DeleteMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -257,7 +257,7 @@ func DeleteMachineController() restapi.Controller {
 
 func StatusMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -280,8 +280,8 @@ func StatusMachineController() restapi.Controller {
 
 func SetMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var request models.VirtualMachineSetRequest
-		svc := services.GetServices().ParallelsService
+		var request models.VirtualMachineConfigRequest
+		svc := service_provider.Get().ParallelsService
 		http_helper.MapRequestBody(r, &request)
 		if err := request.Validate(); err != nil {
 			ReturnApiError(w, models.ApiErrorResponse{
@@ -293,16 +293,16 @@ func SetMachineController() restapi.Controller {
 		params := mux.Vars(r)
 		id := params["id"]
 
-		if err := svc.ConfigVmSetRequest(id, &request); err != nil {
+		if err := svc.ConfigureVm(id, &request); err != nil {
 			ReturnApiError(w, models.NewFromError(err))
 			return
 		}
 
-		result := models.VirtualMachineSetResponse{
-			Operations: make([]models.VirtualMachineSetOperationResponse, 0),
+		result := models.VirtualMachineConfigResponse{
+			Operations: make([]models.VirtualMachineConfigResponseOperation, 0),
 		}
 		for _, op := range request.Operations {
-			rOp := models.VirtualMachineSetOperationResponse{
+			rOp := models.VirtualMachineConfigResponseOperation{
 				Group:     op.Group,
 				Operation: op.Operation,
 			}
@@ -324,7 +324,7 @@ func SetMachineController() restapi.Controller {
 func ExecuteCommandOnMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request models.VirtualMachineExecuteCommandRequest
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 		http_helper.MapRequestBody(r, &request)
 		if request.Command == "" {
 			ReturnApiError(w, models.ApiErrorResponse{
@@ -344,6 +344,130 @@ func ExecuteCommandOnMachineController() restapi.Controller {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(response)
 		}
+	}
+}
+
+func RenameMachineController() restapi.Controller {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request models.RenameVirtualMachineRequest
+		svc := service_provider.Get().ParallelsService
+
+		http_helper.MapRequestBody(r, &request)
+		params := mux.Vars(r)
+		id := params["id"]
+		request.ID = id
+
+		if err := request.Validate(); err != nil {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if err := svc.RenameVm(request); err != nil {
+			ReturnApiError(w, models.NewFromError(err))
+			return
+		}
+
+		vm, err := svc.GetVm(id)
+		if err != nil {
+			ReturnApiError(w, models.NewFromError(err))
+			return
+		}
+
+		if vm == nil {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: fmt.Sprintf("Machine %v not found", id),
+				Code:    http.StatusNotFound,
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(vm)
+	}
+}
+
+func RegisterMachineController() restapi.Controller {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request models.RegisterVirtualMachineRequest
+		svc := service_provider.Get().ParallelsService
+		http_helper.MapRequestBody(r, &request)
+		if err := request.Validate(); err != nil {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if err := svc.RegisterVm(request); err != nil {
+			ReturnApiError(w, models.NewFromError(err))
+			return
+		}
+
+		filter := fmt.Sprintf("Home=%s/", request.Path)
+		vms, err := svc.GetFilteredVm(filter)
+		if err != nil {
+			ReturnApiError(w, models.NewFromError(err))
+			return
+		}
+		if len(vms) == 0 {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: fmt.Sprintf("Machine %v not found", request.Path),
+				Code:    http.StatusNotFound,
+			})
+			return
+		}
+		if len(vms) != 1 {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: fmt.Sprintf("Multiple machines found for %v", request.Path),
+				Code:    http.StatusInternalServerError,
+			})
+			return
+		}
+		if request.MachineName != "" {
+			if err := svc.RenameVm(models.RenameVirtualMachineRequest{
+				ID:      vms[0].ID,
+				NewName: request.MachineName,
+			}); err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			vms[0].Name = request.MachineName
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(vms[0])
+	}
+}
+
+func UnregisterMachineController() restapi.Controller {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request models.UnregisterVirtualMachineRequest
+		svc := service_provider.Get().ParallelsService
+
+		http_helper.MapRequestBody(r, &request)
+		params := mux.Vars(r)
+		id := params["id"]
+		request.ID = id
+
+		if err := request.Validate(); err != nil {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if err := svc.UnregisterVm(request); err != nil {
+			ReturnApiError(w, models.NewFromError(err))
+			return
+		}
+
+		ReturnApiCommonResponse(w)
 	}
 }
 
@@ -379,7 +503,7 @@ func CreateMachine() restapi.Controller {
 			return
 		}
 
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			http.Error(w, "No database connection", http.StatusInternalServerError)
 			return
@@ -414,7 +538,7 @@ func CreateMachine() restapi.Controller {
 			return
 		}
 
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 		vm, err := svc.CreateVm(*template, request.DesiredState)
 		if err != nil {
 			ReturnApiError(w, models.NewFromError(err))
@@ -430,49 +554,5 @@ func CreateMachine() restapi.Controller {
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
-	}
-}
-
-func PushRemoteMachineController() restapi.Controller {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var request models.PushRemoteMachineRequest
-		// svc := services.GetServices().ParallelsService
-		http_helper.MapRequestBody(r, &request)
-		if request.LocalPath == "" {
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "Invalid request body: local path cannot be empty",
-				Code:    http.StatusBadRequest,
-			})
-			return
-		}
-
-		manifest := services.NewManifestService()
-		result, err := manifest.GenerateManifest(request.Name, request.LocalPath)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
-		}
-
-		// params := mux.Vars(r)
-		// id := params["id"]
-
-		// bucket := aws.S3Bucket{
-		// 	Name:      "carlos-pd-machines",
-		// 	Region:    "us-east-2",
-		// 	AccessKey: "x",
-		// 	SecretKey: "x",
-		// }
-		// svc := aws.NewAwsS3Service(bucket)
-
-		// if err := svc.UploadFile("/Users/cjlapao/poc-api-service"); err != nil {
-		// 	ReturnApiError(w, models.NewFromError(err))
-		// 	return
-		// } else {
-		// 	w.WriteHeader(http.StatusOK)
-		// 	json.NewEncoder(w).Encode("ok")
-		// }
-
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
 	}
 }

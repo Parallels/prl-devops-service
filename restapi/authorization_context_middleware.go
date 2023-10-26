@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"Parallels/pd-api-service/basecontext"
 	"Parallels/pd-api-service/constants"
 	"context"
 	"net/http"
@@ -10,7 +11,7 @@ func AddAuthorizationContextMiddlewareAdapter() Adapter {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			id := r.Context().Value(REQUEST_ID_KEY)
-			authorizationContext := CloneAuthorizationContext()
+			authorizationContext := basecontext.CloneAuthorizationContext()
 
 			// Adding the request id if it exist
 			if id != nil {

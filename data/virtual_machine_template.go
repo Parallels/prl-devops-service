@@ -3,13 +3,17 @@ package data
 import (
 	"Parallels/pd-api-service/data/models"
 	"errors"
-	"fmt"
 	"strings"
+)
+
+var (
+	ErrMachineTemplateNotFound      = errors.New("machine Template not found")
+	ErrMachineTemplateAlreadyExists = errors.New("machine Template already exists")
 )
 
 func (j *JsonDatabase) GetVirtualMachineTemplates() ([]models.VirtualMachineTemplate, error) {
 	if !j.IsConnected() {
-		return nil, errors.New("the database is not connected")
+		return nil, ErrDatabaseNotConnected
 	}
 
 	return j.data.VirtualMachineTemplates, nil
@@ -17,7 +21,7 @@ func (j *JsonDatabase) GetVirtualMachineTemplates() ([]models.VirtualMachineTemp
 
 func (j *JsonDatabase) GetVirtualMachineTemplate(nameOrId string) (*models.VirtualMachineTemplate, error) {
 	if !j.IsConnected() {
-		return nil, errors.New("the database is not connected")
+		return nil, ErrDatabaseNotConnected
 	}
 
 	for _, template := range j.data.VirtualMachineTemplates {
@@ -26,19 +30,19 @@ func (j *JsonDatabase) GetVirtualMachineTemplate(nameOrId string) (*models.Virtu
 		}
 	}
 
-	return nil, fmt.Errorf("Machine Template not found")
+	return nil, ErrMachineTemplateNotFound
 }
 
-func (j *JsonDatabase) AddVirtualMachineTemplate(template *models.VirtualMachineTemplate) error {
+func (j *JsonDatabase) AddVirtualMachineTemplate(template *models.VirtualMachineTemplate) (*models.VirtualMachineTemplate, error) {
 	if !j.IsConnected() {
-		return errors.New("the database is not connected")
+		return nil, ErrDatabaseNotConnected
 	}
 
-	if u, _ := j.GetVirtualMachineTemplate(template.Name); u != nil {
-		return fmt.Errorf("Machine Template already exists")
+	if u, _ := j.GetVirtualMachineTemplate(template.ID); u != nil {
+		return nil, ErrMachineTemplateAlreadyExists
 	}
 
 	j.data.VirtualMachineTemplates = append(j.data.VirtualMachineTemplates, *template)
 	j.save()
-	return nil
+	return template, nil
 }

@@ -6,7 +6,7 @@ type ApiErrorResponse struct {
 }
 
 func NewFromError(err error) ApiErrorResponse {
-	return NewFromErrorWithCode(err, 500)
+	return NewFromErrorWithCode(err, 404)
 }
 
 func NewFromErrorWithCode(err error, code int) ApiErrorResponse {

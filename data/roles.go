@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (j *JsonDatabase) GetRoles() ([]models.UserRole, error) {
+func (j *JsonDatabase) GetRoles() ([]models.Role, error) {
 	if !j.IsConnected() {
 		return nil, errors.New("the database is not connected")
 	}
@@ -16,7 +16,7 @@ func (j *JsonDatabase) GetRoles() ([]models.UserRole, error) {
 	return j.data.Roles, nil
 }
 
-func (j *JsonDatabase) GetRole(idOrName string) (*models.UserRole, error) {
+func (j *JsonDatabase) GetRole(idOrName string) (*models.Role, error) {
 	if !j.IsConnected() {
 		return nil, errors.New("the database is not connected")
 	}
@@ -27,10 +27,10 @@ func (j *JsonDatabase) GetRole(idOrName string) (*models.UserRole, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("Role not found")
+	return nil, fmt.Errorf("role not found")
 }
 
-func (j *JsonDatabase) CreateRole(role *models.UserRole) error {
+func (j *JsonDatabase) CreateRole(role *models.Role) error {
 	if !j.IsConnected() {
 		return errors.New("the database is not connected")
 	}
@@ -44,11 +44,11 @@ func (j *JsonDatabase) CreateRole(role *models.UserRole) error {
 	}
 
 	if u, _ := j.GetUser(role.ID); u != nil {
-		return fmt.Errorf("Role %s already exists with ID %s", role.Name, role.ID)
+		return fmt.Errorf("role %s already exists with ID %s", role.Name, role.ID)
 	}
 
 	if u, _ := j.GetUser(role.Name); u != nil {
-		return fmt.Errorf("Role %s already exists with ID %s", role.Name, role.ID)
+		return fmt.Errorf("role %s already exists with ID %s", role.Name, role.ID)
 	}
 
 	j.data.Roles = append(j.data.Roles, *role)

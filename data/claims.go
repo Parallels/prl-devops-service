@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (j *JsonDatabase) GetClaims() ([]models.UserClaim, error) {
+func (j *JsonDatabase) GetClaims() ([]models.Claim, error) {
 	if !j.IsConnected() {
 		return nil, errors.New("the database is not connected")
 	}
@@ -16,7 +16,7 @@ func (j *JsonDatabase) GetClaims() ([]models.UserClaim, error) {
 	return j.data.Claims, nil
 }
 
-func (j *JsonDatabase) GetClaim(idOrName string) (*models.UserClaim, error) {
+func (j *JsonDatabase) GetClaim(idOrName string) (*models.Claim, error) {
 	if !j.IsConnected() {
 		return nil, errors.New("the database is not connected")
 	}
@@ -27,10 +27,10 @@ func (j *JsonDatabase) GetClaim(idOrName string) (*models.UserClaim, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("Claim not found")
+	return nil, fmt.Errorf("claim not found")
 }
 
-func (j *JsonDatabase) CreateClaim(claim *models.UserClaim) error {
+func (j *JsonDatabase) CreateClaim(claim *models.Claim) error {
 	if !j.IsConnected() {
 		return errors.New("the database is not connected")
 	}
@@ -44,11 +44,11 @@ func (j *JsonDatabase) CreateClaim(claim *models.UserClaim) error {
 	}
 
 	if u, _ := j.GetUser(claim.ID); u != nil {
-		return fmt.Errorf("Claim %s already exists with ID %s", claim.Name, claim.ID)
+		return fmt.Errorf("claim %s already exists with ID %s", claim.Name, claim.ID)
 	}
 
 	if u, _ := j.GetUser(claim.Name); u != nil {
-		return fmt.Errorf("Claim %s already exists with ID %s", claim.Name, claim.ID)
+		return fmt.Errorf("claim %s already exists with ID %s", claim.Name, claim.ID)
 	}
 
 	j.data.Claims = append(j.data.Claims, *claim)
