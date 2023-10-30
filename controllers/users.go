@@ -6,7 +6,7 @@ import (
 	"Parallels/pd-api-service/mappers"
 	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/services"
+	"Parallels/pd-api-service/service_provider"
 	"encoding/json"
 	"net/http"
 
@@ -17,7 +17,7 @@ import (
 func GetUsersController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -61,7 +61,7 @@ func GetUsersController() restapi.Controller {
 func GetUserController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -129,7 +129,7 @@ func CreateUserController() restapi.Controller {
 		// Set the ID to 0 to ensure that a new ID is generated
 		user.ID = helpers.GenerateId()
 
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -168,7 +168,7 @@ func CreateUserController() restapi.Controller {
 func DeleteUserController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -214,7 +214,7 @@ func UpdateUserController() restapi.Controller {
 			return
 		}
 
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -235,6 +235,10 @@ func UpdateUserController() restapi.Controller {
 
 		user.ID = id
 		err = dbService.UpdateUser(user)
+		if err != nil {
+			ReturnApiError(w, models.NewFromError(err))
+			return
+		}
 
 		dbService.Disconnect()
 
@@ -245,7 +249,7 @@ func UpdateUserController() restapi.Controller {
 func GetUserRolesController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -287,7 +291,7 @@ func GetUserRolesController() restapi.Controller {
 		}
 		roles := user.Roles
 		if roles == nil {
-			roles = make([]data_models.UserRole, 0)
+			roles = make([]data_models.Role, 0)
 		}
 
 		// Marshal the user struct to JSON
@@ -305,14 +309,14 @@ func GetUserRolesController() restapi.Controller {
 
 func AddRoleToUserController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var role data_models.UserRole
+		var role data_models.Role
 		err := json.NewDecoder(r.Body).Decode(&role)
 		if err != nil {
 			ReturnApiError(w, models.NewFromError(err))
 			return
 		}
 
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -347,7 +351,7 @@ func AddRoleToUserController() restapi.Controller {
 func RemoveRoleFromUserController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -382,7 +386,7 @@ func RemoveRoleFromUserController() restapi.Controller {
 func GetUserClaimsController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -424,7 +428,7 @@ func GetUserClaimsController() restapi.Controller {
 		}
 		claims := user.Claims
 		if claims == nil {
-			claims = make([]data_models.UserClaim, 0)
+			claims = make([]data_models.Claim, 0)
 		}
 
 		// Marshal the user struct to JSON
@@ -442,14 +446,14 @@ func GetUserClaimsController() restapi.Controller {
 
 func AddClaimToUserController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var claim data_models.UserClaim
+		var claim data_models.Claim
 		err := json.NewDecoder(r.Body).Decode(&claim)
 		if err != nil {
 			ReturnApiError(w, models.NewFromError(err))
 			return
 		}
 
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -484,7 +488,7 @@ func AddClaimToUserController() restapi.Controller {
 func RemoveClaimFromUserController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",

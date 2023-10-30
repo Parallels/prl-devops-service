@@ -17,6 +17,10 @@ type Command struct {
 	Args             []string
 }
 
+func (c *Command) String() string {
+	return fmt.Sprintf("%s %s", c.Command, strings.Join(c.Args, " "))
+}
+
 func CreateDirIfNotExist(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0755)
@@ -206,4 +210,23 @@ func GetFileChecksum(path string) (string, error) {
 
 	checksum := hex.EncodeToString(hash.Sum(nil))
 	return checksum, nil
+}
+
+func GetCurrentDirectory() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	return dir, nil
+}
+
+func NormalizeString(s string) string {
+	replaceChars := []string{" ", ",", ":", ";", "(", ")", "[", "]", "{", "}", "'", "\"", "/", "\\", "|", "<", ">", "=", "+", "*", "&", "^", "%", "$", "#", "@", "!", "`", "~", "?"}
+	replaceWith := "_"
+	for _, c := range replaceChars {
+		s = strings.ReplaceAll(s, c, replaceWith)
+	}
+
+	return strings.ToLower(strings.TrimSpace(s))
 }

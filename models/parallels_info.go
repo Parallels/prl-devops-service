@@ -22,7 +22,7 @@ type ParallelsDesktopInfo struct {
 	PreferencesAreLocked         string                                  `json:"Preferences are locked"`
 	DisableDeletingReportArchive string                                  `json:"Disable deleting report archive"`
 	AddSerialPortOutputToReport  string                                  `json:"Add serial port output to report"`
-	License                      ParallelsDesktopLicense                 `json:"License"`
+	License                      HardwareInfoParallelsDesktopLicense     `json:"License"`
 	HardwareID                   string                                  `json:"Hardware Id"`
 	SignedIn                     string                                  `json:"Signed In"`
 	HardwareInfo                 map[string]ParallelsDesktopHardwareInfo `json:"Hardware info"`
@@ -33,7 +33,7 @@ type ParallelsDesktopHardwareInfo struct {
 	Type ParallelsDesktopHardwareType `json:"type"`
 }
 
-type ParallelsDesktopLicense struct {
+type HardwareInfoParallelsDesktopLicense struct {
 	State      string `json:"state"`
 	Key        string `json:"key"`
 	Restricted string `json:"restricted"`

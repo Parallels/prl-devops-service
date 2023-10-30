@@ -39,29 +39,29 @@ func UserToDTO(model models.User) data_models.User {
 	return user
 }
 
-func ClaimFromDTO(model data_models.UserClaim) models.UserClaim {
+func ClaimFromDTO(model data_models.Claim) models.UserClaim {
 	return models.UserClaim{
 		ID:   model.ID,
 		Name: model.Name,
 	}
 }
 
-func ClaimToDTO(model models.UserClaim) data_models.UserClaim {
-	return data_models.UserClaim{
+func ClaimToDTO(model models.UserClaim) data_models.Claim {
+	return data_models.Claim{
 		ID:   model.ID,
 		Name: model.Name,
 	}
 }
 
-func RoleFromDTO(model data_models.UserRole) models.UserRole {
+func RoleFromDTO(model data_models.Role) models.UserRole {
 	return models.UserRole{
 		ID:   model.ID,
 		Name: model.Name,
 	}
 }
 
-func RoleToDTO(model models.UserRole) data_models.UserRole {
-	return data_models.UserRole{
+func RoleToDTO(model models.UserRole) data_models.Role {
+	return data_models.Role{
 		ID:   model.ID,
 		Name: model.Name,
 	}

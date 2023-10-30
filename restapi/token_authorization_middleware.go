@@ -1,12 +1,13 @@
 package restapi
 
 import (
+	"Parallels/pd-api-service/basecontext"
 	"Parallels/pd-api-service/common"
 	"Parallels/pd-api-service/constants"
 	data_modules "Parallels/pd-api-service/data/models"
 	"Parallels/pd-api-service/mappers"
 	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/services"
+	"Parallels/pd-api-service/service_provider"
 	"context"
 	"errors"
 	"net/http"
@@ -24,12 +25,12 @@ import (
 func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapter {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var authorizationContext *AuthorizationContext
+			var authorizationContext *basecontext.AuthorizationContext
 			authCtxFromRequest := r.Context().Value(constants.AUTHORIZATION_CONTEXT_KEY)
 			if authCtxFromRequest != nil {
-				authorizationContext = authCtxFromRequest.(*AuthorizationContext)
+				authorizationContext = authCtxFromRequest.(*basecontext.AuthorizationContext)
 			} else {
-				authorizationContext = InitAuthorizationContext()
+				authorizationContext = basecontext.InitAuthorizationContext()
 			}
 
 			if authorizationContext.IsAuthorized || HasApiKeyAuthorizationHeader(r) {
@@ -46,7 +47,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 				return
 			}
 
-			db := services.GetServices().JsonDatabase
+			db := service_provider.Get().JsonDatabase
 
 			// we do not have enough information to validate the token
 			if db == nil {
@@ -80,7 +81,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 					}
 
 					// Return the secret key used to sign the token
-					return []byte(services.GetServices().HardwareSecret), nil
+					return []byte(service_provider.Get().HardwareSecret), nil
 				})
 
 				if err != nil {
@@ -96,7 +97,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 				if authorized {
 					// Check if the token is valid
 					if jwtClaims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-						db := services.GetServices().JsonDatabase
+						db := service_provider.Get().JsonDatabase
 						var dbUser *data_modules.User
 						var err error
 						if err = db.Connect(); err != nil {

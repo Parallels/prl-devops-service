@@ -4,7 +4,7 @@ import (
 	"Parallels/pd-api-service/common"
 	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/services"
+	"Parallels/pd-api-service/service_provider"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,10 +16,10 @@ import (
 // LoginUser is a public function that logs in a user
 func GetMachinesController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 		filter := ""
 		var err error
-		result := make([]models.ParallelsVM, 0)
+		var result []models.ParallelsVM
 		if r.Header.Get("X-Filter") != "" {
 			filter = r.Header.Get("X-Filter")
 		}
@@ -55,7 +55,7 @@ func GetMachinesController() restapi.Controller {
 
 func GetMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -82,7 +82,7 @@ func GetMachineController() restapi.Controller {
 
 func StartMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -106,7 +106,7 @@ func StartMachineController() restapi.Controller {
 
 func StopMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -130,7 +130,7 @@ func StopMachineController() restapi.Controller {
 
 func RestartMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -153,7 +153,7 @@ func RestartMachineController() restapi.Controller {
 
 func SuspendMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -176,7 +176,7 @@ func SuspendMachineController() restapi.Controller {
 
 func ResumeMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -193,7 +193,7 @@ func ResumeMachineController() restapi.Controller {
 
 func ResetMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -216,7 +216,7 @@ func ResetMachineController() restapi.Controller {
 
 func PauseMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -240,7 +240,7 @@ func PauseMachineController() restapi.Controller {
 
 func DeleteMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -257,7 +257,7 @@ func DeleteMachineController() restapi.Controller {
 
 func StatusMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 
 		params := mux.Vars(r)
 		id := params["id"]
@@ -280,8 +280,8 @@ func StatusMachineController() restapi.Controller {
 
 func SetMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var request models.VirtualMachineSetRequest
-		svc := services.GetServices().ParallelsService
+		var request models.VirtualMachineConfigRequest
+		svc := service_provider.Get().ParallelsService
 		http_helper.MapRequestBody(r, &request)
 		if err := request.Validate(); err != nil {
 			ReturnApiError(w, models.ApiErrorResponse{
@@ -293,16 +293,16 @@ func SetMachineController() restapi.Controller {
 		params := mux.Vars(r)
 		id := params["id"]
 
-		if err := svc.ConfigVmSetRequest(id, &request); err != nil {
+		if err := svc.ConfigureVm(id, &request); err != nil {
 			ReturnApiError(w, models.NewFromError(err))
 			return
 		}
 
-		result := models.VirtualMachineSetResponse{
-			Operations: make([]models.VirtualMachineSetOperationResponse, 0),
+		result := models.VirtualMachineConfigResponse{
+			Operations: make([]models.VirtualMachineConfigResponseOperation, 0),
 		}
 		for _, op := range request.Operations {
-			rOp := models.VirtualMachineSetOperationResponse{
+			rOp := models.VirtualMachineConfigResponseOperation{
 				Group:     op.Group,
 				Operation: op.Operation,
 			}
@@ -324,7 +324,7 @@ func SetMachineController() restapi.Controller {
 func ExecuteCommandOnMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request models.VirtualMachineExecuteCommandRequest
-		svc := services.GetServices().ParallelsService
+		svc := service_provider.Get().ParallelsService
 		http_helper.MapRequestBody(r, &request)
 		if request.Command == "" {
 			ReturnApiError(w, models.ApiErrorResponse{
@@ -347,29 +347,52 @@ func ExecuteCommandOnMachineController() restapi.Controller {
 	}
 }
 
-func CreateMachine() restapi.Controller {
+func RenameMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// svc := services.ParallelsService{}
-		// downloadSvc := services.DownloadService{}
-		// url := "https://releases.ubuntu.com/jammy/ubuntu-22.04.3-desktop-amd64.iso"
-		// filename := "ubuntu-22.04.3-desktop-amd64.iso"
+		var request models.RenameVirtualMachineRequest
+		svc := service_provider.Get().ParallelsService
 
-		// err := downloadSvc.DownloadFile(url, filename)
-		// if err != nil {
-		// 	http.Error(w, "Machine not found", http.StatusInternalServerError)
-		// 	return
-		// }
+		http_helper.MapRequestBody(r, &request)
+		params := mux.Vars(r)
+		id := params["id"]
+		request.ID = id
 
-		// params := mux.Vars(r)
-		// id := params["id"]
+		if err := request.Validate(); err != nil {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
 
-		// result := svc.StopVm(id)
-		// if !result {
-		//   http.Error(w, "Machine not found", http.StatusInternalServerError)
-		//   return
-		// }
+		if err := svc.RenameVm(request); err != nil {
+			ReturnApiError(w, models.NewFromError(err))
+			return
+		}
 
-		var request models.CreateVirtualMachineRequest
+		vm, err := svc.GetVm(id)
+		if err != nil {
+			ReturnApiError(w, models.NewFromError(err))
+			return
+		}
+
+		if vm == nil {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: fmt.Sprintf("Machine %v not found", id),
+				Code:    http.StatusNotFound,
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(vm)
+	}
+}
+
+func RegisterMachineController() restapi.Controller {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request models.RegisterVirtualMachineRequest
+		svc := service_provider.Get().ParallelsService
 		http_helper.MapRequestBody(r, &request)
 		if err := request.Validate(); err != nil {
 			ReturnApiError(w, models.ApiErrorResponse{
@@ -379,100 +402,200 @@ func CreateMachine() restapi.Controller {
 			return
 		}
 
-		dbService := services.GetServices().JsonDatabase
-		if dbService == nil {
-			http.Error(w, "No database connection", http.StatusInternalServerError)
-			return
-		}
-
-		if err := dbService.Connect(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		defer dbService.Disconnect()
-
-		template, err := dbService.GetVirtualMachineTemplate(request.Template)
-		if err != nil {
+		if err := svc.RegisterVm(request); err != nil {
 			ReturnApiError(w, models.NewFromError(err))
 			return
 		}
 
-		if template == nil {
+		filter := fmt.Sprintf("Home=%s/", request.Path)
+		vms, err := svc.GetFilteredVm(filter)
+		if err != nil {
+			ReturnApiError(w, models.NewFromError(err))
+			return
+		}
+		if len(vms) == 0 {
 			ReturnApiError(w, models.ApiErrorResponse{
-				Message: fmt.Sprintf("Template %v not found", request.Template),
+				Message: fmt.Sprintf("Machine %v not found", request.Path),
 				Code:    http.StatusNotFound,
 			})
 			return
 		}
-
-		template.Name = request.Name
-		template.Owner = request.Owner
-		template.Specs["memory"] = request.Memory
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+		if len(vms) != 1 {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: fmt.Sprintf("Multiple machines found for %v", request.Path),
+				Code:    http.StatusInternalServerError,
+			})
 			return
 		}
+		if request.MachineName != "" {
+			if err := svc.RenameVm(models.RenameVirtualMachineRequest{
+				ID:      vms[0].ID,
+				NewName: request.MachineName,
+			}); err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
 
-		svc := services.GetServices().ParallelsService
-		vm, err := svc.CreateVm(*template, request.DesiredState)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
-		}
-
-		response := models.CreateVirtualMachineResponse{
-			ID:           vm.ID,
-			Name:         vm.Name,
-			Owner:        template.Owner,
-			CurrentState: vm.State,
+			vms[0].Name = request.MachineName
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(vms[0])
 	}
 }
 
-func PushRemoteMachineController() restapi.Controller {
+func UnregisterMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var request models.PushRemoteMachineRequest
-		// svc := services.GetServices().ParallelsService
+		var request models.UnregisterVirtualMachineRequest
+		svc := service_provider.Get().ParallelsService
+
 		http_helper.MapRequestBody(r, &request)
-		if request.LocalPath == "" {
+		params := mux.Vars(r)
+		id := params["id"]
+		request.ID = id
+
+		if err := request.Validate(); err != nil {
 			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "Invalid request body: local path cannot be empty",
+				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
 
-		manifest := services.NewManifestService()
-		result, err := manifest.GenerateManifest(request.Name, request.LocalPath)
-		if err != nil {
+		if err := svc.UnregisterVm(request); err != nil {
 			ReturnApiError(w, models.NewFromError(err))
 			return
 		}
 
-		// params := mux.Vars(r)
-		// id := params["id"]
+		ReturnApiCommonResponse(w)
+	}
+}
 
-		// bucket := aws.S3Bucket{
-		// 	Name:      "carlos-pd-machines",
-		// 	Region:    "us-east-2",
-		// 	AccessKey: "x",
-		// 	SecretKey: "x",
-		// }
-		// svc := aws.NewAwsS3Service(bucket)
+func CreateMachine() restapi.Controller {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request models.CreateVirtualMachineRequest
+		http_helper.MapRequestBody(r, &request)
+		if err := request.Validate(); err != nil {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		provider := service_provider.Get()
 
-		// if err := svc.UploadFile("/Users/cjlapao/poc-api-service"); err != nil {
-		// 	ReturnApiError(w, models.NewFromError(err))
-		// 	return
-		// } else {
-		// 	w.WriteHeader(http.StatusOK)
-		// 	json.NewEncoder(w).Encode("ok")
-		// }
+		if request.PackerTemplate != nil {
 
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+			dbService := provider.JsonDatabase
+			if dbService == nil {
+				http.Error(w, "No database connection", http.StatusInternalServerError)
+				return
+			}
+
+			if err := dbService.Connect(); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			defer dbService.Disconnect()
+
+			template, err := dbService.GetVirtualMachineTemplate(request.PackerTemplate.Template)
+			if err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			if template == nil {
+				ReturnApiError(w, models.ApiErrorResponse{
+					Message: fmt.Sprintf("Template %v not found", request.PackerTemplate.Template),
+					Code:    http.StatusNotFound,
+				})
+				return
+			}
+
+			template.Name = request.Name
+			template.Owner = request.Owner
+			template.Specs["memory"] = request.PackerTemplate.Memory
+			if err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			parallelsDesktopService := provider.ParallelsService
+			vm, err := parallelsDesktopService.CreateVm(*template, request.PackerTemplate.DesiredState)
+			if err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			response := models.CreateVirtualMachineResponse{
+				ID:           vm.ID,
+				Name:         vm.Name,
+				Owner:        template.Owner,
+				CurrentState: vm.State,
+			}
+
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(response)
+		} else if request.VagrantBox != nil {
+			vagrantService := provider.VagrantService
+			parallelsDesktopService := provider.ParallelsService
+			// Initializing the box
+			// if err := vagrantService.Init(*request.VagrantBox); err != nil {
+			// 	ReturnApiError(w, models.NewFromError(err))
+			// 	return
+			// }
+
+			// Updating plugins
+			if err := vagrantService.UpdatePlugins(request.Owner); err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			// Generating the vagrant file
+			if content, err := vagrantService.GenerateVagrantFile(*request.VagrantBox); err != nil {
+				common.Logger.Error("Error generating vagrant file: %v", err)
+				common.Logger.Error("Vagrant file content: %v", content)
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			// Creating the box
+			if err := vagrantService.Up(*request.VagrantBox); err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			vm, err := parallelsDesktopService.GetVm(request.Name)
+			if err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			if vm == nil {
+				ReturnApiError(w, models.ApiErrorResponse{
+					Message: "The machine was not found",
+					Code:    http.StatusNotFound,
+				})
+				return
+			}
+
+			response := models.CreateVirtualMachineResponse{
+				Name:         vm.Name,
+				ID:           vm.ID,
+				CurrentState: vm.State,
+				Owner:        vm.User,
+			}
+
+			// Write the JSON data to the response
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(response)
+		} else {
+			ReturnApiError(w, models.ApiErrorResponse{
+				Message: "Invalid request body: no template was specified",
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
 	}
 }

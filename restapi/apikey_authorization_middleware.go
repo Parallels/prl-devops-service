@@ -1,11 +1,12 @@
 package restapi
 
 import (
+	"Parallels/pd-api-service/basecontext"
 	"Parallels/pd-api-service/common"
 	"Parallels/pd-api-service/constants"
 	"Parallels/pd-api-service/helpers"
 	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/services"
+	"Parallels/pd-api-service/service_provider"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -21,12 +22,12 @@ type ApiKeyHeader struct {
 func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapter {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var authorizationContext *AuthorizationContext
+			var authorizationContext *basecontext.AuthorizationContext
 			authCtxFromRequest := r.Context().Value(constants.AUTHORIZATION_CONTEXT_KEY)
 			if authCtxFromRequest != nil {
-				authorizationContext = authCtxFromRequest.(*AuthorizationContext)
+				authorizationContext = authCtxFromRequest.(*basecontext.AuthorizationContext)
 			} else {
-				authorizationContext = InitAuthorizationContext()
+				authorizationContext = basecontext.InitAuthorizationContext()
 			}
 
 			// If the authorization context is already authorized we will skip this middleware
@@ -51,7 +52,7 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 				return
 			}
 			isValid := true
-			db := services.GetServices().JsonDatabase
+			db := service_provider.Get().JsonDatabase
 			db.Connect()
 			dbApiKey, err := db.GetApiKey(apiKey.Key)
 

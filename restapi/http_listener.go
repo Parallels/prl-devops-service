@@ -39,6 +39,8 @@ type HttpListenerOptions struct {
 
 // HttpListener HttpListener structure
 type HttpListener struct {
+	ServerName        string
+	ServerVersion     string
 	Router            *mux.Router
 	Logger            *log.LoggerService
 	Options           *HttpListenerOptions
@@ -48,12 +50,25 @@ type HttpListener struct {
 	Servers           []*http.Server
 	shutdownRequest   chan bool
 	shutdownRequested uint32
+	needsRestart      bool
 }
 
 var globalHttpListener *HttpListener
+var shutdown chan bool
+var needsRestart chan bool
+
+func Get() *HttpListener {
+	return globalHttpListener
+}
+
+func GetRestartChannel() chan bool {
+	return needsRestart
+}
 
 // NewHttpListener  Creates a new controller
 func NewHttpListener() *HttpListener {
+	needsRestart = make(chan bool, 10)
+	shutdown = make(chan bool, 1)
 	if globalHttpListener != nil {
 		globalHttpListener = nil
 		if len(globalHttpListener.Servers) > 0 {
@@ -202,6 +217,9 @@ func (l *HttpListener) AddAuthorizedControllerWithRolesAndClaims(c Controller, p
 }
 
 func (l *HttpListener) Start(serviceName string, serviceVersion string) {
+	l.ServerName = serviceName
+	l.ServerVersion = serviceVersion
+
 	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "authorization", "Authorization", "content-type"})
 	originsOk := handlers.AllowedOrigins([]string{"*"})
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"})
@@ -266,6 +284,10 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 	<-done
 
 	l.Logger.Info("Server shut down successfully...")
+	shutdown <- true
+	if !l.needsRestart {
+		needsRestart <- false
+	}
 }
 
 func (l *HttpListener) WaitAndShutdown() {
@@ -292,6 +314,25 @@ func (l *HttpListener) WaitAndShutdown() {
 			l.Logger.Error("Shutdown request error: %v", err.Error())
 		}
 	}
+}
+
+func (l *HttpListener) Restart() {
+	l.needsRestart = true
+	l.Logger.Info("Restarting the server...")
+	pid := os.Getpid()
+	p, err := os.FindProcess(pid)
+	if err != nil {
+		l.Logger.Error("Error finding process: %v", err.Error())
+	}
+	err = p.Signal(syscall.SIGTERM)
+	if err != nil {
+		l.Logger.Error("Error sending signal: %v", err.Error())
+	}
+
+	<-shutdown
+	globalHttpListener = nil
+	needsRestart <- true
+	l.Logger.Info("Server restarted successfully...")
 }
 
 // region Private Methods

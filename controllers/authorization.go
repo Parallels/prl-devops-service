@@ -5,7 +5,7 @@ import (
 	"Parallels/pd-api-service/helpers"
 	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/services"
+	"Parallels/pd-api-service/service_provider"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -24,7 +24,7 @@ func GetTokenController() restapi.Controller {
 		}
 
 		// Connect to the SQL server
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -83,7 +83,7 @@ func GetTokenController() restapi.Controller {
 		})
 
 		// Sign the token with HMAC
-		key := []byte(services.GetServices().HardwareSecret)
+		key := []byte(service_provider.Get().HardwareSecret)
 		tokenString, err := token.SignedString(key)
 		if err != nil {
 			ReturnApiError(w, models.NewFromErrorWithCode(err, 401))
@@ -120,7 +120,7 @@ func ValidateTokenController() restapi.Controller {
 			}
 
 			// Return the secret key used to sign the token
-			return []byte(services.GetServices().HardwareSecret), nil
+			return []byte(service_provider.Get().HardwareSecret), nil
 		})
 
 		if err != nil {

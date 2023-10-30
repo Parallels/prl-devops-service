@@ -1,7 +1,7 @@
 package startup
 
 import (
-	"Parallels/pd-api-service/services"
+	"Parallels/pd-api-service/service_provider"
 	"fmt"
 	"log"
 
@@ -10,7 +10,7 @@ import (
 
 func ExecuteMigrations() {
 	fmt.Println("Executing migrations")
-	dbService := services.GetServices().MySqlService
+	dbService := service_provider.Get().MySqlService
 	if dbService == nil {
 		log.Fatal("Error connecting to database")
 	}

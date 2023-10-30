@@ -6,7 +6,7 @@ import (
 	"Parallels/pd-api-service/mappers"
 	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/services"
+	"Parallels/pd-api-service/service_provider"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -18,7 +18,7 @@ import (
 func GetApiKeysController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -61,7 +61,7 @@ func GetApiKeysController() restapi.Controller {
 func DeleteApiKeyController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			http.Error(w, "No database connection", http.StatusInternalServerError)
 			ReturnApiError(w, models.ApiErrorResponse{
@@ -101,7 +101,7 @@ func DeleteApiKeyController() restapi.Controller {
 func GetApiKeyByIdOrNameController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			http.Error(w, "No database connection", http.StatusInternalServerError)
 			return
@@ -173,7 +173,7 @@ func CreateApiKeyController() restapi.Controller {
 			return
 		}
 
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			http.Error(w, "No database connection", http.StatusInternalServerError)
 			return
@@ -201,7 +201,7 @@ func CreateApiKeyController() restapi.Controller {
 func RevokeApiKeyController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := services.GetServices().JsonDatabase
+		dbService := service_provider.Get().JsonDatabase
 		if dbService == nil {
 			http.Error(w, "No database connection", http.StatusInternalServerError)
 			ReturnApiError(w, models.ApiErrorResponse{
