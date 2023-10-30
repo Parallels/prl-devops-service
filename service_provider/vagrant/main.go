@@ -62,6 +62,8 @@ func (s *VagrantService) FindPath() string {
 	} else {
 		if _, err := os.Stat("/opt/homebrew/bin/vagrant"); err == nil {
 			s.executable = "/opt/homebrew/bin/vagrant"
+		} else if _, err := os.Stat("/usr/local/bin/vagrant"); err == nil {
+			s.executable = "/opt/homebrew/bin/vagrant"
 		} else {
 			logger.Warn("Vagrant executable not found, trying to install it")
 			return s.executable

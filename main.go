@@ -19,7 +19,7 @@ func main() {
 	versionSvc.License = "MIT"
 	versionSvc.Major = 0
 	versionSvc.Minor = 1
-	versionSvc.Build = 30
+	versionSvc.Build = 31
 
 	if helper.GetFlagSwitch("version", false) {
 		println(versionSvc.String())
@@ -34,6 +34,8 @@ func main() {
 		rootPassword := helper.GetFlagValue("password", "")
 		if rootPassword != "" {
 			db := service_provider.Get().JsonDatabase
+			common.Logger.Info("Database connection found, updating password")
+			db.Connect()
 			if db != nil {
 				err := db.UpdateRootPassword(rootPassword)
 				if err != nil {
