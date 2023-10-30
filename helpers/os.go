@@ -211,3 +211,22 @@ func GetFileChecksum(path string) (string, error) {
 	checksum := hex.EncodeToString(hash.Sum(nil))
 	return checksum, nil
 }
+
+func GetCurrentDirectory() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	return dir, nil
+}
+
+func NormalizeString(s string) string {
+	replaceChars := []string{" ", ",", ":", ";", "(", ")", "[", "]", "{", "}", "'", "\"", "/", "\\", "|", "<", ">", "=", "+", "*", "&", "^", "%", "$", "#", "@", "!", "`", "~", "?"}
+	replaceWith := "_"
+	for _, c := range replaceChars {
+		s = strings.ReplaceAll(s, c, replaceWith)
+	}
+
+	return strings.ToLower(strings.TrimSpace(s))
+}

@@ -473,26 +473,6 @@ func UnregisterMachineController() restapi.Controller {
 
 func CreateMachine() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// svc := services.ParallelsService{}
-		// downloadSvc := services.DownloadService{}
-		// url := "https://releases.ubuntu.com/jammy/ubuntu-22.04.3-desktop-amd64.iso"
-		// filename := "ubuntu-22.04.3-desktop-amd64.iso"
-
-		// err := downloadSvc.DownloadFile(url, filename)
-		// if err != nil {
-		// 	http.Error(w, "Machine not found", http.StatusInternalServerError)
-		// 	return
-		// }
-
-		// params := mux.Vars(r)
-		// id := params["id"]
-
-		// result := svc.StopVm(id)
-		// if !result {
-		//   http.Error(w, "Machine not found", http.StatusInternalServerError)
-		//   return
-		// }
-
 		var request models.CreateVirtualMachineRequest
 		http_helper.MapRequestBody(r, &request)
 		if err := request.Validate(); err != nil {
@@ -502,57 +482,120 @@ func CreateMachine() restapi.Controller {
 			})
 			return
 		}
+		provider := service_provider.Get()
 
-		dbService := service_provider.Get().JsonDatabase
-		if dbService == nil {
-			http.Error(w, "No database connection", http.StatusInternalServerError)
-			return
-		}
+		if request.PackerTemplate != nil {
 
-		if err := dbService.Connect(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+			dbService := provider.JsonDatabase
+			if dbService == nil {
+				http.Error(w, "No database connection", http.StatusInternalServerError)
+				return
+			}
 
-		defer dbService.Disconnect()
+			if err := dbService.Connect(); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
-		template, err := dbService.GetVirtualMachineTemplate(request.Template)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
-		}
+			defer dbService.Disconnect()
 
-		if template == nil {
+			template, err := dbService.GetVirtualMachineTemplate(request.PackerTemplate.Template)
+			if err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			if template == nil {
+				ReturnApiError(w, models.ApiErrorResponse{
+					Message: fmt.Sprintf("Template %v not found", request.PackerTemplate.Template),
+					Code:    http.StatusNotFound,
+				})
+				return
+			}
+
+			template.Name = request.Name
+			template.Owner = request.Owner
+			template.Specs["memory"] = request.PackerTemplate.Memory
+			if err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			parallelsDesktopService := provider.ParallelsService
+			vm, err := parallelsDesktopService.CreateVm(*template, request.PackerTemplate.DesiredState)
+			if err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			response := models.CreateVirtualMachineResponse{
+				ID:           vm.ID,
+				Name:         vm.Name,
+				Owner:        template.Owner,
+				CurrentState: vm.State,
+			}
+
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(response)
+		} else if request.VagrantBox != nil {
+			vagrantService := provider.VagrantService
+			parallelsDesktopService := provider.ParallelsService
+			// Initializing the box
+			// if err := vagrantService.Init(*request.VagrantBox); err != nil {
+			// 	ReturnApiError(w, models.NewFromError(err))
+			// 	return
+			// }
+
+			// Updating plugins
+			if err := vagrantService.UpdatePlugins(request.Owner); err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			// Generating the vagrant file
+			if content, err := vagrantService.GenerateVagrantFile(*request.VagrantBox); err != nil {
+				common.Logger.Error("Error generating vagrant file: %v", err)
+				common.Logger.Error("Vagrant file content: %v", content)
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			// Creating the box
+			if err := vagrantService.Up(*request.VagrantBox); err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			vm, err := parallelsDesktopService.GetVm(request.Name)
+			if err != nil {
+				ReturnApiError(w, models.NewFromError(err))
+				return
+			}
+
+			if vm == nil {
+				ReturnApiError(w, models.ApiErrorResponse{
+					Message: "The machine was not found",
+					Code:    http.StatusNotFound,
+				})
+				return
+			}
+
+			response := models.CreateVirtualMachineResponse{
+				Name:         vm.Name,
+				ID:           vm.ID,
+				CurrentState: vm.State,
+				Owner:        vm.User,
+			}
+
+			// Write the JSON data to the response
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(response)
+		} else {
 			ReturnApiError(w, models.ApiErrorResponse{
-				Message: fmt.Sprintf("Template %v not found", request.Template),
-				Code:    http.StatusNotFound,
+				Message: "Invalid request body: no template was specified",
+				Code:    http.StatusBadRequest,
 			})
 			return
 		}
-
-		template.Name = request.Name
-		template.Owner = request.Owner
-		template.Specs["memory"] = request.Memory
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
-		}
-
-		svc := service_provider.Get().ParallelsService
-		vm, err := svc.CreateVm(*template, request.DesiredState)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
-		}
-
-		response := models.CreateVirtualMachineResponse{
-			ID:           vm.ID,
-			Name:         vm.Name,
-			Owner:        template.Owner,
-			CurrentState: vm.State,
-		}
-
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
 	}
 }

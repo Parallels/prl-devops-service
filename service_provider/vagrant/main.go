@@ -4,13 +4,16 @@ import (
 	"Parallels/pd-api-service/common"
 	"Parallels/pd-api-service/errors"
 	"Parallels/pd-api-service/helpers"
+	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/service_provider/interfaces"
+	"path/filepath"
 
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/cjlapao/common-go/commands"
+	"github.com/cjlapao/common-go/helper"
 )
 
 var globalVagrantService *VagrantService
@@ -87,6 +90,8 @@ func (s *VagrantService) Version() string {
 func (s *VagrantService) Install(asUser, version string, flags map[string]string) error {
 	if s.installed {
 		logger.Info("%s already installed", s.Name())
+		// logger.Info("Updating %s plugins", s.Name())
+		// s.updatePlugins(asUser)
 		return nil
 	}
 
@@ -128,6 +133,8 @@ func (s *VagrantService) Install(asUser, version string, flags map[string]string
 	}
 
 	s.installed = true
+	logger.Info("Installing %s plugins", s.Name())
+	s.InstallParallelsDesktopPlugin(asUser)
 	return nil
 }
 
@@ -187,30 +194,198 @@ func (s *VagrantService) Installed() bool {
 	return s.installed && s.executable != ""
 }
 
-func (s *VagrantService) Init(path string) error {
-	stdout, err := helpers.ExecuteWithNoOutput(helpers.Command{
-		Command:          s.executable,
-		WorkingDirectory: path,
-		Args:             []string{"init", "."},
-	})
-	if err != nil {
-		println(stdout)
-		buildError := fmt.Errorf("There was an error init packer folder %v, error: %v", path, err.Error())
-		return buildError
+func (s *VagrantService) InstallParallelsDesktopPlugin(asUser string) error {
+	if s.installed {
+		logger.Info("Updating Parallels Desktop Plugin %s", s.Name())
+		var cmd helpers.Command
+		if asUser == "" {
+			cmd = helpers.Command{
+				Command: "vagrant",
+				Args:    []string{"plugin", "install", "vagrant-parallels"},
+			}
+		} else {
+			cmd = helpers.Command{
+				Command: "sudo",
+				Args:    []string{"-u", asUser, "vagrant", "plugin", "install", "vagrant-parallels"},
+			}
+		}
+
+		_, err := helpers.ExecuteWithNoOutput(cmd)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (s *VagrantService) Up(path string, variableFile string) error {
-	stdout, err := helpers.ExecuteWithNoOutput(helpers.Command{
-		Command:          s.executable,
-		WorkingDirectory: path,
-		Args:             []string{"build", "-var-file", variableFile, "."},
-	})
+func (s *VagrantService) UpdatePlugins(asUser string) error {
+	if s.installed {
+		logger.Info("Updating Parallels Desktop Plugin %s", s.Name())
+		var cmd helpers.Command
+		if asUser == "" {
+			cmd = helpers.Command{
+				Command: "vagrant",
+				Args:    []string{"plugin", "update"},
+			}
+		} else {
+			cmd = helpers.Command{
+				Command: "sudo",
+				Args:    []string{"-u", asUser, "vagrant", "plugin", "update"},
+			}
+		}
+
+		_, err := helpers.ExecuteWithNoOutput(cmd)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *VagrantService) getVagrantFolderPath(request models.CreateVagrantMachineRequest) (string, error) {
+	rootDir, err := helpers.GetCurrentDirectory()
+	if err != nil {
+		return "", err
+	}
+	// Creating vagrant folder in the root if it does not exist
+	destination := filepath.Join(rootDir, "vagrant")
+	if err := helpers.CreateDirIfNotExist(destination); err != nil {
+		return "", err
+	}
+
+	vagrantFileFolderName := ""
+	if request.Name != "" {
+		vagrantFileFolderName = helpers.NormalizeString(request.Name)
+	} else if request.Box != "" {
+		vagrantFileFolderName = helpers.NormalizeString(request.Box)
+	} else {
+		return "", errors.NewWithCode("Box or Name must be provided", 500)
+	}
+
+	vagrantFileFolder := filepath.Join(destination, vagrantFileFolderName)
+	if err := helpers.CreateDirIfNotExist(vagrantFileFolder); err != nil {
+		return "", err
+	}
+
+	return vagrantFileFolder, nil
+}
+
+func (s *VagrantService) getVagrantFilePath(request models.CreateVagrantMachineRequest) (string, error) {
+	vagrantFileFolder, err := s.getVagrantFolderPath(request)
+	if err != nil {
+		return "", err
+	}
+
+	vagrantFilePath := filepath.Join(vagrantFileFolder, "Vagrantfile")
+
+	if helper.FileExists(vagrantFilePath) {
+		if err := helper.DeleteFile(vagrantFilePath); err != nil {
+			return "", err
+		}
+	}
+
+	return vagrantFilePath, nil
+}
+
+func (s *VagrantService) GenerateVagrantFile(request models.CreateVagrantMachineRequest) (string, error) {
+	vagrantFileContent := "Vagrant.configure(\"2\") do |config|\n"
+	vagrantFileContent += fmt.Sprintf("  config.vm.box = \"%s\"\n", request.Box)
+	if request.Version != "" {
+		vagrantFileContent += fmt.Sprintf("config.vm.box_version = \"%s\"\n", request.Version)
+	}
+	if request.CustomVagrantConfig != "" {
+		vagrantFileContent += request.CustomVagrantConfig
+	}
+
+	if request.Name != "" || request.CustomParallelsConfig != "" {
+		vagrantFileContent += "\n"
+		vagrantFileContent += "  config.vm.provider \"parallels\" do |prl|\n"
+		if request.Name != "" {
+			vagrantFileContent += fmt.Sprintf("    prl.name = \"%s\"\n", request.Name)
+		}
+		if request.CustomParallelsConfig != "" {
+			vagrantFileContent += request.CustomParallelsConfig
+		}
+		vagrantFileContent += "    end\n"
+		vagrantFileContent += "end\n"
+	}
+
+	vagrantFilePath, err := s.getVagrantFilePath(request)
+	if err != nil {
+		return "", err
+	}
+
+	if err := helper.WriteToFile(vagrantFileContent, vagrantFilePath); err != nil {
+		return "", err
+	}
+
+	return vagrantFileContent, nil
+}
+
+func (s *VagrantService) Init(request models.CreateVagrantMachineRequest) error {
+	vagrantFileFolder, err := s.getVagrantFolderPath(request)
+	if err != nil {
+		return err
+	}
+
+	if content, err := s.GenerateVagrantFile(request); err != nil {
+		common.Logger.Error("Error generating vagrant file: %v", err)
+		common.Logger.Error("Vagrant file content: %v", content)
+		return err
+	}
+
+	cmd := helpers.Command{
+		Command:          "sudo",
+		WorkingDirectory: vagrantFileFolder,
+		Args:             make([]string, 0),
+	}
+
+	if request.Owner != "" {
+		cmd.Args = append(cmd.Args, "-u", request.Owner, s.executable)
+	} else {
+		cmd.Args = append(cmd.Args, s.executable)
+	}
+
+	cmd.Args = append(cmd.Args, "init", request.Box)
+
+	logger.Info("Initializing vagrant folder with command: %v", cmd.String())
+	stdout, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		println(stdout)
-		buildError := fmt.Errorf("There was an error building packer folder %v, error: %v", path, err.Error())
+		buildError := errors.Newf("There was an error init vagrant folder %v, error: %v", vagrantFileFolder, err.Error())
 		return buildError
 	}
+
+	return nil
+}
+
+func (s *VagrantService) Up(request models.CreateVagrantMachineRequest) error {
+	vagrantFileFolder, err := s.getVagrantFolderPath(request)
+	if err != nil {
+		return err
+	}
+
+	cmd := helpers.Command{
+		Command:          "sudo",
+		WorkingDirectory: vagrantFileFolder,
+		Args:             make([]string, 0),
+	}
+
+	if request.Owner != "" {
+		cmd.Args = append(cmd.Args, "-u", request.Owner, s.executable)
+	} else {
+		cmd.Args = append(cmd.Args, s.executable)
+	}
+
+	cmd.Args = append(cmd.Args, "up")
+
+	logger.Info("Bringing vagrant box %s up with command: %v", request.Box, cmd.String())
+	stdout, err := helpers.ExecuteWithNoOutput(cmd)
+	if err != nil {
+		println(stdout)
+		buildError := errors.Newf("There was an error init vagrant folder %v, error: %v", vagrantFileFolder, err.Error())
+		return buildError
+	}
+
 	return nil
 }

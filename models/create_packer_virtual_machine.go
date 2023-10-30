@@ -2,10 +2,10 @@ package models
 
 import (
 	"Parallels/pd-api-service/common"
-	"errors"
+	"Parallels/pd-api-service/errors"
 )
 
-type CreateVirtualMachineRequest struct {
+type CreatePackerVirtualMachineRequest struct {
 	Template     string `json:"template"`
 	Owner        string `json:"owner"`
 	Name         string `json:"name"`
@@ -15,7 +15,7 @@ type CreateVirtualMachineRequest struct {
 	DesiredState string `json:"desiredState"`
 }
 
-func (r *CreateVirtualMachineRequest) Validate() error {
+func (r *CreatePackerVirtualMachineRequest) Validate() error {
 	if r.Template == "" {
 		return errors.New("Template cannot be empty")
 	}
@@ -30,8 +30,7 @@ func (r *CreateVirtualMachineRequest) Validate() error {
 	}
 
 	if r.Owner == "" {
-		common.Logger.Info("Owner is empty, setting to 'root'")
-		r.Owner = "root"
+		return errors.New("Owner cannot be empty")
 	}
 
 	if r.Cpu == "" {

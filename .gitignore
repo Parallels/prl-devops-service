@@ -7,3 +7,4 @@ data.json
 /out/*
 .local/*
 __debug_*
+/vagrant

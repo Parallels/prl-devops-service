@@ -18,7 +18,8 @@ import (
 func GetCatalogManifestsController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := service_provider.Get().JsonDatabase
+		provider := service_provider.Get()
+		dbService := provider.JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",
@@ -61,7 +62,8 @@ func GetCatalogManifestsController() restapi.Controller {
 func GetCatalogManifestController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Connect to the SQL server
-		dbService := service_provider.Get().JsonDatabase
+		provider := service_provider.Get()
+		dbService := provider.JsonDatabase
 		if dbService == nil {
 			ReturnApiError(w, models.ApiErrorResponse{
 				Message: "No database connection",

@@ -136,6 +136,9 @@ func InstallToolsController() restapi.Controller {
 			}
 		}
 
+		// Restarting the API Service
+		restapi.Get().Restart()
+
 		// Write the JSON data to the response
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
@@ -233,6 +236,9 @@ func UninstallToolsController() restapi.Controller {
 				}
 			}
 		}
+
+		// Restarting the API Service
+		restapi.Get().Restart()
 
 		// Write the JSON data to the response
 		w.WriteHeader(http.StatusOK)
