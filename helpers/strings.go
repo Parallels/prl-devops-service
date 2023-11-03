@@ -24,3 +24,11 @@ func ConvertByteToGigabyte(bytes int64) float64 {
 	gb := float64(bytes) / 1024 / 1024 / 1024
 	return math.Round(gb*100) / 100
 }
+
+func Obfuscate(input string) string {
+	if len(input) <= 4 {
+		return input
+	}
+
+	return input[0:2] + "****" + input[len(input)-2:]
+}

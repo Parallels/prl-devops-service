@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"bytes"
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
@@ -221,6 +222,22 @@ func GetCurrentDirectory() (string, error) {
 	return dir, nil
 }
 
+func GetFileMD5Checksum(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := md5.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	checksum := hex.EncodeToString(hash.Sum(nil))
+	return checksum, nil
+}
+
 func NormalizeString(s string) string {
 	replaceChars := []string{" ", ",", ":", ";", "(", ")", "[", "]", "{", "}", "'", "\"", "/", "\\", "|", "<", ">", "=", "+", "*", "&", "^", "%", "$", "#", "@", "!", "`", "~", "?"}
 	replaceWith := "_"
@@ -229,4 +246,14 @@ func NormalizeString(s string) string {
 	}
 
 	return strings.ToLower(strings.TrimSpace(s))
+}
+
+func NormalizeStringUpper(s string) string {
+	replaceChars := []string{" ", ",", ":", ";", "(", ")", "[", "]", "{", "}", "'", "\"", "/", "\\", "|", "<", ">", "=", "+", "*", "&", "^", "%", "$", "#", "@", "!", "`", "~", "?"}
+	replaceWith := "_"
+	for _, c := range replaceChars {
+		s = strings.ReplaceAll(s, c, replaceWith)
+	}
+
+	return strings.ToUpper(strings.TrimSpace(s))
 }

@@ -1,18 +1,21 @@
 package catalog
 
 import (
+	"Parallels/pd-api-service/basecontext"
+	"Parallels/pd-api-service/catalog/cleanupservice"
 	"Parallels/pd-api-service/catalog/interfaces"
 	"Parallels/pd-api-service/catalog/models"
 	"Parallels/pd-api-service/catalog/providers/aws_s3_bucket"
+	"Parallels/pd-api-service/catalog/providers/azurestorageaccount"
 	"Parallels/pd-api-service/catalog/providers/local"
-	"Parallels/pd-api-service/common"
+	"Parallels/pd-api-service/errors"
 	"Parallels/pd-api-service/helpers"
 	"Parallels/pd-api-service/mappers"
-	"Parallels/pd-api-service/service_provider"
-	"context"
+	"Parallels/pd-api-service/serviceprovider"
+	"archive/tar"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,20 +24,16 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-var logger = common.Logger
-
 type CatalogManifestService struct {
 	remoteServices []interfaces.RemoteStorageService
-	context        context.Context
 }
 
-func NewManifestService(ctx context.Context) *CatalogManifestService {
-	manifestService := &CatalogManifestService{
-		context: ctx,
-	}
+func NewManifestService(ctx basecontext.ApiContext) *CatalogManifestService {
+	manifestService := &CatalogManifestService{}
 	manifestService.remoteServices = make([]interfaces.RemoteStorageService, 0)
 	manifestService.AddRemoteService(aws_s3_bucket.NewAwsS3RemoteService())
 	manifestService.AddRemoteService(local.NewLocalProviderService())
+	manifestService.AddRemoteService(azurestorageaccount.NewAzureStorageAccountRemoteService())
 	return manifestService
 }
 
@@ -54,44 +53,45 @@ func (s *CatalogManifestService) AddRemoteService(service interfaces.RemoteStora
 	s.remoteServices = append(s.remoteServices, service)
 }
 
-func (s *CatalogManifestService) Push(r *models.PushCatalogManifestRequest) (*models.VirtualMachineManifest, error) {
+func (s *CatalogManifestService) PushOld(ctx basecontext.ApiContext, r *models.PushCatalogManifestRequest) (*models.VirtualMachineCatalogManifest, error) {
 	executed := false
-	manifest, err := s.GenerateManifest(r)
+	var manifest *models.VirtualMachineCatalogManifest
+	var err error
 	for _, rs := range s.remoteServices {
-		check, checkErr := rs.Check(r.Connection)
+		check, checkErr := rs.Check(ctx, r.Connection)
 		if checkErr != nil {
-			logger.Error("Error checking remote service %v: %v", rs.Name(), checkErr)
+			ctx.LogError("Error checking remote service %v: %v", rs.Name(), checkErr)
 			return nil, checkErr
 		}
 
 		if check {
 			executed = true
-			logger.Info("Generating vm manifest for %v", r.Name)
+			err = s.GenerateManifestContent(ctx, r, manifest)
 			if err != nil {
-				logger.Error("Error generating manifest for %v: %v", r.Name, err)
+				ctx.LogError("Error generating manifest for %v: %v", r.Name, err)
 				return nil, err
 			}
-			manifest.Provider = models.CatalogManifestProvider{
+			manifest.Provider = &models.CatalogManifestProvider{
 				Type: rs.Name(),
-				Meta: rs.GetProviderMeta(),
+				Meta: rs.GetProviderMeta(ctx),
 			}
 
-			logger.Info("Pushing manifest %v", manifest.Name)
-			var catalogManifest *models.VirtualMachineManifest
-			if err := rs.PullFile(rs.GetProviderRootPath(), s.getMetaFilename(manifest.ID), "/tmp"); err == nil {
-				logger.Info("Remote Manifest found, retrieving it")
+			ctx.LogInfo("Pushing manifest %v to provider %s", manifest.Name, rs.Name())
+			var catalogManifest *models.VirtualMachineCatalogManifest
+			if err := rs.PullFile(ctx, rs.GetProviderRootPath(ctx), s.getMetaFilename(manifest.ID), "/tmp"); err == nil {
+				ctx.LogInfo("Remote Manifest found, retrieving it")
 				catalogManifest, err = s.readManifestFromFile(filepath.Join("/tmp", s.getMetaFilename(manifest.ID)))
 				if err != nil {
-					logger.Error("Error reading manifest from file %v: %v", filepath.Join("/tmp", s.getMetaFilename(manifest.ID)), err)
+					ctx.LogError("Error reading manifest from file %v: %v", filepath.Join("/tmp", s.getMetaFilename(manifest.ID)), err)
 					if err := helper.DeleteFile("/tmp/" + s.getMetaFilename(manifest.ID)); err != nil {
-						logger.Error("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
+						ctx.LogError("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
 						return nil, err
 					}
 
 					return nil, err
 				}
 				if err := helper.DeleteFile("/tmp/" + s.getMetaFilename(manifest.ID)); err != nil {
-					logger.Error("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
+					ctx.LogError("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
 					return nil, err
 				}
 				manifest.CreatedAt = catalogManifest.CreatedAt
@@ -99,53 +99,53 @@ func (s *CatalogManifestService) Push(r *models.PushCatalogManifestRequest) (*mo
 				manifest.RequiredClaims = catalogManifest.RequiredClaims
 			}
 
-			db := service_provider.Get().JsonDatabase
+			db := serviceprovider.Get().JsonDatabase
 			if catalogManifest == nil {
-				exists, _ := db.GetCatalogManifest(s.context, manifest.ID)
+				exists, _ := db.GetCatalogManifest(ctx, manifest.ID)
 				if exists != nil {
-					logger.Error("Manifest %v already exists in db", manifest.ID)
+					ctx.LogError("Manifest %v already exists in db", manifest.ID)
 					return nil, fmt.Errorf("manifest %v already exists in db", manifest.ID)
 				}
 
-				logger.Info("Remote Manifest not found, creating it")
-				if err := rs.CreateFolder(manifest.ID, "/"); err != nil {
+				ctx.LogInfo("Remote Manifest not found, creating it")
+				if err := rs.CreateFolder(ctx, manifest.ID, "/"); err != nil {
 					return nil, err
 				}
-				logger.Info("Pushing manifest files %v", s.getMetaFilename(manifest.ID))
-				for _, file := range manifest.Contents {
-					destinationPath := filepath.Join(manifest.ID, file.Path)
-					sourcePath := filepath.Join(manifest.Path, file.Path)
-					if file.IsDir {
-						if err := rs.CreateFolder(destinationPath, file.Name); err != nil {
-							return nil, err
-						}
-					} else {
-						manifest.Size += file.Size
-						if err := rs.PushFile(sourcePath, destinationPath, file.Name); err != nil {
-							return nil, err
-						}
-					}
-				}
-				logger.Info("Finished pushing %d files for manifest %v", len(manifest.Contents), s.getMetaFilename(manifest.ID))
+				ctx.LogInfo("Pushing manifest files %v", s.getMetaFilename(manifest.ID))
+				// for _, file := range manifest.Contents {
+				// 	destinationPath := filepath.Join(manifest.ID, file.Path)
+				// 	sourcePath := filepath.Join(manifest.Path, file.Path)
+				// 	if file.IsDir {
+				// 		if err := rs.CreateFolder(ctx, destinationPath, file.Name); err != nil {
+				// 			return nil, err
+				// 		}
+				// 	} else {
+				// 		manifest.Size += file.Size
+				// 		if err := rs.PushFile(ctx, sourcePath, destinationPath, file.Name); err != nil {
+				// 			return nil, err
+				// 		}
+				// 	}
+				// }
+				ctx.LogInfo("Finished pushing %d files for manifest %v", len(manifest.VirtualMachineContents), s.getMetaFilename(manifest.ID))
 
-				logger.Info("Pushing manifest %v", manifest.Name)
-				manifest.Path = filepath.Join(rs.GetProviderRootPath(), manifest.ID)
-				manifest.MetadataPath = filepath.Join(rs.GetProviderRootPath(), s.getMetaFilename(manifest.ID))
+				ctx.LogInfo("Pushing manifest %v", manifest.Name)
+				manifest.Path = filepath.Join(rs.GetProviderRootPath(ctx), manifest.ID)
+				manifest.MetadataFile = filepath.Join(rs.GetProviderRootPath(ctx), s.getMetaFilename(manifest.ID))
 				manifestContent, err := json.MarshalIndent(manifest, "", "  ")
 				if err != nil {
-					logger.Error("Error marshalling manifest %v: %v", manifest, err)
+					ctx.LogError("Error marshalling manifest %v: %v", manifest, err)
 					return nil, err
 				}
 
 				if err := helper.WriteToFile(string(manifestContent), "/tmp/"+s.getMetaFilename(manifest.ID)); err != nil {
-					logger.Error("Error writing manifest to temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
+					ctx.LogError("Error writing manifest to temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
 					return nil, err
 				}
 
-				if err := rs.PushFile("/tmp", "/", s.getMetaFilename(manifest.ID)); err != nil {
-					logger.Error("Error pushing manifest to remote storage %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
+				if err := rs.PushFile(ctx, "/tmp", "/", s.getMetaFilename(manifest.ID)); err != nil {
+					ctx.LogError("Error pushing manifest to remote storage %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
 					if err := helper.DeleteFile("/tmp/" + s.getMetaFilename(manifest.ID)); err != nil {
-						logger.Error("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
+						ctx.LogError("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
 						return nil, err
 					}
 
@@ -153,94 +153,94 @@ func (s *CatalogManifestService) Push(r *models.PushCatalogManifestRequest) (*mo
 				}
 
 				if err := helper.DeleteFile("/tmp/" + s.getMetaFilename(manifest.ID)); err != nil {
-					logger.Error("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
+					ctx.LogError("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
 					return nil, err
 				}
 
-				dto := mappers.DtoCatalogManifestFromBase(*manifest)
+				dto := mappers.CatalogManifestToDto(*manifest)
 
-				if err := db.CreateCatalogManifest(s.context, &dto); err != nil {
-					logger.Error("Error adding manifest to database %v: %v", manifest.Name, err)
+				if err := db.CreateCatalogManifest(ctx, dto); err != nil {
+					ctx.LogError("Error adding manifest to database %v: %v", manifest.Name, err)
 					return nil, err
 				}
-				logger.Info("Finished pushing manifest %v", manifest.Name)
+				ctx.LogInfo("Finished pushing manifest %v", manifest.Name)
 				return manifest, nil
 			} else {
-				logger.Info("Remote Manifest found, checking for changes in files")
-				for _, file := range manifest.Contents {
+				ctx.LogInfo("Remote Manifest found, checking for changes in files")
+				for _, file := range manifest.VirtualMachineContents {
 					destinationPath := filepath.Join(manifest.ID, file.Path)
 					sourcePath := filepath.Join(manifest.Path, file.Path)
 					if file.IsDir {
-						exists, err := rs.FolderExists(destinationPath, file.Name)
+						exists, err := rs.FolderExists(ctx, destinationPath, file.Name)
 						if err != nil {
-							logger.Error("Error checking if folder exists %v: %v", destinationPath, err)
+							ctx.LogError("Error checking if folder exists %v: %v", destinationPath, err)
 							return nil, err
 						}
 						if !exists {
-							if err := rs.CreateFolder(destinationPath, file.Name); err != nil {
-								logger.Error("Error creating folder %v: %v", destinationPath, err)
+							if err := rs.CreateFolder(ctx, destinationPath, file.Name); err != nil {
+								ctx.LogError("Error creating folder %v: %v", destinationPath, err)
 								return nil, err
 							}
 						}
 					} else {
 						manifest.Size += file.Size
-						exists, err := rs.FileExists(destinationPath, file.Name)
+						exists, err := rs.FileExists(ctx, destinationPath, file.Name)
 						if err != nil {
-							logger.Error("Error checking if file exists %v: %v", destinationPath, err)
+							ctx.LogError("Error checking if file exists %v: %v", destinationPath, err)
 							return nil, err
 						}
 						if !exists {
-							if err := rs.PushFile(sourcePath, destinationPath, file.Name); err != nil {
-								logger.Error("Error pushing file %v: %v", destinationPath, err)
+							if err := rs.PushFile(ctx, sourcePath, destinationPath, file.Name); err != nil {
+								ctx.LogError("Error pushing file %v: %v", destinationPath, err)
 								return nil, err
 							}
 						} else {
-							checksum, err := rs.FileChecksum(destinationPath, file.Name)
+							checksum, err := rs.FileChecksum(ctx, destinationPath, file.Name)
 							if err != nil {
-								logger.Error("Error getting file checksum %v: %v", destinationPath, err)
+								ctx.LogError("Error getting file checksum %v: %v", destinationPath, err)
 								return nil, err
 							}
 							if checksum != file.Checksum {
-								if err := rs.DeleteFile(destinationPath, file.Name); err != nil {
-									logger.Error("Error deleting file %v: %v", destinationPath, err)
+								if err := rs.DeleteFile(ctx, destinationPath, file.Name); err != nil {
+									ctx.LogError("Error deleting file %v: %v", destinationPath, err)
 									return nil, err
 								}
-								if err := rs.PushFile(sourcePath, destinationPath, file.Name); err != nil {
-									logger.Error("Error pushing file %v: %v", destinationPath, err)
+								if err := rs.PushFile(ctx, sourcePath, destinationPath, file.Name); err != nil {
+									ctx.LogError("Error pushing file %v: %v", destinationPath, err)
 									return nil, err
 								}
 							} else {
-								logger.Info("File %v is up to date", filepath.Join(destinationPath, file.Name))
+								ctx.LogInfo("File %v is up to date", filepath.Join(destinationPath, file.Name))
 							}
 						}
 					}
 				}
 
-				logger.Info("Finished pushing %v files for manifest %v", len(manifest.Contents), s.getMetaFilename(manifest.ID))
+				ctx.LogInfo("Finished pushing %v files for manifest %v", len(manifest.VirtualMachineContents), s.getMetaFilename(manifest.ID))
 
-				if err := rs.DeleteFile("/", s.getMetaFilename(manifest.ID)); err != nil {
-					logger.Error("Error deleting manifest %v: %v", s.getMetaFilename(manifest.ID), err)
+				if err := rs.DeleteFile(ctx, "/", s.getMetaFilename(manifest.ID)); err != nil {
+					ctx.LogError("Error deleting manifest %v: %v", s.getMetaFilename(manifest.ID), err)
 					return nil, err
 				}
 
-				logger.Info("Pushing new manifest %v", manifest.Name)
-				manifest.Path = filepath.Join(rs.GetProviderRootPath(), manifest.ID)
-				manifest.MetadataPath = filepath.Join(rs.GetProviderRootPath(), s.getMetaFilename(manifest.ID))
+				ctx.LogInfo("Pushing new manifest %v", manifest.Name)
+				manifest.Path = filepath.Join(rs.GetProviderRootPath(ctx), manifest.ID)
+				manifest.MetadataFile = filepath.Join(rs.GetProviderRootPath(ctx), s.getMetaFilename(manifest.ID))
 				manifestContent, err := json.MarshalIndent(manifest, "", "  ")
 				if err != nil {
-					logger.Error("Error marshalling manifest %v: %v", manifest.Name, err)
+					ctx.LogError("Error marshalling manifest %v: %v", manifest.Name, err)
 					return nil, err
 				}
 
 				if err := helper.WriteToFile(string(manifestContent), "/tmp/"+s.getMetaFilename(manifest.ID)); err != nil {
-					logger.Error("Error writing manifest to temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
+					ctx.LogError("Error writing manifest to temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
 					return nil, err
 				}
 
-				if err := rs.PushFile("/tmp", "/", s.getMetaFilename(manifest.ID)); err != nil {
-					logger.Error("Error pushing manifest to remote storage %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
+				if err := rs.PushFile(ctx, "/tmp", "/", s.getMetaFilename(manifest.ID)); err != nil {
+					ctx.LogError("Error pushing manifest to remote storage %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
 					if err := helper.DeleteFile("/tmp/" + s.getMetaFilename(manifest.ID)); err != nil {
-						logger.Error("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
+						ctx.LogError("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
 						return nil, err
 					}
 
@@ -248,28 +248,28 @@ func (s *CatalogManifestService) Push(r *models.PushCatalogManifestRequest) (*mo
 				}
 
 				if err := helper.DeleteFile("/tmp/" + s.getMetaFilename(manifest.ID)); err != nil {
-					logger.Error("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
+					ctx.LogError("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
 					return nil, err
 				}
 
-				exists, _ := db.GetCatalogManifest(s.context, manifest.ID)
+				exists, _ := db.GetCatalogManifest(ctx, manifest.ID)
 				if exists != nil {
-					logger.Info("Updating manifest %v", manifest.Name)
-					dto := mappers.DtoCatalogManifestFromBase(*manifest)
-					if err := db.UpdateCatalogManifest(s.context, dto); err != nil {
-						logger.Error("Error updating manifest %v: %v", manifest.Name, err)
+					ctx.LogInfo("Updating manifest %v", manifest.Name)
+					dto := mappers.CatalogManifestToDto(*manifest)
+					if err := db.UpdateCatalogManifest(ctx, dto); err != nil {
+						ctx.LogError("Error updating manifest %v: %v", manifest.Name, err)
 						return nil, err
 					}
 				} else {
-					logger.Info("Creating manifest %v", manifest.Name)
-					dto := mappers.DtoCatalogManifestFromBase(*manifest)
-					if err := db.CreateCatalogManifest(s.context, &dto); err != nil {
-						logger.Error("Error creating manifest %v: %v", manifest.Name, err)
+					ctx.LogInfo("Creating manifest %v", manifest.Name)
+					dto := mappers.CatalogManifestToDto(*manifest)
+					if err := db.CreateCatalogManifest(ctx, dto); err != nil {
+						ctx.LogError("Error creating manifest %v: %v", manifest.Name, err)
 						return nil, err
 					}
 				}
 
-				logger.Info("Finished pushing manifest %v", manifest.Name)
+				ctx.LogInfo("Finished pushing manifest %v", manifest.Name)
 				return manifest, nil
 			}
 		}
@@ -282,19 +282,19 @@ func (s *CatalogManifestService) Push(r *models.PushCatalogManifestRequest) (*mo
 	return manifest, nil
 }
 
-func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) (*models.PullCatalogManifestResponse, error) {
+func (s *CatalogManifestService) PullOld(ctx basecontext.ApiContext, r *models.PullCatalogManifestRequest) (*models.PullCatalogManifestResponse, error) {
 	executed := false
-	db := service_provider.Get().JsonDatabase
+	db := serviceprovider.Get().JsonDatabase
 	if db == nil {
 		return nil, errors.New("no database connection")
 	}
-	if err := db.Connect(); err != nil {
+	if err := db.Connect(ctx); err != nil {
 		return nil, err
 	}
 
 	connectionString := ""
-	var manifest *models.VirtualMachineManifest
-	dbManifest, err := db.GetCatalogManifest(s.context, r.ID)
+	var manifest *models.VirtualMachineCatalogManifest
+	dbManifest, err := db.GetCatalogManifest(ctx, r.ID)
 	if err != nil && err.Error() != "catalog manifest not found" {
 		return nil, err
 	} else {
@@ -315,28 +315,28 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) (*mo
 	}
 
 	for _, rs := range s.remoteServices {
-		check, checkErr := rs.Check(connectionString)
+		check, checkErr := rs.Check(ctx, connectionString)
 		if checkErr != nil {
-			logger.Error("Error checking remote service %v: %v", rs.Name(), checkErr)
+			ctx.LogError("Error checking remote service %v: %v", rs.Name(), checkErr)
 			return nil, checkErr
 		}
 
 		if check {
-			var catalogManifest *models.VirtualMachineManifest
-			if err := rs.PullFile(filepath.Dir(manifest.MetadataPath), s.getMetaFilename(manifest.ID), "/tmp"); err == nil {
-				logger.Info("Remote Manifest found, retrieving it")
+			var catalogManifest *models.VirtualMachineCatalogManifest
+			if err := rs.PullFile(ctx, filepath.Dir(manifest.MetadataFile), s.getMetaFilename(manifest.ID), "/tmp"); err == nil {
+				ctx.LogInfo("Remote Manifest found, retrieving it")
 				catalogManifest, err = s.readManifestFromFile(filepath.Join("/tmp", s.getMetaFilename(manifest.ID)))
 				if err != nil {
-					logger.Error("Error reading manifest from file %v: %v", filepath.Join("/tmp", s.getMetaFilename(manifest.ID)), err)
+					ctx.LogError("Error reading manifest from file %v: %v", filepath.Join("/tmp", s.getMetaFilename(manifest.ID)), err)
 					if err := helper.DeleteFile("/tmp/" + s.getMetaFilename(manifest.ID)); err != nil {
-						logger.Error("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
+						ctx.LogError("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
 						return nil, err
 					}
 
 					return nil, err
 				}
 				if err := helper.DeleteFile("/tmp/" + s.getMetaFilename(manifest.ID)); err != nil {
-					logger.Error("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
+					ctx.LogError("Error deleting temporary file %v: %v", "/tmp/"+s.getMetaFilename(manifest.ID), err)
 					return nil, err
 				}
 			}
@@ -345,7 +345,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) (*mo
 				return nil, errors.New("manifest not found in the provider")
 			}
 
-			logger.Info("Pulling manifest %v", catalogManifest.Name)
+			ctx.LogInfo("Pulling manifest %v", catalogManifest.Name)
 			machineName := ""
 			if r.MachineName != "" {
 				machineName = r.MachineName
@@ -358,26 +358,26 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) (*mo
 				return nil, err
 			}
 
-			for _, file := range catalogManifest.Contents {
+			for _, file := range catalogManifest.VirtualMachineContents {
 				destinationPath := filepath.Join(localMachineFolder, file.Path)
 				fullSrcPath := filepath.Join(catalogManifest.Path, file.Path)
 				if file.IsDir {
 					dirFolder := filepath.Join(destinationPath, file.Name)
 					if err := helpers.CreateDirIfNotExist(dirFolder); err != nil {
-						logger.Error("Error creating directory %v: %v", dirFolder, err)
+						ctx.LogError("Error creating directory %v: %v", dirFolder, err)
 						return nil, err
 					}
-					logger.Info("Created directory %v", fullSrcPath)
+					ctx.LogInfo("Created directory %v", fullSrcPath)
 				} else {
-					if err := rs.PullFile(fullSrcPath, file.Name, destinationPath); err != nil {
-						logger.Error("Error pulling file %v: %v", filepath.Join(destinationPath, file.Name), err)
+					if err := rs.PullFile(ctx, fullSrcPath, file.Name, destinationPath); err != nil {
+						ctx.LogError("Error pulling file %v: %v", filepath.Join(destinationPath, file.Name), err)
 						return nil, err
 					}
-					logger.Info("Pulled file %v", filepath.Join(destinationPath, file.Name))
+					ctx.LogInfo("Pulled file %v", filepath.Join(destinationPath, file.Name))
 				}
 			}
 
-			logger.Info("Finished pulling %v files for manifest %v", len(catalogManifest.Contents), s.getMetaFilename(catalogManifest.ID))
+			ctx.LogInfo("Finished pulling %v files for manifest %v", len(catalogManifest.VirtualMachineContents), s.getMetaFilename(catalogManifest.ID))
 			resultData := models.PullCatalogManifestResponse{
 				ID:          catalogManifest.ID,
 				LocalPath:   localMachineFolder,
@@ -396,47 +396,79 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) (*mo
 	return nil, errors.New("unknown error")
 }
 
-func (s *CatalogManifestService) GenerateManifest(r *models.PushCatalogManifestRequest) (*models.VirtualMachineManifest, error) {
-	result := models.VirtualMachineManifest{}
-	result.CreatedAt = time.Now().UTC().Format(time.RFC3339Nano)
-	result.UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
+func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiContext, r *models.PushCatalogManifestRequest, manifest *models.VirtualMachineCatalogManifest) error {
+	ctx.LogInfo("Generating manifest content for %v", r.Name)
+	if manifest == nil {
+		manifest = models.NewVirtualMachineCatalogManifest()
+	}
 
-	result.Name = r.Name
-	result.Path = r.LocalPath
+	manifest.CleanupRequest = cleanupservice.NewCleanupRequest()
+	manifest.CreatedAt = helpers.GetUtcCurrentDateTime()
+	manifest.UpdatedAt = helpers.GetUtcCurrentDateTime()
+
+	manifest.Name = r.Name
+	manifest.Path = r.LocalPath
 	if r.Uuid != "" {
-		result.ID = s.getConformName(r.Uuid)
+		manifest.ID = s.getConformName(r.Uuid)
 	} else {
-		result.ID = s.getConformName(r.Name)
+		manifest.ID = s.getConformName(r.Name)
 	}
 	if r.RequiredRoles != nil {
-		result.RequiredRoles = r.RequiredRoles
+		manifest.RequiredRoles = r.RequiredRoles
 	}
 	if r.RequiredClaims != nil {
-		result.RequiredClaims = r.RequiredClaims
+		manifest.RequiredClaims = r.RequiredClaims
 	}
 	if r.Tags != nil {
-		result.Tags = r.Tags
+		manifest.Tags = r.Tags
 	}
 
 	_, file := filepath.Split(r.LocalPath)
 	ext := filepath.Ext(file)
-	result.Type = ext[1:]
+	manifest.Type = ext[1:]
 
 	isDir, err := helpers.IsDirectory(r.LocalPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if !isDir {
-		return nil, fmt.Errorf("the path %v is not a directory", r.LocalPath)
+		return fmt.Errorf("the path %v is not a directory", r.LocalPath)
 	}
 
+	ctx.LogInfo("Getting manifest files for %v", r.Name)
 	files, err := s.getManifestFiles(r.LocalPath, "")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	result.Contents = files
-	return &result, nil
+	ctx.LogInfo("Compressing manifest files for %v", r.Name)
+	packFilePath, err := s.compressMachine(ctx, r.LocalPath, manifest.ID, "/tmp")
+	if err != nil {
+		return err
+	}
+
+	// Adding the zip file to the cleanup request
+	manifest.CleanupRequest.AddLocalFileCleanupOperation(packFilePath, false)
+	manifest.CompressedPath = packFilePath
+	manifest.PackFile = "/tmp/" + manifest.ID + ".pdpack"
+
+	fileInfo, err := os.Stat(packFilePath)
+	if err != nil {
+		return err
+	}
+
+	manifest.Size = fileInfo.Size()
+
+	ctx.LogInfo("Getting manifest package checksum for %v", r.Name)
+	checksum, err := helpers.GetFileMD5Checksum(packFilePath)
+	if err != nil {
+		return err
+	}
+	manifest.CompressedChecksum = checksum
+
+	manifest.VirtualMachineContents = files
+	ctx.LogInfo("Finished generating manifest content for %v", r.Name)
+	return nil
 }
 
 func (s *CatalogManifestService) getManifestFiles(path string, relativePath string) ([]models.VirtualMachineManifestContentItem, error) {
@@ -451,7 +483,7 @@ func (s *CatalogManifestService) getManifestFiles(path string, relativePath stri
 	}
 
 	for _, file := range files {
-		fullPath := filepath.Join(path, file.Name())
+		// fullPath := filepath.Join(path, file.Name())
 		if file.IsDir() {
 			result = append(result, models.VirtualMachineManifestContentItem{
 				IsDir: true,
@@ -477,18 +509,18 @@ func (s *CatalogManifestService) getManifestFiles(path string, relativePath stri
 		manifestFile.Size = fileInfo.Size()
 		manifestFile.CreatedAt = fileInfo.ModTime().Format(time.RFC3339Nano)
 		manifestFile.UpdatedAt = fileInfo.ModTime().Format(time.RFC3339Nano)
-		checksum, err := helpers.GetFileChecksum(fullPath)
-		if err != nil {
-			return nil, err
-		}
-		manifestFile.Checksum = checksum
+		// checksum, err := helpers.GetFileMD5Checksum(fullPath)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// manifestFile.Checksum = checksum
 		result = append(result, manifestFile)
 	}
 
 	return result, nil
 }
 
-func (s *CatalogManifestService) readManifestFromFile(path string) (*models.VirtualMachineManifest, error) {
+func (s *CatalogManifestService) readManifestFromFile(path string) (*models.VirtualMachineCatalogManifest, error) {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return nil, err
@@ -499,7 +531,7 @@ func (s *CatalogManifestService) readManifestFromFile(path string) (*models.Virt
 		return nil, err
 	}
 
-	manifest := &models.VirtualMachineManifest{}
+	manifest := &models.VirtualMachineCatalogManifest{}
 	err = json.Unmarshal(manifestBytes, manifest)
 	if err != nil {
 		return nil, err
@@ -521,6 +553,15 @@ func (s *CatalogManifestService) getMetaFilename(name string) string {
 	name = s.getConformName(name)
 	if !strings.HasSuffix(name, ".meta") {
 		name = name + ".meta"
+	}
+
+	return name
+}
+
+func (s *CatalogManifestService) getPackFilename(name string) string {
+	name = s.getConformName(name)
+	if !strings.HasSuffix(name, ".pdpack") {
+		name = name + ".pdpack"
 	}
 
 	return name
@@ -548,4 +589,121 @@ func (s *CatalogManifestService) parseProviderMetadata(connection string, meta m
 	result = strings.TrimSuffix(result, ";")
 
 	return result
+}
+
+func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, path string, machineName string, destination string) (string, error) {
+	tarFilename := s.getPackFilename(machineName)
+	tarFilePath := filepath.Join(destination, tarFilename)
+
+	tarFile, err := os.Create(tarFilePath)
+	if err != nil {
+		return "", err
+	}
+	defer tarFile.Close()
+
+	tarWriter := tar.NewWriter(tarFile)
+	defer tarWriter.Close()
+
+	countFiles := 0
+	if err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		countFiles += 1
+		return nil
+	}); err != nil {
+		return "", err
+	}
+
+	compressed := 1
+	err = filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+		ctx.LogInfo("[%v/%v] Compressing file %v", compressed, countFiles, filePath)
+		compressed += 1
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			compressed -= 1
+			return nil
+		}
+
+		f, err := os.Open(filePath)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		relPath := strings.TrimPrefix(filePath, path)
+		hdr := &tar.Header{
+			Name: relPath,
+			Mode: int64(info.Mode()),
+			Size: info.Size(),
+		}
+		if err := tarWriter.WriteHeader(hdr); err != nil {
+			return err
+		}
+
+		_, err = io.Copy(tarWriter, f)
+		return err
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return tarFilePath, nil
+}
+
+func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, filePath string, destination string) error {
+	tarFile, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer tarFile.Close()
+
+	tarReader := tar.NewReader(tarFile)
+	for {
+		header, err := tarReader.Next()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
+			return err
+		}
+
+		filePath := filepath.Join(destination, header.Name)
+		// Creating the basedir if it does not exist
+		baseDir := filepath.Dir(filePath)
+		if _, err := os.Stat(baseDir); os.IsNotExist(err) {
+			if err := os.MkdirAll(baseDir, 0755); err != nil {
+				return err
+			}
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if _, err := os.Stat(filePath); os.IsNotExist(err) {
+				if err := os.MkdirAll(filePath, os.FileMode(header.Mode)); err != nil {
+					return err
+				}
+			}
+		case tar.TypeReg:
+			file, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			if _, err := io.Copy(file, tarReader); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

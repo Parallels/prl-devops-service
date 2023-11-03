@@ -1,70 +1,67 @@
 package controllers
 
 import (
+	"Parallels/pd-api-service/config"
 	"Parallels/pd-api-service/constants"
+	"Parallels/pd-api-service/data"
 	"Parallels/pd-api-service/helpers"
 	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/service_provider"
+	"Parallels/pd-api-service/serviceprovider"
 	"encoding/json"
 	"net/http"
 	"time"
 
+	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/dgrijalva/jwt-go"
 )
 
-// GetTokenController is a public function that logs in a user
 func GetTokenController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var login models.ApiLogin
-		err := json.NewDecoder(r.Body).Decode(&login)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
-		}
-
-		// Connect to the SQL server
-		dbService := service_provider.Get().JsonDatabase
-		if dbService == nil {
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "No database connection",
-				Code:    http.StatusInternalServerError,
+		ctx := GetBaseContext(r)
+		cfg := config.NewConfig()
+		var request models.LoginRequest
+		http_helper.MapRequestBody(r, &request)
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
 			})
 			return
 		}
 
-		err = dbService.Connect()
+		dbService, err := GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
 
-		defer dbService.Disconnect()
+		defer dbService.Disconnect(ctx)
 
-		user, err := dbService.GetUser(login.Email)
-
-		if err != nil || user == nil {
-			ReturnApiError(w, models.NewFromError(err))
+		user, err := dbService.GetUser(ctx, request.Email)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
 		if user == nil {
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "User not found",
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: data.ErrUserNotFound.Error(),
 				Code:    http.StatusUnauthorized,
 			})
 			return
 		}
 
 		// Hash the password with SHA-256
-		hashedPassword := helpers.Sha256Hash(login.Password)
+		hashedPassword := helpers.Sha256Hash(request.Password)
 		if hashedPassword != user.Password {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid Password",
 				Code:    http.StatusUnauthorized,
 			})
 			return
 		}
+
 		roles := make([]string, 0)
 		claims := make([]string, 0)
 		for _, role := range user.Roles {
@@ -74,66 +71,85 @@ func GetTokenController() restapi.Controller {
 			claims = append(claims, claim.Name)
 		}
 
-		// Generate JWT token
+		expiresAt := time.Now().Add(time.Minute * constants.TOKEN_DURATION_MINUTES).Unix()
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"email":  login.Email,
+			"email":  request.Email,
 			"roles":  roles,
 			"claims": claims,
-			"exp":    time.Now().Add(time.Minute * constants.TOKEN_DURATION_MINUTES).Unix(),
+			"exp":    expiresAt,
 		})
 
-		// Sign the token with HMAC
-		key := []byte(service_provider.Get().HardwareSecret)
+		// We either signing the token with the HMAC secret or the secret from the config
+		var key []byte
+		if cfg.GetHmacSecret() == "" {
+			key = []byte(cfg.GetHmacSecret())
+		} else {
+			key = []byte(serviceprovider.Get().HardwareSecret)
+		}
+
 		tokenString, err := token.SignedString(key)
 		if err != nil {
-			ReturnApiError(w, models.NewFromErrorWithCode(err, 401))
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 401))
 			return
 		}
 
-		// Return the JWT token
+		response := models.LoginResponse{
+			Token:     tokenString,
+			Email:     request.Email,
+			ExpiresAt: expiresAt,
+		}
+
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+		json.NewEncoder(w).Encode(response)
+		ctx.LogInfo("User %s logged in", request.Email)
 	}
 }
 
 func ValidateTokenController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var tokenRequest models.ApiValidateToken
-		err := json.NewDecoder(r.Body).Decode(&tokenRequest)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
-		}
-
-		if tokenRequest.Token == "" {
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "Token is required",
-				Code:    http.StatusInternalServerError,
+		ctx := GetBaseContext(r)
+		cfg := config.NewConfig()
+		var request models.ValidateTokenRequest
+		http_helper.MapRequestBody(r, &request)
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
 			})
 			return
 		}
 
-		token, err := jwt.Parse(tokenRequest.Token, func(token *jwt.Token) (interface{}, error) {
-			// Validate the algorithm
+		token, err := jwt.Parse(request.Token, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
 
-			// Return the secret key used to sign the token
-			return []byte(service_provider.Get().HardwareSecret), nil
+			// We either signing the token with the HMAC secret or the secret from the config
+			var key []byte
+			if cfg.GetHmacSecret() == "" {
+				key = []byte(cfg.GetHmacSecret())
+			} else {
+				key = []byte(serviceprovider.Get().HardwareSecret)
+			}
+			return key, nil
 		})
 
 		if err != nil {
-			ReturnApiError(w, models.NewFromErrorWithCode(err, 401))
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 401))
 			return
 		}
 
-		// Check if the token is valid
-		if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("Token is valid"))
+			json.NewEncoder(w).Encode(models.ValidateTokenResponse{
+				Valid: true,
+			})
+			ctx.LogInfo("Token for user %s is valid", claims["email"])
+			return
 		} else {
-			http.Error(w, "Token is invalid", http.StatusUnauthorized)
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 401))
+			ctx.LogError("Token is invalid")
+			return
 		}
 	}
 }

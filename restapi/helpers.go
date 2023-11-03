@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"Parallels/pd-api-service/constants"
 	"net/http"
 	"strconv"
 )
@@ -18,7 +19,7 @@ func SetContentLength(contentLength int, w http.ResponseWriter) {
 }
 
 func GetRequestId(r *http.Request) string {
-	id := r.Context().Value(REQUEST_ID_KEY).(string)
+	id := r.Context().Value(constants.REQUEST_ID_KEY).(string)
 
 	return id
 }

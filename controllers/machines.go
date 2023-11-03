@@ -1,10 +1,9 @@
 package controllers
 
 import (
-	"Parallels/pd-api-service/common"
 	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/service_provider"
+	"Parallels/pd-api-service/serviceprovider"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,104 +15,98 @@ import (
 // LoginUser is a public function that logs in a user
 func GetMachinesController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := service_provider.Get().ParallelsService
-		filter := ""
-		var err error
-		var result []models.ParallelsVM
-		if r.Header.Get("X-Filter") != "" {
-			filter = r.Header.Get("X-Filter")
-		}
-		if filter == "" {
-			common.Logger.Info("Getting unfiltered machines")
-			result, err = svc.GetVms()
-			if err != nil {
-				ReturnApiError(w, models.NewFromError(err))
-				return
-			}
-		} else {
-			common.Logger.Info("Getting filtered machines")
-			result, err = svc.GetFilteredVm(filter)
-			if err != nil {
-				ReturnApiError(w, models.NewFromError(err))
-				return
-			}
-		}
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
-		if result == nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			result = make([]models.ParallelsVM, 0)
-			json.NewEncoder(w).Encode(result)
+		vms, err := svc.GetVms(ctx, GetFilterHeader(r))
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		if len(vms) == 0 {
+			w.WriteHeader(http.StatusOK)
+			vms = make([]models.ParallelsVM, 0)
+			json.NewEncoder(w).Encode(vms)
+			ctx.LogInfo("No machines found")
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		json.NewEncoder(w).Encode(vms)
+		ctx.LogInfo("Machines returned: %v", len(vms))
 	}
 }
 
 func GetMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := service_provider.Get().ParallelsService
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
 		params := mux.Vars(r)
 		id := params["id"]
 
-		result, err := svc.GetVm(id)
+		vm, err := svc.GetVm(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		if result == nil {
-			ReturnApiError(w, models.ApiErrorResponse{
+		if vm == nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: fmt.Sprintf("Machine %v not found", id),
 				Code:    http.StatusNotFound,
 			})
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		json.NewEncoder(w).Encode(vm)
+		ctx.LogInfo("Machine returned: %v", vm.ID)
 	}
 }
 
 func StartMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := service_provider.Get().ParallelsService
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
 		params := mux.Vars(r)
 		id := params["id"]
 
-		err := svc.StartVm(id)
+		err := svc.StartVm(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		result := models.VirtualMachineOperationResponse{
 			ID:        id,
 			Operation: "Start",
 			Status:    "Success",
 		}
+
 		json.NewEncoder(w).Encode(result)
+		ctx.LogInfo("Machine started: %v", id)
 	}
 }
 
 func StopMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := service_provider.Get().ParallelsService
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
 		params := mux.Vars(r)
 		id := params["id"]
 
-		err := svc.StopVm(id)
+		err := svc.StopVm(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
@@ -125,19 +118,22 @@ func StopMachineController() restapi.Controller {
 		}
 
 		json.NewEncoder(w).Encode(result)
+		ctx.LogInfo("Machine stopped: %v", id)
 	}
 }
 
 func RestartMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := service_provider.Get().ParallelsService
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
 		params := mux.Vars(r)
 		id := params["id"]
 
-		err := svc.RestartVm(id)
+		err := svc.RestartVm(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
@@ -148,19 +144,22 @@ func RestartMachineController() restapi.Controller {
 			Status:    "Success",
 		}
 		json.NewEncoder(w).Encode(result)
+		ctx.LogInfo("Machine restarted: %v", id)
 	}
 }
 
 func SuspendMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := service_provider.Get().ParallelsService
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
 		params := mux.Vars(r)
 		id := params["id"]
 
-		err := svc.SuspendVm(id)
+		err := svc.SuspendVm(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
@@ -171,36 +170,48 @@ func SuspendMachineController() restapi.Controller {
 			Status:    "Success",
 		}
 		json.NewEncoder(w).Encode(result)
+		ctx.LogInfo("Machine suspended: %v", id)
 	}
 }
 
 func ResumeMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := service_provider.Get().ParallelsService
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
 		params := mux.Vars(r)
 		id := params["id"]
 
-		err := svc.ResumeVm(id)
+		err := svc.ResumeVm(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
 		w.WriteHeader(http.StatusOK)
+		result := models.VirtualMachineOperationResponse{
+			ID:        id,
+			Operation: "Resume",
+			Status:    "Success",
+		}
+		json.NewEncoder(w).Encode(result)
+		ctx.LogInfo("Machine resumed: %v", id)
 	}
 }
 
 func ResetMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := service_provider.Get().ParallelsService
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
 		params := mux.Vars(r)
 		id := params["id"]
 
-		err := svc.ResetVm(id)
+		err := svc.ResetVm(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
@@ -211,19 +222,22 @@ func ResetMachineController() restapi.Controller {
 			Status:    "Success",
 		}
 		json.NewEncoder(w).Encode(result)
+		ctx.LogInfo("Machine reset: %v", id)
 	}
 }
 
 func PauseMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := service_provider.Get().ParallelsService
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
 		params := mux.Vars(r)
 		id := params["id"]
 
-		err := svc.ResetVm(id)
+		err := svc.ResetVm(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
@@ -235,36 +249,42 @@ func PauseMachineController() restapi.Controller {
 		}
 
 		json.NewEncoder(w).Encode(result)
+		ctx.LogInfo("Machine paused: %v", id)
 	}
 }
 
 func DeleteMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := service_provider.Get().ParallelsService
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
 		params := mux.Vars(r)
 		id := params["id"]
 
-		err := svc.DeleteVm(id)
+		err := svc.DeleteVm(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfo("Machine deleted: %v", id)
 	}
 }
 
 func StatusMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		svc := service_provider.Get().ParallelsService
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
 		params := mux.Vars(r)
 		id := params["id"]
 
-		status, err := svc.VmStatus(id)
+		status, err := svc.VmStatus(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
@@ -275,32 +295,38 @@ func StatusMachineController() restapi.Controller {
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(result)
+		ctx.LogInfo("Machine status returned: %v", id)
 	}
 }
 
 func SetMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
 		var request models.VirtualMachineConfigRequest
-		svc := service_provider.Get().ParallelsService
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
 		http_helper.MapRequestBody(r, &request)
 		if err := request.Validate(); err != nil {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
+
 		params := mux.Vars(r)
 		id := params["id"]
 
-		if err := svc.ConfigureVm(id, &request); err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+		if err := svc.ConfigureVm(ctx, id, &request); err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
 		result := models.VirtualMachineConfigResponse{
 			Operations: make([]models.VirtualMachineConfigResponseOperation, 0),
 		}
+
 		for _, op := range request.Operations {
 			rOp := models.VirtualMachineConfigResponseOperation{
 				Group:     op.Group,
@@ -318,66 +344,72 @@ func SetMachineController() restapi.Controller {
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(result)
+		ctx.LogInfo("Machine configured: %v", id)
 	}
 }
 
 func ExecuteCommandOnMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
 		var request models.VirtualMachineExecuteCommandRequest
-		svc := service_provider.Get().ParallelsService
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 		http_helper.MapRequestBody(r, &request)
-		if request.Command == "" {
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "Invalid request body: command cannot be empty",
-				Code:    http.StatusBadRequest,
-			})
-			return
-		}
-
-		params := mux.Vars(r)
-		id := params["id"]
-
-		if response, err := svc.ExecuteCommandOnVm(id, &request); err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
-		} else {
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(response)
-		}
-	}
-}
-
-func RenameMachineController() restapi.Controller {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var request models.RenameVirtualMachineRequest
-		svc := service_provider.Get().ParallelsService
-
-		http_helper.MapRequestBody(r, &request)
-		params := mux.Vars(r)
-		id := params["id"]
-		request.ID = id
-
 		if err := request.Validate(); err != nil {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
 
-		if err := svc.RenameVm(request); err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+		params := mux.Vars(r)
+		id := params["id"]
+
+		if response, err := svc.ExecuteCommandOnVm(ctx, id, &request); err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		} else {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(response)
+			ctx.LogInfo("Command executed on machine: %v", id)
+		}
+	}
+}
+
+func RenameMachineController() restapi.Controller {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		var request models.RenameVirtualMachineRequest
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		http_helper.MapRequestBody(r, &request)
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
 			return
 		}
 
-		vm, err := svc.GetVm(id)
+		params := mux.Vars(r)
+		id := params["id"]
+		request.ID = id
+
+		if err := svc.RenameVm(ctx, request); err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		vm, err := svc.GetVm(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
 		if vm == nil {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: fmt.Sprintf("Machine %v not found", id),
 				Code:    http.StatusNotFound,
 			})
@@ -386,53 +418,60 @@ func RenameMachineController() restapi.Controller {
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(vm)
+		ctx.LogInfo("Machine renamed: %v", id)
 	}
 }
 
 func RegisterMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
 		var request models.RegisterVirtualMachineRequest
-		svc := service_provider.Get().ParallelsService
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
 		http_helper.MapRequestBody(r, &request)
 		if err := request.Validate(); err != nil {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
 
-		if err := svc.RegisterVm(request); err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+		if err := svc.RegisterVm(ctx, request); err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		filter := fmt.Sprintf("Home=%s/", request.Path)
-		vms, err := svc.GetFilteredVm(filter)
+		filter := fmt.Sprintf("Home=%s/,i", request.Path)
+		vms, err := svc.GetVms(ctx, filter)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
+
 		if len(vms) == 0 {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: fmt.Sprintf("Machine %v not found", request.Path),
 				Code:    http.StatusNotFound,
 			})
 			return
 		}
+
 		if len(vms) != 1 {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: fmt.Sprintf("Multiple machines found for %v", request.Path),
 				Code:    http.StatusInternalServerError,
 			})
 			return
 		}
+
 		if request.MachineName != "" {
-			if err := svc.RenameVm(models.RenameVirtualMachineRequest{
+			if err := svc.RenameVm(ctx, models.RenameVirtualMachineRequest{
 				ID:      vms[0].ID,
 				NewName: request.MachineName,
 			}); err != nil {
-				ReturnApiError(w, models.NewFromError(err))
+				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
 
@@ -441,72 +480,72 @@ func RegisterMachineController() restapi.Controller {
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(vms[0])
+		ctx.LogInfo("Machine registered: %v", vms[0].ID)
 	}
 }
 
 func UnregisterMachineController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
 		var request models.UnregisterVirtualMachineRequest
-		svc := service_provider.Get().ParallelsService
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
 		http_helper.MapRequestBody(r, &request)
-		params := mux.Vars(r)
-		id := params["id"]
-		request.ID = id
-
 		if err := request.Validate(); err != nil {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
 
-		if err := svc.UnregisterVm(request); err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+		params := mux.Vars(r)
+		id := params["id"]
+		request.ID = id
+
+		if err := svc.UnregisterVm(ctx, request); err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
 		ReturnApiCommonResponse(w)
+		ctx.LogInfo("Machine unregistered: %v", id)
 	}
 }
 
 func CreateMachine() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+
 		var request models.CreateVirtualMachineRequest
 		http_helper.MapRequestBody(r, &request)
 		if err := request.Validate(); err != nil {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
-		provider := service_provider.Get()
 
 		if request.PackerTemplate != nil {
-
-			dbService := provider.JsonDatabase
-			if dbService == nil {
-				http.Error(w, "No database connection", http.StatusInternalServerError)
-				return
-			}
-
-			if err := dbService.Connect(); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			defer dbService.Disconnect()
-
-			template, err := dbService.GetVirtualMachineTemplate(request.PackerTemplate.Template)
+			dbService, err := GetDatabaseService(ctx)
 			if err != nil {
-				ReturnApiError(w, models.NewFromError(err))
+				ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+				return
+			}
+
+			defer dbService.Disconnect(ctx)
+
+			template, err := dbService.GetPackerTemplate(ctx, request.PackerTemplate.Template)
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
 
 			if template == nil {
-				ReturnApiError(w, models.ApiErrorResponse{
+				ReturnApiError(ctx, w, models.ApiErrorResponse{
 					Message: fmt.Sprintf("Template %v not found", request.PackerTemplate.Template),
 					Code:    http.StatusNotFound,
 				})
@@ -517,14 +556,14 @@ func CreateMachine() restapi.Controller {
 			template.Owner = request.Owner
 			template.Specs["memory"] = request.PackerTemplate.Memory
 			if err != nil {
-				ReturnApiError(w, models.NewFromError(err))
+				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
 
-			parallelsDesktopService := provider.ParallelsService
-			vm, err := parallelsDesktopService.CreateVm(*template, request.PackerTemplate.DesiredState)
+			parallelsDesktopService := provider.ParallelsDesktopService
+			vm, err := parallelsDesktopService.CreateVm(ctx, *template, request.PackerTemplate.DesiredState)
 			if err != nil {
-				ReturnApiError(w, models.NewFromError(err))
+				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
 
@@ -537,43 +576,39 @@ func CreateMachine() restapi.Controller {
 
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(response)
+			ctx.LogInfo("Machine created using packer template: %v", vm.ID)
 		} else if request.VagrantBox != nil {
 			vagrantService := provider.VagrantService
-			parallelsDesktopService := provider.ParallelsService
-			// Initializing the box
-			// if err := vagrantService.Init(*request.VagrantBox); err != nil {
-			// 	ReturnApiError(w, models.NewFromError(err))
-			// 	return
-			// }
+			parallelsDesktopService := provider.ParallelsDesktopService
 
 			// Updating plugins
 			if err := vagrantService.UpdatePlugins(request.Owner); err != nil {
-				ReturnApiError(w, models.NewFromError(err))
+				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
 
 			// Generating the vagrant file
-			if content, err := vagrantService.GenerateVagrantFile(*request.VagrantBox); err != nil {
-				common.Logger.Error("Error generating vagrant file: %v", err)
-				common.Logger.Error("Vagrant file content: %v", content)
-				ReturnApiError(w, models.NewFromError(err))
+			if content, err := vagrantService.GenerateVagrantFile(ctx, *request.VagrantBox); err != nil {
+				ctx.LogError("Error generating vagrant file: %v", err)
+				ctx.LogError("Vagrant file content: %v", content)
+				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
 
 			// Creating the box
-			if err := vagrantService.Up(*request.VagrantBox); err != nil {
-				ReturnApiError(w, models.NewFromError(err))
+			if err := vagrantService.Up(ctx, *request.VagrantBox); err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
 
-			vm, err := parallelsDesktopService.GetVm(request.Name)
+			vm, err := parallelsDesktopService.GetVm(ctx, request.Name)
 			if err != nil {
-				ReturnApiError(w, models.NewFromError(err))
+				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
 
 			if vm == nil {
-				ReturnApiError(w, models.ApiErrorResponse{
+				ReturnApiError(ctx, w, models.ApiErrorResponse{
 					Message: "The machine was not found",
 					Code:    http.StatusNotFound,
 				})
@@ -590,8 +625,9 @@ func CreateMachine() restapi.Controller {
 			// Write the JSON data to the response
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(response)
+			ctx.LogInfo("Machine created using vagrant box: %v", vm.ID)
 		} else {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: no template was specified",
 				Code:    http.StatusBadRequest,
 			})

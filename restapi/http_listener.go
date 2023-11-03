@@ -1,7 +1,9 @@
 package restapi
 
 import (
+	"Parallels/pd-api-service/basecontext"
 	"Parallels/pd-api-service/common"
+	"Parallels/pd-api-service/serviceprovider"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -283,6 +285,9 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 	l.WaitAndShutdown()
 	<-done
 
+	rootContext := basecontext.NewRootBaseContext()
+	provider := serviceprovider.Get()
+	provider.JsonDatabase.Disconnect(rootContext)
 	l.Logger.Info("Server shut down successfully...")
 	shutdown <- true
 	if !l.needsRestart {

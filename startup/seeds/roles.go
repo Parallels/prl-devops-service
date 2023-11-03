@@ -1,45 +1,42 @@
 package seeds
 
 import (
+	"Parallels/pd-api-service/basecontext"
 	"Parallels/pd-api-service/common"
 	"Parallels/pd-api-service/constants"
 	"Parallels/pd-api-service/data/models"
-	"Parallels/pd-api-service/service_provider"
+	"Parallels/pd-api-service/serviceprovider"
 )
 
 func SeedDefaultRoles() error {
-	db := service_provider.Get().JsonDatabase
-	err := db.Connect()
+	ctx := basecontext.NewRootBaseContext()
+	db := serviceprovider.Get().JsonDatabase
+	err := db.Connect(ctx)
 	if err != nil {
 		common.Logger.Error("Error connecting to database: %s", err.Error())
 		return err
 	}
 
-	defer db.Disconnect()
+	defer db.Disconnect(ctx)
 
-	if exists, _ := db.GetRole(constants.USER_ROLE); exists == nil {
-		if err := db.CreateRole(&models.Role{
-			ID:       constants.USER_ROLE,
-			Name:     constants.USER_ROLE,
-			Internal: true,
-		}); err != nil {
-			common.Logger.Error("Error adding role: %s", err.Error())
-			return err
+	allSystemRoles := constants.AllSystemRoles
+
+	for _, role := range allSystemRoles {
+		if exists, _ := db.GetRole(ctx, role); exists == nil {
+			if err := db.CreateRole(ctx, models.Role{
+				ID:       role,
+				Name:     role,
+				Internal: true,
+			}); err != nil {
+				common.Logger.Error("Error adding role: %s", err.Error())
+				return err
+			}
+		} else {
+			ctx.LogDebug("Role already exists: %s", role)
 		}
 	}
 
-	if exists, _ := db.GetRole(constants.SUPER_USER_ROLE); exists == nil {
-		if err := db.CreateRole(&models.Role{
-			ID:       constants.SUPER_USER_ROLE,
-			Name:     constants.SUPER_USER_ROLE,
-			Internal: true,
-		}); err != nil {
-			common.Logger.Error("Error adding role: %s", err.Error())
-			return err
-		}
-	}
-
-	db.Disconnect()
+	db.Disconnect(ctx)
 
 	return nil
 }

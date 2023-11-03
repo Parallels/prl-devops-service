@@ -8,10 +8,10 @@
       "mode": "debug",
       "program": "${workspaceFolder}/main.go",
       // Comment out if you need to setup environment variables for the module
-      // "envFile": "${workspaceFolder}/.env",
-      "args": [
-        "--port=5570",
-      ]
+      "envFile": "${workspaceFolder}/.env",
+      // "args": [
+      //   "--port=5570",
+      // ]
     },
     {
       "name": "Identity.Service Migrations",

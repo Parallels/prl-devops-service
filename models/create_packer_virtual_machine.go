@@ -1,8 +1,9 @@
 package models
 
 import (
-	"Parallels/pd-api-service/common"
+	"Parallels/pd-api-service/constants"
 	"Parallels/pd-api-service/errors"
+	"os"
 )
 
 type CreatePackerVirtualMachineRequest struct {
@@ -25,26 +26,22 @@ func (r *CreatePackerVirtualMachineRequest) Validate() error {
 	}
 
 	if r.Memory == "" {
-		common.Logger.Info("Memory is less than 0, setting to 2048")
 		r.Memory = "2048"
 	}
 
 	if r.Owner == "" {
-		return errors.New("Owner cannot be empty")
+		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
 	}
 
 	if r.Cpu == "" {
-		common.Logger.Info("CPU is less than 0, setting to 2")
 		r.Cpu = "2"
 	}
 
 	if r.Disk == "" {
-		common.Logger.Info("Disk is less than 0, setting to 20480")
 		r.Disk = "20480"
 	}
 
 	if r.DesiredState == "" {
-		common.Logger.Info("DesiredState is empty, setting to 'running'")
 		r.DesiredState = "running"
 	}
 

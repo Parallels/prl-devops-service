@@ -1,12 +1,39 @@
 package controllers
 
 import (
+	"Parallels/pd-api-service/basecontext"
+	"Parallels/pd-api-service/data"
 	"Parallels/pd-api-service/models"
+	"Parallels/pd-api-service/serviceprovider"
 	"encoding/json"
 	"net/http"
 )
 
-func ReturnApiError(w http.ResponseWriter, err models.ApiErrorResponse) {
+func GetDatabaseService(ctx basecontext.ApiContext) (*data.JsonDatabase, error) {
+	provider := serviceprovider.Get()
+	dbService := provider.JsonDatabase
+	if dbService == nil {
+		return nil, data.ErrDatabaseNotConnected
+	}
+
+	err := dbService.Connect(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return dbService, nil
+}
+
+func GetFilterHeader(r *http.Request) string {
+	return r.Header.Get("X-Filter")
+}
+
+func GetBaseContext(r *http.Request) *basecontext.BaseContext {
+	return basecontext.NewBaseContextFromRequest(r)
+}
+
+func ReturnApiError(ctx basecontext.ApiContext, w http.ResponseWriter, err models.ApiErrorResponse) {
+	ctx.LogError("Error: %s", err.Message)
 	w.WriteHeader(err.Code)
 	json.NewEncoder(w).Encode(err)
 }

@@ -1,8 +1,10 @@
 package models
 
 import (
+	"Parallels/pd-api-service/constants"
 	"Parallels/pd-api-service/errors"
 	"fmt"
+	"os"
 )
 
 type VirtualMachineConfigRequest struct {
@@ -42,15 +44,15 @@ func (r *VirtualMachineConfigRequest) Validate() error {
 	}
 
 	if r.Owner == "" {
-		r.Owner = "root"
+		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
 	}
 
 	for _, op := range r.Operations {
 		if err := op.Validate(); err != nil {
 			return err
 		}
-		if op.Owner == "" {
-			op.Owner = r.Owner
+		if r.Owner == "" {
+			r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
 		}
 	}
 	return nil
@@ -68,7 +70,7 @@ func (r *VirtualMachineConfigRequest) HasErrors() bool {
 
 func (r *VirtualMachineConfigRequestOperation) Validate() error {
 	if r.Owner == "" {
-		r.Owner = "root"
+		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
 	}
 	if r.Group == "" {
 		return errors.ErrConfigGroupEmpty()
@@ -114,6 +116,10 @@ func (r *VirtualMachineConfigRequestOperation) Validate() error {
 			return errors.ErrValueEmpty()
 		}
 	case "efi-secure-boot":
+		if r.Value == "" {
+			return errors.ErrValueEmpty()
+		}
+	case "time":
 		if r.Value == "" {
 			return errors.ErrValueEmpty()
 		}

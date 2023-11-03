@@ -2,12 +2,12 @@ package restapi
 
 import (
 	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/common"
+	"Parallels/pd-api-service/config"
 	"Parallels/pd-api-service/constants"
 	data_modules "Parallels/pd-api-service/data/models"
 	"Parallels/pd-api-service/mappers"
 	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/service_provider"
+	"Parallels/pd-api-service/serviceprovider"
 	"context"
 	"errors"
 	"net/http"
@@ -25,16 +25,18 @@ import (
 func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapter {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cfg := config.NewConfig()
+			baseCtx := basecontext.NewBaseContextFromRequest(r)
 			var authorizationContext *basecontext.AuthorizationContext
-			authCtxFromRequest := r.Context().Value(constants.AUTHORIZATION_CONTEXT_KEY)
-			if authCtxFromRequest != nil {
-				authorizationContext = authCtxFromRequest.(*basecontext.AuthorizationContext)
-			} else {
+			authCtxFromRequest := baseCtx.GetAuthorizationContext()
+			if authCtxFromRequest == nil {
 				authorizationContext = basecontext.InitAuthorizationContext()
+			} else {
+				authorizationContext = authCtxFromRequest
 			}
 
 			if authorizationContext.IsAuthorized || HasApiKeyAuthorizationHeader(r) {
-				common.Logger.Info("%sNo Api Key was found in the request, skipping", common.Logger.GetRequestPrefix(r, false))
+				baseCtx.LogDebug("No bearer token was found in the request, skipping")
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -47,7 +49,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 				return
 			}
 
-			db := service_provider.Get().JsonDatabase
+			db := serviceprovider.Get().JsonDatabase
 
 			// we do not have enough information to validate the token
 			if db == nil {
@@ -58,18 +60,18 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 			}
 
 			// Setting the tenant in the context
-			authorizationContext.SetRequestIssuer(r, "global")
+			authorizationContext.Issuer = "Global"
 
 			//Starting authorization layer of the token
 			authorized := true
-			common.Logger.Info("%sToken Authorization layer started", common.Logger.GetRequestPrefix(r, false))
+			baseCtx.LogInfo("Token Authorization layer started")
 
 			// Getting the token for validation
 			jwt_token, valid := http_helper.GetAuthorizationToken(r.Header)
 			if !valid {
 				authorized = false
 				validateError := errors.New("bearer token not found in request")
-				common.Logger.Error("%sError validating token, %v", common.Logger.GetRequestPrefix(r, false), validateError.Error())
+				baseCtx.LogError("Error validating token, %v", validateError.Error())
 			}
 
 			// Validating userToken against the keys
@@ -81,7 +83,14 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 					}
 
 					// Return the secret key used to sign the token
-					return []byte(service_provider.Get().HardwareSecret), nil
+					// We either signing the token with the HMAC secret or the secret from the config
+					var key []byte
+					if cfg.GetHmacSecret() == "" {
+						key = []byte(cfg.GetHmacSecret())
+					} else {
+						key = []byte(serviceprovider.Get().HardwareSecret)
+					}
+					return key, nil
 				})
 
 				if err != nil {
@@ -91,19 +100,19 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 						ErrorDescription: err.Error(),
 					}
 					authorizationContext.AuthorizationError = &response
-					common.Logger.Error("%sRequest failed to authorize, %v", common.Logger.GetRequestPrefix(r, false), response.ErrorDescription)
+					baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
 				}
 
 				if authorized {
 					// Check if the token is valid
 					if jwtClaims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-						db := service_provider.Get().JsonDatabase
+						db := serviceprovider.Get().JsonDatabase
 						var dbUser *data_modules.User
 						var err error
-						if err = db.Connect(); err != nil {
+						if err = db.Connect(baseCtx); err != nil {
 							authorized = false
 						} else {
-							dbUser, err = db.GetUser(jwtClaims["email"].(string))
+							dbUser, err = db.GetUser(baseCtx, jwtClaims["email"].(string))
 							if err != nil || dbUser == nil {
 								authorized = false
 							}
@@ -138,7 +147,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 										}
 										authorizationContext.IsAuthorized = false
 										authorizationContext.AuthorizationError = &response
-										common.Logger.Error("%sRequest failed to authorize, %v", common.Logger.GetRequestPrefix(r, false), response.ErrorDescription)
+										baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
 									}
 								}
 
@@ -163,7 +172,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 										}
 										authorizationContext.IsAuthorized = false
 										authorizationContext.AuthorizationError = &response
-										common.Logger.Error("%sRequest failed to authorize, %v", common.Logger.GetRequestPrefix(r, false), response.ErrorDescription)
+										baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
 									}
 								}
 							}
@@ -177,9 +186,9 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 							if authorizationContext.AuthorizationError == nil {
 								authorizationContext.AuthorizationError = &response
 							}
-							common.Logger.Error("%sRequest failed to authorize, %v", common.Logger.GetRequestPrefix(r, false), response.ErrorDescription)
+							baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
 						} else {
-							user := mappers.UserFromDTO(*dbUser)
+							user := mappers.DtoUserToApiResponse(*dbUser)
 							authorizationContext.User = &user
 							authorizationContext.IsAuthorized = true
 							authorizationContext.AuthorizedBy = "TokenAuthorization"
@@ -191,13 +200,17 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 						}
 						authorizationContext.IsAuthorized = false
 						authorizationContext.AuthorizationError = &response
-						common.Logger.Error("%sRequest failed to authorize, %v", common.Logger.GetRequestPrefix(r, false), response.ErrorDescription)
+						baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
 					}
 				}
 			}
 
 			ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
-			common.Logger.Info("%sToken Authorization layer finished", common.Logger.GetRequestPrefix(r, false))
+			if authorizationContext.User != nil {
+				baseCtx.LogInfo("Token Authorization layer finished, user %v authorized", authorizationContext.User.Email)
+			} else {
+				baseCtx.LogInfo("Token Authorization layer finished, no user authorized")
+			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

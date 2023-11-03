@@ -1,5 +1,20 @@
 package common
 
-import log "github.com/cjlapao/common-go-logger"
+import (
+	"Parallels/pd-api-service/constants"
+	"context"
+	"fmt"
+
+	log "github.com/cjlapao/common-go-logger"
+)
 
 var Logger = log.Get().WithTimestamp()
+
+func LogInfo(ctx context.Context, format string, args ...string) {
+	id := ctx.Value(constants.REQUEST_ID_KEY)
+	if id != nil && id.(string) != "" {
+		Logger.Info(fmt.Sprintf("[%s] %s", id.(string), fmt.Sprintf(format, args)))
+	} else {
+		Logger.Info(format, args)
+	}
+}

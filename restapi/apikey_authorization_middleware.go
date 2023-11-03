@@ -2,14 +2,14 @@ package restapi
 
 import (
 	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/common"
 	"Parallels/pd-api-service/constants"
+	"Parallels/pd-api-service/errors"
 	"Parallels/pd-api-service/helpers"
 	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/service_provider"
+	"Parallels/pd-api-service/serviceprovider"
 	"context"
 	"encoding/base64"
-	"errors"
+
 	"net/http"
 	"strings"
 )
@@ -22,22 +22,23 @@ type ApiKeyHeader struct {
 func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapter {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			baseCtx := basecontext.NewBaseContextFromRequest(r)
 			var authorizationContext *basecontext.AuthorizationContext
-			authCtxFromRequest := r.Context().Value(constants.AUTHORIZATION_CONTEXT_KEY)
-			if authCtxFromRequest != nil {
-				authorizationContext = authCtxFromRequest.(*basecontext.AuthorizationContext)
-			} else {
+			authCtxFromRequest := baseCtx.GetAuthorizationContext()
+			if authCtxFromRequest == nil {
 				authorizationContext = basecontext.InitAuthorizationContext()
+			} else {
+				authorizationContext = authCtxFromRequest
 			}
 
 			// If the authorization context is already authorized we will skip this middleware
 			if authorizationContext.IsAuthorized || HasAuthorizationHeader(r) {
-				common.Logger.Info("%sNo Api Key was found in the request, skipping", common.Logger.GetRequestPrefix(r, false))
+				baseCtx.LogDebug("No Api Key was found in the request, skipping")
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			common.Logger.Info("%sApiKey Authorization layer started", common.Logger.GetRequestPrefix(r, false))
+			baseCtx.LogInfo("ApiKey Authorization layer started")
 			authError := models.OAuthErrorResponse{
 				Error:            models.OAuthUnauthorizedClient,
 				ErrorDescription: "The Api Key is not valid",
@@ -47,14 +48,14 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 			if err != nil {
 				authError.ErrorDescription = err.Error()
 				authorizationContext.AuthorizationError = &authError
-				common.Logger.Info("%sNo Api Key was found in the request, skipping", common.Logger.GetRequestPrefix(r, false))
+				baseCtx.LogInfo("No Api Key was found in the request, skipping")
 				next.ServeHTTP(w, r)
 				return
 			}
 			isValid := true
-			db := service_provider.Get().JsonDatabase
-			db.Connect()
-			dbApiKey, err := db.GetApiKey(apiKey.Key)
+			db := serviceprovider.Get().JsonDatabase
+			db.Connect(baseCtx)
+			dbApiKey, err := db.GetApiKey(baseCtx, apiKey.Key)
 
 			if err != nil || dbApiKey == nil {
 				isValid = false
@@ -75,7 +76,7 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 			}
 
 			if !isValid {
-				common.Logger.Error("%sThe Api Key is not valid", common.Logger.GetRequestPrefix(r, false))
+				baseCtx.LogInfo("The Api Key is not valid")
 				authorizationContext.IsAuthorized = false
 				authorizationContext.AuthorizationError = &authError
 
@@ -89,7 +90,7 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 			authorizationContext.AuthorizedBy = "ApiKeyAuthorization"
 			authorizationContext.AuthorizationError = nil
 			ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
-			common.Logger.Info("%sApiKey Authorization layer finished", common.Logger.GetRequestPrefix(r, false))
+			baseCtx.LogInfo("ApiKey Authorization layer finished")
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

@@ -3,7 +3,7 @@ package controllers
 import (
 	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/service_provider"
+	"Parallels/pd-api-service/serviceprovider"
 	"encoding/json"
 	"net/http"
 
@@ -12,45 +12,48 @@ import (
 
 func GetParallelsDesktopLicenseController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		provider := service_provider.Get()
-		if provider.ParallelsService == nil || !provider.ParallelsService.Installed() {
-			ReturnApiError(w, models.ApiErrorResponse{
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		if provider.ParallelsDesktopService == nil || !provider.ParallelsDesktopService.Installed() {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Parallels Desktop is not installed",
 				Code:    http.StatusNotFound,
 			})
 			return
 		}
 
-		license, err := provider.ParallelsService.GetLicense()
+		license, err := provider.ParallelsDesktopService.GetLicense()
 
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		// Write the JSON data to the response
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(license)
+		ctx.LogInfo("Parallels Desktop License returned successfully")
 	}
 }
 
 func InstallToolsController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
 		var request models.InstallToolsRequest
 		http_helper.MapRequestBody(r, &request)
 		if err := request.Validate(); err != nil {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
+
 		response := models.InstallToolsResponse{
 			Success:        true,
 			InstalledTools: make(map[string]models.InstallToolsResponseItem),
 		}
 
-		provider := service_provider.Get()
+		provider := serviceprovider.Get()
 		if request.All {
 			provider.InstallAllTools(request.RunAs, map[string]string{})
 		} else {
@@ -85,7 +88,7 @@ func InstallToolsController() restapi.Controller {
 						}
 					}
 				case "parallels":
-					if err := provider.ParallelsService.Install(request.RunAs, option.Version, option.Flags); err != nil {
+					if err := provider.ParallelsDesktopService.Install(request.RunAs, option.Version, option.Flags); err != nil {
 						response.Success = false
 						response.InstalledTools[tool] = models.InstallToolsResponseItem{
 							Success:      false,
@@ -142,26 +145,29 @@ func InstallToolsController() restapi.Controller {
 		// Write the JSON data to the response
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
+		ctx.LogInfo("Tools install request successfully")
 	}
 }
 
 func UninstallToolsController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
 		var request models.UninstallToolsRequest
 		http_helper.MapRequestBody(r, &request)
 		if err := request.Validate(); err != nil {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
+
 		response := models.UninstallToolsResponse{
 			Success:          true,
 			UninstalledTools: make(map[string]models.UninstallToolsResponseItem),
 		}
 
-		provider := service_provider.Get()
+		provider := serviceprovider.Get()
 		if request.All {
 			provider.UninstallAllTools(request.RunAs, request.UninstallDependencies, map[string]string{})
 		} else {
@@ -192,7 +198,7 @@ func UninstallToolsController() restapi.Controller {
 						}
 					}
 				case "parallels":
-					if err := provider.ParallelsService.Uninstall(request.RunAs, option.UninstallDependencies); err != nil {
+					if err := provider.ParallelsDesktopService.Uninstall(request.RunAs, option.UninstallDependencies); err != nil {
 						response.Success = false
 						response.UninstalledTools[tool] = models.UninstallToolsResponseItem{
 							Success:      false,
@@ -237,19 +243,19 @@ func UninstallToolsController() restapi.Controller {
 			}
 		}
 
-		// Restarting the API Service
 		restapi.Get().Restart()
 
-		// Write the JSON data to the response
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
+		ctx.LogInfo("Tools uninstall request successfully")
 	}
 }
 
 func RestartController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
 		go restapi.Get().Restart()
-		// Write the JSON data to the response
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfo("Restart request accepted")
 	}
 }

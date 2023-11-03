@@ -6,7 +6,6 @@ import (
 	"Parallels/pd-api-service/mappers"
 	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/service_provider"
 	"encoding/json"
 	"net/http"
 
@@ -17,172 +16,247 @@ import (
 // GetUsers is a public function that returns all users
 func GetCatalogManifestsController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Connect to the SQL server
-		provider := service_provider.Get()
-		dbService := provider.JsonDatabase
-		if dbService == nil {
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "No database connection",
-				Code:    http.StatusInternalServerError,
-			})
-			return
-		}
-
-		err := dbService.Connect()
+		ctx := GetBaseContext(r)
+		dbService, err := GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
 
-		defer dbService.Disconnect()
+		defer dbService.Disconnect(ctx)
 
-		manifests, err := dbService.GetCatalogManifests(r.Context())
+		manifestsDto, err := dbService.GetCatalogManifests(ctx, GetFilterHeader(r))
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		responseData := make([]models.CatalogVirtualMachineManifest, 0)
-		for _, manifest := range manifests {
-			responseData = append(responseData, mappers.DtoCatalogManifestToApi(manifest))
-		}
-
-		jsonData, err := json.Marshal(responseData)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+		if len(manifestsDto) == 0 {
+			w.WriteHeader(http.StatusOK)
+			response := make([]models.CatalogManifest, 0)
+			json.NewEncoder(w).Encode(response)
+			ctx.LogInfo("Manifests returned: %v", len(response))
 			return
 		}
 
-		// Write the JSON data to the response
+		responseManifests := mappers.DtoCatalogManifestsToApi(manifestsDto)
+
 		w.WriteHeader(http.StatusOK)
-		w.Write(jsonData)
+		json.NewEncoder(w).Encode(responseManifests)
+		ctx.LogInfo("Manifests returned: %v", len(responseManifests))
 	}
 }
 
 func GetCatalogManifestController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Connect to the SQL server
-		provider := service_provider.Get()
-		dbService := provider.JsonDatabase
-		if dbService == nil {
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "No database connection",
-				Code:    http.StatusInternalServerError,
-			})
-			return
-		}
-
-		err := dbService.Connect()
+		ctx := GetBaseContext(r)
+		dbService, err := GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
 
-		defer dbService.Disconnect()
+		defer dbService.Disconnect(ctx)
 
-		// Get the user ID from the request URL
 		vars := mux.Vars(r)
 		id := vars["id"]
 
+		manifest, err := dbService.GetCatalogManifest(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
-		}
-
-		// Query the users table for the manifest with the given ID
-		manifest, err := dbService.GetCatalogManifest(r.Context(), id)
-
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
-		}
-		if manifest == nil {
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "Manifest not found",
-				Code:    http.StatusNotFound,
-			})
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
 		resultData := mappers.DtoCatalogManifestToApi(*manifest)
 
-		// Marshal the user struct to JSON
-		jsonData, err := json.Marshal(resultData)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(resultData)
+		ctx.LogInfo("Manifest returned: %v", resultData.ID)
+	}
+}
+
+func CreateCatalogManifestController() restapi.Controller {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		var request catalog_models.VirtualMachineCatalogManifest
+		http_helper.MapRequestBody(r, &request)
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
 			return
 		}
 
-		// Write the JSON data to the response
+		dbService, err := GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		defer dbService.Disconnect(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		exists, _ := dbService.GetCatalogManifest(ctx, id)
+		if exists != nil {
+			dto := mappers.CatalogManifestToDto(request)
+			if err := dbService.UpdateCatalogManifest(ctx, dto); err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		} else {
+			ctx.LogInfo("Creating manifest %v", request.Name)
+			dto := mappers.CatalogManifestToDto(request)
+			if err := dbService.CreateCatalogManifest(ctx, dto); err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		}
+
+		resultData := mappers.DtoCatalogManifestToApi(mappers.CatalogManifestToDto(request))
+
 		w.WriteHeader(http.StatusOK)
-		w.Write(jsonData)
+		json.NewEncoder(w).Encode(resultData)
+		ctx.LogInfo("Manifest returned: %v", resultData.ID)
+	}
+}
+
+func DeleteCatalogManifestController() restapi.Controller {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		dbService, err := GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		defer dbService.Disconnect(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		manifest := catalog.NewManifestService(ctx)
+		err = manifest.Delete(ctx, id)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+		err = dbService.DeleteCatalogManifest(ctx, id)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfo("Catalog manifest deleted successfully")
 	}
 }
 
 func PushCatalogManifestController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
 		var request catalog_models.PushCatalogManifestRequest
 		http_helper.MapRequestBody(r, &request)
 		if err := request.Validate(); err != nil {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
 
-		manifest := catalog.NewManifestService(r.Context())
-		resultManifest, err := manifest.Push(&request)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+		manifest := catalog.NewManifestService(ctx)
+		resultManifest := manifest.Push(ctx, &request)
+		if resultManifest.HasErrors() {
+			errorMessage := "Error pushing manifest: \n"
+			for _, err := range resultManifest.Errors {
+				errorMessage += "\n" + err.Error() + " "
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
 			return
 		}
 
-		resultData := mappers.DtoCatalogManifestToApi(mappers.DtoCatalogManifestFromBase(*resultManifest))
+		resultData := mappers.DtoCatalogManifestToApi(mappers.CatalogManifestToDto(*resultManifest))
 		resultData.ID = resultManifest.ID
 
-		// Marshal the user struct to JSON
-		jsonData, err := json.Marshal(resultData)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
-		}
-
 		w.WriteHeader(http.StatusOK)
-		w.Write(jsonData)
+		json.NewEncoder(w).Encode(resultData)
+		ctx.LogInfo("Manifest pushed: %v", resultData.ID)
 	}
 }
 
 func PullCatalogManifestController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
 		var request catalog_models.PullCatalogManifestRequest
 		http_helper.MapRequestBody(r, &request)
 		if err := request.Validate(); err != nil {
-			ReturnApiError(w, models.ApiErrorResponse{
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
 
-		manifest := catalog.NewManifestService(r.Context())
-		resultManifest, err := manifest.Pull(&request)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+		manifest := catalog.NewManifestService(ctx)
+		resultManifest := manifest.Pull(ctx, &request)
+		if resultManifest.HasErrors() {
+			errorMessage := "Error pulling manifest: \n"
+			for _, err := range resultManifest.Errors {
+				errorMessage += "\n" + err.Error() + " "
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
 			return
 		}
 
 		resultData := mappers.BasePullCatalogManifestResponseToApi(*resultManifest)
 		resultData.ID = resultManifest.ID
 
-		// Marshal the user struct to JSON
-		jsonData, err := json.Marshal(resultData)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(resultData)
+		ctx.LogInfo("Manifest pulled: %v", resultData.ID)
+	}
+}
+
+func ImportCatalogManifestController() restapi.Controller {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		var request catalog_models.ImportCatalogManifestRequest
+		http_helper.MapRequestBody(r, &request)
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
 			return
 		}
 
+		manifest := catalog.NewManifestService(ctx)
+		resultManifest := manifest.Import(ctx, &request)
+		if resultManifest.HasErrors() {
+			errorMessage := "Error importing manifest: \n"
+			for _, err := range resultManifest.Errors {
+				errorMessage += "\n" + err.Error() + " "
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		resultData := mappers.BaseImportCatalogManifestResponseToApi(*resultManifest)
+
 		w.WriteHeader(http.StatusOK)
-		w.Write(jsonData)
+		json.NewEncoder(w).Encode(resultData)
+		ctx.LogInfo("Manifest imported: %v", resultData.ID)
 	}
 }

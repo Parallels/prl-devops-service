@@ -1,6 +1,11 @@
 package models
 
-import "errors"
+import "Parallels/pd-api-service/errors"
+
+var (
+	ErrMissingLocalPath = errors.NewWithCode("missing local path", 400)
+	ErrMissingName      = errors.NewWithCode("missing name", 400)
+)
 
 type PushCatalogManifestRequest struct {
 	LocalPath      string   `json:"local_path"`
@@ -17,10 +22,6 @@ type ImportRemoteMachineRequest struct {
 	Name       string `json:"name"`
 	Connection string `json:"connection"`
 }
-
-var ErrMissingLocalPath = errors.New("missing local path")
-var ErrMissingName = errors.New("missing name")
-var ErrMissingConnection = errors.New("missing connection")
 
 func (r *PushCatalogManifestRequest) Validate() error {
 	if r.LocalPath == "" {

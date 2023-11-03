@@ -1,11 +1,17 @@
 package startup
 
 import (
-	"Parallels/pd-api-service/service_provider"
+	"Parallels/pd-api-service/serviceprovider"
+	"Parallels/pd-api-service/serviceprovider/system"
 )
 
 func Start() {
-	service_provider.InitServices()
+	system := system.New()
+	if system.GetOperatingSystem() != "macos" {
+		serviceprovider.InitCatalogServices()
+	} else {
+		serviceprovider.InitServices()
+	}
 
 	// Seeding defaults
 	if err := SeedDefaults(); err != nil {

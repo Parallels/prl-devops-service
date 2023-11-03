@@ -1,7 +1,9 @@
 package models
 
 import (
+	"Parallels/pd-api-service/constants"
 	"Parallels/pd-api-service/errors"
+	"os"
 )
 
 type CreateRemoteVirtualMachineRequest struct {
@@ -36,7 +38,7 @@ func (r *CreateRemoteVirtualMachineRequest) Validate() error {
 	}
 
 	if r.Owner == "" {
-		return errors.New("Owner cannot be empty")
+		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
 	}
 
 	return nil

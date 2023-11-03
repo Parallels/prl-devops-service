@@ -1,7 +1,17 @@
 package models
 
+import "Parallels/pd-api-service/errors"
+
 type VirtualMachineExecuteCommandRequest struct {
 	Command string `json:"command"`
+}
+
+func (r *VirtualMachineExecuteCommandRequest) Validate() error {
+	if r.Command == "" {
+		return errors.NewWithCode("missing command", 400)
+	}
+
+	return nil
 }
 
 type VirtualMachineExecuteCommandResponse struct {

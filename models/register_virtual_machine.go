@@ -1,6 +1,10 @@
 package models
 
-import "errors"
+import (
+	"Parallels/pd-api-service/constants"
+	"errors"
+	"os"
+)
 
 type RegisterVirtualMachineRequest struct {
 	Path                      string `json:"path"`
@@ -16,8 +20,9 @@ func (r *RegisterVirtualMachineRequest) Validate() error {
 	if r.Path == "" {
 		return errors.New("missing path")
 	}
+
 	if r.Owner == "" {
-		r.Owner = "root"
+		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
 	}
 
 	return nil

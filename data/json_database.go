@@ -1,46 +1,79 @@
 package data
 
 import (
+	"Parallels/pd-api-service/basecontext"
+	"Parallels/pd-api-service/config"
 	"Parallels/pd-api-service/data/models"
+	"Parallels/pd-api-service/errors"
+	"Parallels/pd-api-service/security"
 	"encoding/json"
-	"errors"
 	"os"
+	"sync"
+
+	"github.com/cjlapao/common-go/helper"
 )
 
 var (
-	ErrDatabaseNotConnected = errors.New("the database is not connected")
+	ErrDatabaseNotConnected = errors.NewWithCode("the database is not connected", 500)
+	ErrNotAuthorized        = errors.NewWithCode("not authorized to view record", 403)
 )
 
+var memoryDatabase *JsonDatabase
+
 type Data struct {
-	Users                   []models.User                          `json:"users"`
-	Claims                  []models.Claim                         `json:"claims"`
-	Roles                   []models.Role                          `json:"roles"`
-	ApiKeys                 []models.ApiKey                        `json:"api_keys"`
-	VirtualMachineTemplates []models.VirtualMachineTemplate        `json:"virtual_machine_templates"`
-	ManifestsCatalog        []models.CatalogVirtualMachineManifest `json:"catalog_manifests"`
+	Users            []models.User            `json:"users"`
+	Claims           []models.Claim           `json:"claims"`
+	Roles            []models.Role            `json:"roles"`
+	ApiKeys          []models.ApiKey          `json:"api_keys"`
+	PackerTemplates  []models.PackerTemplate  `json:"virtual_machine_templates"`
+	ManifestsCatalog []models.CatalogManifest `json:"catalog_manifests"`
 }
 
 type JsonDatabase struct {
-	connected bool
-	filename  string
-	data      Data
+	connected   bool
+	isSaving    bool
+	saveProcess chan bool
+	filename    string
+	saveMutex   sync.Mutex
+	saveQueue   []saveRequest
+	data        Data
 }
 
 func NewJsonDatabase(filename string) *JsonDatabase {
-	return &JsonDatabase{
-		connected: false,
-		filename:  filename,
-		data:      Data{},
+	if memoryDatabase != nil {
+		return memoryDatabase
 	}
+
+	memoryDatabase = &JsonDatabase{
+		connected:   false,
+		isSaving:    false,
+		filename:    filename,
+		saveProcess: make(chan bool),
+		data:        Data{},
+	}
+
+	rootContext := basecontext.NewRootBaseContext()
+	go memoryDatabase.ProcessSaveQueue(rootContext)
+	memoryDatabase.Load(rootContext)
+
+	return memoryDatabase
 }
 
-func (j *JsonDatabase) Connect() error {
+func (j *JsonDatabase) Connect(ctx basecontext.ApiContext) error {
+	ctx.LogDebug("Connecting to database %s", j.filename)
+	j.connected = true
+	return nil
+}
+
+func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
+	ctx.LogInfo("Loading database from %s", j.filename)
 	var data Data
 
-	// Check if file exists, create it if it doesn't
 	if _, err := os.Stat(j.filename); os.IsNotExist(err) {
+		ctx.LogInfo("Database file does not exist, creating new file")
 		file, err := os.Create(j.filename)
 		if err != nil {
+			ctx.LogError("Error creating database file: %v", err)
 			return err
 		}
 		file.Close()
@@ -48,33 +81,79 @@ func (j *JsonDatabase) Connect() error {
 
 	file, err := os.Open(j.filename)
 	if err != nil {
+		ctx.LogError("Error opening database file: %v", err)
 		return err
 	}
+
 	defer file.Close()
 
 	fileInfo, err := os.Stat(j.filename)
 	if err != nil {
+		ctx.LogError("Error getting database file info: %v", err)
 		return err
 	}
 
 	if fileInfo.Size() == 0 {
+		ctx.LogInfo("Database file is empty, creating new file")
 		j.data = Data{
-			Users: make([]models.User, 0),
+			Users:            make([]models.User, 0),
+			Claims:           make([]models.Claim, 0),
+			Roles:            make([]models.Role, 0),
+			ApiKeys:          make([]models.ApiKey, 0),
+			PackerTemplates:  make([]models.PackerTemplate, 0),
+			ManifestsCatalog: make([]models.CatalogManifest, 0),
 		}
 
-		err = j.save()
+		err = j.Save(ctx)
 		if err != nil {
+			ctx.LogError("Error saving database file: %v", err)
 			return err
 		}
+
 		j.connected = true
 		return nil
 	} else {
-		// file is not empty
+		ctx.LogInfo("Database file is not empty, loading data")
 
-		decoder := json.NewDecoder(file)
-		err = decoder.Decode(&data)
+		// Backup the file before attempting to read it
+		backupFilename := j.filename + ".bak"
+		err := helper.CopyFile(j.filename, backupFilename)
 		if err != nil {
+			ctx.LogError("Error creating backup file: %v", err)
 			return err
+		}
+
+		content, err := helper.ReadFromFile(j.filename)
+		if err != nil {
+			ctx.LogError("Error reading database file: %v", err)
+			return err
+		}
+		if content == nil {
+			ctx.LogError("Error reading database file: %v", err)
+			return err
+		}
+
+		// Trying to read the file unencrypted
+		err = json.Unmarshal(content, &data)
+		if err != nil {
+			// Trying to read the file encrypted
+			cfg := config.NewConfig()
+			if cfg.GetSecurityKey() == "" {
+				ctx.LogError("Error reading database file: %v", err)
+				return err
+			}
+
+			content, err := security.DecryptString(cfg.GetSecurityKey(), content)
+			if err != nil {
+				ctx.LogError("Error decrypting database file: %v", err)
+				return err
+			}
+
+			err = json.Unmarshal([]byte(content), &data)
+			if err != nil {
+				ctx.LogError("Error reading database file: %v", err)
+				return err
+			}
 		}
 
 		j.data = data
@@ -83,8 +162,8 @@ func (j *JsonDatabase) Connect() error {
 	}
 }
 
-func (j *JsonDatabase) Disconnect() error {
-	j.save()
+func (j *JsonDatabase) Disconnect(ctx basecontext.ApiContext) error {
+	ctx.LogDebug("Disconnecting from database")
 	j.connected = false
 
 	return nil
@@ -98,26 +177,112 @@ func (j *JsonDatabase) IsConnected() bool {
 	return j.connected
 }
 
-func (j *JsonDatabase) save() error {
-	if j.filename == "" {
-		return errors.New("the database filename is not set")
+type saveRequest struct {
+	ctx basecontext.ApiContext
+	wg  *sync.WaitGroup
+}
+
+func (j *JsonDatabase) Save(ctx basecontext.ApiContext) error {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	ctx.LogDebug("Enqueuing save request")
+	saveRequest := saveRequest{
+		ctx: ctx,
+		wg:  wg,
 	}
 
-	file, err := os.OpenFile(j.filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	j.saveQueue = append(j.saveQueue, saveRequest)
+
+	j.saveProcess <- true
+	wg.Wait()
+	return nil
+}
+
+func (j *JsonDatabase) ProcessSaveQueue(ctx basecontext.ApiContext) {
+	for {
+		<-j.saveProcess
+		for len(j.saveQueue) > 0 {
+			request := j.saveQueue[0]
+			j.saveQueue = j.saveQueue[1:]
+			if err := j.processSave(ctx); err != nil {
+				ctx.LogError("Error saving database: %v", err)
+			}
+			request.wg.Done()
+		}
+	}
+}
+
+func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
+	j.saveMutex.Lock()
+
+	cfg := config.NewConfig()
+	// Backup the file before attempting to read it
+	backupFilename := j.filename + ".save.bak"
+	err := helper.CopyFile(j.filename, backupFilename)
 	if err != nil {
+		ctx.LogError("Error creating backup file: %v", err)
 		return err
 	}
+
+	ctx.LogDebug("Saving database to %s", j.filename)
+	j.isSaving = true
+	if j.filename == "" {
+		j.saveMutex.Unlock()
+		return errors.NewWithCode("the database filename is not set", 500)
+	}
+
+	// Trying to open the file and waiting for it to be ready
+	var file *os.File
+	for {
+		var fileOpenError error
+		file, fileOpenError = os.OpenFile(j.filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+		if fileOpenError == nil {
+			break
+		}
+	}
+
 	defer file.Close()
 
 	jsonString, err := json.MarshalIndent(j.data, "", "  ")
 	if err != nil {
-		return err
+		j.isSaving = false
+		j.saveMutex.Unlock()
+		return errors.NewFromError(err)
+	}
+
+	if cfg.GetSecurityKey() != "" {
+		encJsonString, err := security.EncryptString(cfg.GetSecurityKey(), string(jsonString))
+		if err != nil {
+			_, saveErr := file.Write(jsonString)
+			if saveErr != nil {
+				j.isSaving = false
+				j.saveMutex.Unlock()
+				return errors.NewFromError(saveErr)
+			}
+
+			j.isSaving = false
+			j.saveMutex.Unlock()
+			return errors.NewFromError(err)
+		}
+
+		jsonString = encJsonString
 	}
 
 	_, err = file.Write(jsonString)
 	if err != nil {
+		j.isSaving = false
+		j.saveMutex.Unlock()
 		return err
 	}
 
+	if err := file.Close(); err != nil {
+		j.isSaving = false
+		j.saveMutex.Unlock()
+		return err
+	}
+
+	j.isSaving = false
+	j.saveMutex.Unlock()
 	return nil
 }

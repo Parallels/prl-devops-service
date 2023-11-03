@@ -1,238 +1,154 @@
 package controllers
 
 import (
-	data_models "Parallels/pd-api-service/data/models"
-	"Parallels/pd-api-service/helpers"
 	"Parallels/pd-api-service/mappers"
 	"Parallels/pd-api-service/models"
 	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/service_provider"
 	"encoding/json"
 	"net/http"
-	"strings"
 
+	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
 )
 
 // GetUsers is a public function that returns all users
 func GetApiKeysController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Connect to the SQL server
-		dbService := service_provider.Get().JsonDatabase
-		if dbService == nil {
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "No database connection",
-				Code:    http.StatusInternalServerError,
-			})
-			return
-		}
-
-		err := dbService.Connect()
+		ctx := GetBaseContext(r)
+		dbService, err := GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
 
-		defer dbService.Disconnect()
+		defer dbService.Disconnect(ctx)
 
-		apiKeys, err := dbService.GetApiKeys()
+		dtoApiKeys, err := dbService.GetApiKeys(ctx, GetFilterHeader(r))
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		result := make([]models.ApiKey, 0)
-		for _, apiKey := range apiKeys {
-			result = append(result, mappers.ApiKeyFromDTO(apiKey))
-		}
+		result := mappers.ApiKeysDtoToApiKeyResponse(dtoApiKeys)
 
-		jsonData, err := json.Marshal(result)
-		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
-			return
-		}
-
-		// Write the JSON data to the response
 		w.WriteHeader(http.StatusOK)
-		w.Write(jsonData)
+		json.NewEncoder(w).Encode(result)
+		ctx.LogInfo("Api Keys returned successfully")
 	}
 }
 
 func DeleteApiKeyController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Connect to the SQL server
-		dbService := service_provider.Get().JsonDatabase
-		if dbService == nil {
-			http.Error(w, "No database connection", http.StatusInternalServerError)
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "No database connection",
-				Code:    http.StatusInternalServerError,
-			})
-			return
-		}
-
-		err := dbService.Connect()
+		ctx := GetBaseContext(r)
+		dbService, err := GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "No database connection",
-				Code:    http.StatusInternalServerError,
-			})
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
 
-		defer dbService.Disconnect()
+		defer dbService.Disconnect(ctx)
 
-		// Get the user ID from the request URL
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		err = dbService.RemoveKey(id)
+		err = dbService.DeleteApiKey(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		// Write the JSON data to the response
 		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfo("Api Key deleted successfully")
 	}
 }
 
-// GetUserByID is a public function that returns a user by ID
 func GetApiKeyByIdOrNameController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Connect to the SQL server
-		dbService := service_provider.Get().JsonDatabase
-		if dbService == nil {
-			http.Error(w, "No database connection", http.StatusInternalServerError)
-			return
-		}
-
-		err := dbService.Connect()
+		ctx := GetBaseContext(r)
+		dbService, err := GetDatabaseService(ctx)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
 
-		defer dbService.Disconnect()
+		defer dbService.Disconnect(ctx)
 
-		// Get the user ID from the request URL
 		vars := mux.Vars(r)
 		id := vars["id"]
 
+		dtoApiKey, err := dbService.GetApiKey(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
 			return
 		}
 
-		// Query the users table for the apiKey with the given ID
-		apiKey, err := dbService.GetApiKey(id)
+		response := mappers.ApiKeyDtoToApiKeyResponse(*dtoApiKey)
 
-		if err != nil || apiKey == nil {
-			http.Error(w, "Api Key not found", http.StatusNotFound)
-			return
-		}
-
-		resultUser := mappers.ApiKeyFromDTO(*apiKey)
-
-		// Marshal the user struct to JSON
-		jsonData, err := json.Marshal(resultUser)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Write the JSON data to the response
 		w.WriteHeader(http.StatusOK)
-		w.Write(jsonData)
+		json.NewEncoder(w).Encode(response)
+		ctx.LogInfo("Api Key returned successfully")
 	}
 }
 
 func CreateApiKeyController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var apiKey data_models.ApiKey
-		err := json.NewDecoder(r.Body).Decode(&apiKey)
+		ctx := GetBaseContext(r)
+		var request models.ApiKeyRequest
+		http_helper.MapRequestBody(r, &request)
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		dbService, err := GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
 
-		// Set the ID to 0 to ensure that a new ID is generated
-		apiKey.ID = helpers.GenerateId()
-		if apiKey.Secret == "" {
-			http.Error(w, "Api Key Secret cannot be null", http.StatusInternalServerError)
-			return
-		}
-		if apiKey.Key == "" {
-			http.Error(w, "Api Key cannot be null", http.StatusInternalServerError)
-			return
-		}
-		apiKey.Key = strings.ToUpper(strings.ReplaceAll(apiKey.Key, " ", "_"))
+		dtoApiKey := mappers.ApiKeyRequestToDto(request)
 
-		if apiKey.Name == "" {
-			http.Error(w, "Api Key Name cannot be null", http.StatusInternalServerError)
-			return
-		}
-
-		dbService := service_provider.Get().JsonDatabase
-		if dbService == nil {
-			http.Error(w, "No database connection", http.StatusInternalServerError)
-			return
-		}
-		err = dbService.Connect()
+		dtoApiKeyResult, err := dbService.CreateApiKey(ctx, dtoApiKey)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
-
-		err = dbService.CreateApiKey(&apiKey)
-		response := mappers.ApiKeyFromDTO(apiKey)
+		response := mappers.ApiKeyDtoToApiKeyResponse(*dtoApiKeyResult)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
-
-		dbService.Disconnect()
 
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(response)
+		ctx.LogInfo("Api Key created successfully")
 	}
 }
 
 func RevokeApiKeyController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Connect to the SQL server
-		dbService := service_provider.Get().JsonDatabase
-		if dbService == nil {
-			http.Error(w, "No database connection", http.StatusInternalServerError)
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "No database connection",
-				Code:    http.StatusInternalServerError,
-			})
-			return
-		}
-
-		err := dbService.Connect()
+		ctx := GetBaseContext(r)
+		dbService, err := GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(w, models.ApiErrorResponse{
-				Message: "No database connection",
-				Code:    http.StatusInternalServerError,
-			})
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
 
-		defer dbService.Disconnect()
+		defer dbService.Disconnect(ctx)
 
-		// Get the user ID from the request URL
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		err = dbService.RevokeKey(id)
+		err = dbService.RevokeKey(ctx, id)
 		if err != nil {
-			ReturnApiError(w, models.NewFromError(err))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		// Write the JSON data to the response
 		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfo("Api Key revoked successfully")
 	}
 }

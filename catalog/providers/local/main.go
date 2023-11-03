@@ -1,8 +1,8 @@
 package local
 
 import (
+	"Parallels/pd-api-service/basecontext"
 	"Parallels/pd-api-service/catalog/common"
-	global_common "Parallels/pd-api-service/common"
 	"Parallels/pd-api-service/helpers"
 	"errors"
 	"io"
@@ -14,8 +14,6 @@ import (
 )
 
 const providerName = "local-storage"
-
-var logger = global_common.Logger
 
 type LocalProviderConfig struct {
 	Path string
@@ -35,9 +33,9 @@ func (s *LocalProvider) Name() string {
 	return providerName
 }
 
-func (s *LocalProvider) GetProviderMeta() map[string]string {
+func (s *LocalProvider) GetProviderMeta(ctx basecontext.ApiContext) map[string]string {
 	result := map[string]string{
-		"provider": providerName,
+		common.PROVIDER_VAR_NAME: providerName,
 	}
 	if s.Config.Path != "" {
 		result["catalog_path"] = s.Config.Path
@@ -46,37 +44,37 @@ func (s *LocalProvider) GetProviderMeta() map[string]string {
 	return result
 }
 
-func (s *LocalProvider) GetProviderRootPath() string {
+func (s *LocalProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
 	return s.Config.Path
 }
 
-func (s *LocalProvider) Check(connection string) (bool, error) {
-	parts := strings.Split(strings.ToLower(connection), ";")
+func (s *LocalProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
+	parts := strings.Split(connection, ";")
 	provider := ""
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
-		if strings.Contains(part, common.PROVIDER_VAR_NAME+"=") {
+		if strings.Contains(strings.ToLower(part), common.PROVIDER_VAR_NAME+"=") {
 			provider = strings.ReplaceAll(part, common.PROVIDER_VAR_NAME+"=", "")
 		}
-		if strings.Contains(part, "catalog_path=") {
+		if strings.Contains(strings.ToLower(part), "catalog_path=") {
 			s.Config.Path = strings.ReplaceAll(part, "catalog_path=", "")
 		}
 	}
-	if provider != "" && provider != providerName {
-		logger.Info("Provider %s is not %s, skipping", providerName, provider)
+	if provider == "" || !strings.EqualFold(provider, providerName) {
+		ctx.LogInfo("Provider %s is not %s, skipping", providerName, provider)
 		return false, nil
 	}
 
 	if s.Config.Path == "" {
 		dir, err := os.Getwd()
 		if err != nil {
-			logger.Error("Error getting current directory: %v", err)
+			ctx.LogError("Error getting current directory: %v", err)
 			return false, err
 		}
 
 		fullPath := filepath.Join(dir, "catalog")
 		if err := os.MkdirAll(fullPath, os.ModePerm); err != nil {
-			logger.Error("Error creating catalog directory: %v", err)
+			ctx.LogError("Error creating catalog directory: %v", err)
 			return false, err
 		}
 
@@ -90,7 +88,7 @@ func (s *LocalProvider) Check(connection string) (bool, error) {
 	return true, nil
 }
 
-func (s *LocalProvider) PushFile(localRoot, path, filename string) error {
+func (s *LocalProvider) PushFile(ctx basecontext.ApiContext, localRoot, path, filename string) error {
 	srcPath := filepath.Join(localRoot, filename)
 	destPath := filepath.Join(path, filename)
 	if !strings.HasPrefix(destPath, s.Config.Path) {
@@ -117,7 +115,7 @@ func (s *LocalProvider) PushFile(localRoot, path, filename string) error {
 	return nil
 }
 
-func (s *LocalProvider) PullFile(path, filename, destination string) error {
+func (s *LocalProvider) PullFile(ctx basecontext.ApiContext, path, filename, destination string) error {
 	srcPath := filepath.Join(path, filename)
 	destPath := filepath.Join(destination, filename)
 	if !strings.HasPrefix(srcPath, s.Config.Path) {
@@ -144,7 +142,7 @@ func (s *LocalProvider) PullFile(path, filename, destination string) error {
 	return nil
 }
 
-func (s *LocalProvider) DeleteFile(path string, fileName string) error {
+func (s *LocalProvider) DeleteFile(ctx basecontext.ApiContext, path string, fileName string) error {
 	filePath := filepath.Join(path, fileName)
 	if !strings.HasPrefix(filePath, s.Config.Path) {
 		filePath = filepath.Join(s.Config.Path, filePath)
@@ -161,7 +159,7 @@ func (s *LocalProvider) DeleteFile(path string, fileName string) error {
 	return nil
 }
 
-func (s *LocalProvider) FileChecksum(path string, fileName string) (string, error) {
+func (s *LocalProvider) FileChecksum(ctx basecontext.ApiContext, path string, fileName string) (string, error) {
 	fullPath := filepath.Join(path, fileName)
 	if !strings.HasPrefix(fullPath, s.Config.Path) {
 		fullPath = filepath.Join(s.Config.Path, fullPath)
@@ -173,7 +171,7 @@ func (s *LocalProvider) FileChecksum(path string, fileName string) (string, erro
 	return checksum, nil
 }
 
-func (s *LocalProvider) FileExists(path string, fileName string) (bool, error) {
+func (s *LocalProvider) FileExists(ctx basecontext.ApiContext, path string, fileName string) (bool, error) {
 	fullPath := filepath.Join(path, fileName)
 	if !strings.HasPrefix(fullPath, s.Config.Path) {
 		fullPath = filepath.Join(s.Config.Path, fullPath)
@@ -182,7 +180,7 @@ func (s *LocalProvider) FileExists(path string, fileName string) (bool, error) {
 	return exists, nil
 }
 
-func (s *LocalProvider) CreateFolder(path string, folderName string) error {
+func (s *LocalProvider) CreateFolder(ctx basecontext.ApiContext, path string, folderName string) error {
 	folderPath := filepath.Join(path, folderName)
 	if !strings.HasPrefix(folderPath, s.Config.Path) {
 		folderPath = filepath.Join(s.Config.Path, folderPath)
@@ -196,7 +194,7 @@ func (s *LocalProvider) CreateFolder(path string, folderName string) error {
 	return nil
 }
 
-func (s *LocalProvider) DeleteFolder(path string, folderName string) error {
+func (s *LocalProvider) DeleteFolder(ctx basecontext.ApiContext, path string, folderName string) error {
 	folderPath := filepath.Join(path, folderName)
 	if !strings.HasPrefix(folderPath, s.Config.Path) {
 		folderPath = filepath.Join(s.Config.Path, folderPath)
@@ -213,7 +211,7 @@ func (s *LocalProvider) DeleteFolder(path string, folderName string) error {
 	return nil
 }
 
-func (s *LocalProvider) FolderExists(path string, fileName string) (bool, error) {
+func (s *LocalProvider) FolderExists(ctx basecontext.ApiContext, path string, fileName string) (bool, error) {
 	fullPath := filepath.Join(path, fileName)
 	if !strings.HasPrefix(fullPath, s.Config.Path) {
 		fullPath = filepath.Join(s.Config.Path, fullPath)

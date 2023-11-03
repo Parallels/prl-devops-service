@@ -1,14 +1,13 @@
 package aws_s3_bucket
 
 import (
+	"Parallels/pd-api-service/basecontext"
 	"Parallels/pd-api-service/catalog/common"
 	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-
-	global_common "Parallels/pd-api-service/common"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -26,8 +25,6 @@ type S3Bucket struct {
 
 const providerName = "aws-s3"
 
-var logger = global_common.Logger
-
 type AwsS3BucketProvider struct {
 	Bucket S3Bucket
 }
@@ -40,43 +37,43 @@ func (s *AwsS3BucketProvider) Name() string {
 	return providerName
 }
 
-func (s *AwsS3BucketProvider) GetProviderMeta() map[string]string {
+func (s *AwsS3BucketProvider) GetProviderMeta(ctx basecontext.ApiContext) map[string]string {
 	return map[string]string{
-		"provider":   providerName,
-		"bucket":     s.Bucket.Name,
-		"region":     s.Bucket.Region,
-		"access_key": "",
-		"secret_key": "",
+		common.PROVIDER_VAR_NAME: providerName,
+		"bucket":                 s.Bucket.Name,
+		"region":                 s.Bucket.Region,
+		"access_key":             s.Bucket.AccessKey,
+		"secret_key":             s.Bucket.SecretKey,
 	}
 }
 
-func (s *AwsS3BucketProvider) GetProviderRootPath() string {
+func (s *AwsS3BucketProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
 	return "/"
 }
 
-func (s *AwsS3BucketProvider) Check(connection string) (bool, error) {
-	parts := strings.Split(strings.ToLower(connection), ";")
+func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
+	parts := strings.Split(connection, ";")
 	provider := ""
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
-		if strings.Contains(part, common.PROVIDER_VAR_NAME+"=") {
+		if strings.Contains(strings.ToLower(part), common.PROVIDER_VAR_NAME+"=") {
 			provider = strings.ReplaceAll(part, common.PROVIDER_VAR_NAME+"=", "")
 		}
-		if strings.Contains(part, "bucket=") {
+		if strings.Contains(strings.ToLower(part), "bucket=") {
 			s.Bucket.Name = strings.ReplaceAll(part, "bucket=", "")
 		}
-		if strings.Contains(part, "region=") {
+		if strings.Contains(strings.ToLower(part), "region=") {
 			s.Bucket.Region = strings.ReplaceAll(part, "region=", "")
 		}
-		if strings.Contains(part, "access_key=") {
+		if strings.Contains(strings.ToLower(part), "access_key=") {
 			s.Bucket.AccessKey = strings.ReplaceAll(part, "access_key=", "")
 		}
-		if strings.Contains(part, "secret_key=") {
+		if strings.Contains(strings.ToLower(part), "secret_key=") {
 			s.Bucket.SecretKey = strings.ReplaceAll(part, "secret_key=", "")
 		}
 	}
-	if provider != "" && provider != providerName {
-		logger.Info("Provider %s is not %s, skipping", providerName, provider)
+	if provider == "" || !strings.EqualFold(provider, providerName) {
+		ctx.LogInfo("Provider %s is not %s, skipping", providerName, provider)
 		return false, nil
 	}
 
@@ -97,7 +94,7 @@ func (s *AwsS3BucketProvider) Check(connection string) (bool, error) {
 }
 
 // uploadFile uploads a file to an S3 bucket
-func (s *AwsS3BucketProvider) PushFile(rootLocalPath string, path string, filename string) error {
+func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath string, path string, filename string) error {
 	// Create a new session using the default region and credentials.
 	var err error
 	session, err := s.createSession()
@@ -133,7 +130,7 @@ func (s *AwsS3BucketProvider) PushFile(rootLocalPath string, path string, filena
 	return nil
 }
 
-func (s *AwsS3BucketProvider) PullFile(path string, filename string, destination string) error {
+func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, filename string, destination string) error {
 
 	// Create a new session using the default region and credentials.
 	var err error
@@ -168,7 +165,7 @@ func (s *AwsS3BucketProvider) PullFile(path string, filename string, destination
 	return nil
 }
 
-func (s *AwsS3BucketProvider) DeleteFile(path string, fileName string) error {
+func (s *AwsS3BucketProvider) DeleteFile(ctx basecontext.ApiContext, path string, fileName string) error {
 	// Create a new AWS session
 	session, err := s.createSession()
 	if err != nil {
@@ -191,15 +188,15 @@ func (s *AwsS3BucketProvider) DeleteFile(path string, fileName string) error {
 	return nil
 }
 
-func (s *AwsS3BucketProvider) FileChecksum(path string, fileName string) (string, error) {
+func (s *AwsS3BucketProvider) FileChecksum(ctx basecontext.ApiContext, path string, fileName string) (string, error) {
 	return "", nil
 }
 
-func (s *AwsS3BucketProvider) FileExists(path string, fileName string) (bool, error) {
+func (s *AwsS3BucketProvider) FileExists(ctx basecontext.ApiContext, path string, fileName string) (bool, error) {
 	return false, nil
 }
 
-func (s *AwsS3BucketProvider) CreateFolder(folderPath string, folderName string) error {
+func (s *AwsS3BucketProvider) CreateFolder(ctx basecontext.ApiContext, folderPath string, folderName string) error {
 
 	fullPath := filepath.Join(folderPath, folderName)
 	// Create a new session using the default region and credentials.
@@ -219,7 +216,7 @@ func (s *AwsS3BucketProvider) CreateFolder(folderPath string, folderName string)
 		fullPath = fullPath + "/"
 	}
 
-	exists, err := s.FolderExists(folderPath, folderName)
+	exists, err := s.FolderExists(ctx, folderPath, folderName)
 	if err != nil {
 		return err
 	}
@@ -240,7 +237,7 @@ func (s *AwsS3BucketProvider) CreateFolder(folderPath string, folderName string)
 	return nil
 }
 
-func (s *AwsS3BucketProvider) DeleteFolder(folderPath string, folderName string) error {
+func (s *AwsS3BucketProvider) DeleteFolder(ctx basecontext.ApiContext, folderPath string, folderName string) error {
 	fullPath := filepath.Join(folderPath, folderName)
 	// Create a new AWS session
 	session, err := s.createSession()
@@ -272,7 +269,7 @@ func (s *AwsS3BucketProvider) DeleteFolder(folderPath string, folderName string)
 	return nil
 }
 
-func (s *AwsS3BucketProvider) FolderExists(folderPath string, folderName string) (bool, error) {
+func (s *AwsS3BucketProvider) FolderExists(ctx basecontext.ApiContext, folderPath string, folderName string) (bool, error) {
 	fullPath := filepath.Join(folderPath, folderName)
 	// Create a new AWS session
 	session, err := s.createSession()

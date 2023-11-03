@@ -3,84 +3,113 @@ package mappers
 import (
 	catalog_models "Parallels/pd-api-service/catalog/models"
 	data_models "Parallels/pd-api-service/data/models"
-	"Parallels/pd-api-service/helpers"
 	"Parallels/pd-api-service/models"
-	"fmt"
 )
 
-func DtoCatalogManifestFromBase(m catalog_models.VirtualMachineManifest) data_models.CatalogVirtualMachineManifest {
-	data := data_models.CatalogVirtualMachineManifest{
-		ID:                 m.ID,
-		Name:               m.Name,
-		Path:               m.Path,
-		MetadataPath:       m.MetadataPath,
-		Type:               m.Type,
-		Tags:               m.Tags,
-		CreatedAt:          m.CreatedAt,
-		UpdatedAt:          m.UpdatedAt,
-		RequiredRoles:      m.RequiredRoles,
-		RequiredClaims:     m.RequiredClaims,
-		LastDownloadedAt:   m.LastDownloadedAt,
-		LastDownloadedUser: m.LastDownloadedUser,
-		Contents:           DtoCatalogManifestContentItemsFromBase(m.Contents),
-		Size:               m.Size,
+func CatalogManifestToDto(m catalog_models.VirtualMachineCatalogManifest) data_models.CatalogManifest {
+	data := data_models.CatalogManifest{
+		ID:                     m.ID,
+		Name:                   m.Name,
+		Path:                   m.Path,
+		MetadataFile:           m.MetadataFile,
+		PackFile:               m.PackFile,
+		Type:                   m.Type,
+		Tags:                   m.Tags,
+		CreatedAt:              m.CreatedAt,
+		UpdatedAt:              m.UpdatedAt,
+		RequiredRoles:          m.RequiredRoles,
+		RequiredClaims:         m.RequiredClaims,
+		LastDownloadedAt:       m.LastDownloadedAt,
+		LastDownloadedUser:     m.LastDownloadedUser,
+		VirtualMachineContents: CatalogManifestContentItemsToDto(m.VirtualMachineContents),
+		PackContents:           CatalogManifestContentItemsToDto(m.PackContents),
+		Size:                   m.Size,
 	}
-	if m.Provider.Meta != nil {
-		data.Provider = data_models.RemoteVirtualMachineProvider{
-			Type: m.Provider.Type,
-			Meta: m.Provider.Meta,
+
+	if m.Provider != nil {
+		data.Provider = &data_models.CatalogManifestProvider{
+			Type:     m.Provider.Type,
+			Host:     m.Provider.Host,
+			Port:     m.Provider.Port,
+			Username: m.Provider.Username,
+			Password: m.Provider.Password,
+			ApiKey:   m.Provider.ApiKey,
+			Meta:     m.Provider.Meta,
 		}
+	}
+	if data.Provider.Meta == nil {
+		data.Provider.Meta = make(map[string]string)
+	}
+
+	if m.Tags == nil {
+		data.Tags = make([]string, 0)
+	}
+	if m.RequiredRoles == nil {
+		data.RequiredRoles = make([]string, 0)
+	}
+	if m.RequiredClaims == nil {
+		data.RequiredClaims = make([]string, 0)
 	}
 
 	return data
 }
 
-func DtoCatalogManifestToBase(m data_models.CatalogVirtualMachineManifest) catalog_models.VirtualMachineManifest {
-	data := catalog_models.VirtualMachineManifest{
-		ID:                 m.ID,
-		Name:               m.Name,
-		Path:               m.Path,
-		MetadataPath:       m.MetadataPath,
-		Type:               m.Type,
-		Tags:               m.Tags,
-		CreatedAt:          m.CreatedAt,
-		UpdatedAt:          m.UpdatedAt,
-		RequiredRoles:      m.RequiredRoles,
-		RequiredClaims:     m.RequiredClaims,
-		LastDownloadedAt:   m.LastDownloadedAt,
-		LastDownloadedUser: m.LastDownloadedUser,
-		Size:               m.Size,
-		Contents:           DtoCatalogManifestContentItemsToBase(m.Contents),
+func DtoCatalogManifestToBase(m data_models.CatalogManifest) catalog_models.VirtualMachineCatalogManifest {
+	data := catalog_models.VirtualMachineCatalogManifest{
+		ID:                     m.ID,
+		Name:                   m.Name,
+		Path:                   m.Path,
+		MetadataFile:           m.MetadataFile,
+		PackFile:               m.PackFile,
+		Type:                   m.Type,
+		Tags:                   m.Tags,
+		CreatedAt:              m.CreatedAt,
+		UpdatedAt:              m.UpdatedAt,
+		RequiredRoles:          m.RequiredRoles,
+		RequiredClaims:         m.RequiredClaims,
+		LastDownloadedAt:       m.LastDownloadedAt,
+		LastDownloadedUser:     m.LastDownloadedUser,
+		Size:                   m.Size,
+		VirtualMachineContents: DtoCatalogManifestContentItemsToBase(m.VirtualMachineContents),
+		PackContents:           DtoCatalogManifestContentItemsToBase(m.PackContents),
 	}
 
-	if m.Provider.Meta != nil {
-		data.Provider = catalog_models.CatalogManifestProvider{
-			Type: m.Provider.Type,
-			Meta: m.Provider.Meta,
+	if m.Provider != nil {
+		data.Provider = &catalog_models.CatalogManifestProvider{
+			Type:     m.Provider.Type,
+			Host:     m.Provider.Host,
+			Port:     m.Provider.Port,
+			Username: m.Provider.Username,
+			Password: m.Provider.Password,
+			ApiKey:   m.Provider.ApiKey,
+			Meta:     m.Provider.Meta,
 		}
+	}
+	if data.Provider.Meta == nil {
+		data.Provider.Meta = make(map[string]string)
 	}
 
 	return data
 }
 
-func DtoCatalogManifestsFromBase(m []catalog_models.VirtualMachineManifest) []data_models.CatalogVirtualMachineManifest {
-	var result []data_models.CatalogVirtualMachineManifest
+func CatalogManifestsToDto(m []catalog_models.VirtualMachineCatalogManifest) []data_models.CatalogManifest {
+	var result []data_models.CatalogManifest
 	for _, item := range m {
-		result = append(result, DtoCatalogManifestFromBase(item))
+		result = append(result, CatalogManifestToDto(item))
 	}
 	return result
 }
 
-func DtoCatalogManifestsToBase(m []data_models.CatalogVirtualMachineManifest) []catalog_models.VirtualMachineManifest {
-	var result []catalog_models.VirtualMachineManifest
+func DtoCatalogManifestsToBase(m []data_models.CatalogManifest) []catalog_models.VirtualMachineCatalogManifest {
+	var result []catalog_models.VirtualMachineCatalogManifest
 	for _, item := range m {
 		result = append(result, DtoCatalogManifestToBase(item))
 	}
 	return result
 }
 
-func DtoCatalogManifestContentItemFromBase(m catalog_models.VirtualMachineManifestContentItem) data_models.RemoteVirtualMachineContentItem {
-	return data_models.RemoteVirtualMachineContentItem{
+func CatalogManifestContentItemToDto(m catalog_models.VirtualMachineManifestContentItem) data_models.CatalogManifestContentItem {
+	return data_models.CatalogManifestContentItem{
 		IsDir:     m.IsDir,
 		Name:      m.Name,
 		Path:      m.Path,
@@ -92,7 +121,7 @@ func DtoCatalogManifestContentItemFromBase(m catalog_models.VirtualMachineManife
 	}
 }
 
-func DtoCatalogManifestContentItemToBase(m data_models.RemoteVirtualMachineContentItem) catalog_models.VirtualMachineManifestContentItem {
+func DtoCatalogManifestContentItemToBase(m data_models.CatalogManifestContentItem) catalog_models.VirtualMachineManifestContentItem {
 	return catalog_models.VirtualMachineManifestContentItem{
 		IsDir:     m.IsDir,
 		Name:      m.Name,
@@ -105,15 +134,15 @@ func DtoCatalogManifestContentItemToBase(m data_models.RemoteVirtualMachineConte
 	}
 }
 
-func DtoCatalogManifestContentItemsFromBase(m []catalog_models.VirtualMachineManifestContentItem) []data_models.RemoteVirtualMachineContentItem {
-	var result []data_models.RemoteVirtualMachineContentItem
+func CatalogManifestContentItemsToDto(m []catalog_models.VirtualMachineManifestContentItem) []data_models.CatalogManifestContentItem {
+	var result []data_models.CatalogManifestContentItem
 	for _, item := range m {
-		result = append(result, DtoCatalogManifestContentItemFromBase(item))
+		result = append(result, CatalogManifestContentItemToDto(item))
 	}
 	return result
 }
 
-func DtoCatalogManifestContentItemsToBase(m []data_models.RemoteVirtualMachineContentItem) []catalog_models.VirtualMachineManifestContentItem {
+func DtoCatalogManifestContentItemsToBase(m []data_models.CatalogManifestContentItem) []catalog_models.VirtualMachineManifestContentItem {
 	var result []catalog_models.VirtualMachineManifestContentItem
 	for _, item := range m {
 		result = append(result, DtoCatalogManifestContentItemToBase(item))
@@ -121,60 +150,87 @@ func DtoCatalogManifestContentItemsToBase(m []data_models.RemoteVirtualMachineCo
 	return result
 }
 
-func DtoCatalogManifestFromApi(m models.CatalogVirtualMachineManifest) data_models.CatalogVirtualMachineManifest {
-	data := data_models.CatalogVirtualMachineManifest{
+func ApiCatalogManifestToDto(m models.CatalogManifest) data_models.CatalogManifest {
+	data := data_models.CatalogManifest{
 		ID:                 m.ID,
 		Name:               m.Name,
 		Type:               m.Type,
 		Tags:               m.Tags,
+		RequiredRoles:      m.RequiredRoles,
+		RequiredClaims:     m.RequiredClaims,
 		CreatedAt:          m.CreatedAt,
 		UpdatedAt:          m.UpdatedAt,
 		LastDownloadedAt:   m.LastDownloadedAt,
 		LastDownloadedUser: m.LastDownloadedUser,
 	}
 
-	if m.Provider.Meta != nil {
-		for k, v := range m.Provider.Meta {
-			data.Provider.Meta[k] = v
+	if m.Provider != nil {
+		data.Provider = &data_models.CatalogManifestProvider{
+			Type:     m.Provider.Type,
+			Host:     m.Provider.Host,
+			Port:     m.Provider.Port,
+			Username: m.Provider.Username,
+			Password: m.Provider.Password,
+			ApiKey:   m.Provider.ApiKey,
+			Meta:     m.Provider.Meta,
 		}
-		data.Provider.Type = m.Provider.Type
+	}
+	if data.Provider.Meta == nil {
+		data.Provider.Meta = make(map[string]string)
 	}
 
 	return data
 }
 
-func DtoCatalogManifestToApi(m data_models.CatalogVirtualMachineManifest) models.CatalogVirtualMachineManifest {
-	data := models.CatalogVirtualMachineManifest{
+func DtoCatalogManifestToApi(m data_models.CatalogManifest) models.CatalogManifest {
+	data := models.CatalogManifest{
 		ID:                 m.ID,
 		Name:               m.Name,
 		Type:               m.Type,
 		Tags:               m.Tags,
+		RequiredRoles:      m.RequiredRoles,
+		RequiredClaims:     m.RequiredClaims,
 		CreatedAt:          m.CreatedAt,
 		UpdatedAt:          m.UpdatedAt,
 		LastDownloadedAt:   m.LastDownloadedAt,
 		LastDownloadedUser: m.LastDownloadedUser,
 	}
 
-	data.Size = fmt.Sprintf("%vGb", helpers.ConvertByteToGigabyte(m.Size))
-	if m.Provider.Meta != nil {
-		data.Provider = models.RemoteVirtualMachineProvider{
-			Type: m.Provider.Type,
-			Meta: m.Provider.Meta,
+	if data.Tags == nil {
+		data.Tags = make([]string, 0)
+	}
+
+	if m.Provider != nil {
+		data.Provider = &models.RemoteVirtualMachineProvider{
+			Type:     m.Provider.Type,
+			Host:     m.Provider.Host,
+			Port:     m.Provider.Port,
+			Username: m.Provider.Username,
+			Password: m.Provider.Password,
+			ApiKey:   m.Provider.ApiKey,
+			Meta:     m.Provider.Meta,
 		}
 	}
+	if data.Provider.Meta == nil {
+		data.Provider.Meta = make(map[string]string)
+	}
+
+	if m.PackContents != nil {
+		data.PackContents = make([]models.CatalogManifestPackItem, 0)
+		for _, item := range m.PackContents {
+			data.PackContents = append(data.PackContents, models.CatalogManifestPackItem{
+				IsDir: item.IsDir,
+				Name:  item.Name,
+				Path:  item.Path,
+			})
+		}
+	}
+
 	return data
 }
 
-func DtoCatalogManifestsFromApi(m []models.CatalogVirtualMachineManifest) []data_models.CatalogVirtualMachineManifest {
-	var result []data_models.CatalogVirtualMachineManifest
-	for _, item := range m {
-		result = append(result, DtoCatalogManifestFromApi(item))
-	}
-	return result
-}
-
-func DtoCatalogManifestsToApi(m []data_models.CatalogVirtualMachineManifest) []models.CatalogVirtualMachineManifest {
-	var result []models.CatalogVirtualMachineManifest
+func DtoCatalogManifestsToApi(m []data_models.CatalogManifest) []models.CatalogManifest {
+	var result []models.CatalogManifest
 	for _, item := range m {
 		result = append(result, DtoCatalogManifestToApi(item))
 	}
@@ -188,8 +244,59 @@ func BasePullCatalogManifestResponseToApi(m catalog_models.PullCatalogManifestRe
 		MachineName: m.MachineName,
 	}
 
-	dto := DtoCatalogManifestFromBase(*m.Manifest)
+	dto := CatalogManifestToDto(*m.Manifest)
 	d := DtoCatalogManifestToApi(dto)
 	data.Manifest = &d
+	return data
+}
+
+func ApiCatalogManifestToCatalogManifest(m models.CatalogManifest) catalog_models.VirtualMachineCatalogManifest {
+	data := catalog_models.VirtualMachineCatalogManifest{
+		ID:                 m.ID,
+		Name:               m.Name,
+		Type:               m.Type,
+		Tags:               m.Tags,
+		RequiredRoles:      m.RequiredRoles,
+		RequiredClaims:     m.RequiredClaims,
+		CreatedAt:          m.CreatedAt,
+		UpdatedAt:          m.UpdatedAt,
+		LastDownloadedAt:   m.LastDownloadedAt,
+		LastDownloadedUser: m.LastDownloadedUser,
+	}
+
+	if m.Provider != nil {
+		data.Provider = &catalog_models.CatalogManifestProvider{
+			Type:     m.Provider.Type,
+			Host:     m.Provider.Host,
+			Port:     m.Provider.Port,
+			Username: m.Provider.Username,
+			Password: m.Provider.Password,
+			ApiKey:   m.Provider.ApiKey,
+			Meta:     m.Provider.Meta,
+		}
+	}
+
+	if m.PackContents != nil {
+		data.PackContents = make([]catalog_models.VirtualMachineManifestContentItem, 0)
+		for _, item := range m.PackContents {
+			data.PackContents = append(data.PackContents, catalog_models.VirtualMachineManifestContentItem{
+				IsDir: item.IsDir,
+				Name:  item.Name,
+				Path:  item.Path,
+			})
+		}
+	}
+	if data.Provider.Meta == nil {
+		data.Provider.Meta = make(map[string]string)
+	}
+
+	return data
+}
+
+func BaseImportCatalogManifestResponseToApi(m catalog_models.ImportCatalogManifestResponse) models.ImportCatalogManifestResponse {
+	data := models.ImportCatalogManifestResponse{
+		ID: m.ID,
+	}
+
 	return data
 }

@@ -1,16 +1,18 @@
 package interfaces
 
+import "Parallels/pd-api-service/basecontext"
+
 type RemoteStorageService interface {
 	Name() string
-	Check(connection string) (bool, error)
-	GetProviderRootPath() string
-	FileChecksum(path string, fileName string) (string, error)
-	GetProviderMeta() map[string]string
-	FileExists(path string, fileName string) (bool, error)
-	PushFile(rootLocalPath string, path string, filename string) error
-	PullFile(path string, filename string, rootDestination string) error
-	DeleteFile(path string, fileName string) error
-	CreateFolder(path string, folderName string) error
-	DeleteFolder(path string, folderName string) error
-	FolderExists(path string, folderName string) (bool, error)
+	Check(ctx basecontext.ApiContext, connection string) (bool, error)
+	GetProviderRootPath(ctx basecontext.ApiContext) string
+	FileChecksum(ctx basecontext.ApiContext, path string, fileName string) (string, error)
+	GetProviderMeta(ctx basecontext.ApiContext) map[string]string
+	FileExists(ctx basecontext.ApiContext, path string, fileName string) (bool, error)
+	PushFile(ctx basecontext.ApiContext, rootLocalPath string, path string, filename string) error
+	PullFile(ctx basecontext.ApiContext, path string, filename string, rootDestination string) error
+	DeleteFile(ctx basecontext.ApiContext, path string, fileName string) error
+	CreateFolder(ctx basecontext.ApiContext, path string, folderName string) error
+	DeleteFolder(ctx basecontext.ApiContext, path string, folderName string) error
+	FolderExists(ctx basecontext.ApiContext, path string, folderName string) (bool, error)
 }

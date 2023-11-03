@@ -1,7 +1,6 @@
 package errors
 
 import (
-	"Parallels/pd-api-service/common"
 	"fmt"
 )
 
@@ -11,7 +10,7 @@ type SystemError struct {
 	description string
 }
 
-func (e *SystemError) Error() string {
+func (e SystemError) Error() string {
 	msg := ""
 	if e.code != 0 {
 		msg = fmt.Sprintf("error code: %v, %v", e.code, e.message)
@@ -25,12 +24,15 @@ func (e *SystemError) Error() string {
 	return msg
 }
 
+func (e SystemError) Code() int {
+	return e.code
+}
+
 func New(message string) *SystemError {
 	err := &SystemError{
 		message: message,
 	}
 
-	common.Logger.Error(err.Error())
 	return err
 }
 
@@ -39,11 +41,14 @@ func Newf(format string, a ...interface{}) *SystemError {
 		message: fmt.Sprintf(format, a...),
 	}
 
-	common.Logger.Error(err.Error())
 	return err
 }
 
 func NewFromError(err error) *SystemError {
+	if err == nil {
+		return nil
+	}
+
 	return New(err.Error())
 }
 
@@ -52,6 +57,10 @@ func NewFromErrorf(err error, format string, a ...interface{}) *SystemError {
 }
 
 func NewFromErrorWithCode(err error, code int) *SystemError {
+	if err == nil {
+		return nil
+	}
+
 	return NewWithCode(err.Error(), code)
 }
 
@@ -64,7 +73,7 @@ func NewWithCode(message string, code int) *SystemError {
 		message: message,
 		code:    code,
 	}
-	common.Logger.Error(err.Error())
+
 	return err
 }
 
@@ -73,7 +82,7 @@ func NewWithCodef(code int, format string, a ...interface{}) *SystemError {
 		message: fmt.Sprintf(format, a...),
 		code:    code,
 	}
-	common.Logger.Error(err.Error())
+
 	return err
 }
 
@@ -83,7 +92,7 @@ func NewWithCodeAndDescription(message string, code int, description string) *Sy
 		code:        code,
 		description: description,
 	}
-	common.Logger.Error(err.Error())
+
 	return err
 }
 
@@ -92,7 +101,7 @@ func NewWithCodeAndDescriptionf(code int, format string, a ...interface{}) *Syst
 		message: fmt.Sprintf(format, a...),
 		code:    code,
 	}
-	common.Logger.Error(err.Error())
+
 	return err
 }
 
@@ -101,7 +110,7 @@ func NewWithDescription(message string, description string) *SystemError {
 		message:     message,
 		description: description,
 	}
-	common.Logger.Error(err.Error())
+
 	return err
 }
 
@@ -109,6 +118,6 @@ func NewWithDescriptionf(format string, a ...interface{}) *SystemError {
 	err := &SystemError{
 		message: fmt.Sprintf(format, a...),
 	}
-	common.Logger.Error(err.Error())
+
 	return err
 }

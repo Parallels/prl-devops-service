@@ -1,6 +1,10 @@
 package models
 
-import "Parallels/pd-api-service/errors"
+import (
+	"Parallels/pd-api-service/constants"
+	"Parallels/pd-api-service/errors"
+	"os"
+)
 
 type CreateVirtualMachineRequest struct {
 	Name           string                             `json:"name"`
@@ -16,7 +20,7 @@ func (r *CreateVirtualMachineRequest) Validate() error {
 	}
 
 	if r.Owner == "" {
-		return errors.New("Owner cannot be empty")
+		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
 	}
 
 	if r.PackerTemplate != nil {

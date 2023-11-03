@@ -2,6 +2,7 @@ package restapi
 
 import (
 	"Parallels/pd-api-service/common"
+	"Parallels/pd-api-service/constants"
 	"context"
 	"net/http"
 	"regexp"
@@ -9,16 +10,12 @@ import (
 	"github.com/google/uuid"
 )
 
-const (
-	REQUEST_ID_KEY = "requestId"
-)
-
 func RequestIdMiddlewareAdapter() Adapter {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			id := uuid.New().String()
 			r.Header.Add("X-Request-Id", id)
-			ctx := context.WithValue(r.Context(), REQUEST_ID_KEY, id)
+			ctx := context.WithValue(r.Context(), constants.REQUEST_ID_KEY, id)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

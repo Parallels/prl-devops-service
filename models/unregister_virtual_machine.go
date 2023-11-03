@@ -1,6 +1,10 @@
 package models
 
-import "Parallels/pd-api-service/errors"
+import (
+	"Parallels/pd-api-service/constants"
+	"Parallels/pd-api-service/errors"
+	"os"
+)
 
 type UnregisterVirtualMachineRequest struct {
 	ID              string `json:"id"`
@@ -12,8 +16,9 @@ func (r *UnregisterVirtualMachineRequest) Validate() error {
 	if r.ID == "" {
 		return errors.ErrMissingId()
 	}
+
 	if r.Owner == "" {
-		r.Owner = "root"
+		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
 	}
 
 	return nil
