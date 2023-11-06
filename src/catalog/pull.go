@@ -38,6 +38,12 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 		return response
 	}
 
+	if err := helpers.CreateDirIfNotExist("/tmp"); err != nil {
+		ctx.LogError("Error creating temp dir: %v", err)
+		response.AddError(err)
+		return response
+	}
+
 	ctx.LogInfo("Checking if the machine %v already exists", r.MachineName)
 	exists, err := parallelsDesktopSvc.GetVm(ctx, r.MachineName)
 	if err != nil {

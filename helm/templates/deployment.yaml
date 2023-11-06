@@ -52,13 +52,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: HMAC_SECRET
-            {{ if .Values.security.rootPassword }}
             - name: ROOT_PASSWORD 
-              valueFrom: 
-                secretKeyRef:
-                  name: {{ include "helm.fullname" . }}
-                  key: SECURITY_ROOT_PASSWORD
-            {{ end }}
+              value: Nmo5c2U1YTZycWc0Ojc4YmZkOWNlZjJmMjU0ZDQ4MjAwNWM2ZTIwYTNlMTM2
             # - name: TLS_CERTIFICATE 
             #   valueFrom: 
             #     secretKeyRef:

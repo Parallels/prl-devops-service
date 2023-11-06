@@ -177,6 +177,9 @@ func (s *AzureStorageAccountProvider) FileExists(ctx basecontext.ApiContext, pat
 	blobUrl := azblob.NewBlockBlobURL(*URL, azblob.NewPipeline(credential, azblob.PipelineOptions{}))
 
 	props, err := blobUrl.GetProperties(ctx.Context(), azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
+	if err != nil {
+		return false, err
+	}
 
 	return props.ContentLength() > 0, err
 }

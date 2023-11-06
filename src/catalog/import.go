@@ -8,6 +8,7 @@ import (
 	"github.com/Parallels/pd-api-service/data"
 	data_models "github.com/Parallels/pd-api-service/data/models"
 	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/serviceprovider"
 )
@@ -23,6 +24,12 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 		return response
 	}
 	if err := db.Connect(ctx); err != nil {
+		response.AddError(err)
+		return response
+	}
+
+	if err := helpers.CreateDirIfNotExist("/tmp"); err != nil {
+		ctx.LogError("Error creating temp dir: %v", err)
 		response.AddError(err)
 		return response
 	}

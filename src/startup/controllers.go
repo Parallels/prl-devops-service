@@ -42,7 +42,7 @@ func RegisterV1Controllers() {
 	listener.AddController(controllers.ValidateTokenController(), "/v1/auth/token/validate", "POST")
 
 	// Users Controller
-	listener.AddAuthorizedControllerWithRoles(controllers.GetUsersController(), "/v1/auth/users", []string{constants.SUPER_USER_ROLE}, "GET")
+	listener.AddController(controllers.GetUsersController(), "/v1/auth/users", "GET")
 	listener.AddAuthorizedControllerWithRoles(controllers.CreateUserController(), "/v1/auth/users", []string{constants.SUPER_USER_ROLE}, "POST")
 	listener.AddAuthorizedControllerWithRoles(controllers.GetUserController(), "/v1/auth/users/{id}", []string{constants.SUPER_USER_ROLE}, "GET")
 	listener.AddAuthorizedControllerWithRoles(controllers.DeleteUserController(), "/v1/auth/users/{id}", []string{constants.SUPER_USER_ROLE}, "DELETE")

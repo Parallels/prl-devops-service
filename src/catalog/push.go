@@ -88,6 +88,10 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 				break
 			}
 
+			if err := helpers.CreateDirIfNotExist("/tmp"); err != nil {
+				ctx.LogError("Error creating temp dir: %v", err)
+			}
+
 			// Checking if the manifest metadata exists in the remote server
 			var catalogManifest *models.VirtualMachineCatalogManifest
 			manifestPath := filepath.Join(rs.GetProviderRootPath(ctx), manifest.ID)

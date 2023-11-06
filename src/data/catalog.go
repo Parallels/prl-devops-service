@@ -1,6 +1,7 @@
 package data
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 
 var (
 	ErrCatalogManifestNotFound = errors.NewWithCode("catalog manifest not found", 404)
-	ErrCatalogAlreadyExists    = errors.NewWithCode("Catalog Manifest already exists", 400)
+	ErrCatalogAlreadyExists    = errors.NewWithCode("Catalog Manifest already exists", 404)
 )
 
 func (j *JsonDatabase) GetCatalogManifests(ctx basecontext.ApiContext, filter string) ([]models.CatalogManifest, error) {
@@ -57,15 +58,19 @@ func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifes
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
 	}
+	fmt.Println(manifest.ID)
+	fmt.Println(manifest.Name)
 
+	manifest.ID = helpers.NormalizeStringUpper(manifest.Name)
 	if a, _ := j.GetCatalogManifest(ctx, manifest.ID); a != nil {
+		fmt.Printf("a: %v\n", a)
 		return ErrCatalogAlreadyExists
 	}
 
 	if a, _ := j.GetCatalogManifest(ctx, manifest.Name); a != nil {
+		fmt.Printf("a: %v\n", a)
 		return ErrCatalogAlreadyExists
 	}
-	manifest.ID = helpers.NormalizeStringUpper(manifest.Name)
 
 	// Checking the the required claims and roles exist
 	for _, claim := range manifest.RequiredClaims {
