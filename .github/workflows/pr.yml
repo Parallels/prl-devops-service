@@ -9,19 +9,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v1
       - name: Setup Go 1.21.x
         uses: actions/setup-go@v4
         with:
           # Semantic version range syntax or exact version of Go
           go-version: '1.21.x'
           cache-dependency-path: go.sum
-      - name: test
-        run: |
-          cat version.json
       - name: Install dependencies
         run: |
-          ls -la
           go get .
-
+      - name: Run tests
+        run: go test -v ./...
       - name: Build
         run: go build -v ./...
