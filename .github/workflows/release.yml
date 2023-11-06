@@ -43,7 +43,7 @@ jobs:
           
           git checkout -b release/$NEW_VERSION
 
-          git add version.json ./src/main.go
+          git add version.json ./src/main.go ./helm/Chart.yaml
           git commit -m "Release extension version $NEW_VERSION"
 
           git push --set-upstream origin release/$NEW_VERSION

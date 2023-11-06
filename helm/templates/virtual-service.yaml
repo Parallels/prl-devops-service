@@ -24,4 +24,13 @@ spec:
             host: {{ include "helm.fullname" . }}
             port:
               number: {{ .Values.service.port }}
+    - match:
+        - ignoreUriCase: true
+          uri:
+            prefix: /swagger
+      route:
+        - destination:
+            host: {{ include "helm.fullname" . }}
+            port:
+              number: {{ .Values.service.port }}
 {{- end }}

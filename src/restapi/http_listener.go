@@ -386,7 +386,7 @@ func defaultHomepageController(w http.ResponseWriter, r *http.Request) {
 func (l *HttpListener) AddSwagger() *HttpListener {
 	l.Logger.Info("Adding Swagger support")
 
-	l.Router.HandleFunc("/swagger/{.*}", httpSwagger.Handler(
+	l.Router.HandleFunc("/swagger{.*}", httpSwagger.Handler(
 		httpSwagger.DeepLinking(true),
 		httpSwagger.DocExpansion("none"),
 		httpSwagger.PersistAuthorization(true),
