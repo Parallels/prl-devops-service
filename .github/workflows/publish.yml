@@ -105,6 +105,7 @@ jobs:
         goversion: "https://dl.google.com/go/go1.21.1.linux-amd64.tar.gz"
         project_path: "."
         binary_name: "pd-api-service"
+        release_name: "v${{ env.EXT_VERSION }}"
   build-containers:
     needs: release
     env:
