@@ -18,7 +18,7 @@ import (
 	"github.com/cjlapao/common-go/version"
 )
 
-var ver = "0.1.41"
+var ver = "0.1.42"
 var versionSvc = version.Get()
 
 // @title Parallels Desktop API
