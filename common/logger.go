@@ -1,9 +1,10 @@
 package common
 
 import (
-	"Parallels/pd-api-service/constants"
 	"context"
 	"fmt"
+
+	"github.com/Parallels/pd-api-service/constants"
 
 	log "github.com/cjlapao/common-go-logger"
 )

@@ -1,8 +1,8 @@
 package startup
 
 import (
-	"Parallels/pd-api-service/common"
-	"Parallels/pd-api-service/startup/seeds"
+	"github.com/Parallels/pd-api-service/common"
+	"github.com/Parallels/pd-api-service/startup/seeds"
 )
 
 func SeedDefaults() error {

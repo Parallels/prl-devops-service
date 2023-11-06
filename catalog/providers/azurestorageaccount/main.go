@@ -1,14 +1,15 @@
 package azurestorageaccount
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/catalog/common"
 	"encoding/hex"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/catalog/common"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 )

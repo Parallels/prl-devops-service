@@ -1,9 +1,10 @@
 package config
 
 import (
-	"Parallels/pd-api-service/common"
-	"Parallels/pd-api-service/constants"
 	"os"
+
+	"github.com/Parallels/pd-api-service/common"
+	"github.com/Parallels/pd-api-service/constants"
 
 	log "github.com/cjlapao/common-go-logger"
 	"github.com/cjlapao/common-go/helper"

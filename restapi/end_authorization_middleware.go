@@ -1,11 +1,12 @@
 package restapi
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/constants"
-	"Parallels/pd-api-service/models"
 	"encoding/json"
 	"net/http"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/models"
 )
 
 func EndAuthorizationMiddlewareAdapter() Adapter {

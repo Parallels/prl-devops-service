@@ -1,17 +1,27 @@
 package controllers
 
 import (
-	"Parallels/pd-api-service/mappers"
-	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/restapi"
 	"encoding/json"
 	"net/http"
+
+	"github.com/Parallels/pd-api-service/mappers"
+	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/restapi"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
 )
 
-// GetUsers is a public function that returns all users
+// @Summary Gets all the api keys
+// @Description This endpoint returns all the api keys
+// @Tags Api Keys
+// @Produce  json
+// @Success 200 {object} []models.ApiKeyResponse
+// @Failure 400 {object} models.ApiErrorResponse
+// @Failure 401 {object} models.OAuthErrorResponse
+// @Security ApiKeyAuth
+// @Security BearerAuth
+// @Router /v1/auth/api_keys [get]
 func GetApiKeysController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)

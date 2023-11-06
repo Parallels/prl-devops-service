@@ -1,8 +1,8 @@
 package data
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
 )
 
 type AuthorizedRecord interface {

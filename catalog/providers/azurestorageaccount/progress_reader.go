@@ -1,9 +1,10 @@
 package azurestorageaccount
 
 import (
-	"Parallels/pd-api-service/basecontext"
 	"fmt"
 	"io"
+
+	"github.com/Parallels/pd-api-service/basecontext"
 )
 
 type progressReader struct {

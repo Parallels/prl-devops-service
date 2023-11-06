@@ -1,10 +1,11 @@
 package mappers
 
 import (
-	data_models "Parallels/pd-api-service/data/models"
-	"Parallels/pd-api-service/helpers"
-	"Parallels/pd-api-service/models"
 	"strings"
+
+	data_models "github.com/Parallels/pd-api-service/data/models"
+	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/models"
 )
 
 func DtoRoleToApi(model data_models.Role) models.RoleResponse {

@@ -1,14 +1,15 @@
 package catalog
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/catalog/models"
-	"Parallels/pd-api-service/data"
-	data_models "Parallels/pd-api-service/data/models"
-	"Parallels/pd-api-service/errors"
-	"Parallels/pd-api-service/mappers"
-	"Parallels/pd-api-service/serviceprovider"
 	"path/filepath"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/catalog/models"
+	"github.com/Parallels/pd-api-service/data"
+	data_models "github.com/Parallels/pd-api-service/data/models"
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/mappers"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 )
 
 func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.ImportCatalogManifestRequest) *models.ImportCatalogManifestResponse {

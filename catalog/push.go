@@ -1,18 +1,19 @@
 package catalog
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/catalog/models"
-	"Parallels/pd-api-service/constants"
-	"Parallels/pd-api-service/errors"
-	"Parallels/pd-api-service/helpers"
-	"Parallels/pd-api-service/mappers"
-	api_models "Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/serviceprovider"
-	"Parallels/pd-api-service/serviceprovider/httpclient"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/catalog/models"
+	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/mappers"
+	api_models "github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/pd-api-service/serviceprovider/httpclient"
 
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/helper/http_helper"

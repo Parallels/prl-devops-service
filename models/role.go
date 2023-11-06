@@ -1,6 +1,6 @@
 package models
 
-import "Parallels/pd-api-service/errors"
+import "github.com/Parallels/pd-api-service/errors"
 
 type RoleRequest struct {
 	Name string `json:"name"`

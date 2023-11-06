@@ -1,12 +1,13 @@
 package data
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/data/models"
-	"Parallels/pd-api-service/errors"
-	"Parallels/pd-api-service/helpers"
 	"strings"
 	"time"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/data/models"
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/helpers"
 )
 
 var (

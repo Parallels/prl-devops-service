@@ -1,9 +1,6 @@
 package restapi
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/common"
-	"Parallels/pd-api-service/serviceprovider"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -14,14 +11,20 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/common"
+	"github.com/Parallels/pd-api-service/serviceprovider"
+
 	"net/http"
 
+	_ "github.com/Parallels/pd-api-service/docs"
 	log "github.com/cjlapao/common-go-logger"
 	"github.com/cjlapao/common-go/configuration"
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/cjlapao/common-go/helper/reflect_helper"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 type HttpListenerOptions struct {
@@ -378,6 +381,19 @@ func defaultHomepageController(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(response)
+}
+
+func (l *HttpListener) AddSwagger() *HttpListener {
+	l.Logger.Info("Adding Swagger support")
+
+	l.Router.HandleFunc("/swagger/{.*}", httpSwagger.Handler(
+		httpSwagger.DeepLinking(true),
+		httpSwagger.DocExpansion("none"),
+		httpSwagger.PersistAuthorization(true),
+		httpSwagger.DomID("swagger-ui"),
+	))
+
+	return l
 }
 
 //endregion

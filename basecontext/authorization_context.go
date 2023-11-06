@@ -1,10 +1,11 @@
 package basecontext
 
 import (
-	"Parallels/pd-api-service/constants"
-	"Parallels/pd-api-service/models"
 	"context"
 	"strings"
+
+	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/models"
 )
 
 type AuthorizationContext struct {

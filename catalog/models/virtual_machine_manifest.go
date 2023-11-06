@@ -1,8 +1,8 @@
 package models
 
 import (
-	"Parallels/pd-api-service/catalog/cleanupservice"
-	"Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/catalog/cleanupservice"
+	"github.com/Parallels/pd-api-service/errors"
 )
 
 type VirtualMachineCatalogManifest struct {

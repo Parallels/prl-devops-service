@@ -1,9 +1,10 @@
 package restapi
 
 import (
-	"Parallels/pd-api-service/constants"
 	"net/http"
 	"strconv"
+
+	"github.com/Parallels/pd-api-service/constants"
 )
 
 func SetContentType(contentType string, w http.ResponseWriter) {

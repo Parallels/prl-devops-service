@@ -1,17 +1,6 @@
 package catalog
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/catalog/cleanupservice"
-	"Parallels/pd-api-service/catalog/interfaces"
-	"Parallels/pd-api-service/catalog/models"
-	"Parallels/pd-api-service/catalog/providers/aws_s3_bucket"
-	"Parallels/pd-api-service/catalog/providers/azurestorageaccount"
-	"Parallels/pd-api-service/catalog/providers/local"
-	"Parallels/pd-api-service/errors"
-	"Parallels/pd-api-service/helpers"
-	"Parallels/pd-api-service/mappers"
-	"Parallels/pd-api-service/serviceprovider"
 	"archive/tar"
 	"encoding/json"
 	"fmt"
@@ -20,6 +9,18 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/catalog/cleanupservice"
+	"github.com/Parallels/pd-api-service/catalog/interfaces"
+	"github.com/Parallels/pd-api-service/catalog/models"
+	"github.com/Parallels/pd-api-service/catalog/providers/aws_s3_bucket"
+	"github.com/Parallels/pd-api-service/catalog/providers/azurestorageaccount"
+	"github.com/Parallels/pd-api-service/catalog/providers/local"
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/mappers"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper"
 )

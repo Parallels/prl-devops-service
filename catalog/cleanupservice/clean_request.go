@@ -1,8 +1,8 @@
 package cleanupservice
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/catalog/interfaces"
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/catalog/interfaces"
 )
 
 type CleanupRequest struct {

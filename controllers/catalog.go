@@ -1,13 +1,14 @@
 package controllers
 
 import (
-	"Parallels/pd-api-service/catalog"
-	catalog_models "Parallels/pd-api-service/catalog/models"
-	"Parallels/pd-api-service/mappers"
-	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/restapi"
 	"encoding/json"
 	"net/http"
+
+	"github.com/Parallels/pd-api-service/catalog"
+	catalog_models "github.com/Parallels/pd-api-service/catalog/models"
+	"github.com/Parallels/pd-api-service/mappers"
+	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/restapi"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"

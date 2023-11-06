@@ -1,8 +1,8 @@
 package startup
 
 import (
-	"Parallels/pd-api-service/serviceprovider"
-	"Parallels/pd-api-service/serviceprovider/system"
+	"github.com/Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/pd-api-service/serviceprovider/system"
 )
 
 func Start() {
