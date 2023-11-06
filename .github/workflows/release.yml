@@ -39,7 +39,7 @@ jobs:
           jq --arg new_version "$NEW_VERSION" '.version = $new_version' version.json > "tmp.json" && mv "tmp.json" "version.json"
           
           git checkout -b release/$NEW_VERSION
-          sed -i '/^var ver =/c\var ver = "0.0.15"' main.go
+          sed -i '/^var ver =/c\var ver = "$NEW_VERSION"' main.go
 
           git add version.json main.go
           git commit -m "Release extension version $NEW_VERSION"

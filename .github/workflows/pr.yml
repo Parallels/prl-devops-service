@@ -13,13 +13,15 @@ jobs:
       - name: Setup Go 1.21.x
         uses: actions/setup-go@v4
         with:
-          # Semantic version range syntax or exact version of Go
           go-version: '1.21.x'
-          cache-dependency-path: go.sum
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Install dependencies
+        working-directory: ${{ github.workspace }}/src
         run: |
           go get .
       - name: Run tests
+        working-directory: ${{ github.workspace }}/src
         run: go test -v ./...
       - name: Build
+        working-directory: ${{ github.workspace }}/src
         run: go build -v ./...

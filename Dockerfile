@@ -9,7 +9,7 @@ RUN apk update && apk add --no-cache git coreutils musl-utils
 
 WORKDIR /go/src
 
-COPY . .
+COPY ./src .
 
 # Using go get.
 RUN go get -d -v

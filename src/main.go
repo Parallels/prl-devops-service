@@ -119,6 +119,7 @@ func main() {
 	if os.Getenv(constants.ROOT_PASSWORD_ENV_VAR) != "" {
 		rootPassword := helpers.Sha256Hash(os.Getenv(constants.ROOT_PASSWORD_ENV_VAR))
 		db := serviceprovider.Get().JsonDatabase
+		db.Connect(ctx)
 		rootUser, _ := db.GetUser(ctx, "root")
 		if rootUser != nil {
 			if rootUser.Password != rootPassword {
@@ -126,8 +127,8 @@ func main() {
 				db.UpdateRootPassword(ctx, rootPassword)
 			}
 		}
-
 	}
+
 	for {
 		listener := startup.InitApi()
 		restartChannel := restapi.GetRestartChannel()
