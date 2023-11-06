@@ -1,16 +1,17 @@
 package controllers
 
 import (
-	"Parallels/pd-api-service/config"
-	"Parallels/pd-api-service/constants"
-	"Parallels/pd-api-service/data"
-	"Parallels/pd-api-service/helpers"
-	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/serviceprovider"
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/Parallels/pd-api-service/config"
+	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/data"
+	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/restapi"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/dgrijalva/jwt-go"

@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.fullname" . }}
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "helm.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        timestamp: {{ now | quote }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "helm.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "helm.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: API_PORT
+              value: {{ .Values.service.targetPort | quote }}
+            - name: API_PREFIX
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: API_PREFIX
+            - name: SECURITY_PRIVATE_KEY 
+              valueFrom: 
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: SECURITY_PRIVATE_KEY
+            - name: HMAC_SECRET 
+              valueFrom: 
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: HMAC_SECRET
+            # - name: TLS_CERTIFICATE 
+            #   valueFrom: 
+            #     secretKeyRef:
+            #       name: {{ include "helm.fullname" . }}
+            #       key: TLS_CERTIFICATE
+            # - name: TLS_PRIVATE_KEY 
+            #   valueFrom: 
+            #     secretKeyRef:
+            #       name: {{ include "helm.fullname" . }}
+            #       key: TLS_PRIVATE_KEY
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          # livenessProbe:
+          #   httpGet:
+          #     path: /{{ .Values.ingress.prefix }}/health/probe
+          #     port: {{ .Values.service.targetPort }}
+          # readinessProbe:
+          #   httpGet:
+          #     path: /{{ .Values.ingress.prefix }}/health/probe
+          #     port: {{ .Values.service.targetPort }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

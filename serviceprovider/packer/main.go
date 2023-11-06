@@ -1,13 +1,14 @@
 package packer
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/common"
-	"Parallels/pd-api-service/errors"
-	"Parallels/pd-api-service/helpers"
-	"Parallels/pd-api-service/serviceprovider/interfaces"
 	"os"
 	"strings"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/common"
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/serviceprovider/interfaces"
 
 	"github.com/cjlapao/common-go/commands"
 )

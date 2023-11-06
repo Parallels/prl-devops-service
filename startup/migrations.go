@@ -1,9 +1,10 @@
 package startup
 
 import (
-	"Parallels/pd-api-service/serviceprovider"
 	"fmt"
 	"log"
+
+	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	_ "github.com/go-sql-driver/mysql"
 )

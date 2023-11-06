@@ -1,12 +1,12 @@
 package seeds
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/common"
-	"Parallels/pd-api-service/constants"
-	"Parallels/pd-api-service/data"
-	"Parallels/pd-api-service/data/models"
-	"Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/common"
+	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/data"
+	"github.com/Parallels/pd-api-service/data/models"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 )
 
 func SeedDefaultVirtualMachineTemplates() error {

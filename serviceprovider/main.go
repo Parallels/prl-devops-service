@@ -1,22 +1,23 @@
 package serviceprovider
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/common"
-	"Parallels/pd-api-service/data"
-	"Parallels/pd-api-service/errors"
-	"Parallels/pd-api-service/helpers"
-	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/serviceprovider/git"
-	"Parallels/pd-api-service/serviceprovider/interfaces"
-	"Parallels/pd-api-service/serviceprovider/packer"
-	"Parallels/pd-api-service/serviceprovider/parallelsdesktop"
-	"Parallels/pd-api-service/serviceprovider/system"
-	"Parallels/pd-api-service/serviceprovider/vagrant"
-	sql_database "Parallels/pd-api-service/sql"
 	"encoding/base64"
 	"fmt"
 	"strings"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/common"
+	"github.com/Parallels/pd-api-service/data"
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/serviceprovider/git"
+	"github.com/Parallels/pd-api-service/serviceprovider/interfaces"
+	"github.com/Parallels/pd-api-service/serviceprovider/packer"
+	"github.com/Parallels/pd-api-service/serviceprovider/parallelsdesktop"
+	"github.com/Parallels/pd-api-service/serviceprovider/system"
+	"github.com/Parallels/pd-api-service/serviceprovider/vagrant"
+	sql_database "github.com/Parallels/pd-api-service/sql"
 
 	log "github.com/cjlapao/common-go-logger"
 )

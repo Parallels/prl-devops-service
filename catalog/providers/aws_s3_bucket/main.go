@@ -1,13 +1,14 @@
 package aws_s3_bucket
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/catalog/common"
 	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/catalog/common"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"

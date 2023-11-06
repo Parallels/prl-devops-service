@@ -1,9 +1,10 @@
 package models
 
 import (
-	"Parallels/pd-api-service/constants"
-	"Parallels/pd-api-service/errors"
 	"os"
+
+	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/errors"
 )
 
 type CreatePackerVirtualMachineRequest struct {

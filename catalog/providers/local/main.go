@@ -1,14 +1,15 @@
 package local
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/catalog/common"
-	"Parallels/pd-api-service/helpers"
 	"errors"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/catalog/common"
+	"github.com/Parallels/pd-api-service/helpers"
 
 	"github.com/cjlapao/common-go/helper"
 )

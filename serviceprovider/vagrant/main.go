@@ -1,14 +1,15 @@
 package vagrant
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/common"
-	"Parallels/pd-api-service/errors"
-	"Parallels/pd-api-service/helpers"
-	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/serviceprovider/interfaces"
-	"Parallels/pd-api-service/serviceprovider/system"
 	"path/filepath"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/common"
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/serviceprovider/interfaces"
+	"github.com/Parallels/pd-api-service/serviceprovider/system"
 
 	"fmt"
 	"os"

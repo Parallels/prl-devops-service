@@ -1,7 +1,6 @@
 package security
 
 import (
-	"Parallels/pd-api-service/errors"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -10,6 +9,8 @@ import (
 	"encoding/pem"
 	"io"
 	"os"
+
+	"github.com/Parallels/pd-api-service/errors"
 )
 
 func GenPrivateRsaKey(filename string) error {

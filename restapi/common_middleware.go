@@ -1,11 +1,12 @@
 package restapi
 
 import (
-	"Parallels/pd-api-service/common"
-	"Parallels/pd-api-service/constants"
 	"context"
 	"net/http"
 	"regexp"
+
+	"github.com/Parallels/pd-api-service/common"
+	"github.com/Parallels/pd-api-service/constants"
 
 	"github.com/google/uuid"
 )

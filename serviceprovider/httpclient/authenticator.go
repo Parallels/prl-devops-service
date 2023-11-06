@@ -1,8 +1,8 @@
 package httpclient
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/errors"
 )
 
 func GetAuthenticator(ctx basecontext.ApiContext, host string, authenticator *AuthorizationModel) (*HttpClientAuthorization, error) {

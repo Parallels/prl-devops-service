@@ -30,13 +30,14 @@ const (
 	TOKEN_DURATION_MINUTES  = 60
 	API_PORT_ENV_VAR        = "API_PORT"
 	API_PREFIX_ENV_VAR      = "API_PREFIX"
+	ROOT_PASSWORD_ENV_VAR   = "ROOT_PASSWORD"
 )
 
 const (
-	API_PORT_FLAG         = "port"
-	UPDATE_ROOT_PASSWORD  = "update-root-pass"
-	GENERATE_SECURITY_KEY = "gen-rsa"
-	FILE_FLAG             = "file"
+	API_PORT_FLAG              = "port"
+	UPDATE_ROOT_PASSWORD_FLAG  = "update-root-pass"
+	GENERATE_SECURITY_KEY_FLAG = "gen-rsa"
+	FILE_FLAG                  = "file"
 )
 
 const (

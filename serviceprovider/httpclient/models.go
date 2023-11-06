@@ -1,6 +1,6 @@
 package httpclient
 
-import "Parallels/pd-api-service/models"
+import "github.com/Parallels/pd-api-service/models"
 
 type HttpClientVerb string
 

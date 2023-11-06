@@ -1,17 +1,18 @@
 package restapi
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/config"
-	"Parallels/pd-api-service/constants"
-	data_modules "Parallels/pd-api-service/data/models"
-	"Parallels/pd-api-service/mappers"
-	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/serviceprovider"
 	"context"
 	"errors"
 	"net/http"
 	"strings"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/config"
+	"github.com/Parallels/pd-api-service/constants"
+	data_modules "github.com/Parallels/pd-api-service/data/models"
+	"github.com/Parallels/pd-api-service/mappers"
+	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/dgrijalva/jwt-go"

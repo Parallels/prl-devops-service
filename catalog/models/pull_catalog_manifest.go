@@ -1,10 +1,11 @@
 package models
 
 import (
-	"Parallels/pd-api-service/catalog/cleanupservice"
-	"Parallels/pd-api-service/constants"
-	"Parallels/pd-api-service/errors"
 	"os"
+
+	"github.com/Parallels/pd-api-service/catalog/cleanupservice"
+	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/errors"
 )
 
 var (

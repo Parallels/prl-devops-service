@@ -1,9 +1,10 @@
 package models
 
 import (
-	"Parallels/pd-api-service/errors"
-	"Parallels/pd-api-service/helpers"
 	"strings"
+
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/helpers"
 )
 
 type ApiKeyRequest struct {

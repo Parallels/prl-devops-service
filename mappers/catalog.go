@@ -1,9 +1,9 @@
 package mappers
 
 import (
-	catalog_models "Parallels/pd-api-service/catalog/models"
-	data_models "Parallels/pd-api-service/data/models"
-	"Parallels/pd-api-service/models"
+	catalog_models "github.com/Parallels/pd-api-service/catalog/models"
+	data_models "github.com/Parallels/pd-api-service/data/models"
+	"github.com/Parallels/pd-api-service/models"
 )
 
 func CatalogManifestToDto(m catalog_models.VirtualMachineCatalogManifest) data_models.CatalogManifest {

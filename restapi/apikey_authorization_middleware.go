@@ -1,14 +1,15 @@
 package restapi
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/constants"
-	"Parallels/pd-api-service/errors"
-	"Parallels/pd-api-service/helpers"
-	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/serviceprovider"
 	"context"
 	"encoding/base64"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	"net/http"
 	"strings"

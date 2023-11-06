@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Identity.Service",
+      "name": "Parallels Desktop Api",
       "type": "go",
       "request": "launch",
       "mode": "debug",
@@ -12,18 +12,6 @@
       // "args": [
       //   "--port=5570",
       // ]
-    },
-    {
-      "name": "Identity.Service Migrations",
-      "type": "go",
-      "request": "launch",
-      "mode": "debug",
-      "program": "${workspaceFolder}/main.go",
-      // Comment out if you need to setup environment variables for the module
-      "envFile": "${workspaceFolder}/.env",
-      "args": [
-        "--migrate"
-      ]
     }
   ]
 }

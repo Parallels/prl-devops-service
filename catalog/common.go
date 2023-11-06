@@ -1,9 +1,9 @@
 package catalog
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/catalog/models"
-	"Parallels/pd-api-service/serviceprovider/httpclient"
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/catalog/models"
+	"github.com/Parallels/pd-api-service/serviceprovider/httpclient"
 )
 
 func GetAuthenticator(ctx basecontext.ApiContext, provider *models.CatalogManifestProvider) (*httpclient.HttpClientAuthorization, error) {

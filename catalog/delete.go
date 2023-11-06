@@ -1,13 +1,14 @@
 package catalog
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/catalog/cleanupservice"
-	"Parallels/pd-api-service/catalog/models"
-	"Parallels/pd-api-service/errors"
-	"Parallels/pd-api-service/mappers"
-	"Parallels/pd-api-service/serviceprovider"
 	"path/filepath"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/catalog/cleanupservice"
+	"github.com/Parallels/pd-api-service/catalog/models"
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/mappers"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 )
 
 func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, id string) error {

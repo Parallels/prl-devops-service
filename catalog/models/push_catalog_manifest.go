@@ -1,6 +1,6 @@
 package models
 
-import "Parallels/pd-api-service/errors"
+import "github.com/Parallels/pd-api-service/errors"
 
 var (
 	ErrMissingLocalPath = errors.NewWithCode("missing local path", 400)

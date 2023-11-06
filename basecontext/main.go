@@ -1,11 +1,12 @@
 package basecontext
 
 import (
-	"Parallels/pd-api-service/common"
-	"Parallels/pd-api-service/constants"
-	"Parallels/pd-api-service/models"
 	"context"
 	"net/http"
+
+	"github.com/Parallels/pd-api-service/common"
+	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/models"
 )
 
 type ApiContext interface {

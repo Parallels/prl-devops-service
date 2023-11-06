@@ -1,12 +1,13 @@
 package controllers
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/data"
-	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/serviceprovider"
 	"encoding/json"
 	"net/http"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/data"
+	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 )
 
 func GetDatabaseService(ctx basecontext.ApiContext) (*data.JsonDatabase, error) {

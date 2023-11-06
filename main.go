@@ -1,30 +1,59 @@
 package main
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/common"
-	"Parallels/pd-api-service/config"
-	"Parallels/pd-api-service/constants"
-	"Parallels/pd-api-service/data"
-	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/security"
-	"Parallels/pd-api-service/serviceprovider"
-	"Parallels/pd-api-service/startup"
 	"os"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/common"
+	"github.com/Parallels/pd-api-service/config"
+	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/data"
+	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/restapi"
+	"github.com/Parallels/pd-api-service/security"
+	"github.com/Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/pd-api-service/startup"
 
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/version"
 )
 
+var ver = "0.0.14"
 var versionSvc = version.Get()
 
+// @title Parallels Desktop API
+// @version 1.0
+// @description Parallels Desktop API Service
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name Parallels Desktop API Support
+// @contact.url https://forum.parallels.com/
+// @contact.email carlos.lapao@parallels.com
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+// @BasePath /api
+// @securityDefinitions.apikey  ApiKeyAuth
+// @description                 Type the api key in the input below.
+// @in                          header
+// @name                        X-Api-Key
+
+// @securityDefinitions.apikey BearerAuth
+// @description                 Type "Bearer" followed by a space and JWT token.
+// @in                          header
+// @name                        Authorization
 func main() {
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = "Parallels Desktop API Service"
 	versionSvc.License = "MIT"
-	versionSvc.Major = 0
-	versionSvc.Minor = 1
-	versionSvc.Build = 32
+	// Reading the version from a string
+	strVer, err := version.FromString(ver)
+	if err == nil {
+		versionSvc.Major = strVer.Major
+		versionSvc.Minor = strVer.Minor
+		versionSvc.Build = strVer.Build
+		versionSvc.Rev = strVer.Rev
+	}
 
 	if helper.GetFlagSwitch("version", false) {
 		println(versionSvc.String())
@@ -35,7 +64,7 @@ func main() {
 	ctx := basecontext.NewRootBaseContext()
 	cfg := config.NewConfig()
 
-	if helper.GetFlagSwitch(constants.GENERATE_SECURITY_KEY, false) {
+	if helper.GetFlagSwitch(constants.GENERATE_SECURITY_KEY_FLAG, false) {
 		ctx.LogInfo("Generating security key")
 		filename := "private.key"
 		if helper.GetFlagValue(constants.FILE_FLAG, "") != "" {
@@ -55,7 +84,7 @@ func main() {
 
 	startup.Start()
 
-	if helper.GetFlagSwitch(constants.UPDATE_ROOT_PASSWORD, false) {
+	if helper.GetFlagSwitch(constants.UPDATE_ROOT_PASSWORD_FLAG, false) {
 		ctx.LogInfo("Updating root password")
 		rootPassword := helper.GetFlagValue("password", "")
 		if rootPassword != "" {
@@ -87,6 +116,18 @@ func main() {
 	os.Setenv(constants.CURRENT_USER_ENV_VAR, currentUser)
 	ctx.LogInfo("Running with user %s", os.Getenv(constants.CURRENT_USER_ENV_VAR))
 
+	if os.Getenv(constants.ROOT_PASSWORD_ENV_VAR) != "" {
+		rootPassword := helpers.Sha256Hash(os.Getenv(constants.ROOT_PASSWORD_ENV_VAR))
+		db := serviceprovider.Get().JsonDatabase
+		rootUser, _ := db.GetUser(ctx, "root")
+		if rootUser != nil {
+			if rootUser.Password != rootPassword {
+				ctx.LogInfo("Updating root password")
+				db.UpdateRootPassword(ctx, rootPassword)
+			}
+		}
+
+	}
 	for {
 		listener := startup.InitApi()
 		restartChannel := restapi.GetRestartChannel()

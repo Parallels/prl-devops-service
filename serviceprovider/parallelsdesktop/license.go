@@ -1,11 +1,12 @@
 package parallelsdesktop
 
 import (
-	"Parallels/pd-api-service/errors"
-	"Parallels/pd-api-service/helpers"
-	"Parallels/pd-api-service/models"
 	"encoding/json"
 	"strings"
+
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/models"
 )
 
 func (s *ParallelsService) GetLicense() (*models.ParallelsDesktopLicense, error) {

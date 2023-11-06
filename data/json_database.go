@@ -1,14 +1,15 @@
 package data
 
 import (
-	"Parallels/pd-api-service/basecontext"
-	"Parallels/pd-api-service/config"
-	"Parallels/pd-api-service/data/models"
-	"Parallels/pd-api-service/errors"
-	"Parallels/pd-api-service/security"
 	"encoding/json"
 	"os"
 	"sync"
+
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/config"
+	"github.com/Parallels/pd-api-service/data/models"
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/security"
 
 	"github.com/cjlapao/common-go/helper"
 )

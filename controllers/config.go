@@ -1,11 +1,12 @@
 package controllers
 
 import (
-	"Parallels/pd-api-service/models"
-	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/serviceprovider"
 	"encoding/json"
 	"net/http"
+
+	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/restapi"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 )

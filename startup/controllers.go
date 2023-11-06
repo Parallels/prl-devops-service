@@ -1,11 +1,11 @@
 package startup
 
 import (
-	"Parallels/pd-api-service/config"
-	"Parallels/pd-api-service/constants"
-	"Parallels/pd-api-service/controllers"
-	"Parallels/pd-api-service/restapi"
-	"Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/pd-api-service/config"
+	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/controllers"
+	"github.com/Parallels/pd-api-service/restapi"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 )
 
 var listener *restapi.HttpListener
@@ -22,6 +22,7 @@ func InitApi() *restapi.HttpListener {
 		listener.Options.TLSPort = cfg.GetTLSPort()
 	}
 
+	listener.AddSwagger()
 	listener.AddJsonContent().AddLogger().AddHealthCheck()
 	listener.WithPublicUserRegistration()
 	RegisterV1Controllers()

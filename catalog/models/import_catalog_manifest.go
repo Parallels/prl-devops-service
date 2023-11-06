@@ -1,7 +1,7 @@
 package models
 
 import (
-	"Parallels/pd-api-service/catalog/cleanupservice"
+	"github.com/Parallels/pd-api-service/catalog/cleanupservice"
 )
 
 type ImportCatalogManifestRequest struct {

@@ -1,9 +1,10 @@
 package models
 
 import (
-	"Parallels/pd-api-service/constants"
 	"errors"
 	"os"
+
+	"github.com/Parallels/pd-api-service/constants"
 )
 
 type RegisterVirtualMachineRequest struct {

@@ -1,8 +1,8 @@
 package models
 
 import (
-	"Parallels/pd-api-service/constants"
-	"Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/errors"
 )
 
 type UserCreateRequest struct {
