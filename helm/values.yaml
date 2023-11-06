@@ -32,11 +32,12 @@ security:
   hmacSecret: ""
   key: ""
   tokenDurationMinutes: "60"
+  rootPassword: ""
 
 service:
   type: ClusterIP
   port: 80
-  targetPort: 5000
+  targetPort: 80
 
 logLevel: info
 

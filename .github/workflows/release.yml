@@ -37,9 +37,11 @@ jobs:
 
           NEW_VERSION=$(./scripts/workflows/increment-version.sh ${{ inputs.version }})
           jq --arg new_version "$NEW_VERSION" '.version = $new_version' version.json > "tmp.json" && mv "tmp.json" "version.json"
+          sed -i "/^version:/c\version: \"$NEW_VERSION\"" ./helm/Chart.yaml
+          sed -i "/^appVersion:/c\appVersion: \"$NEW_VERSION\"" ./helm/Chart.yaml
+          sed -i "/^var ver =/c\var ver = \"$NEW_VERSION\"" ./src/main.go
           
           git checkout -b release/$NEW_VERSION
-          sed -i "/^var ver =/c\var ver = \"$NEW_VERSION\"" ./src/main.go
 
           git add version.json ./src/main.go
           git commit -m "Release extension version $NEW_VERSION"
