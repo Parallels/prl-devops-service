@@ -124,7 +124,7 @@ func main() {
 		if rootUser != nil {
 			if rootUser.Password != rootPassword {
 				ctx.LogInfo("Updating root password")
-				db.UpdateRootPassword(ctx, rootPassword)
+				db.UpdateRootPassword(ctx, constants.ROOT_PASSWORD_ENV_VAR)
 			}
 		}
 	}

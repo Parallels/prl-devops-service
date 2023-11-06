@@ -15,7 +15,7 @@ spec:
         - ignoreUriCase: true
           uri:
           {{- if .Values.ingress.prefix }}
-            prefix: /{{ .Values.ingress.apiPrefix }}
+            prefix: {{ .Values.ingress.apiPrefix }}
           {{- else }}
             prefix: /
           {{- end }}
