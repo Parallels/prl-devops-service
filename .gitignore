@@ -10,3 +10,4 @@ __debug_*
 /vagrant
 *.key
 .env
+**/*.local.*
