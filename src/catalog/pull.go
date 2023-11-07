@@ -78,7 +78,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 		}
 
 		var catalogManifest api_models.CatalogManifest
-		path := http_helper.JoinUrl(constants.DEFAULT_API_PREFIX, "catalog", helpers.NormalizeStringUpper(r.ID))
+		path := http_helper.JoinUrl(constants.DEFAULT_API_PREFIX, "v1", "catalog", helpers.NormalizeStringUpper(r.ID))
 		if _, err := httpClient.Get(ctx, fmt.Sprintf("%s%s", manifest.Provider.GetUrl(), path), nil, auth, &catalogManifest); err != nil {
 			ctx.LogError("Error getting catalog manifest %v: %v", path, err)
 			response.AddError(err)
@@ -107,6 +107,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 		}
 
 		manifest = &m
+		ctx.LogDebug("Remote Manifest: %v", manifest)
 	} else {
 		ctx.LogInfo("Checking if the manifest exists in the local catalog")
 		dto, err := db.GetCatalogManifest(ctx, r.ID)
@@ -118,6 +119,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 		}
 		m := mappers.DtoCatalogManifestToBase(*dto)
 		manifest = &m
+		ctx.LogDebug("Local Manifest: %v", manifest)
 	}
 
 	// Checking if we have read all of the manifest correctly
@@ -146,11 +148,14 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 		}
 
 		if check {
+			ctx.LogInfo("Found remote service %v", rs.Name())
 			foundProvider = true
 			r.LocalMachineFolder = fmt.Sprintf("%s.%s", filepath.Join(r.Path, r.MachineName), manifest.Type)
+			ctx.LogInfo("Local machine folder: %v", r.LocalMachineFolder)
 			count := 1
 			for {
 				if helper.FileExists(r.LocalMachineFolder) {
+					ctx.LogInfo("Local machine folder %v already exists, attempting to create a different one", r.LocalMachineFolder)
 					r.LocalMachineFolder = fmt.Sprintf("%s_%v.%s", filepath.Join(r.Path, r.MachineName), count, manifest.Type)
 					count += 1
 				} else {
@@ -166,8 +171,27 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 			ctx.LogInfo("Created local machine folder %v", r.LocalMachineFolder)
 
 			ctx.LogInfo("Pulling manifest %v", manifest.Name)
-			for _, file := range manifest.PackContents {
+			packContent := make([]models.VirtualMachineManifestContentItem, 0)
+			if manifest.PackContents == nil {
+				ctx.LogDebug("Manifest %v does not have pack contents, adding default files", manifest.Name)
+				packContent = append(packContent, models.VirtualMachineManifestContentItem{
+					Path: manifest.Path,
+					Name: manifest.PackFile,
+				})
+				packContent = append(packContent, models.VirtualMachineManifestContentItem{
+					Path: manifest.Path,
+					Name: manifest.MetadataFile,
+				})
+				ctx.LogDebug("default file content %v", packContent)
+			} else {
+				ctx.LogDebug("Manifest %v has pack contents, adding them", manifest.Name)
+				packContent = append(packContent, manifest.PackContents...)
+			}
+			ctx.LogDebug("pack content %v", packContent)
+
+			for _, file := range packContent {
 				if strings.HasSuffix(file.Name, ".meta") {
+					ctx.LogDebug("Skipping meta file %v", file.Name)
 					continue
 				}
 
@@ -183,6 +207,15 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					ctx.LogError("Error decompressing file %v: %v", file.Name, err)
 					response.AddError(err)
 					break
+				}
+
+				systemSrv := serviceProvider.System
+				if r.Owner != "" && r.Owner != "root" {
+					if err := systemSrv.ChangeFileUserOwner(ctx, r.Owner, r.LocalMachineFolder); err != nil {
+						ctx.LogError("Error changing file %v owner to %v: %v", r.LocalMachineFolder, r.Owner, err)
+						response.AddError(err)
+						break
+					}
 				}
 			}
 
@@ -209,6 +242,9 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 	// Renaming
 	s.renameMachineWithParallelsDesktop(ctx, r, response)
 
+	//starting the machine
+	s.startMachineWithParallelsDesktop(ctx, r, response)
+
 	// Cleaning up
 	s.CleanPullRequest(ctx, r, response)
 
@@ -216,14 +252,16 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 }
 
 func (s *CatalogManifestService) registerMachineWithParallelsDesktop(ctx basecontext.ApiContext, r *models.PullCatalogManifestRequest, response *models.PullCatalogManifestResponse) {
+	ctx.LogInfo("Registering machine %v", r.MachineName)
 	serviceProvider := serviceprovider.Get()
 	parallelsDesktopSvc := serviceProvider.ParallelsDesktopService
 
 	if !response.HasErrors() {
 		machineRegisterRequest := api_models.RegisterVirtualMachineRequest{
-			Path:        r.LocalMachineFolder,
-			Owner:       r.Owner,
-			MachineName: r.MachineName,
+			Path:                 r.LocalMachineFolder,
+			Owner:                r.Owner,
+			MachineName:          r.MachineName,
+			RegenerateSourceUuid: true,
 		}
 
 		if err := parallelsDesktopSvc.RegisterVm(ctx, machineRegisterRequest); err != nil {
@@ -231,10 +269,13 @@ func (s *CatalogManifestService) registerMachineWithParallelsDesktop(ctx basecon
 			response.AddError(err)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
 		}
+	} else {
+		ctx.LogError("Error registering machine %v: %v", r.MachineName, response.Errors)
 	}
 }
 
 func (s *CatalogManifestService) renameMachineWithParallelsDesktop(ctx basecontext.ApiContext, r *models.PullCatalogManifestRequest, response *models.PullCatalogManifestResponse) {
+	ctx.LogInfo("Renaming machine %v", r.MachineName)
 	serviceProvider := serviceprovider.Get()
 	parallelsDesktopSvc := serviceProvider.ParallelsDesktopService
 
@@ -246,12 +287,14 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(ctx baseconte
 			ctx.LogError("Error getting machine %v: %v", r.MachineName, err)
 			response.AddError(err)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
+			return
 		}
 
 		if len(vms) != 1 {
 			ctx.LogError("Error getting machine %v: %v", r.MachineName, err)
 			response.AddError(err)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
+			return
 		}
 
 		response.ID = vms[0].ID
@@ -265,7 +308,44 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(ctx baseconte
 			ctx.LogError("Error renaming machine %v: %v", r.MachineName, err)
 			response.AddError(err)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
+			return
 		}
+	} else {
+		ctx.LogError("Error renaming machine %v: %v", r.MachineName, response.Errors)
+	}
+}
+
+func (s *CatalogManifestService) startMachineWithParallelsDesktop(ctx basecontext.ApiContext, r *models.PullCatalogManifestRequest, response *models.PullCatalogManifestResponse) {
+	ctx.LogInfo("Starting machine %v", r.MachineName)
+	serviceProvider := serviceprovider.Get()
+	parallelsDesktopSvc := serviceProvider.ParallelsDesktopService
+
+	if !response.HasErrors() {
+		ctx.LogInfo("Starting machine %v to %v", r.MachineName, r.MachineName)
+		filter := fmt.Sprintf("home=%s", r.LocalMachineFolder)
+		vms, err := parallelsDesktopSvc.GetVms(ctx, filter)
+		if err != nil {
+			ctx.LogError("Error getting machine %v: %v", r.MachineName, err)
+			response.AddError(err)
+			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
+			return
+		}
+
+		if len(vms) != 1 {
+			ctx.LogError("Error getting machine %v: %v", r.MachineName, err)
+			response.AddError(err)
+			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
+			return
+		}
+
+		if err := parallelsDesktopSvc.StartVm(ctx, vms[0].ID); err != nil {
+			ctx.LogError("Error starting machine %v: %v", r.MachineName, err)
+			response.AddError(err)
+			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
+			return
+		}
+	} else {
+		ctx.LogError("Error starting machine %v: %v", r.MachineName, response.Errors)
 	}
 }
 

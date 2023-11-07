@@ -42,42 +42,15 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 				break
 			}
 
-			// Checking if the manifest already exists either in the remote server or locally
-			// if manifest.Provider.IsRemote() {
-			// 	ctx.LogInfo("Checking if the manifest exists in the remote catalog")
-			// 	auth, err := GetAuthenticator(ctx, manifest.Provider)
-			// 	if err != nil {
-			// 		ctx.LogError("Error getting authenticator for provider %v: %v", manifest.Provider, err)
-			// 		manifest.AddError(err)
-			// 		break
-			// 	}
-
-			// 	var catalogManifest api_models.CatalogManifest
-			// 	path := http_helper.JoinUrl(constants.API_PREFIX, "catalog", helpers.NormalizeStringUpper(r.Name))
-			// 	if response, err := httpClient.Get(ctx, fmt.Sprintf("%s%s", manifest.Provider.GetUrl(), path), nil, auth, &catalogManifest); err != nil {
-			// 		if response != nil && response.StatusCode != 404 {
-			// 			ctx.LogError("Error getting catalog manifest %v: %v", manifest.Provider.String(), err)
-			// 			manifestErr := errors.Newf("manifest %v already exists in db", r.Name)
-			// 			manifest.AddError(manifestErr)
-			// 			break
-			// 		}
-			// 	}
-			// } else {
-			// 	ctx.LogInfo("Checking if the manifest exists in the local catalog")
-			// 	db := serviceprovider.Get().JsonDatabase
-			// 	if err := db.Connect(ctx); err != nil {
-			// 		manifest.AddError(err)
-			// 		break
-			// 	}
-
-			// 	_, err := db.GetCatalogManifest(ctx, r.Name)
-			// 	if err == nil {
-			// 		ctx.LogError("Manifest %v already exists in db", r.Name)
-			// 		manifestErr := errors.Newf("manifest %v already exists in db", r.Name)
-			// 		manifest.AddError(manifestErr)
-			// 		break
-			// 	}
-			// }
+			if manifest.Provider.IsRemote() {
+				ctx.LogDebug("Testing remote provider %v", manifest.Provider.Host)
+				_, err := GetAuthenticator(ctx, manifest.Provider)
+				if err != nil {
+					ctx.LogError("Error getting authenticator for provider %v: %v", manifest.Provider, err)
+					manifest.AddError(err)
+					break
+				}
+			}
 
 			// Generating the manifest content
 			ctx.LogInfo("Pushing manifest %v to provider %s", r.Name, rs.Name())
@@ -219,6 +192,21 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 					manifest.AddError(err)
 					break
 				}
+				manifest.PackContents = append(manifest.PackContents, models.VirtualMachineManifestContentItem{
+					Path:      manifest.Path,
+					IsDir:     false,
+					Name:      filepath.Base(manifest.MetadataFile),
+					CreatedAt: helpers.GetUtcCurrentDateTime(),
+					UpdatedAt: helpers.GetUtcCurrentDateTime(),
+				})
+				manifest.PackContents = append(manifest.PackContents, models.VirtualMachineManifestContentItem{
+					Path:      manifest.Path,
+					IsDir:     false,
+					Name:      filepath.Base(manifest.PackFile),
+					Checksum:  manifest.CompressedChecksum,
+					CreatedAt: helpers.GetUtcCurrentDateTime(),
+					UpdatedAt: helpers.GetUtcCurrentDateTime(),
+				})
 
 				manifest.CleanupRequest.AddLocalFileCleanupOperation(tempManifestContentFilePath, false)
 				if err := helper.WriteToFile(string(manifestContent), tempManifestContentFilePath); err != nil {
@@ -233,14 +221,6 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 					manifest.AddError(err)
 					break
 				}
-				manifest.PackContents = append(manifest.PackContents, models.VirtualMachineManifestContentItem{
-					Path:      manifest.Path,
-					IsDir:     false,
-					Name:      filepath.Base(manifest.PackFile),
-					Checksum:  manifest.CompressedChecksum,
-					CreatedAt: helpers.GetUtcCurrentDateTime(),
-					UpdatedAt: helpers.GetUtcCurrentDateTime(),
-				})
 
 				ctx.LogInfo("Pushing manifest meta file %v", s.getMetaFilename(manifest.ID))
 				if err := rs.PushFile(ctx, "/tmp", manifest.Path, manifest.MetadataFile); err != nil {
@@ -248,21 +228,11 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 					break
 				}
 
-				metadataChecksum, err := helpers.GetFileMD5Checksum(tempManifestContentFilePath)
 				if err != nil {
 					ctx.LogError("Error getting metadata checksum %v: %v", tempManifestContentFilePath, err)
 					manifest.AddError(err)
 					break
 				}
-
-				manifest.PackContents = append(manifest.PackContents, models.VirtualMachineManifestContentItem{
-					Path:      manifest.Path,
-					IsDir:     false,
-					Name:      filepath.Base(manifest.MetadataFile),
-					Checksum:  metadataChecksum,
-					CreatedAt: helpers.GetUtcCurrentDateTime(),
-					UpdatedAt: helpers.GetUtcCurrentDateTime(),
-				})
 
 				if manifest.HasErrors() {
 					manifest.CleanupRequest.AddRemoteFileCleanupOperation(filepath.Join(manifest.Path, manifest.PackFile), false)

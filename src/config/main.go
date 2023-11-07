@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 
 	"github.com/Parallels/pd-api-service/common"
 	"github.com/Parallels/pd-api-service/constants"
@@ -47,17 +48,20 @@ func (c *Config) GetHmacSecret() string {
 
 func (c *Config) GetLogLevel() string {
 	logLevel := os.Getenv(constants.LOG_LEVEL_ENV_VAR)
-	switch logLevel {
-	case "DEBUG":
+	if logLevel != "" {
+		common.Logger.Info("Log Level set to %v", logLevel)
+	}
+	switch strings.ToLower(logLevel) {
+	case "debug":
 		logLevel = "DEBUG"
 		common.Logger.LogLevel = log.Debug
-	case "INFO":
+	case "info":
 		logLevel = "INFO"
 		common.Logger.LogLevel = log.Info
-	case "WARN":
+	case "warn":
 		logLevel = "WARN"
 		common.Logger.LogLevel = log.Warning
-	case "ERROR":
+	case "error":
 		logLevel = "ERROR"
 		common.Logger.LogLevel = log.Error
 	}

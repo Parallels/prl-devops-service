@@ -24,7 +24,6 @@ import (
 	"github.com/cjlapao/common-go/helper/reflect_helper"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 type HttpListenerOptions struct {
@@ -40,6 +39,7 @@ type HttpListenerOptions struct {
 	EnableAuthentication    bool
 	LogHealthChecks         bool
 	PublicRegistration      bool
+	DefaultApiVersion       string
 }
 
 // HttpListener HttpListener structure
@@ -96,6 +96,7 @@ func NewHttpListener() *HttpListener {
 	listener.Options = listener.getDefaultConfiguration()
 
 	// Appending the correlationId renewal
+	listener.DefaultAdapters = append(listener.DefaultAdapters, SetDefaultVersionMiddlewareAdapter())
 	listener.DefaultAdapters = append(listener.DefaultAdapters, RequestIdMiddlewareAdapter())
 
 	globalHttpListener = &listener
@@ -386,11 +387,18 @@ func defaultHomepageController(w http.ResponseWriter, r *http.Request) {
 func (l *HttpListener) AddSwagger() *HttpListener {
 	l.Logger.Info("Adding Swagger support")
 
-	l.Router.HandleFunc("/swagger{.*}", httpSwagger.Handler(
-		httpSwagger.DeepLinking(true),
-		httpSwagger.DocExpansion("none"),
-		httpSwagger.PersistAuthorization(true),
-		httpSwagger.DomID("swagger-ui"),
+	l.Router.HandleFunc("/swagger", SwaggerHandler(
+		SwaggerDeepLinking(true),
+		SwaggerDocExpansion("none"),
+		SwaggerPersistAuthorization(true),
+		SwaggerDomID("swagger-ui"),
+	))
+
+	l.Router.HandleFunc("/swagger/{.*}", SwaggerHandler(
+		SwaggerDeepLinking(true),
+		SwaggerDocExpansion("none"),
+		SwaggerPersistAuthorization(true),
+		SwaggerDomID("swagger-ui"),
 	))
 
 	return l

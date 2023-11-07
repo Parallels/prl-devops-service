@@ -131,7 +131,7 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 					}
 				}
 				if exists == nil {
-					ctx.LogInfo("Creating claim %v", role)
+					ctx.LogInfo("Creating role %v", role)
 					newRole := data_models.Role{
 						ID:   role,
 						Name: role,
@@ -145,7 +145,8 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 				response.AddError(err)
 				break
 			}
-			cat, err := db.GetCatalogManifest(ctx, r.ID)
+
+			cat, err := db.GetCatalogManifest(ctx, dto.ID)
 			if err != nil {
 				ctx.LogError("Error getting catalog manifest: %v", err)
 				response.AddError(err)

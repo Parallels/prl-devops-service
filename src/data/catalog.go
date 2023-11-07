@@ -63,13 +63,11 @@ func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifes
 
 	manifest.ID = helpers.NormalizeStringUpper(manifest.Name)
 	if a, _ := j.GetCatalogManifest(ctx, manifest.ID); a != nil {
-		fmt.Printf("a: %v\n", a)
-		return ErrCatalogAlreadyExists
+		return j.UpdateCatalogManifest(ctx, manifest)
 	}
 
 	if a, _ := j.GetCatalogManifest(ctx, manifest.Name); a != nil {
-		fmt.Printf("a: %v\n", a)
-		return ErrCatalogAlreadyExists
+		return j.UpdateCatalogManifest(ctx, manifest)
 	}
 
 	// Checking the the required claims and roles exist

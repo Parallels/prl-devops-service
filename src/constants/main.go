@@ -13,6 +13,10 @@ const (
 )
 
 const (
+	DELETE_REMOTE_MANIFEST_QUERY = "clean_remote"
+)
+
+const (
 	DEFAULT_API_PREFIX   = "/api"
 	DEFAULT_API_PORT     = "80"
 	DEFAULT_API_TLS_PORT = "443"

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -460,6 +462,7 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 			return errors.Newf("VM with UUID %s already exists", r.Uuid)
 		}
 	}
+
 	if r.MachineName != "" {
 		vm, err := s.findVm(ctx, r.MachineName)
 		if err != nil && errors.GetSystemErrorCode(err) != 404 {
@@ -468,6 +471,10 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 		if vm != nil {
 			return errors.Newf("VM with name %s already exists", r.MachineName)
 		}
+	}
+
+	if err := s.ReplaceMachineNameInConfigPvs(r.Path, r.MachineName); err != nil {
+		return err
 	}
 
 	cmd := helpers.Command{
@@ -484,7 +491,7 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 		cmd.Args = append(cmd.Args, "--uuid", r.Uuid)
 	}
 	if r.RegenerateSourceUuid {
-		cmd.Args = append(cmd.Args, "--regenerate-source-uuid")
+		cmd.Args = append(cmd.Args, "--regenerate-src-uuid")
 	}
 	if r.Force {
 		cmd.Args = append(cmd.Args, "--force")
@@ -492,6 +499,8 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 	if r.DelayApplyingRestrictions {
 		cmd.Args = append(cmd.Args, "--delay-applying-restrictions")
 	}
+
+	ctx.LogDebug("Executing command: %s", cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -1292,4 +1301,53 @@ func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id str
 
 	ctx.LogInfo("Command %s %s executed with exit code %v", cmd.Command, strings.Join(cmd.Args, " "), exitCode)
 	return response, nil
+}
+
+func (s *ParallelsService) ReplaceMachineNameInConfigPvs(path string, newName string) error {
+	configPath := filepath.Join(path, "config.pvs")
+	if !helper.FileExists(configPath) {
+		return errors.Newf("Config file %s not found", configPath)
+	}
+
+	// fileInfo, err := os.Stat("filename")
+	// if err != nil {
+	// 	return err
+	// }
+
+	// fileMode := fileInfo.Mode()
+	// // Get the file owner
+	// sys := fileInfo.Sys().(*syscall.Stat_t)
+	// uid := sys.Uid
+	// gid := int(sys.Gid)
+
+	file, err := os.Open(configPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	content, err := helper.ReadFromFile(configPath)
+	if err != nil {
+		return err
+	}
+
+	pattern := regexp.MustCompile(`<[Vv]m[Nn]ame>[^<]*</[Vv]m[Nn]ame>`)
+
+	newContent := pattern.ReplaceAllString(string(content), fmt.Sprintf("<VmName>%s</VmName>", newName))
+
+	err = helper.WriteToFile(newContent, configPath)
+	if err != nil {
+		return err
+	}
+
+	// // Set the mode and owner of another file to be the same as configPath
+	// err = os.Chmod(configPath, fileMode)
+	// if err != nil {
+	// 	return err
+	// }
+	// err = os.Chown(configPath, uid, gid)
+	// if err != nil {
+	// 	return err
+	// }
+	return nil
 }

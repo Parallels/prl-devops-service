@@ -1,11 +1,15 @@
 package startup
 
 import (
+	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/serviceprovider"
 	"github.com/Parallels/pd-api-service/serviceprovider/system"
 )
 
 func Start() {
+	config := config.NewConfig()
+	config.GetLogLevel()
+
 	system := system.New()
 	if system.GetOperatingSystem() != "macos" {
 		serviceprovider.InitCatalogServices()
