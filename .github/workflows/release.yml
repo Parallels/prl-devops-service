@@ -29,7 +29,11 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
-        
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.x'
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Bump version and push
         run: |
           git config --global user.email "cjlapao@gmail.com"
@@ -42,6 +46,9 @@ jobs:
           sed -i "/^var ver =/c\var ver = \"$NEW_VERSION\"" ./src/main.go
           
           git checkout -b release/$NEW_VERSION
+
+          go install github.com/swaggo/swag/cmd/swag@latest
+          swag init -g ./src/main.go
 
           git add version.json ./src/main.go ./helm/Chart.yaml
           git commit -m "Release extension version $NEW_VERSION"

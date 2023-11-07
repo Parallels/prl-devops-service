@@ -6,6 +6,9 @@ type CatalogManifest struct {
 	Type               string                        `json:"type"`
 	Tags               []string                      `json:"tags,omitempty"`
 	Size               string                        `json:"size,omitempty"`
+	Path               string                        `json:"path,omitempty"`
+	PackFilename       string                        `json:"pack_filename,omitempty"`
+	MetadataFilename   string                        `json:"metadata_filename,omitempty"`
 	Provider           *RemoteVirtualMachineProvider `json:"provider,omitempty"`
 	CreatedAt          string                        `json:"created_at,omitempty"`
 	UpdatedAt          string                        `json:"updated_at,omitempty"`

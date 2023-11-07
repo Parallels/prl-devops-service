@@ -6,6 +6,7 @@ import (
 
 	"github.com/Parallels/pd-api-service/catalog"
 	catalog_models "github.com/Parallels/pd-api-service/catalog/models"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
@@ -138,12 +139,18 @@ func DeleteCatalogManifestController() restapi.Controller {
 		vars := mux.Vars(r)
 		id := vars["id"]
 
+		cleanRemote := http_helper.GetHttpRequestStrValue(r, constants.DELETE_REMOTE_MANIFEST_QUERY)
+
 		manifest := catalog.NewManifestService(ctx)
-		err = manifest.Delete(ctx, id)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
+		if cleanRemote == "true" {
+			ctx.LogInfo("Deleting remote manifest %v", id)
+			err = manifest.Delete(ctx, id)
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
 		}
+
 		err = dbService.DeleteCatalogManifest(ctx, id)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))

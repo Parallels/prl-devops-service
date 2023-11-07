@@ -202,7 +202,21 @@ func (s *SystemService) getMacSystemUsers(ctx basecontext.ApiContext) ([]models.
 		if user == "" {
 			continue
 		}
-		userHomeDir := "/Users/" + user
+		if strings.HasPrefix(user, "_") {
+			continue
+		}
+		if strings.HasPrefix(user, "daemon") {
+			continue
+		}
+		if strings.HasPrefix(user, "nobody") {
+			continue
+		}
+
+		userHomeDir, err := s.GetUserHome(ctx, user)
+		if err != nil {
+			continue
+		}
+
 		if _, err := os.Stat(userHomeDir); os.IsNotExist(err) {
 			continue
 		} else {
@@ -375,7 +389,7 @@ func (s *SystemService) GetCurrentUser(ctx basecontext.ApiContext) (string, erro
 }
 
 func (s *SystemService) getMacCurrentUser(ctx basecontext.ApiContext) (string, error) {
-	out, err := commands.ExecuteWithNoOutput("stat", "-f%Su", "/dev/console")
+	out, err := commands.ExecuteWithNoOutput("whoami")
 	if err != nil {
 		return "", err
 	}
@@ -431,4 +445,35 @@ func (s *SystemService) getUniqueIdLinux(ctx basecontext.ApiContext) (string, er
 	}
 
 	return strings.Trim(strings.TrimSpace(out), "\n"), nil
+}
+
+func (s *SystemService) ChangeFileUserOwner(ctx basecontext.ApiContext, userName string, filePath string) error {
+	ctx.LogDebug("Changing file %s owner to %s", filePath, userName)
+	switch s.GetOperatingSystem() {
+	case "macos":
+		return s.changeMacFileUserOwner(userName, filePath)
+	case "linux":
+		return s.changeLinuxFileUserOwner(userName, filePath)
+	default:
+		return errors.New("Not implemented")
+	}
+
+}
+
+func (s *SystemService) changeMacFileUserOwner(userName string, filePath string) error {
+	_, err := commands.ExecuteWithNoOutput("chown", "-R", userName, filePath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *SystemService) changeLinuxFileUserOwner(userName string, filePath string) error {
+	_, err := commands.ExecuteWithNoOutput("chown", "-R", userName, filePath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
