@@ -748,7 +748,9 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 	ctx.LogInfo("Creating Packer Virtual Machine %s", template.Name)
 	existVm, err := s.findVm(ctx, template.Name)
 	if existVm != nil || err != nil {
-		return nil, errors.Newf("Machine %v with ID %v already exists and is %s", template.Name, existVm.ID, existVm.State)
+		if errors.GetSystemErrorCode(err) != 404 {
+			return nil, errors.Newf("Machine %v with ID %v already exists and is %s", template.Name, existVm.ID, existVm.State)
+		}
 	}
 
 	git := git.Get()
