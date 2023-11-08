@@ -555,10 +555,11 @@ func CreateMachine() restapi.Controller {
 
 			template.Name = request.Name
 			template.Owner = request.Owner
-			template.Specs["memory"] = request.PackerTemplate.Memory
-			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromError(err))
-				return
+			if request.PackerTemplate.Cpu != "" {
+				template.Specs["cpu"] = request.PackerTemplate.Cpu
+			}
+			if request.PackerTemplate.Memory != "" {
+				template.Specs["memory"] = request.PackerTemplate.Memory
 			}
 
 			parallelsDesktopService := provider.ParallelsDesktopService
