@@ -18,30 +18,30 @@ import (
 	"github.com/cjlapao/common-go/version"
 )
 
-var ver = "0.1.42"
+var ver = "0.1.43"
 var versionSvc = version.Get()
 
-// @title Parallels Desktop API
-// @version 1.0
-// @description Parallels Desktop API Service
-// @termsOfService http://swagger.io/terms/
+//	@title			Parallels Desktop API
+//	@version		1.0
+//	@description	Parallels Desktop API Service
+//	@termsOfService	http://swagger.io/terms/
 
-// @contact.name Parallels Desktop API Support
-// @contact.url https://forum.parallels.com/
-// @contact.email carlos.lapao@parallels.com
+//	@contact.name	Parallels Desktop API Support
+//	@contact.url	https://forum.parallels.com/
+//	@contact.email	carlos.lapao@parallels.com
 
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-// @BasePath /api
-// @securityDefinitions.apikey  ApiKeyAuth
-// @description                 Type the api key in the input below.
-// @in                          header
-// @name                        X-Api-Key
+//	@license.name				Apache 2.0
+//	@license.url				http://www.apache.org/licenses/LICENSE-2.0.html
+//	@BasePath					/api
+//	@securityDefinitions.apikey	ApiKeyAuth
+//	@description				Type the api key in the input below.
+//	@in							header
+//	@name						X-Api-Key
 
-// @securityDefinitions.apikey BearerAuth
-// @description                 Type "Bearer" followed by a space and JWT token.
-// @in                          header
-// @name                        Authorization
+//	@securityDefinitions.apikey	BearerAuth
+//	@description				Type "Bearer" followed by a space and JWT token.
+//	@in							header
+//	@name						Authorization
 func main() {
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = "Parallels Desktop API Service"
