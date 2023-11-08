@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/errors"
@@ -139,7 +140,7 @@ func (r *VirtualMachineConfigRequestOperation) Validate() error {
 			return errors.New("Value cannot be empty")
 		}
 		if r.Operation != "add" &&
-			r.Operation != "remove" &&
+			r.Operation != "delete" &&
 			r.Operation != "set" {
 			return errors.ErrConfigOperationNotSupported(r.Group, r.Operation)
 		}
@@ -157,6 +158,13 @@ func (r *VirtualMachineConfigRequestOperation) Validate() error {
 			return errors.ErrConfigOperationNotSupported(r.Group, r.Operation)
 		}
 		if r.Operation != "set" {
+			return errors.ErrConfigOperationNotSupported(r.Group, r.Operation)
+		}
+	case "cmd":
+		if r.Operation == "" {
+			return errors.ErrConfigOperationNotSupported(r.Group, r.Operation)
+		}
+		if r.Flags == nil || len(r.Flags) == 0 {
 			return errors.ErrConfigOperationNotSupported(r.Group, r.Operation)
 		}
 	default:
@@ -182,8 +190,42 @@ func (r *VirtualMachineConfigRequestOperation) GetCmdArgs() []string {
 		args = append(args, fmt.Sprintf("--%s", flag))
 	}
 	for _, option := range r.Options {
-		args = append(args, fmt.Sprintf("--%s %s", option.Flag, option.Value))
+		args = append(args, fmt.Sprintf("--%s", r.CleanString(option.Flag)), r.CleanString(option.Value))
 	}
 
 	return args
+}
+
+func (r *VirtualMachineConfigRequestOperation) GetRawFlagsArgs() []string {
+	args := make([]string, 0)
+	for _, flag := range r.Flags {
+		if !strings.HasPrefix(flag, "--") {
+			flag = fmt.Sprintf("--%s", flag)
+		}
+		args = append(args, r.CleanString(flag))
+	}
+
+	return args
+}
+
+func (r *VirtualMachineConfigRequestOperation) GetRawOptionsArgs() []string {
+	args := make([]string, 0)
+	for _, option := range r.Options {
+		if !strings.HasPrefix(option.Flag, "--") {
+			option.Flag = fmt.Sprintf("--%s", option.Flag)
+		}
+		args = append(args, fmt.Sprintf("%s %s", r.CleanString(option.Flag), r.CleanString(option.Value)))
+	}
+
+	return args
+}
+
+func (r *VirtualMachineConfigRequestOperation) CleanString(value string) string {
+	value = strings.ReplaceAll(value, "\n\r", "")
+	value = strings.ReplaceAll(value, "\n", "")
+	value = strings.ReplaceAll(value, "\r", "")
+	value = strings.ReplaceAll(value, "\t", "")
+	value = strings.ReplaceAll(value, "\v", "")
+
+	return value
 }

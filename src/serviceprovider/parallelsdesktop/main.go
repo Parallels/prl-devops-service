@@ -717,7 +717,7 @@ func (s *ParallelsService) ConfigureVm(ctx basecontext.ApiContext, id string, se
 			if err := s.SetVmDeviceOperation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
-		case "shared_folder":
+		case "shared-folder":
 			ctx.LogInfo("Setting shared_folder property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmSharedFolderOperation(ctx, vm, op); err != nil {
 				op.Error = err
@@ -727,7 +727,11 @@ func (s *ParallelsService) ConfigureVm(ctx basecontext.ApiContext, id string, se
 			if err := s.SetVmRosettaEmulation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
-
+		case "cmd":
+			ctx.LogInfo("Setting custom property %s to %s", op.Operation, op.Value)
+			if err := s.RunCustomCommand(ctx, vm, op); err != nil {
+				op.Error = err
+			}
 		default:
 			return errors.Newf("Invalid group %s", op.Group)
 		}
@@ -995,7 +999,7 @@ func (s *ParallelsService) SetVmBootOperation(ctx basecontext.ApiContext, vm *mo
 		Command: "sudo",
 		Args:    make([]string, 0),
 	}
-	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, "set")
+	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, "set", vm.ID)
 
 	switch op.Operation {
 	case "boot-order":
@@ -1037,7 +1041,7 @@ func (s *ParallelsService) SetVmSharedFolderOperation(ctx basecontext.ApiContext
 		Command: "sudo",
 		Args:    make([]string, 0),
 	}
-	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, "set")
+	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, "set", vm.ID)
 
 	switch op.Operation {
 	case "add":
@@ -1050,7 +1054,7 @@ func (s *ParallelsService) SetVmSharedFolderOperation(ctx basecontext.ApiContext
 		cmd.Args = append(cmd.Args, "--shf-host-set", op.Value)
 		cmd.Args = append(cmd.Args, op.GetCmdArgs()...)
 	case "delete":
-		cmd.Args = append(cmd.Args, "--shf-host-delete", op.Value)
+		cmd.Args = append(cmd.Args, "--shf-host-del", op.Value)
 	default:
 		return errors.ErrConfigInvalidOperation(op.Operation)
 	}
@@ -1069,7 +1073,7 @@ func (s *ParallelsService) SetVmDeviceOperation(ctx basecontext.ApiContext, vm *
 		Command: "sudo",
 		Args:    make([]string, 0),
 	}
-	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, "set")
+	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, "set", vm.ID)
 
 	switch op.Operation {
 	case "add":
@@ -1176,7 +1180,7 @@ func (s *ParallelsService) SetVmMemory(ctx basecontext.ApiContext, vm *models.Pa
 				return err
 			}
 		}
-		args = append(args, s.executable, "set", vm.ID, "--memSize", op.Value)
+		args = append(args, s.executable, "set", vm.ID, "--memsize", op.Value)
 	default:
 		return errors.Newf("Invalid operation %s", op.Operation)
 	}
@@ -1229,7 +1233,7 @@ func (s *ParallelsService) SetTimeSyncOperation(ctx basecontext.ApiContext, vm *
 		Command: "sudo",
 		Args:    make([]string, 0),
 	}
-	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, "set")
+	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, "set", vm.ID)
 
 	switch op.Operation {
 	case "time-sync":
@@ -1349,5 +1353,27 @@ func (s *ParallelsService) ReplaceMachineNameInConfigPvs(path string, newName st
 	// if err != nil {
 	// 	return err
 	// }
+	return nil
+}
+
+func (s *ParallelsService) RunCustomCommand(ctx basecontext.ApiContext, vm *models.ParallelsVM, op *models.VirtualMachineConfigRequestOperation) error {
+	if vm.State != "stopped" {
+		return errors.New("VM is not stopped")
+	}
+	cmd := "sudo"
+	args := make([]string, 0)
+	// Setting the owner in the command
+	if op.Owner != "root" {
+		args = append(args, "-u", op.Owner)
+	}
+
+	args = append(args, s.executable, op.Operation, vm.ID)
+	args = append(args, op.GetCmdArgs()...)
+
+	_, err := commands.ExecuteWithNoOutput(cmd, args...)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
