@@ -17,6 +17,15 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+// @Summary		Generates a token
+// @Description	This endpoint generates a token
+// @Tags			Authorization
+// @Produce		json
+// @Param			apiKey	body	models.LoginRequest true "Body"
+// @Success		200 	{object}	models.LoginResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Router			/v1/auth/api_keys [post]
 func GetTokenController() restapi.Controller {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)

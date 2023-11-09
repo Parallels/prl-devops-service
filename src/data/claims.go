@@ -54,26 +54,26 @@ func (j *JsonDatabase) GetClaim(ctx basecontext.ApiContext, idOrName string) (*m
 	return nil, ErrClaimNotFound
 }
 
-func (j *JsonDatabase) CreateClaim(ctx basecontext.ApiContext, claim models.Claim) error {
+func (j *JsonDatabase) CreateClaim(ctx basecontext.ApiContext, claim models.Claim) (*models.Claim, error) {
 	if !j.IsConnected() {
-		return ErrDatabaseNotConnected
+		return nil, ErrDatabaseNotConnected
 	}
 
 	if claim.Name == "" {
-		return ErrClaimEmptyName
+		return nil, ErrClaimEmptyName
 	}
 
 	claim.Name = strings.ToUpper(helpers.NormalizeString(claim.Name))
 	claim.ID = claim.Name
 
 	if u, _ := j.GetClaim(ctx, claim.ID); u != nil {
-		return errors.NewWithCodef(400, "claim %s already exists with ID %s", claim.Name, claim.ID)
+		return nil, errors.NewWithCodef(400, "claim %s already exists with ID %s", claim.Name, claim.ID)
 	}
 
 	j.data.Claims = append(j.data.Claims, claim)
 	j.Save(ctx)
 
-	return nil
+	return &claim, nil
 }
 
 func (j *JsonDatabase) DeleteClaim(ctx basecontext.ApiContext, idOrName string) error {

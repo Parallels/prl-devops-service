@@ -22,7 +22,7 @@ func SeedDefaultClaims() error {
 
 	for _, claim := range allSystemClaims {
 		if exists, _ := db.GetClaim(ctx, claim); exists == nil {
-			if err := db.CreateClaim(ctx, models.Claim{
+			if _, err := db.CreateClaim(ctx, models.Claim{
 				ID:       claim,
 				Name:     claim,
 				Internal: true,

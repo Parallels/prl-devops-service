@@ -97,14 +97,16 @@ func CreateRoleController() restapi.Controller {
 
 		dtoRole := mappers.ApiRoleToDto(request)
 
-		err = dbService.CreateRole(ctx, dtoRole)
+		role, err := dbService.CreateRole(ctx, dtoRole)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
-		request.Name = strings.ToUpper(helpers.NormalizeString(request.Name))
+
+		response := mappers.DtoRoleToApi(*role)
+
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(request)
+		json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("Role created successfully")
 	}
 }

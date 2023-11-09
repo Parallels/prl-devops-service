@@ -187,12 +187,23 @@ func (s *PackerService) Installed() bool {
 	return s.installed && s.executable != ""
 }
 
-func (s *PackerService) Init(ctx basecontext.ApiContext, path string) error {
-	stdout, err := helpers.ExecuteWithNoOutput(helpers.Command{
-		Command:          s.executable,
-		WorkingDirectory: path,
-		Args:             []string{"init", "."},
-	})
+func (s *PackerService) Init(ctx basecontext.ApiContext, owner string, path string) error {
+	var cmd helpers.Command
+	if owner == "" {
+		cmd = helpers.Command{
+			Command:          s.executable,
+			WorkingDirectory: path,
+			Args:             []string{"init", "."},
+		}
+	} else {
+		cmd = helpers.Command{
+			Command:          "sudo",
+			WorkingDirectory: path,
+			Args:             []string{"-u", owner, s.executable, "init", "."},
+		}
+	}
+
+	stdout, _, _, err := helpers.ExecuteAndWatch(cmd)
 	if err != nil {
 		println(stdout)
 		buildError := errors.NewWithCodef(400, "There was an error init packer folder %v, error: %v", path, err.Error())
@@ -203,12 +214,23 @@ func (s *PackerService) Init(ctx basecontext.ApiContext, path string) error {
 	return nil
 }
 
-func (s *PackerService) Build(ctx basecontext.ApiContext, path string, variableFile string) error {
-	stdout, err := helpers.ExecuteWithNoOutput(helpers.Command{
-		Command:          s.executable,
-		WorkingDirectory: path,
-		Args:             []string{"build", "-var-file", variableFile, "."},
-	})
+func (s *PackerService) Build(ctx basecontext.ApiContext, owner string, path string, variableFile string) error {
+	var cmd helpers.Command
+	if owner == "" {
+		cmd = helpers.Command{
+			Command:          s.executable,
+			WorkingDirectory: path,
+			Args:             []string{"build", "-var-file", variableFile, "."},
+		}
+	} else {
+		cmd = helpers.Command{
+			Command:          "sudo",
+			WorkingDirectory: path,
+			Args:             []string{"-u", owner, s.executable, "build", "-var-file", variableFile, "."},
+		}
+	}
+
+	stdout, _, _, err := helpers.ExecuteAndWatch(cmd)
 	if err != nil {
 		println(stdout)
 		buildError := errors.NewWithCodef(400, "There was an error building packer folder %v, error: %v", path, err.Error())

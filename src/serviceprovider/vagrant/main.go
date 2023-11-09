@@ -358,7 +358,7 @@ func (s *VagrantService) Init(ctx basecontext.ApiContext, request models.CreateV
 	cmd.Args = append(cmd.Args, "init", request.Box)
 
 	ctx.LogInfo("Initializing vagrant folder with command: %v", cmd.String())
-	stdout, err := helpers.ExecuteWithNoOutput(cmd)
+	stdout, _, _, err := helpers.ExecuteAndWatch(cmd)
 	if err != nil {
 		println(stdout)
 		buildError := errors.Newf("There was an error init vagrant folder %v, error: %v", vagrantFileFolder, err.Error())
@@ -389,7 +389,7 @@ func (s *VagrantService) Up(ctx basecontext.ApiContext, request models.CreateVag
 	cmd.Args = append(cmd.Args, "up")
 
 	ctx.LogInfo("Bringing vagrant box %s up with command: %v", request.Box, cmd.String())
-	stdout, err := helpers.ExecuteWithNoOutput(cmd)
+	stdout, _, _, err := helpers.ExecuteAndWatch(cmd)
 	if err != nil {
 		println(stdout)
 		buildError := errors.Newf("There was an error init vagrant folder %v, error: %v", vagrantFileFolder, err.Error())

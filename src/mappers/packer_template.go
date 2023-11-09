@@ -8,7 +8,7 @@ import (
 
 func DtoPackerTemplateFromApiCreateRequest(m models.CreatePackerTemplateRequest) data_models.PackerTemplate {
 	data := data_models.PackerTemplate{
-		ID:             helpers.NormalizeString(m.Name),
+		ID:             helpers.NormalizeString(m.ID),
 		Name:           m.Name,
 		Description:    m.Description,
 		PackerFolder:   m.PackerFolder,

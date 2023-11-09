@@ -3,6 +3,7 @@ package models
 import "github.com/Parallels/pd-api-service/errors"
 
 type CreatePackerTemplateRequest struct {
+	ID             string            `json:"id"`
 	Name           string            `json:"name"`
 	Description    string            `json:"description,omitempty"`
 	PackerFolder   string            `json:"packer_folder"`
@@ -18,8 +19,11 @@ type CreatePackerTemplateRequest struct {
 }
 
 func (m *CreatePackerTemplateRequest) Validate() error {
+	if m.ID == "" {
+		return errors.NewWithCode("id cannot be empty", 400)
+	}
 	if m.Name == "" {
-		return errors.NewWithCode("name cannot be empty", 500)
+		return errors.NewWithCode("name cannot be empty", 400)
 	}
 
 	if m.Specs == nil {

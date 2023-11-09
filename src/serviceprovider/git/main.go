@@ -1,8 +1,8 @@
 package git
 
 import (
-	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Parallels/pd-api-service/basecontext"
@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/serviceprovider/interfaces"
+	"github.com/Parallels/pd-api-service/serviceprovider/system"
 
 	"github.com/cjlapao/common-go/commands"
 )
@@ -191,25 +192,58 @@ func (s *GitService) Installed() bool {
 	return s.installed && s.executable != ""
 }
 
-func (s *GitService) Clone(ctx basecontext.ApiContext, repoURL string, localPath string) (string, error) {
-	path := fmt.Sprintf("/tmp/%s", localPath)
+func (s *GitService) Clone(ctx basecontext.ApiContext, repoURL string, owner string, localPath string) (string, error) {
+	var path string
+	if owner == "" || owner == "root" {
+		path = filepath.Join("/tmp", localPath)
+	} else {
+		home, err := system.Get().GetUserHome(ctx, owner)
+		if err != nil {
+			return "", err
+		}
+		path = filepath.Join(home, localPath)
+	}
+
+	var cmd helpers.Command
+	if owner == "" {
+		cmd = helpers.Command{
+			Command:          s.executable,
+			WorkingDirectory: path,
+			Args:             make([]string, 0),
+		}
+	} else {
+		cmd = helpers.Command{
+			Command:          "sudo",
+			WorkingDirectory: path,
+			Args:             []string{"-u", owner, s.executable},
+		}
+	}
+
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err := helpers.CreateDirIfNotExist(path)
 		if err != nil {
 			return "", err
 		}
+		_, err = helpers.ExecuteWithNoOutput(helpers.Command{
+			Command: "chown",
+			Args:    []string{"-R", owner, path},
+		})
+		if err != nil {
+			return "", err
+		}
 
-		_, err = commands.ExecuteWithNoOutput(s.executable, "clone", repoURL, path)
+		cmd.Args = append(cmd.Args, "clone", repoURL, path)
+
+		ctx.LogInfo(cmd.String())
+		_, err = helpers.ExecuteWithNoOutput(cmd)
 		if err != nil {
 			buildError := errors.NewWithCodef(400, "failed to pull repository %v, error: %v", path, err.Error())
 			return "", buildError
 		}
 	} else {
-		_, err := helpers.ExecuteWithNoOutput(helpers.Command{
-			Command:          s.executable,
-			Args:             []string{"pull"},
-			WorkingDirectory: path,
-		})
+		cmd.Args = append(cmd.Args, "pull")
+
+		ctx.LogInfo(cmd.String())
 		if err != nil {
 			buildError := errors.NewWithCodef(400, "failed to pull repository %v, error: %v", path, err.Error())
 

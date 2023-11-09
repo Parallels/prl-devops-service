@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
@@ -29,6 +30,7 @@ func CreateDirIfNotExist(path string) error {
 			return fmt.Errorf("failed to create directory: %v", err)
 		}
 	}
+
 	return nil
 }
 
@@ -82,6 +84,35 @@ func ExecuteWithOutput(command Command) (stdout string, stderr string, exitCode 
 	stderr = ""
 	stdout = strings.TrimSuffix(stdOut.String(), "\n")
 	return stdout, stderr, cmd.ProcessState.ExitCode(), nil
+}
+
+func ExecuteAndWatch(command Command) (stdout string, stderr string, exitCode int, err error) {
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, command.Command, command.Args...)
+	if command.WorkingDirectory != "" {
+		cmd.Dir = command.WorkingDirectory
+	}
+	var stdOut, stdIn, stdErr bytes.Buffer
+
+	cmd.Stdout = io.MultiWriter(os.Stdout, &stdOut)
+	cmd.Stderr = io.MultiWriter(os.Stderr, &stdErr)
+	cmd.Stdin = &stdIn
+
+	if err := cmd.Start(); err != nil {
+		return stdOut.String(), stdErr.String(), cmd.ProcessState.ExitCode(), err
+	}
+
+	go func() {
+		<-ctx.Done()
+	}()
+
+	if err := cmd.Wait(); err != nil {
+		return stdOut.String(), stdErr.String(), cmd.ProcessState.ExitCode(), err
+	}
+
+	return stdOut.String(), stdErr.String(), cmd.ProcessState.ExitCode(), err
 }
 
 func RemoveFolder(path string) error {

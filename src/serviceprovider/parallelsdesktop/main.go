@@ -754,7 +754,7 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 	}
 
 	git := git.Get()
-	repoPath, err := git.Clone(ctx, "https://github.com/Parallels/packer-examples", "packer-examples")
+	repoPath, err := git.Clone(ctx, "https://github.com/Parallels/packer-examples", template.Owner, "packer-examples")
 	if err != nil {
 		ctx.LogError("Error cloning packer-examples repository: %s", err.Error())
 		return nil, err
@@ -810,7 +810,7 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 	ctx.LogInfo("Created override file")
 
 	ctx.LogInfo("Initializing packer repository")
-	if err = packer.Init(ctx, scriptPath); err != nil {
+	if err = packer.Init(ctx, template.Owner, scriptPath); err != nil {
 		cleanError := helpers.RemoveFolder(repoPath)
 		if cleanError != nil {
 			ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
@@ -821,7 +821,7 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 	ctx.LogInfo("Initialized packer repository")
 
 	ctx.LogInfo("Building packer machine")
-	if err = packer.Build(ctx, scriptPath, overrideFilePath); err != nil {
+	if err = packer.Build(ctx, template.Owner, scriptPath, overrideFilePath); err != nil {
 		cleanError := helpers.RemoveFolder(repoPath)
 		if cleanError != nil {
 			ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())

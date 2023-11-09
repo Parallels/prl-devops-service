@@ -97,15 +97,16 @@ func CreateClaimController() restapi.Controller {
 
 		dtoClaim := mappers.ApiClaimToDto(request)
 
-		err = dbService.CreateClaim(ctx, dtoClaim)
+		claim, err := dbService.CreateClaim(ctx, dtoClaim)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		request.Name = strings.ToUpper(helpers.NormalizeString(request.Name))
+		response := mappers.DtoClaimToApi(*claim)
+
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(request)
+		json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("Claim created successfully")
 	}
 }

@@ -7,6 +7,23 @@ definitions:
       message:
         type: string
     type: object
+  models.ApiKeyRequest:
+    properties:
+      created_at:
+        type: string
+      key:
+        type: string
+      name:
+        type: string
+      revoked:
+        type: boolean
+      revoked_at:
+        type: string
+      secret:
+        type: string
+      updated_at:
+        type: string
+    type: object
   models.ApiKeyResponse:
     properties:
       created_at:
@@ -22,6 +39,22 @@ definitions:
       revoked_at:
         type: string
       updated_at:
+        type: string
+    type: object
+  models.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  models.LoginResponse:
+    properties:
+      email:
+        type: string
+      expires_at:
+        type: integer
+      token:
         type: string
     type: object
   models.OAuthErrorResponse:
@@ -100,6 +133,121 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Gets all the api keys
+      tags:
+      - Api Keys
+    post:
+      description: This endpoint generates a token
+      parameters:
+      - description: Body
+        in: body
+        name: apiKey
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Generates a token
+      tags:
+      - Authorization
+  /v1/auth/api_keys/{id}:
+    delete:
+      description: This endpoint deletes an api key
+      parameters:
+      - description: Api Key ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes an api key
+      tags:
+      - Api Keys
+    get:
+      description: This endpoint returns an api key by id or name
+      parameters:
+      - description: Api Key ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ApiKeyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets an api key by id or name
+      tags:
+      - Api Keys
+  /v1/auth/api_keys/{id}/revoke:
+    put:
+      description: This endpoint revokes an api key
+      parameters:
+      - description: Api Key ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Revoke an api key
       tags:
       - Api Keys
 securityDefinitions:

@@ -23,7 +23,7 @@ func SeedDefaultRoles() error {
 
 	for _, role := range allSystemRoles {
 		if exists, _ := db.GetRole(ctx, role); exists == nil {
-			if err := db.CreateRole(ctx, models.Role{
+			if _, err := db.CreateRole(ctx, models.Role{
 				ID:       role,
 				Name:     role,
 				Internal: true,

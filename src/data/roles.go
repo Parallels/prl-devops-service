@@ -54,25 +54,25 @@ func (j *JsonDatabase) GetRole(ctx basecontext.ApiContext, idOrName string) (*mo
 	return nil, ErrRoleNotFound
 }
 
-func (j *JsonDatabase) CreateRole(ctx basecontext.ApiContext, role models.Role) error {
+func (j *JsonDatabase) CreateRole(ctx basecontext.ApiContext, role models.Role) (*models.Role, error) {
 	if !j.IsConnected() {
-		return ErrDatabaseNotConnected
+		return nil, ErrDatabaseNotConnected
 	}
 
 	if role.Name == "" {
-		return ErrRoleEmptyName
+		return nil, ErrRoleEmptyName
 	}
 
 	role.Name = strings.ToUpper(helpers.NormalizeString(role.Name))
 	role.ID = role.Name
 
 	if u, _ := j.GetUser(ctx, role.ID); u != nil {
-		return errors.NewWithCodef(400, "role %s already exists with ID %s", role.Name, role.ID)
+		return nil, errors.NewWithCodef(400, "role %s already exists with ID %s", role.Name, role.ID)
 	}
 
 	j.data.Roles = append(j.data.Roles, role)
 	j.Save(ctx)
-	return nil
+	return &role, nil
 }
 
 func (j *JsonDatabase) DeleteRole(ctx basecontext.ApiContext, idOrName string) error {
