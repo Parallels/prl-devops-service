@@ -17,15 +17,15 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-// @Summary		Generates a token
-// @Description	This endpoint generates a token
-// @Tags			Authorization
-// @Produce		json
-// @Param			login	body	models.LoginRequest true "Body"
-// @Success		200 	{object}	models.LoginResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Router			/v1/auth/token [post]
+//	@Summary		Generates a token
+//	@Description	This endpoint generates a token
+//	@Tags			Authorization
+//	@Produce		json
+//	@Param			login	body		models.LoginRequest	true	"Body"
+//	@Success		200		{object}	models.LoginResponse
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Router			/v1/auth/token [post]
 func GetTokenController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -115,15 +115,15 @@ func GetTokenController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Validates a token
-// @Description	This endpoint validates a token
-// @Tags			Authorization
-// @Produce		json
-// @Param			tokenRequest	body	models.ValidateTokenRequest true "Body"
-// @Success		200 	{object}	models.ValidateTokenResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Router			/v1/auth/token/validate [post]
+//	@Summary		Validates a token
+//	@Description	This endpoint validates a token
+//	@Tags			Authorization
+//	@Produce		json
+//	@Param			tokenRequest	body		models.ValidateTokenRequest	true	"Body"
+//	@Success		200				{object}	models.ValidateTokenResponse
+//	@Failure		400				{object}	models.ApiErrorResponse
+//	@Failure		401				{object}	models.OAuthErrorResponse
+//	@Router			/v1/auth/token/validate [post]
 func ValidateTokenController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)

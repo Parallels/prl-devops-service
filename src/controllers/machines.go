@@ -13,17 +13,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// @Summary		Gets all the virtual machines
-// @Description	This endpoint returns all the virtual machines
-// @Tags			Machines
-// @Produce		json
-// @Param			filter	header	string	false	"X-Filter"
-// @Success		200	{object}	[]models.ParallelsVM
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines [get]
+//	@Summary		Gets all the virtual machines
+//	@Description	This endpoint returns all the virtual machines
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			filter	header		string	false	"X-Filter"
+//	@Success		200		{object}	[]models.ParallelsVM
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines [get]
 func GetMachinesController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -50,17 +50,17 @@ func GetMachinesController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Gets a virtual machine
-// @Description	This endpoint returns a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Success		200	{object}	models.ParallelsVM
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id} [get]
+//	@Summary		Gets a virtual machine
+//	@Description	This endpoint returns a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id	path		string	true	"Machine ID"
+//	@Success		200	{object}	models.ParallelsVM
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id} [get]
 func GetMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -90,17 +90,17 @@ func GetMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Starts a virtual machine
-// @Description	This endpoint starts a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Success		200	{object}	models.VirtualMachineOperationResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/start [get]
+//	@Summary		Starts a virtual machine
+//	@Description	This endpoint starts a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id	path		string	true	"Machine ID"
+//	@Success		200	{object}	models.VirtualMachineOperationResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id}/start [get]
 func StartMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -128,17 +128,17 @@ func StartMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Stops a virtual machine
-// @Description	This endpoint stops a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Success		200	{object}	models.VirtualMachineOperationResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/stop [get]
+//	@Summary		Stops a virtual machine
+//	@Description	This endpoint stops a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id	path		string	true	"Machine ID"
+//	@Success		200	{object}	models.VirtualMachineOperationResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id}/stop [get]
 func StopMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -166,17 +166,17 @@ func StopMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Restarts a virtual machine
-// @Description	This endpoint restarts a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Success		200	{object}	models.VirtualMachineOperationResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/restart [get]
+//	@Summary		Restarts a virtual machine
+//	@Description	This endpoint restarts a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id	path		string	true	"Machine ID"
+//	@Success		200	{object}	models.VirtualMachineOperationResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id}/restart [get]
 func RestartMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -203,17 +203,17 @@ func RestartMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Suspends a virtual machine
-// @Description	This endpoint suspends a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Success		200	{object}	models.VirtualMachineOperationResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/suspend [get]
+//	@Summary		Suspends a virtual machine
+//	@Description	This endpoint suspends a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id	path		string	true	"Machine ID"
+//	@Success		200	{object}	models.VirtualMachineOperationResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id}/suspend [get]
 func SuspendMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -240,17 +240,17 @@ func SuspendMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Resumes a virtual machine
-// @Description	This endpoint resumes a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Success		200	{object}	models.VirtualMachineOperationResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/resume [get]
+//	@Summary		Resumes a virtual machine
+//	@Description	This endpoint resumes a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id	path		string	true	"Machine ID"
+//	@Success		200	{object}	models.VirtualMachineOperationResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id}/resume [get]
 func ResumeMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -277,17 +277,17 @@ func ResumeMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Reset a virtual machine
-// @Description	This endpoint reset a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Success		200	{object}	models.VirtualMachineOperationResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/reset [get]
+//	@Summary		Reset a virtual machine
+//	@Description	This endpoint reset a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id	path		string	true	"Machine ID"
+//	@Success		200	{object}	models.VirtualMachineOperationResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id}/reset [get]
 func ResetMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -314,17 +314,17 @@ func ResetMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Pauses a virtual machine
-// @Description	This endpoint pauses a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Success		200	{object}	models.VirtualMachineOperationResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/pause [get]
+//	@Summary		Pauses a virtual machine
+//	@Description	This endpoint pauses a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id	path		string	true	"Machine ID"
+//	@Success		200	{object}	models.VirtualMachineOperationResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id}/pause [get]
 func PauseMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -352,17 +352,17 @@ func PauseMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Deletes a virtual machine
-// @Description	This endpoint deletes a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id} [delete]
+//	@Summary		Deletes a virtual machine
+//	@Description	This endpoint deletes a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id	path	string	true	"Machine ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id} [delete]
 func DeleteMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -383,17 +383,17 @@ func DeleteMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Get the current state of a virtual machine
-// @Description	This endpoint returns the current state of a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Success		200	{object}	models.VirtualMachineStatusResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/status [post]
+//	@Summary		Get the current state of a virtual machine
+//	@Description	This endpoint returns the current state of a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id	path		string	true	"Machine ID"
+//	@Success		200	{object}	models.VirtualMachineStatusResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id}/status [post]
 func StatusMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -420,18 +420,18 @@ func StatusMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Configures a virtual machine
-// @Description	This endpoint configures a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Param			configRequest	body	models.VirtualMachineConfigRequest	true	"Machine Set Request"
-// @Success		200	{object}	models.VirtualMachineConfigResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/set [post]
+//	@Summary		Configures a virtual machine
+//	@Description	This endpoint configures a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id				path		string								true	"Machine ID"
+//	@Param			configRequest	body		models.VirtualMachineConfigRequest	true	"Machine Set Request"
+//	@Success		200				{object}	models.VirtualMachineConfigResponse
+//	@Failure		400				{object}	models.ApiErrorResponse
+//	@Failure		401				{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id}/set [post]
 func SetMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -481,18 +481,18 @@ func SetMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Executes a command on a virtual machine
-// @Description	This endpoint executes a command on a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Param			executeRequest	body	models.VirtualMachineExecuteCommandRequest	true	"Machine Execute Command Request"
-// @Success		200	{object}	models.VirtualMachineExecuteCommandResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/execute [post]
+//	@Summary		Executes a command on a virtual machine
+//	@Description	This endpoint executes a command on a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id				path		string										true	"Machine ID"
+//	@Param			executeRequest	body		models.VirtualMachineExecuteCommandRequest	true	"Machine Execute Command Request"
+//	@Success		200				{object}	models.VirtualMachineExecuteCommandResponse
+//	@Failure		400				{object}	models.ApiErrorResponse
+//	@Failure		401				{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id}/execute [post]
 func ExecuteCommandOnMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -522,18 +522,18 @@ func ExecuteCommandOnMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Renames a virtual machine
-// @Description	This endpoint Renames a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Param			renameRequest	body	models.RenameVirtualMachineRequest	true	"Machine Rename Request"
-// @Success		200	{object}	models.ParallelsVM
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/rename [post]
+//	@Summary		Renames a virtual machine
+//	@Description	This endpoint Renames a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id				path		string								true	"Machine ID"
+//	@Param			renameRequest	body		models.RenameVirtualMachineRequest	true	"Machine Rename Request"
+//	@Success		200				{object}	models.ParallelsVM
+//	@Failure		400				{object}	models.ApiErrorResponse
+//	@Failure		401				{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id}/rename [post]
 func RenameMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -579,18 +579,18 @@ func RenameMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Registers a virtual machine
-// @Description	This endpoint registers a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Param			registerRequest	body	models.RegisterVirtualMachineRequest	true	"Machine Register Request"
-// @Success		200	{object}	models.ParallelsVM
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/register [post]
+//	@Summary		Registers a virtual machine
+//	@Description	This endpoint registers a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id				path		string									true	"Machine ID"
+//	@Param			registerRequest	body		models.RegisterVirtualMachineRequest	true	"Machine Register Request"
+//	@Success		200				{object}	models.ParallelsVM
+//	@Failure		400				{object}	models.ApiErrorResponse
+//	@Failure		401				{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/register [post]
 func RegisterMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -653,18 +653,18 @@ func RegisterMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Unregisters a virtual machine
-// @Description	This endpoint unregisters a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			id	path	string	true	"Machine ID"
-// @Param			unregisterRequest	body	models.UnregisterVirtualMachineRequest	true	"Machine Unregister Request"
-// @Success		200	{object}	models.ApiCommonResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/unregister [post]
+//	@Summary		Unregisters a virtual machine
+//	@Description	This endpoint unregisters a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			id					path		string									true	"Machine ID"
+//	@Param			unregisterRequest	body		models.UnregisterVirtualMachineRequest	true	"Machine Unregister Request"
+//	@Success		200					{object}	models.ApiCommonResponse
+//	@Failure		400					{object}	models.ApiErrorResponse
+//	@Failure		401					{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines/{id}/unregister [post]
 func UnregisterMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -695,17 +695,17 @@ func UnregisterMachineController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Creates a virtual machine
-// @Description	This endpoint creates a virtual machine
-// @Tags			Machines
-// @Produce		json
-// @Param			createRequest	body	models.CreateVirtualMachineRequest	true	"New Machine Request"
-// @Success		200	{object}	models.CreateVirtualMachineResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines [post]
+//	@Summary		Creates a virtual machine
+//	@Description	This endpoint creates a virtual machine
+//	@Tags			Machines
+//	@Produce		json
+//	@Param			createRequest	body		models.CreateVirtualMachineRequest	true	"New Machine Request"
+//	@Success		200				{object}	models.CreateVirtualMachineResponse
+//	@Failure		400				{object}	models.ApiErrorResponse
+//	@Failure		401				{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/machines [post]
 func CreateMachine() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
