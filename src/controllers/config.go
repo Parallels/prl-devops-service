@@ -11,16 +11,16 @@ import (
 	"github.com/cjlapao/common-go/helper/http_helper"
 )
 
-// @Summary		Gets Parallels Desktop active license
-// @Description	This endpoint returns Parallels Desktop active license
-// @Tags			Config
-// @Produce		json
-// @Success		200	{object}	models.ParallelsDesktopLicense
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/parallels_desktop/key [get]
+//	@Summary		Gets Parallels Desktop active license
+//	@Description	This endpoint returns Parallels Desktop active license
+//	@Tags			Config
+//	@Produce		json
+//	@Success		200	{object}	models.ParallelsDesktopLicense
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/parallels_desktop/key [get]
 func GetParallelsDesktopLicenseController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -46,17 +46,17 @@ func GetParallelsDesktopLicenseController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Installs API requires 3rd party tools
-// @Description	This endpoint installs API requires 3rd party tools
-// @Tags			Config
-// @Produce		json
-// @Param			installToolsRequest	body	models.InstallToolsRequest true "Install Tools Request"
-// @Success		200	{object}	models.InstallToolsResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/config/tools/install [post]
+//	@Summary		Installs API requires 3rd party tools
+//	@Description	This endpoint installs API requires 3rd party tools
+//	@Tags			Config
+//	@Produce		json
+//	@Param			installToolsRequest	body		models.InstallToolsRequest	true	"Install Tools Request"
+//	@Success		200					{object}	models.InstallToolsResponse
+//	@Failure		400					{object}	models.ApiErrorResponse
+//	@Failure		401					{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/config/tools/install [post]
 func InstallToolsController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -171,17 +171,17 @@ func InstallToolsController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Uninstalls API requires 3rd party tools
-// @Description	This endpoint uninstalls API requires 3rd party tools
-// @Tags			Config
-// @Produce		json
-// @Param			uninstallToolsRequest	body	models.UninstallToolsRequest true "Uninstall Tools Request"
-// @Success		200	{object}	models.InstallToolsResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/config/tools/uninstall [post]
+//	@Summary		Uninstalls API requires 3rd party tools
+//	@Description	This endpoint uninstalls API requires 3rd party tools
+//	@Tags			Config
+//	@Produce		json
+//	@Param			uninstallToolsRequest	body		models.UninstallToolsRequest	true	"Uninstall Tools Request"
+//	@Success		200						{object}	models.InstallToolsResponse
+//	@Failure		400						{object}	models.ApiErrorResponse
+//	@Failure		401						{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/config/tools/uninstall [post]
 func UninstallToolsController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -284,16 +284,16 @@ func UninstallToolsController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Restarts the API Service
-// @Description	This endpoint restarts the API Service
-// @Tags			Config
-// @Produce		json
-// @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/config/tools/restart [post]
+//	@Summary		Restarts the API Service
+//	@Description	This endpoint restarts the API Service
+//	@Tags			Config
+//	@Produce		json
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/config/tools/restart [post]
 func RestartController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)

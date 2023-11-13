@@ -12,16 +12,16 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// @Summary		Gets all the users
-// @Description	This endpoint returns all the users
-// @Tags			Users
-// @Produce		json
-// @Success		200	{object}	[]models.ApiUser
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/auth/users  [get]
+//	@Summary		Gets all the users
+//	@Description	This endpoint returns all the users
+//	@Tags			Users
+//	@Produce		json
+//	@Success		200	{object}	[]models.ApiUser
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users  [get]
 func GetUsersController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -55,17 +55,17 @@ func GetUsersController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Gets a user
-// @Description	This endpoint returns a user
-// @Tags			Users
-// @Produce		json
-// @Param			id	path	string	true	"User ID"
-// @Success		200	{object}	models.ApiUser
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/auth/users/{id}  [get]
+//	@Summary		Gets a user
+//	@Description	This endpoint returns a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id	path		string	true	"User ID"
+//	@Success		200	{object}	models.ApiUser
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}  [get]
 func GetUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -94,17 +94,17 @@ func GetUserController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Creates a user
-// @Description	This endpoint creates a user
-// @Tags			Users
-// @Produce		json
-// @Param			body	body	models.UserCreateRequest	true	"User"
-// @Success		201	{object}	models.ApiUser
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/auth/users  [post]
+//	@Summary		Creates a user
+//	@Description	This endpoint creates a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			body	body		models.UserCreateRequest	true	"User"
+//	@Success		201		{object}	models.ApiUser
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users  [post]
 func CreateUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -140,17 +140,17 @@ func CreateUserController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Deletes a user
-// @Description	This endpoint deletes a user
-// @Tags			Users
-// @Produce		json
-// @Param			id	path	string	true	"User ID"
-// @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/auth/users/{id}  [delete]
+//	@Summary		Deletes a user
+//	@Description	This endpoint deletes a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id	path	string	true	"User ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}  [delete]
 func DeleteUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -176,17 +176,17 @@ func DeleteUserController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Update a user
-// @Description	This endpoint updates a user
-// @Tags			Users
-// @Produce		json
-// @Param			body	body	models.UserCreateRequest	true	"User"
-// @Success		202	{object}	models.ApiUser
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/auth/users/{id}  [put]
+//	@Summary		Update a user
+//	@Description	This endpoint updates a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			body	body		models.UserCreateRequest	true	"User"
+//	@Success		202		{object}	models.ApiUser
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}  [put]
 func UpdateUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -224,17 +224,17 @@ func UpdateUserController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Gets all the roles for a user
-// @Description	This endpoint returns all the roles for a user
-// @Tags			Users
-// @Produce		json
-// @Param			id	path	string	true	"User ID"
-// @Success		200	{object}	models.RoleResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/auth/users/{id}/roles  [get]
+//	@Summary		Gets all the roles for a user
+//	@Description	This endpoint returns all the roles for a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id	path		string	true	"User ID"
+//	@Success		200	{object}	models.RoleResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}/roles  [get]
 func GetUserRolesController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -264,18 +264,18 @@ func GetUserRolesController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Adds a role to a user
-// @Description	This endpoint adds a role to a user
-// @Tags			Users
-// @Produce		json
-// @Param			id	path	string	true	"User ID"
-// @Param			body	body	models.RoleRequest	true	"Role Name"
-// @Success		201	{object}	models.RoleRequest
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/auth/users/{id}/roles  [post]
+//	@Summary		Adds a role to a user
+//	@Description	This endpoint adds a role to a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id		path		string				true	"User ID"
+//	@Param			body	body		models.RoleRequest	true	"Role Name"
+//	@Success		201		{object}	models.RoleRequest
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}/roles  [post]
 func AddRoleToUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -313,18 +313,18 @@ func AddRoleToUserController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Removes a role from a user
-// @Description	This endpoint removes a role from a user
-// @Tags			Users
-// @Produce		json
-// @Param			id	path	string	true	"User ID"
-// @Param			role_id	path	string	true	"Role ID"
-// @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/auth/users/{id}/roles/{role_id}  [post]
+//	@Summary		Removes a role from a user
+//	@Description	This endpoint removes a role from a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id		path	string	true	"User ID"
+//	@Param			role_id	path	string	true	"Role ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}/roles/{role_id}  [post]
 func RemoveRoleFromUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -350,17 +350,17 @@ func RemoveRoleFromUserController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Gets all the claims for a user
-// @Description	This endpoint returns all the claims for a user
-// @Tags			Users
-// @Produce		json
-// @Param			id	path	string	true	"User ID"
-// @Success		200	{object}	models.ClaimResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/auth/users/{id}/claims  [get]
+//	@Summary		Gets all the claims for a user
+//	@Description	This endpoint returns all the claims for a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id	path		string	true	"User ID"
+//	@Success		200	{object}	models.ClaimResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}/claims  [get]
 func GetUserClaimsController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -390,18 +390,18 @@ func GetUserClaimsController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Adds a claim to a user
-// @Description	This endpoint adds a claim to a user
-// @Tags			Users
-// @Produce		json
-// @Param			id	path	string	true	"User ID"
-// @Param			body	body	models.ClaimRequest	true	"Claim Name"
-// @Success		201	{object}	models.ClaimRequest
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/auth/users/{id}/claims  [post]
+//	@Summary		Adds a claim to a user
+//	@Description	This endpoint adds a claim to a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id		path		string				true	"User ID"
+//	@Param			body	body		models.ClaimRequest	true	"Claim Name"
+//	@Success		201		{object}	models.ClaimRequest
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}/claims  [post]
 func AddClaimToUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -439,18 +439,18 @@ func AddClaimToUserController() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Removes a claim from a user
-// @Description	This endpoint removes a claim from a user
-// @Tags			Users
-// @Produce		json
-// @Param			id	path	string	true	"User ID"
-// @Param			claim_id	path	string	true	"Claim ID"
-// @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/auth/users/{id}/claims/{claim_id}  [post]
+//	@Summary		Removes a claim from a user
+//	@Description	This endpoint removes a claim from a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id			path	string	true	"User ID"
+//	@Param			claim_id	path	string	true	"Claim ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}/claims/{claim_id}  [post]
 func RemoveClaimFromUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
