@@ -14,7 +14,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func GetClaimsController() restapi.Controller {
+// @Summary		Gets all the claims
+// @Description	This endpoint returns all the claims
+// @Tags			Claims
+// @Produce		json
+// @Success		200	{object}	[]models.ClaimResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims [get]
+func GetClaimsController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -46,7 +56,19 @@ func GetClaimsController() restapi.Controller {
 		ctx.LogInfo("Claims returned successfully")
 	}
 }
-func GetClaimController() restapi.Controller {
+
+// @Summary		Gets a claim
+// @Description	This endpoint returns a claim
+// @Tags			Claims
+// @Produce		json
+// @Param			id	path	string	true	"Claim ID"
+// @Success		200	{object}	models.ClaimResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims/{id} [get]
+func GetClaimController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -74,7 +96,18 @@ func GetClaimController() restapi.Controller {
 	}
 }
 
-func CreateClaimController() restapi.Controller {
+// @Summary		Creates a claim
+// @Description	This endpoint creates a claim
+// @Tags			Claims
+// @Produce		json
+// @Param			claimRequest body models.ClaimRequest true "Claim Request"
+// @Success		200	{object}	models.ClaimResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims [post]
+func CreateClaimController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.ClaimRequest
@@ -111,7 +144,18 @@ func CreateClaimController() restapi.Controller {
 	}
 }
 
-func DeleteClaimController() restapi.Controller {
+// @Summary		Delete a claim
+// @Description	This endpoint Deletes a claim
+// @Tags			Claims
+// @Produce		json
+// @Param			id	path	string	true	"Claim ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims/{id} [delete]
+func DeleteClaimController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)

@@ -1,5 +1,110 @@
 basePath: /api
 definitions:
+  github_com_Parallels_pd-api-service_models.CatalogManifest:
+    properties:
+      catalog_id:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      download_count:
+        type: integer
+      id:
+        type: string
+      last_downloaded_at:
+        type: string
+      last_downloaded_user:
+        type: string
+      metadata_filename:
+        type: string
+      name:
+        type: string
+      pack_contents:
+        items:
+          $ref: '#/definitions/models.CatalogManifestPackItem'
+        type: array
+      pack_filename:
+        type: string
+      path:
+        type: string
+      provider:
+        $ref: '#/definitions/models.RemoteVirtualMachineProvider'
+      required_claims:
+        items:
+          type: string
+        type: array
+      required_roles:
+        items:
+          type: string
+        type: array
+      revoked:
+        type: boolean
+      revoked_at:
+        type: string
+      revoked_by:
+        type: string
+      size:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      tainted:
+        type: boolean
+      tainted_at:
+        type: string
+      tainted_by:
+        type: string
+      type:
+        type: string
+      untainted_by:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: string
+    type: object
+  github_com_Parallels_pd-api-service_models.ImportCatalogManifestResponse:
+    properties:
+      id:
+        type: string
+    type: object
+  github_com_Parallels_pd-api-service_models.PullCatalogManifestResponse:
+    properties:
+      id:
+        type: string
+      local_path:
+        type: string
+      machine_name:
+        type: string
+      manifest:
+        $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+    type: object
+  models.Advanced:
+    properties:
+      Public SSH keys synchronization:
+        type: string
+      Share host location:
+        type: string
+      Show developer tools:
+        type: string
+      Swipe from edges:
+        type: string
+      VM hostname synchronization:
+        type: string
+    type: object
+  models.ApiCommonResponse:
+    properties:
+      code:
+        type: integer
+      data: {}
+      error: {}
+      operation:
+        type: string
+      success:
+        type: boolean
+    type: object
   models.ApiErrorResponse:
     properties:
       code:
@@ -41,6 +146,338 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.ApiUser:
+    properties:
+      claims:
+        items:
+          type: string
+        type: array
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      username:
+        type: string
+    type: object
+  models.CPU:
+    properties:
+      VT-x:
+        type: boolean
+      accl:
+        type: string
+      auto:
+        type: string
+      cpus:
+        type: integer
+      hotplug:
+        type: boolean
+      mode:
+        type: string
+      type:
+        type: string
+    type: object
+  models.CatalogManifestPackItem:
+    properties:
+      is_dir:
+        type: boolean
+      name:
+        type: string
+      path:
+        type: string
+    type: object
+  models.Cdrom0:
+    properties:
+      enabled:
+        type: boolean
+      image:
+        type: string
+      port:
+        type: string
+      state:
+        type: string
+    type: object
+  models.ClaimRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  models.ClaimResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  models.Code:
+    properties:
+      enabled:
+        type: boolean
+      mode:
+        type: string
+      path:
+        type: string
+    type: object
+  models.Coherence:
+    properties:
+      Auto-switch to full screen:
+        type: string
+      Disable aero:
+        type: string
+      Hide minimized windows:
+        type: string
+      Show Windows systray in Mac menu:
+        type: string
+    type: object
+  models.CreatePackerTemplateRequest:
+    properties:
+      addons:
+        items:
+          type: string
+        type: array
+      created_at:
+        type: string
+      defaults:
+        additionalProperties:
+          type: string
+        type: object
+      description:
+        type: string
+      id:
+        type: string
+      internal:
+        type: boolean
+      name:
+        type: string
+      packer_folder:
+        type: string
+      required_claims:
+        items:
+          type: string
+        type: array
+      required_roles:
+        items:
+          type: string
+        type: array
+      specs:
+        additionalProperties:
+          type: string
+        type: object
+      updated_at:
+        type: string
+      variables:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  models.CreatePackerVirtualMachineRequest:
+    properties:
+      cpu:
+        type: string
+      desiredState:
+        type: string
+      disk:
+        type: string
+      memory:
+        type: string
+      name:
+        type: string
+      owner:
+        type: string
+      template:
+        type: string
+    type: object
+  models.CreateRemoteVirtualMachineRequest:
+    properties:
+      api_key:
+        type: string
+      host:
+        type: string
+      name:
+        type: string
+      owner:
+        type: string
+      password:
+        type: string
+      port:
+        type: string
+      username:
+        type: string
+    type: object
+  models.CreateVagrantMachineRequest:
+    properties:
+      box:
+        type: string
+      custom_parallels_config:
+        type: string
+      custom_vagrant_config:
+        type: string
+      name:
+        type: string
+      owner:
+        type: string
+      version:
+        type: string
+    type: object
+  models.CreateVirtualMachineRequest:
+    properties:
+      name:
+        type: string
+      owner:
+        type: string
+      packer_template:
+        $ref: '#/definitions/models.CreatePackerVirtualMachineRequest'
+      remote:
+        $ref: '#/definitions/models.CreateRemoteVirtualMachineRequest'
+      vagrant_box:
+        $ref: '#/definitions/models.CreateVagrantMachineRequest'
+    type: object
+  models.CreateVirtualMachineResponse:
+    properties:
+      current_state:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      owner:
+        type: string
+    type: object
+  models.Expiration:
+    properties:
+      enabled:
+        type: boolean
+    type: object
+  models.Fullscreen:
+    properties:
+      Activate spaces on click:
+        type: string
+      Gamma control:
+        type: string
+      Optimize for games:
+        type: string
+      Scale view mode:
+        type: string
+      Use all displays:
+        type: string
+    type: object
+  models.GuestSharedFolders:
+    properties:
+      Automount:
+        type: string
+      enabled:
+        type: boolean
+    type: object
+  models.GuestTools:
+    properties:
+      state:
+        type: string
+      version:
+        type: string
+    type: object
+  models.Hardware:
+    properties:
+      cdrom0:
+        $ref: '#/definitions/models.Cdrom0'
+      cpu:
+        $ref: '#/definitions/models.CPU'
+      hdd0:
+        $ref: '#/definitions/models.Hdd0'
+      memory:
+        $ref: '#/definitions/models.Memory'
+      memory_quota:
+        $ref: '#/definitions/models.MemoryQuota'
+      net0:
+        $ref: '#/definitions/models.Net0'
+      sound0:
+        $ref: '#/definitions/models.Sound0'
+      usb:
+        $ref: '#/definitions/models.Expiration'
+      video:
+        $ref: '#/definitions/models.Video'
+    type: object
+  models.Hdd0:
+    properties:
+      enabled:
+        type: boolean
+      image:
+        type: string
+      online-compact:
+        type: string
+      port:
+        type: string
+      size:
+        type: string
+      type:
+        type: string
+    type: object
+  models.HostSharedFolders:
+    properties:
+      code:
+        $ref: '#/definitions/models.Code'
+      demo:
+        $ref: '#/definitions/models.Code'
+      enabled:
+        type: boolean
+      packer-examples:
+        $ref: '#/definitions/models.Code'
+    type: object
+  models.ImportCatalogManifestRequest:
+    properties:
+      catalog_id:
+        type: string
+      connection:
+        type: string
+      provider_metadata:
+        additionalProperties:
+          type: string
+        type: object
+      version:
+        type: string
+    type: object
+  models.InstallToolsRequest:
+    properties:
+      all:
+        type: boolean
+      run_as:
+        type: string
+      tools:
+        additionalProperties:
+          $ref: '#/definitions/models.InstallToolsRequestItem'
+        type: object
+    type: object
+  models.InstallToolsRequestItem:
+    properties:
+      flags:
+        additionalProperties:
+          type: string
+        type: object
+      version:
+        type: string
+    type: object
+  models.InstallToolsResponse:
+    properties:
+      installed_tools:
+        additionalProperties:
+          $ref: '#/definitions/models.InstallToolsResponseItem'
+        type: object
+      success:
+        type: boolean
+    type: object
+  models.InstallToolsResponseItem:
+    properties:
+      message:
+        type: string
+      success:
+        type: boolean
+      version:
+        type: string
+    type: object
   models.LoginRequest:
     properties:
       email:
@@ -55,6 +492,69 @@ definitions:
       expires_at:
         type: integer
       token:
+        type: string
+    type: object
+  models.Memory:
+    properties:
+      auto:
+        type: string
+      hotplug:
+        type: boolean
+      size:
+        type: string
+    type: object
+  models.MemoryQuota:
+    properties:
+      auto:
+        type: string
+    type: object
+  models.MinimumSpecRequirement:
+    properties:
+      cpu:
+        type: integer
+      disk:
+        type: integer
+      memory:
+        type: integer
+    type: object
+  models.MiscellaneousSharing:
+    properties:
+      Shared clipboard:
+        type: string
+      Shared cloud:
+        type: string
+    type: object
+  models.Modality:
+    properties:
+      Capture mouse clicks:
+        type: string
+      Opacity (percentage):
+        type: integer
+      Show on all spaces:
+        type: string
+      Stay on top:
+        type: string
+    type: object
+  models.MouseAndKeyboard:
+    properties:
+      Keyboard optimization mode:
+        type: string
+      Smart mouse optimized for games:
+        type: string
+      Smooth scrolling:
+        type: string
+      Sticky mouse:
+        type: string
+    type: object
+  models.Net0:
+    properties:
+      card:
+        type: string
+      enabled:
+        type: boolean
+      mac:
+        type: string
+      type:
         type: string
     type: object
   models.OAuthErrorResponse:
@@ -96,6 +596,580 @@ definitions:
     - OAuthEmailNotVerified
     - OAuthUserBlocked
     - UnknownError
+  models.Optimization:
+    properties:
+      Adaptive hypervisor:
+        type: string
+      Auto compress virtual disks:
+        type: string
+      Disabled Windows logo:
+        type: string
+      Faster virtual machine:
+        type: string
+      Hypervisor type:
+        type: string
+      Longer battery life:
+        type: string
+      Nested virtualization:
+        type: string
+      PMU virtualization:
+        type: string
+      Resource quota:
+        type: string
+      Show battery status:
+        type: string
+    type: object
+  models.PackerTemplateResponse:
+    properties:
+      addons:
+        items:
+          type: string
+        type: array
+      created_at:
+        type: string
+      defaults:
+        additionalProperties:
+          type: string
+        type: object
+      description:
+        type: string
+      id:
+        type: string
+      internal:
+        type: boolean
+      name:
+        type: string
+      packer_folder:
+        type: string
+      required_claims:
+        items:
+          type: string
+        type: array
+      required_roles:
+        items:
+          type: string
+        type: array
+      specs:
+        additionalProperties:
+          type: string
+        type: object
+      updated_at:
+        type: string
+      variables:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  models.ParallelsDesktopLicense:
+    properties:
+      advanced_restrictions:
+        type: string
+      cpu_total:
+        type: integer
+      deferred_activation:
+        type: string
+      edition:
+        type: string
+      expiration:
+        type: string
+      grace_period_ends_at:
+        type: string
+      is_volume:
+        type: string
+      main_period_ends_at:
+        type: string
+      max_memory:
+        type: integer
+      serial:
+        type: string
+      status:
+        type: string
+      uuid:
+        type: string
+    type: object
+  models.ParallelsVM:
+    properties:
+      Advanced:
+        $ref: '#/definitions/models.Advanced'
+      Allow select boot device:
+        type: string
+      BIOS type:
+        type: string
+      Boot order:
+        type: string
+      Coherence:
+        $ref: '#/definitions/models.Coherence'
+      Description:
+        type: string
+      EFI Secure boot:
+        type: string
+      Expiration:
+        $ref: '#/definitions/models.Expiration'
+      External boot device:
+        type: string
+      Fullscreen:
+        $ref: '#/definitions/models.Fullscreen'
+      Guest Shared Folders:
+        $ref: '#/definitions/models.GuestSharedFolders'
+      GuestTools:
+        $ref: '#/definitions/models.GuestTools'
+      Hardware:
+        $ref: '#/definitions/models.Hardware'
+      Home:
+        type: string
+      Home path:
+        type: string
+      Host Shared Folders:
+        $ref: '#/definitions/models.HostSharedFolders'
+      Host defined sharing:
+        type: string
+      ID:
+        type: string
+      Miscellaneous Sharing:
+        $ref: '#/definitions/models.MiscellaneousSharing'
+      Modality:
+        $ref: '#/definitions/models.Modality'
+      Mouse and Keyboard:
+        $ref: '#/definitions/models.MouseAndKeyboard'
+      Name:
+        type: string
+      OS:
+        type: string
+      Optimization:
+        $ref: '#/definitions/models.Optimization'
+      Print Management:
+        $ref: '#/definitions/models.PrintManagement'
+      Restore Image:
+        type: string
+      SMBIOS settings:
+        $ref: '#/definitions/models.SMBIOSSettings'
+      Security:
+        $ref: '#/definitions/models.Security'
+      Shared Applications:
+        $ref: '#/definitions/models.SharedApplications'
+      Shared Profile:
+        $ref: '#/definitions/models.Expiration'
+      Smart Guard:
+        $ref: '#/definitions/models.Expiration'
+      SmartMount:
+        $ref: '#/definitions/models.SmartMount'
+      Startup and Shutdown:
+        $ref: '#/definitions/models.StartupAndShutdown'
+      State:
+        type: string
+      Template:
+        type: string
+      Time Synchronization:
+        $ref: '#/definitions/models.TimeSynchronization'
+      Travel mode:
+        $ref: '#/definitions/models.TravelMode'
+      Type:
+        type: string
+      USB and Bluetooth:
+        $ref: '#/definitions/models.USBAndBluetooth'
+      Uptime:
+        type: string
+      user:
+        type: string
+    type: object
+  models.PrintManagement:
+    properties:
+      Show host printer UI:
+        type: string
+      Synchronize default printer:
+        type: string
+      Synchronize with host printers:
+        type: string
+    type: object
+  models.PullCatalogManifestRequest:
+    properties:
+      catalog_id:
+        type: string
+      connection:
+        type: string
+      machine_name:
+        type: string
+      owner:
+        type: string
+      path:
+        type: string
+      provider_metadata:
+        additionalProperties:
+          type: string
+        type: object
+      start_after_pull:
+        type: boolean
+      version:
+        type: string
+    type: object
+  models.PushCatalogManifestRequest:
+    properties:
+      catalog_id:
+        type: string
+      connection:
+        type: string
+      description:
+        type: string
+      local_path:
+        type: string
+      minimum_requirements:
+        $ref: '#/definitions/models.MinimumSpecRequirement'
+      required_claims:
+        items:
+          type: string
+        type: array
+      required_roles:
+        items:
+          type: string
+        type: array
+      tags:
+        items:
+          type: string
+        type: array
+      uuid:
+        type: string
+      version:
+        type: string
+    type: object
+  models.RegisterVirtualMachineRequest:
+    properties:
+      delay_applying_restrictions:
+        type: boolean
+      force:
+        type: boolean
+      machine_name:
+        type: string
+      owner:
+        type: string
+      path:
+        type: string
+      regenerate_source_uuid:
+        type: boolean
+      uuid:
+        type: string
+    type: object
+  models.RemoteVirtualMachineProvider:
+    properties:
+      api_key:
+        type: string
+      host:
+        type: string
+      meta:
+        additionalProperties:
+          type: string
+        type: object
+      password:
+        type: string
+      port:
+        type: string
+      type:
+        type: string
+      user:
+        type: string
+    type: object
+  models.RenameVirtualMachineRequest:
+    properties:
+      current_name:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      new_name:
+        type: string
+    type: object
+  models.RoleRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  models.RoleResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  models.SMBIOSSettings:
+    properties:
+      BIOS Version:
+        type: string
+      Board Manufacturer:
+        type: string
+      System serial number:
+        type: string
+    type: object
+  models.Security:
+    properties:
+      Archived:
+        type: string
+      Configuration is locked:
+        type: string
+      Custom password protection:
+        type: string
+      Encrypted:
+        type: string
+      Packed:
+        type: string
+      Protected:
+        type: string
+      TPM enabled:
+        type: string
+      TPM type:
+        type: string
+    type: object
+  models.SharedApplications:
+    properties:
+      Bounce dock icon when app flashes:
+        type: string
+      Guest-to-host apps sharing:
+        type: string
+      Host-to-guest apps sharing:
+        type: string
+      Show guest apps folder in Dock:
+        type: string
+      Show guest notifications:
+        type: string
+      enabled:
+        type: boolean
+    type: object
+  models.SmartMount:
+    properties:
+      CD/DVD drives:
+        type: string
+      Network shares:
+        type: string
+      Removable drives:
+        type: string
+      enabled:
+        type: boolean
+    type: object
+  models.Sound0:
+    properties:
+      enabled:
+        type: boolean
+      mixer:
+        type: string
+      output:
+        type: string
+    type: object
+  models.StartupAndShutdown:
+    properties:
+      Autostart:
+        type: string
+      Autostart delay:
+        type: integer
+      Autostop:
+        type: string
+      On shutdown:
+        type: string
+      On window close:
+        type: string
+      Pause idle:
+        type: string
+      Startup view:
+        type: string
+      Undo disks:
+        type: string
+    type: object
+  models.TimeSynchronization:
+    properties:
+      Interval (in seconds):
+        type: integer
+      Smart mode:
+        type: string
+      Timezone synchronization disabled:
+        type: string
+      enabled:
+        type: boolean
+    type: object
+  models.TravelMode:
+    properties:
+      Enter condition:
+        type: string
+      Enter threshold:
+        type: integer
+      Quit condition:
+        type: string
+    type: object
+  models.USBAndBluetooth:
+    properties:
+      Automatic sharing bluetooth:
+        type: string
+      Automatic sharing cameras:
+        type: string
+      Automatic sharing gamepads:
+        type: string
+      Automatic sharing smart cards:
+        type: string
+      Support USB 3.0:
+        type: string
+    type: object
+  models.UninstallToolsRequest:
+    properties:
+      all:
+        type: boolean
+      run_as:
+        type: string
+      tools:
+        additionalProperties:
+          $ref: '#/definitions/models.UninstallToolsRequestItem'
+        type: object
+      uninstall_dependencies:
+        type: boolean
+    type: object
+  models.UninstallToolsRequestItem:
+    properties:
+      flags:
+        additionalProperties:
+          type: string
+        type: object
+      uninstall_dependencies:
+        type: boolean
+    type: object
+  models.UnregisterVirtualMachineRequest:
+    properties:
+      clean_source_uuid:
+        type: boolean
+      id:
+        type: string
+      owner:
+        type: string
+    type: object
+  models.UserCreateRequest:
+    properties:
+      claims:
+        items:
+          type: string
+        type: array
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      username:
+        type: string
+    type: object
+  models.ValidateTokenRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  models.ValidateTokenResponse:
+    properties:
+      valid:
+        type: boolean
+    type: object
+  models.Video:
+    properties:
+      3d-acceleration:
+        type: string
+      adapter-type:
+        type: string
+      automatic-video-memory:
+        type: string
+      high-resolution:
+        type: string
+      high-resolution-in-guest:
+        type: string
+      native-scaling-in-guest:
+        type: string
+      size:
+        type: string
+      vertical-sync:
+        type: string
+    type: object
+  models.VirtualMachineConfigRequest:
+    properties:
+      operations:
+        items:
+          $ref: '#/definitions/models.VirtualMachineConfigRequestOperation'
+        type: array
+      owner:
+        type: string
+    type: object
+  models.VirtualMachineConfigRequestOperation:
+    properties:
+      error: {}
+      flags:
+        items:
+          type: string
+        type: array
+      group:
+        type: string
+      operation:
+        type: string
+      options:
+        items:
+          $ref: '#/definitions/models.VirtualMachineConfigRequestOperationOption'
+        type: array
+      owner:
+        type: string
+      value:
+        type: string
+    type: object
+  models.VirtualMachineConfigRequestOperationOption:
+    properties:
+      flag:
+        type: string
+      value:
+        type: string
+    type: object
+  models.VirtualMachineConfigResponse:
+    properties:
+      operations:
+        items:
+          $ref: '#/definitions/models.VirtualMachineConfigResponseOperation'
+        type: array
+    type: object
+  models.VirtualMachineConfigResponseOperation:
+    properties:
+      error:
+        type: string
+      group:
+        type: string
+      operation:
+        type: string
+      status:
+        type: string
+    type: object
+  models.VirtualMachineExecuteCommandRequest:
+    properties:
+      command:
+        type: string
+    type: object
+  models.VirtualMachineExecuteCommandResponse:
+    properties:
+      error:
+        type: string
+      exit_code:
+        type: integer
+      stderr:
+        type: string
+      stdout:
+        type: string
+    type: object
+  models.VirtualMachineOperationResponse:
+    properties:
+      id:
+        type: string
+      operation:
+        type: string
+      status:
+        type: string
+    type: object
+  models.VirtualMachineStatusResponse:
+    properties:
+      id:
+        type: string
+      status:
+        type: string
+    type: object
 info:
   contact:
     email: carlos.lapao@parallels.com
@@ -136,21 +1210,21 @@ paths:
       tags:
       - Api Keys
     post:
-      description: This endpoint generates a token
+      description: This endpoint creates an api key
       parameters:
       - description: Body
         in: body
         name: apiKey
         required: true
         schema:
-          $ref: '#/definitions/models.LoginRequest'
+          $ref: '#/definitions/models.ApiKeyRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.LoginResponse'
+            $ref: '#/definitions/models.ApiKeyResponse'
         "400":
           description: Bad Request
           schema:
@@ -162,9 +1236,9 @@ paths:
       security:
       - ApiKeyAuth: []
       - BearerAuth: []
-      summary: Generates a token
+      summary: Creates an api key
       tags:
-      - Authorization
+      - Api Keys
   /v1/auth/api_keys/{id}:
     delete:
       description: This endpoint deletes an api key
@@ -250,6 +1324,1622 @@ paths:
       summary: Revoke an api key
       tags:
       - Api Keys
+  /v1/auth/claims:
+    get:
+      description: This endpoint returns all the claims
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ClaimResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the claims
+      tags:
+      - Claims
+    post:
+      description: This endpoint creates a claim
+      parameters:
+      - description: Claim Request
+        in: body
+        name: claimRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.ClaimRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ClaimResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a claim
+      tags:
+      - Claims
+  /v1/auth/claims/{id}:
+    delete:
+      description: This endpoint Deletes a claim
+      parameters:
+      - description: Claim ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Delete a claim
+      tags:
+      - Claims
+    get:
+      description: This endpoint returns a claim
+      parameters:
+      - description: Claim ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ClaimResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a claim
+      tags:
+      - Claims
+  /v1/auth/roles:
+    get:
+      description: This endpoint returns all the roles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.RoleResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the roles
+      tags:
+      - Roles
+    post:
+      description: This endpoint returns a role
+      parameters:
+      - description: Role Request
+        in: body
+        name: roleRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.RoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RoleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a role
+      tags:
+      - Roles
+  /v1/auth/roles/{id}:
+    get:
+      description: This endpoint deletes a role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Delete a role
+      tags:
+      - Roles
+  /v1/auth/token:
+    post:
+      description: This endpoint generates a token
+      parameters:
+      - description: Body
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      summary: Generates a token
+      tags:
+      - Authorization
+  /v1/auth/token/validate:
+    post:
+      description: This endpoint validates a token
+      parameters:
+      - description: Body
+        in: body
+        name: tokenRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.ValidateTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ValidateTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      summary: Validates a token
+      tags:
+      - Authorization
+  /v1/auth/users:
+    get:
+      description: This endpoint returns all the users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ApiUser'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the users
+      tags:
+      - Users
+    post:
+      description: This endpoint creates a user
+      parameters:
+      - description: User
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.ApiUser'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a user
+      tags:
+      - Users
+  /v1/auth/users/{id}:
+    delete:
+      description: This endpoint deletes a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a user
+      tags:
+      - Users
+    get:
+      description: This endpoint returns a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ApiUser'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a user
+      tags:
+      - Users
+    put:
+      description: This endpoint updates a user
+      parameters:
+      - description: User
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.ApiUser'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Update a user
+      tags:
+      - Users
+  /v1/auth/users/{id}/claims:
+    get:
+      description: This endpoint returns all the claims for a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ClaimResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the claims for a user
+      tags:
+      - Users
+  /v1/auth/users/{id}/roles:
+    get:
+      description: This endpoint returns all the roles for a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RoleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the roles for a user
+      tags:
+      - Users
+    post:
+      description: This endpoint adds a claim to a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Claim Name
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ClaimRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.ClaimRequest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Adds a claim to a user
+      tags:
+      - Users
+  /v1/auth/users/{id}/roles/{role_id}:
+    post:
+      description: This endpoint removes a claim from a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Claim ID
+        in: path
+        name: claim_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Removes a claim from a user
+      tags:
+      - Users
+  /v1/catalog:
+    get:
+      description: This endpoint returns all the remote catalogs
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties:
+                items:
+                  $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+                type: array
+              type: object
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the remote catalogs
+      tags:
+      - Catalogs
+  /v1/catalog/{catalogId}:
+    delete:
+      description: This endpoint deletes a catalog manifest and all its versions
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a catalog manifest and all its versions
+      tags:
+      - Catalogs
+    get:
+      description: This endpoint returns all the remote catalogs
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the remote catalogs
+      tags:
+      - Catalogs
+  /v1/catalog/{catalogId}/{version}:
+    delete:
+      description: This endpoint deletes a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a catalog manifest version
+      tags:
+      - Catalogs
+    get:
+      description: This endpoint returns a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a catalog manifest version
+      tags:
+      - Catalogs
+  /v1/catalog/{catalogId}/{version}/download:
+    get:
+      description: This endpoint downloads a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Downloads a catalog manifest version
+      tags:
+      - Catalogs
+  /v1/catalog/{catalogId}/{version}/download/revoke:
+    post:
+      description: This endpoint UnTaints a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: UnTaints a catalog manifest version
+      tags:
+      - Catalogs
+  /v1/catalog/{catalogId}/{version}/download/untaint:
+    post:
+      description: This endpoint UnTaints a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: UnTaints a catalog manifest version
+      tags:
+      - Catalogs
+  /v1/catalog/{catalogId}/{version}/taint:
+    post:
+      description: This endpoint Taints a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Taints a catalog manifest version
+      tags:
+      - Catalogs
+  /v1/catalog/import:
+    put:
+      description: This endpoint imports a remote catalog manifest metadata into the
+        catalog inventory
+      parameters:
+      - description: Pull request
+        in: body
+        name: importRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.ImportCatalogManifestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.ImportCatalogManifestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Imports a remote catalog manifest metadata into the catalog inventory
+      tags:
+      - Catalogs
+  /v1/catalog/pull:
+    put:
+      description: This endpoint pulls a remote catalog manifest
+      parameters:
+      - description: Pull request
+        in: body
+        name: pullRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.PullCatalogManifestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.PullCatalogManifestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Pull a remote catalog manifest
+      tags:
+      - Catalogs
+  /v1/catalog/push:
+    post:
+      description: This endpoint pushes a catalog manifest to the catalog inventory
+      parameters:
+      - description: Push request
+        in: body
+        name: pushRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.PushCatalogManifestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Pushes a catalog manifest to the catalog inventory
+      tags:
+      - Catalogs
+  /v1/config/tools/install:
+    post:
+      description: This endpoint restarts the API Service
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Restarts the API Service
+      tags:
+      - Config
+  /v1/machines:
+    get:
+      description: This endpoint returns all the virtual machines
+      parameters:
+      - description: X-Filter
+        in: header
+        name: filter
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ParallelsVM'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the virtual machines
+      tags:
+      - Machines
+    post:
+      description: This endpoint creates a virtual machine
+      parameters:
+      - description: New Machine Request
+        in: body
+        name: createRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateVirtualMachineRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CreateVirtualMachineResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}:
+    delete:
+      description: This endpoint deletes a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a virtual machine
+      tags:
+      - Machines
+    get:
+      description: This endpoint returns a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ParallelsVM'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/execute:
+    post:
+      description: This endpoint executes a command on a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Machine Execute Command Request
+        in: body
+        name: executeRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.VirtualMachineExecuteCommandRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineExecuteCommandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Executes a command on a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/rename:
+    post:
+      description: This endpoint Renames a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Machine Rename Request
+        in: body
+        name: renameRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.RenameVirtualMachineRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ParallelsVM'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Renames a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/reset:
+    get:
+      description: This endpoint pauses a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Pauses a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/restart:
+    get:
+      description: This endpoint restarts a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Restarts a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/resume:
+    get:
+      description: This endpoint resumes a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Resumes a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/set:
+    post:
+      description: This endpoint configures a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Machine Set Request
+        in: body
+        name: configRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.VirtualMachineConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Configures a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/start:
+    get:
+      description: This endpoint starts a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Starts a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/status:
+    post:
+      description: This endpoint returns the current state of a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Get the current state of a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/stop:
+    get:
+      description: This endpoint stops a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Stops a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/suspend:
+    get:
+      description: This endpoint suspends a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Suspends a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/unregister:
+    post:
+      description: This endpoint unregisters a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Machine Unregister Request
+        in: body
+        name: unregisterRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.UnregisterVirtualMachineRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Unregisters a virtual machine
+      tags:
+      - Machines
+  /v1/machines/register:
+    post:
+      description: This endpoint registers a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Machine Register Request
+        in: body
+        name: registerRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterVirtualMachineRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ParallelsVM'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Registers a virtual machine
+      tags:
+      - Machines
+  /v1/parallels_desktop/key:
+    get:
+      description: This endpoint returns Parallels Desktop active license
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ParallelsDesktopLicense'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets Parallels Desktop active license
+      tags:
+      - Config
+  /v1/templates/packer:
+    get:
+      description: This endpoint returns all the packer templates
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.PackerTemplateResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the packer templates
+      tags:
+      - Packer Templates
+    post:
+      description: This endpoint creates a packer template
+      parameters:
+      - description: Create Packer Template Request
+        in: body
+        name: createPackerTemplateRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreatePackerTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PackerTemplateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a packer template
+      tags:
+      - Packer Templates
+  /v1/templates/packer/{id}:
+    delete:
+      description: This endpoint deletes a packer template
+      parameters:
+      - description: Packer Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a packer template
+      tags:
+      - Packer Templates
+    get:
+      description: This endpoint returns a packer template
+      parameters:
+      - description: Packer Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PackerTemplateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a packer template
+      tags:
+      - Packer Templates
+    put:
+      description: This endpoint updates a packer template
+      parameters:
+      - description: Update Packer Template Request
+        in: body
+        name: createPackerTemplateRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreatePackerTemplateRequest'
+      - description: Packer Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PackerTemplateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Updates a packer template
+      tags:
+      - Packer Templates
 securityDefinitions:
   ApiKeyAuth:
     description: Type the api key in the input below.

@@ -11,7 +11,7 @@ import (
 	"github.com/Parallels/pd-api-service/serviceprovider"
 )
 
-func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, id string) error {
+func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId string, version string) error {
 	executed := false
 	db := serviceprovider.Get().JsonDatabase
 	if db == nil {
@@ -21,39 +21,44 @@ func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, id string) e
 		return err
 	}
 
-	connectionString := ""
-	var manifest *models.VirtualMachineCatalogManifest
-	dbManifest, err := db.GetCatalogManifest(ctx, id)
-	if err != nil && err.Error() != "catalog manifest not found" {
-		return err
-	} else {
-		if dbManifest != nil {
-			m := mappers.DtoCatalogManifestToBase(*dbManifest)
-			manifest = &m
+	// Either we will be cleaning all of the catalog or just a specific version
+	cleanItems := make([]models.VirtualMachineCatalogManifest, 0)
+
+	if version == "" {
+		dbManifest, err := db.GetCatalogManifestsByCatalogId(ctx, catalogId)
+		if err != nil && err.Error() != "catalog manifest not found" {
+			return err
+		} else {
+			for _, manifest := range dbManifest {
+				cleanItems = append(cleanItems, mappers.DtoCatalogManifestToBase(manifest))
+			}
 		}
 	}
 
-	if manifest == nil || manifest.Provider == nil {
-		return errors.Newf("no catalog manifest found for id %s", id)
+	connectionString := ""
+	if len(cleanItems) == 0 {
+		return errors.Newf("no catalog manifest found for id %s", catalogId)
 	}
 
 	cleanupService := cleanupservice.NewCleanupRequest()
 
-	for _, rs := range s.remoteServices {
-		check, checkErr := rs.Check(ctx, manifest.Provider.String())
-		if checkErr != nil {
-			ctx.LogError("Error checking remote service %v: %v", rs.Name(), checkErr)
-			return checkErr
-		}
+	for _, cleanItem := range cleanItems {
+		for _, rs := range s.remoteServices {
+			check, checkErr := rs.Check(ctx, cleanItem.Provider.String())
+			if checkErr != nil {
+				ctx.LogError("Error checking remote service %v: %v", rs.Name(), checkErr)
+				return checkErr
+			}
 
-		if check {
-			cleanupService.RemoteStorageService = rs
-			executed = true
-			metadataFilePath := filepath.Join(manifest.Path, manifest.MetadataFile)
-			packFilePath := filepath.Join(manifest.Path, manifest.PackFile)
-			cleanupService.AddRemoteFileCleanupOperation(metadataFilePath, false)
-			cleanupService.AddRemoteFileCleanupOperation(packFilePath, false)
-			cleanupService.AddRemoteFileCleanupOperation(manifest.Path, true)
+			if check {
+				cleanupService.RemoteStorageService = rs
+				executed = true
+				metadataFilePath := filepath.Join(cleanItem.Path, cleanItem.MetadataFile)
+				packFilePath := filepath.Join(cleanItem.Path, cleanItem.PackFile)
+				cleanupService.AddRemoteFileCleanupOperation(metadataFilePath, false)
+				cleanupService.AddRemoteFileCleanupOperation(packFilePath, false)
+				cleanupService.AddRemoteFileCleanupOperation(cleanItem.Path, true)
+			}
 		}
 	}
 

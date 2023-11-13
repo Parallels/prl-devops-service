@@ -87,7 +87,7 @@ func (j *JsonDatabase) DeleteClaim(ctx basecontext.ApiContext, idOrName string) 
 
 	for i, claim := range j.data.Claims {
 		if strings.EqualFold(claim.ID, idOrName) || strings.EqualFold(claim.Name, idOrName) {
-			if claim.Internal {
+			if claim.Internal && !IsRootUser(ctx) {
 				return ErrRemoveInternalClaim
 			}
 

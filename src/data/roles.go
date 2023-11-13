@@ -86,7 +86,7 @@ func (j *JsonDatabase) DeleteRole(ctx basecontext.ApiContext, idOrName string) e
 
 	for i, role := range j.data.Roles {
 		if strings.EqualFold(role.ID, idOrName) || strings.EqualFold(role.Name, idOrName) {
-			if role.Internal {
+			if role.Internal && !IsRootUser(ctx) {
 				return ErrRemoveInternalRole
 			}
 			j.data.Roles = append(j.data.Roles[:i], j.data.Roles[i+1:]...)

@@ -1,24 +1,36 @@
 package models
 
 import (
+	"fmt"
+
 	"github.com/Parallels/pd-api-service/catalog/cleanupservice"
+	"github.com/Parallels/pd-api-service/helpers"
 )
 
 type ImportCatalogManifestRequest struct {
-	ID               string            `json:"id"`
+	CatalogId        string            `json:"catalog_id"`
+	Version          string            `json:"version"`
 	Connection       string            `json:"connection,omitempty"`
 	ProviderMetadata map[string]string `json:"provider_metadata,omitempty"`
 }
 
 func (r *ImportCatalogManifestRequest) Validate() error {
-	if r.ID == "" {
-		return ErrMissingId
+	if r.CatalogId == "" {
+		return ErrPullMissingCatalogId
 	}
+	if r.Version == "" {
+		return ErrPushMissingVersion
+	}
+
 	if r.Connection == "" {
 		return ErrMissingConnection
 	}
 
 	return nil
+}
+
+func (r *ImportCatalogManifestRequest) Name() string {
+	return fmt.Sprintf("%s-%s", helpers.NormalizeString(r.CatalogId), helpers.NormalizeString(r.Version))
 }
 
 type ImportCatalogManifestResponse struct {

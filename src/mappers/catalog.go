@@ -9,7 +9,10 @@ import (
 func CatalogManifestToDto(m catalog_models.VirtualMachineCatalogManifest) data_models.CatalogManifest {
 	data := data_models.CatalogManifest{
 		ID:                     m.ID,
+		CatalogId:              m.CatalogId,
+		Description:            m.Description,
 		Name:                   m.Name,
+		Version:                m.Version,
 		Path:                   m.Path,
 		MetadataFile:           m.MetadataFile,
 		PackFile:               m.PackFile,
@@ -24,6 +27,14 @@ func CatalogManifestToDto(m catalog_models.VirtualMachineCatalogManifest) data_m
 		VirtualMachineContents: CatalogManifestContentItemsToDto(m.VirtualMachineContents),
 		PackContents:           CatalogManifestContentItemsToDto(m.PackContents),
 		Size:                   m.Size,
+		Tainted:                m.Tainted,
+		TaintedBy:              m.TaintedBy,
+		TaintedAt:              m.TaintedAt,
+		UnTaintedBy:            m.UnTaintedBy,
+		Revoked:                m.Revoked,
+		RevokedAt:              m.RevokedAt,
+		RevokedBy:              m.RevokedBy,
+		DownloadCount:          m.DownloadCount,
 	}
 
 	if m.Provider != nil {
@@ -57,7 +68,10 @@ func CatalogManifestToDto(m catalog_models.VirtualMachineCatalogManifest) data_m
 func DtoCatalogManifestToBase(m data_models.CatalogManifest) catalog_models.VirtualMachineCatalogManifest {
 	data := catalog_models.VirtualMachineCatalogManifest{
 		ID:                     m.ID,
+		CatalogId:              m.CatalogId,
+		Version:                m.Version,
 		Name:                   m.Name,
+		Description:            m.Description,
 		Path:                   m.Path,
 		MetadataFile:           m.MetadataFile,
 		PackFile:               m.PackFile,
@@ -72,6 +86,14 @@ func DtoCatalogManifestToBase(m data_models.CatalogManifest) catalog_models.Virt
 		Size:                   m.Size,
 		VirtualMachineContents: DtoCatalogManifestContentItemsToBase(m.VirtualMachineContents),
 		PackContents:           DtoCatalogManifestContentItemsToBase(m.PackContents),
+		Tainted:                m.Tainted,
+		TaintedBy:              m.TaintedBy,
+		TaintedAt:              m.TaintedAt,
+		UnTaintedBy:            m.UnTaintedBy,
+		Revoked:                m.Revoked,
+		RevokedAt:              m.RevokedAt,
+		RevokedBy:              m.RevokedBy,
+		DownloadCount:          m.DownloadCount,
 	}
 
 	if m.Provider != nil {
@@ -154,6 +176,9 @@ func ApiCatalogManifestToDto(m models.CatalogManifest) data_models.CatalogManife
 	data := data_models.CatalogManifest{
 		ID:                 m.ID,
 		Name:               m.Name,
+		CatalogId:          m.CatalogId,
+		Description:        m.Description,
+		Version:            m.Version,
 		Type:               m.Type,
 		Tags:               m.Tags,
 		Path:               m.Path,
@@ -165,6 +190,14 @@ func ApiCatalogManifestToDto(m models.CatalogManifest) data_models.CatalogManife
 		UpdatedAt:          m.UpdatedAt,
 		LastDownloadedAt:   m.LastDownloadedAt,
 		LastDownloadedUser: m.LastDownloadedUser,
+		Tainted:            m.Tainted,
+		TaintedBy:          m.TaintedBy,
+		TaintedAt:          m.TaintedAt,
+		UnTaintedBy:        m.UnTaintedBy,
+		Revoked:            m.Revoked,
+		RevokedAt:          m.RevokedAt,
+		RevokedBy:          m.RevokedBy,
+		DownloadCount:      m.DownloadCount,
 	}
 
 	if m.Provider != nil {
@@ -188,6 +221,9 @@ func ApiCatalogManifestToDto(m models.CatalogManifest) data_models.CatalogManife
 func DtoCatalogManifestToApi(m data_models.CatalogManifest) models.CatalogManifest {
 	data := models.CatalogManifest{
 		ID:                 m.ID,
+		CatalogId:          m.CatalogId,
+		Description:        m.Description,
+		Version:            m.Version,
 		Name:               m.Name,
 		Type:               m.Type,
 		Tags:               m.Tags,
@@ -200,6 +236,14 @@ func DtoCatalogManifestToApi(m data_models.CatalogManifest) models.CatalogManife
 		UpdatedAt:          m.UpdatedAt,
 		LastDownloadedAt:   m.LastDownloadedAt,
 		LastDownloadedUser: m.LastDownloadedUser,
+		Tainted:            m.Tainted,
+		TaintedBy:          m.TaintedBy,
+		TaintedAt:          m.TaintedAt,
+		UnTaintedBy:        m.UnTaintedBy,
+		Revoked:            m.Revoked,
+		RevokedAt:          m.RevokedAt,
+		RevokedBy:          m.RevokedBy,
+		DownloadCount:      m.DownloadCount,
 	}
 
 	if data.Tags == nil {
@@ -259,7 +303,10 @@ func BasePullCatalogManifestResponseToApi(m catalog_models.PullCatalogManifestRe
 func ApiCatalogManifestToCatalogManifest(m models.CatalogManifest) catalog_models.VirtualMachineCatalogManifest {
 	data := catalog_models.VirtualMachineCatalogManifest{
 		ID:                 m.ID,
+		CatalogId:          m.CatalogId,
+		Version:            m.Version,
 		Name:               m.Name,
+		Description:        m.Description,
 		Path:               m.Path,
 		PackFile:           m.PackFilename,
 		MetadataFile:       m.MetadataFilename,
@@ -271,6 +318,14 @@ func ApiCatalogManifestToCatalogManifest(m models.CatalogManifest) catalog_model
 		UpdatedAt:          m.UpdatedAt,
 		LastDownloadedAt:   m.LastDownloadedAt,
 		LastDownloadedUser: m.LastDownloadedUser,
+		Tainted:            m.Tainted,
+		TaintedBy:          m.TaintedBy,
+		TaintedAt:          m.TaintedAt,
+		UnTaintedBy:        m.UnTaintedBy,
+		Revoked:            m.Revoked,
+		RevokedAt:          m.RevokedAt,
+		RevokedBy:          m.RevokedBy,
+		DownloadCount:      m.DownloadCount,
 	}
 
 	if m.Provider != nil {

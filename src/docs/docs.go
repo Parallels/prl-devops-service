@@ -75,14 +75,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint generates a token",
+                "description": "This endpoint creates an api key",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Authorization"
+                    "Api Keys"
                 ],
-                "summary": "Generates a token",
+                "summary": "Creates an api key",
                 "parameters": [
                     {
                         "description": "Body",
@@ -90,7 +90,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.LoginRequest"
+                            "$ref": "#/definitions/models.ApiKeyRequest"
                         }
                     }
                 ],
@@ -98,7 +98,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.LoginResponse"
+                            "$ref": "#/definitions/models.ApiKeyResponse"
                         }
                     },
                     "400": {
@@ -254,9 +254,2791 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/v1/auth/claims": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the claims",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Claims"
+                ],
+                "summary": "Gets all the claims",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ClaimResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint creates a claim",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Claims"
+                ],
+                "summary": "Creates a claim",
+                "parameters": [
+                    {
+                        "description": "Claim Request",
+                        "name": "claimRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ClaimRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ClaimResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/claims/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns a claim",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Claims"
+                ],
+                "summary": "Gets a claim",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Claim ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ClaimResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint Deletes a claim",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Claims"
+                ],
+                "summary": "Delete a claim",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Claim ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/roles": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the roles",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Gets all the roles",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.RoleResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns a role",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Gets a role",
+                "parameters": [
+                    {
+                        "description": "Role Request",
+                        "name": "roleRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.RoleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/roles/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a role",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Delete a role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/token": {
+            "post": {
+                "description": "This endpoint generates a token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authorization"
+                ],
+                "summary": "Generates a token",
+                "parameters": [
+                    {
+                        "description": "Body",
+                        "name": "login",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/token/validate": {
+            "post": {
+                "description": "This endpoint validates a token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authorization"
+                ],
+                "summary": "Validates a token",
+                "parameters": [
+                    {
+                        "description": "Body",
+                        "name": "tokenRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ValidateTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ValidateTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/users": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the users",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Gets all the users",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ApiUser"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint creates a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Creates a user",
+                "parameters": [
+                    {
+                        "description": "User",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UserCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiUser"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/users/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Gets a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiUser"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint updates a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update a user",
+                "parameters": [
+                    {
+                        "description": "User",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UserCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiUser"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Deletes a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/users/{id}/claims": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the claims for a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Gets all the claims for a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ClaimResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/users/{id}/roles": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the roles for a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Gets all the roles for a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.RoleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint adds a claim to a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Adds a claim to a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Claim Name",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ClaimRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.ClaimRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/users/{id}/roles/{role_id}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint removes a claim from a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Removes a claim from a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Claim ID",
+                        "name": "claim_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the remote catalogs",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Gets all the remote catalogs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/import": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint imports a remote catalog manifest metadata into the catalog inventory",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Imports a remote catalog manifest metadata into the catalog inventory",
+                "parameters": [
+                    {
+                        "description": "Pull request",
+                        "name": "importRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ImportCatalogManifestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.ImportCatalogManifestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/pull": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint pulls a remote catalog manifest",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Pull a remote catalog manifest",
+                "parameters": [
+                    {
+                        "description": "Pull request",
+                        "name": "pullRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PullCatalogManifestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.PullCatalogManifestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/push": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint pushes a catalog manifest to the catalog inventory",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Pushes a catalog manifest to the catalog inventory",
+                "parameters": [
+                    {
+                        "description": "Push request",
+                        "name": "pushRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PushCatalogManifestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/{catalogId}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the remote catalogs",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Gets all the remote catalogs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a catalog manifest and all its versions",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Deletes a catalog manifest and all its versions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/{catalogId}/{version}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns a catalog manifest version",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Gets a catalog manifest version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Version",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a catalog manifest version",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Deletes a catalog manifest version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Version",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/{catalogId}/{version}/download": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint downloads a catalog manifest version",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Downloads a catalog manifest version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Version",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/{catalogId}/{version}/download/revoke": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint UnTaints a catalog manifest version",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "UnTaints a catalog manifest version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Version",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/{catalogId}/{version}/download/untaint": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint UnTaints a catalog manifest version",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "UnTaints a catalog manifest version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Version",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/{catalogId}/{version}/taint": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint Taints a catalog manifest version",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Taints a catalog manifest version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Version",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/config/tools/install": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint restarts the API Service",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Restarts the API Service",
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the virtual machines",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Gets all the virtual machines",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "X-Filter",
+                        "name": "filter",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ParallelsVM"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint creates a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Creates a virtual machine",
+                "parameters": [
+                    {
+                        "description": "New Machine Request",
+                        "name": "createRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateVirtualMachineRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateVirtualMachineResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/register": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint registers a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Registers a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Machine Register Request",
+                        "name": "registerRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RegisterVirtualMachineRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ParallelsVM"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Gets a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ParallelsVM"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Deletes a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/{id}/execute": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint executes a command on a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Executes a command on a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Machine Execute Command Request",
+                        "name": "executeRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineExecuteCommandRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineExecuteCommandResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/{id}/rename": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint Renames a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Renames a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Machine Rename Request",
+                        "name": "renameRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RenameVirtualMachineRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ParallelsVM"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/{id}/reset": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint pauses a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Pauses a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineOperationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/{id}/restart": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint restarts a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Restarts a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineOperationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/{id}/resume": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint resumes a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Resumes a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineOperationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/{id}/set": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint configures a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Configures a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Machine Set Request",
+                        "name": "configRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/{id}/start": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint starts a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Starts a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineOperationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/{id}/status": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns the current state of a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Get the current state of a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineStatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/{id}/stop": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint stops a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Stops a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineOperationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/{id}/suspend": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint suspends a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Suspends a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineOperationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/{id}/unregister": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint unregisters a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Unregisters a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Machine Unregister Request",
+                        "name": "unregisterRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UnregisterVirtualMachineRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiCommonResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/parallels_desktop/key": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns Parallels Desktop active license",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Gets Parallels Desktop active license",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ParallelsDesktopLicense"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/templates/packer": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the packer templates",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Packer Templates"
+                ],
+                "summary": "Gets all the packer templates",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.PackerTemplateResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint creates a packer template",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Packer Templates"
+                ],
+                "summary": "Creates a packer template",
+                "parameters": [
+                    {
+                        "description": "Create Packer Template Request",
+                        "name": "createPackerTemplateRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreatePackerTemplateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.PackerTemplateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/templates/packer/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns a packer template",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Packer Templates"
+                ],
+                "summary": "Gets a packer template",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Packer Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.PackerTemplateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint updates a packer template",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Packer Templates"
+                ],
+                "summary": "Updates a packer template",
+                "parameters": [
+                    {
+                        "description": "Update Packer Template Request",
+                        "name": "createPackerTemplateRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreatePackerTemplateRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Packer Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.PackerTemplateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a packer template",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Packer Templates"
+                ],
+                "summary": "Deletes a packer template",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Packer Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "github_com_Parallels_pd-api-service_models.CatalogManifest": {
+            "type": "object",
+            "properties": {
+                "catalog_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "download_count": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_downloaded_at": {
+                    "type": "string"
+                },
+                "last_downloaded_user": {
+                    "type": "string"
+                },
+                "metadata_filename": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pack_contents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.CatalogManifestPackItem"
+                    }
+                },
+                "pack_filename": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "provider": {
+                    "$ref": "#/definitions/models.RemoteVirtualMachineProvider"
+                },
+                "required_claims": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required_roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "revoked": {
+                    "type": "boolean"
+                },
+                "revoked_at": {
+                    "type": "string"
+                },
+                "revoked_by": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tainted": {
+                    "type": "boolean"
+                },
+                "tainted_at": {
+                    "type": "string"
+                },
+                "tainted_by": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "untainted_by": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_pd-api-service_models.ImportCatalogManifestResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_pd-api-service_models.PullCatalogManifestResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "local_path": {
+                    "type": "string"
+                },
+                "machine_name": {
+                    "type": "string"
+                },
+                "manifest": {
+                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                }
+            }
+        },
+        "models.Advanced": {
+            "type": "object",
+            "properties": {
+                "Public SSH keys synchronization": {
+                    "type": "string"
+                },
+                "Share host location": {
+                    "type": "string"
+                },
+                "Show developer tools": {
+                    "type": "string"
+                },
+                "Swipe from edges": {
+                    "type": "string"
+                },
+                "VM hostname synchronization": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ApiCommonResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {},
+                "error": {},
+                "operation": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "models.ApiErrorResponse": {
             "type": "object",
             "properties": {
@@ -320,6 +3102,517 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ApiUser": {
+            "type": "object",
+            "properties": {
+                "claims": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CPU": {
+            "type": "object",
+            "properties": {
+                "VT-x": {
+                    "type": "boolean"
+                },
+                "accl": {
+                    "type": "string"
+                },
+                "auto": {
+                    "type": "string"
+                },
+                "cpus": {
+                    "type": "integer"
+                },
+                "hotplug": {
+                    "type": "boolean"
+                },
+                "mode": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CatalogManifestPackItem": {
+            "type": "object",
+            "properties": {
+                "is_dir": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Cdrom0": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ClaimRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ClaimResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Code": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "mode": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Coherence": {
+            "type": "object",
+            "properties": {
+                "Auto-switch to full screen": {
+                    "type": "string"
+                },
+                "Disable aero": {
+                    "type": "string"
+                },
+                "Hide minimized windows": {
+                    "type": "string"
+                },
+                "Show Windows systray in Mac menu": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CreatePackerTemplateRequest": {
+            "type": "object",
+            "properties": {
+                "addons": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "defaults": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "internal": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "packer_folder": {
+                    "type": "string"
+                },
+                "required_claims": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required_roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "specs": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "models.CreatePackerVirtualMachineRequest": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "type": "string"
+                },
+                "desiredState": {
+                    "type": "string"
+                },
+                "disk": {
+                    "type": "string"
+                },
+                "memory": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "template": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CreateRemoteVirtualMachineRequest": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CreateVagrantMachineRequest": {
+            "type": "object",
+            "properties": {
+                "box": {
+                    "type": "string"
+                },
+                "custom_parallels_config": {
+                    "type": "string"
+                },
+                "custom_vagrant_config": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CreateVirtualMachineRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "packer_template": {
+                    "$ref": "#/definitions/models.CreatePackerVirtualMachineRequest"
+                },
+                "remote": {
+                    "$ref": "#/definitions/models.CreateRemoteVirtualMachineRequest"
+                },
+                "vagrant_box": {
+                    "$ref": "#/definitions/models.CreateVagrantMachineRequest"
+                }
+            }
+        },
+        "models.CreateVirtualMachineResponse": {
+            "type": "object",
+            "properties": {
+                "current_state": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Expiration": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.Fullscreen": {
+            "type": "object",
+            "properties": {
+                "Activate spaces on click": {
+                    "type": "string"
+                },
+                "Gamma control": {
+                    "type": "string"
+                },
+                "Optimize for games": {
+                    "type": "string"
+                },
+                "Scale view mode": {
+                    "type": "string"
+                },
+                "Use all displays": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.GuestSharedFolders": {
+            "type": "object",
+            "properties": {
+                "Automount": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.GuestTools": {
+            "type": "object",
+            "properties": {
+                "state": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Hardware": {
+            "type": "object",
+            "properties": {
+                "cdrom0": {
+                    "$ref": "#/definitions/models.Cdrom0"
+                },
+                "cpu": {
+                    "$ref": "#/definitions/models.CPU"
+                },
+                "hdd0": {
+                    "$ref": "#/definitions/models.Hdd0"
+                },
+                "memory": {
+                    "$ref": "#/definitions/models.Memory"
+                },
+                "memory_quota": {
+                    "$ref": "#/definitions/models.MemoryQuota"
+                },
+                "net0": {
+                    "$ref": "#/definitions/models.Net0"
+                },
+                "sound0": {
+                    "$ref": "#/definitions/models.Sound0"
+                },
+                "usb": {
+                    "$ref": "#/definitions/models.Expiration"
+                },
+                "video": {
+                    "$ref": "#/definitions/models.Video"
+                }
+            }
+        },
+        "models.Hdd0": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "online-compact": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.HostSharedFolders": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "$ref": "#/definitions/models.Code"
+                },
+                "demo": {
+                    "$ref": "#/definitions/models.Code"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "packer-examples": {
+                    "$ref": "#/definitions/models.Code"
+                }
+            }
+        },
+        "models.ImportCatalogManifestRequest": {
+            "type": "object",
+            "properties": {
+                "catalog_id": {
+                    "type": "string"
+                },
+                "connection": {
+                    "type": "string"
+                },
+                "provider_metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.InstallToolsRequest": {
+            "type": "object",
+            "properties": {
+                "all": {
+                    "type": "boolean"
+                },
+                "run_as": {
+                    "type": "string"
+                },
+                "tools": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/models.InstallToolsRequestItem"
+                    }
+                }
+            }
+        },
+        "models.InstallToolsRequestItem": {
+            "type": "object",
+            "properties": {
+                "flags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.InstallToolsResponse": {
+            "type": "object",
+            "properties": {
+                "installed_tools": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/models.InstallToolsResponseItem"
+                    }
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.InstallToolsResponseItem": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
         "models.LoginRequest": {
             "type": "object",
             "properties": {
@@ -341,6 +3634,104 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Memory": {
+            "type": "object",
+            "properties": {
+                "auto": {
+                    "type": "string"
+                },
+                "hotplug": {
+                    "type": "boolean"
+                },
+                "size": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.MemoryQuota": {
+            "type": "object",
+            "properties": {
+                "auto": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.MinimumSpecRequirement": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "type": "integer"
+                },
+                "disk": {
+                    "type": "integer"
+                },
+                "memory": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.MiscellaneousSharing": {
+            "type": "object",
+            "properties": {
+                "Shared clipboard": {
+                    "type": "string"
+                },
+                "Shared cloud": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Modality": {
+            "type": "object",
+            "properties": {
+                "Capture mouse clicks": {
+                    "type": "string"
+                },
+                "Opacity (percentage)": {
+                    "type": "integer"
+                },
+                "Show on all spaces": {
+                    "type": "string"
+                },
+                "Stay on top": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.MouseAndKeyboard": {
+            "type": "object",
+            "properties": {
+                "Keyboard optimization mode": {
+                    "type": "string"
+                },
+                "Smart mouse optimized for games": {
+                    "type": "string"
+                },
+                "Smooth scrolling": {
+                    "type": "string"
+                },
+                "Sticky mouse": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Net0": {
+            "type": "object",
+            "properties": {
+                "card": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "mac": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -391,6 +3782,885 @@ const docTemplate = `{
                 "OAuthUserBlocked",
                 "UnknownError"
             ]
+        },
+        "models.Optimization": {
+            "type": "object",
+            "properties": {
+                "Adaptive hypervisor": {
+                    "type": "string"
+                },
+                "Auto compress virtual disks": {
+                    "type": "string"
+                },
+                "Disabled Windows logo": {
+                    "type": "string"
+                },
+                "Faster virtual machine": {
+                    "type": "string"
+                },
+                "Hypervisor type": {
+                    "type": "string"
+                },
+                "Longer battery life": {
+                    "type": "string"
+                },
+                "Nested virtualization": {
+                    "type": "string"
+                },
+                "PMU virtualization": {
+                    "type": "string"
+                },
+                "Resource quota": {
+                    "type": "string"
+                },
+                "Show battery status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PackerTemplateResponse": {
+            "type": "object",
+            "properties": {
+                "addons": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "defaults": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "internal": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "packer_folder": {
+                    "type": "string"
+                },
+                "required_claims": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required_roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "specs": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "models.ParallelsDesktopLicense": {
+            "type": "object",
+            "properties": {
+                "advanced_restrictions": {
+                    "type": "string"
+                },
+                "cpu_total": {
+                    "type": "integer"
+                },
+                "deferred_activation": {
+                    "type": "string"
+                },
+                "edition": {
+                    "type": "string"
+                },
+                "expiration": {
+                    "type": "string"
+                },
+                "grace_period_ends_at": {
+                    "type": "string"
+                },
+                "is_volume": {
+                    "type": "string"
+                },
+                "main_period_ends_at": {
+                    "type": "string"
+                },
+                "max_memory": {
+                    "type": "integer"
+                },
+                "serial": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ParallelsVM": {
+            "type": "object",
+            "properties": {
+                "Advanced": {
+                    "$ref": "#/definitions/models.Advanced"
+                },
+                "Allow select boot device": {
+                    "type": "string"
+                },
+                "BIOS type": {
+                    "type": "string"
+                },
+                "Boot order": {
+                    "type": "string"
+                },
+                "Coherence": {
+                    "$ref": "#/definitions/models.Coherence"
+                },
+                "Description": {
+                    "type": "string"
+                },
+                "EFI Secure boot": {
+                    "type": "string"
+                },
+                "Expiration": {
+                    "$ref": "#/definitions/models.Expiration"
+                },
+                "External boot device": {
+                    "type": "string"
+                },
+                "Fullscreen": {
+                    "$ref": "#/definitions/models.Fullscreen"
+                },
+                "Guest Shared Folders": {
+                    "$ref": "#/definitions/models.GuestSharedFolders"
+                },
+                "GuestTools": {
+                    "$ref": "#/definitions/models.GuestTools"
+                },
+                "Hardware": {
+                    "$ref": "#/definitions/models.Hardware"
+                },
+                "Home": {
+                    "type": "string"
+                },
+                "Home path": {
+                    "type": "string"
+                },
+                "Host Shared Folders": {
+                    "$ref": "#/definitions/models.HostSharedFolders"
+                },
+                "Host defined sharing": {
+                    "type": "string"
+                },
+                "ID": {
+                    "type": "string"
+                },
+                "Miscellaneous Sharing": {
+                    "$ref": "#/definitions/models.MiscellaneousSharing"
+                },
+                "Modality": {
+                    "$ref": "#/definitions/models.Modality"
+                },
+                "Mouse and Keyboard": {
+                    "$ref": "#/definitions/models.MouseAndKeyboard"
+                },
+                "Name": {
+                    "type": "string"
+                },
+                "OS": {
+                    "type": "string"
+                },
+                "Optimization": {
+                    "$ref": "#/definitions/models.Optimization"
+                },
+                "Print Management": {
+                    "$ref": "#/definitions/models.PrintManagement"
+                },
+                "Restore Image": {
+                    "type": "string"
+                },
+                "SMBIOS settings": {
+                    "$ref": "#/definitions/models.SMBIOSSettings"
+                },
+                "Security": {
+                    "$ref": "#/definitions/models.Security"
+                },
+                "Shared Applications": {
+                    "$ref": "#/definitions/models.SharedApplications"
+                },
+                "Shared Profile": {
+                    "$ref": "#/definitions/models.Expiration"
+                },
+                "Smart Guard": {
+                    "$ref": "#/definitions/models.Expiration"
+                },
+                "SmartMount": {
+                    "$ref": "#/definitions/models.SmartMount"
+                },
+                "Startup and Shutdown": {
+                    "$ref": "#/definitions/models.StartupAndShutdown"
+                },
+                "State": {
+                    "type": "string"
+                },
+                "Template": {
+                    "type": "string"
+                },
+                "Time Synchronization": {
+                    "$ref": "#/definitions/models.TimeSynchronization"
+                },
+                "Travel mode": {
+                    "$ref": "#/definitions/models.TravelMode"
+                },
+                "Type": {
+                    "type": "string"
+                },
+                "USB and Bluetooth": {
+                    "$ref": "#/definitions/models.USBAndBluetooth"
+                },
+                "Uptime": {
+                    "type": "string"
+                },
+                "user": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PrintManagement": {
+            "type": "object",
+            "properties": {
+                "Show host printer UI": {
+                    "type": "string"
+                },
+                "Synchronize default printer": {
+                    "type": "string"
+                },
+                "Synchronize with host printers": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PullCatalogManifestRequest": {
+            "type": "object",
+            "properties": {
+                "catalog_id": {
+                    "type": "string"
+                },
+                "connection": {
+                    "type": "string"
+                },
+                "machine_name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "provider_metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "start_after_pull": {
+                    "type": "boolean"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PushCatalogManifestRequest": {
+            "type": "object",
+            "properties": {
+                "catalog_id": {
+                    "type": "string"
+                },
+                "connection": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "local_path": {
+                    "type": "string"
+                },
+                "minimum_requirements": {
+                    "$ref": "#/definitions/models.MinimumSpecRequirement"
+                },
+                "required_claims": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required_roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "uuid": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RegisterVirtualMachineRequest": {
+            "type": "object",
+            "properties": {
+                "delay_applying_restrictions": {
+                    "type": "boolean"
+                },
+                "force": {
+                    "type": "boolean"
+                },
+                "machine_name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "regenerate_source_uuid": {
+                    "type": "boolean"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RemoteVirtualMachineProvider": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "meta": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "password": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "user": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RenameVirtualMachineRequest": {
+            "type": "object",
+            "properties": {
+                "current_name": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "new_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RoleRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RoleResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SMBIOSSettings": {
+            "type": "object",
+            "properties": {
+                "BIOS Version": {
+                    "type": "string"
+                },
+                "Board Manufacturer": {
+                    "type": "string"
+                },
+                "System serial number": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Security": {
+            "type": "object",
+            "properties": {
+                "Archived": {
+                    "type": "string"
+                },
+                "Configuration is locked": {
+                    "type": "string"
+                },
+                "Custom password protection": {
+                    "type": "string"
+                },
+                "Encrypted": {
+                    "type": "string"
+                },
+                "Packed": {
+                    "type": "string"
+                },
+                "Protected": {
+                    "type": "string"
+                },
+                "TPM enabled": {
+                    "type": "string"
+                },
+                "TPM type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SharedApplications": {
+            "type": "object",
+            "properties": {
+                "Bounce dock icon when app flashes": {
+                    "type": "string"
+                },
+                "Guest-to-host apps sharing": {
+                    "type": "string"
+                },
+                "Host-to-guest apps sharing": {
+                    "type": "string"
+                },
+                "Show guest apps folder in Dock": {
+                    "type": "string"
+                },
+                "Show guest notifications": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.SmartMount": {
+            "type": "object",
+            "properties": {
+                "CD/DVD drives": {
+                    "type": "string"
+                },
+                "Network shares": {
+                    "type": "string"
+                },
+                "Removable drives": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.Sound0": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "mixer": {
+                    "type": "string"
+                },
+                "output": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.StartupAndShutdown": {
+            "type": "object",
+            "properties": {
+                "Autostart": {
+                    "type": "string"
+                },
+                "Autostart delay": {
+                    "type": "integer"
+                },
+                "Autostop": {
+                    "type": "string"
+                },
+                "On shutdown": {
+                    "type": "string"
+                },
+                "On window close": {
+                    "type": "string"
+                },
+                "Pause idle": {
+                    "type": "string"
+                },
+                "Startup view": {
+                    "type": "string"
+                },
+                "Undo disks": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.TimeSynchronization": {
+            "type": "object",
+            "properties": {
+                "Interval (in seconds)": {
+                    "type": "integer"
+                },
+                "Smart mode": {
+                    "type": "string"
+                },
+                "Timezone synchronization disabled": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.TravelMode": {
+            "type": "object",
+            "properties": {
+                "Enter condition": {
+                    "type": "string"
+                },
+                "Enter threshold": {
+                    "type": "integer"
+                },
+                "Quit condition": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.USBAndBluetooth": {
+            "type": "object",
+            "properties": {
+                "Automatic sharing bluetooth": {
+                    "type": "string"
+                },
+                "Automatic sharing cameras": {
+                    "type": "string"
+                },
+                "Automatic sharing gamepads": {
+                    "type": "string"
+                },
+                "Automatic sharing smart cards": {
+                    "type": "string"
+                },
+                "Support USB 3.0": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UninstallToolsRequest": {
+            "type": "object",
+            "properties": {
+                "all": {
+                    "type": "boolean"
+                },
+                "run_as": {
+                    "type": "string"
+                },
+                "tools": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/models.UninstallToolsRequestItem"
+                    }
+                },
+                "uninstall_dependencies": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.UninstallToolsRequestItem": {
+            "type": "object",
+            "properties": {
+                "flags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "uninstall_dependencies": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.UnregisterVirtualMachineRequest": {
+            "type": "object",
+            "properties": {
+                "clean_source_uuid": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UserCreateRequest": {
+            "type": "object",
+            "properties": {
+                "claims": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ValidateTokenRequest": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ValidateTokenResponse": {
+            "type": "object",
+            "properties": {
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.Video": {
+            "type": "object",
+            "properties": {
+                "3d-acceleration": {
+                    "type": "string"
+                },
+                "adapter-type": {
+                    "type": "string"
+                },
+                "automatic-video-memory": {
+                    "type": "string"
+                },
+                "high-resolution": {
+                    "type": "string"
+                },
+                "high-resolution-in-guest": {
+                    "type": "string"
+                },
+                "native-scaling-in-guest": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "vertical-sync": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineConfigRequest": {
+            "type": "object",
+            "properties": {
+                "operations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.VirtualMachineConfigRequestOperation"
+                    }
+                },
+                "owner": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineConfigRequestOperation": {
+            "type": "object",
+            "properties": {
+                "error": {},
+                "flags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "group": {
+                    "type": "string"
+                },
+                "operation": {
+                    "type": "string"
+                },
+                "options": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.VirtualMachineConfigRequestOperationOption"
+                    }
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineConfigRequestOperationOption": {
+            "type": "object",
+            "properties": {
+                "flag": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineConfigResponse": {
+            "type": "object",
+            "properties": {
+                "operations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.VirtualMachineConfigResponseOperation"
+                    }
+                }
+            }
+        },
+        "models.VirtualMachineConfigResponseOperation": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "group": {
+                    "type": "string"
+                },
+                "operation": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineExecuteCommandRequest": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineExecuteCommandResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "exit_code": {
+                    "type": "integer"
+                },
+                "stderr": {
+                    "type": "string"
+                },
+                "stdout": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineOperationResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "operation": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineStatusResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
         }
     },
     "securityDefinitions": {

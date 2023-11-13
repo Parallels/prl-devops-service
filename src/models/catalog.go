@@ -3,6 +3,9 @@ package models
 type CatalogManifest struct {
 	Name               string                        `json:"name"`
 	ID                 string                        `json:"id"`
+	CatalogId          string                        `json:"catalog_id"`
+	Description        string                        `json:"description"`
+	Version            string                        `json:"version"`
 	Type               string                        `json:"type"`
 	Tags               []string                      `json:"tags,omitempty"`
 	Size               string                        `json:"size,omitempty"`
@@ -16,6 +19,14 @@ type CatalogManifest struct {
 	RequiredRoles      []string                      `json:"required_roles,omitempty"`
 	LastDownloadedAt   string                        `json:"last_downloaded_at,omitempty"`
 	LastDownloadedUser string                        `json:"last_downloaded_user,omitempty"`
+	DownloadCount      int                           `json:"download_count,omitempty"`
+	Tainted            bool                          `json:"tainted,omitempty"`
+	TaintedBy          string                        `json:"tainted_by,omitempty"`
+	TaintedAt          string                        `json:"tainted_at,omitempty"`
+	UnTaintedBy        string                        `json:"untainted_by,omitempty"`
+	Revoked            bool                          `json:"revoked,omitempty"`
+	RevokedAt          string                        `json:"revoked_at,omitempty"`
+	RevokedBy          string                        `json:"revoked_by,omitempty"`
 	PackContents       []CatalogManifestPackItem     `json:"pack_contents,omitempty"`
 }
 

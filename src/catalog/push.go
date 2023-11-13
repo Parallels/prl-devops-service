@@ -53,10 +53,10 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 			}
 
 			// Generating the manifest content
-			ctx.LogInfo("Pushing manifest %v to provider %s", r.Name, rs.Name())
+			ctx.LogInfo("Pushing manifest %v to provider %s", r.CatalogId, rs.Name())
 			err = s.GenerateManifestContent(ctx, r, manifest)
 			if err != nil {
-				ctx.LogError("Error generating manifest content for %v: %v", r.Name, err)
+				ctx.LogError("Error generating manifest content for %v: %v", r.CatalogId, err)
 				manifest.AddError(err)
 				break
 			}
@@ -67,10 +67,10 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 
 			// Checking if the manifest metadata exists in the remote server
 			var catalogManifest *models.VirtualMachineCatalogManifest
-			manifestPath := filepath.Join(rs.GetProviderRootPath(ctx), manifest.ID)
-			if err := rs.PullFile(ctx, manifestPath, s.getMetaFilename(manifest.ID), "/tmp"); err == nil {
+			manifestPath := filepath.Join(rs.GetProviderRootPath(ctx), manifest.CatalogId)
+			if err := rs.PullFile(ctx, manifestPath, s.getMetaFilename(manifest.Name), "/tmp"); err == nil {
 				ctx.LogInfo("Remote Manifest metadata found, retrieving it")
-				tmpCatalogManifestFilePath := filepath.Join("/tmp", s.getMetaFilename(manifest.ID))
+				tmpCatalogManifestFilePath := filepath.Join("/tmp", s.getMetaFilename(manifest.Name))
 				manifest.CleanupRequest.AddLocalFileCleanupOperation(tmpCatalogManifestFilePath, false)
 				catalogManifest, err = s.readManifestFromFile(tmpCatalogManifestFilePath)
 
@@ -88,8 +88,8 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 			// Pushing the necessary files to the remote server
 			if catalogManifest != nil {
 				manifest.Path = catalogManifest.Path
-				manifest.MetadataFile = s.getMetaFilename(manifest.ID)
-				manifest.PackFile = s.getPackFilename(manifest.ID)
+				manifest.MetadataFile = s.getMetaFilename(catalogManifest.Name)
+				manifest.PackFile = s.getPackFilename(catalogManifest.Name)
 				localPackPath := filepath.Dir(manifest.CompressedPath)
 
 				// The catalog manifest metadata already exists checking if the files are up to date and pushing them if not
@@ -119,7 +119,7 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 					UpdatedAt: helpers.GetUtcCurrentDateTime(),
 				})
 
-				tempManifestContentFilePath := filepath.Join("/tmp", s.getMetaFilename(manifest.ID))
+				tempManifestContentFilePath := filepath.Join("/tmp", manifest.MetadataFile)
 				manifestContent, err := json.MarshalIndent(manifest, "", "  ")
 				if err != nil {
 					ctx.LogError("Error marshalling manifest %v: %v", manifest, err)
@@ -182,16 +182,11 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 					break
 				}
 
-				manifest.Path = filepath.Join(rs.GetProviderRootPath(ctx), manifest.ID)
-				manifest.MetadataFile = s.getMetaFilename(manifest.ID)
-				manifest.PackFile = s.getPackFilename(manifest.ID)
-				tempManifestContentFilePath := filepath.Join("/tmp", s.getMetaFilename(manifest.ID))
-				manifestContent, err := json.MarshalIndent(manifest, "", "  ")
-				if err != nil {
-					ctx.LogError("Error marshalling manifest %v: %v", manifest, err)
-					manifest.AddError(err)
-					break
-				}
+				manifest.Path = filepath.Join(rs.GetProviderRootPath(ctx), manifest.CatalogId)
+				manifest.MetadataFile = s.getMetaFilename(manifest.Name)
+				manifest.PackFile = s.getPackFilename(manifest.Name)
+				tempManifestContentFilePath := filepath.Join("/tmp", s.getMetaFilename(manifest.Name))
+
 				manifest.PackContents = append(manifest.PackContents, models.VirtualMachineManifestContentItem{
 					Path:      manifest.Path,
 					IsDir:     false,
@@ -208,6 +203,13 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 					UpdatedAt: helpers.GetUtcCurrentDateTime(),
 				})
 
+				manifestContent, err := json.MarshalIndent(manifest, "", "  ")
+				if err != nil {
+					ctx.LogError("Error marshalling manifest %v: %v", manifest, err)
+					manifest.AddError(err)
+					break
+				}
+
 				manifest.CleanupRequest.AddLocalFileCleanupOperation(tempManifestContentFilePath, false)
 				if err := helper.WriteToFile(string(manifestContent), tempManifestContentFilePath); err != nil {
 					ctx.LogError("Error writing manifest to temporary file %v: %v", tempManifestContentFilePath, err)
@@ -215,14 +217,14 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 					break
 				}
 
-				ctx.LogInfo("Pushing manifest pack file %v", s.getPackFilename(manifest.ID))
+				ctx.LogInfo("Pushing manifest pack file %v", manifest.PackFile)
 				localPackPath := filepath.Dir(manifest.CompressedPath)
 				if err := rs.PushFile(ctx, localPackPath, manifest.Path, manifest.PackFile); err != nil {
 					manifest.AddError(err)
 					break
 				}
 
-				ctx.LogInfo("Pushing manifest meta file %v", s.getMetaFilename(manifest.ID))
+				ctx.LogInfo("Pushing manifest meta file %v", manifest.MetadataFile)
 				if err := rs.PushFile(ctx, "/tmp", manifest.Path, manifest.MetadataFile); err != nil {
 					manifest.AddError(err)
 					break
@@ -266,11 +268,11 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 						break
 					}
 
-					exists, _ := db.GetCatalogManifest(ctx, manifest.ID)
+					exists, _ := db.GetCatalogManifestsByCatalogIdAndVersion(ctx, manifest.CatalogId, manifest.Version)
 					if exists != nil {
 						ctx.LogInfo("Updating manifest %v", manifest.Name)
 						dto := mappers.CatalogManifestToDto(*manifest)
-						if err := db.UpdateCatalogManifest(ctx, dto); err != nil {
+						if _, err := db.UpdateCatalogManifest(ctx, dto); err != nil {
 							ctx.LogError("Error updating manifest %v: %v", manifest.Name, err)
 							manifest.AddError(err)
 							break
@@ -278,7 +280,7 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 					} else {
 						ctx.LogInfo("Creating manifest %v", manifest.Name)
 						dto := mappers.CatalogManifestToDto(*manifest)
-						if err := db.CreateCatalogManifest(ctx, dto); err != nil {
+						if _, err := db.CreateCatalogManifest(ctx, dto); err != nil {
 							ctx.LogError("Error creating manifest %v: %v", manifest.Name, err)
 							manifest.AddError(err)
 							break
@@ -294,7 +296,7 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 	}
 
 	if cleanErrors := manifest.CleanupRequest.Clean(ctx); len(cleanErrors) > 0 {
-		ctx.LogError("Error cleaning up manifest %v", r.Name)
+		ctx.LogError("Error cleaning up manifest %v", r.CatalogId)
 		for _, err := range manifest.Errors {
 			manifest.AddError(err)
 		}

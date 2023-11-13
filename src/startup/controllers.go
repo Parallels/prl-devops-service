@@ -16,6 +16,7 @@ func InitApi() *restapi.HttpListener {
 	cfg := config.NewConfig()
 	listener.Options.ApiPrefix = cfg.GetApiPrefix()
 	listener.Options.HttpPort = cfg.GetApiPort()
+	listener.WithVersion("Version 1", "v1", true)
 	listener.Options.DefaultApiVersion = "v1"
 	if cfg.TLSEnabled() {
 		listener.Options.EnableTLS = true
@@ -38,6 +39,8 @@ func ResetApi() {
 }
 
 func RegisterDefaultControllers() {
+	controllers.RegisterV1()
+
 	provider := serviceprovider.Get()
 
 	// Authorization Controller
@@ -114,8 +117,16 @@ func RegisterDefaultControllers() {
 	// Remote Machines Catalog Controller
 	listener.AddAuthorizedControllerWithClaims(controllers.GetCatalogManifestsController(), "/catalog", []string{constants.LIST_CATALOG_MANIFEST_CLAIM}, "GET")
 	listener.AddAuthorizedControllerWithClaims(controllers.CreateCatalogManifestController(), "/catalog", []string{constants.CREATE_CATALOG_MANIFEST_CLAIM}, "POST")
-	listener.AddAuthorizedControllerWithClaims(controllers.DeleteCatalogManifestController(), "/catalog/{id}", []string{constants.DELETE_CATALOG_MANIFEST_CLAIM}, "DELETE")
-	listener.AddAuthorizedControllerWithClaims(controllers.GetCatalogManifestController(), "/catalog/{id}", []string{constants.LIST_CATALOG_MANIFEST_CLAIM}, "GET")
+	listener.AddAuthorizedControllerWithClaims(controllers.DeleteCatalogManifestController(), "/catalog/{catalogId}", []string{constants.DELETE_CATALOG_MANIFEST_CLAIM}, "DELETE")
+	listener.AddAuthorizedControllerWithClaims(controllers.DeleteCatalogManifestVersionController(), "/catalog/{catalogId}/{version}", []string{constants.DELETE_CATALOG_MANIFEST_CLAIM}, "DELETE")
+	listener.AddAuthorizedControllerWithClaims(controllers.GetCatalogManifestByCatalogIdController(), "/catalog/{catalogId}", []string{constants.LIST_CATALOG_MANIFEST_CLAIM}, "GET")
+	listener.AddAuthorizedControllerWithClaims(controllers.GetCatalogManifestByCatalogIdAndVersionController(), "/catalog/{catalogId}/{version}", []string{constants.LIST_CATALOG_MANIFEST_CLAIM}, "GET")
+
+	listener.AddAuthorizedControllerWithClaims(controllers.DownloadCatalogManifestByCatalogIdAndVersionController(), http_helper.JoinUrl("/catalog/{catalogId}/{version}/download"), []string{constants.CREATE_CATALOG_MANIFEST_CLAIM}, "GET")
+	listener.AddAuthorizedControllerWithRoles(controllers.TaintCatalogManifestByCatalogIdAndVersionController(), http_helper.JoinUrl("/catalog/{catalogId}/{version}/taint"), []string{constants.SUPER_USER_ROLE}, "PATCH")
+	listener.AddAuthorizedControllerWithRoles(controllers.UnTaintCatalogManifestByCatalogIdAndVersionController(), http_helper.JoinUrl("/catalog/{catalogId}/{version}/untaint"), []string{constants.SUPER_USER_ROLE}, "PATCH")
+	listener.AddAuthorizedControllerWithRoles(controllers.RevokeCatalogManifestByCatalogIdAndVersionController(), http_helper.JoinUrl("/catalog/{catalogId}/{version}/revoke"), []string{constants.SUPER_USER_ROLE}, "PATCH")
+
 	listener.AddAuthorizedControllerWithClaims(controllers.PushCatalogManifestController(), "/catalog/push", []string{constants.PUSH_CATALOG_MANIFEST_CLAIM}, "POST")
 	listener.AddAuthorizedControllerWithClaims(controllers.PullCatalogManifestController(), "/catalog/pull", []string{constants.PULL_CATALOG_MANIFEST_CLAIM}, "PUT")
 	listener.AddAuthorizedControllerWithClaims(controllers.ImportCatalogManifestController(), "/catalog/import", []string{constants.PULL_CATALOG_MANIFEST_CLAIM}, "PUT")
@@ -198,8 +209,16 @@ func RegisterV1Controllers() {
 	// Remote Machines Catalog Controller
 	listener.AddAuthorizedControllerWithClaims(controllers.GetCatalogManifestsController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog"), []string{constants.LIST_CATALOG_MANIFEST_CLAIM}, "GET")
 	listener.AddAuthorizedControllerWithClaims(controllers.CreateCatalogManifestController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog"), []string{constants.CREATE_CATALOG_MANIFEST_CLAIM}, "POST")
-	listener.AddAuthorizedControllerWithClaims(controllers.DeleteCatalogManifestController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/{id}"), []string{constants.DELETE_CATALOG_MANIFEST_CLAIM}, "DELETE")
-	listener.AddAuthorizedControllerWithClaims(controllers.GetCatalogManifestController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/{id}"), []string{constants.LIST_CATALOG_MANIFEST_CLAIM}, "GET")
+	listener.AddAuthorizedControllerWithClaims(controllers.DeleteCatalogManifestController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/{catalogId}"), []string{constants.DELETE_CATALOG_MANIFEST_CLAIM}, "DELETE")
+	listener.AddAuthorizedControllerWithClaims(controllers.DeleteCatalogManifestVersionController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/{catalogId}/{version}"), []string{constants.DELETE_CATALOG_MANIFEST_CLAIM}, "DELETE")
+	listener.AddAuthorizedControllerWithClaims(controllers.GetCatalogManifestByCatalogIdController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/{catalogId}"), []string{constants.LIST_CATALOG_MANIFEST_CLAIM}, "GET")
+	listener.AddAuthorizedControllerWithClaims(controllers.GetCatalogManifestByCatalogIdAndVersionController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/{catalogId}/{version}"), []string{constants.LIST_CATALOG_MANIFEST_CLAIM}, "GET")
+
+	listener.AddAuthorizedControllerWithClaims(controllers.DownloadCatalogManifestByCatalogIdAndVersionController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/{catalogId}/{version}/download"), []string{constants.CREATE_CATALOG_MANIFEST_CLAIM}, "GET")
+	listener.AddAuthorizedControllerWithRoles(controllers.TaintCatalogManifestByCatalogIdAndVersionController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/{catalogId}/{version}/taint"), []string{constants.SUPER_USER_ROLE}, "PATCH")
+	listener.AddAuthorizedControllerWithRoles(controllers.UnTaintCatalogManifestByCatalogIdAndVersionController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/{catalogId}/{version}/untaint"), []string{constants.SUPER_USER_ROLE}, "PATCH")
+	listener.AddAuthorizedControllerWithRoles(controllers.RevokeCatalogManifestByCatalogIdAndVersionController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/{catalogId}/{version}/revoke"), []string{constants.SUPER_USER_ROLE}, "PATCH")
+
 	listener.AddAuthorizedControllerWithClaims(controllers.PushCatalogManifestController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/push"), []string{constants.PUSH_CATALOG_MANIFEST_CLAIM}, "POST")
 	listener.AddAuthorizedControllerWithClaims(controllers.PullCatalogManifestController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/pull"), []string{constants.PULL_CATALOG_MANIFEST_CLAIM}, "PUT")
 	listener.AddAuthorizedControllerWithClaims(controllers.ImportCatalogManifestController(), http_helper.JoinUrl(listener.Options.DefaultApiVersion, "/catalog/import"), []string{constants.PULL_CATALOG_MANIFEST_CLAIM}, "PUT")

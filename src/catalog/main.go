@@ -52,7 +52,7 @@ func (s *CatalogManifestService) AddRemoteService(service interfaces.RemoteStora
 }
 
 func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiContext, r *models.PushCatalogManifestRequest, manifest *models.VirtualMachineCatalogManifest) error {
-	ctx.LogInfo("Generating manifest content for %v", r.Name)
+	ctx.LogInfo("Generating manifest content for %v", r.CatalogId)
 	if manifest == nil {
 		manifest = models.NewVirtualMachineCatalogManifest()
 	}
@@ -61,13 +61,15 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 	manifest.CreatedAt = helpers.GetUtcCurrentDateTime()
 	manifest.UpdatedAt = helpers.GetUtcCurrentDateTime()
 
-	manifest.Name = r.Name
+	manifest.Name = r.CatalogId
 	manifest.Path = r.LocalPath
-	if r.Uuid != "" {
-		manifest.ID = s.getConformName(r.Uuid)
-	} else {
-		manifest.ID = s.getConformName(r.Name)
-	}
+	manifest.ID = helpers.GenerateId()
+	manifest.CatalogId = helpers.NormalizeString(r.CatalogId)
+	manifest.Description = r.Description
+	manifest.Version = helpers.NormalizeString(r.Version)
+	manifest.Name = fmt.Sprintf("%v-%v", manifest.CatalogId, manifest.Version)
+	manifestPackFileName := s.getPackFilename(manifest.Name)
+
 	if r.RequiredRoles != nil {
 		manifest.RequiredRoles = r.RequiredRoles
 	}
@@ -90,14 +92,14 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 		return fmt.Errorf("the path %v is not a directory", r.LocalPath)
 	}
 
-	ctx.LogInfo("Getting manifest files for %v", r.Name)
+	ctx.LogInfo("Getting manifest files for %v", r.CatalogId)
 	files, err := s.getManifestFiles(r.LocalPath, "")
 	if err != nil {
 		return err
 	}
 
-	ctx.LogInfo("Compressing manifest files for %v", r.Name)
-	packFilePath, err := s.compressMachine(ctx, r.LocalPath, manifest.ID, "/tmp")
+	ctx.LogInfo("Compressing manifest files for %v", r.CatalogId)
+	packFilePath, err := s.compressMachine(ctx, r.LocalPath, manifestPackFileName, "/tmp")
 	if err != nil {
 		return err
 	}
@@ -105,7 +107,7 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 	// Adding the zip file to the cleanup request
 	manifest.CleanupRequest.AddLocalFileCleanupOperation(packFilePath, false)
 	manifest.CompressedPath = packFilePath
-	manifest.PackFile = "/tmp/" + manifest.ID + ".pdpack"
+	manifest.PackFile = "/tmp/" + manifestPackFileName
 
 	fileInfo, err := os.Stat(packFilePath)
 	if err != nil {
@@ -114,7 +116,7 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 
 	manifest.Size = fileInfo.Size()
 
-	ctx.LogInfo("Getting manifest package checksum for %v", r.Name)
+	ctx.LogInfo("Getting manifest package checksum for %v", r.CatalogId)
 	checksum, err := helpers.GetFileMD5Checksum(packFilePath)
 	if err != nil {
 		return err
@@ -122,7 +124,7 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 	manifest.CompressedChecksum = checksum
 
 	manifest.VirtualMachineContents = files
-	ctx.LogInfo("Finished generating manifest content for %v", r.Name)
+	ctx.LogInfo("Finished generating manifest content for %v", r.CatalogId)
 	return nil
 }
 
@@ -217,8 +219,8 @@ func (s *CatalogManifestService) getPackFilename(name string) string {
 	return name
 }
 
-func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, path string, machineName string, destination string) (string, error) {
-	tarFilename := s.getPackFilename(machineName)
+func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, path string, machineFileName string, destination string) (string, error) {
+	tarFilename := machineFileName
 	tarFilePath := filepath.Join(destination, tarFilename)
 
 	tarFile, err := os.Create(tarFilePath)
