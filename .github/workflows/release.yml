@@ -49,7 +49,7 @@ jobs:
 
           go install github.com/swaggo/swag/cmd/swag@latest
           cd src
-          swag init -g ./src/main.go
+          swag init -g main.go
           swag fmt
           cd ..
 
