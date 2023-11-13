@@ -542,6 +542,53 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "This endpoint returns a role",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Gets a role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.RoleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "This endpoint deletes a role",
                 "produces": [
                     "application/json"
@@ -945,6 +992,115 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint adds a claim to a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Adds a claim to a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Claim Name",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ClaimRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.ClaimRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/auth/users/{id}/claims/{claim_id}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint removes a claim from a user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Removes a claim from a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Claim ID",
+                        "name": "claim_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/v1/auth/users/{id}/roles": {
@@ -1004,14 +1160,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint adds a claim to a user",
+                "description": "This endpoint adds a role to a user",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Users"
                 ],
-                "summary": "Adds a claim to a user",
+                "summary": "Adds a role to a user",
                 "parameters": [
                     {
                         "type": "string",
@@ -1021,12 +1177,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Claim Name",
+                        "description": "Role Name",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.ClaimRequest"
+                            "$ref": "#/definitions/models.RoleRequest"
                         }
                     }
                 ],
@@ -1034,7 +1190,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/models.ClaimRequest"
+                            "$ref": "#/definitions/models.RoleRequest"
                         }
                     },
                     "400": {
@@ -1062,14 +1218,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint removes a claim from a user",
+                "description": "This endpoint removes a role from a user",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Users"
                 ],
-                "summary": "Removes a claim from a user",
+                "summary": "Removes a role from a user",
                 "parameters": [
                     {
                         "type": "string",
@@ -1080,8 +1236,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Claim ID",
-                        "name": "claim_id",
+                        "description": "Role ID",
+                        "name": "role_id",
                         "in": "path",
                         "required": true
                     }
@@ -1744,6 +1900,57 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+                "description": "This endpoint installs API requires 3rd party tools",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Installs API requires 3rd party tools",
+                "parameters": [
+                    {
+                        "description": "Install Tools Request",
+                        "name": "installToolsRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.InstallToolsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.InstallToolsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/config/tools/restart": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "This endpoint restarts the API Service",
                 "produces": [
                     "application/json"
@@ -1755,6 +1962,57 @@ const docTemplate = `{
                 "responses": {
                     "202": {
                         "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/config/tools/uninstall": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint uninstalls API requires 3rd party tools",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Uninstalls API requires 3rd party tools",
+                "parameters": [
+                    {
+                        "description": "Uninstall Tools Request",
+                        "name": "uninstallToolsRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UninstallToolsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.InstallToolsResponse"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -2080,6 +2338,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/machines/{id}/pause": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint pauses a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Pauses a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineOperationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/machines/{id}/rename": {
             "post": {
                 "security": [
@@ -2148,14 +2455,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint pauses a virtual machine",
+                "description": "This endpoint reset a virtual machine",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Machines"
                 ],
-                "summary": "Pauses a virtual machine",
+                "summary": "Reset a virtual machine",
                 "parameters": [
                     {
                         "type": "string",

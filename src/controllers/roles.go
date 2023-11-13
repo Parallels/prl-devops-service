@@ -154,7 +154,7 @@ func CreateRoleController() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/auth/roles/{id}  [get]
+// @Router			/v1/auth/roles/{id}  [delete]
 func DeleteRoleController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)

@@ -324,7 +324,7 @@ func ResetMachineController() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/reset [get]
+// @Router			/v1/machines/{id}/pause [get]
 func PauseMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)

@@ -181,7 +181,7 @@ func InstallToolsController() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/config/tools/install [post]
+// @Router			/v1/config/tools/uninstall [post]
 func UninstallToolsController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -293,7 +293,7 @@ func UninstallToolsController() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/config/tools/install [post]
+// @Router			/v1/config/tools/restart [post]
 func RestartController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)

@@ -1494,7 +1494,7 @@ paths:
       tags:
       - Roles
   /v1/auth/roles/{id}:
-    get:
+    delete:
       description: This endpoint deletes a role
       parameters:
       - description: Role ID
@@ -1519,6 +1519,35 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Delete a role
+      tags:
+      - Roles
+    get:
+      description: This endpoint returns a role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RoleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a role
       tags:
       - Roles
   /v1/auth/token:
@@ -1750,36 +1779,6 @@ paths:
       summary: Gets all the claims for a user
       tags:
       - Users
-  /v1/auth/users/{id}/roles:
-    get:
-      description: This endpoint returns all the roles for a user
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.RoleResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.OAuthErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      - BearerAuth: []
-      summary: Gets all the roles for a user
-      tags:
-      - Users
     post:
       description: This endpoint adds a claim to a user
       parameters:
@@ -1815,7 +1814,7 @@ paths:
       summary: Adds a claim to a user
       tags:
       - Users
-  /v1/auth/users/{id}/roles/{role_id}:
+  /v1/auth/users/{id}/claims/{claim_id}:
     post:
       description: This endpoint removes a claim from a user
       parameters:
@@ -1846,6 +1845,104 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Removes a claim from a user
+      tags:
+      - Users
+  /v1/auth/users/{id}/roles:
+    get:
+      description: This endpoint returns all the roles for a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RoleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the roles for a user
+      tags:
+      - Users
+    post:
+      description: This endpoint adds a role to a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role Name
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.RoleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.RoleRequest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Adds a role to a user
+      tags:
+      - Users
+  /v1/auth/users/{id}/roles/{role_id}:
+    post:
+      description: This endpoint removes a role from a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Removes a role from a user
       tags:
       - Users
   /v1/catalog:
@@ -2240,6 +2337,37 @@ paths:
       - Catalogs
   /v1/config/tools/install:
     post:
+      description: This endpoint installs API requires 3rd party tools
+      parameters:
+      - description: Install Tools Request
+        in: body
+        name: installToolsRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.InstallToolsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.InstallToolsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Installs API requires 3rd party tools
+      tags:
+      - Config
+  /v1/config/tools/restart:
+    post:
       description: This endpoint restarts the API Service
       produces:
       - application/json
@@ -2258,6 +2386,37 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Restarts the API Service
+      tags:
+      - Config
+  /v1/config/tools/uninstall:
+    post:
+      description: This endpoint uninstalls API requires 3rd party tools
+      parameters:
+      - description: Uninstall Tools Request
+        in: body
+        name: uninstallToolsRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.UninstallToolsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.InstallToolsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Uninstalls API requires 3rd party tools
       tags:
       - Config
   /v1/machines:
@@ -2414,6 +2573,36 @@ paths:
       summary: Executes a command on a virtual machine
       tags:
       - Machines
+  /v1/machines/{id}/pause:
+    get:
+      description: This endpoint pauses a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Pauses a virtual machine
+      tags:
+      - Machines
   /v1/machines/{id}/rename:
     post:
       description: This endpoint Renames a virtual machine
@@ -2452,7 +2641,7 @@ paths:
       - Machines
   /v1/machines/{id}/reset:
     get:
-      description: This endpoint pauses a virtual machine
+      description: This endpoint reset a virtual machine
       parameters:
       - description: Machine ID
         in: path
@@ -2477,7 +2666,7 @@ paths:
       security:
       - ApiKeyAuth: []
       - BearerAuth: []
-      summary: Pauses a virtual machine
+      summary: Reset a virtual machine
       tags:
       - Machines
   /v1/machines/{id}/restart:

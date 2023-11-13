@@ -401,7 +401,7 @@ func GetUserClaimsController() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/auth/users/{id}/roles  [post]
+// @Router			/v1/auth/users/{id}/claims  [post]
 func AddClaimToUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -450,7 +450,7 @@ func AddClaimToUserController() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/auth/users/{id}/roles/{role_id}  [post]
+// @Router			/v1/auth/users/{id}/claims/{claim_id}  [post]
 func RemoveClaimFromUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
