@@ -35,6 +35,10 @@ func NewManifestService(ctx basecontext.ApiContext) *CatalogManifestService {
 	return manifestService
 }
 
+func (s *CatalogManifestService) GetProviders(ctx basecontext.ApiContext) []interfaces.RemoteStorageService {
+	return s.remoteServices
+}
+
 func (s *CatalogManifestService) AddRemoteService(service interfaces.RemoteStorageService) {
 	exists := false
 	for _, remoteService := range s.remoteServices {

@@ -24,6 +24,77 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/health/probe": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns the API Health Probe",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Gets the API Health Probe",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    },
+                    "402": {
+                        "description": "Payment Required",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/health/system": {
+            "get": {
+                "description": "This endpoint returns the API Health Probe",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Gets the API System Health",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Full Health Check",
+                        "name": "full",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ServiceHealthCheck"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/auth/api_keys": {
             "get": {
                 "security": [
@@ -1051,7 +1122,7 @@ const docTemplate = `{
             }
         },
         "/v1/auth/users/{id}/claims/{claim_id}": {
-            "post": {
+            "delete": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -1209,7 +1280,7 @@ const docTemplate = `{
             }
         },
         "/v1/auth/users/{id}/roles/{role_id}": {
-            "post": {
+            "delete": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -1722,64 +1793,8 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/catalog/{catalogId}/{version}/download/revoke": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "This endpoint UnTaints a catalog manifest version",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Catalogs"
-                ],
-                "summary": "UnTaints a catalog manifest version",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Catalog ID",
-                        "name": "catalogId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Version",
-                        "name": "version",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.OAuthErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/catalog/{catalogId}/{version}/download/untaint": {
-            "post": {
+        "/v1/catalog/{catalogId}/{version}/revoke": {
+            "patch": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -1835,7 +1850,7 @@ const docTemplate = `{
             }
         },
         "/v1/catalog/{catalogId}/{version}/taint": {
-            "post": {
+            "patch": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -1873,6 +1888,102 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/{catalogId}/{version}/untaint": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint UnTaints a catalog manifest version",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "UnTaints a catalog manifest version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Version",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/config/hardware": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns the Hardware Info",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Gets the Hardware Info",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SystemUsageResponse"
                         }
                     },
                     "400": {
@@ -4580,6 +4691,23 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ServiceHealthCheck": {
+            "type": "object",
+            "properties": {
+                "error_message": {
+                    "type": "string"
+                },
+                "healthy": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "models.SharedApplications": {
             "type": "object",
             "properties": {
@@ -4660,6 +4788,43 @@ const docTemplate = `{
                 },
                 "Undo disks": {
                     "type": "string"
+                }
+            }
+        },
+        "models.SystemUsageItem": {
+            "type": "object",
+            "properties": {
+                "disk_count": {
+                    "type": "number"
+                },
+                "logical_cpu_count": {
+                    "type": "integer"
+                },
+                "memory_size": {
+                    "type": "number"
+                },
+                "physical_cpu_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.SystemUsageResponse": {
+            "type": "object",
+            "properties": {
+                "cpu_type": {
+                    "type": "string"
+                },
+                "total": {
+                    "$ref": "#/definitions/models.SystemUsageItem"
+                },
+                "total_available": {
+                    "$ref": "#/definitions/models.SystemUsageItem"
+                },
+                "total_in_use": {
+                    "$ref": "#/definitions/models.SystemUsageItem"
+                },
+                "total_reserved": {
+                    "$ref": "#/definitions/models.SystemUsageItem"
                 }
             }
         },

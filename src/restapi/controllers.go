@@ -1,3 +1,6 @@
+// Package restapi provides a set of functions to create and register HTTP controllers.
+// A controller is a struct that contains information about a specific HTTP endpoint, such as the path, method, and required roles and claims.
+// The package also provides functions to serve the registered controllers.
 package restapi
 
 import (
@@ -8,10 +11,7 @@ import (
 	"github.com/cjlapao/common-go/helper/http_helper"
 )
 
-type RestApiController interface {
-	Serve() error
-}
-
+// Controller represents a REST API controller with its properties.
 type Controller struct {
 	listener       *HttpListener
 	path           string
@@ -22,8 +22,8 @@ type Controller struct {
 	RequiredClaims []string
 }
 
-type ControllerHandler func(w http.ResponseWriter, r *http.Request)
-
+// NewController creates a new instance of the Controller struct with default values.
+// The returned controller has the GET method, uses the global HTTP listener, and has no required roles or claims.
 func NewController() *Controller {
 	controller := &Controller{
 		Method:         GET,
@@ -106,9 +106,9 @@ func (c *Controller) Serve() error {
 	}
 
 	if c.NeedsAuthorization() {
-		c.listener.AddAuthorizedControllerWithRolesAndClaims(c.Handler, c.Path(), c.RequiredRoles, c.RequiredClaims, string(c.Method))
+		c.listener.AddAuthorizedHandlerWithRolesAndClaims(c.Handler, c.Path(), c.RequiredRoles, c.RequiredClaims, string(c.Method))
 	} else {
-		c.listener.AddController(c.Handler, c.Path(), string(c.Method))
+		c.listener.AddHandler(c.Handler, c.Path(), string(c.Method))
 	}
 
 	if c.Version != nil {
@@ -123,9 +123,9 @@ func (c *Controller) Serve() error {
 
 		if needsDefaultApiController {
 			if c.NeedsAuthorization() {
-				c.listener.AddAuthorizedControllerWithRolesAndClaims(c.Handler, prefixPath, c.RequiredRoles, c.RequiredClaims, string(c.Method))
+				c.listener.AddAuthorizedHandlerWithRolesAndClaims(c.Handler, prefixPath, c.RequiredRoles, c.RequiredClaims, string(c.Method))
 			} else {
-				c.listener.AddController(c.Handler, prefixPath, string(c.Method))
+				c.listener.AddHandler(c.Handler, prefixPath, string(c.Method))
 			}
 		}
 	}

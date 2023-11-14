@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
@@ -11,6 +13,86 @@ import (
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
 )
+
+func registerUsersHandlers(ctx basecontext.ApiContext, version string) {
+	ctx.LogInfo("Registering version %s Users handlers", version)
+	usersController := restapi.NewController()
+	usersController.WithMethod(restapi.GET)
+	usersController.WithVersion(version)
+	usersController.WithPath("/auth/users")
+	usersController.WithRequiredClaim(constants.LIST_USER_CLAIM)
+	usersController.WithHandler(GetUsersHandler()).Register()
+
+	getUserController := restapi.NewController()
+	getUserController.WithMethod(restapi.GET)
+	getUserController.WithVersion(version)
+	getUserController.WithPath("/auth/users/{id}")
+	getUserController.WithRequiredClaim(constants.LIST_USER_CLAIM)
+	getUserController.WithHandler(GetUserHandler()).Register()
+
+	createUserController := restapi.NewController()
+	createUserController.WithMethod(restapi.POST)
+	createUserController.WithVersion(version)
+	createUserController.WithPath("/auth/users")
+	createUserController.WithRequiredClaim(constants.CREATE_USER_CLAIM)
+	createUserController.WithHandler(CreateUserHandler()).Register()
+
+	updateUserController := restapi.NewController()
+	updateUserController.WithMethod(restapi.PUT)
+	updateUserController.WithVersion(version)
+	updateUserController.WithPath("/auth/users/{id}")
+	updateUserController.WithRequiredClaim(constants.UPDATE_USER_CLAIM)
+	updateUserController.WithHandler(UpdateUserHandler()).Register()
+
+	deleteUserController := restapi.NewController()
+	deleteUserController.WithMethod(restapi.DELETE)
+	deleteUserController.WithVersion(version)
+	deleteUserController.WithPath("/auth/users/{id}")
+	deleteUserController.WithRequiredClaim(constants.DELETE_USER_CLAIM)
+	deleteUserController.WithHandler(DeleteUserHandler()).Register()
+
+	getUserRoles := restapi.NewController()
+	getUserRoles.WithMethod(restapi.GET)
+	getUserRoles.WithVersion(version)
+	getUserRoles.WithPath("/auth/users/{id}/roles")
+	getUserRoles.WithRequiredClaim(constants.LIST_USER_CLAIM)
+	getUserRoles.WithHandler(GetUserRolesHandler()).Register()
+
+	addRoleToUserController := restapi.NewController()
+	addRoleToUserController.WithMethod(restapi.POST)
+	addRoleToUserController.WithVersion(version)
+	addRoleToUserController.WithPath("/auth/users/{id}/roles")
+	addRoleToUserController.WithRequiredClaim(constants.UPDATE_USER_CLAIM)
+	addRoleToUserController.WithHandler(AddRoleToUserHandler()).Register()
+
+	removeRoleFromUserController := restapi.NewController()
+	removeRoleFromUserController.WithMethod(restapi.DELETE)
+	removeRoleFromUserController.WithVersion(version)
+	removeRoleFromUserController.WithPath("/auth/users/{id}/roles/{role_id}")
+	removeRoleFromUserController.WithRequiredClaim(constants.UPDATE_USER_CLAIM)
+	removeRoleFromUserController.WithHandler(RemoveRoleFromUserHandler()).Register()
+
+	getUserClaims := restapi.NewController()
+	getUserClaims.WithMethod(restapi.GET)
+	getUserClaims.WithVersion(version)
+	getUserClaims.WithPath("/auth/users/{id}/claims")
+	getUserClaims.WithRequiredClaim(constants.LIST_USER_CLAIM)
+	getUserClaims.WithHandler(GetUserClaimsHandler()).Register()
+
+	addClaimToUserController := restapi.NewController()
+	addClaimToUserController.WithMethod(restapi.POST)
+	addClaimToUserController.WithVersion(version)
+	addClaimToUserController.WithPath("/auth/users/{id}/claims")
+	addClaimToUserController.WithRequiredClaim(constants.UPDATE_USER_CLAIM)
+	addClaimToUserController.WithHandler(AddClaimToUserHandler()).Register()
+
+	removeClaimFromUserController := restapi.NewController()
+	removeClaimFromUserController.WithMethod(restapi.DELETE)
+	removeClaimFromUserController.WithVersion(version)
+	removeClaimFromUserController.WithPath("/auth/users/{id}/claims/{claim_id}")
+	removeClaimFromUserController.WithRequiredClaim(constants.UPDATE_USER_CLAIM)
+	removeClaimFromUserController.WithHandler(RemoveClaimFromUserHandler()).Register()
+}
 
 //	@Summary		Gets all the users
 //	@Description	This endpoint returns all the users
@@ -22,7 +104,7 @@ import (
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/users  [get]
-func GetUsersController() restapi.ControllerHandler {
+func GetUsersHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -66,7 +148,7 @@ func GetUsersController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/users/{id}  [get]
-func GetUserController() restapi.ControllerHandler {
+func GetUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -105,7 +187,7 @@ func GetUserController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/users  [post]
-func CreateUserController() restapi.ControllerHandler {
+func CreateUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.UserCreateRequest
@@ -151,7 +233,7 @@ func CreateUserController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/users/{id}  [delete]
-func DeleteUserController() restapi.ControllerHandler {
+func DeleteUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -187,7 +269,7 @@ func DeleteUserController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/users/{id}  [put]
-func UpdateUserController() restapi.ControllerHandler {
+func UpdateUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.UserCreateRequest
@@ -235,7 +317,7 @@ func UpdateUserController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/users/{id}/roles  [get]
-func GetUserRolesController() restapi.ControllerHandler {
+func GetUserRolesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -276,7 +358,7 @@ func GetUserRolesController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/users/{id}/roles  [post]
-func AddRoleToUserController() restapi.ControllerHandler {
+func AddRoleToUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.RoleRequest
@@ -324,8 +406,8 @@ func AddRoleToUserController() restapi.ControllerHandler {
 //	@Failure		401	{object}	models.OAuthErrorResponse
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
-//	@Router			/v1/auth/users/{id}/roles/{role_id}  [post]
-func RemoveRoleFromUserController() restapi.ControllerHandler {
+//	@Router			/v1/auth/users/{id}/roles/{role_id}  [delete]
+func RemoveRoleFromUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -361,7 +443,7 @@ func RemoveRoleFromUserController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/users/{id}/claims  [get]
-func GetUserClaimsController() restapi.ControllerHandler {
+func GetUserClaimsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -402,7 +484,7 @@ func GetUserClaimsController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/users/{id}/claims  [post]
-func AddClaimToUserController() restapi.ControllerHandler {
+func AddClaimToUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.ClaimRequest
@@ -450,8 +532,8 @@ func AddClaimToUserController() restapi.ControllerHandler {
 //	@Failure		401	{object}	models.OAuthErrorResponse
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
-//	@Router			/v1/auth/users/{id}/claims/{claim_id}  [post]
-func RemoveClaimFromUserController() restapi.ControllerHandler {
+//	@Router			/v1/auth/users/{id}/claims/{claim_id}  [delete]
+func RemoveClaimFromUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)

@@ -918,6 +918,17 @@ definitions:
       TPM type:
         type: string
     type: object
+  models.ServiceHealthCheck:
+    properties:
+      error_message:
+        type: string
+      healthy:
+        type: boolean
+      message:
+        type: string
+      name:
+        type: string
+    type: object
   models.SharedApplications:
     properties:
       Bounce dock icon when app flashes:
@@ -971,6 +982,30 @@ definitions:
         type: string
       Undo disks:
         type: string
+    type: object
+  models.SystemUsageItem:
+    properties:
+      disk_count:
+        type: number
+      logical_cpu_count:
+        type: integer
+      memory_size:
+        type: number
+      physical_cpu_count:
+        type: integer
+    type: object
+  models.SystemUsageResponse:
+    properties:
+      cpu_type:
+        type: string
+      total:
+        $ref: '#/definitions/models.SystemUsageItem'
+      total_available:
+        $ref: '#/definitions/models.SystemUsageItem'
+      total_in_use:
+        $ref: '#/definitions/models.SystemUsageItem'
+      total_reserved:
+        $ref: '#/definitions/models.SystemUsageItem'
     type: object
   models.TimeSynchronization:
     properties:
@@ -1183,6 +1218,50 @@ info:
   title: Parallels Desktop API
   version: "1.0"
 paths:
+  /health/probe:
+    get:
+      description: This endpoint returns the API Health Probe
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+        "402":
+          description: Payment Required
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets the API Health Probe
+      tags:
+      - Config
+  /health/system:
+    get:
+      description: This endpoint returns the API Health Probe
+      parameters:
+      - description: Full Health Check
+        in: query
+        name: full
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ServiceHealthCheck'
+      summary: Gets the API System Health
+      tags:
+      - Config
   /v1/auth/api_keys:
     get:
       description: This endpoint returns all the api keys
@@ -1815,7 +1894,7 @@ paths:
       tags:
       - Users
   /v1/auth/users/{id}/claims/{claim_id}:
-    post:
+    delete:
       description: This endpoint removes a claim from a user
       parameters:
       - description: User ID
@@ -1913,7 +1992,7 @@ paths:
       tags:
       - Users
   /v1/auth/users/{id}/roles/{role_id}:
-    post:
+    delete:
       description: This endpoint removes a role from a user
       parameters:
       - description: User ID
@@ -2136,43 +2215,8 @@ paths:
       summary: Downloads a catalog manifest version
       tags:
       - Catalogs
-  /v1/catalog/{catalogId}/{version}/download/revoke:
-    post:
-      description: This endpoint UnTaints a catalog manifest version
-      parameters:
-      - description: Catalog ID
-        in: path
-        name: catalogId
-        required: true
-        type: string
-      - description: Version
-        in: path
-        name: version
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.OAuthErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      - BearerAuth: []
-      summary: UnTaints a catalog manifest version
-      tags:
-      - Catalogs
-  /v1/catalog/{catalogId}/{version}/download/untaint:
-    post:
+  /v1/catalog/{catalogId}/{version}/revoke:
+    patch:
       description: This endpoint UnTaints a catalog manifest version
       parameters:
       - description: Catalog ID
@@ -2207,7 +2251,7 @@ paths:
       tags:
       - Catalogs
   /v1/catalog/{catalogId}/{version}/taint:
-    post:
+    patch:
       description: This endpoint Taints a catalog manifest version
       parameters:
       - description: Catalog ID
@@ -2239,6 +2283,41 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Taints a catalog manifest version
+      tags:
+      - Catalogs
+  /v1/catalog/{catalogId}/{version}/untaint:
+    patch:
+      description: This endpoint UnTaints a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: UnTaints a catalog manifest version
       tags:
       - Catalogs
   /v1/catalog/import:
@@ -2335,6 +2414,30 @@ paths:
       summary: Pushes a catalog manifest to the catalog inventory
       tags:
       - Catalogs
+  /v1/config/hardware:
+    get:
+      description: This endpoint returns the Hardware Info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SystemUsageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets the Hardware Info
+      tags:
+      - Config
   /v1/config/tools/install:
     post:
       description: This endpoint installs API requires 3rd party tools

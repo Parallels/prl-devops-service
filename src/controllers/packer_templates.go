@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
@@ -12,6 +14,45 @@ import (
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
 )
+
+func registerPackerTemplatesHandlers(ctx basecontext.ApiContext, version string) {
+	ctx.LogInfo("Registering version %s packer template handlers", version)
+	packerTemplatesController := restapi.NewController()
+	packerTemplatesController.WithMethod(restapi.GET)
+	packerTemplatesController.WithVersion(version)
+	packerTemplatesController.WithPath("/templates/packer")
+	packerTemplatesController.WithRequiredClaim(constants.LIST_PACKER_TEMPLATE_CLAIM)
+	packerTemplatesController.WithHandler(GetPackerTemplatesHandler()).Register()
+
+	getPackerTemplateController := restapi.NewController()
+	getPackerTemplateController.WithMethod(restapi.GET)
+	getPackerTemplateController.WithVersion(version)
+	getPackerTemplateController.WithPath("/templates/packer/{id}")
+	getPackerTemplateController.WithRequiredClaim(constants.LIST_PACKER_TEMPLATE_CLAIM)
+	getPackerTemplateController.WithHandler(GetPackerTemplateHandler()).Register()
+
+	createPackerTemplateController := restapi.NewController()
+	createPackerTemplateController.WithMethod(restapi.POST)
+	createPackerTemplateController.WithVersion(version)
+	createPackerTemplateController.WithPath("/templates/packer")
+	createPackerTemplateController.WithRequiredClaim(constants.CREATE_PACKER_TEMPLATE_CLAIM)
+	createPackerTemplateController.WithHandler(CreatePackerTemplateHandler()).Register()
+
+	updatePackerTemplateController := restapi.NewController()
+	updatePackerTemplateController.WithMethod(restapi.PUT)
+	updatePackerTemplateController.WithVersion(version)
+	updatePackerTemplateController.WithPath("/templates/packer/{id}")
+	updatePackerTemplateController.WithRequiredClaim(constants.UPDATE_PACKER_TEMPLATE_CLAIM)
+	updatePackerTemplateController.WithHandler(UpdatePackerTemplateHandler()).Register()
+
+	deletePackerTemplateController := restapi.NewController()
+	deletePackerTemplateController.WithMethod(restapi.DELETE)
+	deletePackerTemplateController.WithVersion(version)
+	deletePackerTemplateController.WithPath("/templates/packer/{id}")
+	deletePackerTemplateController.WithRequiredClaim(constants.DELETE_PACKER_TEMPLATE_CLAIM)
+	deletePackerTemplateController.WithHandler(DeletePackerTemplateHandler()).Register()
+
+}
 
 //	@Summary		Gets all the packer templates
 //	@Description	This endpoint returns all the packer templates
@@ -23,7 +64,7 @@ import (
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/templates/packer [get]
-func GetPackerTemplatesController() restapi.ControllerHandler {
+func GetPackerTemplatesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -65,7 +106,7 @@ func GetPackerTemplatesController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/templates/packer/{id} [get]
-func GetPackerTemplateController() restapi.ControllerHandler {
+func GetPackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -111,7 +152,7 @@ func GetPackerTemplateController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/templates/packer  [post]
-func CreatePackerTemplateController() restapi.ControllerHandler {
+func CreatePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.CreatePackerTemplateRequest
@@ -157,7 +198,7 @@ func CreatePackerTemplateController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/templates/packer/{id}  [PUT]
-func UpdatePackerTemplateController() restapi.ControllerHandler {
+func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.CreatePackerTemplateRequest
@@ -206,7 +247,7 @@ func UpdatePackerTemplateController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/templates/packer/{id}  [DELETE]
-func DeletePackerTemplateController() restapi.ControllerHandler {
+func DeletePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
 	"github.com/Parallels/pd-api-service/serviceprovider"
@@ -12,6 +14,132 @@ import (
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
 )
+
+func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string) {
+	provider := serviceprovider.Get()
+
+	if provider.IsParallelsDesktopAvailable() {
+		ctx.LogInfo("Registering version %s virtual machine handlers", version)
+		virtualMachinesController := restapi.NewController()
+		virtualMachinesController.WithMethod(restapi.GET)
+		virtualMachinesController.WithVersion(version)
+		virtualMachinesController.WithPath("/machines")
+		virtualMachinesController.WithRequiredClaim(constants.LIST_VM_CLAIM)
+		virtualMachinesController.WithHandler(GetVirtualMachinesHandler()).Register()
+
+		getVirtualMachineController := restapi.NewController()
+		getVirtualMachineController.WithMethod(restapi.GET)
+		getVirtualMachineController.WithVersion(version)
+		getVirtualMachineController.WithPath("/machines/{id}")
+		getVirtualMachineController.WithRequiredClaim(constants.LIST_VM_CLAIM)
+		getVirtualMachineController.WithHandler(GetVirtualMachineHandler()).Register()
+
+		createVirtualMachineController := restapi.NewController()
+		createVirtualMachineController.WithMethod(restapi.POST)
+		createVirtualMachineController.WithVersion(version)
+		createVirtualMachineController.WithPath("/machines")
+		createVirtualMachineController.WithRequiredClaim(constants.CREATE_VM_CLAIM)
+		createVirtualMachineController.WithHandler(CreateVirtualMachineHandler()).Register()
+
+		deleteVirtualMachineController := restapi.NewController()
+		deleteVirtualMachineController.WithMethod(restapi.DELETE)
+		deleteVirtualMachineController.WithVersion(version)
+		deleteVirtualMachineController.WithPath("/machines/{id}")
+		deleteVirtualMachineController.WithRequiredClaim(constants.DELETE_VM_CLAIM)
+		deleteVirtualMachineController.WithHandler(DeleteVirtualMachineHandler()).Register()
+
+		registerVirtualMachineController := restapi.NewController()
+		registerVirtualMachineController.WithMethod(restapi.POST)
+		registerVirtualMachineController.WithVersion(version)
+		registerVirtualMachineController.WithPath("/machines/register")
+		registerVirtualMachineController.WithRequiredClaim(constants.CREATE_VM_CLAIM)
+		registerVirtualMachineController.WithHandler(RegisterVirtualMachineHandler()).Register()
+
+		unregisterVirtualMachineController := restapi.NewController()
+		unregisterVirtualMachineController.WithMethod(restapi.POST)
+		unregisterVirtualMachineController.WithVersion(version)
+		unregisterVirtualMachineController.WithPath("/machines/{id}/unregister")
+		unregisterVirtualMachineController.WithRequiredClaim(constants.UPDATE_VM_CLAIM)
+		unregisterVirtualMachineController.WithHandler(UnregisterVirtualMachineHandler()).Register()
+
+		startVirtualMachineController := restapi.NewController()
+		startVirtualMachineController.WithMethod(restapi.GET)
+		startVirtualMachineController.WithVersion(version)
+		startVirtualMachineController.WithPath("/machines/{id}/start")
+		startVirtualMachineController.WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM)
+		startVirtualMachineController.WithHandler(StartVirtualMachineHandler()).Register()
+
+		stopVirtualMachineController := restapi.NewController()
+		stopVirtualMachineController.WithMethod(restapi.GET)
+		stopVirtualMachineController.WithVersion(version)
+		stopVirtualMachineController.WithPath("/machines/{id}/stop")
+		stopVirtualMachineController.WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM)
+		stopVirtualMachineController.WithHandler(StopVirtualMachineHandler()).Register()
+
+		restartVirtualMachineController := restapi.NewController()
+		restartVirtualMachineController.WithMethod(restapi.GET)
+		restartVirtualMachineController.WithVersion(version)
+		restartVirtualMachineController.WithPath("/machines/{id}/restart")
+		restartVirtualMachineController.WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM)
+		restartVirtualMachineController.WithHandler(RestartVirtualMachineHandler()).Register()
+
+		pauseVirtualMachineController := restapi.NewController()
+		pauseVirtualMachineController.WithMethod(restapi.GET)
+		pauseVirtualMachineController.WithVersion(version)
+		pauseVirtualMachineController.WithPath("/machines/{id}/pause")
+		pauseVirtualMachineController.WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM)
+		pauseVirtualMachineController.WithHandler(PauseVirtualMachineHandler()).Register()
+
+		resumeVirtualMachineController := restapi.NewController()
+		resumeVirtualMachineController.WithMethod(restapi.GET)
+		resumeVirtualMachineController.WithVersion(version)
+		resumeVirtualMachineController.WithPath("/machines/{id}/resume")
+		resumeVirtualMachineController.WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM)
+		resumeVirtualMachineController.WithHandler(ResumeMachineController()).Register()
+
+		resetVirtualMachineController := restapi.NewController()
+		resetVirtualMachineController.WithMethod(restapi.GET)
+		resetVirtualMachineController.WithVersion(version)
+		resetVirtualMachineController.WithPath("/machines/{id}/reset")
+		resetVirtualMachineController.WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM)
+		resetVirtualMachineController.WithHandler(ResetMachineController()).Register()
+
+		suspendVirtualMachineController := restapi.NewController()
+		suspendVirtualMachineController.WithMethod(restapi.GET)
+		suspendVirtualMachineController.WithVersion(version)
+		suspendVirtualMachineController.WithPath("/machines/{id}/suspend")
+		suspendVirtualMachineController.WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM)
+		suspendVirtualMachineController.WithHandler(SuspendVirtualMachineHandler()).Register()
+
+		getVirtualMachineStatusController := restapi.NewController()
+		getVirtualMachineStatusController.WithMethod(restapi.GET)
+		getVirtualMachineStatusController.WithVersion(version)
+		getVirtualMachineStatusController.WithPath("/machines/{id}/status")
+		getVirtualMachineStatusController.WithRequiredClaim(constants.LIST_VM_CLAIM)
+		getVirtualMachineStatusController.WithHandler(GetVirtualMachineStatusHandler()).Register()
+
+		setVirtualMachineConfigurationController := restapi.NewController()
+		setVirtualMachineConfigurationController.WithMethod(restapi.POST)
+		setVirtualMachineConfigurationController.WithVersion(version)
+		setVirtualMachineConfigurationController.WithPath("/machines/{id}/set")
+		setVirtualMachineConfigurationController.WithRequiredClaim(constants.UPDATE_VM_CLAIM)
+		setVirtualMachineConfigurationController.WithHandler(SetVirtualMachineHandler()).Register()
+
+		executeCommandOnVirtualMachineController := restapi.NewController()
+		executeCommandOnVirtualMachineController.WithMethod(restapi.POST)
+		executeCommandOnVirtualMachineController.WithVersion(version)
+		executeCommandOnVirtualMachineController.WithPath("/machines/{id}/execute")
+		executeCommandOnVirtualMachineController.WithRequiredClaim(constants.EXECUTE_COMMAND_VM_CLAIM)
+		executeCommandOnVirtualMachineController.WithHandler(ExecuteCommandOnVirtualMachineHandler()).Register()
+
+		renameVirtualMachineController := restapi.NewController()
+		renameVirtualMachineController.WithMethod(restapi.POST)
+		renameVirtualMachineController.WithVersion(version)
+		renameVirtualMachineController.WithPath("/machines/{id}/rename")
+		renameVirtualMachineController.WithRequiredClaim(constants.UPDATE_VM_CLAIM)
+		renameVirtualMachineController.WithHandler(RenameVirtualMachineHandler()).Register()
+	}
+}
 
 //	@Summary		Gets all the virtual machines
 //	@Description	This endpoint returns all the virtual machines
@@ -24,7 +152,7 @@ import (
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines [get]
-func GetMachinesController() restapi.ControllerHandler {
+func GetVirtualMachinesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		provider := serviceprovider.Get()
@@ -61,7 +189,7 @@ func GetMachinesController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/{id} [get]
-func GetMachineController() restapi.ControllerHandler {
+func GetVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		provider := serviceprovider.Get()
@@ -101,7 +229,7 @@ func GetMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/{id}/start [get]
-func StartMachineController() restapi.ControllerHandler {
+func StartVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		provider := serviceprovider.Get()
@@ -139,7 +267,7 @@ func StartMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/{id}/stop [get]
-func StopMachineController() restapi.ControllerHandler {
+func StopVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		provider := serviceprovider.Get()
@@ -177,7 +305,7 @@ func StopMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/{id}/restart [get]
-func RestartMachineController() restapi.ControllerHandler {
+func RestartVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		provider := serviceprovider.Get()
@@ -214,7 +342,7 @@ func RestartMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/{id}/suspend [get]
-func SuspendMachineController() restapi.ControllerHandler {
+func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		provider := serviceprovider.Get()
@@ -325,7 +453,7 @@ func ResetMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/{id}/pause [get]
-func PauseMachineController() restapi.ControllerHandler {
+func PauseVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		provider := serviceprovider.Get()
@@ -363,7 +491,7 @@ func PauseMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/{id} [delete]
-func DeleteMachineController() restapi.ControllerHandler {
+func DeleteVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		provider := serviceprovider.Get()
@@ -394,7 +522,7 @@ func DeleteMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/{id}/status [post]
-func StatusMachineController() restapi.ControllerHandler {
+func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		provider := serviceprovider.Get()
@@ -432,7 +560,7 @@ func StatusMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/{id}/set [post]
-func SetMachineController() restapi.ControllerHandler {
+func SetVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.VirtualMachineConfigRequest
@@ -493,7 +621,7 @@ func SetMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/{id}/execute [post]
-func ExecuteCommandOnMachineController() restapi.ControllerHandler {
+func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.VirtualMachineExecuteCommandRequest
@@ -534,7 +662,7 @@ func ExecuteCommandOnMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/{id}/rename [post]
-func RenameMachineController() restapi.ControllerHandler {
+func RenameVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.RenameVirtualMachineRequest
@@ -591,7 +719,7 @@ func RenameMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/register [post]
-func RegisterMachineController() restapi.ControllerHandler {
+func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.RegisterVirtualMachineRequest
@@ -665,7 +793,7 @@ func RegisterMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines/{id}/unregister [post]
-func UnregisterMachineController() restapi.ControllerHandler {
+func UnregisterVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.UnregisterVirtualMachineRequest
@@ -706,7 +834,7 @@ func UnregisterMachineController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/machines [post]
-func CreateMachine() restapi.ControllerHandler {
+func CreateVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		provider := serviceprovider.Get()

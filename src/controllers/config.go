@@ -4,12 +4,58 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
 	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 )
+
+func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
+	provider := serviceprovider.Get()
+
+	ctx.LogInfo("Registering version %s config handlers", version)
+	if provider.System.GetOperatingSystem() == "macos" {
+		install3rdPartyToolsController := restapi.NewController()
+		install3rdPartyToolsController.WithMethod(restapi.POST)
+		install3rdPartyToolsController.WithVersion(version)
+		install3rdPartyToolsController.WithPath("/config/tools/install")
+		install3rdPartyToolsController.WithHandler(Install3rdPartyToolsHandler()).Register()
+
+		uninstall3rdPartyToolsController := restapi.NewController()
+		uninstall3rdPartyToolsController.WithMethod(restapi.POST)
+		uninstall3rdPartyToolsController.WithVersion(version)
+		uninstall3rdPartyToolsController.WithPath("/config/tools/uninstall")
+		uninstall3rdPartyToolsController.WithHandler(Uninstall3rdPartyToolsHandler()).Register()
+	}
+
+	restartController := restapi.NewController()
+	restartController.WithMethod(restapi.POST)
+	restartController.WithVersion(version)
+	restartController.WithPath("/config/tools/restart")
+	restartController.WithHandler(RestartApiHandler()).Register()
+
+	if provider.IsParallelsDesktopAvailable() {
+		getParallelsDesktopLicenseController := restapi.NewController()
+		getParallelsDesktopLicenseController.WithMethod(restapi.GET)
+		getParallelsDesktopLicenseController.WithVersion(version)
+		getParallelsDesktopLicenseController.WithPath("/config/parallels-desktop/license")
+		getParallelsDesktopLicenseController.WithHandler(GetParallelsDesktopLicenseHandler()).Register()
+	}
+
+	hardwareInfoController := restapi.NewController()
+	hardwareInfoController.WithMethod(restapi.GET)
+	hardwareInfoController.WithVersion(version)
+	hardwareInfoController.WithPath("/config/hardware")
+	hardwareInfoController.WithHandler(GetHardwareInfo()).Register()
+
+	systemHealthCheck := restapi.NewController()
+	systemHealthCheck.WithMethod(restapi.GET)
+	systemHealthCheck.WithVersion(version)
+	systemHealthCheck.WithPath("/health/system")
+	systemHealthCheck.WithHandler(GetSystemHealth()).Register()
+}
 
 //	@Summary		Gets Parallels Desktop active license
 //	@Description	This endpoint returns Parallels Desktop active license
@@ -21,7 +67,7 @@ import (
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/parallels_desktop/key [get]
-func GetParallelsDesktopLicenseController() restapi.ControllerHandler {
+func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		provider := serviceprovider.Get()
@@ -57,7 +103,7 @@ func GetParallelsDesktopLicenseController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/config/tools/install [post]
-func InstallToolsController() restapi.ControllerHandler {
+func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.InstallToolsRequest
@@ -182,7 +228,7 @@ func InstallToolsController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/config/tools/uninstall [post]
-func UninstallToolsController() restapi.ControllerHandler {
+func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.UninstallToolsRequest
@@ -294,11 +340,112 @@ func UninstallToolsController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/config/tools/restart [post]
-func RestartController() restapi.ControllerHandler {
+func RestartApiHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		go restapi.Get().Restart()
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfo("Restart request accepted")
+	}
+}
+
+//	@Summary		Gets the Hardware Info
+//	@Description	This endpoint returns the Hardware Info
+//	@Tags			Config
+//	@Produce		json
+//	@Success		200	{object}	models.SystemUsageResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/config/hardware [get]
+func GetHardwareInfo() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		provider := serviceprovider.Get()
+		hardwareInfo, err := provider.ParallelsDesktopService.GetHardwareUsage(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(hardwareInfo)
+	}
+}
+
+//	@Summary		Gets the API System Health
+//	@Description	This endpoint returns the API Health Probe
+//	@Tags			Config
+//	@Produce		json
+//	@Param			full	query		bool	false	"Full Health Check"
+//	@Success		200		{object}	models.ServiceHealthCheck
+//	@Router			/health/system [get]
+func GetSystemHealth() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		provider := serviceprovider.Get()
+		result := models.ApiHealthCheck{}
+
+		pdService := models.ServiceHealthCheck{
+			Healthy: true,
+			Name:    "Parallels Desktop Service",
+		}
+
+		_, err := provider.ParallelsDesktopService.GetInfo()
+		if err != nil {
+			pdService.Healthy = false
+			pdService.ErrorMessage = err.Error()
+		}
+		result.Services = append(result.Services, pdService)
+
+		fullHealthCheck := http_helper.GetHttpRequestBoolValue(r, "full", false)
+		if fullHealthCheck {
+			packerService := models.ServiceHealthCheck{
+				Healthy: true,
+				Name:    "Packer Service",
+			}
+			if version := provider.PackerService.Version(); version == "unknown" {
+				packerService.Healthy = false
+				packerService.ErrorMessage = "Packer Service not installed"
+			} else {
+				packerService.Message = version
+			}
+			result.Services = append(result.Services, packerService)
+
+			vagrantService := models.ServiceHealthCheck{
+				Healthy: true,
+				Name:    "Vagrant Service",
+			}
+			if version := provider.VagrantService.Version(); version == "unknown" {
+				vagrantService.Healthy = false
+				vagrantService.ErrorMessage = "Packer Service not installed"
+			} else {
+				vagrantService.Message = version
+			}
+			result.Services = append(result.Services, vagrantService)
+
+			gitService := models.ServiceHealthCheck{
+				Healthy: true,
+				Name:    "Git Service",
+			}
+			if version := provider.VagrantService.Version(); version == "unknown" {
+				gitService.Healthy = false
+				gitService.ErrorMessage = "Git Service not installed"
+			} else {
+				gitService.Message = version
+			}
+			result.Services = append(result.Services, gitService)
+		}
+
+		healthy, message := result.GetHealthStatus()
+		result.Healthy = healthy
+		if !result.Healthy {
+			result.ErrorMessage = message
+		} else {
+			result.Message = message
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(result)
 	}
 }

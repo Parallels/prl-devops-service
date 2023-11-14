@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
@@ -11,6 +13,44 @@ import (
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
 )
+
+func registerApiKeysHandlers(ctx basecontext.ApiContext, version string) {
+	ctx.LogInfo("Registering version %s ApiKeys handlers", version)
+	apiKeysController := restapi.NewController()
+	apiKeysController.WithMethod(restapi.GET)
+	apiKeysController.WithVersion(version)
+	apiKeysController.WithPath("/auth/api_keys")
+	apiKeysController.WithRequiredClaim(constants.LIST_API_KEY_CLAIM)
+	apiKeysController.WithHandler(GetApiKeysHandler()).Register()
+
+	getApiKeyController := restapi.NewController()
+	getApiKeyController.WithMethod(restapi.GET)
+	getApiKeyController.WithVersion(version)
+	getApiKeyController.WithPath("/auth/api_keys/{id}")
+	getApiKeyController.WithRequiredClaim(constants.LIST_API_KEY_CLAIM)
+	getApiKeyController.WithHandler(GetApiKeyHandler()).Register()
+
+	createApiKeysController := restapi.NewController()
+	createApiKeysController.WithMethod(restapi.POST)
+	createApiKeysController.WithVersion(version)
+	createApiKeysController.WithPath("/auth/api_keys")
+	createApiKeysController.WithRequiredClaim(constants.CREATE_API_KEY_CLAIM)
+	createApiKeysController.WithHandler(CreateApiKeyHandler()).Register()
+
+	deleteApiKeyController := restapi.NewController()
+	deleteApiKeyController.WithMethod(restapi.DELETE)
+	deleteApiKeyController.WithVersion(version)
+	deleteApiKeyController.WithPath("/auth/api_keys/{id}")
+	deleteApiKeyController.WithRequiredClaim(constants.DELETE_API_KEY_CLAIM)
+	deleteApiKeyController.WithHandler(DeleteApiKeyHandler()).Register()
+
+	revokeApiKeyController := restapi.NewController()
+	revokeApiKeyController.WithMethod(restapi.PUT)
+	revokeApiKeyController.WithVersion(version)
+	revokeApiKeyController.WithPath("/auth/api_keys/{id}/revoke")
+	revokeApiKeyController.WithRequiredRole(constants.SUPER_USER_ROLE)
+	revokeApiKeyController.WithHandler(RevokeApiKeyHandler()).Register()
+}
 
 //	@Summary		Gets all the api keys
 //	@Description	This endpoint returns all the api keys
@@ -22,7 +62,7 @@ import (
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/api_keys [get]
-func GetApiKeysController() restapi.ControllerHandler {
+func GetApiKeysHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -58,7 +98,7 @@ func GetApiKeysController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/api_keys/{id} [delete]
-func DeleteApiKeyController() restapi.ControllerHandler {
+func DeleteApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -94,7 +134,7 @@ func DeleteApiKeyController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/api_keys/{id} [get]
-func GetApiKeyByIdOrNameController() restapi.ControllerHandler {
+func GetApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -133,7 +173,7 @@ func GetApiKeyByIdOrNameController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/api_keys [post]
-func CreateApiKeyController() restapi.ControllerHandler {
+func CreateApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.ApiKeyRequest
@@ -182,7 +222,7 @@ func CreateApiKeyController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/api_keys/{id}/revoke [put]
-func RevokeApiKeyController() restapi.ControllerHandler {
+func RevokeApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)

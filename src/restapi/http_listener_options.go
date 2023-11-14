@@ -13,5 +13,4 @@ type HttpListenerOptions struct {
 	EnableAuthentication    bool
 	LogHealthChecks         bool
 	PublicRegistration      bool
-	DefaultApiVersion       string
 }

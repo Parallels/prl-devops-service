@@ -1,12 +1,14 @@
 package azurestorageaccount
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/catalog/common"
@@ -83,6 +85,7 @@ func (s *AzureStorageAccountProvider) Check(ctx basecontext.ApiContext, connecti
 }
 
 func (s *AzureStorageAccountProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath string, path string, filename string) error {
+	ctx.LogInfo("Pushing file %s", filename)
 	localFilePath := filepath.Join(rootLocalPath, filename)
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 
@@ -111,7 +114,9 @@ func (s *AzureStorageAccountProvider) PushFile(ctx basecontext.ApiContext, rootL
 }
 
 func (s *AzureStorageAccountProvider) PullFile(ctx basecontext.ApiContext, path string, filename string, destination string) error {
+	ctx.LogInfo("Pulling file %s", filename)
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
+	destinationFilePath := filepath.Join(destination, filename)
 	credential, err := azblob.NewSharedKeyCredential(s.StorageAccount.Name, s.StorageAccount.Key)
 	if err != nil {
 		return fmt.Errorf("invalid credentials with error: %s", err.Error())
@@ -119,15 +124,24 @@ func (s *AzureStorageAccountProvider) PullFile(ctx basecontext.ApiContext, path 
 	URL, _ := url.Parse(
 		fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", s.StorageAccount.Name, s.StorageAccount.ContainerName, remoteFilePath))
 
-	blobUrl := azblob.NewBlockBlobURL(*URL, azblob.NewPipeline(credential, azblob.PipelineOptions{}))
+	blobUrl := azblob.NewBlockBlobURL(*URL, azblob.NewPipeline(credential, azblob.PipelineOptions{
+		Retry: azblob.RetryOptions{
+			MaxTries:   5,
+			TryTimeout: 40 * time.Minute,
+		},
+	}))
 
-	file, err := os.Create(filepath.Join(destination, filename))
+	file, err := os.Create(destinationFilePath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	err = azblob.DownloadBlobToFile(ctx.Context(), blobUrl.BlobURL, 0, azblob.CountToEnd, file, azblob.DownloadFromBlobOptions{})
+	// Create a new context with a longer deadline
+	downloadContext, cancel := context.WithTimeout(ctx.Context(), 5*time.Hour)
+	defer cancel()
+
+	err = azblob.DownloadBlobToFile(downloadContext, blobUrl.BlobURL, 0, azblob.CountToEnd, file, azblob.DownloadFromBlobOptions{})
 
 	return err
 }

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
@@ -13,6 +15,37 @@ import (
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
 )
+
+func registerClaimsHandlers(ctx basecontext.ApiContext, version string) {
+	ctx.LogInfo("Registering version %s Claims handlers", version)
+	claimsController := restapi.NewController()
+	claimsController.WithMethod(restapi.GET)
+	claimsController.WithVersion(version)
+	claimsController.WithPath("/auth/claims")
+	claimsController.WithRequiredClaim(constants.LIST_CLAIM_CLAIM)
+	claimsController.WithHandler(GetClaimsHandler()).Register()
+
+	getClaimController := restapi.NewController()
+	getClaimController.WithMethod(restapi.GET)
+	getClaimController.WithVersion(version)
+	getClaimController.WithPath("/auth/claims/{id}")
+	getClaimController.WithRequiredClaim(constants.LIST_CLAIM_CLAIM)
+	getClaimController.WithHandler(GetClaimHandler()).Register()
+
+	createClaimController := restapi.NewController()
+	createClaimController.WithMethod(restapi.POST)
+	createClaimController.WithVersion(version)
+	createClaimController.WithPath("/auth/claims")
+	createClaimController.WithRequiredClaim(constants.CREATE_CLAIM_CLAIM)
+	createClaimController.WithHandler(CreateClaimHandler()).Register()
+
+	deleteClaimController := restapi.NewController()
+	deleteClaimController.WithMethod(restapi.DELETE)
+	deleteClaimController.WithVersion(version)
+	deleteClaimController.WithPath("/auth/claims/{id}")
+	deleteClaimController.WithRequiredClaim(constants.DELETE_CLAIM_CLAIM)
+	deleteClaimController.WithHandler(DeleteClaimHandler()).Register()
+}
 
 //	@Summary		Gets all the claims
 //	@Description	This endpoint returns all the claims
@@ -24,7 +57,7 @@ import (
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/claims [get]
-func GetClaimsController() restapi.ControllerHandler {
+func GetClaimsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -68,7 +101,7 @@ func GetClaimsController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/claims/{id} [get]
-func GetClaimController() restapi.ControllerHandler {
+func GetClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -107,7 +140,7 @@ func GetClaimController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/claims [post]
-func CreateClaimController() restapi.ControllerHandler {
+func CreateClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.ClaimRequest
@@ -155,7 +188,7 @@ func CreateClaimController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/claims/{id} [delete]
-func DeleteClaimController() restapi.ControllerHandler {
+func DeleteClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)

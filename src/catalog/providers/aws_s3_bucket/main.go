@@ -96,6 +96,10 @@ func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection strin
 
 // uploadFile uploads a file to an S3 bucket
 func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath string, path string, filename string) error {
+	ctx.LogInfo("Pushing file %s", filename)
+	localFilePath := filepath.Join(rootLocalPath, filename)
+	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
+
 	// Create a new session using the default region and credentials.
 	var err error
 	session, err := s.createSession()
@@ -108,11 +112,8 @@ func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 		u.Concurrency = 5             // default is 5
 	})
 
-	fullLocalPath := filepath.Join(rootLocalPath, path, filename)
-	remotePath := filepath.Join(path, filename)
-
 	// Open the file for reading.
-	file, err := os.Open(fullLocalPath)
+	file, err := os.Open(localFilePath)
 	if err != nil {
 		return err
 	}
@@ -120,7 +121,7 @@ func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s.Bucket.Name),
-		Key:    aws.String(remotePath),
+		Key:    aws.String(remoteFilePath),
 		Body:   file,
 	})
 
@@ -132,6 +133,9 @@ func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 }
 
 func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, filename string, destination string) error {
+	ctx.LogInfo("Pulling file %s", filename)
+	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
+	destinationFilePath := filepath.Join(destination, filename)
 
 	// Create a new session using the default region and credentials.
 	var err error
@@ -145,11 +149,8 @@ func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 		d.Concurrency = 5             // default is 5
 	})
 
-	fullLocalPath := filepath.Join(destination, path, filename)
-	remotePath := filepath.Join(path, filename)
-
 	// Create a file to write the S3 Object contents to.
-	f, err := os.Create(fullLocalPath)
+	f, err := os.Create(destinationFilePath)
 	if err != nil {
 		return err
 	}
@@ -157,7 +158,7 @@ func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 	// Write the contents of S3 Object to the file
 	_, err = downloader.Download(f, &s3.GetObjectInput{
 		Bucket: aws.String(s.Bucket.Name),
-		Key:    aws.String(remotePath),
+		Key:    aws.String(remoteFilePath),
 	})
 	if err != nil {
 		return err
@@ -167,6 +168,8 @@ func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 }
 
 func (s *AwsS3BucketProvider) DeleteFile(ctx basecontext.ApiContext, path string, fileName string) error {
+	remoteFilePath := strings.TrimPrefix(filepath.Join(path, fileName), "/")
+
 	// Create a new AWS session
 	session, err := s.createSession()
 	if err != nil {
@@ -176,10 +179,9 @@ func (s *AwsS3BucketProvider) DeleteFile(ctx basecontext.ApiContext, path string
 	// Create a new S3 client
 	svc := s3.New(session)
 
-	fullPath := filepath.Join(path, fileName)
 	_, err = svc.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(s.Bucket.Name),
-		Key:    aws.String(fullPath),
+		Key:    aws.String(remoteFilePath),
 	})
 
 	if err != nil {
@@ -190,11 +192,53 @@ func (s *AwsS3BucketProvider) DeleteFile(ctx basecontext.ApiContext, path string
 }
 
 func (s *AwsS3BucketProvider) FileChecksum(ctx basecontext.ApiContext, path string, fileName string) (string, error) {
-	return "", nil
+	// Create a new AWS session
+	session, err := s.createSession()
+	if err != nil {
+		return "", err
+	}
+
+	// Create a new S3 client
+	svc := s3.New(session)
+
+	fullPath := filepath.Join(path, fileName)
+	resp, err := svc.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(s.Bucket.Name),
+		Key:    aws.String(fullPath),
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	// The ETag is enclosed in double quotes, so we remove them
+	checksum := strings.Trim(*resp.ETag, "\"")
+
+	return checksum, nil
 }
 
 func (s *AwsS3BucketProvider) FileExists(ctx basecontext.ApiContext, path string, fileName string) (bool, error) {
-	return false, nil
+	fullPath := filepath.Join(path, fileName)
+	// Create a new AWS session
+	session, err := s.createSession()
+	if err != nil {
+		return false, err
+	}
+
+	// Create a new S3 client
+	svc := s3.New(session)
+
+	// Check if the file exists
+	_, err = svc.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(s.Bucket.Name),
+		Key:    aws.String(fullPath),
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (s *AwsS3BucketProvider) CreateFolder(ctx basecontext.ApiContext, folderPath string, folderName string) error {
@@ -240,6 +284,7 @@ func (s *AwsS3BucketProvider) CreateFolder(ctx basecontext.ApiContext, folderPat
 
 func (s *AwsS3BucketProvider) DeleteFolder(ctx basecontext.ApiContext, folderPath string, folderName string) error {
 	fullPath := filepath.Join(folderPath, folderName)
+	fullPath = strings.TrimPrefix(fullPath, "/")
 	// Create a new AWS session
 	session, err := s.createSession()
 	if err != nil {
@@ -272,6 +317,8 @@ func (s *AwsS3BucketProvider) DeleteFolder(ctx basecontext.ApiContext, folderPat
 
 func (s *AwsS3BucketProvider) FolderExists(ctx basecontext.ApiContext, folderPath string, folderName string) (bool, error) {
 	fullPath := filepath.Join(folderPath, folderName)
+	fullPath = strings.TrimPrefix(fullPath, "/")
+
 	// Create a new AWS session
 	session, err := s.createSession()
 	if err != nil {

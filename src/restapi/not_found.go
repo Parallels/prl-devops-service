@@ -11,8 +11,9 @@ import (
 
 func NotFoundController() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// listener := globalHttpListener
 		baseCtx := basecontext.NewBaseContextFromRequest(r)
+
+		// listener := globalHttpListener
 		// path := r.URL.Path
 		// if len(listener.Versions) > 0 {
 		// 	if strings.HasPrefix(path, listener.Options.ApiPrefix) && !strings.HasPrefix(path, listener.GetFullPathPrefix()) {

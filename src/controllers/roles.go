@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
@@ -13,6 +15,37 @@ import (
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
 )
+
+func registerRolesHandlers(ctx basecontext.ApiContext, version string) {
+	ctx.LogInfo("Registering version %s Roles handlers", version)
+	rolesController := restapi.NewController()
+	rolesController.WithMethod(restapi.GET)
+	rolesController.WithVersion(version)
+	rolesController.WithPath("/auth/roles")
+	rolesController.WithRequiredClaim(constants.LIST_ROLE_CLAIM)
+	rolesController.WithHandler(GetRolesHandler()).Register()
+
+	getRoleController := restapi.NewController()
+	getRoleController.WithMethod(restapi.GET)
+	getRoleController.WithVersion(version)
+	getRoleController.WithPath("/auth/roles/{id}")
+	getRoleController.WithRequiredClaim(constants.LIST_ROLE_CLAIM)
+	getRoleController.WithHandler(GetRoleHandler()).Register()
+
+	createRoleController := restapi.NewController()
+	createRoleController.WithMethod(restapi.POST)
+	createRoleController.WithVersion(version)
+	createRoleController.WithPath("/auth/roles")
+	createRoleController.WithRequiredClaim(constants.CREATE_ROLE_CLAIM)
+	createRoleController.WithHandler(CreateRoleHandler()).Register()
+
+	deleteRoleController := restapi.NewController()
+	deleteRoleController.WithMethod(restapi.DELETE)
+	deleteRoleController.WithVersion(version)
+	deleteRoleController.WithPath("/auth/roles/{id}")
+	deleteRoleController.WithRequiredClaim(constants.DELETE_ROLE_CLAIM)
+	deleteRoleController.WithHandler(DeleteRoleHandler()).Register()
+}
 
 //	@Summary		Gets all the roles
 //	@Description	This endpoint returns all the roles
@@ -24,7 +57,7 @@ import (
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/roles  [get]
-func GetRolesController() restapi.ControllerHandler {
+func GetRolesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -68,7 +101,7 @@ func GetRolesController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/roles/{id}  [get]
-func GetRoleController() restapi.ControllerHandler {
+func GetRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -107,7 +140,7 @@ func GetRoleController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/roles  [post]
-func CreateRoleController() restapi.ControllerHandler {
+func CreateRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.RoleRequest
@@ -155,7 +188,7 @@ func CreateRoleController() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/roles/{id}  [delete]
-func DeleteRoleController() restapi.ControllerHandler {
+func DeleteRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
