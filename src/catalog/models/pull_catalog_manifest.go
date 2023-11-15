@@ -9,31 +9,36 @@ import (
 )
 
 var (
-	ErrMissingPath        = errors.NewWithCode("missing path", 400)
-	ErrMissingId          = errors.NewWithCode("missing id", 400)
-	ErrMissingMachineName = errors.NewWithCode("missing machine name", 400)
-	ErrMissingConnection  = errors.NewWithCode("missing connection", 400)
+	ErrPullMissingPath        = errors.NewWithCode("missing path", 400)
+	ErrPullMissingCatalogId   = errors.NewWithCode("missing catalog id", 400)
+	ErrPullMissingMachineName = errors.NewWithCode("missing machine name", 400)
+	ErrMissingConnection      = errors.NewWithCode("missing connection", 400)
 )
 
 type PullCatalogManifestRequest struct {
-	ID                 string            `json:"id"`
+	CatalogId          string            `json:"catalog_id"`
+	Version            string            `json:"version,omitempty"`
 	Owner              string            `json:"owner,omitempty"`
 	MachineName        string            `json:"machine_name,omitempty"`
 	Path               string            `json:"path,omitempty"`
 	Connection         string            `json:"connection,omitempty"`
 	ProviderMetadata   map[string]string `json:"provider_metadata,omitempty"`
+	StartAfterPull     bool              `json:"start_after_pull,omitempty"`
 	LocalMachineFolder string            `json:"-"`
 }
 
 func (r *PullCatalogManifestRequest) Validate() error {
 	if r.Path == "" {
-		return ErrMissingPath
+		return ErrPullMissingPath
 	}
-	if r.ID == "" {
-		return ErrMissingId
+	if r.CatalogId == "" {
+		return ErrPullMissingCatalogId
+	}
+	if r.Version == "" {
+		r.Version = constants.LATEST_TAG
 	}
 	if r.MachineName == "" {
-		return ErrMissingMachineName
+		return ErrPullMissingMachineName
 	}
 	if r.Connection == "" {
 		return ErrMissingConnection
@@ -48,6 +53,8 @@ func (r *PullCatalogManifestRequest) Validate() error {
 
 type PullCatalogManifestResponse struct {
 	ID             string                         `json:"id"`
+	CatalogId      string                         `json:"catalog_id"`
+	Version        string                         `json:"version"`
 	LocalPath      string                         `json:"local_path"`
 	MachineName    string                         `json:"machine_name"`
 	Manifest       *VirtualMachineCatalogManifest `json:"manifest"`

@@ -22,7 +22,7 @@ import (
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/api_keys [get]
-func GetApiKeysController() restapi.Controller {
+func GetApiKeysController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -58,7 +58,7 @@ func GetApiKeysController() restapi.Controller {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/api_keys/{id} [delete]
-func DeleteApiKeyController() restapi.Controller {
+func DeleteApiKeyController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -94,7 +94,7 @@ func DeleteApiKeyController() restapi.Controller {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/api_keys/{id} [get]
-func GetApiKeyByIdOrNameController() restapi.Controller {
+func GetApiKeyByIdOrNameController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -133,7 +133,7 @@ func GetApiKeyByIdOrNameController() restapi.Controller {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/api_keys [post]
-func CreateApiKeyController() restapi.Controller {
+func CreateApiKeyController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.ApiKeyRequest
@@ -182,7 +182,7 @@ func CreateApiKeyController() restapi.Controller {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/auth/api_keys/{id}/revoke [put]
-func RevokeApiKeyController() restapi.Controller {
+func RevokeApiKeyController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)

@@ -6,7 +6,7 @@ import (
 )
 
 // Login Generate a token for a valid user
-func (c *HttpListener) Probe() Controller {
+func (c *HttpListener) Probe() ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		response := "Healthy"
 		json.NewEncoder(w).Encode(response)

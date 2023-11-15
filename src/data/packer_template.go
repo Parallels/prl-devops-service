@@ -98,7 +98,7 @@ func (j *JsonDatabase) DeletePackerTemplate(ctx basecontext.ApiContext, nameOrId
 
 	for i, template := range j.data.PackerTemplates {
 		if strings.EqualFold(template.Name, nameOrId) || strings.EqualFold(template.ID, nameOrId) {
-			if template.Internal {
+			if template.Internal && !IsRootUser(ctx) {
 				return ErrRemovingInternalPackerTemplate
 			}
 

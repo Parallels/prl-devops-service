@@ -13,8 +13,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// LoginUser is a public function that logs in a user
-func GetPackerTemplatesController() restapi.Controller {
+//	@Summary		Gets all the packer templates
+//	@Description	This endpoint returns all the packer templates
+//	@Tags			Packer Templates
+//	@Produce		json
+//	@Success		200	{object}	[]models.PackerTemplateResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/templates/packer [get]
+func GetPackerTemplatesController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -45,7 +54,18 @@ func GetPackerTemplatesController() restapi.Controller {
 	}
 }
 
-func GetPackerTemplateController() restapi.Controller {
+//	@Summary		Gets a packer template
+//	@Description	This endpoint returns a packer template
+//	@Tags			Packer Templates
+//	@Produce		json
+//	@Param			id	path		string	true	"Packer Template ID"
+//	@Success		200	{object}	models.PackerTemplateResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/templates/packer/{id} [get]
+func GetPackerTemplateController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -80,7 +100,18 @@ func GetPackerTemplateController() restapi.Controller {
 	}
 }
 
-func CreatePackerTemplateController() restapi.Controller {
+//	@Summary		Creates a packer template
+//	@Description	This endpoint creates a packer template
+//	@Tags			Packer Templates
+//	@Produce		json
+//	@Param			createPackerTemplateRequest	body		models.CreatePackerTemplateRequest	true	"Create Packer Template Request"
+//	@Success		200							{object}	models.PackerTemplateResponse
+//	@Failure		400							{object}	models.ApiErrorResponse
+//	@Failure		401							{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/templates/packer  [post]
+func CreatePackerTemplateController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.CreatePackerTemplateRequest
@@ -114,7 +145,19 @@ func CreatePackerTemplateController() restapi.Controller {
 	}
 }
 
-func UpdatePackerTemplateController() restapi.Controller {
+//	@Summary		Updates a packer template
+//	@Description	This endpoint updates a packer template
+//	@Tags			Packer Templates
+//	@Produce		json
+//	@Param			createPackerTemplateRequest	body		models.CreatePackerTemplateRequest	true	"Update Packer Template Request"
+//	@Param			id							path		string								true	"Packer Template ID"
+//	@Success		200							{object}	models.PackerTemplateResponse
+//	@Failure		400							{object}	models.ApiErrorResponse
+//	@Failure		401							{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/templates/packer/{id}  [PUT]
+func UpdatePackerTemplateController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.CreatePackerTemplateRequest
@@ -152,7 +195,18 @@ func UpdatePackerTemplateController() restapi.Controller {
 	}
 }
 
-func DeletePackerTemplateController() restapi.Controller {
+//	@Summary		Deletes a packer template
+//	@Description	This endpoint deletes a packer template
+//	@Tags			Packer Templates
+//	@Produce		json
+//	@Param			id	path	string	true	"Packer Template ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/templates/packer/{id}  [DELETE]
+func DeletePackerTemplateController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)

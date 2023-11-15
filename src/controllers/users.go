@@ -12,7 +12,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func GetUsersController() restapi.Controller {
+//	@Summary		Gets all the users
+//	@Description	This endpoint returns all the users
+//	@Tags			Users
+//	@Produce		json
+//	@Success		200	{object}	[]models.ApiUser
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users  [get]
+func GetUsersController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -45,7 +55,18 @@ func GetUsersController() restapi.Controller {
 	}
 }
 
-func GetUserController() restapi.Controller {
+//	@Summary		Gets a user
+//	@Description	This endpoint returns a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id	path		string	true	"User ID"
+//	@Success		200	{object}	models.ApiUser
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}  [get]
+func GetUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -73,7 +94,18 @@ func GetUserController() restapi.Controller {
 	}
 }
 
-func CreateUserController() restapi.Controller {
+//	@Summary		Creates a user
+//	@Description	This endpoint creates a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			body	body		models.UserCreateRequest	true	"User"
+//	@Success		201		{object}	models.ApiUser
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users  [post]
+func CreateUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.UserCreateRequest
@@ -108,7 +140,18 @@ func CreateUserController() restapi.Controller {
 	}
 }
 
-func DeleteUserController() restapi.Controller {
+//	@Summary		Deletes a user
+//	@Description	This endpoint deletes a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id	path	string	true	"User ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}  [delete]
+func DeleteUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -133,7 +176,18 @@ func DeleteUserController() restapi.Controller {
 	}
 }
 
-func UpdateUserController() restapi.Controller {
+//	@Summary		Update a user
+//	@Description	This endpoint updates a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			body	body		models.UserCreateRequest	true	"User"
+//	@Success		202		{object}	models.ApiUser
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}  [put]
+func UpdateUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.UserCreateRequest
@@ -170,7 +224,18 @@ func UpdateUserController() restapi.Controller {
 	}
 }
 
-func GetUserRolesController() restapi.Controller {
+//	@Summary		Gets all the roles for a user
+//	@Description	This endpoint returns all the roles for a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id	path		string	true	"User ID"
+//	@Success		200	{object}	models.RoleResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}/roles  [get]
+func GetUserRolesController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -199,7 +264,19 @@ func GetUserRolesController() restapi.Controller {
 	}
 }
 
-func AddRoleToUserController() restapi.Controller {
+//	@Summary		Adds a role to a user
+//	@Description	This endpoint adds a role to a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id		path		string				true	"User ID"
+//	@Param			body	body		models.RoleRequest	true	"Role Name"
+//	@Success		201		{object}	models.RoleRequest
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}/roles  [post]
+func AddRoleToUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.RoleRequest
@@ -236,7 +313,19 @@ func AddRoleToUserController() restapi.Controller {
 	}
 }
 
-func RemoveRoleFromUserController() restapi.Controller {
+//	@Summary		Removes a role from a user
+//	@Description	This endpoint removes a role from a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id		path	string	true	"User ID"
+//	@Param			role_id	path	string	true	"Role ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}/roles/{role_id}  [post]
+func RemoveRoleFromUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -261,7 +350,18 @@ func RemoveRoleFromUserController() restapi.Controller {
 	}
 }
 
-func GetUserClaimsController() restapi.Controller {
+//	@Summary		Gets all the claims for a user
+//	@Description	This endpoint returns all the claims for a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id	path		string	true	"User ID"
+//	@Success		200	{object}	models.ClaimResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}/claims  [get]
+func GetUserClaimsController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -290,7 +390,19 @@ func GetUserClaimsController() restapi.Controller {
 	}
 }
 
-func AddClaimToUserController() restapi.Controller {
+//	@Summary		Adds a claim to a user
+//	@Description	This endpoint adds a claim to a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id		path		string				true	"User ID"
+//	@Param			body	body		models.ClaimRequest	true	"Claim Name"
+//	@Success		201		{object}	models.ClaimRequest
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}/claims  [post]
+func AddClaimToUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.ClaimRequest
@@ -327,7 +439,19 @@ func AddClaimToUserController() restapi.Controller {
 	}
 }
 
-func RemoveClaimFromUserController() restapi.Controller {
+//	@Summary		Removes a claim from a user
+//	@Description	This endpoint removes a claim from a user
+//	@Tags			Users
+//	@Produce		json
+//	@Param			id			path	string	true	"User ID"
+//	@Param			claim_id	path	string	true	"Claim ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/auth/users/{id}/claims/{claim_id}  [post]
+func RemoveClaimFromUserController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)

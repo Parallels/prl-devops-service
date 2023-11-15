@@ -9,9 +9,25 @@ import (
 	"github.com/Parallels/pd-api-service/models"
 )
 
-func NotFoundController() Controller {
-	return func(w http.ResponseWriter, r *http.Request) {
+func NotFoundController() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// listener := globalHttpListener
 		baseCtx := basecontext.NewBaseContextFromRequest(r)
+		// path := r.URL.Path
+		// if len(listener.Versions) > 0 {
+		// 	if strings.HasPrefix(path, listener.Options.ApiPrefix) && !strings.HasPrefix(path, listener.GetFullPathPrefix()) {
+		// 		protocol := "http"
+		// 		if r.TLS != nil {
+		// 			protocol = "https"
+		// 		}
+		// 		baseUrl := fmt.Sprintf("%s://%s", protocol, r.Host)
+		// 		path = strings.ReplaceAll(path, listener.Options.ApiPrefix, "")
+		// 		newUrl := fmt.Sprintf("%s%s", baseUrl, http_helper.JoinUrl(listener.GetFullPathPrefix(), path))
+		// 		http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
+		// 		return
+		// 	}
+		// }
+
 		response := models.ApiErrorResponse{
 			Code:    http.StatusNotFound,
 			Message: fmt.Sprintf("resource %s not found", r.URL.Path),
@@ -19,6 +35,6 @@ func NotFoundController() Controller {
 
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(response)
-		baseCtx.LogInfo("Resource not found")
-	}
+		baseCtx.LogInfo("Resource %s not found", r.URL.Path)
+	})
 }

@@ -57,40 +57,40 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 		if check {
 			foundProvider = true
 			response.CleanupRequest.RemoteStorageService = rs
-			dir := r.ID
-			metaFileName := s.getMetaFilename(r.ID)
-			packFileName := s.getPackFilename(r.ID)
+			dir := r.CatalogId
+			metaFileName := s.getMetaFilename(r.Name())
+			packFileName := s.getPackFilename(r.Name())
 			metaExists, err := rs.FileExists(ctx, dir, metaFileName)
 			if err != nil {
-				ctx.LogError("Error checking if meta file %v exists: %v", r.ID, err)
+				ctx.LogError("Error checking if meta file %v exists: %v", r.CatalogId, err)
 				response.AddError(err)
 				break
 			}
 			if !metaExists {
-				err := errors.Newf("meta file %v does not exist", r.ID)
+				err := errors.Newf("meta file %v does not exist", r.CatalogId)
 				response.AddError(err)
 				break
 			}
 			packExists, err := rs.FileExists(ctx, dir, packFileName)
 			if err != nil {
-				ctx.LogError("Error checking if pack file %v exists: %v", r.ID, err)
+				ctx.LogError("Error checking if pack file %v exists: %v", r.CatalogId, err)
 				response.AddError(err)
 				break
 			}
 			if !packExists {
-				err := errors.Newf("pack file %v does not exist", r.ID)
+				err := errors.Newf("pack file %v does not exist", r.CatalogId)
 				response.AddError(err)
 				break
 			}
 
 			ctx.LogInfo("Getting manifest from remote service %v", rs.Name())
 			if err := rs.PullFile(ctx, dir, metaFileName, "/tmp"); err != nil {
-				ctx.LogError("Error pulling file %v from remote service %v: %v", r.ID, rs.Name(), err)
+				ctx.LogError("Error pulling file %v from remote service %v: %v", r.CatalogId, rs.Name(), err)
 				response.AddError(err)
 				break
 			}
 
-			ctx.LogInfo("Loading manifest from file %v", r.ID)
+			ctx.LogInfo("Loading manifest from file %v", r.CatalogId)
 			tmpCatalogManifestFilePath := filepath.Join("/tmp", metaFileName)
 			response.CleanupRequest.AddLocalFileCleanupOperation(tmpCatalogManifestFilePath, false)
 			catalogManifest, err := s.readManifestFromFile(tmpCatalogManifestFilePath)
@@ -100,6 +100,9 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 				break
 			}
 
+			catalogManifest.Version = r.Version
+			catalogManifest.CatalogId = r.CatalogId
+			catalogManifest.Validate()
 			dto := mappers.CatalogManifestToDto(*catalogManifest)
 
 			// Importing claims and roles
@@ -140,13 +143,14 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 				}
 			}
 
-			if err := db.CreateCatalogManifest(ctx, dto); err != nil {
+			result, err := db.CreateCatalogManifest(ctx, dto)
+			if err != nil {
 				ctx.LogError("Error creating catalog manifest: %v", err)
 				response.AddError(err)
 				break
 			}
 
-			cat, err := db.GetCatalogManifest(ctx, dto.ID)
+			cat, err := db.GetCatalogManifestByName(ctx, result.ID)
 			if err != nil {
 				ctx.LogError("Error getting catalog manifest: %v", err)
 				response.AddError(err)

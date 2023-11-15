@@ -192,7 +192,7 @@ func (j *JsonDatabase) DeleteUser(ctx basecontext.ApiContext, id string) error {
 	}
 
 	for i, user := range j.data.Users {
-		if user.ID == id {
+		if strings.EqualFold(user.ID, id) || strings.EqualFold(user.Email, id) || strings.EqualFold(user.Username, id) {
 			if user.Name == "root" || user.Username == "root" || user.Email == "root@localhost" {
 				return ErrCannotUpdateRootUser
 			}

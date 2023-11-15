@@ -21,12 +21,12 @@ import (
 //	@Description	This endpoint generates a token
 //	@Tags			Authorization
 //	@Produce		json
-//	@Param			apiKey	body		models.LoginRequest	true	"Body"
+//	@Param			login	body		models.LoginRequest	true	"Body"
 //	@Success		200		{object}	models.LoginResponse
 //	@Failure		400		{object}	models.ApiErrorResponse
 //	@Failure		401		{object}	models.OAuthErrorResponse
-//	@Router			/v1/auth/api_keys [post]
-func GetTokenController() restapi.Controller {
+//	@Router			/v1/auth/token [post]
+func GetTokenController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		cfg := config.NewConfig()
@@ -115,7 +115,16 @@ func GetTokenController() restapi.Controller {
 	}
 }
 
-func ValidateTokenController() restapi.Controller {
+//	@Summary		Validates a token
+//	@Description	This endpoint validates a token
+//	@Tags			Authorization
+//	@Produce		json
+//	@Param			tokenRequest	body		models.ValidateTokenRequest	true	"Body"
+//	@Success		200				{object}	models.ValidateTokenResponse
+//	@Failure		400				{object}	models.ApiErrorResponse
+//	@Failure		401				{object}	models.OAuthErrorResponse
+//	@Router			/v1/auth/token/validate [post]
+func ValidateTokenController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		cfg := config.NewConfig()

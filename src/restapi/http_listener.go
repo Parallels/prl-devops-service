@@ -26,36 +26,40 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type HttpListenerOptions struct {
-	ApiPrefix               string
-	HttpPort                string
-	EnableTLS               bool
-	TLSPort                 string
-	TLSCertificate          string
-	TLSPrivateKey           string
-	UseAuthBackend          bool
-	MongoDbConnectionString string
-	DatabaseName            string
-	EnableAuthentication    bool
-	LogHealthChecks         bool
-	PublicRegistration      bool
-	DefaultApiVersion       string
+type HttpControllerMethod string
+
+const (
+	GET     HttpControllerMethod = "GET"
+	POST    HttpControllerMethod = "POST"
+	PUT     HttpControllerMethod = "PUT"
+	DELETE  HttpControllerMethod = "DELETE"
+	PATCH   HttpControllerMethod = "PATCH"
+	OPTIONS HttpControllerMethod = "OPTIONS"
+	HEAD    HttpControllerMethod = "HEAD"
+)
+
+type HttpVersion struct {
+	Version string
+	Path    string
+	Default bool
 }
 
 // HttpListener HttpListener structure
 type HttpListener struct {
-	ServerName        string
-	ServerVersion     string
-	Router            *mux.Router
-	Logger            *log.LoggerService
-	Options           *HttpListenerOptions
-	Configuration     *configuration.ConfigurationService
-	Controllers       []Controller
-	DefaultAdapters   []Adapter
-	Servers           []*http.Server
-	shutdownRequest   chan bool
-	shutdownRequested uint32
-	needsRestart      bool
+	ServerName          string
+	ServerVersion       string
+	Router              *mux.Router
+	Logger              *log.LoggerService
+	Options             *HttpListenerOptions
+	Configuration       *configuration.ConfigurationService
+	ControllersHandlers []ControllerHandler
+	Controllers         []*Controller
+	DefaultAdapters     []Adapter
+	Servers             []*http.Server
+	Versions            []HttpVersion
+	shutdownRequest     chan bool
+	shutdownRequested   uint32
+	needsRestart        bool
 }
 
 var globalHttpListener *HttpListener
@@ -82,15 +86,19 @@ func NewHttpListener() *HttpListener {
 	}
 
 	listener := HttpListener{
-		Router:  mux.NewRouter().StrictSlash(true),
-		Servers: make([]*http.Server, 0),
+		Router:   mux.NewRouter().StrictSlash(true),
+		Servers:  make([]*http.Server, 0),
+		Versions: make([]HttpVersion, 0),
 	}
+
+	listener.Router.NotFoundHandler = NotFoundController()
 
 	listener.shutdownRequest = make(chan bool)
 	listener.Logger = common.Logger
 	listener.Configuration = configuration.New().RegisterDefaults()
 
-	listener.Controllers = make([]Controller, 0)
+	listener.ControllersHandlers = make([]ControllerHandler, 0)
+	listener.Controllers = make([]*Controller, 0)
 	listener.DefaultAdapters = make([]Adapter, 0)
 
 	listener.Options = listener.getDefaultConfiguration()
@@ -144,8 +152,40 @@ func (l *HttpListener) WithPublicUserRegistration() *HttpListener {
 	return l
 }
 
-func (l *HttpListener) AddController(c Controller, path string, methods ...string) {
-	l.Controllers = append(l.Controllers, c)
+func (l *HttpListener) WithVersion(version string, path string, isDefault bool) {
+	for i, v := range l.Versions {
+		if v.Version == version {
+			l.Versions[i].Path = path
+			l.Versions[i].Default = isDefault
+			return
+		}
+	}
+
+	l.Versions = append(l.Versions, HttpVersion{
+		Version: version,
+		Path:    path,
+		Default: isDefault,
+	})
+}
+
+func (l *HttpListener) GetFullPathPrefix() string {
+	defaultVersionPath := ""
+	for _, v := range l.Versions {
+		if v.Default {
+			defaultVersionPath = v.Path
+			break
+		}
+	}
+
+	if defaultVersionPath == "" && len(l.Versions) > 0 {
+		defaultVersionPath = l.Versions[len(l.Versions)-1].Path
+	}
+
+	return http_helper.JoinUrl(l.Options.ApiPrefix, defaultVersionPath)
+}
+
+func (l *HttpListener) AddController(c ControllerHandler, path string, methods ...string) {
+	l.ControllersHandlers = append(l.ControllersHandlers, c)
 	var subRouter *mux.Router
 	if len(methods) > 0 {
 		subRouter = l.Router.Methods(methods...).Subrouter()
@@ -164,41 +204,20 @@ func (l *HttpListener) AddController(c Controller, path string, methods ...strin
 		adapters...).ServeHTTP)
 }
 
-func (l *HttpListener) AddAuthorizedController(c Controller, path string, methods ...string) {
-	l.Controllers = append(l.Controllers, c)
-	var subRouter *mux.Router
-	if len(methods) > 0 {
-		subRouter = l.Router.Methods(methods...).Subrouter()
-	} else {
-		subRouter = l.Router.Methods("GET").Subrouter()
-	}
-	adapters := make([]Adapter, 0)
-	adapters = append(adapters, l.DefaultAdapters...)
-	adapters = append(adapters, AddAuthorizationContextMiddlewareAdapter())
-	adapters = append(adapters, TokenAuthorizationMiddlewareAdapter([]string{}, []string{}))
-	adapters = append(adapters, ApiKeyAuthorizationMiddlewareAdapter([]string{}, []string{}))
-	adapters = append(adapters, EndAuthorizationMiddlewareAdapter())
-
-	if l.Options.ApiPrefix != "" {
-		path = http_helper.JoinUrl(l.Options.ApiPrefix, path)
-	}
-
-	subRouter.HandleFunc(path,
-		Adapt(
-			http.HandlerFunc(c),
-			adapters...).ServeHTTP)
+func (l *HttpListener) AddAuthorizedController(c ControllerHandler, path string, methods ...string) {
+	l.AddAuthorizedControllerWithRolesAndClaims(c, path, []string{}, []string{}, methods...)
 }
 
-func (l *HttpListener) AddAuthorizedControllerWithRoles(c Controller, path string, roles []string, methods ...string) {
+func (l *HttpListener) AddAuthorizedControllerWithRoles(c ControllerHandler, path string, roles []string, methods ...string) {
 	l.AddAuthorizedControllerWithRolesAndClaims(c, path, roles, []string{}, methods...)
 }
 
-func (l *HttpListener) AddAuthorizedControllerWithClaims(c Controller, path string, claims []string, methods ...string) {
+func (l *HttpListener) AddAuthorizedControllerWithClaims(c ControllerHandler, path string, claims []string, methods ...string) {
 	l.AddAuthorizedControllerWithRolesAndClaims(c, path, []string{}, claims, methods...)
 }
 
-func (l *HttpListener) AddAuthorizedControllerWithRolesAndClaims(c Controller, path string, roles []string, claims []string, methods ...string) {
-	l.Controllers = append(l.Controllers, c)
+func (l *HttpListener) AddAuthorizedControllerWithRolesAndClaims(c ControllerHandler, path string, roles []string, claims []string, methods ...string) {
+	l.ControllersHandlers = append(l.ControllersHandlers, c)
 	var subRouter *mux.Router
 	if len(methods) > 0 {
 		subRouter = l.Router.Methods(methods...).Subrouter()
@@ -225,6 +244,8 @@ func (l *HttpListener) AddAuthorizedControllerWithRolesAndClaims(c Controller, p
 func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 	l.ServerName = serviceName
 	l.ServerVersion = serviceVersion
+	// for _, v := range l.Versions {
+	//   if v.Default {
 
 	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "authorization", "Authorization", "content-type"})
 	originsOk := handlers.AllowedOrigins([]string{"*"})
@@ -244,6 +265,10 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 	}
 
 	l.Servers = append(l.Servers, srv)
+
+	for _, controller := range l.Controllers {
+		controller.Serve()
+	}
 
 	go func() {
 		l.Logger.Info("Api listening on http://::" + l.Options.HttpPort + l.GetApiPrefix())

@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"math"
+	"strings"
 )
 
 func GenerateId() string {
@@ -31,4 +32,29 @@ func Obfuscate(input string) string {
 	}
 
 	return input[0:2] + "****" + input[len(input)-2:]
+}
+
+func ContainsIllegalChars(s string) bool {
+	illegalChars := []string{" ", ",", ":", ";", "(", ")", "[", "]", "{", "}", "'", "\"", "/", "\\", "|", "<", ">", "=", "+", "*", "&", "^", "%", "$", "#", "@", "!", "`", "~", "?"}
+	for _, c := range illegalChars {
+		if strings.Contains(s, c) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func NormalizeString(s string) string {
+	replaceChars := []string{" ", ",", ":", ";", "(", ")", "[", "]", "{", "}", "'", "\"", "/", "\\", "|", "<", ">", "=", "+", "*", "&", "^", "%", "$", "#", "@", "!", "`", "~", "?"}
+	replaceWith := "_"
+	for _, c := range replaceChars {
+		s = strings.ReplaceAll(s, c, replaceWith)
+	}
+
+	return strings.ToLower(strings.TrimSpace(s))
+}
+
+func NormalizeStringUpper(s string) string {
+	return strings.ToUpper(NormalizeString(s))
 }

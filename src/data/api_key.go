@@ -78,7 +78,7 @@ func (j *JsonDatabase) DeleteApiKey(ctx basecontext.ApiContext, id string) error
 	}
 
 	for i, apiKey := range j.data.ApiKeys {
-		if apiKey.ID == id {
+		if strings.EqualFold(apiKey.ID, id) || strings.EqualFold(apiKey.Name, id) || strings.EqualFold(apiKey.Key, id) {
 			j.data.ApiKeys = append(j.data.ApiKeys[:i], j.data.ApiKeys[i+1:]...)
 			j.Save(ctx)
 			return nil

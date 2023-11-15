@@ -268,23 +268,3 @@ func GetFileMD5Checksum(path string) (string, error) {
 	checksum := hex.EncodeToString(hash.Sum(nil))
 	return checksum, nil
 }
-
-func NormalizeString(s string) string {
-	replaceChars := []string{" ", ",", ":", ";", "(", ")", "[", "]", "{", "}", "'", "\"", "/", "\\", "|", "<", ">", "=", "+", "*", "&", "^", "%", "$", "#", "@", "!", "`", "~", "?"}
-	replaceWith := "_"
-	for _, c := range replaceChars {
-		s = strings.ReplaceAll(s, c, replaceWith)
-	}
-
-	return strings.ToLower(strings.TrimSpace(s))
-}
-
-func NormalizeStringUpper(s string) string {
-	replaceChars := []string{" ", ",", ":", ";", "(", ")", "[", "]", "{", "}", "'", "\"", "/", "\\", "|", "<", ">", "=", "+", "*", "&", "^", "%", "$", "#", "@", "!", "`", "~", "?"}
-	replaceWith := "_"
-	for _, c := range replaceChars {
-		s = strings.ReplaceAll(s, c, replaceWith)
-	}
-
-	return strings.ToUpper(strings.TrimSpace(s))
-}

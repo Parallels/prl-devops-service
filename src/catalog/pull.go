@@ -78,8 +78,15 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 		}
 
 		var catalogManifest api_models.CatalogManifest
-		path := http_helper.JoinUrl(constants.DEFAULT_API_PREFIX, "v1", "catalog", helpers.NormalizeStringUpper(r.ID))
-		if _, err := httpClient.Get(ctx, fmt.Sprintf("%s%s", manifest.Provider.GetUrl(), path), nil, auth, &catalogManifest); err != nil {
+		path := http_helper.JoinUrl(constants.DEFAULT_API_PREFIX, "catalog", helpers.NormalizeStringUpper(r.CatalogId), helpers.NormalizeString(r.Version), "download")
+		if clientResponse, err := httpClient.Get(ctx, fmt.Sprintf("%s%s", manifest.Provider.GetUrl(), path), nil, auth, &catalogManifest); err != nil {
+			if clientResponse != nil && clientResponse.ApiError != nil {
+				if clientResponse.StatusCode == 403 || clientResponse.StatusCode == 400 {
+					ctx.LogError("Error getting catalog manifest %v: %v", path, clientResponse.ApiError.Message)
+					response.AddError(errors.Newf(clientResponse.ApiError.Message))
+					return response
+				}
+			}
 			ctx.LogError("Error getting catalog manifest %v: %v", path, err)
 			response.AddError(err)
 			return response
@@ -110,9 +117,9 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 		ctx.LogDebug("Remote Manifest: %v", manifest)
 	} else {
 		ctx.LogInfo("Checking if the manifest exists in the local catalog")
-		dto, err := db.GetCatalogManifest(ctx, r.ID)
+		dto, err := db.GetCatalogManifestByName(ctx, r.CatalogId)
 		if err != nil {
-			manifestErr := errors.Newf("Error getting catalog manifest %v: %v", r.ID, err)
+			manifestErr := errors.Newf("Error getting catalog manifest %v: %v", r.CatalogId, err)
 			ctx.LogError(manifestErr.Error())
 			response.AddError(manifestErr)
 			return response
@@ -124,8 +131,23 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 
 	// Checking if we have read all of the manifest correctly
 	if manifest == nil || manifest.Provider == nil {
-		ctx.LogError("Manifest %v not found in the catalog", r.ID)
-		manifestErr := errors.Newf("manifest %v not found in the catalog", r.ID)
+		ctx.LogError("Manifest %v not found in the catalog", r.CatalogId)
+		manifestErr := errors.Newf("manifest %v not found in the catalog", r.CatalogId)
+		response.AddError(manifestErr)
+		return response
+	}
+
+	// Checking for tainted or revoked manifests
+	if manifest.Tainted {
+		ctx.LogError("Manifest %v is tainted", r.CatalogId)
+		manifestErr := errors.Newf("manifest %v is tainted", r.CatalogId)
+		response.AddError(manifestErr)
+		return response
+	}
+
+	if manifest.Revoked {
+		ctx.LogError("Manifest %v is revoked", r.CatalogId)
+		manifestErr := errors.Newf("manifest %v is revoked", r.CatalogId)
 		response.AddError(manifestErr)
 		return response
 	}
@@ -138,6 +160,9 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 	}
 
 	response.ID = manifest.ID
+	response.CatalogId = manifest.CatalogId
+	response.Version = manifest.Version
+
 	response.Manifest = manifest
 	for _, rs := range s.remoteServices {
 		check, checkErr := rs.Check(ctx, manifest.Provider.String())
@@ -243,7 +268,9 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 	s.renameMachineWithParallelsDesktop(ctx, r, response)
 
 	//starting the machine
-	s.startMachineWithParallelsDesktop(ctx, r, response)
+	if r.StartAfterPull {
+		s.startMachineWithParallelsDesktop(ctx, r, response)
+	}
 
 	// Cleaning up
 	s.CleanPullRequest(ctx, r, response)

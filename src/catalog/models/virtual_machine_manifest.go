@@ -1,12 +1,19 @@
 package models
 
 import (
+	"fmt"
+
 	"github.com/Parallels/pd-api-service/catalog/cleanupservice"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/helpers"
 )
 
 type VirtualMachineCatalogManifest struct {
 	ID                     string                              `json:"id"`
+	CatalogId              string                              `json:"catalog_id"`
+	Description            string                              `json:"description"`
+	Version                string                              `json:"version"`
 	Name                   string                              `json:"name"`
 	Path                   string                              `json:"path,omitempty"`
 	PackFile               string                              `json:"pack_path,omitempty"`
@@ -21,10 +28,18 @@ type VirtualMachineCatalogManifest struct {
 	UpdatedAt              string                              `json:"updated_at"`
 	LastDownloadedAt       string                              `json:"last_downloaded_at"`
 	LastDownloadedUser     string                              `json:"last_downloaded_user"`
+	DownloadCount          int                                 `json:"download_count"`
 	CompressedPath         string                              `json:"-"`
-	CompressedChecksum     string                              `json:"_"`
+	CompressedChecksum     string                              `json:"compressed_checksum"`
 	VirtualMachineContents []VirtualMachineManifestContentItem `json:"virtual_machine_contents"`
 	PackContents           []VirtualMachineManifestContentItem `json:"pack_contents"`
+	Tainted                bool                                `json:"tainted"`
+	TaintedBy              string                              `json:"tainted_by"`
+	TaintedAt              string                              `json:"tainted_at"`
+	UnTaintedBy            string                              `json:"untainted_by"`
+	Revoked                bool                                `json:"revoked"`
+	RevokedAt              string                              `json:"revoked_at"`
+	RevokedBy              string                              `json:"revoked_by"`
 	CleanupRequest         *cleanupservice.CleanupRequest      `json:"-"`
 	Errors                 []error                             `json:"-"`
 }
@@ -40,11 +55,19 @@ func NewVirtualMachineCatalogManifest() *VirtualMachineCatalogManifest {
 
 func (m *VirtualMachineCatalogManifest) Validate() error {
 	if m.ID == "" {
-		return errors.NewWithCode("ID is required", 400)
+		m.ID = helpers.GenerateId()
 	}
-	if m.Name == "" {
-		return errors.NewWithCode("Name is required", 400)
+
+	if m.CatalogId == "" {
+		return errors.NewWithCode("CatalogId is required", 400)
 	}
+
+	if m.Version == "" {
+		m.Version = constants.LATEST_TAG
+	}
+
+	m.Name = fmt.Sprintf("%s-%s", helpers.NormalizeString(m.CatalogId), helpers.NormalizeString(m.Version))
+
 	if m.Path == "" {
 		return errors.NewWithCode("Path is required", 400)
 	}
@@ -64,7 +87,7 @@ func (m *VirtualMachineCatalogManifest) Validate() error {
 		m.RequiredRoles = []string{}
 	}
 	if m.Tags == nil {
-		m.Tags = []string{}
+		m.RequiredRoles = []string{}
 	}
 
 	return nil

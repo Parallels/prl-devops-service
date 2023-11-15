@@ -1,11 +1,10 @@
 package data
 
 import (
-	"fmt"
 	"strings"
-	"time"
 
 	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/data/models"
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
@@ -32,10 +31,16 @@ func (j *JsonDatabase) GetCatalogManifests(ctx basecontext.ApiContext, filter st
 	}
 
 	result := GetAuthorizedRecords(ctx, filteredData...)
-	return result, nil
+
+	orderedResult, err := OrderByProperty(result, &Order{Property: "UpdatedAt", Direction: OrderDirectionDesc})
+	if err != nil {
+		return nil, err
+	}
+
+	return orderedResult, nil
 }
 
-func (j *JsonDatabase) GetCatalogManifest(ctx basecontext.ApiContext, idOrName string) (*models.CatalogManifest, error) {
+func (j *JsonDatabase) GetCatalogManifestByName(ctx basecontext.ApiContext, idOrName string) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
 	}
@@ -54,33 +59,128 @@ func (j *JsonDatabase) GetCatalogManifest(ctx basecontext.ApiContext, idOrName s
 	return nil, ErrCatalogManifestNotFound
 }
 
-func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifest models.CatalogManifest) error {
+func (j *JsonDatabase) GetCatalogManifestByTag(ctx basecontext.ApiContext, catalogId string, tag string) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
-		return ErrDatabaseNotConnected
-	}
-	fmt.Println(manifest.ID)
-	fmt.Println(manifest.Name)
-
-	manifest.ID = helpers.NormalizeStringUpper(manifest.Name)
-	if a, _ := j.GetCatalogManifest(ctx, manifest.ID); a != nil {
-		return j.UpdateCatalogManifest(ctx, manifest)
+		return nil, ErrDatabaseNotConnected
 	}
 
-	if a, _ := j.GetCatalogManifest(ctx, manifest.Name); a != nil {
-		return j.UpdateCatalogManifest(ctx, manifest)
+	catalogManifests, err := j.GetCatalogManifests(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, manifest := range catalogManifests {
+		if strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) {
+			for _, t := range manifest.Tags {
+				if strings.EqualFold(t, tag) {
+					return &manifest, nil
+				}
+			}
+		}
+	}
+
+	return nil, ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) GetCatalogManifestsByCatalogId(ctx basecontext.ApiContext, catalogId string) ([]models.CatalogManifest, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	result := make([]models.CatalogManifest, 0)
+	catalogManifests, err := j.GetCatalogManifests(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, manifest := range catalogManifests {
+		if strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) {
+			result = append(result, manifest)
+		}
+	}
+
+	return result, nil
+}
+
+func (j *JsonDatabase) GetCatalogManifestsByCatalogIdAndVersion(ctx basecontext.ApiContext, catalogId string, version string) (*models.CatalogManifest, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	catalogManifests, err := j.GetCatalogManifests(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, manifest := range catalogManifests {
+		if strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) && strings.EqualFold(manifest.Version, version) {
+			return &manifest, nil
+		}
+	}
+
+	return nil, ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifest models.CatalogManifest) (*models.CatalogManifest, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+	manifest.ID = helpers.GenerateId()
+	if manifest.Version == "" {
+		manifest.Version = constants.LATEST_TAG
+	}
+
+	manifest.Name = helpers.NormalizeString(manifest.Name)
+	manifest.CatalogId = helpers.NormalizeStringUpper(manifest.CatalogId)
+	manifest.AddTag(constants.LATEST_TAG)
+
+	// Getting all of the siblings, we need to check for tag clashing
+	siblings, err := j.GetCatalogManifestsByCatalogId(ctx, manifest.CatalogId)
+	if err != nil {
+		return nil, err
+	}
+	// The rule of the tag is simple, only one can exist per catalog item
+	// If the current tag exists, we will remove the sibling tag
+	// the manifest files will be overridden by the new one as the file name is the same
+	for _, sibling := range siblings {
+		if strings.EqualFold(sibling.Version, manifest.Version) {
+			continue
+		}
+		if sibling.HasTag(constants.LATEST_TAG) {
+			sibling.RemoveTag(constants.LATEST_TAG)
+			j.UpdateCatalogManifestTags(ctx, sibling)
+		}
+	}
+
+	exists, err := j.GetCatalogManifestsByCatalogIdAndVersion(ctx, manifest.CatalogId, manifest.Version)
+	if err != nil {
+		if errors.GetSystemErrorCode(err) != 404 {
+			return nil, err
+		}
+	}
+
+	if exists != nil {
+		manifest.ID = exists.ID
+		manifest.Name = exists.Name
+		manifest.CatalogId = exists.CatalogId
+		r, err := j.UpdateCatalogManifest(ctx, manifest)
+		if err != nil {
+			return nil, err
+		}
+		return r, nil
 	}
 
 	// Checking the the required claims and roles exist
 	for _, claim := range manifest.RequiredClaims {
 		_, err := j.GetClaim(ctx, claim)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	for _, role := range manifest.RequiredRoles {
 		_, err := j.GetRole(ctx, role)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -90,16 +190,55 @@ func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifes
 	j.data.ManifestsCatalog = append(j.data.ManifestsCatalog, manifest)
 
 	j.Save(ctx)
-	return nil
+	return &manifest, nil
 }
 
-func (j *JsonDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, id string) error {
+func (j *JsonDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, catalogIdOrId string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
 	}
 
-	if id == "" {
+	if catalogIdOrId == "" {
+		return ErrCatalogManifestNotFound
+	}
+
+	found := false
+	for {
+		catalogManifests, err := j.GetCatalogManifests(ctx, "")
+		if err != nil {
+			return err
+		}
+
+		deletedSomething := false
+		for i, manifest := range catalogManifests {
+			if strings.EqualFold(manifest.ID, catalogIdOrId) || strings.EqualFold(manifest.CatalogId, catalogIdOrId) {
+				j.data.ManifestsCatalog = append(j.data.ManifestsCatalog[:i], j.data.ManifestsCatalog[i+1:]...)
+				deletedSomething = true
+				found = true
+				break
+			}
+		}
+
+		if !deletedSomething {
+			break
+		}
+	}
+
+	if found {
+		j.Save(ctx)
 		return nil
+	}
+
+	return ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) DeleteCatalogManifestVersion(ctx basecontext.ApiContext, catalogIdOrId string, version string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	if catalogIdOrId == "" {
+		return ErrCatalogManifestNotFound
 	}
 
 	catalogManifests, err := j.GetCatalogManifests(ctx, "")
@@ -108,7 +247,8 @@ func (j *JsonDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, id stri
 	}
 
 	for i, manifest := range catalogManifests {
-		if strings.EqualFold(manifest.ID, id) {
+		if (strings.EqualFold(manifest.ID, catalogIdOrId) || strings.EqualFold(manifest.CatalogId, catalogIdOrId)) &&
+			manifest.Version == version {
 			j.data.ManifestsCatalog = append(j.data.ManifestsCatalog[:i], j.data.ManifestsCatalog[i+1:]...)
 			j.Save(ctx)
 			return nil
@@ -118,22 +258,27 @@ func (j *JsonDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, id stri
 	return ErrCatalogManifestNotFound
 }
 
-func (j *JsonDatabase) UpdateCatalogManifest(ctx basecontext.ApiContext, record models.CatalogManifest) error {
+func (j *JsonDatabase) UpdateCatalogManifest(ctx basecontext.ApiContext, record models.CatalogManifest) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
-		return ErrDatabaseNotConnected
+		return nil, ErrDatabaseNotConnected
 	}
 
-	catalogManifests, err := j.GetCatalogManifests(ctx, "")
-	if err != nil {
-		return err
-	}
+	for i, manifest := range j.data.ManifestsCatalog {
+		e, err := GetRecordIndex(j.data.ManifestsCatalog, "id", record.ID)
+		if err != nil {
+			return nil, err
+		}
+		println(e)
 
-	for i, manifest := range catalogManifests {
-		if strings.EqualFold(manifest.ID, record.ID) {
+		if strings.EqualFold(manifest.ID, record.ID) || strings.EqualFold(manifest.Name, record.Name) {
+			if !strings.EqualFold(manifest.Version, record.Version) {
+				return nil, errors.Newf("cannot update version of catalog manifest %s, it is trying to change the version %s to version %s, not allowed", record.ID, j.data.ManifestsCatalog[i].Version, record.Version)
+			}
+
 			j.data.ManifestsCatalog[i].VirtualMachineContents = record.VirtualMachineContents
 			j.data.ManifestsCatalog[i].PackContents = record.PackContents
-			j.data.ManifestsCatalog[i].CreatedAt = record.CreatedAt
-			j.data.ManifestsCatalog[i].UpdatedAt = time.Now().UTC().Format(time.RFC3339Nano)
+			j.data.ManifestsCatalog[i].CreatedAt = manifest.CreatedAt
+			j.data.ManifestsCatalog[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
 			j.data.ManifestsCatalog[i].LastDownloadedAt = record.LastDownloadedAt
 			j.data.ManifestsCatalog[i].LastDownloadedUser = record.LastDownloadedUser
 			j.data.ManifestsCatalog[i].Size = record.Size
@@ -146,9 +291,127 @@ func (j *JsonDatabase) UpdateCatalogManifest(ctx basecontext.ApiContext, record 
 			j.data.ManifestsCatalog[i].RequiredRoles = record.RequiredRoles
 
 			j.Save(ctx)
+			return &j.data.ManifestsCatalog[i], nil
+		}
+	}
+
+	return nil, ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) UpdateCatalogManifestTags(ctx basecontext.ApiContext, record models.CatalogManifest) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.ID, record.ID) || (strings.EqualFold(manifest.CatalogId, record.CatalogId) && strings.EqualFold(manifest.Version, record.Version)) {
+			j.data.ManifestsCatalog[i].Tags = record.Tags
+
+			j.Save(ctx)
 			return nil
 		}
 	}
 
 	return ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) UpdateCatalogManifestDownloadCount(ctx basecontext.ApiContext, catalogId, version string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	downloadUser := "unknown"
+	authContext := ctx.GetAuthorizationContext()
+	if authContext.User != nil && authContext.User.Username != "" {
+		downloadUser = authContext.User.Username
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.CatalogId, catalogId) && strings.EqualFold(manifest.Version, version) {
+			j.data.ManifestsCatalog[i].LastDownloadedAt = helpers.GetUtcCurrentDateTime()
+			j.data.ManifestsCatalog[i].LastDownloadedUser = downloadUser
+			j.data.ManifestsCatalog[i].DownloadCount = j.data.ManifestsCatalog[i].DownloadCount + 1
+
+			j.Save(ctx)
+			return nil
+		}
+	}
+
+	return ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) TaintCatalogManifestVersion(ctx basecontext.ApiContext, catalogId string, version string) (*models.CatalogManifest, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	taintUser := "unknown"
+	authContext := ctx.GetAuthorizationContext()
+	if authContext.User != nil && authContext.User.Username != "" {
+		taintUser = authContext.User.Username
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.CatalogId, catalogId) && strings.EqualFold(manifest.Version, version) {
+			j.data.ManifestsCatalog[i].TaintedAt = helpers.GetUtcCurrentDateTime()
+			j.data.ManifestsCatalog[i].Tainted = true
+			j.data.ManifestsCatalog[i].TaintedBy = taintUser
+
+			j.Save(ctx)
+			return &j.data.ManifestsCatalog[i], nil
+		}
+	}
+
+	return nil, ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) UnTaintCatalogManifestVersion(ctx basecontext.ApiContext, catalogId string, version string) (*models.CatalogManifest, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	unTaintUser := "unknown"
+	authContext := ctx.GetAuthorizationContext()
+	if authContext.User != nil && authContext.User.Username != "" {
+		unTaintUser = authContext.User.Username
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.CatalogId, catalogId) && strings.EqualFold(manifest.Version, version) {
+			j.data.ManifestsCatalog[i].TaintedAt = ""
+			j.data.ManifestsCatalog[i].Tainted = false
+			j.data.ManifestsCatalog[i].UnTaintedBy = unTaintUser
+			j.data.ManifestsCatalog[i].TaintedBy = ""
+
+			j.Save(ctx)
+			return &j.data.ManifestsCatalog[i], nil
+		}
+	}
+
+	return nil, ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) RevokeCatalogManifestVersion(ctx basecontext.ApiContext, catalogId string, version string) (*models.CatalogManifest, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	revokeUser := "unknown"
+	authContext := ctx.GetAuthorizationContext()
+	if authContext.User != nil && authContext.User.Username != "" {
+		revokeUser = authContext.User.Username
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.CatalogId, catalogId) && strings.EqualFold(manifest.Version, version) {
+			j.data.ManifestsCatalog[i].RevokedAt = helpers.GetUtcCurrentDateTime()
+			j.data.ManifestsCatalog[i].Revoked = true
+			j.data.ManifestsCatalog[i].RevokedBy = revokeUser
+
+			j.Save(ctx)
+			return &j.data.ManifestsCatalog[i], nil
+		}
+	}
+
+	return nil, ErrCatalogManifestNotFound
 }

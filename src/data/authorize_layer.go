@@ -21,6 +21,21 @@ func GetAuthorizedRecords[T AuthorizedRecord](ctx basecontext.ApiContext, t ...T
 	return result
 }
 
+func IsRootUser(ctx basecontext.ApiContext) bool {
+	authContext := ctx.GetAuthorizationContext()
+	if authContext == nil {
+		return false
+	}
+	if authContext.AuthorizedBy == "RootAuthorization" {
+		return true
+	}
+	if authContext.User != nil && authContext.User.Username == "root" {
+		return true
+	}
+
+	return false
+}
+
 func IsAuthorized[T AuthorizedRecord](ctx basecontext.ApiContext, t T) bool {
 	authContext := ctx.GetAuthorizationContext()
 	if authContext == nil {

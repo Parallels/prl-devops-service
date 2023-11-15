@@ -48,8 +48,10 @@ jobs:
           git checkout -b release/$NEW_VERSION
 
           go install github.com/swaggo/swag/cmd/swag@latest
-          swag init -g ./src/main.go
+          cd src
+          swag init -g main.go
           swag fmt
+          cd ..
 
 
           git add version.json ./src/* ./helm/Chart.yaml
