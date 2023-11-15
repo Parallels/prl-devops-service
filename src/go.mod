@@ -11,7 +11,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/handlers v1.5.2
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/swaggo/files/v2 v2.0.0
 	github.com/swaggo/swag v1.16.2
 )
