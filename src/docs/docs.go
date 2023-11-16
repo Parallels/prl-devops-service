@@ -3656,6 +3656,35 @@ const docTemplate = `{
                 }
             }
         },
+        "models.CreateCatalogVirtualMachineRequest": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                },
+                "connection": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "models.CreatePackerTemplateRequest": {
             "type": "object",
             "properties": {
@@ -3744,32 +3773,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.CreateRemoteVirtualMachineRequest": {
-            "type": "object",
-            "properties": {
-                "api_key": {
-                    "type": "string"
-                },
-                "host": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "owner": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
         "models.CreateVagrantMachineRequest": {
             "type": "object",
             "properties": {
@@ -3788,6 +3791,9 @@ const docTemplate = `{
                 "owner": {
                     "type": "string"
                 },
+                "vagrant_file_path": {
+                    "type": "string"
+                },
                 "version": {
                     "type": "string"
                 }
@@ -3796,6 +3802,9 @@ const docTemplate = `{
         "models.CreateVirtualMachineRequest": {
             "type": "object",
             "properties": {
+                "catalog_manifest": {
+                    "$ref": "#/definitions/models.CreateCatalogVirtualMachineRequest"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -3804,9 +3813,6 @@ const docTemplate = `{
                 },
                 "packer_template": {
                     "$ref": "#/definitions/models.CreatePackerVirtualMachineRequest"
-                },
-                "remote": {
-                    "$ref": "#/definitions/models.CreateRemoteVirtualMachineRequest"
                 },
                 "vagrant_box": {
                     "$ref": "#/definitions/models.CreateVagrantMachineRequest"

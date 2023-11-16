@@ -234,6 +234,25 @@ definitions:
       Show Windows systray in Mac menu:
         type: string
     type: object
+  models.CreateCatalogVirtualMachineRequest:
+    properties:
+      api_key:
+        type: string
+      connection:
+        type: string
+      host:
+        type: string
+      name:
+        type: string
+      owner:
+        type: string
+      password:
+        type: string
+      port:
+        type: string
+      username:
+        type: string
+    type: object
   models.CreatePackerTemplateRequest:
     properties:
       addons:
@@ -292,23 +311,6 @@ definitions:
       template:
         type: string
     type: object
-  models.CreateRemoteVirtualMachineRequest:
-    properties:
-      api_key:
-        type: string
-      host:
-        type: string
-      name:
-        type: string
-      owner:
-        type: string
-      password:
-        type: string
-      port:
-        type: string
-      username:
-        type: string
-    type: object
   models.CreateVagrantMachineRequest:
     properties:
       box:
@@ -321,19 +323,21 @@ definitions:
         type: string
       owner:
         type: string
+      vagrant_file_path:
+        type: string
       version:
         type: string
     type: object
   models.CreateVirtualMachineRequest:
     properties:
+      catalog_manifest:
+        $ref: '#/definitions/models.CreateCatalogVirtualMachineRequest'
       name:
         type: string
       owner:
         type: string
       packer_template:
         $ref: '#/definitions/models.CreatePackerVirtualMachineRequest'
-      remote:
-        $ref: '#/definitions/models.CreateRemoteVirtualMachineRequest'
       vagrant_box:
         $ref: '#/definitions/models.CreateVagrantMachineRequest'
     type: object
