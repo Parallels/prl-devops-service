@@ -8,11 +8,11 @@ import (
 )
 
 type CreateVirtualMachineRequest struct {
-	Name           string                             `json:"name"`
-	Owner          string                             `json:"owner,omitempty"`
-	PackerTemplate *CreatePackerVirtualMachineRequest `json:"packer_template,omitempty"`
-	VagrantBox     *CreateVagrantMachineRequest       `json:"vagrant_box,omitempty"`
-	Remote         *CreateRemoteVirtualMachineRequest `json:"remote,omitempty"`
+	Name            string                              `json:"name"`
+	Owner           string                              `json:"owner,omitempty"`
+	PackerTemplate  *CreatePackerVirtualMachineRequest  `json:"packer_template,omitempty"`
+	VagrantBox      *CreateVagrantMachineRequest        `json:"vagrant_box,omitempty"`
+	CatalogManifest *CreateCatalogVirtualMachineRequest `json:"catalog_manifest,omitempty"`
 }
 
 func (r *CreateVirtualMachineRequest) Validate() error {
@@ -25,8 +25,8 @@ func (r *CreateVirtualMachineRequest) Validate() error {
 	}
 
 	if r.PackerTemplate != nil {
-		if r.VagrantBox != nil || r.Remote != nil {
-			return errors.New("Only one of packer_template, vagrant_box or remote can be specified")
+		if r.VagrantBox != nil || r.CatalogManifest != nil {
+			return errors.New("Only one of packer_template, vagrant_box or catalog_manifest can be specified")
 		}
 		r.PackerTemplate.Name = r.Name
 		r.PackerTemplate.Owner = r.Owner
@@ -34,21 +34,21 @@ func (r *CreateVirtualMachineRequest) Validate() error {
 	}
 
 	if r.VagrantBox != nil {
-		if r.PackerTemplate != nil || r.Remote != nil {
-			return errors.New("Only one of packer_template, vagrant_box or remote can be specified")
+		if r.PackerTemplate != nil || r.CatalogManifest != nil {
+			return errors.New("Only one of packer_template, vagrant_box or catalog_manifest can be specified")
 		}
 		r.VagrantBox.Name = r.Name
 		r.VagrantBox.Owner = r.Owner
 		return r.VagrantBox.Validate()
 	}
 
-	if r.Remote != nil {
+	if r.CatalogManifest != nil {
 		if r.PackerTemplate != nil || r.VagrantBox != nil {
-			return errors.New("Only one of packer_template, vagrant_box or remote can be specified")
+			return errors.New("Only one of packer_template, vagrant_box or catalog_manifest can be specified")
 		}
-		r.Remote.Name = r.Name
-		r.Remote.Owner = r.Owner
-		return r.Remote.Validate()
+		r.CatalogManifest.Name = r.Name
+		r.CatalogManifest.Owner = r.Owner
+		return r.CatalogManifest.Validate()
 	}
 
 	return nil

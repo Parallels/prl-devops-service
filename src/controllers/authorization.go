@@ -20,28 +20,30 @@ import (
 
 func registerAuthorizationHandlers(ctx basecontext.ApiContext, version string) {
 	ctx.LogInfo("Registering version %s Authorization handlers", version)
-	getTokenHandler := restapi.NewController()
-	getTokenHandler.WithMethod(restapi.POST)
-	getTokenHandler.WithVersion(version)
-	getTokenHandler.WithPath("/auth/token")
-	getTokenHandler.WithHandler(GetTokenHandler()).Register()
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/auth/token").
+		WithHandler(GetTokenHandler()).
+		Register()
 
-	validateTokenHandler := restapi.NewController()
-	validateTokenHandler.WithMethod(restapi.GET)
-	validateTokenHandler.WithVersion(version)
-	validateTokenHandler.WithPath("/auth/token/validate")
-	validateTokenHandler.WithHandler(ValidateTokenHandler()).Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/auth/token/validate").
+		WithHandler(ValidateTokenHandler()).
+		Register()
 }
 
-//	@Summary		Generates a token
-//	@Description	This endpoint generates a token
-//	@Tags			Authorization
-//	@Produce		json
-//	@Param			login	body		models.LoginRequest	true	"Body"
-//	@Success		200		{object}	models.LoginResponse
-//	@Failure		400		{object}	models.ApiErrorResponse
-//	@Failure		401		{object}	models.OAuthErrorResponse
-//	@Router			/v1/auth/token [post]
+// @Summary		Generates a token
+// @Description	This endpoint generates a token
+// @Tags			Authorization
+// @Produce		json
+// @Param			login	body		models.LoginRequest	true	"Body"
+// @Success		200		{object}	models.LoginResponse
+// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		401		{object}	models.OAuthErrorResponse
+// @Router			/v1/auth/token [post]
 func GetTokenHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -131,15 +133,15 @@ func GetTokenHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Validates a token
-//	@Description	This endpoint validates a token
-//	@Tags			Authorization
-//	@Produce		json
-//	@Param			tokenRequest	body		models.ValidateTokenRequest	true	"Body"
-//	@Success		200				{object}	models.ValidateTokenResponse
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Router			/v1/auth/token/validate [post]
+// @Summary		Validates a token
+// @Description	This endpoint validates a token
+// @Tags			Authorization
+// @Produce		json
+// @Param			tokenRequest	body		models.ValidateTokenRequest	true	"Body"
+// @Success		200				{object}	models.ValidateTokenResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Router			/v1/auth/token/validate [post]
 func ValidateTokenHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)

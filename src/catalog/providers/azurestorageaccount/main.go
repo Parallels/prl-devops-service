@@ -28,7 +28,7 @@ type AzureStorageAccountProvider struct {
 	StorageAccount AzureStorageAccount
 }
 
-func NewAzureStorageAccountRemoteService() *AzureStorageAccountProvider {
+func NewAzureStorageAccountProvider() *AzureStorageAccountProvider {
 	return &AzureStorageAccountProvider{}
 }
 
@@ -67,7 +67,7 @@ func (s *AzureStorageAccountProvider) Check(ctx basecontext.ApiContext, connecti
 		}
 	}
 	if provider == "" || !strings.EqualFold(provider, providerName) {
-		ctx.LogInfo("Provider %s is not %s, skipping", providerName, provider)
+		ctx.LogDebug("Provider %s is not %s, skipping", providerName, provider)
 		return false, nil
 	}
 

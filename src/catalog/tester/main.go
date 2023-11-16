@@ -33,6 +33,10 @@ func NewTestProvider(ctx basecontext.ApiContext, connection string) *TestProvide
 }
 
 func (s *TestProvider) Test() error {
+	if err := s.Check(); err != nil {
+		s.ctx.LogError("Error checking remote service: %v", err)
+		return err
+	}
 	if err := s.testCreateFolder(); err != nil {
 		s.ctx.LogError("Error testing create folder: %v", err)
 		if err := s.Clean(); err != nil {
@@ -118,6 +122,28 @@ func (s *TestProvider) Clean() error {
 	return nil
 }
 
+func (s *TestProvider) Check() error {
+	found := false
+	for _, rs := range s.service.GetProviders(s.ctx) {
+		check, checkErr := rs.Check(s.ctx, s.connection)
+		if checkErr != nil {
+			s.ctx.LogError("Error checking remote service %v: %v", rs.Name(), checkErr)
+			return checkErr
+		}
+
+		if check {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("no remote service found")
+	}
+
+	return nil
+}
+
 func (s *TestProvider) testCreateFolder() error {
 	for _, rs := range s.service.GetProviders(s.ctx) {
 		check, checkErr := rs.Check(s.ctx, s.connection)
@@ -127,7 +153,7 @@ func (s *TestProvider) testCreateFolder() error {
 		}
 
 		if check {
-			s.ctx.LogInfo("Testing remote service %v", rs.Name())
+			s.ctx.LogInfo("Testing remote service %v create directory capability", rs.Name())
 			if err := rs.CreateFolder(s.ctx, "/", TESTING_REMOTE_FOLDER_NAME); err != nil {
 				s.ctx.LogError("Error creating folder %v: %v", TESTING_REMOTE_FOLDER_NAME, err)
 				return err
@@ -146,7 +172,7 @@ func (s *TestProvider) testFolderExists() error {
 		}
 
 		if check {
-			s.ctx.LogInfo("Testing remote service %v folder exist", rs.Name())
+			s.ctx.LogInfo("Testing remote service %v folder exists capability", rs.Name())
 			if exists, err := rs.FolderExists(s.ctx, "/", TESTING_REMOTE_FOLDER_NAME); err != nil {
 				s.ctx.LogError("Error checking if folder %v exists: %v", TESTING_REMOTE_FOLDER_NAME, err)
 				return err
@@ -188,7 +214,7 @@ func (s *TestProvider) testPushFile() error {
 		}
 
 		if check {
-			s.ctx.LogInfo("Testing remote service %v", rs.Name())
+			s.ctx.LogInfo("Testing remote service %v push file capability", rs.Name())
 			execPath, err := helpers.GetCurrentDirectory()
 			if err != nil {
 				s.ctx.LogError("Error getting current directory: %v", err)
@@ -225,7 +251,7 @@ func (s *TestProvider) testFileChecksum() error {
 		}
 
 		if check {
-			s.ctx.LogInfo("Testing remote service %v", rs.Name())
+			s.ctx.LogInfo("Testing remote service %v file checksum capability", rs.Name())
 
 			checksum, err := rs.FileChecksum(s.ctx, TESTING_REMOTE_FOLDER_NAME, TESTING_FILENAME)
 			if err != nil {
@@ -251,10 +277,18 @@ func (s *TestProvider) testPullFile() error {
 		}
 
 		if check {
-			s.ctx.LogInfo("Testing remote service %v", rs.Name())
+			s.ctx.LogInfo("Testing remote service %v pull file capability", rs.Name())
 			execPath, err := helpers.GetCurrentDirectory()
 			if err != nil {
 				s.ctx.LogError("Error getting current directory: %v", err)
+			}
+
+			localFilePath := filepath.Join(execPath, TESTING_FILENAME)
+			if helper.FileExists(localFilePath) {
+				if err := helper.DeleteFile(localFilePath); err != nil {
+					s.ctx.LogError("Error deleting file %v: %v", TESTING_FILENAME, err)
+					return err
+				}
 			}
 
 			if err := rs.PullFile(s.ctx, TESTING_REMOTE_FOLDER_NAME, TESTING_FILENAME, execPath); err != nil {
@@ -262,7 +296,7 @@ func (s *TestProvider) testPullFile() error {
 				return err
 			}
 
-			content, err := helper.ReadFromFile(filepath.Join(execPath, TESTING_FILENAME))
+			content, err := helper.ReadFromFile(localFilePath)
 			if err != nil {
 				s.ctx.LogError("Error reading file %v: %v", TESTING_FILENAME, err)
 				return err
@@ -287,7 +321,7 @@ func (s *TestProvider) testFileExists() error {
 		}
 
 		if check {
-			s.ctx.LogInfo("Testing remote service %v file exist", rs.Name())
+			s.ctx.LogInfo("Testing remote service %v file exist capability", rs.Name())
 			if exists, err := rs.FileExists(s.ctx, TESTING_REMOTE_FOLDER_NAME, TESTING_FILENAME); err != nil {
 				s.ctx.LogError("Error checking if file %v exists: %v", TESTING_FILENAME, err)
 				return err
@@ -310,7 +344,7 @@ func (s *TestProvider) testDeleteFile() error {
 		}
 
 		if check {
-			s.ctx.LogInfo("Testing remote service %v delete file", rs.Name())
+			s.ctx.LogInfo("Testing remote service %v delete file capability", rs.Name())
 			if err := rs.DeleteFile(s.ctx, TESTING_REMOTE_FOLDER_NAME, TESTING_FILENAME); err != nil {
 				s.ctx.LogError("Error deleting file %v: %v", TESTING_FILENAME, err)
 				return err

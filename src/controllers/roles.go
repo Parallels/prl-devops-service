@@ -18,45 +18,49 @@ import (
 
 func registerRolesHandlers(ctx basecontext.ApiContext, version string) {
 	ctx.LogInfo("Registering version %s Roles handlers", version)
-	rolesController := restapi.NewController()
-	rolesController.WithMethod(restapi.GET)
-	rolesController.WithVersion(version)
-	rolesController.WithPath("/auth/roles")
-	rolesController.WithRequiredClaim(constants.LIST_ROLE_CLAIM)
-	rolesController.WithHandler(GetRolesHandler()).Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/auth/roles").
+		WithRequiredClaim(constants.LIST_ROLE_CLAIM).
+		WithHandler(GetRolesHandler()).
+		Register()
 
-	getRoleController := restapi.NewController()
-	getRoleController.WithMethod(restapi.GET)
-	getRoleController.WithVersion(version)
-	getRoleController.WithPath("/auth/roles/{id}")
-	getRoleController.WithRequiredClaim(constants.LIST_ROLE_CLAIM)
-	getRoleController.WithHandler(GetRoleHandler()).Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/auth/roles/{id}").
+		WithRequiredClaim(constants.LIST_ROLE_CLAIM).
+		WithHandler(GetRoleHandler()).
+		Register()
 
-	createRoleController := restapi.NewController()
-	createRoleController.WithMethod(restapi.POST)
-	createRoleController.WithVersion(version)
-	createRoleController.WithPath("/auth/roles")
-	createRoleController.WithRequiredClaim(constants.CREATE_ROLE_CLAIM)
-	createRoleController.WithHandler(CreateRoleHandler()).Register()
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/auth/roles").
+		WithRequiredClaim(constants.CREATE_ROLE_CLAIM).
+		WithHandler(CreateRoleHandler()).
+		Register()
 
-	deleteRoleController := restapi.NewController()
-	deleteRoleController.WithMethod(restapi.DELETE)
-	deleteRoleController.WithVersion(version)
-	deleteRoleController.WithPath("/auth/roles/{id}")
-	deleteRoleController.WithRequiredClaim(constants.DELETE_ROLE_CLAIM)
-	deleteRoleController.WithHandler(DeleteRoleHandler()).Register()
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/auth/roles/{id}").
+		WithRequiredClaim(constants.DELETE_ROLE_CLAIM).
+		WithHandler(DeleteRoleHandler()).
+		Register()
 }
 
-//	@Summary		Gets all the roles
-//	@Description	This endpoint returns all the roles
-//	@Tags			Roles
-//	@Produce		json
-//	@Success		200	{object}	[]models.RoleResponse
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/roles  [get]
+// @Summary		Gets all the roles
+// @Description	This endpoint returns all the roles
+// @Tags			Roles
+// @Produce		json
+// @Success		200	{object}	[]models.RoleResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/roles  [get]
 func GetRolesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -90,17 +94,17 @@ func GetRolesHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets a role
-//	@Description	This endpoint returns a role
-//	@Tags			Roles
-//	@Produce		json
-//	@Param			id	path		string	true	"Role ID"
-//	@Success		200	{object}	models.RoleResponse
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/roles/{id}  [get]
+// @Summary		Gets a role
+// @Description	This endpoint returns a role
+// @Tags			Roles
+// @Produce		json
+// @Param			id	path		string	true	"Role ID"
+// @Success		200	{object}	models.RoleResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/roles/{id}  [get]
 func GetRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -129,17 +133,17 @@ func GetRoleHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets a role
-//	@Description	This endpoint returns a role
-//	@Tags			Roles
-//	@Produce		json
-//	@Param			roleRequest	body		models.RoleRequest	true	"Role Request"
-//	@Success		200			{object}	models.RoleResponse
-//	@Failure		400			{object}	models.ApiErrorResponse
-//	@Failure		401			{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/roles  [post]
+// @Summary		Gets a role
+// @Description	This endpoint returns a role
+// @Tags			Roles
+// @Produce		json
+// @Param			roleRequest	body		models.RoleRequest	true	"Role Request"
+// @Success		200			{object}	models.RoleResponse
+// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		401			{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/roles  [post]
 func CreateRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -177,17 +181,17 @@ func CreateRoleHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Delete a role
-//	@Description	This endpoint deletes a role
-//	@Tags			Roles
-//	@Produce		json
-//	@Param			id	path	string	true	"Role ID"
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/roles/{id}  [delete]
+// @Summary		Delete a role
+// @Description	This endpoint deletes a role
+// @Tags			Roles
+// @Produce		json
+// @Param			id	path	string	true	"Role ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/roles/{id}  [delete]
 func DeleteRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)

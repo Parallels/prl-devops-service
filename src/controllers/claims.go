@@ -18,45 +18,48 @@ import (
 
 func registerClaimsHandlers(ctx basecontext.ApiContext, version string) {
 	ctx.LogInfo("Registering version %s Claims handlers", version)
-	claimsController := restapi.NewController()
-	claimsController.WithMethod(restapi.GET)
-	claimsController.WithVersion(version)
-	claimsController.WithPath("/auth/claims")
-	claimsController.WithRequiredClaim(constants.LIST_CLAIM_CLAIM)
-	claimsController.WithHandler(GetClaimsHandler()).Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).WithPath("/auth/claims").
+		WithRequiredClaim(constants.LIST_CLAIM_CLAIM).
+		WithHandler(GetClaimsHandler()).
+		Register()
 
-	getClaimController := restapi.NewController()
-	getClaimController.WithMethod(restapi.GET)
-	getClaimController.WithVersion(version)
-	getClaimController.WithPath("/auth/claims/{id}")
-	getClaimController.WithRequiredClaim(constants.LIST_CLAIM_CLAIM)
-	getClaimController.WithHandler(GetClaimHandler()).Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/auth/claims/{id}").
+		WithRequiredClaim(constants.LIST_CLAIM_CLAIM).
+		WithHandler(GetClaimHandler()).
+		Register()
 
-	createClaimController := restapi.NewController()
-	createClaimController.WithMethod(restapi.POST)
-	createClaimController.WithVersion(version)
-	createClaimController.WithPath("/auth/claims")
-	createClaimController.WithRequiredClaim(constants.CREATE_CLAIM_CLAIM)
-	createClaimController.WithHandler(CreateClaimHandler()).Register()
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/auth/claims").
+		WithRequiredClaim(constants.CREATE_CLAIM_CLAIM).
+		WithHandler(CreateClaimHandler()).
+		Register()
 
-	deleteClaimController := restapi.NewController()
-	deleteClaimController.WithMethod(restapi.DELETE)
-	deleteClaimController.WithVersion(version)
-	deleteClaimController.WithPath("/auth/claims/{id}")
-	deleteClaimController.WithRequiredClaim(constants.DELETE_CLAIM_CLAIM)
-	deleteClaimController.WithHandler(DeleteClaimHandler()).Register()
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/auth/claims/{id}").
+		WithRequiredClaim(constants.DELETE_CLAIM_CLAIM).
+		WithHandler(DeleteClaimHandler()).
+		Register()
 }
 
-//	@Summary		Gets all the claims
-//	@Description	This endpoint returns all the claims
-//	@Tags			Claims
-//	@Produce		json
-//	@Success		200	{object}	[]models.ClaimResponse
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/claims [get]
+// @Summary		Gets all the claims
+// @Description	This endpoint returns all the claims
+// @Tags			Claims
+// @Produce		json
+// @Success		200	{object}	[]models.ClaimResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims [get]
 func GetClaimsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -90,17 +93,17 @@ func GetClaimsHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets a claim
-//	@Description	This endpoint returns a claim
-//	@Tags			Claims
-//	@Produce		json
-//	@Param			id	path		string	true	"Claim ID"
-//	@Success		200	{object}	models.ClaimResponse
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/claims/{id} [get]
+// @Summary		Gets a claim
+// @Description	This endpoint returns a claim
+// @Tags			Claims
+// @Produce		json
+// @Param			id	path		string	true	"Claim ID"
+// @Success		200	{object}	models.ClaimResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims/{id} [get]
 func GetClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -129,17 +132,17 @@ func GetClaimHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Creates a claim
-//	@Description	This endpoint creates a claim
-//	@Tags			Claims
-//	@Produce		json
-//	@Param			claimRequest	body		models.ClaimRequest	true	"Claim Request"
-//	@Success		200				{object}	models.ClaimResponse
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/claims [post]
+// @Summary		Creates a claim
+// @Description	This endpoint creates a claim
+// @Tags			Claims
+// @Produce		json
+// @Param			claimRequest	body		models.ClaimRequest	true	"Claim Request"
+// @Success		200				{object}	models.ClaimResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims [post]
 func CreateClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -177,17 +180,17 @@ func CreateClaimHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Delete a claim
-//	@Description	This endpoint Deletes a claim
-//	@Tags			Claims
-//	@Produce		json
-//	@Param			id	path	string	true	"Claim ID"
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/claims/{id} [delete]
+// @Summary		Delete a claim
+// @Description	This endpoint Deletes a claim
+// @Tags			Claims
+// @Produce		json
+// @Param			id	path	string	true	"Claim ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims/{id} [delete]
 func DeleteClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)

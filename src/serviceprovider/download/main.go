@@ -5,75 +5,80 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
 var globalDownloadService *DownloadService
 
+type DownloadHttpMethod string
+
+const (
+	DownloadHttpMethodGet  DownloadHttpMethod = "GET"
+	DownloadHttpMethodPost DownloadHttpMethod = "POST"
+)
+
 type DownloadService struct {
+	ChunkSize int
+	Retries   int
 }
 
 func NewDownloadService() *DownloadService {
 	if globalDownloadService == nil {
-		globalDownloadService = &DownloadService{}
+		globalDownloadService = &DownloadService{
+			ChunkSize: 5 * 1024 * 1024,
+			Retries:   5,
+		}
 	}
 
 	return globalDownloadService
 }
 
-func (s *DownloadService) DownloadFile(url string, filename string) error {
-	chunkSize := 4096 * 1024 // 4MB
-	// Create an HTTP client
-	// Create an HTTP client
-	client := &http.Client{}
-
-	// Make a GET request to the URL
-	req, err := http.NewRequest("GET", url, nil)
+func (s *DownloadService) DownloadFile(url string, headers map[string]string, destination string) error {
+	file, err := os.Create(destination)
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
-	// Send the request
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Check if the response status code is 200 OK
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
-	}
-
-	// Create a new file with the given filename
-	out, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Copy the response body to the file in chunks
-	var written int64
+	start := 0
 	for {
-		// Read the next chunk from the response body
-		buf := make([]byte, chunkSize)
-		n, err := resp.Body.Read(buf)
-		if err != nil && err != io.EOF {
+		request, err := http.NewRequest("GET", url, nil)
+		if err != nil {
 			return err
 		}
 
-		// Write the chunk to the output file
-		if n > 0 {
-			n, err = out.Write(buf[:n])
-			if err != nil {
-				return err
+		for key, value := range headers {
+			request.Header.Add(key, value)
+		}
+		request.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", start, start+s.ChunkSize-1))
+
+		var res *http.Response
+		for i := 0; i < s.Retries; i++ {
+			res, err = http.DefaultClient.Do(request)
+			if err == nil && (res.StatusCode == http.StatusOK || res.StatusCode == http.StatusPartialContent) {
+				break
 			}
-			written += int64(n)
+			time.Sleep(time.Second * time.Duration(i*i))
 		}
 
-		// If we've reached the end of the response body, break out of the loop
-		if err == io.EOF {
+		if err != nil {
+			return err
+		}
+
+		if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusPartialContent {
+			return fmt.Errorf("HTTP request failed with status code %d", res.StatusCode)
+		}
+		_, err = io.Copy(file, res.Body)
+		res.Body.Close()
+		if err != nil {
+			return err
+		}
+
+		if res.ContentLength < int64(s.ChunkSize) {
 			break
 		}
+
+		start += s.ChunkSize
 	}
 
 	return nil

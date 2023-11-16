@@ -30,7 +30,7 @@ type AwsS3BucketProvider struct {
 	Bucket S3Bucket
 }
 
-func NewAwsS3RemoteService() *AwsS3BucketProvider {
+func NewAwsS3Provider() *AwsS3BucketProvider {
 	return &AwsS3BucketProvider{}
 }
 
@@ -74,7 +74,7 @@ func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection strin
 		}
 	}
 	if provider == "" || !strings.EqualFold(provider, providerName) {
-		ctx.LogInfo("Provider %s is not %s, skipping", providerName, provider)
+		ctx.LogDebug("Provider %s is not %s, skipping", providerName, provider)
 		return false, nil
 	}
 

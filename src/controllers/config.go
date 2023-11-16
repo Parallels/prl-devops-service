@@ -17,56 +17,62 @@ func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 
 	ctx.LogInfo("Registering version %s config handlers", version)
 	if provider.System.GetOperatingSystem() == "macos" {
-		install3rdPartyToolsController := restapi.NewController()
-		install3rdPartyToolsController.WithMethod(restapi.POST)
-		install3rdPartyToolsController.WithVersion(version)
-		install3rdPartyToolsController.WithPath("/config/tools/install")
-		install3rdPartyToolsController.WithHandler(Install3rdPartyToolsHandler()).Register()
+		restapi.NewController().
+			WithMethod(restapi.POST).
+			WithVersion(version).
+			WithPath("/config/tools/install").
+			WithHandler(Install3rdPartyToolsHandler()).
+			Register()
 
-		uninstall3rdPartyToolsController := restapi.NewController()
-		uninstall3rdPartyToolsController.WithMethod(restapi.POST)
-		uninstall3rdPartyToolsController.WithVersion(version)
-		uninstall3rdPartyToolsController.WithPath("/config/tools/uninstall")
-		uninstall3rdPartyToolsController.WithHandler(Uninstall3rdPartyToolsHandler()).Register()
+		restapi.NewController().
+			WithMethod(restapi.POST).
+			WithVersion(version).
+			WithPath("/config/tools/uninstall").
+			WithHandler(Uninstall3rdPartyToolsHandler()).
+			Register()
 	}
 
-	restartController := restapi.NewController()
-	restartController.WithMethod(restapi.POST)
-	restartController.WithVersion(version)
-	restartController.WithPath("/config/tools/restart")
-	restartController.WithHandler(RestartApiHandler()).Register()
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/config/tools/restart").
+		WithHandler(RestartApiHandler()).
+		Register()
 
 	if provider.IsParallelsDesktopAvailable() {
-		getParallelsDesktopLicenseController := restapi.NewController()
-		getParallelsDesktopLicenseController.WithMethod(restapi.GET)
-		getParallelsDesktopLicenseController.WithVersion(version)
-		getParallelsDesktopLicenseController.WithPath("/config/parallels-desktop/license")
-		getParallelsDesktopLicenseController.WithHandler(GetParallelsDesktopLicenseHandler()).Register()
+		restapi.NewController().
+			WithMethod(restapi.GET).
+			WithVersion(version).
+			WithPath("/config/parallels-desktop/license").
+			WithHandler(GetParallelsDesktopLicenseHandler()).
+			Register()
 	}
 
-	hardwareInfoController := restapi.NewController()
-	hardwareInfoController.WithMethod(restapi.GET)
-	hardwareInfoController.WithVersion(version)
-	hardwareInfoController.WithPath("/config/hardware")
-	hardwareInfoController.WithHandler(GetHardwareInfo()).Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/config/hardware").
+		WithHandler(GetHardwareInfo()).
+		Register()
 
-	systemHealthCheck := restapi.NewController()
-	systemHealthCheck.WithMethod(restapi.GET)
-	systemHealthCheck.WithVersion(version)
-	systemHealthCheck.WithPath("/health/system")
-	systemHealthCheck.WithHandler(GetSystemHealth()).Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/health/system").
+		WithHandler(GetSystemHealth()).
+		Register()
 }
 
-//	@Summary		Gets Parallels Desktop active license
-//	@Description	This endpoint returns Parallels Desktop active license
-//	@Tags			Config
-//	@Produce		json
-//	@Success		200	{object}	models.ParallelsDesktopLicense
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/parallels_desktop/key [get]
+// @Summary		Gets Parallels Desktop active license
+// @Description	This endpoint returns Parallels Desktop active license
+// @Tags			Config
+// @Produce		json
+// @Success		200	{object}	models.ParallelsDesktopLicense
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/parallels_desktop/key [get]
 func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -92,17 +98,17 @@ func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Installs API requires 3rd party tools
-//	@Description	This endpoint installs API requires 3rd party tools
-//	@Tags			Config
-//	@Produce		json
-//	@Param			installToolsRequest	body		models.InstallToolsRequest	true	"Install Tools Request"
-//	@Success		200					{object}	models.InstallToolsResponse
-//	@Failure		400					{object}	models.ApiErrorResponse
-//	@Failure		401					{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/config/tools/install [post]
+// @Summary		Installs API requires 3rd party tools
+// @Description	This endpoint installs API requires 3rd party tools
+// @Tags			Config
+// @Produce		json
+// @Param			installToolsRequest	body		models.InstallToolsRequest	true	"Install Tools Request"
+// @Success		200					{object}	models.InstallToolsResponse
+// @Failure		400					{object}	models.ApiErrorResponse
+// @Failure		401					{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/config/tools/install [post]
 func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -217,17 +223,17 @@ func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Uninstalls API requires 3rd party tools
-//	@Description	This endpoint uninstalls API requires 3rd party tools
-//	@Tags			Config
-//	@Produce		json
-//	@Param			uninstallToolsRequest	body		models.UninstallToolsRequest	true	"Uninstall Tools Request"
-//	@Success		200						{object}	models.InstallToolsResponse
-//	@Failure		400						{object}	models.ApiErrorResponse
-//	@Failure		401						{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/config/tools/uninstall [post]
+// @Summary		Uninstalls API requires 3rd party tools
+// @Description	This endpoint uninstalls API requires 3rd party tools
+// @Tags			Config
+// @Produce		json
+// @Param			uninstallToolsRequest	body		models.UninstallToolsRequest	true	"Uninstall Tools Request"
+// @Success		200						{object}	models.InstallToolsResponse
+// @Failure		400						{object}	models.ApiErrorResponse
+// @Failure		401						{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/config/tools/uninstall [post]
 func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -330,16 +336,16 @@ func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Restarts the API Service
-//	@Description	This endpoint restarts the API Service
-//	@Tags			Config
-//	@Produce		json
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/config/tools/restart [post]
+// @Summary		Restarts the API Service
+// @Description	This endpoint restarts the API Service
+// @Tags			Config
+// @Produce		json
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/config/tools/restart [post]
 func RestartApiHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -349,16 +355,16 @@ func RestartApiHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets the Hardware Info
-//	@Description	This endpoint returns the Hardware Info
-//	@Tags			Config
-//	@Produce		json
-//	@Success		200	{object}	models.SystemUsageResponse
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/config/hardware [get]
+// @Summary		Gets the Hardware Info
+// @Description	This endpoint returns the Hardware Info
+// @Tags			Config
+// @Produce		json
+// @Success		200	{object}	models.SystemUsageResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/config/hardware [get]
 func GetHardwareInfo() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -374,13 +380,13 @@ func GetHardwareInfo() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets the API System Health
-//	@Description	This endpoint returns the API Health Probe
-//	@Tags			Config
-//	@Produce		json
-//	@Param			full	query		bool	false	"Full Health Check"
-//	@Success		200		{object}	models.ServiceHealthCheck
-//	@Router			/health/system [get]
+// @Summary		Gets the API System Health
+// @Description	This endpoint returns the API Health Probe
+// @Tags			Config
+// @Produce		json
+// @Param			full	query		bool	false	"Full Health Check"
+// @Success		200		{object}	models.ServiceHealthCheck
+// @Router			/health/system [get]
 func GetSystemHealth() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		provider := serviceprovider.Get()

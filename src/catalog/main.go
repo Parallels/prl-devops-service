@@ -14,6 +14,7 @@ import (
 	"github.com/Parallels/pd-api-service/catalog/cleanupservice"
 	"github.com/Parallels/pd-api-service/catalog/interfaces"
 	"github.com/Parallels/pd-api-service/catalog/models"
+	"github.com/Parallels/pd-api-service/catalog/providers/artifactory"
 	"github.com/Parallels/pd-api-service/catalog/providers/aws_s3_bucket"
 	"github.com/Parallels/pd-api-service/catalog/providers/azurestorageaccount"
 	"github.com/Parallels/pd-api-service/catalog/providers/local"
@@ -29,9 +30,10 @@ type CatalogManifestService struct {
 func NewManifestService(ctx basecontext.ApiContext) *CatalogManifestService {
 	manifestService := &CatalogManifestService{}
 	manifestService.remoteServices = make([]interfaces.RemoteStorageService, 0)
-	manifestService.AddRemoteService(aws_s3_bucket.NewAwsS3RemoteService())
-	manifestService.AddRemoteService(local.NewLocalProviderService())
-	manifestService.AddRemoteService(azurestorageaccount.NewAzureStorageAccountRemoteService())
+	manifestService.AddRemoteService(aws_s3_bucket.NewAwsS3Provider())
+	manifestService.AddRemoteService(local.NewLocalProvider())
+	manifestService.AddRemoteService(azurestorageaccount.NewAzureStorageAccountProvider())
+	manifestService.AddRemoteService(artifactory.NewArtifactoryProvider())
 	return manifestService
 }
 

@@ -24,7 +24,7 @@ type LocalProvider struct {
 	Config LocalProviderConfig
 }
 
-func NewLocalProviderService() *LocalProvider {
+func NewLocalProvider() *LocalProvider {
 	return &LocalProvider{
 		Config: LocalProviderConfig{},
 	}
@@ -62,7 +62,7 @@ func (s *LocalProvider) Check(ctx basecontext.ApiContext, connection string) (bo
 		}
 	}
 	if provider == "" || !strings.EqualFold(provider, providerName) {
-		ctx.LogInfo("Provider %s is not %s, skipping", providerName, provider)
+		ctx.LogDebug("Provider %s is not %s, skipping", providerName, provider)
 		return false, nil
 	}
 
