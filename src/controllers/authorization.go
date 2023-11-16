@@ -7,7 +7,6 @@ import (
 
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/config"
-	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/data"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/models"
@@ -99,7 +98,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 			claims = append(claims, claim.Name)
 		}
 
-		expiresAt := time.Now().Add(time.Minute * constants.TOKEN_DURATION_MINUTES).Unix()
+		expiresAt := time.Now().Add(time.Minute * time.Duration(cfg.GetTokenDurationMinutes())).Unix()
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"email":  request.Email,
 			"roles":  roles,

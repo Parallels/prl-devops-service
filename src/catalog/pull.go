@@ -2,11 +2,14 @@ package catalog
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/catalog/models"
+	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/data"
 	"github.com/Parallels/pd-api-service/errors"
@@ -60,6 +63,8 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 
 	var manifest *models.VirtualMachineCatalogManifest
 	provider := models.CatalogManifestProvider{}
+	cfg := config.NewConfig()
+
 	if err := provider.Parse(r.Connection); err != nil {
 		response.AddError(err)
 		return response
@@ -220,16 +225,53 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					continue
 				}
 
-				if err := rs.PullFile(ctx, file.Path, file.Name, r.Path); err != nil {
-					ctx.LogError("Error pulling file %v: %v", file.Name, err)
+				destinationFolder := r.Path
+				fileName := file.Name
+				fileChecksum, err := rs.FileChecksum(ctx, file.Path, file.Name)
+				if err != nil {
+					ctx.LogError("Error getting file %v checksum: %v", fileName, err)
 					response.AddError(err)
 					break
 				}
 
-				response.CleanupRequest.AddLocalFileCleanupOperation(filepath.Join(r.Path, file.Name), false)
-				ctx.LogInfo("Decompressing file %v", file.Name)
-				if err := s.decompressMachine(ctx, filepath.Join(r.Path, file.Name), r.LocalMachineFolder); err != nil {
-					ctx.LogError("Error decompressing file %v: %v", file.Name, err)
+				cacheFileName := fmt.Sprintf("%s.pdpack", fileChecksum)
+				needsPulling := false
+				if cfg.IsCatalogCachingEnable() {
+					destinationFolder, err = cfg.GetCatalogCacheFolder()
+					if err != nil {
+						destinationFolder = r.Path
+					}
+					if helper.FileExists(filepath.Join(destinationFolder, cacheFileName)) {
+						ctx.LogInfo("File %v already exists in cache", fileName)
+					} else {
+						needsPulling = true
+					}
+				} else {
+					needsPulling = true
+				}
+
+				if needsPulling {
+					if err := rs.PullFile(ctx, file.Path, file.Name, destinationFolder); err != nil {
+						ctx.LogError("Error pulling file %v: %v", fileName, err)
+						response.AddError(err)
+						break
+					}
+					if cfg.IsCatalogCachingEnable() {
+						err := os.Rename(filepath.Join(destinationFolder, file.Name), filepath.Join(destinationFolder, cacheFileName))
+						if err != nil {
+							log.Fatal(err)
+						}
+					}
+				}
+
+				if !cfg.IsCatalogCachingEnable() {
+					cacheFileName = file.Name
+					response.CleanupRequest.AddLocalFileCleanupOperation(filepath.Join(destinationFolder, file.Name), false)
+				}
+
+				ctx.LogInfo("Decompressing file %v", cacheFileName)
+				if err := s.decompressMachine(ctx, filepath.Join(destinationFolder, cacheFileName), r.LocalMachineFolder); err != nil {
+					ctx.LogError("Error decompressing file %v: %v", fileName, err)
 					response.AddError(err)
 					break
 				}

@@ -2,7 +2,6 @@ package azurestorageaccount
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"net/url"
 	"os"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/catalog/common"
+	"github.com/Parallels/pd-api-service/helpers"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 )
@@ -105,10 +105,24 @@ func (s *AzureStorageAccountProvider) PushFile(ctx basecontext.ApiContext, rootL
 
 	defer file.Close()
 
+	md5, err := helpers.GetFileMD5Checksum(localFilePath)
+	if err != nil {
+		return err
+	}
+	// md5Hash := base64.StdEncoding.EncodeToString([]byte(md5))
+
 	_, err = azblob.UploadFileToBlockBlob(ctx.Context(), file, blobUrl, azblob.UploadToBlockBlobOptions{
 		BlockSize:   4 * 1024 * 1024,
 		Parallelism: 16,
 	})
+	if err != nil {
+		return err
+	}
+
+	_, err = blobUrl.SetHTTPHeaders(ctx.Context(), azblob.BlobHTTPHeaders{
+		ContentType: "application/octet-stream",
+		ContentMD5:  []byte(md5),
+	}, azblob.BlobAccessConditions{})
 
 	return err
 }
@@ -175,7 +189,7 @@ func (s *AzureStorageAccountProvider) FileChecksum(ctx basecontext.ApiContext, p
 
 	props, err := blobUrl.GetProperties(ctx.Context(), azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
 
-	fileCheckSum := hex.EncodeToString(props.ContentMD5()[:])
+	fileCheckSum := string(props.ContentMD5())
 	return fileCheckSum, err
 }
 
