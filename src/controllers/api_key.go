@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
@@ -12,17 +14,59 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//	@Summary		Gets all the api keys
-//	@Description	This endpoint returns all the api keys
-//	@Tags			Api Keys
-//	@Produce		json
-//	@Success		200	{object}	[]models.ApiKeyResponse
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/api_keys [get]
-func GetApiKeysController() restapi.ControllerHandler {
+func registerApiKeysHandlers(ctx basecontext.ApiContext, version string) {
+	ctx.LogInfo("Registering version %s ApiKeys handlers", version)
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).WithPath("/auth/api_keys").
+		WithRequiredClaim(constants.LIST_API_KEY_CLAIM).
+		WithHandler(GetApiKeysHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/auth/api_keys/{id}").
+		WithRequiredClaim(constants.LIST_API_KEY_CLAIM).
+		WithHandler(GetApiKeyHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/auth/api_keys").
+		WithRequiredClaim(constants.CREATE_API_KEY_CLAIM).
+		WithHandler(CreateApiKeyHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/auth/api_keys/{id}").
+		WithRequiredClaim(constants.DELETE_API_KEY_CLAIM).
+		WithHandler(DeleteApiKeyHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/auth/api_keys/{id}/revoke").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(RevokeApiKeyHandler()).
+		Register()
+}
+
+// @Summary		Gets all the api keys
+// @Description	This endpoint returns all the api keys
+// @Tags			Api Keys
+// @Produce		json
+// @Success		200	{object}	[]models.ApiKeyResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/api_keys [get]
+func GetApiKeysHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -47,18 +91,18 @@ func GetApiKeysController() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Deletes an api key
-//	@Description	This endpoint deletes an api key
-//	@Tags			Api Keys
-//	@Param			id	path	string	true	"Api Key ID"
-//	@Produce		json
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/api_keys/{id} [delete]
-func DeleteApiKeyController() restapi.ControllerHandler {
+// @Summary		Deletes an api key
+// @Description	This endpoint deletes an api key
+// @Tags			Api Keys
+// @Param			id	path	string	true	"Api Key ID"
+// @Produce		json
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/api_keys/{id} [delete]
+func DeleteApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -83,18 +127,18 @@ func DeleteApiKeyController() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets an api key by id or name
-//	@Description	This endpoint returns an api key by id or name
-//	@Tags			Api Keys
-//	@Param			id	path	string	true	"Api Key ID"
-//	@Produce		json
-//	@Success		200	{object}	models.ApiKeyResponse
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/api_keys/{id} [get]
-func GetApiKeyByIdOrNameController() restapi.ControllerHandler {
+// @Summary		Gets an api key by id or name
+// @Description	This endpoint returns an api key by id or name
+// @Tags			Api Keys
+// @Param			id	path	string	true	"Api Key ID"
+// @Produce		json
+// @Success		200	{object}	models.ApiKeyResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/api_keys/{id} [get]
+func GetApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -122,18 +166,18 @@ func GetApiKeyByIdOrNameController() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Creates an api key
-//	@Description	This endpoint creates an api key
-//	@Tags			Api Keys
-//	@Produce		json
-//	@Param			apiKey	body		models.ApiKeyRequest	true	"Body"
-//	@Success		200		{object}	models.ApiKeyResponse
-//	@Failure		400		{object}	models.ApiErrorResponse
-//	@Failure		401		{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/api_keys [post]
-func CreateApiKeyController() restapi.ControllerHandler {
+// @Summary		Creates an api key
+// @Description	This endpoint creates an api key
+// @Tags			Api Keys
+// @Produce		json
+// @Param			apiKey	body		models.ApiKeyRequest	true	"Body"
+// @Success		200		{object}	models.ApiKeyResponse
+// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		401		{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/api_keys [post]
+func CreateApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.ApiKeyRequest
@@ -171,18 +215,18 @@ func CreateApiKeyController() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Revoke an api key
-//	@Description	This endpoint revokes an api key
-//	@Tags			Api Keys
-//	@Produce		json
-//	@Param			id	path	string	true	"Api Key ID"
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/api_keys/{id}/revoke [put]
-func RevokeApiKeyController() restapi.ControllerHandler {
+// @Summary		Revoke an api key
+// @Description	This endpoint revokes an api key
+// @Tags			Api Keys
+// @Produce		json
+// @Param			id	path	string	true	"Api Key ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/api_keys/{id}/revoke [put]
+func RevokeApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)

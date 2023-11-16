@@ -7,17 +7,18 @@ import (
 	"github.com/Parallels/pd-api-service/errors"
 )
 
-type CreateRemoteVirtualMachineRequest struct {
-	Host     string `json:"host"`
-	Port     string `json:"port,omitempty"`
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-	ApiKey   string `json:"api_key,omitempty"`
-	Name     string `json:"name"`
-	Owner    string `json:"owner,omitempty"`
+type CreateCatalogVirtualMachineRequest struct {
+	Host       string `json:"host"`
+	Port       string `json:"port,omitempty"`
+	Username   string `json:"username,omitempty"`
+	Password   string `json:"password,omitempty"`
+	ApiKey     string `json:"api_key,omitempty"`
+	Name       string `json:"name"`
+	Connection string `json:"connection"`
+	Owner      string `json:"owner,omitempty"`
 }
 
-func (r *CreateRemoteVirtualMachineRequest) Validate() error {
+func (r *CreateCatalogVirtualMachineRequest) Validate() error {
 	if r.Host == "" {
 		return errors.New("Host cannot be empty")
 	}
@@ -36,6 +37,10 @@ func (r *CreateRemoteVirtualMachineRequest) Validate() error {
 
 	if r.Name == "" {
 		return errors.New("Name cannot be empty")
+	}
+
+	if r.Connection == "" {
+		return errors.New("Connection cannot be empty")
 	}
 
 	if r.Owner == "" {

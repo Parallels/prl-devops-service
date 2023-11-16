@@ -4,11 +4,13 @@ import (
 	"os"
 
 	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/catalog/tester"
 	"github.com/Parallels/pd-api-service/common"
 	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/data"
 	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/install"
 	"github.com/Parallels/pd-api-service/restapi"
 	"github.com/Parallels/pd-api-service/security"
 	"github.com/Parallels/pd-api-service/serviceprovider"
@@ -38,10 +40,10 @@ var versionSvc = version.Get()
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = "Parallels Desktop API Service"
@@ -78,6 +80,22 @@ func main() {
 		os.Exit(0)
 	}
 
+	if helper.GetFlagSwitch(constants.INSTALL_SERVICE_FLAG, false) {
+		if err := install.InstallService(ctx); err != nil {
+			ctx.LogError(err.Error())
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
+	if helper.GetFlagSwitch(constants.UNINSTALL_SERVICE_FLAG, false) {
+		if err := install.UninstallService(ctx); err != nil {
+			ctx.LogError(err.Error())
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
 	if cfg.GetSecurityKey() == "" {
 		common.Logger.Warn("No security key found, database will be unencrypted")
 	}
@@ -108,14 +126,17 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Serve the API
 	currentUser, err := serviceprovider.Get().System.GetCurrentUser(ctx)
 	if err != nil {
 		panic(err)
 	}
 	os.Setenv(constants.CURRENT_USER_ENV_VAR, currentUser)
-	ctx.LogInfo("Running with user %s", os.Getenv(constants.CURRENT_USER_ENV_VAR))
+	currentUserEnv := os.Getenv(constants.CURRENT_USER_ENV_VAR)
+	if currentUserEnv != "" {
+		ctx.LogInfo("Running with user %s", currentUser)
+	}
 
+	// updating the root password if the environment variable is set
 	if os.Getenv(constants.ROOT_PASSWORD_ENV_VAR) != "" {
 		rootPassword := helpers.Sha256Hash(os.Getenv(constants.ROOT_PASSWORD_ENV_VAR))
 		db := serviceprovider.Get().JsonDatabase
@@ -129,6 +150,24 @@ func main() {
 		}
 	}
 
+	if os.Getenv("ARTIFACTORY_TEST_CONNECTION") != "" {
+		ctx.LogInfo("Testing connection to Artifactory")
+		test := tester.NewTestProvider(ctx, os.Getenv("ARTIFACTORY_TEST_CONNECTION"))
+		err := test.Test()
+		if err != nil {
+			ctx.LogError(err.Error())
+			os.Exit(1)
+		} else {
+			ctx.LogInfo("Connection to Artifactory successful")
+			os.Exit(0)
+		}
+	}
+
+	// filePath := "/Users/cjlapao/VagrantTest/Vagrantfile"
+	// vs := serviceprovider.Get().VagrantService
+	// vs.UpdateVagrantFile(ctx, filePath)
+
+	// Serve the API
 	for {
 		listener := startup.InitApi()
 		restartChannel := restapi.GetRestartChannel()

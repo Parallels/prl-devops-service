@@ -8,6 +8,7 @@ import (
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/serviceprovider/download"
 	"github.com/Parallels/pd-api-service/serviceprovider/interfaces"
 	"github.com/Parallels/pd-api-service/serviceprovider/system"
 
@@ -247,6 +248,46 @@ func (s *VagrantService) UpdatePlugins(asUser string) error {
 	return nil
 }
 
+func (s *VagrantService) updateVagrantFile(ctx basecontext.ApiContext, filePath string, machineName string) error {
+	if !helper.FileExists(filePath) {
+		return errors.Newf("Vagrant file %v does not exist", filePath)
+	}
+	if !strings.HasSuffix(filePath, "Vagrantfile") {
+		filePath = filepath.Join(filePath, "Vagrantfile")
+	}
+
+	vagrantFile, err := LoadVagrantFile(ctx, filePath)
+	if err != nil {
+		return err
+	}
+
+	helper.CopyFile(filePath, filePath+".bak")
+	helper.CopyFile(filePath, filePath+".tmp")
+
+	blocks := vagrantFile.GetConfigBlock("parallels")
+	if len(blocks) == 0 {
+		ctx.LogInfo("No parallels block found in vagrant file, adding it")
+		parallelsBlock := VagrantConfigBlock{
+			Name:         "parallels",
+			Type:         "config.vm.provider",
+			VariableName: "prl",
+		}
+		parallelsBlock.SetContentVariable("name", machineName)
+		vagrantFile.Root.Children = append(vagrantFile.Root.Children, &parallelsBlock)
+	} else {
+		block := blocks[len(blocks)-1]
+		if block.GetContentVariable("name") != machineName {
+			block.SetContentVariable("name", machineName)
+		}
+	}
+
+	if err := vagrantFile.Save(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *VagrantService) getVagrantFolderPath(ctx basecontext.ApiContext, request models.CreateVagrantMachineRequest) (string, error) {
 	system := system.Get()
 	rootDir, err := system.GetUserHome(ctx, request.Owner)
@@ -263,11 +304,27 @@ func (s *VagrantService) getVagrantFolderPath(ctx basecontext.ApiContext, reques
 		vagrantFileFolderName = helpers.NormalizeString(request.Name)
 	} else if request.Box != "" {
 		vagrantFileFolderName = helpers.NormalizeString(request.Box)
+	} else if request.VagrantFilePath != "" {
+		vagrantFileFolderName = helpers.NormalizeString(filepath.Base(request.VagrantFilePath))
 	} else {
 		return "", errors.NewWithCode("Box or Name must be provided", 500)
 	}
 
 	vagrantFileFolder := filepath.Join(rootDir, fmt.Sprintf("vagrant_%s", vagrantFileFolderName))
+	if request.VagrantFilePath != "" {
+		if !strings.HasPrefix(request.VagrantFilePath, "http://") || !strings.HasPrefix(request.VagrantFilePath, "https://") {
+			return filepath.Dir(request.VagrantFilePath), nil
+		} else {
+			destinationFilePath := filepath.Join(vagrantFileFolder, "Vagrantfile")
+			downloadService := download.NewDownloadService()
+			if err := downloadService.DownloadFile(request.VagrantFilePath, nil, destinationFilePath); err != nil {
+				return "", err
+			}
+
+			return filepath.Dir(destinationFilePath), nil
+		}
+	}
+
 	if err := helpers.CreateDirIfNotExist(vagrantFileFolder); err != nil {
 		return "", err
 	}
@@ -297,38 +354,36 @@ func (s *VagrantService) getVagrantFilePath(ctx basecontext.ApiContext, request 
 }
 
 func (s *VagrantService) GenerateVagrantFile(ctx basecontext.ApiContext, request models.CreateVagrantMachineRequest) (string, error) {
-	vagrantFileContent := "Vagrant.configure(\"2\") do |config|\n"
-	vagrantFileContent += fmt.Sprintf("  config.vm.box = \"%s\"\n", request.Box)
-	if request.Version != "" {
-		vagrantFileContent += fmt.Sprintf("config.vm.box_version = \"%s\"\n", request.Version)
-	}
-	if request.CustomVagrantConfig != "" {
-		vagrantFileContent += request.CustomVagrantConfig
-	}
-
-	if request.Name != "" || request.CustomParallelsConfig != "" {
-		vagrantFileContent += "\n"
-		vagrantFileContent += "  config.vm.provider \"parallels\" do |prl|\n"
-		if request.Name != "" {
-			vagrantFileContent += fmt.Sprintf("    prl.name = \"%s\"\n", request.Name)
-		}
-		if request.CustomParallelsConfig != "" {
-			vagrantFileContent += request.CustomParallelsConfig
-		}
-		vagrantFileContent += "    end\n"
-		vagrantFileContent += "end\n"
-	}
-
 	vagrantFilePath, err := s.getVagrantFilePath(ctx, request)
 	if err != nil {
 		return "", err
 	}
 
-	if err := helper.WriteToFile(vagrantFileContent, vagrantFilePath); err != nil {
+	file := NewVagrantFile(ctx, vagrantFilePath)
+	file.Root.SetContentVariable("vm.box", request.Box)
+	if request.Version != "" {
+		file.Root.SetContentVariable("vm.box_version", request.Version)
+	}
+
+	block := file.Root.NewBlock("config.vm.provider", "parallels", "prl")
+	block.SetContentVariable("name", request.Name)
+	if request.CustomParallelsConfig != "" {
+		lines := strings.Split(request.CustomParallelsConfig, "\n")
+		block.Content = append(block.Content, lines...)
+	}
+
+	if request.CustomVagrantConfig != "" {
+		lines := strings.Split(request.CustomVagrantConfig, "\n")
+		file.Root.Content = append(file.Root.Content, lines...)
+	}
+
+	file.Refresh()
+
+	if err := file.Save(); err != nil {
 		return "", err
 	}
 
-	return vagrantFileContent, nil
+	return file.String(), nil
 }
 
 func (s *VagrantService) Init(ctx basecontext.ApiContext, request models.CreateVagrantMachineRequest) error {
@@ -386,14 +441,26 @@ func (s *VagrantService) Up(ctx basecontext.ApiContext, request models.CreateVag
 		cmd.Args = append(cmd.Args, s.executable)
 	}
 
-	cmd.Args = append(cmd.Args, "up")
+	if request.VagrantFilePath != "" {
+		if err := s.updateVagrantFile(ctx, request.VagrantFilePath, request.Name); err != nil {
+			return err
+		}
+	}
 
+	cmd.Args = append(cmd.Args, "up", "--no-tty", "--machine-readable")
 	ctx.LogInfo("Bringing vagrant box %s up with command: %v", request.Box, cmd.String())
-	stdout, _, _, err := helpers.ExecuteAndWatch(cmd)
+	ctx.LogInfo(cmd.String())
+	_, _, _, err = helpers.ExecuteAndWatch(cmd)
 	if err != nil {
-		println(stdout)
-		buildError := errors.Newf("There was an error init vagrant folder %v, error: %v", vagrantFileFolder, err.Error())
+		buildError := errors.Newf("There was an error bringing the vagrant box up on folder %v, error: %v", vagrantFileFolder, err.Error())
 		return buildError
+	}
+
+	// Cleaning any backup files we had to create
+	if helper.FileExists(filepath.Join(vagrantFileFolder, "Vagrantfile.tmp")) {
+		helper.DeleteFile(filepath.Join(vagrantFileFolder, "Vagrantfile"))
+		helper.CopyFile(filepath.Join(vagrantFileFolder, "Vagrantfile.tmp"), filepath.Join(vagrantFileFolder, "Vagrantfile"))
+		helper.DeleteFile(filepath.Join(vagrantFileFolder, "Vagrantfile.tmp"))
 	}
 
 	return nil

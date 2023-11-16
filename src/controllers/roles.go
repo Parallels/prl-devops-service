@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
@@ -14,17 +16,52 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//	@Summary		Gets all the roles
-//	@Description	This endpoint returns all the roles
-//	@Tags			Roles
-//	@Produce		json
-//	@Success		200	{object}	[]models.RoleResponse
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/roles  [get]
-func GetRolesController() restapi.ControllerHandler {
+func registerRolesHandlers(ctx basecontext.ApiContext, version string) {
+	ctx.LogInfo("Registering version %s Roles handlers", version)
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/auth/roles").
+		WithRequiredClaim(constants.LIST_ROLE_CLAIM).
+		WithHandler(GetRolesHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/auth/roles/{id}").
+		WithRequiredClaim(constants.LIST_ROLE_CLAIM).
+		WithHandler(GetRoleHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/auth/roles").
+		WithRequiredClaim(constants.CREATE_ROLE_CLAIM).
+		WithHandler(CreateRoleHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/auth/roles/{id}").
+		WithRequiredClaim(constants.DELETE_ROLE_CLAIM).
+		WithHandler(DeleteRoleHandler()).
+		Register()
+}
+
+// @Summary		Gets all the roles
+// @Description	This endpoint returns all the roles
+// @Tags			Roles
+// @Produce		json
+// @Success		200	{object}	[]models.RoleResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/roles  [get]
+func GetRolesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -57,18 +94,18 @@ func GetRolesController() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets a role
-//	@Description	This endpoint returns a role
-//	@Tags			Roles
-//	@Produce		json
-//	@Param			id	path		string	true	"Role ID"
-//	@Success		200	{object}	models.RoleResponse
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/roles/{id}  [get]
-func GetRoleController() restapi.ControllerHandler {
+// @Summary		Gets a role
+// @Description	This endpoint returns a role
+// @Tags			Roles
+// @Produce		json
+// @Param			id	path		string	true	"Role ID"
+// @Success		200	{object}	models.RoleResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/roles/{id}  [get]
+func GetRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -96,18 +133,18 @@ func GetRoleController() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets a role
-//	@Description	This endpoint returns a role
-//	@Tags			Roles
-//	@Produce		json
-//	@Param			roleRequest	body		models.RoleRequest	true	"Role Request"
-//	@Success		200			{object}	models.RoleResponse
-//	@Failure		400			{object}	models.ApiErrorResponse
-//	@Failure		401			{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/roles  [post]
-func CreateRoleController() restapi.ControllerHandler {
+// @Summary		Gets a role
+// @Description	This endpoint returns a role
+// @Tags			Roles
+// @Produce		json
+// @Param			roleRequest	body		models.RoleRequest	true	"Role Request"
+// @Success		200			{object}	models.RoleResponse
+// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		401			{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/roles  [post]
+func CreateRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.RoleRequest
@@ -144,18 +181,18 @@ func CreateRoleController() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Delete a role
-//	@Description	This endpoint deletes a role
-//	@Tags			Roles
-//	@Produce		json
-//	@Param			id	path	string	true	"Role ID"
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/roles/{id}  [delete]
-func DeleteRoleController() restapi.ControllerHandler {
+// @Summary		Delete a role
+// @Description	This endpoint deletes a role
+// @Tags			Roles
+// @Produce		json
+// @Param			id	path	string	true	"Role ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/roles/{id}  [delete]
+func DeleteRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)

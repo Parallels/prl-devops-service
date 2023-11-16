@@ -177,15 +177,16 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 			} else {
 				// The catalog manifest metadata does not exist creating it
 				ctx.LogInfo("Remote Manifest metadata not found, creating it")
-				if err := rs.CreateFolder(ctx, manifest.ID, "/"); err != nil {
-					manifest.AddError(err)
-					break
-				}
 
 				manifest.Path = filepath.Join(rs.GetProviderRootPath(ctx), manifest.CatalogId)
 				manifest.MetadataFile = s.getMetaFilename(manifest.Name)
 				manifest.PackFile = s.getPackFilename(manifest.Name)
 				tempManifestContentFilePath := filepath.Join("/tmp", s.getMetaFilename(manifest.Name))
+
+				if err := rs.CreateFolder(ctx, "/", manifest.Path); err != nil {
+					manifest.AddError(err)
+					break
+				}
 
 				manifest.PackContents = append(manifest.PackContents, models.VirtualMachineManifestContentItem{
 					Path:      manifest.Path,

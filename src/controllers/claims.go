@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
@@ -14,17 +16,51 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//	@Summary		Gets all the claims
-//	@Description	This endpoint returns all the claims
-//	@Tags			Claims
-//	@Produce		json
-//	@Success		200	{object}	[]models.ClaimResponse
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/claims [get]
-func GetClaimsController() restapi.ControllerHandler {
+func registerClaimsHandlers(ctx basecontext.ApiContext, version string) {
+	ctx.LogInfo("Registering version %s Claims handlers", version)
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).WithPath("/auth/claims").
+		WithRequiredClaim(constants.LIST_CLAIM_CLAIM).
+		WithHandler(GetClaimsHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/auth/claims/{id}").
+		WithRequiredClaim(constants.LIST_CLAIM_CLAIM).
+		WithHandler(GetClaimHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/auth/claims").
+		WithRequiredClaim(constants.CREATE_CLAIM_CLAIM).
+		WithHandler(CreateClaimHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/auth/claims/{id}").
+		WithRequiredClaim(constants.DELETE_CLAIM_CLAIM).
+		WithHandler(DeleteClaimHandler()).
+		Register()
+}
+
+// @Summary		Gets all the claims
+// @Description	This endpoint returns all the claims
+// @Tags			Claims
+// @Produce		json
+// @Success		200	{object}	[]models.ClaimResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims [get]
+func GetClaimsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -57,18 +93,18 @@ func GetClaimsController() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets a claim
-//	@Description	This endpoint returns a claim
-//	@Tags			Claims
-//	@Produce		json
-//	@Param			id	path		string	true	"Claim ID"
-//	@Success		200	{object}	models.ClaimResponse
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/claims/{id} [get]
-func GetClaimController() restapi.ControllerHandler {
+// @Summary		Gets a claim
+// @Description	This endpoint returns a claim
+// @Tags			Claims
+// @Produce		json
+// @Param			id	path		string	true	"Claim ID"
+// @Success		200	{object}	models.ClaimResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims/{id} [get]
+func GetClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)
@@ -96,18 +132,18 @@ func GetClaimController() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Creates a claim
-//	@Description	This endpoint creates a claim
-//	@Tags			Claims
-//	@Produce		json
-//	@Param			claimRequest	body		models.ClaimRequest	true	"Claim Request"
-//	@Success		200				{object}	models.ClaimResponse
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/claims [post]
-func CreateClaimController() restapi.ControllerHandler {
+// @Summary		Creates a claim
+// @Description	This endpoint creates a claim
+// @Tags			Claims
+// @Produce		json
+// @Param			claimRequest	body		models.ClaimRequest	true	"Claim Request"
+// @Success		200				{object}	models.ClaimResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims [post]
+func CreateClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.ClaimRequest
@@ -144,18 +180,18 @@ func CreateClaimController() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Delete a claim
-//	@Description	This endpoint Deletes a claim
-//	@Tags			Claims
-//	@Produce		json
-//	@Param			id	path	string	true	"Claim ID"
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/auth/claims/{id} [delete]
-func DeleteClaimController() restapi.ControllerHandler {
+// @Summary		Delete a claim
+// @Description	This endpoint Deletes a claim
+// @Tags			Claims
+// @Produce		json
+// @Param			id	path	string	true	"Claim ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims/{id} [delete]
+func DeleteClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		dbService, err := GetDatabaseService(ctx)

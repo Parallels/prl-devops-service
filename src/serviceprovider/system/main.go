@@ -477,3 +477,101 @@ func (s *SystemService) changeLinuxFileUserOwner(userName string, filePath strin
 
 	return nil
 }
+
+func (s *SystemService) GetHardwareInfo(ctx basecontext.ApiContext) (*models.SystemHardwareInfo, error) {
+	switch s.GetOperatingSystem() {
+	case "macos":
+		return s.getMacSystemHardwareInfo(ctx)
+	case "linux":
+		return nil, errors.New("Not implemented")
+	default:
+		return nil, errors.New("Not implemented")
+	}
+}
+
+func (s *SystemService) getMacSystemHardwareInfo(ctx basecontext.ApiContext) (*models.SystemHardwareInfo, error) {
+	result := models.SystemHardwareInfo{}
+	cpuTypeCmd := helpers.Command{
+		Command: "sysctl",
+		Args:    []string{"-n", "machdep.cpu.brand_string"},
+	}
+	physicalCpuCountCmd := helpers.Command{
+		Command: "sysctl",
+		Args:    []string{"-n", "hw.physicalcpu"},
+	}
+	logicalCpuCountCmd := helpers.Command{
+		Command: "sysctl",
+		Args:    []string{"-n", "hw.logicalcpu"},
+	}
+	memorySizeCmd := helpers.Command{
+		Command: "sysctl",
+		Args:    []string{"-n", "hw.memsize"},
+	}
+	diskAvailableCmd := helpers.Command{
+		Command: "df",
+		Args:    []string{"-h", "/"},
+	}
+	cpuType, err := helpers.ExecuteWithNoOutput(cpuTypeCmd)
+	if err != nil {
+		return nil, err
+	}
+	physicalCpuCount, err := helpers.ExecuteWithNoOutput(physicalCpuCountCmd)
+	if err != nil {
+		return nil, err
+	}
+	logicalCpuCount, err := helpers.ExecuteWithNoOutput(logicalCpuCountCmd)
+	if err != nil {
+		return nil, err
+	}
+	memorySize, err := helpers.ExecuteWithNoOutput(memorySizeCmd)
+	if err != nil {
+		return nil, err
+	}
+	diskAvailable, err := helpers.ExecuteWithNoOutput(diskAvailableCmd)
+	if err != nil {
+		return nil, err
+	}
+	result.CpuType = cpuType
+	physicalCpuCountInt, err := strconv.Atoi(helpers.CleanOutputString(physicalCpuCount))
+	if err != nil {
+		return nil, err
+	}
+	result.PhysicalCpuCount = physicalCpuCountInt
+	logicalCpuCountInt, err := strconv.Atoi(helpers.CleanOutputString(logicalCpuCount))
+	if err != nil {
+		return nil, err
+	}
+	result.LogicalCpuCount = logicalCpuCountInt
+	memorySizeInt, err := strconv.ParseFloat(helpers.CleanOutputString(memorySize), 64)
+	if err != nil {
+		return nil, err
+	}
+	result.MemorySize = helpers.ConvertByteToMegabyte(memorySizeInt)
+	totalDiskInt, diskAvailableInt, err := s.parseDfCommand(diskAvailable)
+	if err != nil {
+		return nil, err
+	}
+	result.DiskSize = helpers.ConvertByteToMegabyte(totalDiskInt)
+	result.FreeDiskSize = helpers.ConvertByteToMegabyte(diskAvailableInt)
+
+	return &result, nil
+}
+
+func (s *SystemService) parseDfCommand(output string) (totalDisk float64, freeDisk float64, err error) {
+	lines := strings.Split(output, "\n")
+	if len(lines) > 1 {
+		fields := strings.Fields(lines[1])
+		if len(fields) > 2 {
+			totalDisk, err = helpers.GetSizeByteFromString(helpers.CleanOutputString(fields[1]))
+			if err != nil {
+				return -1, -1, err
+			}
+			freeDisk, err = helpers.GetSizeByteFromString(helpers.CleanOutputString(fields[2]))
+			if err != nil {
+				return -1, -1, err
+			}
+		}
+	}
+
+	return totalDisk, freeDisk, nil
+}

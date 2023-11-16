@@ -1379,3 +1379,59 @@ func (s *ParallelsService) RunCustomCommand(ctx basecontext.ApiContext, vm *mode
 
 	return nil
 }
+
+func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models.SystemUsageResponse, error) {
+	result := &models.SystemUsageResponse{}
+
+	vms, err := s.GetVms(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, vm := range vms {
+		if vm.State == "running" {
+			result.TotalInUse.LogicalCpuCount += vm.Hardware.CPU.Cpus
+			memorySizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Memory.Size)
+			if err != nil {
+				return nil, err
+			}
+			result.TotalInUse.MemorySize += helpers.ConvertByteToMegabyte(memorySizeInt)
+			if vm.Hardware.Hdd0.Size != "" {
+				hddSizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Hdd0.Size)
+				if err != nil {
+					return nil, err
+				}
+				result.TotalInUse.DiskSize += helpers.ConvertByteToMegabyte(hddSizeInt)
+			}
+		} else {
+			result.TotalReserved.LogicalCpuCount += vm.Hardware.CPU.Cpus
+			memorySizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Memory.Size)
+			if err != nil {
+				return nil, err
+			}
+			result.TotalReserved.MemorySize += helpers.ConvertByteToMegabyte(memorySizeInt)
+			if vm.Hardware.Hdd0.Size != "" {
+				hddSizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Hdd0.Size)
+				if err != nil {
+					return nil, err
+				}
+				result.TotalReserved.DiskSize += helpers.ConvertByteToMegabyte(hddSizeInt)
+			}
+		}
+	}
+
+	systemSrv := system.Get()
+	systemInfo, err := systemSrv.GetHardwareInfo(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result.Total.LogicalCpuCount = int64(systemInfo.LogicalCpuCount)
+	result.Total.MemorySize = systemInfo.MemorySize
+	result.Total.DiskSize = systemInfo.DiskSize - systemInfo.FreeDiskSize
+
+	result.TotalAvailable.DiskSize = result.Total.DiskSize - result.TotalReserved.DiskSize - result.TotalInUse.DiskSize
+	result.TotalAvailable.MemorySize = result.Total.MemorySize - result.TotalInUse.MemorySize
+	result.TotalAvailable.LogicalCpuCount = result.Total.LogicalCpuCount - result.TotalInUse.LogicalCpuCount
+
+	return result, nil
+}

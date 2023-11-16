@@ -104,7 +104,6 @@ func NewHttpListener() *HttpListener {
 	listener.Options = listener.getDefaultConfiguration()
 
 	// Appending the correlationId renewal
-	listener.DefaultAdapters = append(listener.DefaultAdapters, SetDefaultVersionMiddlewareAdapter())
 	listener.DefaultAdapters = append(listener.DefaultAdapters, RequestIdMiddlewareAdapter())
 
 	globalHttpListener = &listener
@@ -129,7 +128,7 @@ func (l *HttpListener) GetApiPrefix() string {
 
 func (l *HttpListener) AddHealthCheck() *HttpListener {
 
-	l.AddController(l.Probe(), http_helper.JoinUrl("health", "probe"), "GET")
+	l.AddHandler(l.Probe(), http_helper.JoinUrl("health", "probe"), "GET")
 	return l
 }
 
@@ -184,7 +183,7 @@ func (l *HttpListener) GetFullPathPrefix() string {
 	return http_helper.JoinUrl(l.Options.ApiPrefix, defaultVersionPath)
 }
 
-func (l *HttpListener) AddController(c ControllerHandler, path string, methods ...string) {
+func (l *HttpListener) AddHandler(c ControllerHandler, path string, methods ...string) {
 	l.ControllersHandlers = append(l.ControllersHandlers, c)
 	var subRouter *mux.Router
 	if len(methods) > 0 {
@@ -196,7 +195,7 @@ func (l *HttpListener) AddController(c ControllerHandler, path string, methods .
 	adapters := make([]Adapter, 0)
 	adapters = append(adapters, l.DefaultAdapters...)
 
-	if l.GetApiPrefix() != "" {
+	if l.GetApiPrefix() != "" && !strings.HasPrefix(path, l.Options.ApiPrefix) {
 		path = http_helper.JoinUrl(l.GetApiPrefix(), path)
 	}
 	subRouter.HandleFunc(path, Adapt(
@@ -204,19 +203,19 @@ func (l *HttpListener) AddController(c ControllerHandler, path string, methods .
 		adapters...).ServeHTTP)
 }
 
-func (l *HttpListener) AddAuthorizedController(c ControllerHandler, path string, methods ...string) {
-	l.AddAuthorizedControllerWithRolesAndClaims(c, path, []string{}, []string{}, methods...)
+func (l *HttpListener) AddAuthorizedHandler(c ControllerHandler, path string, methods ...string) {
+	l.AddAuthorizedHandlerWithRolesAndClaims(c, path, []string{}, []string{}, methods...)
 }
 
-func (l *HttpListener) AddAuthorizedControllerWithRoles(c ControllerHandler, path string, roles []string, methods ...string) {
-	l.AddAuthorizedControllerWithRolesAndClaims(c, path, roles, []string{}, methods...)
+func (l *HttpListener) AddAuthorizedHandlerWithRoles(c ControllerHandler, path string, roles []string, methods ...string) {
+	l.AddAuthorizedHandlerWithRolesAndClaims(c, path, roles, []string{}, methods...)
 }
 
-func (l *HttpListener) AddAuthorizedControllerWithClaims(c ControllerHandler, path string, claims []string, methods ...string) {
-	l.AddAuthorizedControllerWithRolesAndClaims(c, path, []string{}, claims, methods...)
+func (l *HttpListener) AddAuthorizedHandlerWithClaims(c ControllerHandler, path string, claims []string, methods ...string) {
+	l.AddAuthorizedHandlerWithRolesAndClaims(c, path, []string{}, claims, methods...)
 }
 
-func (l *HttpListener) AddAuthorizedControllerWithRolesAndClaims(c ControllerHandler, path string, roles []string, claims []string, methods ...string) {
+func (l *HttpListener) AddAuthorizedHandlerWithRolesAndClaims(c ControllerHandler, path string, roles []string, claims []string, methods ...string) {
 	l.ControllersHandlers = append(l.ControllersHandlers, c)
 	var subRouter *mux.Router
 	if len(methods) > 0 {
@@ -231,7 +230,7 @@ func (l *HttpListener) AddAuthorizedControllerWithRolesAndClaims(c ControllerHan
 	adapters = append(adapters, ApiKeyAuthorizationMiddlewareAdapter(roles, claims))
 	adapters = append(adapters, EndAuthorizationMiddlewareAdapter())
 
-	if l.Options.ApiPrefix != "" {
+	if l.GetApiPrefix() != "" && !strings.HasPrefix(path, l.Options.ApiPrefix) {
 		path = http_helper.JoinUrl(l.Options.ApiPrefix, path)
 	}
 
@@ -244,8 +243,6 @@ func (l *HttpListener) AddAuthorizedControllerWithRolesAndClaims(c ControllerHan
 func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 	l.ServerName = serviceName
 	l.ServerVersion = serviceVersion
-	// for _, v := range l.Versions {
-	//   if v.Default {
 
 	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "authorization", "Authorization", "content-type"})
 	originsOk := handlers.AllowedOrigins([]string{"*"})
