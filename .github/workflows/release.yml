@@ -49,10 +49,10 @@ jobs:
 
           go install github.com/swaggo/swag/cmd/swag@latest
           cd src
-          swag init -g main.go
+          go mod tidy
           swag fmt
+          swag init -g main.go
           cd ..
-
 
           git add version.json ./src/* ./helm/Chart.yaml
           git commit -m "Release extension version $NEW_VERSION"
