@@ -1,0 +1,2193 @@
+{
+	"info": {
+		"_postman_id": "ad857ffd-df7f-4f92-a1d2-fc039477b332",
+		"name": "Parallels Desktop API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "2728951"
+	},
+	"item": [
+		{
+			"name": "Health Checks",
+			"item": [
+				{
+					"name": "System Healthcheck",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/health/system",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"system"
+							],
+							"query": [
+								{
+									"key": "full",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Health Check Probe",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/health/system",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"system"
+							],
+							"query": [
+								{
+									"key": "full",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "noauth"
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Config",
+			"item": [
+				{
+					"name": "Install Tools",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"all\": false,\n    \"run_as\": \"ec2-user\",\n    \"tools\": {\n        \"packer\": {\n            \"version\": \"latest\"\n        },\n        \"parallels\": {\n            \"version\": \"latest\",\n            \"flags\": {\n                \"license\": \"{{PARALLELS-DESKTOP-LICENSE}}\"\n            }\n        },\n        \"vagrant\": {\n            \"version\": \"latest\"\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/config/tools/install",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"config",
+								"tools",
+								"install"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Uninstall Tools",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"all\": false,\n    \"run_as\": \"ec2-user\",\n    \"tools\": {\n        \"parallels\": {\n            \"uninstall_dependencies\": false\n        },\n                \"packer\": {\n            \"uninstall_dependencies\": false\n        },\n        \"vagrant\": {\n            \"uninstall_dependencies\": false\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/config/tools/uninstall",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"config",
+								"tools",
+								"uninstall"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Restart Api Server",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"all\": false,\n    \"run_as\": \"ec2-user\",\n    \"tools\": {\n        \"packer\": {\n            \"version\": \"latest\"\n        },\n        \"parallels\": {\n            \"version\": \"latest\",\n            \"flags\": {\n                \"license\": \"6J9W67-SG4ANH-4V2BEE-6P4EJE-3D7H2X\"\n            }\n        },\n        \"vagrant\": {\n            \"version\": \"latest\"\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/config/restart",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"config",
+								"restart"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Parallels Desktop License",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"all\": false,\n    \"run_as\": \"ec2-user\",\n    \"tools\": {\n        \"packer\": {\n            \"version\": \"latest\"\n        },\n        \"parallels\": {\n            \"version\": \"latest\",\n            \"flags\": {\n                \"license\": \"6J9W67-SG4ANH-4V2BEE-6P4EJE-3D7H2X\"\n            }\n        },\n        \"vagrant\": {\n            \"version\": \"latest\"\n        },\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/config/parallels-desktop/license",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"config",
+								"parallels-desktop",
+								"license"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Hardware Info",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/config/hardware",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"config",
+								"hardware"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Identity",
+			"item": [
+				{
+					"name": "Login with User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"jwt_token\", jsonData.token);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{USER-EMAIL}}\",\n    \"password\": \"{{USER-PASSWORD}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/token",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login With Super User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);",
+									"postman.setEnvironmentVariable(\"jwt_token\", jsonData.token);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{ROOT-USER-EMAIL}}\",\n    \"password\": \"{{ROOT-USER-PASSWORD}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/token",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"{{jwt_token}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/token/validate",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"token",
+								"validate"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "noauth"
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Api Key",
+			"item": [
+				{
+					"name": "Get All Keys",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Filter",
+								"value": "id=",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/api_keys",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"api_keys"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Api Key",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"\",\n    \"key\": \"\",\n    \"secret\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/api_keys",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"api_keys"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Api Key",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test 1\",\n    \"key\": \"testing\",\n    \"secret\": \"password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/api_keys/{{API-KEY-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"api_keys",
+								"{{API-KEY-ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Key",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test 1\",\n    \"key\": \"testing\",\n    \"secret\": \"password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/api_keys/{{API-KEY-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"api_keys",
+								"{{API-KEY-ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke Key",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test 1\",\n    \"key\": \"testing\",\n    \"secret\": \"password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/api_keys/{{API-KEY-ID}}/revoke",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"api_keys",
+								"{{API-KEY-ID}}",
+								"revoke"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Claims",
+			"item": [
+				{
+					"name": "Get All Claims",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Filter",
+								"value": "name=READ_ONLY",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/claims",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"claims"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Claim",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/claims",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"claims"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Claim",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test 1\",\n    \"key\": \"testing\",\n    \"secret\": \"password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/claims/{{CLAIM-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"claims",
+								"{{CLAIM-ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Claim",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test 1\",\n    \"key\": \"testing\",\n    \"secret\": \"password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/claims/{{CLAIM-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"claims",
+								"{{CLAIM-ID}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Roles",
+			"item": [
+				{
+					"name": "Get All Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Filter",
+								"value": "id=",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/roles",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"roles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Role",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/roles",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"roles"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Role",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test 1\",\n    \"key\": \"testing\",\n    \"secret\": \"password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/roles/{{ROLE-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"roles",
+								"{{ROLE-ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Role",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test 1\",\n    \"key\": \"testing\",\n    \"secret\": \"password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/roles/{{ROLE-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"roles",
+								"{{ROLE-ID}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Roles",
+					"item": [
+						{
+							"name": "Get User Roles",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/auth/users/{{USER-ID}}/roles",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"auth",
+										"users",
+										"{{USER-ID}}",
+										"roles"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Add Role to User",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/auth/users/{{USER-ID}}/roles",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"auth",
+										"users",
+										"{{USER-ID}}",
+										"roles"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Role from User",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/auth/users/{{USER-ID}}/roles/{{ROLE-ID}}",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"auth",
+										"users",
+										"{{USER-ID}}",
+										"roles",
+										"{{ROLE-ID}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Claims",
+					"item": [
+						{
+							"name": "Get User Claims",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/auth/users/{{USER-ID}}/claims",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"auth",
+										"users",
+										"{{USER-ID}}",
+										"claims"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Add Claim to User",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/auth/users/{{USER-ID}}/claims",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"auth",
+										"users",
+										"{{USER-ID}}",
+										"claims"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Claim from User",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/auth/users/{{USER-ID}}/claims/{{CLAIM-ID}}",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"auth",
+										"users",
+										"{{USER-ID}}",
+										"claims",
+										"{{CLAIM-ID}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Filter",
+								"value": "name=root",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/users",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"\",\n    \"name\": \"\",\n    \"email\": \"\",\n    \"password\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/users",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/users/{{USER-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"users",
+								"{{USER-ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/users/{{USER-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"users",
+								"{{USER-ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"\",\n    \"password\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/auth/users/{{USER-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"users",
+								"{{USER-ID}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Machines",
+			"item": [
+				{
+					"name": "Configure",
+					"item": [
+						{
+							"name": "Set",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"operations\": [\n        {\n            \"group\": \"\",\n            \"operation\": \"\",\n            \"value\": \"\"\n        }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/set",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"machines",
+										"{{MACHINE-ID}}",
+										"set"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Machine State",
+					"item": [
+						{
+							"name": "Start Machine",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/start",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"machines",
+										"{{MACHINE-ID}}",
+										"start"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Stop Machine",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/stop",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"machines",
+										"{{MACHINE-ID}}",
+										"stop"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Restart Machine",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/restart",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"machines",
+										"{{MACHINE-ID}}",
+										"restart"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Suspend Machine",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/suspend",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"machines",
+										"{{MACHINE-ID}}",
+										"suspend"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reset Machine",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/reset",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"machines",
+										"{{MACHINE-ID}}",
+										"reset"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Pause Machine",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/pause",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"machines",
+										"{{MACHINE-ID}}",
+										"pause"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Machine Status",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/status",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"machines",
+										"{{MACHINE-ID}}",
+										"status"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Get All Machines",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Filter",
+								"value": "id=ub,i",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Machine",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines",
+								"{{MACHINE-ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Packer Machine",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"\",\n    \"owner\": \"\",\n    \"packer_template\": {\n        \"template\": \"\",\n        \"memory\": \"\",\n        \"cpu\": \"\",\n        \"disk\": \"\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Vagrant Machine",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"\",\n    \"owner\": \"\",\n    \"vagrant_box\": {\n        \"vagrant_file_path\": \"\",\n        \"box\":\"\",\n        \"version\":\"\",\n        \"custom_vagrant_config\":\"\",\n        \"custom_parallels_config\":\"\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Machine",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines",
+								"{{MACHINE-ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Machine",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"path\": \"\",\n    \"owner\": \"\",\n    \"machine_name\": \"\",\n    \"regenerate_source_uuid\": true,\n    \"force\": false,\n    \"delay_applying_restrictions\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines/register",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Rename Machine",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"new_name\": \"\",\n    \"description\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/rename",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines",
+								"{{MACHINE-ID}}",
+								"rename"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unregister",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clean_source_uuid\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/unregister",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines",
+								"{{MACHINE-ID}}",
+								"unregister"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Execute",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"command\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/execute",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines",
+								"{{MACHINE-ID}}",
+								"execute"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Packer Templates",
+			"item": [
+				{
+					"name": "Get All Packer Templates",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Filter",
+								"value": "name=[Uu]sbuntu",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/templates/packer",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"templates",
+								"packer"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Packer Template",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/templates/packer/{{PACKER-TEMPLATE-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"templates",
+								"packer",
+								"{{PACKER-TEMPLATE-ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Packer Template",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"\",\n    \"name\": \"\",\n    \"description\": \"\",\n    \"packer_folder\": \"\",\n    \"variables\": {\n        \"variable1\": \"\"\n    },\n    \"specs\": {\n        \"cpu\": \"2\",\n        \"disk\": \"20480\",\n        \"memory\": \"2048\"\n    },\n    \"required_roles\": [\n        \"USER\"\n    ],\n    \"required_claims\": [\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/templates/packer",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"templates",
+								"packer"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Packer Template",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"\",\n    \"description\": \"\",\n    \"packer_folder\": \"\",\n    \"variables\": {\n        \"variable1\": \"\"\n    },\n    \"specs\": {\n        \"cpu\": \"2\",\n        \"disk\": \"20480\",\n        \"memory\": \"2048\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/templates/packer/{{PACKER-TEMPLATE-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"templates",
+								"packer",
+								"{{PACKER-TEMPLATE-ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Packer Template",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/templates/packer/{{PACKER-TEMPLATE-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"templates",
+								"packer",
+								"{{PACKER-TEMPLATE-ID}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Catalog",
+			"item": [
+				{
+					"name": "Get All Catalog Manifests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Filter",
+								"value": "name=test",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Catalog Manifest",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"{{CATALOG-ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Download Catalog Manifest",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/download",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"{{CATALOG-ID}}",
+								"{{CATALOG-VERSION}}",
+								"download"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Catalog Manifest Version",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"{{CATALOG-ID}}",
+								"{{CATALOG-VERSION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Catalog Manifest",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"{{CATALOG-ID}}"
+							],
+							"query": [
+								{
+									"key": "clean_remote",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Catalog Manifest Version",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"{{CATALOG-ID}}",
+								"{{CATALOG-VERSION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Push Catalog",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"catalog_id\": \"\",\n    \"version\": \"\",\n    \"connection\": \"\",\n    \"local_path\": \"\",\n    \"required_roles\": [],\n    \"required_claims\": []\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/push",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"push"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Pull Catalog",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"catalog_id\": \"\",\n    \"version\": \"\",\n    \"machine_name\": \"\",\n    \"owner\": \"\",\n    \"connection\": \"\",\n    \"path\": \"\",\n    \"start_after_pull\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/pull",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"pull"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Import Catalog",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"catalog_id\": \"\",\n    \"version\": \"\",\n    \"connection\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/import",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"import"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Taint Catalog Manifest",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/taint",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"{{CATALOG-ID}}",
+								"{{CATALOG-VERSION}}",
+								"taint"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UnTaint Catalog Manifest",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/untaint",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"{{CATALOG-ID}}",
+								"{{CATALOG-VERSION}}",
+								"untaint"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke Catalog Manifest",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/revoke",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"{{CATALOG-ID}}",
+								"{{CATALOG-VERSION}}",
+								"revoke"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
