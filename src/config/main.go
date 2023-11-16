@@ -2,10 +2,15 @@ package config
 
 import (
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 
+	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/common"
 	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/serviceprovider/system"
 
 	log "github.com/cjlapao/common-go-logger"
 	"github.com/cjlapao/common-go/helper"
@@ -128,5 +133,68 @@ func (c *Config) TLSEnabled() bool {
 }
 
 func (c *Config) GetTokenDurationMinutes() int {
-	return constants.TOKEN_DURATION_MINUTES
+	tokenDuration := os.Getenv(constants.TOKEN_DURATION_MINUTES_ENV_VAR)
+	if tokenDuration != "" {
+		return constants.DEFAULT_TOKEN_DURATION_MINUTES
+	}
+
+	intVal, err := strconv.Atoi(tokenDuration)
+	if err != nil {
+		return constants.DEFAULT_TOKEN_DURATION_MINUTES
+	}
+	return intVal
+}
+
+func (c *Config) GetRootFolder() (string, error) {
+	srv := system.Get()
+	ctx := basecontext.NewRootBaseContext()
+	currentUser, err := srv.GetCurrentUser(ctx)
+	if err != nil {
+		currentUser = "root"
+	}
+
+	if currentUser == "root" {
+		folder := "/etc/parallels-api-service"
+		err := helpers.CreateDirIfNotExist(folder)
+		if err != nil {
+			return "", err
+		}
+
+		return folder, nil
+	} else {
+		userHome, err := srv.GetUserHome(ctx, currentUser)
+		if err != nil {
+			return "", err
+		}
+		folder := userHome + "/.parallels-api-service"
+		err = helpers.CreateDirIfNotExist(folder)
+		if err != nil {
+			return "", err
+		}
+
+		return folder, nil
+	}
+}
+
+func (c *Config) GetCatalogCacheFolder() (string, error) {
+	rootFolder, err := c.GetRootFolder()
+	if err != nil {
+		return "", err
+	}
+	cacheFolder := filepath.Join(rootFolder, constants.DEFAULT_CATALOG_CACHE_FOLDER)
+	err = helpers.CreateDirIfNotExist(cacheFolder)
+	if err != nil {
+		return "", err
+	}
+
+	return cacheFolder, nil
+}
+
+func (c *Config) IsCatalogCachingEnable() bool {
+	envVar := os.Getenv(constants.DISABLE_CATALOG_CACHING_ENV_VAR)
+	if envVar == "true" || envVar == "1" {
+		return false
+	}
+
+	return true
 }

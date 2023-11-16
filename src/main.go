@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/catalog/tester"
 	"github.com/Parallels/pd-api-service/common"
 	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/constants"
@@ -15,6 +14,7 @@ import (
 	"github.com/Parallels/pd-api-service/security"
 	"github.com/Parallels/pd-api-service/serviceprovider"
 	"github.com/Parallels/pd-api-service/startup"
+	"github.com/Parallels/pd-api-service/tests"
 
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/version"
@@ -65,6 +65,18 @@ func main() {
 	versionSvc.PrintAnsiHeader()
 	ctx := basecontext.NewRootBaseContext()
 	cfg := config.NewConfig()
+
+	// Checking if we just want to test
+	if helper.GetFlagSwitch(constants.TEST_FLAG, false) {
+		if helper.GetFlagSwitch(constants.TEST_CATALOG_PROVIDERS_FLAG, false) {
+			if err := tests.TestCatalogProviders(ctx); err != nil {
+				ctx.LogError(err.Error())
+				os.Exit(1)
+			}
+		}
+
+		os.Exit(0)
+	}
 
 	if helper.GetFlagSwitch(constants.GENERATE_SECURITY_KEY_FLAG, false) {
 		ctx.LogInfo("Generating security key")
@@ -149,23 +161,6 @@ func main() {
 			}
 		}
 	}
-
-	if os.Getenv("ARTIFACTORY_TEST_CONNECTION") != "" {
-		ctx.LogInfo("Testing connection to Artifactory")
-		test := tester.NewTestProvider(ctx, os.Getenv("ARTIFACTORY_TEST_CONNECTION"))
-		err := test.Test()
-		if err != nil {
-			ctx.LogError(err.Error())
-			os.Exit(1)
-		} else {
-			ctx.LogInfo("Connection to Artifactory successful")
-			os.Exit(0)
-		}
-	}
-
-	// filePath := "/Users/cjlapao/VagrantTest/Vagrantfile"
-	// vs := serviceprovider.Get().VagrantService
-	// vs.UpdateVagrantFile(ctx, filePath)
 
 	// Serve the API
 	for {
