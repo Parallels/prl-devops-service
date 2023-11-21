@@ -15,3 +15,8 @@ services:
       TLS_PRIVATE_KEY: ''
       API_PORT: '80'
       API_PREFIX: '/api'
+      ROOR_PASSWORD: ''
+      DISABLE_CATALOG_CACHING: 'false'
+      TOKEN_DURATION_MINUTES: 60
+      MODE: api
+      USE_ORCHESTRATOR_RESOURCES: 'false'

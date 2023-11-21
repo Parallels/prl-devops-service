@@ -1,6 +1,7 @@
 package install
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,9 +19,19 @@ const (
 	MAC_PLIST_DAEMON_NAME = "com.parallels.pd-api-service.plist"
 )
 
-func InstallService(ctx basecontext.ApiContext) error {
+func InstallService(ctx basecontext.ApiContext, configFilePath string) error {
 	ctx.LogInfo("Installing service...")
-	config := getConfigFromEnv()
+	var config ApiServiceConfig
+	var err error
+	if configFilePath != "" {
+		config, err = getConfigFromFile(configFilePath)
+		if err != nil {
+			return err
+		}
+	} else {
+		config = getConfigFromEnv()
+	}
+
 	switch os := runtime.GOOS; os {
 	case "darwin":
 		return installServiceOnMac(ctx, config)
@@ -152,8 +163,69 @@ func getConfigFromEnv() ApiServiceConfig {
 	} else {
 		config.Port = constants.DEFAULT_API_PORT
 	}
+	if os.Getenv(constants.API_PREFIX_ENV_VAR) != "" {
+		config.Prefix = os.Getenv(constants.API_PREFIX_ENV_VAR)
+	} else {
+		config.Prefix = constants.DEFAULT_API_PREFIX
+	}
+	if os.Getenv(constants.LOG_LEVEL_ENV_VAR) != "" {
+		config.LogLevel = os.Getenv(constants.LOG_LEVEL_ENV_VAR)
+	} else {
+		config.LogLevel = "INFO"
+	}
+	if os.Getenv(constants.SECURITY_KEY_ENV_VAR) != "" {
+		config.EncryptionRsaKey = os.Getenv(constants.SECURITY_KEY_ENV_VAR)
+	}
+	if os.Getenv(constants.HMAC_SECRET_ENV_VAR) != "" {
+		config.HmacSecret = os.Getenv(constants.HMAC_SECRET_ENV_VAR)
+	}
+	if os.Getenv(constants.TLS_ENABLED_ENV_VAR) != "" {
+		config.EnableTLS = os.Getenv(constants.TLS_ENABLED_ENV_VAR) == "true"
+	} else {
+		config.EnableTLS = false
+	}
+	if os.Getenv(constants.TLS_CERTIFICATE_ENV_VAR) != "" {
+		config.TLSPrivateKey = os.Getenv(constants.TLS_CERTIFICATE_ENV_VAR)
+	}
+	if os.Getenv(constants.TLS_PRIVATE_KEY_ENV_VAR) != "" {
+		config.TLSPrivateKey = os.Getenv(constants.TLS_PRIVATE_KEY_ENV_VAR)
+	}
+	if os.Getenv(constants.ROOT_PASSWORD_ENV_VAR) != "" {
+		config.RootPassword = os.Getenv(constants.ROOT_PASSWORD_ENV_VAR)
+	}
+	if os.Getenv(constants.DISABLE_CATALOG_CACHING_ENV_VAR) != "" {
+		config.DisableCatalogCaching = os.Getenv(constants.ROOT_PASSWORD_ENV_VAR) == "true"
+	}
+	if os.Getenv(constants.TOKEN_DURATION_MINUTES_ENV_VAR) != "" {
+		config.DisableCatalogCaching = os.Getenv(constants.TOKEN_DURATION_MINUTES_ENV_VAR) == "true"
+	}
+	if os.Getenv(constants.MODE_ENV_VAR) != "" {
+		config.Mode = os.Getenv(constants.MODE_ENV_VAR)
+	}
+	if os.Getenv(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR) != "" {
+		config.UseOrchestratorResources = os.Getenv(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR) == "true"
+	}
 
 	return config
+}
+
+func getConfigFromFile(filePath string) (ApiServiceConfig, error) {
+	result := ApiServiceConfig{}
+
+	if !helper.FileExists(filePath) {
+		return result, errors.New("config file does not exist")
+	}
+
+	content, err := helper.ReadFromFile(filePath)
+	if err != nil {
+		return result, err
+	}
+
+	if err := json.Unmarshal(content, &result); err != nil {
+		return result, err
+	}
+
+	return result, nil
 }
 
 func getExecutablePath() (string, error) {

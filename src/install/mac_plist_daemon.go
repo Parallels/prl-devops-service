@@ -3,19 +3,26 @@ package install
 import (
 	"bytes"
 	"text/template"
+
+	"github.com/Parallels/pd-api-service/constants"
 )
 
 type PlistTemplateData struct {
-	Path             string
-	Port             string
-	RootPassword     string
-	EncryptionRsaKey string
-	HmacSecret       string
-	LogLevel         string
-	EnableTLS        string
-	HostTLSPort      string
-	TlsCertificate   string
-	TlsPrivateKey    string
+	Path                     string
+	Port                     string
+	Prefix                   string
+	RootPassword             string
+	EncryptionRsaKey         string
+	HmacSecret               string
+	LogLevel                 string
+	EnableTLS                string
+	HostTLSPort              string
+	TlsCertificate           string
+	TlsPrivateKey            string
+	DisableCatalogCaching    string
+	TokenDurationMinutes     string
+	Mode                     string
+	UseOrchestratorResources string
 }
 
 var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
@@ -29,26 +36,65 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
   <key>ProgramArguments</key>
   <array>
     <string>{{ .Path }}/pd-api-service</string>
-    <string>--port={{ .Port }}</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>
-    <key>ROOT_PASSWORD</key>
+    {{- if .Port }}
+    <key>` + constants.API_PORT_ENV_VAR + `</key>
+    <string>{{ .Port }}</string>
+    {{- end }}
+    {{- if .Prefix }}
+    <key>` + constants.API_PREFIX_ENV_VAR + `</key>
+    <string>{{ .Prefix }}</string>
+    {{- end }}
+    {{- if .RootPassword }}
+    <key>` + constants.ROOT_PASSWORD_ENV_VAR + `</key>
     <string>{{ .RootPassword }}</string>
-    <key>SECURITY_PRIVATE_KEY</key>
+    {{- end }}
+    {{- if .EncryptionRsaKey }}
+    <key>` + constants.SECURITY_KEY_ENV_VAR + `</key>
     <string>{{ .EncryptionRsaKey }}</string>
-    <key>HMAC_SECRET</key>
+    {{- end }}
+    {{- if .HmacSecret }}
+    <key>` + constants.HMAC_SECRET_ENV_VAR + `</key>
     <string>{{ .HmacSecret }}</string>
-    <key>LOG_LEVEL</key>
+    {{- end }}
+    {{- if .LogLevel }}
+    <key>` + constants.LOG_LEVEL_ENV_VAR + `</key>
     <string>{{ .LogLevel }}</string>
-    <key>TLS_ENABLED</key>
+    {{- end }}
+    {{- if .EnableTLS }}
+    <key>` + constants.TLS_ENABLED_ENV_VAR + `</key>
     <string>{{ .EnableTLS }}</string>
-    <key>TLS_PORT</key>
+    {{- end }}
+    {{- if .HostTLSPort }}
+    <key>` + constants.TLS_PORT_ENV_VAR + `</key>
     <string>{{ .HostTLSPort }}</string>
-    <key>TLS_CERTIFICATE</key>
+    {{- end }}
+    {{- if .TlsCertificate }}
+    <key>` + constants.TLS_CERTIFICATE_ENV_VAR + `</key>
     <string>{{ .TlsCertificate }}</string>
-    <key>TLS_PRIVATE_KEY</key>
+    {{- end }}
+    {{- if .TlsPrivateKey }}
+    <key>` + constants.TLS_PRIVATE_KEY_ENV_VAR + `</key>
     <string>{{ .TlsPrivateKey }}</string>
+    {{- end }}
+    {{- if .DisableCatalogCaching }}
+    <key>` + constants.DISABLE_CATALOG_CACHING_ENV_VAR + `</key>
+    <string>{{ .DisableCatalogCaching }}</string>
+    {{- end }}
+    {{- if .TokenDurationMinutes }}
+    <key>` + constants.TOKEN_DURATION_MINUTES_ENV_VAR + `</key>
+    <string>{{ .TokenDurationMinutes }}</string>
+    {{- end }}
+    {{- if .Mode }}
+    <key>` + constants.MODE_ENV_VAR + `</key>
+    <string>{{ .Mode }}</string>
+    {{- end }}
+    {{- if .UseOrchestratorResources }}
+    <key>` + constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR + `</key>
+    <string>{{ .UseOrchestratorResources }}</string>
+    {{- end }}
   </dict>
   <key>RunAtLoad</key>
   <true/>
@@ -71,18 +117,27 @@ func generatePlist(path string, config ApiServiceConfig) (string, error) {
 	// Execute the template with a value
 	var tpl bytes.Buffer
 	templateData := PlistTemplateData{
-		Path:             path,
-		Port:             config.Port,
-		RootPassword:     config.RootPassword,
-		EncryptionRsaKey: config.EncryptionRsaKey,
-		HmacSecret:       config.HmacSecret,
-		LogLevel:         config.LogLevel,
-		HostTLSPort:      config.TLSPort,
-		TlsCertificate:   config.TLSCertificate,
-		TlsPrivateKey:    config.TLSPrivateKey,
+		Path:                 path,
+		Port:                 config.Port,
+		Prefix:               config.Prefix,
+		RootPassword:         config.RootPassword,
+		EncryptionRsaKey:     config.EncryptionRsaKey,
+		HmacSecret:           config.HmacSecret,
+		LogLevel:             config.LogLevel,
+		HostTLSPort:          config.TLSPort,
+		TlsCertificate:       config.TLSCertificate,
+		TlsPrivateKey:        config.TLSPrivateKey,
+		TokenDurationMinutes: config.TokenDurationMinutes,
+		Mode:                 config.Mode,
 	}
 	if config.EnableTLS {
 		templateData.EnableTLS = "true"
+	}
+	if config.DisableCatalogCaching {
+		templateData.DisableCatalogCaching = "true"
+	}
+	if config.UseOrchestratorResources {
+		templateData.UseOrchestratorResources = "true"
 	}
 
 	err = tmpl.Execute(&tpl, templateData)
