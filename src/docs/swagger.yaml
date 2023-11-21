@@ -1295,7 +1295,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop API
-  version: "1.0"
+  version: 0.2.2
 paths:
   /health/probe:
     get:
