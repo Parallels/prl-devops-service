@@ -34,11 +34,9 @@ func (r *ApiKeyRequest) Validate() error {
 }
 
 type ApiKeyResponse struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Key       string `json:"key"`
-	Revoked   bool   `json:"revoked,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
-	UpdatedAt string `json:"updated_at,omitempty"`
-	RevokedAt string `json:"revoked_at,omitempty"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Key     string `json:"key"`
+	Encoded string `json:"encoded,omitempty"`
+	Revoked bool   `json:"revoked,omitempty"`
 }

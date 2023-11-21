@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
 	"github.com/Parallels/pd-api-service/serviceprovider"
@@ -52,6 +53,7 @@ func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/config/hardware").
+		WithRequiredClaim(constants.LIST_CLAIM).
 		WithHandler(GetHardwareInfo()).
 		Register()
 

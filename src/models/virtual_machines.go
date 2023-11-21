@@ -3,47 +3,49 @@ package models
 type ParallelsVMs []ParallelsVM
 
 type ParallelsVM struct {
-	User                  string               `json:"user"`
-	ID                    string               `json:"ID"`
-	Name                  string               `json:"Name"`
-	Description           string               `json:"Description"`
-	Type                  string               `json:"Type"`
-	State                 string               `json:"State"`
-	OS                    string               `json:"OS"`
-	Template              string               `json:"Template"`
-	Uptime                string               `json:"Uptime"`
-	HomePath              string               `json:"Home path"`
-	Home                  string               `json:"Home"`
-	RestoreImage          string               `json:"Restore Image"`
-	GuestTools            GuestTools           `json:"GuestTools"`
-	MouseAndKeyboard      MouseAndKeyboard     `json:"Mouse and Keyboard"`
-	USBAndBluetooth       USBAndBluetooth      `json:"USB and Bluetooth"`
-	StartupAndShutdown    StartupAndShutdown   `json:"Startup and Shutdown"`
-	Optimization          Optimization         `json:"Optimization"`
-	TravelMode            TravelMode           `json:"Travel mode"`
-	Security              Security             `json:"Security"`
-	SmartGuard            Expiration           `json:"Smart Guard"`
-	Modality              Modality             `json:"Modality"`
-	Fullscreen            Fullscreen           `json:"Fullscreen"`
-	Coherence             Coherence            `json:"Coherence"`
-	TimeSynchronization   TimeSynchronization  `json:"Time Synchronization"`
-	Expiration            Expiration           `json:"Expiration"`
-	BootOrder             string               `json:"Boot order"`
-	BIOSType              string               `json:"BIOS type"`
-	EFISecureBoot         string               `json:"EFI Secure boot"`
-	AllowSelectBootDevice string               `json:"Allow select boot device"`
-	ExternalBootDevice    string               `json:"External boot device"`
-	SMBIOSSettings        SMBIOSSettings       `json:"SMBIOS settings"`
-	Hardware              Hardware             `json:"Hardware"`
-	HostSharedFolders     HostSharedFolders    `json:"Host Shared Folders"`
-	HostDefinedSharing    string               `json:"Host defined sharing"`
-	SharedProfile         Expiration           `json:"Shared Profile"`
-	SharedApplications    SharedApplications   `json:"Shared Applications"`
-	SmartMount            SmartMount           `json:"SmartMount"`
-	MiscellaneousSharing  MiscellaneousSharing `json:"Miscellaneous Sharing"`
-	Advanced              Advanced             `json:"Advanced"`
-	PrintManagement       *PrintManagement     `json:"Print Management,omitempty"`
-	GuestSharedFolders    *GuestSharedFolders  `json:"Guest Shared Folders,omitempty"`
+	Host                  string                 `json:"host,omitempty"`
+	HostId                string                 `json:"host_id,omitempty"`
+	User                  string                 `json:"user"`
+	ID                    string                 `json:"ID"`
+	Name                  string                 `json:"Name"`
+	Description           string                 `json:"Description"`
+	Type                  string                 `json:"Type"`
+	State                 string                 `json:"State"`
+	OS                    string                 `json:"OS"`
+	Template              string                 `json:"Template"`
+	Uptime                string                 `json:"Uptime"`
+	HomePath              string                 `json:"Home path"`
+	Home                  string                 `json:"Home"`
+	RestoreImage          string                 `json:"Restore Image"`
+	GuestTools            GuestTools             `json:"GuestTools"`
+	MouseAndKeyboard      MouseAndKeyboard       `json:"Mouse and Keyboard"`
+	USBAndBluetooth       USBAndBluetooth        `json:"USB and Bluetooth"`
+	StartupAndShutdown    StartupAndShutdown     `json:"Startup and Shutdown"`
+	Optimization          Optimization           `json:"Optimization"`
+	TravelMode            TravelMode             `json:"Travel mode"`
+	Security              Security               `json:"Security"`
+	SmartGuard            Expiration             `json:"Smart Guard"`
+	Modality              Modality               `json:"Modality"`
+	Fullscreen            Fullscreen             `json:"Fullscreen"`
+	Coherence             Coherence              `json:"Coherence"`
+	TimeSynchronization   TimeSynchronization    `json:"Time Synchronization"`
+	Expiration            Expiration             `json:"Expiration"`
+	BootOrder             string                 `json:"Boot order"`
+	BIOSType              string                 `json:"BIOS type"`
+	EFISecureBoot         string                 `json:"EFI Secure boot"`
+	AllowSelectBootDevice string                 `json:"Allow select boot device"`
+	ExternalBootDevice    string                 `json:"External boot device"`
+	SMBIOSSettings        SMBIOSSettings         `json:"SMBIOS settings"`
+	Hardware              Hardware               `json:"Hardware"`
+	HostSharedFolders     map[string]interface{} `json:"Host Shared Folders"`
+	HostDefinedSharing    string                 `json:"Host defined sharing"`
+	SharedProfile         Expiration             `json:"Shared Profile"`
+	SharedApplications    SharedApplications     `json:"Shared Applications"`
+	SmartMount            SmartMount             `json:"SmartMount"`
+	MiscellaneousSharing  MiscellaneousSharing   `json:"Miscellaneous Sharing"`
+	Advanced              Advanced               `json:"Advanced"`
+	PrintManagement       PrintManagement        `json:"Print Management,omitempty"`
+	GuestSharedFolders    GuestSharedFolders     `json:"Guest Shared Folders,omitempty"`
 }
 
 type Advanced struct {
@@ -79,8 +81,8 @@ type GuestSharedFolders struct {
 }
 
 type GuestTools struct {
-	State   string  `json:"state"`
-	Version *string `json:"version,omitempty"`
+	State   string `json:"state"`
+	Version string `json:"version,omitempty"`
 }
 
 type Hardware struct {
@@ -106,10 +108,10 @@ type CPU struct {
 }
 
 type Cdrom0 struct {
-	Enabled bool    `json:"enabled"`
-	Port    string  `json:"port"`
-	Image   string  `json:"image"`
-	State   *string `json:"state,omitempty"`
+	Enabled bool   `json:"enabled"`
+	Port    string `json:"port"`
+	Image   string `json:"image"`
+	State   string `json:"state,omitempty"`
 }
 
 type Hdd0 struct {
@@ -153,19 +155,6 @@ type Video struct {
 	HighResolutionInGuest string `json:"high-resolution-in-guest"`
 	NativeScalingInGuest  string `json:"native-scaling-in-guest"`
 	AutomaticVideoMemory  string `json:"automatic-video-memory"`
-}
-
-type HostSharedFolders struct {
-	Enabled        bool  `json:"enabled"`
-	PackerExamples *Code `json:"packer-examples,omitempty"`
-	Demo           *Code `json:"demo,omitempty"`
-	Code           *Code `json:"code,omitempty"`
-}
-
-type Code struct {
-	Enabled bool   `json:"enabled"`
-	Path    string `json:"path"`
-	Mode    string `json:"mode"`
 }
 
 type MiscellaneousSharing struct {
@@ -233,10 +222,10 @@ type SharedApplications struct {
 }
 
 type SmartMount struct {
-	Enabled         bool    `json:"enabled"`
-	RemovableDrives *string `json:"Removable drives,omitempty"`
-	CDDVDDrives     *string `json:"CD/DVD drives,omitempty"`
-	NetworkShares   *string `json:"Network shares,omitempty"`
+	Enabled         bool   `json:"enabled"`
+	RemovableDrives string `json:"Removable drives,omitempty"`
+	CDDVDDrives     string `json:"CD/DVD drives,omitempty"`
+	NetworkShares   string `json:"Network shares,omitempty"`
 }
 
 type StartupAndShutdown struct {

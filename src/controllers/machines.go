@@ -6,7 +6,10 @@ import (
 	"net/http"
 
 	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/catalog"
 	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
 	"github.com/Parallels/pd-api-service/serviceprovider"
@@ -134,7 +137,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 			Register()
 
 		restapi.NewController().
-			WithMethod(restapi.POST).
+			WithMethod(restapi.PUT).
 			WithVersion(version).
 			WithPath("/machines/{id}/set").
 			WithRequiredClaim(constants.UPDATE_VM_CLAIM).
@@ -142,7 +145,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 			Register()
 
 		restapi.NewController().
-			WithMethod(restapi.POST).
+			WithMethod(restapi.PUT).
 			WithVersion(version).
 			WithPath("/machines/{id}/execute").
 			WithRequiredClaim(constants.EXECUTE_COMMAND_VM_CLAIM).
@@ -150,7 +153,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 			Register()
 
 		restapi.NewController().
-			WithMethod(restapi.POST).
+			WithMethod(restapi.PUT).
 			WithVersion(version).
 			WithPath("/machines/{id}/rename").
 			WithRequiredClaim(constants.UPDATE_VM_CLAIM).
@@ -539,7 +542,7 @@ func DeleteVirtualMachineHandler() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/status [post]
+// @Router			/v1/machines/{id}/status [get]
 func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -577,7 +580,7 @@ func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 // @Failure		401				{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/set [post]
+// @Router			/v1/machines/{id}/set [put]
 func SetVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -638,7 +641,7 @@ func SetVirtualMachineHandler() restapi.ControllerHandler {
 // @Failure		401				{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/execute [post]
+// @Router			/v1/machines/{id}/execute [put]
 func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -679,13 +682,17 @@ func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 // @Failure		401				{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/rename [post]
+// @Router			/v1/machines/{id}/rename [put]
 func RenameVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.RenameVirtualMachineRequest
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
+
+		params := mux.Vars(r)
+		id := params["id"]
+		request.ID = id
 
 		http_helper.MapRequestBody(r, &request)
 		if err := request.Validate(); err != nil {
@@ -695,10 +702,6 @@ func RenameVirtualMachineHandler() restapi.ControllerHandler {
 			})
 			return
 		}
-
-		params := mux.Vars(r)
-		id := params["id"]
-		request.ID = id
 
 		if err := svc.RenameVm(ctx, request); err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
@@ -799,8 +802,8 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Unregisters a virtual machine
-// @Description	This endpoint unregisters a virtual machine
+// @Summary		Unregister a virtual machine
+// @Description	This endpoint unregister a virtual machine
 // @Tags			Machines
 // @Produce		json
 // @Param			id					path		string									true	"Machine ID"
@@ -869,7 +872,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 
 		// Decide which service to use to create the VM
 		if request.PackerTemplate != nil {
-			dbService, err := GetDatabaseService(ctx)
+			dbService, err := serviceprovider.GetDatabaseService(ctx)
 			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 				return
@@ -893,11 +896,13 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 
 			template.Name = request.Name
 			template.Owner = request.Owner
-			if request.PackerTemplate.Cpu != "" {
-				template.Specs["cpu"] = request.PackerTemplate.Cpu
-			}
-			if request.PackerTemplate.Memory != "" {
-				template.Specs["memory"] = request.PackerTemplate.Memory
+			if request.PackerTemplate.Specs != nil {
+				if request.PackerTemplate.Specs.Cpu != "" {
+					template.Specs["cpu"] = request.PackerTemplate.Specs.Cpu
+				}
+				if request.PackerTemplate.Specs.Memory != "" {
+					template.Specs["memory"] = request.PackerTemplate.Specs.Memory
+				}
 			}
 
 			parallelsDesktopService := provider.ParallelsDesktopService
@@ -918,87 +923,27 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Machine created using packer template: %v", vm.ID)
 		} else if request.VagrantBox != nil {
-			vagrantService := provider.VagrantService
-			parallelsDesktopService := provider.ParallelsDesktopService
-
-			// Updating plugins
-			// if err := vagrantService.UpdatePlugins(request.Owner); err != nil {
-			// 	ReturnApiError(ctx, w, models.NewFromError(err))
-			// 	return
-			// }
-
-			if request.VagrantBox.Box != "" {
-				// Generating the vagrant file
-				if content, err := vagrantService.GenerateVagrantFile(ctx, *request.VagrantBox); err != nil {
-					ctx.LogError("Error generating vagrant file: %v", err)
-					ctx.LogError("Vagrant file content: %v", content)
-					ReturnApiError(ctx, w, models.NewFromError(err))
-					return
-				}
-			} else {
-				if !helper.FileExists(request.VagrantBox.VagrantFilePath) {
-					ReturnApiError(ctx, w, models.ApiErrorResponse{
-						Message: fmt.Sprintf("Vagrant file %v not found", request.VagrantBox.VagrantFilePath),
-						Code:    http.StatusNotFound,
-					})
-					return
-				}
-			}
-
-			// Creating the box
-			if err := vagrantService.Up(ctx, *request.VagrantBox); err != nil {
+			response, err := createVagrantBox(ctx, request)
+			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
 
-			var response models.CreateVirtualMachineResponse
-			if request.VagrantBox.Box == "" {
-				response = models.CreateVirtualMachineResponse{
-					Name:         request.Name,
-					ID:           "unknown",
-					CurrentState: "unknown",
-					Owner:        request.Owner,
-				}
-				vm, err := parallelsDesktopService.GetVm(ctx, request.Name)
-				if err != nil {
-					ReturnApiError(ctx, w, models.NewFromError(err))
-					return
-				}
-
-				if vm != nil {
-					response.ID = vm.ID
-					response.CurrentState = vm.State
-					response.Name = vm.Name
-					response.Owner = vm.User
-				}
-
-			} else {
-				vm, err := parallelsDesktopService.GetVm(ctx, request.Name)
-				if err != nil {
-					ReturnApiError(ctx, w, models.NewFromError(err))
-					return
-				}
-
-				if vm == nil {
-					ReturnApiError(ctx, w, models.ApiErrorResponse{
-						Message: "The machine was not found",
-						Code:    http.StatusNotFound,
-					})
-					return
-				}
-
-				response = models.CreateVirtualMachineResponse{
-					Name:         vm.Name,
-					ID:           vm.ID,
-					CurrentState: vm.State,
-					Owner:        vm.User,
-				}
-			}
-
-			// Write the JSON data to the response
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Machine created using vagrant box: %v", response.ID)
+			return
+		} else if request.CatalogManifest != nil {
+			response, err := createCatalogMachine(ctx, request)
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(response)
+			ctx.LogInfo("Machine created using catalog: %v", response.ID)
+			return
 		} else {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: no template was specified",
@@ -1007,4 +952,198 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 	}
+}
+
+func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
+	provider := serviceprovider.Get()
+
+	vagrantService := provider.VagrantService
+	parallelsDesktopService := provider.ParallelsDesktopService
+
+	// Updating plugins
+	// if err := vagrantService.UpdatePlugins(request.Owner); err != nil {
+	// 	ReturnApiError(ctx, w, models.NewFromError(err))
+	// 	return
+	// }
+
+	if request.VagrantBox.Box != "" {
+		// Generating the vagrant file
+		if content, err := vagrantService.GenerateVagrantFile(ctx, *request.VagrantBox); err != nil {
+			ctx.LogError("Error generating vagrant file: %v", err)
+			ctx.LogError("Vagrant file content: %v", content)
+			return nil, err
+		}
+	} else {
+		if !helper.FileExists(request.VagrantBox.VagrantFilePath) {
+			return nil, errors.NewWithCodef(400, "Vagrant file %v not found", request.VagrantBox.VagrantFilePath)
+		}
+	}
+
+	// Creating the box
+	if err := vagrantService.Up(ctx, *request.VagrantBox); err != nil {
+		return nil, err
+	}
+
+	var response models.CreateVirtualMachineResponse
+	if request.VagrantBox.Box == "" {
+		response = models.CreateVirtualMachineResponse{
+			Name:         request.Name,
+			ID:           "unknown",
+			CurrentState: "unknown",
+			Owner:        request.Owner,
+		}
+
+		vm, err := parallelsDesktopService.GetVm(ctx, request.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		if vm != nil {
+			response.ID = vm.ID
+			response.CurrentState = vm.State
+			response.Name = vm.Name
+			response.Owner = vm.User
+		}
+
+	} else {
+		vm, err := parallelsDesktopService.GetVm(ctx, request.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		if vm == nil {
+			return nil, errors.NewWithCode("The machine was not found", 404)
+		}
+
+		response = models.CreateVirtualMachineResponse{
+			Name:         vm.Name,
+			ID:           vm.ID,
+			CurrentState: vm.State,
+			Owner:        vm.User,
+		}
+	}
+
+	if response.CurrentState == "running" || response.CurrentState == "unknown" {
+		parallelsDesktopService.StopVm(ctx, response.ID)
+		response.CurrentState = "stopped"
+	}
+
+	if request.VagrantBox.Specs != nil {
+		configureRequest := models.VirtualMachineConfigRequest{
+			Operations: make([]*models.VirtualMachineConfigRequestOperation, 0),
+		}
+
+		if request.VagrantBox.Specs.Cpu != "" {
+			configureRequest.Operations = append(configureRequest.Operations, &models.VirtualMachineConfigRequestOperation{
+				Group:     "cpu",
+				Operation: "set",
+				Value:     request.VagrantBox.Specs.Cpu,
+			})
+		}
+
+		if request.VagrantBox.Specs.Memory != "" {
+			configureRequest.Operations = append(configureRequest.Operations, &models.VirtualMachineConfigRequestOperation{
+				Group:     "memory",
+				Operation: "set",
+				Value:     request.VagrantBox.Specs.Memory,
+			})
+		}
+
+		if err := parallelsDesktopService.ConfigureVm(ctx, response.ID, &configureRequest); err != nil {
+			return nil, err
+		}
+	}
+
+	if request.StartOnCreate && response.CurrentState == "stopped" {
+		err := parallelsDesktopService.StartVm(ctx, response.ID)
+		if err != nil {
+			return nil, err
+		}
+		response.CurrentState = "running"
+	}
+
+	return &response, nil
+}
+
+func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
+	provider := serviceprovider.Get()
+
+	parallelsDesktopService := provider.ParallelsDesktopService
+
+	var response models.CreateVirtualMachineResponse
+	pullRequest := mappers.MapPullCatalogManifestRequestFromCreateCatalogVirtualMachineRequest(*request.CatalogManifest)
+	if err := pullRequest.Validate(); err != nil {
+		return nil, err
+	}
+
+	manifest := catalog.NewManifestService(ctx)
+	resultManifest := manifest.Pull(ctx, &pullRequest)
+	if resultManifest.HasErrors() {
+		errorMessage := "Error pulling manifest: \n"
+		for _, err := range resultManifest.Errors {
+			errorMessage += "\n" + err.Error() + " "
+		}
+
+		return nil, errors.NewWithCode(errorMessage, 400)
+	}
+
+	resultData := mappers.BasePullCatalogManifestResponseToApi(*resultManifest)
+	resultData.ID = resultManifest.ID
+
+	response = models.CreateVirtualMachineResponse{
+		Name:  resultData.MachineName,
+		ID:    resultData.ID,
+		Owner: request.Owner,
+	}
+
+	vm, err := parallelsDesktopService.GetVm(ctx, resultData.ID)
+	if err != nil {
+		return nil, err
+	}
+	if vm == nil {
+		return nil, errors.NewWithCode("The machine was not found", 404)
+	}
+
+	response.CurrentState = vm.State
+
+	if response.CurrentState == "running" || response.CurrentState == "unknown" {
+		parallelsDesktopService.StopVm(ctx, response.ID)
+		response.CurrentState = "stopped"
+	}
+
+	if request.CatalogManifest.Specs != nil {
+		configureRequest := models.VirtualMachineConfigRequest{
+			Operations: make([]*models.VirtualMachineConfigRequestOperation, 0),
+		}
+
+		if request.CatalogManifest.Specs.Cpu != "" {
+			configureRequest.Operations = append(configureRequest.Operations, &models.VirtualMachineConfigRequestOperation{
+				Group:     "cpu",
+				Operation: "set",
+				Value:     request.CatalogManifest.Specs.Cpu,
+			})
+		}
+
+		if request.CatalogManifest.Specs.Memory != "" {
+			configureRequest.Operations = append(configureRequest.Operations, &models.VirtualMachineConfigRequestOperation{
+				Group:     "memory",
+				Operation: "set",
+				Value:     request.CatalogManifest.Specs.Memory,
+			})
+		}
+
+		if err := parallelsDesktopService.ConfigureVm(ctx, response.ID, &configureRequest); err != nil {
+			return nil, err
+		}
+	}
+
+	if request.StartOnCreate && response.CurrentState == "stopped" {
+		err := parallelsDesktopService.StartVm(ctx, response.ID)
+		if err != nil {
+			return nil, err
+		}
+		response.CurrentState = "running"
+	}
+
+	return &response, nil
 }

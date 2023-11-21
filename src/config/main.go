@@ -17,10 +17,15 @@ import (
 	"github.com/cjlapao/common-go/security"
 )
 
-type Config struct{}
+type Config struct {
+	mode                string
+	includeOwnResources bool
+}
 
 func NewConfig() *Config {
-	return &Config{}
+	return &Config{
+		mode: "api",
+	}
 }
 
 func (c *Config) GetApiPort() string {
@@ -197,4 +202,62 @@ func (c *Config) IsCatalogCachingEnable() bool {
 	}
 
 	return true
+}
+
+func (c *Config) GetSystemMode() string {
+	c.mode = os.Getenv(constants.MODE_ENV_VAR)
+	if c.mode != "" {
+		return c.mode
+	}
+
+	c.mode = helper.GetFlagValue(constants.MODE_FLAG, "unknown")
+	if c.mode == "" {
+		c.mode = "api"
+	}
+
+	return c.mode
+}
+
+func (c *Config) GetLocalhost() string {
+	schema := "http"
+	host := "localhost"
+	port := c.GetApiPort()
+	if c.TLSEnabled() {
+		schema = "https"
+		port = c.GetTLSPort()
+	}
+
+	return schema + "://" + host + ":" + port
+}
+
+func (c *Config) IsOrchestrator() bool {
+	return c.GetSystemMode() == constants.ORCHESTRATOR_MODE
+}
+
+func (c *Config) IsCatalog() bool {
+	return c.GetSystemMode() == constants.CATALOG_MODE
+}
+
+func (c *Config) IsApi() bool {
+	return c.GetSystemMode() == constants.API_MODE
+}
+
+func (c *Config) UseOrchestratorResources() bool {
+	ownResources := os.Getenv(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR)
+	if ownResources != "" {
+		if ownResources == "true" || ownResources == "1" {
+			c.includeOwnResources = true
+			return true
+		}
+	}
+
+	ownResources = helper.GetFlagValue(constants.USE_ORCHESTRATOR_RESOURCES_FLAG, "unknown")
+	if ownResources != "" {
+		if ownResources == "true" || ownResources == "1" {
+			c.includeOwnResources = true
+			return true
+		}
+	}
+
+	return false
 }

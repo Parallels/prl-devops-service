@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
@@ -72,7 +73,7 @@ func registerPackerTemplatesHandlers(ctx basecontext.ApiContext, version string)
 func GetPackerTemplatesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -114,7 +115,7 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 func GetPackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -170,7 +171,7 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -216,7 +217,7 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -255,7 +256,7 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 func DeletePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return

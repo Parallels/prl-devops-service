@@ -57,7 +57,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return

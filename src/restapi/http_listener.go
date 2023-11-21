@@ -64,6 +64,7 @@ type HttpListener struct {
 
 var globalHttpListener *HttpListener
 var shutdown chan bool
+var Initialized chan bool = make(chan bool, 1)
 var needsRestart chan bool
 
 func Get() *HttpListener {
@@ -78,6 +79,7 @@ func GetRestartChannel() chan bool {
 func NewHttpListener() *HttpListener {
 	needsRestart = make(chan bool, 10)
 	shutdown = make(chan bool, 1)
+
 	if globalHttpListener != nil {
 		globalHttpListener = nil
 		if len(globalHttpListener.Servers) > 0 {
@@ -308,6 +310,7 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 		}
 	}
 
+	Initialized <- true
 	l.WaitAndShutdown()
 	<-done
 

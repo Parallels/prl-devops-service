@@ -27,32 +27,41 @@ const (
 	CURRENT_USER_ENV_VAR           = "PD_CURRENT_USER"
 	DEFAULT_TOKEN_DURATION_MINUTES = 60
 	DEFAULT_CATALOG_CACHE_FOLDER   = "./catalog_cache"
+
+	API_MODE          = "api"
+	CLI_MODE          = "cli"
+	ORCHESTRATOR_MODE = "orchestrator"
+	CATALOG_MODE      = "catalog"
 )
 
 const (
-	HMAC_SECRET_ENV_VAR             = "HMAC_SECRET"
-	LOG_LEVEL_ENV_VAR               = "LOG_LEVEL"
-	SECURITY_KEY_ENV_VAR            = "SECURITY_PRIVATE_KEY"
-	TLS_ENABLED_ENV_VAR             = "TLS_ENABLED"
-	TLS_PORT_ENV_VAR                = "TLS_PORT"
-	TLS_CERTIFICATE_ENV_VAR         = "TLS_CERTIFICATE"
-	TLS_PRIVATE_KEY_ENV_VAR         = "TLS_PRIVATE_KEY"
-	API_PORT_ENV_VAR                = "API_PORT"
-	API_PREFIX_ENV_VAR              = "API_PREFIX"
-	ROOT_PASSWORD_ENV_VAR           = "ROOT_PASSWORD"
-	DISABLE_CATALOG_CACHING_ENV_VAR = "DISABLE_CATALOG_CACHING"
-	TOKEN_DURATION_MINUTES_ENV_VAR  = "TOKEN_DURATION_MINUTES"
+	HMAC_SECRET_ENV_VAR                = "HMAC_SECRET"
+	LOG_LEVEL_ENV_VAR                  = "LOG_LEVEL"
+	SECURITY_KEY_ENV_VAR               = "SECURITY_PRIVATE_KEY"
+	TLS_ENABLED_ENV_VAR                = "TLS_ENABLED"
+	TLS_PORT_ENV_VAR                   = "TLS_PORT"
+	TLS_CERTIFICATE_ENV_VAR            = "TLS_CERTIFICATE"
+	TLS_PRIVATE_KEY_ENV_VAR            = "TLS_PRIVATE_KEY"
+	API_PORT_ENV_VAR                   = "API_PORT"
+	API_PREFIX_ENV_VAR                 = "API_PREFIX"
+	ROOT_PASSWORD_ENV_VAR              = "ROOT_PASSWORD"
+	DISABLE_CATALOG_CACHING_ENV_VAR    = "DISABLE_CATALOG_CACHING"
+	TOKEN_DURATION_MINUTES_ENV_VAR     = "TOKEN_DURATION_MINUTES"
+	MODE_ENV_VAR                       = "MODE"
+	USE_ORCHESTRATOR_RESOURCES_ENV_VAR = "USE_ORCHESTRATOR_RESOURCES"
 )
 
 const (
-	API_PORT_FLAG               = "port"
-	UPDATE_ROOT_PASSWORD_FLAG   = "update-root-pass"
-	GENERATE_SECURITY_KEY_FLAG  = "gen-rsa"
-	FILE_FLAG                   = "file"
-	INSTALL_SERVICE_FLAG        = "install"
-	UNINSTALL_SERVICE_FLAG      = "uninstall"
-	TEST_FLAG                   = "test"
-	TEST_CATALOG_PROVIDERS_FLAG = "catalog-providers"
+	TEST_FLAG                       = "test"
+	TEST_CATALOG_PROVIDERS_FLAG     = "catalog-providers"
+	API_PORT_FLAG                   = "port"
+	UPDATE_ROOT_PASSWORD_FLAG       = "update-root-pass"
+	GENERATE_SECURITY_KEY_FLAG      = "gen-rsa"
+	FILE_FLAG                       = "file"
+	INSTALL_SERVICE_FLAG            = "install"
+	UNINSTALL_SERVICE_FLAG          = "uninstall"
+	MODE_FLAG                       = "mode"
+	USE_ORCHESTRATOR_RESOURCES_FLAG = "use-orchestrator-resources"
 )
 
 const (
