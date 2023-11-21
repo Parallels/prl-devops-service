@@ -1,6 +1,8 @@
 package startup
 
 import (
+	"encoding/base64"
+
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/data/models"
@@ -34,6 +36,16 @@ func Start() {
 			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
 				hostName := config.GetLocalhost()
 				localhost, _ := dbService.GetOrchestratorHost(ctx, hostName)
+				_, err := dbService.CreateApiKey(ctx, models.ApiKey{
+					Key:    "orchestrator_key",
+					Name:   "orchestrator_key",
+					Secret: serviceprovider.Get().HardwareSecret,
+				})
+				if err != nil {
+					ctx.LogError("Error creating orchestrator key: %v", err)
+					panic(err)
+				}
+
 				if localhost == nil {
 					ctx.LogInfo("Creating local orchestrator host")
 					dbService.CreateOrchestratorHost(ctx, models.OrchestratorHost{
@@ -45,8 +57,7 @@ func Start() {
 						Schema:      "http",
 						Port:        config.GetApiPort(),
 						Authentication: &models.OrchestratorHostAuthentication{
-							Username: "root@localhost",
-							Password: serviceprovider.Get().HardwareSecret,
+							ApiKey: base64.StdEncoding.EncodeToString([]byte("orchestrator_key:" + serviceprovider.Get().HardwareSecret)),
 						},
 					})
 				}
