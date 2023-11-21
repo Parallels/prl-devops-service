@@ -2978,7 +2978,7 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/status:
-    post:
+    get:
       description: This endpoint returns the current state of a virtual machine
       parameters:
       - description: Machine ID
@@ -3492,6 +3492,41 @@ paths:
       summary: Configures orchestrator host virtual machine
       tags:
       - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/status:
+    get:
+      description: This endpoint returns orchestrator host virtual machine status
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ParallelsVM'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Get orchestrator host virtual machine status
+      tags:
+      - Orchestrator
   /v1/orchestrator/hosts/{id}/machines/{vmId}/unregister:
     post:
       description: This endpoint unregister a virtual machine in a orchestrator host
@@ -3626,31 +3661,7 @@ paths:
       summary: Creates a virtual machine in one of the hosts for the orchestrator
       tags:
       - Orchestrator
-  /v1/orchestrator/overview/resources:
-    get:
-      description: This endpoint returns orchestrator resource overview
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.HostResourceOverviewResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.OAuthErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      - BearerAuth: []
-      summary: Get orchestrator resource overview
-      tags:
-      - Orchestrator
-  /v1/orchestrator/overview/resources/{id}:
+  /v1/orchestrator/overview/{id}/resources:
     get:
       description: This endpoint returns orchestrator host resources
       parameters:
@@ -3678,6 +3689,30 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Get orchestrator host resources
+      tags:
+      - Orchestrator
+  /v1/orchestrator/overview/resources:
+    get:
+      description: This endpoint returns orchestrator resource overview
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.HostResourceOverviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Get orchestrator resource overview
       tags:
       - Orchestrator
   /v1/parallels_desktop/key:
