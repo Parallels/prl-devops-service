@@ -6,10 +6,15 @@ import (
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/data/models"
+	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/orchestrator"
 	"github.com/Parallels/pd-api-service/serviceprovider"
 	"github.com/Parallels/pd-api-service/serviceprovider/system"
+)
+
+const (
+	ORCHESTRATOR_KEY_NAME = "orchestrator_key"
 )
 
 func Start() {
@@ -36,14 +41,26 @@ func Start() {
 			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
 				hostName := config.GetLocalhost()
 				localhost, _ := dbService.GetOrchestratorHost(ctx, hostName)
-				_, err := dbService.CreateApiKey(ctx, models.ApiKey{
-					Key:    "orchestrator_key",
-					Name:   "orchestrator_key",
-					Secret: serviceprovider.Get().HardwareSecret,
-				})
+				apiKey, err := dbService.GetApiKey(ctx, ORCHESTRATOR_KEY_NAME)
 				if err != nil {
-					ctx.LogError("Error creating orchestrator key: %v", err)
-					panic(err)
+					if errors.GetSystemErrorCode(err) != 404 {
+						ctx.LogError("Error getting orchestrator key: %v", err)
+						panic(err)
+					}
+				}
+
+				if apiKey == nil {
+					_, err := dbService.CreateApiKey(ctx, models.ApiKey{
+						Key:    ORCHESTRATOR_KEY_NAME,
+						Name:   ORCHESTRATOR_KEY_NAME,
+						Secret: serviceprovider.Get().HardwareSecret,
+					})
+					if err != nil {
+						if errors.GetSystemErrorCode(err) != 404 {
+							ctx.LogError("Error creating orchestrator key: %v", err)
+							panic(err)
+						}
+					}
 				}
 
 				if localhost == nil {
@@ -57,7 +74,7 @@ func Start() {
 						Schema:      "http",
 						Port:        config.GetApiPort(),
 						Authentication: &models.OrchestratorHostAuthentication{
-							ApiKey: base64.StdEncoding.EncodeToString([]byte("orchestrator_key:" + serviceprovider.Get().HardwareSecret)),
+							ApiKey: base64.StdEncoding.EncodeToString([]byte(ORCHESTRATOR_KEY_NAME + serviceprovider.Get().HardwareSecret)),
 						},
 					})
 				}
@@ -70,6 +87,11 @@ func Start() {
 				if localhost != nil {
 					ctx.LogInfo("Removing local orchestrator host")
 					dbService.DeleteOrchestratorHost(ctx, localhost.ID)
+				}
+				apiKey, _ := dbService.GetApiKey(ctx, ORCHESTRATOR_KEY_NAME)
+				if apiKey != nil {
+					ctx.LogInfo("Removing local orchestrator key")
+					dbService.DeleteApiKey(ctx, apiKey.ID)
 				}
 			}
 

@@ -23,5 +23,6 @@ func (s *OrchestratorService) DeleteHostVirtualMachine(host *models.Orchestrator
 		return errors.NewWithCodef(400, "Error deleting virtual machine for host %s: %v", host.Host, apiResponse.StatusCode)
 	}
 
+	s.Refresh()
 	return nil
 }

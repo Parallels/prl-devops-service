@@ -218,6 +218,20 @@ func (c *Config) GetSystemMode() string {
 	return c.mode
 }
 
+func (c *Config) GetOrchestratorPullFrequency() int {
+	frequency := os.Getenv(constants.ORCHESTRATOR_PULL_FREQUENCY_SECONDS_ENV_VAR)
+	if frequency == "" {
+		return constants.DEFAULT_ORCHESTRATOR_PULL_FREQUENCY_SEC
+	}
+
+	intVal, err := strconv.Atoi(frequency)
+	if err != nil {
+		return constants.DEFAULT_ORCHESTRATOR_PULL_FREQUENCY_SEC
+	}
+
+	return intVal
+}
+
 func (c *Config) GetLocalhost() string {
 	schema := "http"
 	host := "localhost"

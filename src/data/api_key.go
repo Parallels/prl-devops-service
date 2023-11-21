@@ -51,7 +51,7 @@ func (j *JsonDatabase) CreateApiKey(ctx basecontext.ApiContext, apiKey models.Ap
 	}
 
 	if a, _ := j.GetApiKey(ctx, apiKey.ID); a != nil {
-		return nil, ErrApiKeyNotFound
+		return nil, ErrApiKeyAlreadyExists
 	}
 
 	if a, _ := j.GetApiKey(ctx, apiKey.Name); a != nil {

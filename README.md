@@ -114,6 +114,7 @@ some of the flags can also be defined as environment variables to set it up and 
 | TOKEN_DURATION_MINUTES | The duration of the jwt token in minutes | 60 |
 | MODE | The mode that the service will run in, this can be either `api` or `orchestrator` | api |
 | USE_ORCHESTRATOR_RESOURCES | If the service is running in orchestrator mode, this will allow the service to use the resources of the orchestrator | false |
+| ORCHESTRATOR_PULL_FREQUENCY_SECONDS_ENV_VAR | The frequency in seconds that the orchestrator will sync with the other hosts in seconds | 30 |
 
 ## Catalog Manifests
 

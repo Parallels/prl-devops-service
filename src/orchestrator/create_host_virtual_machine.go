@@ -20,5 +20,8 @@ func (s *OrchestratorService) CreateHostVirtualMachine(host *data_models.Orchest
 		return nil, err
 	}
 
+	response.Host = host.GetHost()
+
+	s.Refresh()
 	return &response, nil
 }

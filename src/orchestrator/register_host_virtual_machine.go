@@ -20,5 +20,6 @@ func (s *OrchestratorService) RegisterHostVirtualMachine(host *data_models.Orche
 		return nil, err
 	}
 
+	s.Refresh()
 	return &response, nil
 }

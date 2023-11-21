@@ -21,12 +21,13 @@ const (
 )
 
 const (
-	DEFAULT_API_PREFIX             = "/api"
-	DEFAULT_API_PORT               = "80"
-	DEFAULT_API_TLS_PORT           = "443"
-	CURRENT_USER_ENV_VAR           = "PD_CURRENT_USER"
-	DEFAULT_TOKEN_DURATION_MINUTES = 60
-	DEFAULT_CATALOG_CACHE_FOLDER   = "./catalog_cache"
+	DEFAULT_API_PREFIX                      = "/api"
+	DEFAULT_API_PORT                        = "80"
+	DEFAULT_API_TLS_PORT                    = "443"
+	CURRENT_USER_ENV_VAR                    = "PD_CURRENT_USER"
+	DEFAULT_TOKEN_DURATION_MINUTES          = 60
+	DEFAULT_CATALOG_CACHE_FOLDER            = "./catalog_cache"
+	DEFAULT_ORCHESTRATOR_PULL_FREQUENCY_SEC = 30
 
 	API_MODE          = "api"
 	CLI_MODE          = "cli"
@@ -35,20 +36,21 @@ const (
 )
 
 const (
-	HMAC_SECRET_ENV_VAR                = "HMAC_SECRET"
-	LOG_LEVEL_ENV_VAR                  = "LOG_LEVEL"
-	SECURITY_KEY_ENV_VAR               = "SECURITY_PRIVATE_KEY"
-	TLS_ENABLED_ENV_VAR                = "TLS_ENABLED"
-	TLS_PORT_ENV_VAR                   = "TLS_PORT"
-	TLS_CERTIFICATE_ENV_VAR            = "TLS_CERTIFICATE"
-	TLS_PRIVATE_KEY_ENV_VAR            = "TLS_PRIVATE_KEY"
-	API_PORT_ENV_VAR                   = "API_PORT"
-	API_PREFIX_ENV_VAR                 = "API_PREFIX"
-	ROOT_PASSWORD_ENV_VAR              = "ROOT_PASSWORD"
-	DISABLE_CATALOG_CACHING_ENV_VAR    = "DISABLE_CATALOG_CACHING"
-	TOKEN_DURATION_MINUTES_ENV_VAR     = "TOKEN_DURATION_MINUTES"
-	MODE_ENV_VAR                       = "MODE"
-	USE_ORCHESTRATOR_RESOURCES_ENV_VAR = "USE_ORCHESTRATOR_RESOURCES"
+	HMAC_SECRET_ENV_VAR                         = "HMAC_SECRET"
+	LOG_LEVEL_ENV_VAR                           = "LOG_LEVEL"
+	SECURITY_KEY_ENV_VAR                        = "SECURITY_PRIVATE_KEY"
+	TLS_ENABLED_ENV_VAR                         = "TLS_ENABLED"
+	TLS_PORT_ENV_VAR                            = "TLS_PORT"
+	TLS_CERTIFICATE_ENV_VAR                     = "TLS_CERTIFICATE"
+	TLS_PRIVATE_KEY_ENV_VAR                     = "TLS_PRIVATE_KEY"
+	API_PORT_ENV_VAR                            = "API_PORT"
+	API_PREFIX_ENV_VAR                          = "API_PREFIX"
+	ROOT_PASSWORD_ENV_VAR                       = "ROOT_PASSWORD"
+	DISABLE_CATALOG_CACHING_ENV_VAR             = "DISABLE_CATALOG_CACHING"
+	TOKEN_DURATION_MINUTES_ENV_VAR              = "TOKEN_DURATION_MINUTES"
+	MODE_ENV_VAR                                = "MODE"
+	USE_ORCHESTRATOR_RESOURCES_ENV_VAR          = "USE_ORCHESTRATOR_RESOURCES"
+	ORCHESTRATOR_PULL_FREQUENCY_SECONDS_ENV_VAR = "ORCHESTRATOR_PULL_FREQUENCY_SECONDS"
 )
 
 const (

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/data"
 	"github.com/Parallels/pd-api-service/data/models"
 	"github.com/Parallels/pd-api-service/mappers"
@@ -28,10 +29,12 @@ type OrchestratorService struct {
 func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
 	if globalOrchestratorService == nil {
 		globalOrchestratorService = &OrchestratorService{
-			ctx:             ctx,
-			timeout:         2 * time.Minute,
-			refreshInterval: 30 * time.Second,
+			ctx:     ctx,
+			timeout: 2 * time.Minute,
 		}
+		cfg := config.NewConfig()
+		globalOrchestratorService.refreshInterval = time.Duration(cfg.GetOrchestratorPullFrequency()) * time.Second
+
 	} else {
 		globalOrchestratorService.ctx = ctx
 	}
@@ -68,11 +71,11 @@ func (s *OrchestratorService) Start(waitForInit bool) error {
 
 			for _, host := range dtoOrchestratorHosts {
 				wg.Add(1)
-				go s.processHost(host, &wg)
+				go s.processHostWaitingGroup(host, &wg)
 			}
 			wg.Wait()
 
-			s.ctx.LogInfo("[Orchestrator] Sleeping for %s", s.refreshInterval)
+			s.ctx.LogInfo("[Orchestrator] Sleeping for %s seconds", s.refreshInterval)
 			time.Sleep(s.refreshInterval)
 		}
 	}
@@ -84,66 +87,78 @@ func (s *OrchestratorService) Stop() {
 	s.syncContext.Done()
 }
 
-func (s *OrchestratorService) Restart() {
-	s.Stop()
-	go s.Start(false)
+func (s *OrchestratorService) Refresh() error {
+	dtoOrchestratorHosts, err := s.db.GetOrchestratorHosts(s.ctx, "")
+	if err != nil {
+		return err
+	}
+
+	for _, host := range dtoOrchestratorHosts {
+		go s.processHost(host)
+	}
+
+	return nil
 }
 
-func (s *OrchestratorService) processHost(host models.OrchestratorHost, wg *sync.WaitGroup) {
+func (s *OrchestratorService) processHostWaitingGroup(host models.OrchestratorHost, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	select {
 	case <-s.syncContext.Done():
 		return
 	default:
-		s.ctx.LogInfo("[Orchestrator] Processing host %s", host.Host)
-
-		host.HealthCheck = &apimodels.ApiHealthCheck{}
-		if healthCheck, err := s.GetHostSystemHealthCheck(&host); err != nil {
-			s.ctx.LogError("[Orchestrator] Error getting health check for host %s: %v", host.Host, err.Error())
-			host.SetUnhealthy(err.Error())
-			s.persistHost(&host)
-			return
-		} else {
-			host.SetHealthy()
-			host.HealthCheck = healthCheck
-		}
-
-		// Updating the host resources
-		hardwareInfo, err := s.GetHostHardwareInfo(&host)
-		if err != nil {
-			s.ctx.LogError("[Orchestrator] Error getting hardware info for host %s: %v", host.Host, err.Error())
-			host.SetUnhealthy(err.Error())
-			s.persistHost(&host)
-			return
-		}
-
-		if host.Resources == nil {
-			host.Resources = &models.HostResources{}
-		}
-
-		dtoResources := mappers.MapHostResourcesFromSystemUsageResponse(*hardwareInfo)
-		host.Resources = &dtoResources
-
-		// Updating the Virtual Machines
-		vms, err := s.GetHostVirtualMachinesInfo(&host)
-		if err != nil {
-			s.ctx.LogError("[Orchestrator] Error getting virtual machines for host %s: %v", host.Host, err.Error())
-			host.SetUnhealthy(err.Error())
-			s.persistHost(&host)
-			return
-		}
-
-		host.VirtualMachines = make([]models.VirtualMachine, 0)
-		for _, vm := range vms {
-			dtoVm := mappers.MapDtoVirtualMachineFromApi(vm)
-			dtoVm.HostId = host.ID
-			dtoVm.Host = host.GetHost()
-			host.VirtualMachines = append(host.VirtualMachines, dtoVm)
-		}
-
-		s.persistHost(&host)
+		s.processHost(host)
 	}
+}
+
+func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
+	s.ctx.LogInfo("[Orchestrator] Processing host %s", host.Host)
+
+	host.HealthCheck = &apimodels.ApiHealthCheck{}
+	if healthCheck, err := s.GetHostSystemHealthCheck(&host); err != nil {
+		s.ctx.LogError("[Orchestrator] Error getting health check for host %s: %v", host.Host, err.Error())
+		host.SetUnhealthy(err.Error())
+		s.persistHost(&host)
+		return
+	} else {
+		host.SetHealthy()
+		host.HealthCheck = healthCheck
+	}
+
+	// Updating the host resources
+	hardwareInfo, err := s.GetHostHardwareInfo(&host)
+	if err != nil {
+		s.ctx.LogError("[Orchestrator] Error getting hardware info for host %s: %v", host.Host, err.Error())
+		host.SetUnhealthy(err.Error())
+		s.persistHost(&host)
+		return
+	}
+
+	if host.Resources == nil {
+		host.Resources = &models.HostResources{}
+	}
+
+	dtoResources := mappers.MapHostResourcesFromSystemUsageResponse(*hardwareInfo)
+	host.Resources = &dtoResources
+
+	// Updating the Virtual Machines
+	vms, err := s.GetHostVirtualMachinesInfo(&host)
+	if err != nil {
+		s.ctx.LogError("[Orchestrator] Error getting virtual machines for host %s: %v", host.Host, err.Error())
+		host.SetUnhealthy(err.Error())
+		s.persistHost(&host)
+		return
+	}
+
+	host.VirtualMachines = make([]models.VirtualMachine, 0)
+	for _, vm := range vms {
+		dtoVm := mappers.MapDtoVirtualMachineFromApi(vm)
+		dtoVm.HostId = host.ID
+		dtoVm.Host = host.GetHost()
+		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
+	}
+
+	s.persistHost(&host)
 }
 
 func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {

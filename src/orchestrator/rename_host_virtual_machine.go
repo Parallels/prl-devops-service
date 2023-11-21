@@ -20,5 +20,6 @@ func (s *OrchestratorService) RenameHostVirtualMachine(host *data_models.Orchest
 		return nil, err
 	}
 
+	s.Refresh()
 	return &response, nil
 }
