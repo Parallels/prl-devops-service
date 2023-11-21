@@ -2811,7 +2811,7 @@ const docTemplate = `{
             }
         },
         "/v1/machines/{id}/status": {
-            "post": {
+            "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -3641,6 +3641,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/orchestrator/hosts/{id}/machines/{vmId}/status": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns orchestrator host virtual machine status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Get orchestrator host virtual machine status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Virtual Machine ID",
+                        "name": "vmId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ParallelsVM"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/orchestrator/hosts/{id}/machines/{vmId}/unregister": {
             "post": {
                 "security": [
@@ -3838,7 +3894,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/orchestrator/overview/resources/{id}": {
+        "/v1/orchestrator/overview/{id}/resources": {
             "get": {
                 "security": [
                     {
