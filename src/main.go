@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/pd-api-service/data"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/install"
+	"github.com/Parallels/pd-api-service/orchestrator"
 	"github.com/Parallels/pd-api-service/restapi"
 	"github.com/Parallels/pd-api-service/security"
 	"github.com/Parallels/pd-api-service/serviceprovider"
@@ -173,5 +174,11 @@ func main() {
 			break
 		}
 		startup.Start()
+	}
+
+	if cfg.IsOrchestrator() {
+		ctx := basecontext.NewRootBaseContext()
+		orchestratorBackgroundService := orchestrator.NewOrchestratorService(ctx)
+		orchestratorBackgroundService.Stop()
 	}
 }

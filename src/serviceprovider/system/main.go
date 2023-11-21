@@ -531,7 +531,7 @@ func (s *SystemService) getMacSystemHardwareInfo(ctx basecontext.ApiContext) (*m
 	if err != nil {
 		return nil, err
 	}
-	result.CpuType = cpuType
+	result.CpuType = strings.ReplaceAll(cpuType, "\n", "")
 	physicalCpuCountInt, err := strconv.Atoi(helpers.CleanOutputString(physicalCpuCount))
 	if err != nil {
 		return nil, err

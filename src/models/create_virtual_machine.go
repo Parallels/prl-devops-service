@@ -13,6 +13,7 @@ type CreateVirtualMachineRequest struct {
 	PackerTemplate  *CreatePackerVirtualMachineRequest  `json:"packer_template,omitempty"`
 	VagrantBox      *CreateVagrantMachineRequest        `json:"vagrant_box,omitempty"`
 	CatalogManifest *CreateCatalogVirtualMachineRequest `json:"catalog_manifest,omitempty"`
+	StartOnCreate   bool                                `json:"start_on_create,omitempty"`
 }
 
 func (r *CreateVirtualMachineRequest) Validate() error {
@@ -46,7 +47,8 @@ func (r *CreateVirtualMachineRequest) Validate() error {
 		if r.PackerTemplate != nil || r.VagrantBox != nil {
 			return errors.New("Only one of packer_template, vagrant_box or catalog_manifest can be specified")
 		}
-		r.CatalogManifest.Name = r.Name
+
+		r.CatalogManifest.MachineName = r.Name
 		r.CatalogManifest.Owner = r.Owner
 		return r.CatalogManifest.Validate()
 	}

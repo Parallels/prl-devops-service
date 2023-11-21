@@ -65,6 +65,19 @@ definitions:
       version:
         type: string
     type: object
+  github_com_Parallels_pd-api-service_models.HostResourceItem:
+    properties:
+      disk_size:
+        type: number
+      free_disk_size:
+        type: number
+      logical_cpu_count:
+        type: integer
+      memory_size:
+        type: number
+      physical_cpu_count:
+        type: integer
+    type: object
   github_com_Parallels_pd-api-service_models.ImportCatalogManifestResponse:
     properties:
       id:
@@ -131,7 +144,7 @@ definitions:
     type: object
   models.ApiKeyResponse:
     properties:
-      created_at:
+      encoded:
         type: string
       id:
         type: string
@@ -141,10 +154,6 @@ definitions:
         type: string
       revoked:
         type: boolean
-      revoked_at:
-        type: string
-      updated_at:
-        type: string
     type: object
   models.ApiUser:
     properties:
@@ -214,15 +223,6 @@ definitions:
       name:
         type: string
     type: object
-  models.Code:
-    properties:
-      enabled:
-        type: boolean
-      mode:
-        type: string
-      path:
-        type: string
-    type: object
   models.Coherence:
     properties:
       Auto-switch to full screen:
@@ -236,21 +236,25 @@ definitions:
     type: object
   models.CreateCatalogVirtualMachineRequest:
     properties:
-      api_key:
+      catalog_id:
         type: string
       connection:
         type: string
-      host:
-        type: string
-      name:
+      machine_name:
         type: string
       owner:
         type: string
-      password:
+      path:
         type: string
-      port:
-        type: string
-      username:
+      provider_metadata:
+        additionalProperties:
+          type: string
+        type: object
+      specs:
+        $ref: '#/definitions/models.CreateVirtualMachineSpecs'
+      start_after_pull:
+        type: boolean
+      version:
         type: string
     type: object
   models.CreatePackerTemplateRequest:
@@ -296,18 +300,14 @@ definitions:
     type: object
   models.CreatePackerVirtualMachineRequest:
     properties:
-      cpu:
-        type: string
       desiredState:
-        type: string
-      disk:
-        type: string
-      memory:
         type: string
       name:
         type: string
       owner:
         type: string
+      specs:
+        $ref: '#/definitions/models.CreateVirtualMachineSpecs'
       template:
         type: string
     type: object
@@ -323,6 +323,8 @@ definitions:
         type: string
       owner:
         type: string
+      specs:
+        $ref: '#/definitions/models.CreateVirtualMachineSpecs'
       vagrant_file_path:
         type: string
       version:
@@ -338,6 +340,8 @@ definitions:
         type: string
       packer_template:
         $ref: '#/definitions/models.CreatePackerVirtualMachineRequest'
+      start_on_create:
+        type: boolean
       vagrant_box:
         $ref: '#/definitions/models.CreateVagrantMachineRequest'
     type: object
@@ -350,6 +354,15 @@ definitions:
       name:
         type: string
       owner:
+        type: string
+    type: object
+  models.CreateVirtualMachineSpecs:
+    properties:
+      cpu:
+        type: string
+      disk:
+        type: string
+      memory:
         type: string
     type: object
   models.Expiration:
@@ -420,16 +433,18 @@ definitions:
       type:
         type: string
     type: object
-  models.HostSharedFolders:
+  models.HostResourceOverviewResponse:
     properties:
-      code:
-        $ref: '#/definitions/models.Code'
-      demo:
-        $ref: '#/definitions/models.Code'
-      enabled:
-        type: boolean
-      packer-examples:
-        $ref: '#/definitions/models.Code'
+      cpu_type:
+        type: string
+      total:
+        $ref: '#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem'
+      total_available:
+        $ref: '#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem'
+      total_in_use:
+        $ref: '#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem'
+      total_reserved:
+        $ref: '#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem'
     type: object
   models.ImportCatalogManifestRequest:
     properties:
@@ -623,6 +638,61 @@ definitions:
       Show battery status:
         type: string
     type: object
+  models.OrchestratorAuthentication:
+    properties:
+      api_key:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  models.OrchestratorHostRequest:
+    properties:
+      authentication:
+        $ref: '#/definitions/models.OrchestratorAuthentication'
+      description:
+        type: string
+      host:
+        type: string
+      required_claims:
+        items:
+          type: string
+        type: array
+      required_roles:
+        items:
+          type: string
+        type: array
+      tags:
+        items:
+          type: string
+        type: array
+    type: object
+  models.OrchestratorHostResponse:
+    properties:
+      description:
+        type: string
+      host:
+        type: string
+      id:
+        type: string
+      required_claims:
+        items:
+          type: string
+        type: array
+      required_roles:
+        items:
+          type: string
+        type: array
+      resources:
+        $ref: '#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem'
+      state:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+    type: object
   models.PackerTemplateResponse:
     properties:
       addons:
@@ -724,7 +794,8 @@ definitions:
       Home path:
         type: string
       Host Shared Folders:
-        $ref: '#/definitions/models.HostSharedFolders'
+        additionalProperties: true
+        type: object
       Host defined sharing:
         type: string
       ID:
@@ -772,6 +843,10 @@ definitions:
       USB and Bluetooth:
         $ref: '#/definitions/models.USBAndBluetooth'
       Uptime:
+        type: string
+      host:
+        type: string
+      host_id:
         type: string
       user:
         type: string
@@ -2645,7 +2720,7 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/execute:
-    post:
+    put:
       description: This endpoint executes a command on a virtual machine
       parameters:
       - description: Machine ID
@@ -2711,7 +2786,7 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/rename:
-    post:
+    put:
       description: This endpoint Renames a virtual machine
       parameters:
       - description: Machine ID
@@ -2837,7 +2912,7 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/set:
-    post:
+    put:
       description: This endpoint configures a virtual machine
       parameters:
       - description: Machine ID
@@ -2994,7 +3069,7 @@ paths:
       - Machines
   /v1/machines/{id}/unregister:
     post:
-      description: This endpoint unregisters a virtual machine
+      description: This endpoint unregister a virtual machine
       parameters:
       - description: Machine ID
         in: path
@@ -3025,7 +3100,7 @@ paths:
       security:
       - ApiKeyAuth: []
       - BearerAuth: []
-      summary: Unregisters a virtual machine
+      summary: Unregister a virtual machine
       tags:
       - Machines
   /v1/machines/register:
@@ -3064,6 +3139,547 @@ paths:
       summary: Registers a virtual machine
       tags:
       - Machines
+  /v1/orchestrator/hosts:
+    get:
+      description: This endpoint returns all hosts from the orchestrator
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.OrchestratorHostResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all hosts from the orchestrator
+      tags:
+      - Claims
+    post:
+      description: This endpoint creates a host in the orchestrator
+      parameters:
+      - description: Host Request
+        in: body
+        name: hostRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.OrchestratorHostRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.OrchestratorHostResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a Host in the orchestrator
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}:
+    delete:
+      description: This endpoint deletes a host from the orchestrator
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Delete a host from the orchestrator
+      tags:
+      - Orchestrator
+    get:
+      description: This endpoint returns a host from the orchestrator
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.OrchestratorHostResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a host from the orchestrator
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines:
+    get:
+      description: This endpoint returns orchestrator host virtual machines
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ParallelsVM'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Get orchestrator host virtual machines
+      tags:
+      - Orchestrator
+    post:
+      description: This endpoint creates a orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Create Virtual Machine Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateVirtualMachineRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CreateVirtualMachineResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}:
+    delete:
+      description: This endpoint deletes orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes orchestrator host virtual machine
+      tags:
+      - Orchestrator
+    get:
+      description: This endpoint returns orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ParallelsVM'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Get orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/execute:
+    put:
+      description: This endpoint executes a command in a orchestrator host virtual
+        machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Executes a command in a orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/rename:
+    put:
+      description: This endpoint renames orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ParallelsVM'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Renames orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/set:
+    put:
+      description: This endpoint configures orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Configures orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/unregister:
+    post:
+      description: This endpoint unregister a virtual machine in a orchestrator host
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      - description: Register Virtual Machine Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UnregisterVirtualMachineRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ParallelsVM'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Unregister a virtual machine in a orchestrator host
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/register:
+    post:
+      description: This endpoint registers a virtual machine in a orchestrator host
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Register Virtual Machine Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterVirtualMachineRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ParallelsVM'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Register a virtual machine in a orchestrator host
+      tags:
+      - Orchestrator
+  /v1/orchestrator/machines:
+    get:
+      description: This endpoint returns orchestrator Virtual Machines
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ParallelsVM'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Get orchestrator Virtual Machines
+      tags:
+      - Orchestrator
+    post:
+      description: This endpoint creates a virtual machine in one of the hosts for
+        the orchestrator
+      parameters:
+      - description: Create Virtual Machine Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateVirtualMachineRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CreateVirtualMachineResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a virtual machine in one of the hosts for the orchestrator
+      tags:
+      - Orchestrator
+  /v1/orchestrator/overview/resources:
+    get:
+      description: This endpoint returns orchestrator resource overview
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.HostResourceOverviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Get orchestrator resource overview
+      tags:
+      - Orchestrator
+  /v1/orchestrator/overview/resources/{id}:
+    get:
+      description: This endpoint returns orchestrator host resources
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.HostResourceOverviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Get orchestrator host resources
+      tags:
+      - Orchestrator
   /v1/parallels_desktop/key:
     get:
       description: This endpoint returns Parallels Desktop active license
