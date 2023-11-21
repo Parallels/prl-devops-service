@@ -8,13 +8,14 @@ import (
 )
 
 type CreateVagrantMachineRequest struct {
-	Box                   string `json:"box"`
-	Version               string `json:"version"`
-	Owner                 string `json:"owner"`
-	Name                  string `json:"name"`
-	VagrantFilePath       string `json:"vagrant_file_path"`
-	CustomVagrantConfig   string `json:"custom_vagrant_config"`
-	CustomParallelsConfig string `json:"custom_parallels_config"`
+	Box                   string                     `json:"box"`
+	Version               string                     `json:"version"`
+	Owner                 string                     `json:"owner"`
+	Name                  string                     `json:"name"`
+	Specs                 *CreateVirtualMachineSpecs `json:"specs,omitempty"`
+	VagrantFilePath       string                     `json:"vagrant_file_path"`
+	CustomVagrantConfig   string                     `json:"custom_vagrant_config"`
+	CustomParallelsConfig string                     `json:"custom_parallels_config"`
 }
 
 func (r *CreateVagrantMachineRequest) Validate() error {

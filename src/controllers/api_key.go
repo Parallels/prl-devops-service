@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
@@ -69,7 +71,7 @@ func registerApiKeysHandlers(ctx basecontext.ApiContext, version string) {
 func GetApiKeysHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -105,7 +107,7 @@ func GetApiKeysHandler() restapi.ControllerHandler {
 func DeleteApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -141,7 +143,7 @@ func DeleteApiKeyHandler() restapi.ControllerHandler {
 func GetApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -190,7 +192,7 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -204,6 +206,7 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 			return
 		}
 		response := mappers.ApiKeyDtoToApiKeyResponse(*dtoApiKeyResult)
+		response.Encoded = base64.StdEncoding.EncodeToString([]byte(request.Key + ":" + request.Secret))
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -229,7 +232,7 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 func RevokeApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return

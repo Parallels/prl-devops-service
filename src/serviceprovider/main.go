@@ -34,6 +34,8 @@ type ServiceProvider struct {
 	JsonDatabase            *data.JsonDatabase
 	Services                []interfaces.Service
 	HardwareInfo            *models.ParallelsDesktopInfo
+	SystemHardwareInfo      *models.SystemHardwareInfo
+	CpuType                 string
 	HardwareId              string
 	HardwareSecret          string
 	CurrentSystemUser       string
@@ -92,6 +94,9 @@ func InitCatalogServices() {
 
 	globalProvider.HardwareId = hid
 	globalProvider.HardwareSecret = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", key, hid)))
+	if systemHardwareInfo, err := globalProvider.System.GetHardwareInfo(ctx); err == nil {
+		globalProvider.SystemHardwareInfo = systemHardwareInfo
+	}
 }
 
 func InitServices() {
@@ -171,6 +176,9 @@ func InitServices() {
 
 	globalProvider.HardwareId = hid
 	globalProvider.HardwareSecret = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", key, hid)))
+	if systemHardwareInfo, err := globalProvider.System.GetHardwareInfo(ctx); err == nil {
+		globalProvider.SystemHardwareInfo = systemHardwareInfo
+	}
 }
 
 func Get() *ServiceProvider {

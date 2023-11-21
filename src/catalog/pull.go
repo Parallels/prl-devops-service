@@ -17,7 +17,7 @@ import (
 	"github.com/Parallels/pd-api-service/mappers"
 	api_models "github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/serviceprovider"
-	"github.com/Parallels/pd-api-service/serviceprovider/httpclient"
+	"github.com/Parallels/pd-api-service/serviceprovider/apiclient"
 
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/helper/http_helper"
@@ -27,7 +27,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 	foundProvider := false
 	response := models.NewPullCatalogManifestResponse()
 	response.MachineName = r.MachineName
-	httpClient := httpclient.NewHttpCaller()
+	apiClient := apiclient.NewHttpClient(ctx)
 	serviceProvider := serviceprovider.Get()
 	parallelsDesktopSvc := serviceProvider.ParallelsDesktopService
 	db := serviceProvider.JsonDatabase
@@ -75,16 +75,12 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 		ctx.LogInfo("Checking if the manifest exists in the remote catalog")
 		manifest = &models.VirtualMachineCatalogManifest{}
 		manifest.Provider = &provider
-		auth, err := GetAuthenticator(ctx, manifest.Provider)
-		if err != nil {
-			ctx.LogError("Error getting authenticator for provider %v: %v", manifest.Provider, err)
-			response.AddError(err)
-			return response
-		}
+		apiClient.SetAuthorization(GetAuthenticator(manifest.Provider))
 
 		var catalogManifest api_models.CatalogManifest
 		path := http_helper.JoinUrl(constants.DEFAULT_API_PREFIX, "catalog", helpers.NormalizeStringUpper(r.CatalogId), helpers.NormalizeString(r.Version), "download")
-		if clientResponse, err := httpClient.Get(ctx, fmt.Sprintf("%s%s", manifest.Provider.GetUrl(), path), nil, auth, &catalogManifest); err != nil {
+		getUrl := fmt.Sprintf("%s%s", manifest.Provider.GetUrl(), path)
+		if clientResponse, err := apiClient.Get(getUrl, &catalogManifest); err != nil {
 			if clientResponse != nil && clientResponse.ApiError != nil {
 				if clientResponse.StatusCode == 403 || clientResponse.StatusCode == 400 {
 					ctx.LogError("Error getting catalog manifest %v: %v", path, clientResponse.ApiError.Message)

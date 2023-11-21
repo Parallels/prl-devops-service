@@ -22,12 +22,13 @@ var (
 var memoryDatabase *JsonDatabase
 
 type Data struct {
-	Users            []models.User            `json:"users"`
-	Claims           []models.Claim           `json:"claims"`
-	Roles            []models.Role            `json:"roles"`
-	ApiKeys          []models.ApiKey          `json:"api_keys"`
-	PackerTemplates  []models.PackerTemplate  `json:"virtual_machine_templates"`
-	ManifestsCatalog []models.CatalogManifest `json:"catalog_manifests"`
+	Users             []models.User             `json:"users"`
+	Claims            []models.Claim            `json:"claims"`
+	Roles             []models.Role             `json:"roles"`
+	ApiKeys           []models.ApiKey           `json:"api_keys"`
+	PackerTemplates   []models.PackerTemplate   `json:"virtual_machine_templates"`
+	ManifestsCatalog  []models.CatalogManifest  `json:"catalog_manifests"`
+	OrchestratorHosts []models.OrchestratorHost `json:"orchestrator_hosts"`
 }
 
 type JsonDatabase struct {
@@ -61,20 +62,20 @@ func NewJsonDatabase(filename string) *JsonDatabase {
 }
 
 func (j *JsonDatabase) Connect(ctx basecontext.ApiContext) error {
-	ctx.LogDebug("Connecting to database %s", j.filename)
+	ctx.LogDebug("[Database] Connecting to database %s", j.filename)
 	j.connected = true
 	return nil
 }
 
 func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
-	ctx.LogInfo("Loading database from %s", j.filename)
+	ctx.LogInfo("[Database] Loading database from %s", j.filename)
 	var data Data
 
 	if _, err := os.Stat(j.filename); os.IsNotExist(err) {
-		ctx.LogInfo("Database file does not exist, creating new file")
+		ctx.LogInfo("[Database] Database file does not exist, creating new file")
 		file, err := os.Create(j.filename)
 		if err != nil {
-			ctx.LogError("Error creating database file: %v", err)
+			ctx.LogError("[Database] Error creating database file: %v", err)
 			return err
 		}
 		file.Close()
@@ -82,7 +83,7 @@ func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
 
 	file, err := os.Open(j.filename)
 	if err != nil {
-		ctx.LogError("Error opening database file: %v", err)
+		ctx.LogError("[Database] Error opening database file: %v", err)
 		return err
 	}
 
@@ -90,12 +91,12 @@ func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
 
 	fileInfo, err := os.Stat(j.filename)
 	if err != nil {
-		ctx.LogError("Error getting database file info: %v", err)
+		ctx.LogError("[Database] Error getting database file info: %v", err)
 		return err
 	}
 
 	if fileInfo.Size() == 0 {
-		ctx.LogInfo("Database file is empty, creating new file")
+		ctx.LogInfo("[Database] Database file is empty, creating new file")
 		j.data = Data{
 			Users:            make([]models.User, 0),
 			Claims:           make([]models.Claim, 0),
@@ -107,30 +108,30 @@ func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
 
 		err = j.Save(ctx)
 		if err != nil {
-			ctx.LogError("Error saving database file: %v", err)
+			ctx.LogError("[Database] Error saving database file: %v", err)
 			return err
 		}
 
 		j.connected = true
 		return nil
 	} else {
-		ctx.LogInfo("Database file is not empty, loading data")
+		ctx.LogInfo("[Database] Database file is not empty, loading data")
 
 		// Backup the file before attempting to read it
 		backupFilename := j.filename + ".bak"
 		err := helper.CopyFile(j.filename, backupFilename)
 		if err != nil {
-			ctx.LogError("Error creating backup file: %v", err)
+			ctx.LogError("[Database] Error creating backup file: %v", err)
 			return err
 		}
 
 		content, err := helper.ReadFromFile(j.filename)
 		if err != nil {
-			ctx.LogError("Error reading database file: %v", err)
+			ctx.LogError("[Database] Error reading database file: %v", err)
 			return err
 		}
 		if content == nil {
-			ctx.LogError("Error reading database file: %v", err)
+			ctx.LogError("[Database] Error reading database file: %v", err)
 			return err
 		}
 
@@ -140,19 +141,19 @@ func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
 			// Trying to read the file encrypted
 			cfg := config.NewConfig()
 			if cfg.GetSecurityKey() == "" {
-				ctx.LogError("Error reading database file: %v", err)
+				ctx.LogError("[Database] Error reading database file: %v", err)
 				return err
 			}
 
 			content, err := security.DecryptString(cfg.GetSecurityKey(), content)
 			if err != nil {
-				ctx.LogError("Error decrypting database file: %v", err)
+				ctx.LogError("[Database] Error decrypting database file: %v", err)
 				return err
 			}
 
 			err = json.Unmarshal([]byte(content), &data)
 			if err != nil {
-				ctx.LogError("Error reading database file: %v", err)
+				ctx.LogError("[Database] Error reading database file: %v", err)
 				return err
 			}
 		}
@@ -164,8 +165,7 @@ func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
 }
 
 func (j *JsonDatabase) Disconnect(ctx basecontext.ApiContext) error {
-	ctx.LogDebug("Disconnecting from database")
-	j.connected = false
+	ctx.LogDebug("[Database] Disconnecting from database")
 
 	return nil
 }
@@ -187,7 +187,7 @@ func (j *JsonDatabase) Save(ctx basecontext.ApiContext) error {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
-	ctx.LogDebug("Enqueuing save request")
+	ctx.LogDebug("[Database] Enqueuing save request")
 	saveRequest := saveRequest{
 		ctx: ctx,
 		wg:  wg,
@@ -207,7 +207,7 @@ func (j *JsonDatabase) ProcessSaveQueue(ctx basecontext.ApiContext) {
 			request := j.saveQueue[0]
 			j.saveQueue = j.saveQueue[1:]
 			if err := j.processSave(ctx); err != nil {
-				ctx.LogError("Error saving database: %v", err)
+				ctx.LogError("[Database] Error saving database: %v", err)
 			}
 			request.wg.Done()
 		}
@@ -222,11 +222,11 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 	backupFilename := j.filename + ".save.bak"
 	err := helper.CopyFile(j.filename, backupFilename)
 	if err != nil {
-		ctx.LogError("Error creating backup file: %v", err)
+		ctx.LogError("[Database] Error creating backup file: %v", err)
 		return err
 	}
 
-	ctx.LogDebug("Saving database to %s", j.filename)
+	ctx.LogDebug("[Database] Saving database to %s", j.filename)
 	j.isSaving = true
 	if j.filename == "" {
 		j.saveMutex.Unlock()

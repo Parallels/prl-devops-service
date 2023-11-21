@@ -15,6 +15,7 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 	registerPackerTemplatesHandlers(ctx, version)
 	registerVirtualMachinesHandlers(ctx, version)
 	registerConfigHandlers(ctx, version)
+	registerOrchestratorHostsHandlers(ctx, version)
 
 	return nil
 }

@@ -8,43 +8,37 @@ import (
 )
 
 type CreateCatalogVirtualMachineRequest struct {
-	Host       string `json:"host"`
-	Port       string `json:"port,omitempty"`
-	Username   string `json:"username,omitempty"`
-	Password   string `json:"password,omitempty"`
-	ApiKey     string `json:"api_key,omitempty"`
-	Name       string `json:"name"`
-	Connection string `json:"connection"`
-	Owner      string `json:"owner,omitempty"`
+	CatalogId        string                     `json:"catalog_id"`
+	Version          string                     `json:"version,omitempty"`
+	Owner            string                     `json:"owner,omitempty"`
+	MachineName      string                     `json:"machine_name,omitempty"`
+	Connection       string                     `json:"connection,omitempty"`
+	Path             string                     `json:"path,omitempty"`
+	ProviderMetadata map[string]string          `json:"provider_metadata,omitempty"`
+	StartAfterPull   bool                       `json:"start_after_pull,omitempty"`
+	Specs            *CreateVirtualMachineSpecs `json:"specs,omitempty"`
 }
 
 func (r *CreateCatalogVirtualMachineRequest) Validate() error {
-	if r.Host == "" {
-		return errors.New("Host cannot be empty")
+	if r.CatalogId == "" {
+		return errors.NewWithCode("missing catalog id", 400)
 	}
-
-	if r.Port == "" {
-		return errors.New("Port cannot be empty")
+	if r.Version == "" {
+		r.Version = constants.LATEST_TAG
 	}
-
-	if r.Username != "" && r.Password == "" {
-		return errors.New("Username password cannot be empty")
+	if r.MachineName == "" {
+		return errors.NewWithCode("missing machine name", 400)
 	}
-
-	if r.ApiKey == "" && r.Username == "" {
-		return errors.New("ApiKey or Username cannot be empty")
-	}
-
-	if r.Name == "" {
-		return errors.New("Name cannot be empty")
-	}
-
 	if r.Connection == "" {
-		return errors.New("Connection cannot be empty")
+		return errors.NewWithCode("missing connection", 400)
 	}
 
 	if r.Owner == "" {
-		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
+		owner := os.Getenv(constants.CURRENT_USER_ENV_VAR)
+		if owner == "" {
+			owner = "root"
+		}
+		r.Owner = owner
 	}
 
 	return nil

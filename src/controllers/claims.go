@@ -11,6 +11,7 @@ import (
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
+	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
@@ -63,7 +64,7 @@ func registerClaimsHandlers(ctx basecontext.ApiContext, version string) {
 func GetClaimsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -107,7 +108,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 func GetClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -156,7 +157,7 @@ func CreateClaimHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -194,7 +195,7 @@ func CreateClaimHandler() restapi.ControllerHandler {
 func DeleteClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return

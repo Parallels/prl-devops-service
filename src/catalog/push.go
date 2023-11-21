@@ -13,7 +13,7 @@ import (
 	"github.com/Parallels/pd-api-service/mappers"
 	api_models "github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/serviceprovider"
-	"github.com/Parallels/pd-api-service/serviceprovider/httpclient"
+	"github.com/Parallels/pd-api-service/serviceprovider/apiclient"
 
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/helper/http_helper"
@@ -34,7 +34,7 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 		if check {
 			executed = true
 			manifest.CleanupRequest.RemoteStorageService = rs
-			httpClient := httpclient.NewHttpCaller()
+			apiClient := apiclient.NewHttpClient(ctx)
 
 			if err := manifest.Provider.Parse(r.Connection); err != nil {
 				ctx.LogError("Error parsing provider %v: %v", r.Connection, err)
@@ -44,12 +44,7 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 
 			if manifest.Provider.IsRemote() {
 				ctx.LogDebug("Testing remote provider %v", manifest.Provider.Host)
-				_, err := GetAuthenticator(ctx, manifest.Provider)
-				if err != nil {
-					ctx.LogError("Error getting authenticator for provider %v: %v", manifest.Provider, err)
-					manifest.AddError(err)
-					break
-				}
+				apiClient.SetAuthorization(GetAuthenticator(manifest.Provider))
 			}
 
 			// Generating the manifest content
@@ -248,15 +243,12 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 			if !manifest.HasErrors() {
 				if manifest.Provider.IsRemote() {
 					ctx.LogInfo("Manifest pushed successfully, adding it to the remote database")
-					auth, err := GetAuthenticator(ctx, manifest.Provider)
-					if err != nil {
-						ctx.LogError("Error getting authenticator for provider %v: %v", manifest.Provider, err)
-						manifest.AddError(err)
-						break
-					}
+					apiClient.SetAuthorization(GetAuthenticator(manifest.Provider))
 					path := http_helper.JoinUrl(constants.DEFAULT_API_PREFIX, "catalog")
+
 					var response api_models.CatalogManifest
-					if _, err := httpClient.Post(ctx, fmt.Sprintf("%s%s", manifest.Provider.GetUrl(), path), nil, manifest, auth, &response); err != nil {
+					postUrl := fmt.Sprintf("%s%s", manifest.Provider.GetUrl(), path)
+					if _, err := apiClient.Post(postUrl, manifest, &response); err != nil {
 						ctx.LogError("Error posting catalog manifest %v: %v", manifest.Provider.String(), err)
 						manifest.AddError(err)
 						break

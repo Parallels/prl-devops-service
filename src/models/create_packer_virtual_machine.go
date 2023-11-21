@@ -8,13 +8,11 @@ import (
 )
 
 type CreatePackerVirtualMachineRequest struct {
-	Template     string `json:"template"`
-	Owner        string `json:"owner"`
-	Name         string `json:"name"`
-	Memory       string `json:"memory"`
-	Cpu          string `json:"cpu"`
-	Disk         string `json:"disk"`
-	DesiredState string `json:"desiredState"`
+	Template     string                     `json:"template"`
+	Owner        string                     `json:"owner"`
+	Name         string                     `json:"name"`
+	Specs        *CreateVirtualMachineSpecs `json:"specs,omitempty"`
+	DesiredState string                     `json:"desiredState"`
 }
 
 func (r *CreatePackerVirtualMachineRequest) Validate() error {
@@ -26,20 +24,16 @@ func (r *CreatePackerVirtualMachineRequest) Validate() error {
 		return errors.New("Name cannot be empty")
 	}
 
-	if r.Memory == "" {
-		r.Memory = "2048"
+	if r.Specs == nil {
+		r.Specs = &CreateVirtualMachineSpecs{
+			Cpu:    "2",
+			Disk:   "20480",
+			Memory: "2048",
+		}
 	}
 
 	if r.Owner == "" {
 		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
-	}
-
-	if r.Cpu == "" {
-		r.Cpu = "2"
-	}
-
-	if r.Disk == "" {
-		r.Disk = "20480"
 	}
 
 	if r.DesiredState == "" {
