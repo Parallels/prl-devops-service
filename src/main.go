@@ -41,10 +41,10 @@ var versionSvc = version.Get()
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = "Parallels Desktop API Service"
@@ -94,9 +94,17 @@ func main() {
 	}
 
 	if helper.GetFlagSwitch(constants.INSTALL_SERVICE_FLAG, false) {
-		if err := install.InstallService(ctx); err != nil {
-			ctx.LogError(err.Error())
-			os.Exit(1)
+		filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
+		if filePath != "" {
+			if err := install.InstallService(ctx, filePath); err != nil {
+				ctx.LogError(err.Error())
+				os.Exit(1)
+			}
+		} else {
+			if err := install.InstallService(ctx, ""); err != nil {
+				ctx.LogError(err.Error())
+				os.Exit(1)
+			}
 		}
 		os.Exit(0)
 	}
