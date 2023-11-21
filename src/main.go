@@ -21,11 +21,11 @@ import (
 	"github.com/cjlapao/common-go/version"
 )
 
-var ver = "0.2.3"
+var ver = "0.2.4"
 var versionSvc = version.Get()
 
 //	@title			Parallels Desktop API
-//	@version		0.2.3
+//	@version		0.2.4
 //	@description	Parallels Desktop API Service
 //	@termsOfService	http://swagger.io/terms/
 
