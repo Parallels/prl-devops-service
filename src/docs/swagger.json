@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.2.4"
+        "version": "0.2.5"
     },
     "basePath": "/api",
     "paths": {
@@ -4750,6 +4750,9 @@
             "type": "object",
             "properties": {
                 "current_state": {
+                    "type": "string"
+                },
+                "host": {
                     "type": "string"
                 },
                 "id": {
