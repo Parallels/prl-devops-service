@@ -28,6 +28,12 @@ spec:
       serviceAccountName: {{ include "helm.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.storage.databasePath }}
+      volumes:
+        - name: db-storage
+          persistentVolumeClaim:
+            claimName: {{ include "helm.fullname" . }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -37,47 +43,100 @@ spec:
           env:
             - name: API_PORT
               value: {{ .Values.service.targetPort | quote }}
+            {{- if .Values.apiPrefix }}
             - name: API_PREFIX
               valueFrom: 
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: API_PREFIX
+            {{- end }}
+            {{- if .Values.logLevel }}
+            - name: LOG_LEVEL
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: LOG_LEVEL
+            {{- end }}
+            {{- if .Values.security.key }}
             - name: SECURITY_PRIVATE_KEY 
               valueFrom: 
                 secretKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: SECURITY_PRIVATE_KEY
+            {{- end }}
+            {{- if .Values.security.hmacSecret }}
             - name: HMAC_SECRET 
               valueFrom: 
                 secretKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: HMAC_SECRET
+            {{- end }}
+            {{- if .Values.security.rootPassword }}
             - name: ROOT_PASSWORD 
-              value: Nmo5c2U1YTZycWc0Ojc4YmZkOWNlZjJmMjU0ZDQ4MjAwNWM2ZTIwYTNlMTM2
-            # - name: TLS_CERTIFICATE 
-            #   valueFrom: 
-            #     secretKeyRef:
-            #       name: {{ include "helm.fullname" . }}
-            #       key: TLS_CERTIFICATE
-            # - name: TLS_PRIVATE_KEY 
-            #   valueFrom: 
-            #     secretKeyRef:
-            #       name: {{ include "helm.fullname" . }}
-            #       key: TLS_PRIVATE_KEY
+              valueFrom: 
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: SECURITY_ROOT_PASSWORD
+            {{- end }}
+            {{- if .Values.ingress.tls.enabled }}
+            - name: TLS_ENABLED 
+              value: "true"
+            - name: TLS_CERTIFICATE 
+              valueFrom: 
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: TLS_CERTIFICATE
+            - name: TLS_PRIVATE_KEY 
+              valueFrom: 
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: TLS_PRIVATE_KEY
+            {{- end }}
+            {{- if .Values.config.disableCatalogCaching }}
+            - name: DISABLE_CATALOG_CACHING 
+              value: "true"
+            {{- end }}
+            {{- if .Values.logLevel }}
+            - name: TOKEN_DURATION_MINUTES
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: TOKEN_DURATION_MINUTES
+            {{- end }}
+            {{- if .Values.storage.databasePath }}
+            - name: DATABASE_FOLDER
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: DATABASE_FOLDER
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
-          # livenessProbe:
-          #   httpGet:
-          #     path: /{{ .Values.ingress.prefix }}/health/probe
-          #     port: {{ .Values.service.targetPort }}
-          # readinessProbe:
-          #   httpGet:
-          #     path: /{{ .Values.ingress.prefix }}/health/probe
-          #     port: {{ .Values.service.targetPort }}
+          livenessProbe:
+            httpGet:
+              {{- if .Values.ingress.apiPrefix }}
+              path: {{ .Values.ingress.apiPrefix }}/health/probe
+              {{- else }}
+              path: /health/probe
+              {{- end }}
+              port: {{ .Values.service.targetPort }}
+          readinessProbe:
+            httpGet:
+              {{- if .Values.ingress.apiPrefix }}
+              path: {{ .Values.ingress.apiPrefix }}/health/probe
+              {{- else }}
+              path: /health/probe
+              {{- end }}
+              port: {{ .Values.service.targetPort }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.storage.databasePath }}
+          volumeMounts:
+            - mountPath: {{ .Values.storage.databasePath }}
+              name: db-storage
+          {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
