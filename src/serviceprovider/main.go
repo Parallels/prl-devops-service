@@ -3,10 +3,12 @@ package serviceprovider
 import (
 	"encoding/base64"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/common"
+	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/data"
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
@@ -44,6 +46,7 @@ type ServiceProvider struct {
 var globalProvider *ServiceProvider
 
 func InitCatalogServices() {
+	cfg := config.NewConfig()
 	globalProvider = &ServiceProvider{
 		Logger: common.Logger,
 	}
@@ -64,7 +67,11 @@ func InitCatalogServices() {
 			panic(err)
 		}
 
-		globalProvider.JsonDatabase = data.NewJsonDatabase(dbLocation + "/data.json")
+		if cfg.GetDatabaseFolder() != "" {
+			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.GetDatabaseFolder(), "/data.json"))
+		} else {
+			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
+		}
 		globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.Logger.Info("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 		globalProvider.JsonDatabase.Save(ctx)
@@ -79,7 +86,11 @@ func InitCatalogServices() {
 			panic(err)
 		}
 
-		globalProvider.JsonDatabase = data.NewJsonDatabase(dbLocation + "/data.json")
+		if cfg.GetDatabaseFolder() != "" {
+			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.GetDatabaseFolder(), "/data.json"))
+		} else {
+			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
+		}
 		globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.Logger.Info("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
@@ -101,6 +112,7 @@ func InitCatalogServices() {
 
 func InitServices() {
 	// Create a new Services struct and add the DB service
+	cfg := config.NewConfig()
 	globalProvider = &ServiceProvider{
 		Logger: common.Logger,
 	}
@@ -137,7 +149,12 @@ func InitServices() {
 			panic(err)
 		}
 
-		globalProvider.JsonDatabase = data.NewJsonDatabase(dbLocation + "/data.json")
+		if cfg.GetDatabaseFolder() != "" {
+			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.GetDatabaseFolder(), "/data.json"))
+		} else {
+			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
+		}
+
 		globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.Logger.Info("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 		globalProvider.JsonDatabase.Save(ctx)
@@ -152,7 +169,12 @@ func InitServices() {
 			panic(err)
 		}
 
-		globalProvider.JsonDatabase = data.NewJsonDatabase(dbLocation + "/data.json")
+		if cfg.GetDatabaseFolder() != "" {
+			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.GetDatabaseFolder(), "/data.json"))
+		} else {
+			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
+		}
+
 		globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.Logger.Info("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}

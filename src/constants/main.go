@@ -36,6 +36,8 @@ const (
 )
 
 const (
+	API_PORT_ENV_VAR                            = "API_PORT"
+	API_PREFIX_ENV_VAR                          = "API_PREFIX"
 	HMAC_SECRET_ENV_VAR                         = "HMAC_SECRET"
 	LOG_LEVEL_ENV_VAR                           = "LOG_LEVEL"
 	SECURITY_KEY_ENV_VAR                        = "SECURITY_PRIVATE_KEY"
@@ -43,14 +45,13 @@ const (
 	TLS_PORT_ENV_VAR                            = "TLS_PORT"
 	TLS_CERTIFICATE_ENV_VAR                     = "TLS_CERTIFICATE"
 	TLS_PRIVATE_KEY_ENV_VAR                     = "TLS_PRIVATE_KEY"
-	API_PORT_ENV_VAR                            = "API_PORT"
-	API_PREFIX_ENV_VAR                          = "API_PREFIX"
 	ROOT_PASSWORD_ENV_VAR                       = "ROOT_PASSWORD"
 	DISABLE_CATALOG_CACHING_ENV_VAR             = "DISABLE_CATALOG_CACHING"
 	TOKEN_DURATION_MINUTES_ENV_VAR              = "TOKEN_DURATION_MINUTES"
 	MODE_ENV_VAR                                = "MODE"
 	USE_ORCHESTRATOR_RESOURCES_ENV_VAR          = "USE_ORCHESTRATOR_RESOURCES"
 	ORCHESTRATOR_PULL_FREQUENCY_SECONDS_ENV_VAR = "ORCHESTRATOR_PULL_FREQUENCY_SECONDS"
+	DATABASE_FOLDER_ENV_VAR                     = "DATABASE_FOLDER"
 )
 
 const (

@@ -232,6 +232,10 @@ func (c *Config) GetOrchestratorPullFrequency() int {
 	return intVal
 }
 
+func (c *Config) GetDatabaseFolder() string {
+	return os.Getenv(constants.DATABASE_FOLDER_ENV_VAR)
+}
+
 func (c *Config) GetLocalhost() string {
 	schema := "http"
 	host := "localhost"

@@ -6,8 +6,8 @@ metadata:
     {{- include "helm.labels" . | nindent 4 }}
 data:
   LOG_LEVEL: {{ .Values.logLevel }}
-  # TLS_ENABLED: {{ .Values.ingress.tls.enabled }}
-  # TLS_PORT: {{ .Values.ingress.tls.port }}
-  # TOKEN_DURATION_MINUTES: {{ .Values.security.tokenDurationMinutes }}
-  # API_PORT: {{ .Values.ingress.apiPort }}
+  TLS_PORT: {{ .Values.ingress.tls.port | quote }}
+  TOKEN_DURATION_MINUTES: {{ .Values.security.tokenDurationMinutes | quote }}
+  API_PORT: {{ .Values.ingress.apiPort | quote }}
   API_PREFIX: {{ .Values.ingress.apiPrefix }}
+  DATABASE_FOLDER: {{ .Values.storage.databasePath }}
