@@ -75,7 +75,11 @@ func (s *OrchestratorService) Start(waitForInit bool) error {
 			}
 			wg.Wait()
 
-			s.ctx.LogInfo("[Orchestrator] Sleeping for %s seconds", s.refreshInterval)
+			if len(dtoOrchestratorHosts) > 0 {
+				s.ctx.LogInfo("[Orchestrator] processed %v hosts", len(dtoOrchestratorHosts))
+				s.ctx.LogInfo("[Orchestrator] Sleeping for %s seconds", s.refreshInterval)
+			}
+
 			time.Sleep(s.refreshInterval)
 		}
 	}

@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/catalog/models"
@@ -57,7 +58,7 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 		if check {
 			foundProvider = true
 			response.CleanupRequest.RemoteStorageService = rs
-			dir := r.CatalogId
+			dir := strings.ToLower(r.CatalogId)
 			metaFileName := s.getMetaFilename(r.Name())
 			packFileName := s.getPackFilename(r.Name())
 			metaExists, err := rs.FileExists(ctx, dir, metaFileName)

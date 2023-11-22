@@ -103,6 +103,13 @@ spec:
                   name: {{ include "helm.fullname" . }}
                   key: TOKEN_DURATION_MINUTES
             {{- end }}
+            {{- if .Values.config.mode }}
+            - name: MODE
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: MODE
+            {{- end }}
             {{- if .Values.storage.databasePath }}
             - name: DATABASE_FOLDER
               valueFrom: 

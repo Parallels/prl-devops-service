@@ -11,3 +11,9 @@ data:
   API_PORT: {{ .Values.ingress.apiPort | quote }}
   API_PREFIX: {{ .Values.ingress.apiPrefix }}
   DATABASE_FOLDER: {{ .Values.storage.databasePath }}
+  {{- if .Values.config.mode }}
+  MODE: {{ .Values.config.mode }}
+  {{- else }}
+  MODE: "api"
+  {{- end }}
+  
