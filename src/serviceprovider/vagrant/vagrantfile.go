@@ -150,7 +150,6 @@ func (s *VagrantFile) extractConfigBlock(content string, nestingLevel int) (stri
 			lines = append(lines[:index], lines[index+1:]...)
 			continue
 		} else if trimmed == "end" {
-			inBlock = false
 			lines = append(lines[:index], lines[index+1:]...)
 			return strings.Join(lines, "\n"), &result
 		}

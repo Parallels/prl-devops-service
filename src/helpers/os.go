@@ -214,9 +214,8 @@ func ToHCL(m map[string]interface{}, indent int) string {
 		}
 	}
 	result := strings.Join(lines, "\n")
-	if strings.HasSuffix(result, ",") {
-		result = result[:len(result)-1]
-	}
+	result = strings.TrimSuffix(result, ",")
+
 	return result
 }
 

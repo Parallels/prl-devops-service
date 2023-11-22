@@ -140,7 +140,9 @@ func (s *VagrantService) Install(asUser, version string, flags map[string]string
 
 	s.installed = true
 	logger.Info("Installing %s plugins", s.Name())
-	s.InstallParallelsDesktopPlugin(asUser)
+	if err := s.InstallParallelsDesktopPlugin(asUser); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -261,8 +263,13 @@ func (s *VagrantService) updateVagrantFile(ctx basecontext.ApiContext, filePath 
 		return err
 	}
 
-	helper.CopyFile(filePath, filePath+".bak")
-	helper.CopyFile(filePath, filePath+".tmp")
+	if err := helper.CopyFile(filePath, filePath+".bak"); err != nil {
+		return err
+	}
+
+	if err := helper.CopyFile(filePath, filePath+".tmp"); err != nil {
+		return err
+	}
 
 	blocks := vagrantFile.GetConfigBlock("parallels")
 	if len(blocks) == 0 {
@@ -458,9 +465,15 @@ func (s *VagrantService) Up(ctx basecontext.ApiContext, request models.CreateVag
 
 	// Cleaning any backup files we had to create
 	if helper.FileExists(filepath.Join(vagrantFileFolder, "Vagrantfile.tmp")) {
-		helper.DeleteFile(filepath.Join(vagrantFileFolder, "Vagrantfile"))
-		helper.CopyFile(filepath.Join(vagrantFileFolder, "Vagrantfile.tmp"), filepath.Join(vagrantFileFolder, "Vagrantfile"))
-		helper.DeleteFile(filepath.Join(vagrantFileFolder, "Vagrantfile.tmp"))
+		if err := helper.DeleteFile(filepath.Join(vagrantFileFolder, "Vagrantfile")); err != nil {
+			return err
+		}
+		if err := helper.CopyFile(filepath.Join(vagrantFileFolder, "Vagrantfile.tmp"), filepath.Join(vagrantFileFolder, "Vagrantfile")); err != nil {
+			return err
+		}
+		if err := helper.DeleteFile(filepath.Join(vagrantFileFolder, "Vagrantfile.tmp")); err != nil {
+			return err
+		}
 	}
 
 	return nil

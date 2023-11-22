@@ -72,9 +72,9 @@ func InitCatalogServices() {
 		} else {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}
-		globalProvider.JsonDatabase.Connect(ctx)
+		_ = globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.Logger.Info("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
-		globalProvider.JsonDatabase.Save(ctx)
+		_ = globalProvider.JsonDatabase.Save(ctx)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
 		if err != nil {
@@ -91,7 +91,7 @@ func InitCatalogServices() {
 		} else {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}
-		globalProvider.JsonDatabase.Connect(ctx)
+		_ = globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.Logger.Info("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 
@@ -155,9 +155,9 @@ func InitServices() {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}
 
-		globalProvider.JsonDatabase.Connect(ctx)
+		_ = globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.Logger.Info("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
-		globalProvider.JsonDatabase.Save(ctx)
+		_ = globalProvider.JsonDatabase.Save(ctx)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
 		if err != nil {
@@ -175,7 +175,7 @@ func InitServices() {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}
 
-		globalProvider.JsonDatabase.Connect(ctx)
+		_ = globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.Logger.Info("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 
@@ -249,28 +249,28 @@ func (p *ServiceProvider) IsSystemAvailable() bool {
 
 func (p *ServiceProvider) InstallAllTools(asUser string, flags map[string]string) {
 	if p.IsParallelsDesktopAvailable() {
-		p.ParallelsDesktopService.Install(asUser, "latest", flags)
+		_ = p.ParallelsDesktopService.Install(asUser, "latest", flags)
 	}
 	if p.IsGitAvailable() {
-		p.GitService.Install(asUser, "latest", flags)
+		_ = p.GitService.Install(asUser, "latest", flags)
 	}
 	if p.IsPackerAvailable() {
-		p.PackerService.Install(asUser, "latest", flags)
+		_ = p.PackerService.Install(asUser, "latest", flags)
 	}
 	if p.IsVagrantAvailable() {
-		p.VagrantService.Install(asUser, "latest", flags)
+		_ = p.VagrantService.Install(asUser, "latest", flags)
 	}
 }
 
 func (p *ServiceProvider) UninstallAllTools(asUser string, uninstallDependencies bool, flags map[string]string) {
 	if p.IsParallelsDesktopAvailable() {
-		p.ParallelsDesktopService.Uninstall(asUser, uninstallDependencies)
+		_ = p.ParallelsDesktopService.Uninstall(asUser, uninstallDependencies)
 	}
 	if p.IsPackerAvailable() {
-		p.PackerService.Uninstall(asUser, uninstallDependencies)
+		_ = p.PackerService.Uninstall(asUser, uninstallDependencies)
 	}
 	if p.IsVagrantAvailable() {
-		p.VagrantService.Uninstall(asUser, uninstallDependencies)
+		_ = p.VagrantService.Uninstall(asUser, uninstallDependencies)
 	}
 }
 

@@ -70,8 +70,6 @@ func GetClaimsHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		dtoClaims, err := dbService.GetClaims(ctx, GetFilterHeader(r))
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
@@ -81,7 +79,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 		if len(dtoClaims) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.ClaimResponse, 0)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Claims returned: %v", len(response))
 			return
 		}
@@ -89,7 +87,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 		result := mappers.DtoClaimsToApi(dtoClaims)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Claims returned successfully")
 	}
 }
@@ -114,8 +112,6 @@ func GetClaimHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		vars := mux.Vars(r)
 		id := vars["id"]
 
@@ -128,7 +124,7 @@ func GetClaimHandler() restapi.ControllerHandler {
 		response := mappers.DtoClaimToApi(*dtoClaim)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("Claim returned successfully")
 	}
 }
@@ -148,7 +144,12 @@ func CreateClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.ClaimRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -163,8 +164,6 @@ func CreateClaimHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		dtoClaim := mappers.ApiClaimToDto(request)
 
 		claim, err := dbService.CreateClaim(ctx, dtoClaim)
@@ -176,7 +175,7 @@ func CreateClaimHandler() restapi.ControllerHandler {
 		response := mappers.DtoClaimToApi(*claim)
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("Claim created successfully")
 	}
 }
@@ -200,8 +199,6 @@ func DeleteClaimHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]

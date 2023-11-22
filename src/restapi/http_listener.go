@@ -266,7 +266,7 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 	l.Servers = append(l.Servers, srv)
 
 	for _, controller := range l.Controllers {
-		controller.Serve()
+		_ = controller.Serve()
 	}
 
 	go func() {
@@ -316,7 +316,7 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 
 	rootContext := basecontext.NewRootBaseContext()
 	provider := serviceprovider.Get()
-	provider.JsonDatabase.Disconnect(rootContext)
+	_ = provider.JsonDatabase.Disconnect(rootContext)
 	l.Logger.Info("Server shut down successfully...")
 	shutdown <- true
 	if !l.needsRestart {
@@ -406,7 +406,7 @@ func defaultHomepageController(w http.ResponseWriter, r *http.Request) {
 		Timestamp: fmt.Sprint(time.Now().Format(time.RFC850)),
 	}
 
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 func (l *HttpListener) AddSwagger() *HttpListener {

@@ -65,7 +65,7 @@ func Start() {
 
 				if localhost == nil {
 					ctx.LogInfo("Creating local orchestrator host")
-					dbService.CreateOrchestratorHost(ctx, models.OrchestratorHost{
+					_, _ = dbService.CreateOrchestratorHost(ctx, models.OrchestratorHost{
 						ID:          helpers.GenerateId(),
 						Host:        "localhost",
 						Description: "Local Orchestrator",
@@ -86,12 +86,12 @@ func Start() {
 				localhost, _ := dbService.GetOrchestratorHost(ctx, hostName)
 				if localhost != nil {
 					ctx.LogInfo("Removing local orchestrator host")
-					dbService.DeleteOrchestratorHost(ctx, localhost.ID)
+					_ = dbService.DeleteOrchestratorHost(ctx, localhost.ID)
 				}
 				apiKey, _ := dbService.GetApiKey(ctx, ORCHESTRATOR_KEY_NAME)
 				if apiKey != nil {
 					ctx.LogInfo("Removing local orchestrator key")
-					dbService.DeleteApiKey(ctx, apiKey.ID)
+					_ = dbService.DeleteApiKey(ctx, apiKey.ID)
 				}
 			}
 

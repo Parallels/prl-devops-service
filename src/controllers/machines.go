@@ -188,13 +188,13 @@ func GetVirtualMachinesHandler() restapi.ControllerHandler {
 		if len(vms) == 0 {
 			w.WriteHeader(http.StatusOK)
 			vms = make([]models.ParallelsVM, 0)
-			json.NewEncoder(w).Encode(vms)
+			_ = json.NewEncoder(w).Encode(vms)
 			ctx.LogInfo("No machines found")
 			return
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(vms)
+		_ = json.NewEncoder(w).Encode(vms)
 		ctx.LogInfo("Machines returned: %v", len(vms))
 	}
 }
@@ -234,7 +234,7 @@ func GetVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(vm)
+		_ = json.NewEncoder(w).Encode(vm)
 		ctx.LogInfo("Machine returned: %v", vm.ID)
 	}
 }
@@ -272,7 +272,7 @@ func StartVirtualMachineHandler() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Machine started: %v", id)
 	}
 }
@@ -310,7 +310,7 @@ func StopVirtualMachineHandler() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Machine stopped: %v", id)
 	}
 }
@@ -347,7 +347,7 @@ func RestartVirtualMachineHandler() restapi.ControllerHandler {
 			Operation: "Restart",
 			Status:    "Success",
 		}
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Machine restarted: %v", id)
 	}
 }
@@ -384,7 +384,7 @@ func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 			Operation: "Suspend",
 			Status:    "Success",
 		}
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Machine suspended: %v", id)
 	}
 }
@@ -421,7 +421,7 @@ func ResumeMachineController() restapi.ControllerHandler {
 			Operation: "Resume",
 			Status:    "Success",
 		}
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Machine resumed: %v", id)
 	}
 }
@@ -458,7 +458,7 @@ func ResetMachineController() restapi.ControllerHandler {
 			Operation: "Reset",
 			Status:    "Success",
 		}
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Machine reset: %v", id)
 	}
 }
@@ -496,7 +496,7 @@ func PauseVirtualMachineHandler() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Machine paused: %v", id)
 	}
 }
@@ -564,7 +564,7 @@ func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Machine status returned: %v", id)
 	}
 }
@@ -588,7 +588,12 @@ func SetVirtualMachineHandler() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -625,7 +630,7 @@ func SetVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Machine configured: %v", id)
 	}
 }
@@ -648,7 +653,12 @@ func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 		var request models.VirtualMachineExecuteCommandRequest
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -665,7 +675,7 @@ func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		} else {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Command executed on machine: %v", id)
 		}
 	}
@@ -694,7 +704,12 @@ func RenameVirtualMachineHandler() restapi.ControllerHandler {
 		id := params["id"]
 		request.ID = id
 
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -723,7 +738,7 @@ func RenameVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(vm)
+		_ = json.NewEncoder(w).Encode(vm)
 		ctx.LogInfo("Machine renamed: %v", id)
 	}
 }
@@ -747,7 +762,12 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -797,7 +817,7 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(vms[0])
+		_ = json.NewEncoder(w).Encode(vms[0])
 		ctx.LogInfo("Machine registered: %v", vms[0].ID)
 	}
 }
@@ -820,8 +840,12 @@ func UnregisterVirtualMachineHandler() restapi.ControllerHandler {
 		var request models.UnregisterVirtualMachineRequest
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
-
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -861,7 +885,12 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 
 		var request models.CreateVirtualMachineRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -877,8 +906,6 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 				ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 				return
 			}
-
-			defer dbService.Disconnect(ctx)
 
 			template, err := dbService.GetPackerTemplate(ctx, request.PackerTemplate.Template)
 			if err != nil {
@@ -920,7 +947,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Machine created using packer template: %v", vm.ID)
 		} else if request.VagrantBox != nil {
 			response, err := createVagrantBox(ctx, request)
@@ -930,7 +957,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Machine created using vagrant box: %v", response.ID)
 			return
 		} else if request.CatalogManifest != nil {
@@ -941,7 +968,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Machine created using catalog: %v", response.ID)
 			return
 		} else {
@@ -1024,7 +1051,9 @@ func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMa
 	}
 
 	if response.CurrentState == "running" || response.CurrentState == "unknown" {
-		parallelsDesktopService.StopVm(ctx, response.ID)
+		if err := parallelsDesktopService.StopVm(ctx, response.ID); err != nil {
+			return nil, err
+		}
 		response.CurrentState = "stopped"
 	}
 
@@ -1107,7 +1136,9 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 	response.CurrentState = vm.State
 
 	if response.CurrentState == "running" || response.CurrentState == "unknown" {
-		parallelsDesktopService.StopVm(ctx, response.ID)
+		if err := parallelsDesktopService.StopVm(ctx, response.ID); err != nil {
+			return nil, err
+		}
 		response.CurrentState = "stopped"
 	}
 

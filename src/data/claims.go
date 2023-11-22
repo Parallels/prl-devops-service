@@ -71,7 +71,9 @@ func (j *JsonDatabase) CreateClaim(ctx basecontext.ApiContext, claim models.Clai
 	}
 
 	j.data.Claims = append(j.data.Claims, claim)
-	j.Save(ctx)
+	if err := j.Save(ctx); err != nil {
+		return nil, err
+	}
 
 	return &claim, nil
 }
@@ -99,7 +101,9 @@ func (j *JsonDatabase) DeleteClaim(ctx basecontext.ApiContext, idOrName string) 
 					}
 				}
 			}
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -131,7 +135,9 @@ func (j *JsonDatabase) UpdateClaim(ctx basecontext.ApiContext, claim *models.Cla
 					}
 				}
 			}
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return nil, err
+			}
 			return claim, nil
 		}
 	}

@@ -48,7 +48,12 @@ func GetTokenHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		cfg := config.NewConfig()
 		var request models.LoginRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -62,8 +67,6 @@ func GetTokenHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		user, err := dbService.GetUser(ctx, request.Email)
 		if err != nil {
@@ -127,7 +130,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("User %s logged in", request.Email)
 	}
 }
@@ -146,7 +149,12 @@ func ValidateTokenHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		cfg := config.NewConfig()
 		var request models.ValidateTokenRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -177,7 +185,7 @@ func ValidateTokenHandler() restapi.ControllerHandler {
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(models.ValidateTokenResponse{
+			_ = json.NewEncoder(w).Encode(models.ValidateTokenResponse{
 				Valid: true,
 			})
 			ctx.LogInfo("Token for user %s is valid", claims["email"])

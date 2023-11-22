@@ -143,8 +143,6 @@ func GetCatalogManifestsHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		manifestsDto, err := dbService.GetCatalogManifests(ctx, GetFilterHeader(r))
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
@@ -154,7 +152,7 @@ func GetCatalogManifestsHandler() restapi.ControllerHandler {
 		if len(manifestsDto) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.CatalogManifest, 0)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Manifests returned: %v", len(response))
 			return
 		}
@@ -183,7 +181,7 @@ func GetCatalogManifestsHandler() restapi.ControllerHandler {
 		// responseManifests := mappers.DtoCatalogManifestsToApi(manifestsDto)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Manifests returned: %v", len(result))
 	}
 }
@@ -208,8 +206,6 @@ func GetCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		vars := mux.Vars(r)
 		catalogId := vars["catalogId"]
 
@@ -221,7 +217,7 @@ func GetCatalogManifestHandler() restapi.ControllerHandler {
 		if len(manifest) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.CatalogManifest, 0)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Manifests returned: %v", len(response))
 			return
 		}
@@ -229,7 +225,7 @@ func GetCatalogManifestHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestsToApi(manifest)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resultData)
+		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfo("Manifests returned: %v", len(resultData))
 	}
 }
@@ -255,8 +251,6 @@ func GetCatalogManifestVersionHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		vars := mux.Vars(r)
 		catalogId := vars["catalogId"]
 		version := vars["version"]
@@ -270,7 +264,7 @@ func GetCatalogManifestVersionHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*manifest)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resultData)
+		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfo("Manifest: %v", resultData.ID)
 	}
 }
@@ -295,8 +289,6 @@ func DownloadCatalogManifestVersionHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		catalogId := vars["catalogId"]
@@ -332,7 +324,7 @@ func DownloadCatalogManifestVersionHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*manifest)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resultData)
+		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfo("Manifest: %v", resultData.ID)
 	}
 }
@@ -357,8 +349,6 @@ func TaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		catalogId := vars["catalogId"]
@@ -395,7 +385,7 @@ func TaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*result)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resultData)
+		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfo("Manifest tainted: %v", resultData.ID)
 	}
 }
@@ -420,8 +410,6 @@ func UnTaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		catalogId := vars["catalogId"]
@@ -458,7 +446,7 @@ func UnTaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*result)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resultData)
+		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfo("Manifest untainted: %v", resultData.ID)
 	}
 }
@@ -483,8 +471,6 @@ func RevokeCatalogManifestVersionHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		catalogId := vars["catalogId"]
@@ -513,7 +499,7 @@ func RevokeCatalogManifestVersionHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*result)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resultData)
+		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfo("Manifest untainted: %v", resultData.ID)
 	}
 }
@@ -522,7 +508,12 @@ func CreateCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request catalog_models.VirtualMachineCatalogManifest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -537,8 +528,6 @@ func CreateCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		ctx.LogInfo("Creating manifest %v", request.Name)
 		dto := mappers.CatalogManifestToDto(request)
 		result, err := dbService.CreateCatalogManifest(ctx, dto)
@@ -550,7 +539,7 @@ func CreateCatalogManifestHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*result)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resultData)
+		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfo("Manifest returned: %v", resultData.ID)
 	}
 }
@@ -574,8 +563,6 @@ func DeleteCatalogManifestHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		catalogId := vars["catalogId"]
@@ -624,8 +611,6 @@ func DeleteCatalogManifestVersionHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		vars := mux.Vars(r)
 		catalogId := vars["catalogId"]
 		version := vars["version"]
@@ -668,7 +653,12 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request catalog_models.PushCatalogManifestRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -695,7 +685,7 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 		resultData.ID = resultManifest.ID
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resultData)
+		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfo("Manifest pushed: %v", resultData.ID)
 	}
 }
@@ -715,7 +705,12 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request catalog_models.PullCatalogManifestRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -742,7 +737,7 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 		resultData.ID = resultManifest.ID
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resultData)
+		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfo("Manifest pulled: %v", resultData.ID)
 	}
 }
@@ -762,7 +757,12 @@ func ImportCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request catalog_models.ImportCatalogManifestRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -788,7 +788,7 @@ func ImportCatalogManifestHandler() restapi.ControllerHandler {
 		resultData := mappers.BaseImportCatalogManifestResponseToApi(*resultManifest)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resultData)
+		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfo("Manifest imported: %v", resultData.ID)
 	}
 }

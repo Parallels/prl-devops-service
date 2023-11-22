@@ -84,7 +84,9 @@ func installServiceOnMac(ctx basecontext.ApiContext, config ApiServiceConfig) er
 
 	// Unload the daemon if it is already loaded
 	if helper.FileExists(daemonPath) {
-		uninstallServiceOnMac(ctx)
+		if err := uninstallServiceOnMac(ctx); err != nil {
+			return err
+		}
 	}
 
 	if err := helper.WriteToFile(plist, daemonPath); err != nil {

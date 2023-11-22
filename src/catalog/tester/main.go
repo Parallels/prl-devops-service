@@ -20,7 +20,6 @@ type TestProvider struct {
 	ctx        basecontext.ApiContext
 	service    *catalog.CatalogManifestService
 	connection string
-	name       string
 	checksum   string
 }
 

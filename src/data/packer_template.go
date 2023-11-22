@@ -83,7 +83,9 @@ func (j *JsonDatabase) AddPackerTemplate(ctx basecontext.ApiContext, template *m
 
 	j.data.PackerTemplates = append(j.data.PackerTemplates, *template)
 
-	j.Save(ctx)
+	if err := j.Save(ctx); err != nil {
+		return nil, err
+	}
 	return template, nil
 }
 
@@ -103,7 +105,9 @@ func (j *JsonDatabase) DeletePackerTemplate(ctx basecontext.ApiContext, nameOrId
 			}
 
 			j.data.PackerTemplates = append(j.data.PackerTemplates[:i], j.data.PackerTemplates[i+1:]...)
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -122,7 +126,9 @@ func (j *JsonDatabase) UpdatePackerTemplate(ctx basecontext.ApiContext, template
 				return nil, ErrUpdatingInternalPackerTemplate
 			}
 			j.data.PackerTemplates[i] = *template
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return nil, err
+			}
 			return template, nil
 		}
 	}

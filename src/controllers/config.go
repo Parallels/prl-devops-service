@@ -95,7 +95,7 @@ func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(license)
+		_ = json.NewEncoder(w).Encode(license)
 		ctx.LogInfo("Parallels Desktop License returned successfully")
 	}
 }
@@ -115,7 +115,12 @@ func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.InstallToolsRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -220,7 +225,7 @@ func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 
 		// Write the JSON data to the response
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("Tools install request successfully")
 	}
 }
@@ -240,7 +245,12 @@ func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.UninstallToolsRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -333,7 +343,7 @@ func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 		restapi.Get().Restart()
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("Tools uninstall request successfully")
 	}
 }
@@ -378,7 +388,7 @@ func GetHardwareInfo() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(hardwareInfo)
+		_ = json.NewEncoder(w).Encode(hardwareInfo)
 	}
 }
 
@@ -454,6 +464,6 @@ func GetSystemHealth() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 	}
 }

@@ -103,7 +103,11 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 
 			catalogManifest.Version = r.Version
 			catalogManifest.CatalogId = r.CatalogId
-			catalogManifest.Validate()
+			if err := catalogManifest.Validate(); err != nil {
+				ctx.LogError("Error validating manifest: %v", err)
+				response.AddError(err)
+				break
+			}
 			dto := mappers.CatalogManifestToDto(*catalogManifest)
 
 			// Importing claims and roles
@@ -122,7 +126,11 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 						ID:   claim,
 						Name: claim,
 					}
-					db.CreateClaim(ctx, newClaim)
+					if _, err := db.CreateClaim(ctx, newClaim); err != nil {
+						ctx.LogError("Error creating claim %v: %v", claim, err)
+						response.AddError(err)
+						break
+					}
 				}
 			}
 			for _, role := range dto.RequiredRoles {
@@ -140,7 +148,11 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 						ID:   role,
 						Name: role,
 					}
-					db.CreateRole(ctx, newRole)
+					if _, err := db.CreateRole(ctx, newRole); err != nil {
+						ctx.LogError("Error creating role %v: %v", role, err)
+						response.AddError(err)
+						break
+					}
 				}
 			}
 
