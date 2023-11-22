@@ -46,6 +46,7 @@ service:
 logLevel: info
 
 config:
+  mode: "api"
   disableCatalogCaching: false
 
 ingress:
