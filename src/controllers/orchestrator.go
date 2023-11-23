@@ -1243,13 +1243,13 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 
 				orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 				resp, err := orchestratorSvc.CreateHostVirtualMachine(host, request)
-				response = *resp
 				if err != nil {
 					e := models.NewFromError(err)
 					apiError = &e
 					host = nil
-					continue
+					break
 				} else {
+					response = *resp
 					break
 				}
 			}

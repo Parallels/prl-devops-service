@@ -1737,7 +1737,128 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/catalog/{catalogId}/{version}/download": {
+        "/v1/catalog/{catalogId}/{version}/{architecture}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns a catalog manifest version",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Gets a catalog manifest version architecture",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Version",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Architecture",
+                        "name": "architecture",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a catalog manifest version",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Deletes a catalog manifest version architecture",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Version",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Architecture",
+                        "name": "architecture",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/{catalogId}/{version}/{architecture}/download": {
             "get": {
                 "security": [
                     {
@@ -1769,6 +1890,13 @@ const docTemplate = `{
                         "name": "version",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Architecture",
+                        "name": "architecture",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1793,7 +1921,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/catalog/{catalogId}/{version}/revoke": {
+        "/v1/catalog/{catalogId}/{version}/{architecture}/revoke": {
             "patch": {
                 "security": [
                     {
@@ -1825,6 +1953,13 @@ const docTemplate = `{
                         "name": "version",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Architecture",
+                        "name": "architecture",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1849,7 +1984,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/catalog/{catalogId}/{version}/taint": {
+        "/v1/catalog/{catalogId}/{version}/{architecture}/taint": {
             "patch": {
                 "security": [
                     {
@@ -1881,6 +2016,13 @@ const docTemplate = `{
                         "name": "version",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Architecture",
+                        "name": "architecture",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1905,7 +2047,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/catalog/{catalogId}/{version}/untaint": {
+        "/v1/catalog/{catalogId}/{version}/{architecture}/untaint": {
             "patch": {
                 "security": [
                     {
@@ -1935,6 +2077,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Version",
                         "name": "version",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Architecture",
+                        "name": "architecture",
                         "in": "path",
                         "required": true
                     }
@@ -4229,6 +4378,9 @@ const docTemplate = `{
         "github_com_Parallels_pd-api-service_models.CatalogManifest": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "catalog_id": {
                     "type": "string"
                 },
@@ -4587,6 +4739,9 @@ const docTemplate = `{
         "models.CreateCatalogVirtualMachineRequest": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "catalog_id": {
                     "type": "string"
                 },
@@ -4684,6 +4839,9 @@ const docTemplate = `{
         "models.CreatePackerVirtualMachineRequest": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "desiredState": {
                     "type": "string"
                 },
@@ -4704,6 +4862,9 @@ const docTemplate = `{
         "models.CreateVagrantMachineRequest": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "box": {
                     "type": "string"
                 },
@@ -4733,6 +4894,9 @@ const docTemplate = `{
         "models.CreateVirtualMachineRequest": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "catalog_manifest": {
                     "$ref": "#/definitions/models.CreateCatalogVirtualMachineRequest"
                 },
@@ -4895,6 +5059,9 @@ const docTemplate = `{
         "models.HostResourceOverviewResponse": {
             "type": "object",
             "properties": {
+                "cpu_brand": {
+                    "type": "string"
+                },
                 "cpu_type": {
                     "type": "string"
                 },
@@ -4915,6 +5082,9 @@ const docTemplate = `{
         "models.ImportCatalogManifestRequest": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "catalog_id": {
                     "type": "string"
                 },
@@ -5245,6 +5415,12 @@ const docTemplate = `{
         "models.OrchestratorHostResponse": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
+                "cpu_model": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -5535,6 +5711,9 @@ const docTemplate = `{
         "models.PullCatalogManifestRequest": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "catalog_id": {
                     "type": "string"
                 },
@@ -5567,6 +5746,9 @@ const docTemplate = `{
         "models.PushCatalogManifestRequest": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "catalog_id": {
                     "type": "string"
                 },
@@ -5862,6 +6044,9 @@ const docTemplate = `{
         "models.SystemUsageResponse": {
             "type": "object",
             "properties": {
+                "cpu_brand": {
+                    "type": "string"
+                },
                 "cpu_type": {
                     "type": "string"
                 },

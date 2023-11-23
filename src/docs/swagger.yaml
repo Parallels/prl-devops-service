@@ -2,6 +2,8 @@ basePath: /api
 definitions:
   github_com_Parallels_pd-api-service_models.CatalogManifest:
     properties:
+      architecture:
+        type: string
       catalog_id:
         type: string
       created_at:
@@ -236,6 +238,8 @@ definitions:
     type: object
   models.CreateCatalogVirtualMachineRequest:
     properties:
+      architecture:
+        type: string
       catalog_id:
         type: string
       connection:
@@ -300,6 +304,8 @@ definitions:
     type: object
   models.CreatePackerVirtualMachineRequest:
     properties:
+      architecture:
+        type: string
       desiredState:
         type: string
       name:
@@ -313,6 +319,8 @@ definitions:
     type: object
   models.CreateVagrantMachineRequest:
     properties:
+      architecture:
+        type: string
       box:
         type: string
       custom_parallels_config:
@@ -332,6 +340,8 @@ definitions:
     type: object
   models.CreateVirtualMachineRequest:
     properties:
+      architecture:
+        type: string
       catalog_manifest:
         $ref: '#/definitions/models.CreateCatalogVirtualMachineRequest'
       name:
@@ -437,6 +447,8 @@ definitions:
     type: object
   models.HostResourceOverviewResponse:
     properties:
+      cpu_brand:
+        type: string
       cpu_type:
         type: string
       total:
@@ -450,6 +462,8 @@ definitions:
     type: object
   models.ImportCatalogManifestRequest:
     properties:
+      architecture:
+        type: string
       catalog_id:
         type: string
       connection:
@@ -672,6 +686,10 @@ definitions:
     type: object
   models.OrchestratorHostResponse:
     properties:
+      architecture:
+        type: string
+      cpu_model:
+        type: string
       description:
         type: string
       host:
@@ -864,6 +882,8 @@ definitions:
     type: object
   models.PullCatalogManifestRequest:
     properties:
+      architecture:
+        type: string
       catalog_id:
         type: string
       connection:
@@ -885,6 +905,8 @@ definitions:
     type: object
   models.PushCatalogManifestRequest:
     properties:
+      architecture:
+        type: string
       catalog_id:
         type: string
       connection:
@@ -1077,6 +1099,8 @@ definitions:
     type: object
   models.SystemUsageResponse:
     properties:
+      cpu_brand:
+        type: string
       cpu_type:
         type: string
       total:
@@ -2261,7 +2285,84 @@ paths:
       summary: Gets a catalog manifest version
       tags:
       - Catalogs
-  /v1/catalog/{catalogId}/{version}/download:
+  /v1/catalog/{catalogId}/{version}/{architecture}:
+    delete:
+      description: This endpoint deletes a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a catalog manifest version architecture
+      tags:
+      - Catalogs
+    get:
+      description: This endpoint returns a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a catalog manifest version architecture
+      tags:
+      - Catalogs
+  /v1/catalog/{catalogId}/{version}/{architecture}/download:
     get:
       description: This endpoint downloads a catalog manifest version
       parameters:
@@ -2273,6 +2374,11 @@ paths:
       - description: Version
         in: path
         name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
         required: true
         type: string
       produces:
@@ -2296,7 +2402,7 @@ paths:
       summary: Downloads a catalog manifest version
       tags:
       - Catalogs
-  /v1/catalog/{catalogId}/{version}/revoke:
+  /v1/catalog/{catalogId}/{version}/{architecture}/revoke:
     patch:
       description: This endpoint UnTaints a catalog manifest version
       parameters:
@@ -2308,6 +2414,11 @@ paths:
       - description: Version
         in: path
         name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
         required: true
         type: string
       produces:
@@ -2331,7 +2442,7 @@ paths:
       summary: UnTaints a catalog manifest version
       tags:
       - Catalogs
-  /v1/catalog/{catalogId}/{version}/taint:
+  /v1/catalog/{catalogId}/{version}/{architecture}/taint:
     patch:
       description: This endpoint Taints a catalog manifest version
       parameters:
@@ -2343,6 +2454,11 @@ paths:
       - description: Version
         in: path
         name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
         required: true
         type: string
       produces:
@@ -2366,7 +2482,7 @@ paths:
       summary: Taints a catalog manifest version
       tags:
       - Catalogs
-  /v1/catalog/{catalogId}/{version}/untaint:
+  /v1/catalog/{catalogId}/{version}/{architecture}/untaint:
     patch:
       description: This endpoint UnTaints a catalog manifest version
       parameters:
@@ -2378,6 +2494,11 @@ paths:
       - description: Version
         in: path
         name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
         required: true
         type: string
       produces:
