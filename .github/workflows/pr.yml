@@ -13,7 +13,7 @@ jobs:
       - name: Setup Go 1.21.x
         uses: actions/setup-go@v4
         with:
-          go-version-file: 'go.mod'
+          go-version-file: ${{ github.workspace }}/src/go.mod
           cache: true
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Install dependencies
