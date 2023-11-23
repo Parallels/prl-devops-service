@@ -7,6 +7,7 @@ type CatalogManifest struct {
 	CatalogId              string                       `json:"catalog_id"`
 	Name                   string                       `json:"name"`
 	Version                string                       `json:"version"`
+	Architecture           string                       `json:"architecture"`
 	Description            string                       `json:"description"`
 	Path                   string                       `json:"path,omitempty"`
 	PackFile               string                       `json:"pack_path,omitempty"`

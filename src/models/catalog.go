@@ -5,6 +5,7 @@ type CatalogManifest struct {
 	ID                 string                        `json:"id"`
 	CatalogId          string                        `json:"catalog_id"`
 	Description        string                        `json:"description"`
+	Architecture       string                        `json:"architecture"`
 	Version            string                        `json:"version"`
 	Type               string                        `json:"type"`
 	Tags               []string                      `json:"tags,omitempty"`

@@ -11,7 +11,7 @@ import (
 	"github.com/Parallels/pd-api-service/serviceprovider"
 )
 
-func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId string, version string) error {
+func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId string, version string, architecture string) error {
 	executed := false
 	db := serviceprovider.Get().JsonDatabase
 	if db == nil {
@@ -33,6 +33,21 @@ func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId st
 				cleanItems = append(cleanItems, mappers.DtoCatalogManifestToBase(manifest))
 			}
 		}
+	} else if version != "" && architecture == "" {
+		dbManifest, err := db.GetCatalogManifestsByCatalogIdAndVersion(ctx, catalogId, version)
+		if err != nil && err.Error() != "catalog manifest not found" {
+			return err
+		} else {
+			for _, manifest := range dbManifest {
+				cleanItems = append(cleanItems, mappers.DtoCatalogManifestToBase(manifest))
+			}
+		}
+	} else if version != "" && architecture != "" {
+		dbManifest, err := db.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil && err.Error() != "catalog manifest not found" {
+			return err
+		}
+		cleanItems = append(cleanItems, mappers.DtoCatalogManifestToBase(*dbManifest))
 	}
 
 	connectionString := ""

@@ -131,6 +131,8 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 
 				j.data.OrchestratorHosts[index].UpdatedAt = helpers.GetUtcCurrentDateTime()
 				j.data.OrchestratorHosts[index].Host = host.Host
+				j.data.OrchestratorHosts[index].Architecture = host.Architecture
+				j.data.OrchestratorHosts[index].CpuModel = host.CpuModel
 				j.data.OrchestratorHosts[index].Port = host.Port
 				j.data.OrchestratorHosts[index].Authentication = host.Authentication
 				j.data.OrchestratorHosts[index].Resources = host.Resources
@@ -161,16 +163,21 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 	return nil, ErrOrchestratorHostNotFound
 }
 
-func (j *JsonDatabase) GetOrchestratorAvailableResources(ctx basecontext.ApiContext) models.HostResourceItem {
-	result := models.HostResourceItem{}
+func (j *JsonDatabase) GetOrchestratorAvailableResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
+	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
 		if host.State == "healthy" {
 			if host.Resources != nil {
-				result.LogicalCpuCount += host.Resources.TotalAvailable.LogicalCpuCount
-				result.PhysicalCpuCount += host.Resources.TotalAvailable.PhysicalCpuCount
-				result.FreeDiskSize += host.Resources.TotalAvailable.FreeDiskSize
-				result.MemorySize += host.Resources.TotalAvailable.MemorySize
+				if _, ok := result[host.Resources.CpuType]; !ok {
+					result[host.Resources.CpuType] = models.HostResourceItem{}
+				}
+				item := result[host.Resources.CpuType]
+				item.LogicalCpuCount += host.Resources.TotalAvailable.LogicalCpuCount
+				item.PhysicalCpuCount += host.Resources.TotalAvailable.PhysicalCpuCount
+				item.FreeDiskSize += host.Resources.TotalAvailable.FreeDiskSize
+				item.MemorySize += host.Resources.TotalAvailable.MemorySize
+				result[host.Resources.CpuType] = item
 			}
 		}
 	}
@@ -178,16 +185,21 @@ func (j *JsonDatabase) GetOrchestratorAvailableResources(ctx basecontext.ApiCont
 	return result
 }
 
-func (j *JsonDatabase) GetOrchestratorTotalResources(ctx basecontext.ApiContext) models.HostResourceItem {
-	result := models.HostResourceItem{}
+func (j *JsonDatabase) GetOrchestratorTotalResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
+	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
 		if host.State == "healthy" {
 			if host.Resources != nil {
-				result.LogicalCpuCount += host.Resources.Total.LogicalCpuCount
-				result.PhysicalCpuCount += host.Resources.Total.PhysicalCpuCount
-				result.FreeDiskSize += host.Resources.Total.FreeDiskSize
-				result.MemorySize += host.Resources.Total.MemorySize
+				if _, ok := result[host.Resources.CpuType]; !ok {
+					result[host.Resources.CpuType] = models.HostResourceItem{}
+				}
+				item := result[host.Resources.CpuType]
+				item.LogicalCpuCount += host.Resources.Total.LogicalCpuCount
+				item.PhysicalCpuCount += host.Resources.Total.PhysicalCpuCount
+				item.FreeDiskSize += host.Resources.Total.FreeDiskSize
+				item.MemorySize += host.Resources.Total.MemorySize
+				result[host.Resources.CpuType] = item
 			}
 		}
 	}
@@ -195,16 +207,21 @@ func (j *JsonDatabase) GetOrchestratorTotalResources(ctx basecontext.ApiContext)
 	return result
 }
 
-func (j *JsonDatabase) GetOrchestratorInUseResources(ctx basecontext.ApiContext) models.HostResourceItem {
-	result := models.HostResourceItem{}
+func (j *JsonDatabase) GetOrchestratorInUseResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
+	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
 		if host.State == "healthy" {
 			if host.Resources != nil {
-				result.LogicalCpuCount += host.Resources.TotalInUse.LogicalCpuCount
-				result.PhysicalCpuCount += host.Resources.TotalInUse.PhysicalCpuCount
-				result.FreeDiskSize += host.Resources.TotalInUse.FreeDiskSize
-				result.MemorySize += host.Resources.TotalInUse.MemorySize
+				if _, ok := result[host.Resources.CpuType]; !ok {
+					result[host.Resources.CpuType] = models.HostResourceItem{}
+				}
+				item := result[host.Resources.CpuType]
+				item.LogicalCpuCount += host.Resources.TotalInUse.LogicalCpuCount
+				item.PhysicalCpuCount += host.Resources.TotalInUse.PhysicalCpuCount
+				item.FreeDiskSize += host.Resources.TotalInUse.FreeDiskSize
+				item.MemorySize += host.Resources.TotalInUse.MemorySize
+				result[host.Resources.CpuType] = item
 			}
 		}
 	}
@@ -212,16 +229,21 @@ func (j *JsonDatabase) GetOrchestratorInUseResources(ctx basecontext.ApiContext)
 	return result
 }
 
-func (j *JsonDatabase) GetOrchestratorReservedResources(ctx basecontext.ApiContext) models.HostResourceItem {
-	result := models.HostResourceItem{}
+func (j *JsonDatabase) GetOrchestratorReservedResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
+	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
 		if host.State == "healthy" {
 			if host.Resources != nil {
-				result.LogicalCpuCount += host.Resources.TotalReserved.LogicalCpuCount
-				result.PhysicalCpuCount += host.Resources.TotalReserved.PhysicalCpuCount
-				result.FreeDiskSize += host.Resources.TotalReserved.FreeDiskSize
-				result.MemorySize += host.Resources.TotalReserved.MemorySize
+				if _, ok := result[host.Resources.CpuType]; !ok {
+					result[host.Resources.CpuType] = models.HostResourceItem{}
+				}
+				item := result[host.Resources.CpuType]
+				item.LogicalCpuCount += host.Resources.TotalReserved.LogicalCpuCount
+				item.PhysicalCpuCount += host.Resources.TotalReserved.PhysicalCpuCount
+				item.FreeDiskSize += host.Resources.TotalReserved.FreeDiskSize
+				item.MemorySize += host.Resources.TotalReserved.MemorySize
+				result[host.Resources.CpuType] = item
 			}
 		}
 	}

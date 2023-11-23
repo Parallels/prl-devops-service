@@ -2,6 +2,7 @@ package models
 
 type SystemUsageResponse struct {
 	CpuType        string          `json:"cpu_type,omitempty"`
+	CpuBrand       string          `json:"cpu_brand,omitempty"`
 	Total          SystemUsageItem `json:"total,omitempty"`
 	TotalAvailable SystemUsageItem `json:"total_available,omitempty"`
 	TotalInUse     SystemUsageItem `json:"total_in_use,omitempty"`
@@ -17,6 +18,7 @@ type SystemUsageItem struct {
 
 type SystemHardwareInfo struct {
 	CpuType          string  `json:"cpu_type,omitempty"`
+	CpuBrand         string  `json:"cpu_brand,omitempty"`
 	PhysicalCpuCount int     `json:"physical_cpu_count,omitempty"`
 	LogicalCpuCount  int     `json:"logical_cpu_count,omitempty"`
 	MemorySize       float64 `json:"memory_size,omitempty"`

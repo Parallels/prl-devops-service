@@ -103,11 +103,26 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 
 			catalogManifest.Version = r.Version
 			catalogManifest.CatalogId = r.CatalogId
+			catalogManifest.Architecture = r.Architecture
 			if err := catalogManifest.Validate(); err != nil {
 				ctx.LogError("Error validating manifest: %v", err)
 				response.AddError(err)
 				break
 			}
+			exists, err := db.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogManifest.Name, catalogManifest.Version, catalogManifest.Architecture)
+			if err != nil {
+				if errors.GetSystemErrorCode(err) != 404 {
+					ctx.LogError("Error getting catalog manifest: %v", err)
+					response.AddError(err)
+					break
+				}
+			}
+			if exists != nil {
+				ctx.LogError("Catalog manifest already exists: %v", catalogManifest.Name)
+				response.AddError(errors.Newf("Catalog manifest already exists: %v", catalogManifest.Name))
+				break
+			}
+
 			dto := mappers.CatalogManifestToDto(*catalogManifest)
 
 			// Importing claims and roles

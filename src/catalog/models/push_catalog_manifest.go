@@ -1,8 +1,10 @@
 package models
 
 import (
+	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/serviceprovider/system"
 )
 
 var (
@@ -10,6 +12,8 @@ var (
 	ErrPushMissingCatalogId    = errors.NewWithCode("missing catalog_id", 400)
 	ErrPushMissingVersion      = errors.NewWithCode("missing version", 400)
 	ErrPushVersionInvalidChars = errors.NewWithCode("version contains invalid characters", 400)
+	ErrMissingArchitecture     = errors.NewWithCode("missing architecture", 400)
+	ErrInvalidArchitecture     = errors.NewWithCode("invalid architecture, needs to be either x86_64 or arm64", 400)
 )
 
 type PushCatalogManifestRequest struct {
@@ -17,6 +21,7 @@ type PushCatalogManifestRequest struct {
 	CatalogId               string                 `json:"catalog_id"`
 	Description             string                 `json:"description"`
 	Version                 string                 `json:"version"`
+	Architecture            string                 `json:"architecture"`
 	Connection              string                 `json:"connection"`
 	Uuid                    string                 `json:"uuid,omitempty"`
 	RequiredRoles           []string               `json:"required_roles,omitempty"`
@@ -53,6 +58,17 @@ func (r *PushCatalogManifestRequest) Validate() error {
 	if r.Version == "" {
 		return ErrPushMissingVersion
 	}
+
+	if r.Architecture == "" {
+		sysCtl := system.Get()
+		ctx := basecontext.NewRootBaseContext()
+		arch, err := sysCtl.GetArchitecture(ctx)
+		if err != nil {
+			return errors.NewWithCode("unable to determine architecture and none was set", 400)
+		}
+		r.Architecture = arch
+	}
+
 	if helpers.ContainsIllegalChars(r.Version) {
 		return ErrPushVersionInvalidChars
 	}

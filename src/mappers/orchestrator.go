@@ -11,6 +11,8 @@ func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.O
 	result := models.OrchestratorHostResponse{
 		ID:             dto.ID,
 		Host:           dto.GetHost(),
+		Architecture:   dto.Architecture,
+		CpuModel:       dto.CpuModel,
 		Description:    dto.Description,
 		Tags:           dto.Tags,
 		RequiredClaims: dto.RequiredClaims,

@@ -10,6 +10,7 @@ import (
 type CreatePackerVirtualMachineRequest struct {
 	Template     string                     `json:"template"`
 	Owner        string                     `json:"owner"`
+	Architecture string                     `json:"architecture"`
 	Name         string                     `json:"name"`
 	Specs        *CreateVirtualMachineSpecs `json:"specs,omitempty"`
 	DesiredState string                     `json:"desiredState"`

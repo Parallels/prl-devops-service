@@ -52,6 +52,8 @@ func (o *OrchestratorHostRequest) Validate() error {
 type OrchestratorHostResponse struct {
 	ID             string           `json:"id"`
 	Host           string           `json:"host"`
+	Architecture   string           `json:"architecture"`
+	CpuModel       string           `json:"cpu_model"`
 	Description    string           `json:"description,omitempty"`
 	Tags           []string         `json:"tags,omitempty"`
 	State          string           `json:"state,omitempty"`

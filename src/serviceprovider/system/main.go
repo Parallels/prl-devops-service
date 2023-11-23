@@ -37,7 +37,7 @@ func New() *SystemService {
 
 	if globalSystemService.GetOperatingSystem() == "macos" && globalSystemService.FindPath() == "" {
 		logger.Warn("Running without support for brew")
-		return nil
+		return globalSystemService
 	} else {
 		globalSystemService.installed = true
 	}
@@ -64,6 +64,8 @@ func (s *SystemService) FindPath() string {
 	} else {
 		if _, err := os.Stat("/opt/homebrew/bin/brew"); err == nil {
 			s.brewExecutable = "/opt/homebrew/bin/brew"
+		} else if _, err := os.Stat("/usr/local/bin/brew"); err == nil {
+			s.brewExecutable = "/usr/local/bin/brew"
 		} else {
 			logger.Warn("Brew executable not found")
 			return s.brewExecutable
@@ -491,9 +493,13 @@ func (s *SystemService) GetHardwareInfo(ctx basecontext.ApiContext) (*models.Sys
 
 func (s *SystemService) getMacSystemHardwareInfo(ctx basecontext.ApiContext) (*models.SystemHardwareInfo, error) {
 	result := models.SystemHardwareInfo{}
-	cpuTypeCmd := helpers.Command{
+	cpuBrandNameCmd := helpers.Command{
 		Command: "sysctl",
 		Args:    []string{"-n", "machdep.cpu.brand_string"},
+	}
+	cpuTypeCmd := helpers.Command{
+		Command: "uname",
+		Args:    []string{"-m"},
 	}
 	physicalCpuCountCmd := helpers.Command{
 		Command: "sysctl",
@@ -510,6 +516,10 @@ func (s *SystemService) getMacSystemHardwareInfo(ctx basecontext.ApiContext) (*m
 	diskAvailableCmd := helpers.Command{
 		Command: "df",
 		Args:    []string{"-h", "/"},
+	}
+	cpuBrand, err := helpers.ExecuteWithNoOutput(cpuBrandNameCmd)
+	if err != nil {
+		return nil, err
 	}
 	cpuType, err := helpers.ExecuteWithNoOutput(cpuTypeCmd)
 	if err != nil {
@@ -532,6 +542,7 @@ func (s *SystemService) getMacSystemHardwareInfo(ctx basecontext.ApiContext) (*m
 		return nil, err
 	}
 	result.CpuType = strings.ReplaceAll(cpuType, "\n", "")
+	result.CpuBrand = strings.ReplaceAll(cpuBrand, "\n", "")
 	physicalCpuCountInt, err := strconv.Atoi(helpers.CleanOutputString(physicalCpuCount))
 	if err != nil {
 		return nil, err
@@ -574,4 +585,39 @@ func (s *SystemService) parseDfCommand(output string) (totalDisk float64, freeDi
 	}
 
 	return totalDisk, freeDisk, nil
+}
+
+func (s *SystemService) GetArchitecture(ctx basecontext.ApiContext) (string, error) {
+	switch s.GetOperatingSystem() {
+	case "macos":
+		return s.getMacArchitecture(ctx)
+	case "linux":
+		return s.getLinuxArchitecture(ctx)
+	default:
+		return "", errors.New("Not implemented")
+	}
+}
+
+func (s *SystemService) getMacArchitecture(ctx basecontext.ApiContext) (string, error) {
+	cpuTypeCmd := helpers.Command{
+		Command: "uname",
+		Args:    []string{"-m"},
+	}
+	cpuType, err := helpers.ExecuteWithNoOutput(cpuTypeCmd)
+	if err != nil {
+		return "", err
+	}
+	return strings.ReplaceAll(cpuType, "\n", ""), nil
+}
+
+func (s *SystemService) getLinuxArchitecture(ctx basecontext.ApiContext) (string, error) {
+	cpuTypeCmd := helpers.Command{
+		Command: "uname",
+		Args:    []string{"-m"},
+	}
+	cpuType, err := helpers.ExecuteWithNoOutput(cpuTypeCmd)
+	if err != nil {
+		return "", err
+	}
+	return strings.ReplaceAll(cpuType, "\n", ""), nil
 }

@@ -11,6 +11,7 @@ func MapPullCatalogManifestRequestFromCreateCatalogVirtualMachineRequest(m model
 		MachineName:      m.MachineName,
 		Owner:            m.Owner,
 		Version:          m.Version,
+		Architecture:     m.Architecture,
 		Connection:       m.Connection,
 		ProviderMetadata: m.ProviderMetadata,
 		StartAfterPull:   m.StartAfterPull,

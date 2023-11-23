@@ -10,6 +10,7 @@ import (
 type CreateCatalogVirtualMachineRequest struct {
 	CatalogId        string                     `json:"catalog_id"`
 	Version          string                     `json:"version,omitempty"`
+	Architecture     string                     `json:"architecture,omitempty"`
 	Owner            string                     `json:"owner,omitempty"`
 	MachineName      string                     `json:"machine_name,omitempty"`
 	Connection       string                     `json:"connection,omitempty"`
@@ -26,6 +27,7 @@ func (r *CreateCatalogVirtualMachineRequest) Validate() error {
 	if r.Version == "" {
 		r.Version = constants.LATEST_TAG
 	}
+
 	if r.MachineName == "" {
 		return errors.NewWithCode("missing machine name", 400)
 	}

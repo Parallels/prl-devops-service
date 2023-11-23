@@ -1432,6 +1432,7 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 		return nil, err
 	}
 	result.CpuType = systemInfo.CpuType
+	result.CpuBrand = systemInfo.CpuBrand
 	result.Total.LogicalCpuCount = int64(systemInfo.LogicalCpuCount)
 	result.Total.MemorySize = systemInfo.MemorySize
 	result.Total.DiskSize = systemInfo.DiskSize - systemInfo.FreeDiskSize

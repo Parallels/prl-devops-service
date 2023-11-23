@@ -13,6 +13,7 @@ import (
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
 	"github.com/Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/pd-api-service/serviceprovider/system"
 
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/helper/http_helper"
@@ -882,7 +883,6 @@ func UnregisterVirtualMachineHandler() restapi.ControllerHandler {
 func CreateVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		provider := serviceprovider.Get()
 
 		var request models.CreateVirtualMachineRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
@@ -891,6 +891,21 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 				Code:    http.StatusBadRequest,
 			})
 		}
+
+		// Attempt to get the architecture from the system
+		if request.Architecture == "" {
+			svcCtl := system.Get()
+			arch, err := svcCtl.GetArchitecture(ctx)
+			if err != nil {
+				ReturnApiError(ctx, w, models.ApiErrorResponse{
+					Message: "Failed to get architecture and none was provided",
+					Code:    400,
+				})
+				return
+			}
+			request.Architecture = arch
+		}
+
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -901,54 +916,16 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 
 		// Decide which service to use to create the VM
 		if request.PackerTemplate != nil {
-			dbService, err := serviceprovider.GetDatabaseService(ctx)
-			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-				return
-			}
-
-			template, err := dbService.GetPackerTemplate(ctx, request.PackerTemplate.Template)
+			response, err := createPackerTemplate(ctx, request)
 			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
-			}
-
-			if template == nil {
-				ReturnApiError(ctx, w, models.ApiErrorResponse{
-					Message: fmt.Sprintf("Template %v not found", request.PackerTemplate.Template),
-					Code:    http.StatusNotFound,
-				})
-				return
-			}
-
-			template.Name = request.Name
-			template.Owner = request.Owner
-			if request.PackerTemplate.Specs != nil {
-				if request.PackerTemplate.Specs.Cpu != "" {
-					template.Specs["cpu"] = request.PackerTemplate.Specs.Cpu
-				}
-				if request.PackerTemplate.Specs.Memory != "" {
-					template.Specs["memory"] = request.PackerTemplate.Specs.Memory
-				}
-			}
-
-			parallelsDesktopService := provider.ParallelsDesktopService
-			vm, err := parallelsDesktopService.CreateVm(ctx, *template, request.PackerTemplate.DesiredState)
-			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromError(err))
-				return
-			}
-
-			response := models.CreateVirtualMachineResponse{
-				ID:           vm.ID,
-				Name:         vm.Name,
-				Owner:        template.Owner,
-				CurrentState: vm.State,
 			}
 
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfo("Machine created using packer template: %v", vm.ID)
+			ctx.LogInfo("Machine created using packer template: %v", response.ID)
+
 		} else if request.VagrantBox != nil {
 			response, err := createVagrantBox(ctx, request)
 			if err != nil {
@@ -979,6 +956,50 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 	}
+}
+
+func createPackerTemplate(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
+	provider := serviceprovider.Get()
+	parallelsDesktopService := provider.ParallelsDesktopService
+
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	template, err := dbService.GetPackerTemplate(ctx, request.PackerTemplate.Template)
+	if err != nil {
+		return nil, err
+	}
+
+	if template == nil {
+		return nil, errors.NewWithCodef(404, "Template %v not found", request.PackerTemplate.Template)
+	}
+
+	template.Name = request.Name
+	template.Owner = request.Owner
+	if request.PackerTemplate.Specs != nil {
+		if request.PackerTemplate.Specs.Cpu != "" {
+			template.Specs["cpu"] = request.PackerTemplate.Specs.Cpu
+		}
+		if request.PackerTemplate.Specs.Memory != "" {
+			template.Specs["memory"] = request.PackerTemplate.Specs.Memory
+		}
+	}
+
+	vm, err := parallelsDesktopService.CreateVm(ctx, *template, request.PackerTemplate.DesiredState)
+	if err != nil {
+		return nil, err
+	}
+
+	response := models.CreateVirtualMachineResponse{
+		ID:           vm.ID,
+		Name:         vm.Name,
+		Owner:        template.Owner,
+		CurrentState: vm.State,
+	}
+
+	return &response, nil
 }
 
 func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
@@ -1101,6 +1122,9 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 
 	var response models.CreateVirtualMachineResponse
 	pullRequest := mappers.MapPullCatalogManifestRequestFromCreateCatalogVirtualMachineRequest(*request.CatalogManifest)
+	if pullRequest.Architecture == "" {
+		pullRequest.Architecture = request.Architecture
+	}
 	if err := pullRequest.Validate(); err != nil {
 		return nil, err
 	}
