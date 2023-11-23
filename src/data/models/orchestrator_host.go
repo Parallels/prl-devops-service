@@ -10,6 +10,8 @@ import (
 type OrchestratorHost struct {
 	ID                        string                          `json:"id"`
 	Host                      string                          `json:"host"`
+	Architecture              string                          `json:"architecture"`
+	CpuModel                  string                          `json:"cpu_model"`
 	Description               string                          `json:"description,omitempty"`
 	Tags                      []string                        `json:"tags,omitempty"`
 	Port                      string                          `json:"port,omitempty"`
@@ -59,6 +61,12 @@ func (o *OrchestratorHost) SetHealthy() {
 
 func (o *OrchestratorHost) Diff(source OrchestratorHost) bool {
 	if o.Host != source.Host {
+		return true
+	}
+	if o.Architecture != source.Architecture {
+		return true
+	}
+	if o.CpuModel != source.CpuModel {
 		return true
 	}
 	if o.Description != source.Description {

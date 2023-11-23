@@ -94,7 +94,8 @@ func (j *JsonDatabase) GetCatalogManifestsByCatalogId(ctx basecontext.ApiContext
 	}
 
 	for _, manifest := range catalogManifests {
-		if strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) {
+		if strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) ||
+			strings.EqualFold(manifest.Name, helpers.NormalizeString(catalogId)) {
 			result = append(result, manifest)
 		}
 	}
@@ -102,7 +103,33 @@ func (j *JsonDatabase) GetCatalogManifestsByCatalogId(ctx basecontext.ApiContext
 	return result, nil
 }
 
-func (j *JsonDatabase) GetCatalogManifestsByCatalogIdAndVersion(ctx basecontext.ApiContext, catalogId string, version string) (*models.CatalogManifest, error) {
+func (j *JsonDatabase) GetCatalogManifestsByCatalogIdAndVersion(ctx basecontext.ApiContext, catalogId string, version string) ([]models.CatalogManifest, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	result := make([]models.CatalogManifest, 0)
+	catalogManifests, err := j.GetCatalogManifests(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, manifest := range catalogManifests {
+		if (strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) ||
+			strings.EqualFold(manifest.Name, helpers.NormalizeString(catalogId))) &&
+			strings.EqualFold(manifest.Version, version) {
+			result = append(result, manifest)
+		}
+	}
+
+	if len(result) == 0 {
+		return nil, ErrCatalogManifestNotFound
+	}
+
+	return result, nil
+}
+
+func (j *JsonDatabase) GetCatalogManifestsByCatalogIdVersionAndArch(ctx basecontext.ApiContext, catalogId string, version string, arch string) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
 	}
@@ -113,7 +140,10 @@ func (j *JsonDatabase) GetCatalogManifestsByCatalogIdAndVersion(ctx basecontext.
 	}
 
 	for _, manifest := range catalogManifests {
-		if strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) && strings.EqualFold(manifest.Version, version) {
+		if (strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) ||
+			strings.EqualFold(manifest.Name, helpers.NormalizeString(catalogId))) &&
+			strings.EqualFold(manifest.Version, version) &&
+			strings.EqualFold(manifest.Architecture, arch) {
 			return &manifest, nil
 		}
 	}
@@ -154,7 +184,7 @@ func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifes
 		}
 	}
 
-	exists, err := j.GetCatalogManifestsByCatalogIdAndVersion(ctx, manifest.CatalogId, manifest.Version)
+	exists, err := j.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, manifest.CatalogId, manifest.Version, manifest.Architecture)
 	if err != nil {
 		if errors.GetSystemErrorCode(err) != 404 {
 			return nil, err
@@ -165,6 +195,7 @@ func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifes
 		manifest.ID = exists.ID
 		manifest.Name = exists.Name
 		manifest.CatalogId = exists.CatalogId
+		manifest.Architecture = exists.Architecture
 		r, err := j.UpdateCatalogManifest(ctx, manifest)
 		if err != nil {
 			return nil, err
@@ -218,7 +249,7 @@ func (j *JsonDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, catalog
 			if strings.EqualFold(manifest.ID, catalogIdOrId) || strings.EqualFold(manifest.CatalogId, catalogIdOrId) {
 				index, err := GetRecordIndex(j.data.ManifestsCatalog, "id", manifest.ID)
 				if err != nil {
-					return err
+					continue
 				}
 				j.data.ManifestsCatalog = append(j.data.ManifestsCatalog[:index], j.data.ManifestsCatalog[index+1:]...)
 				deletedSomething = true
@@ -256,9 +287,47 @@ func (j *JsonDatabase) DeleteCatalogManifestVersion(ctx basecontext.ApiContext, 
 		return err
 	}
 
-	for i, manifest := range catalogManifests {
+	for _, manifest := range catalogManifests {
+		i, err := GetRecordIndex(catalogManifests, "id", manifest.ID)
+		if err != nil {
+			continue
+		}
+
 		if (strings.EqualFold(manifest.ID, catalogIdOrId) || strings.EqualFold(manifest.CatalogId, catalogIdOrId)) &&
-			manifest.Version == version {
+			strings.EqualFold(manifest.Version, version) {
+			j.data.ManifestsCatalog = append(j.data.ManifestsCatalog[:i], j.data.ManifestsCatalog[i+1:]...)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) DeleteCatalogManifestVersionArch(ctx basecontext.ApiContext, catalogIdOrId string, version string, architecture string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	if catalogIdOrId == "" {
+		return ErrCatalogManifestNotFound
+	}
+
+	catalogManifests, err := j.GetCatalogManifests(ctx, "")
+	if err != nil {
+		return err
+	}
+
+	for _, manifest := range catalogManifests {
+		if (strings.EqualFold(manifest.ID, catalogIdOrId) || strings.EqualFold(manifest.CatalogId, catalogIdOrId)) &&
+			strings.EqualFold(manifest.Version, version) &&
+			strings.EqualFold(manifest.Architecture, architecture) {
+			i, err := GetRecordIndex(j.data.ManifestsCatalog, "id", manifest.ID)
+			if err != nil {
+				continue
+			}
 			j.data.ManifestsCatalog = append(j.data.ManifestsCatalog[:i], j.data.ManifestsCatalog[i+1:]...)
 			if err := j.Save(ctx); err != nil {
 				return err
@@ -276,20 +345,20 @@ func (j *JsonDatabase) UpdateCatalogManifest(ctx basecontext.ApiContext, record 
 	}
 
 	for i, manifest := range j.data.ManifestsCatalog {
-		e, err := GetRecordIndex(j.data.ManifestsCatalog, "id", record.ID)
-		if err != nil {
-			return nil, err
-		}
-		println(e)
 
-		if strings.EqualFold(manifest.ID, record.ID) || strings.EqualFold(manifest.Name, record.Name) {
+		if strings.EqualFold(manifest.ID, record.ID) {
 			if !strings.EqualFold(manifest.Version, record.Version) {
 				return nil, errors.Newf("cannot update version of catalog manifest %s, it is trying to change the version %s to version %s, not allowed", record.ID, j.data.ManifestsCatalog[i].Version, record.Version)
 			}
+			if !strings.EqualFold(manifest.Architecture, record.Architecture) {
+				return nil, errors.Newf("cannot update architecture of catalog manifest %s, it is trying to change the version %s to version %s, not allowed", record.ID, j.data.ManifestsCatalog[i].Architecture, record.Architecture)
+			}
 
+			j.data.ManifestsCatalog[i].Name = record.Name
 			j.data.ManifestsCatalog[i].VirtualMachineContents = record.VirtualMachineContents
 			j.data.ManifestsCatalog[i].PackContents = record.PackContents
 			j.data.ManifestsCatalog[i].CreatedAt = manifest.CreatedAt
+			j.data.ManifestsCatalog[i].Architecture = record.Architecture
 			j.data.ManifestsCatalog[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
 			j.data.ManifestsCatalog[i].LastDownloadedAt = record.LastDownloadedAt
 			j.data.ManifestsCatalog[i].LastDownloadedUser = record.LastDownloadedUser

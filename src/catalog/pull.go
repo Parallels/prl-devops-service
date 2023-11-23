@@ -18,6 +18,7 @@ import (
 	api_models "github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/serviceprovider"
 	"github.com/Parallels/pd-api-service/serviceprovider/apiclient"
+	"github.com/Parallels/pd-api-service/serviceprovider/system"
 
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/helper/http_helper"
@@ -76,9 +77,15 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 		manifest = &models.VirtualMachineCatalogManifest{}
 		manifest.Provider = &provider
 		apiClient.SetAuthorization(GetAuthenticator(manifest.Provider))
+		srvCtl := system.Get()
+		arch, err := srvCtl.GetArchitecture(ctx)
+		if err != nil {
+			response.AddError(errors.New("unable to determine architecture"))
+			return response
+		}
 
 		var catalogManifest api_models.CatalogManifest
-		path := http_helper.JoinUrl(constants.DEFAULT_API_PREFIX, "catalog", helpers.NormalizeStringUpper(r.CatalogId), helpers.NormalizeString(r.Version), "download")
+		path := http_helper.JoinUrl(constants.DEFAULT_API_PREFIX, "catalog", helpers.NormalizeStringUpper(r.CatalogId), helpers.NormalizeString(r.Version), arch, "download")
 		getUrl := fmt.Sprintf("%s%s", manifest.Provider.GetUrl(), path)
 		if clientResponse, err := apiClient.Get(getUrl, &catalogManifest); err != nil {
 			if clientResponse != nil && clientResponse.ApiError != nil {
@@ -89,7 +96,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 				}
 			}
 			ctx.LogError("Error getting catalog manifest %v: %v", path, err)
-			response.AddError(err)
+			response.AddError(errors.Newf("Could not find a catalog manifest %s version %s for architecture %s", r.CatalogId, r.Version, arch))
 			return response
 		}
 		m := mappers.ApiCatalogManifestToCatalogManifest(catalogManifest)

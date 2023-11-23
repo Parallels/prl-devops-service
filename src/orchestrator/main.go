@@ -142,6 +142,8 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 
 	dtoResources := mappers.MapHostResourcesFromSystemUsageResponse(*hardwareInfo)
 	host.Resources = &dtoResources
+	host.Architecture = hardwareInfo.CpuType
+	host.CpuModel = hardwareInfo.CpuBrand
 
 	// Updating the Virtual Machines
 	vms, err := s.GetHostVirtualMachinesInfo(&host)

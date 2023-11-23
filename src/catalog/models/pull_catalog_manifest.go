@@ -3,9 +3,11 @@ package models
 import (
 	"os"
 
+	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/catalog/cleanupservice"
 	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/pd-api-service/serviceprovider/system"
 )
 
 var (
@@ -16,6 +18,7 @@ var (
 )
 
 type PullCatalogManifestRequest struct {
+	architecture       string
 	CatalogId          string            `json:"catalog_id"`
 	Version            string            `json:"version,omitempty"`
 	Owner              string            `json:"owner,omitempty"`
@@ -44,6 +47,14 @@ func (r *PullCatalogManifestRequest) Validate() error {
 		return ErrMissingConnection
 	}
 
+	svcCtl := system.Get()
+	ctx := basecontext.NewRootBaseContext()
+	arch, err := svcCtl.GetArchitecture(ctx)
+	if err != nil {
+		return errors.New("unable to determine architecture")
+	}
+	r.architecture = arch
+
 	if r.Owner == "" {
 		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
 	}
@@ -55,6 +66,7 @@ type PullCatalogManifestResponse struct {
 	ID             string                         `json:"id"`
 	CatalogId      string                         `json:"catalog_id"`
 	Version        string                         `json:"version"`
+	Architecture   string                         `json:"architecture"`
 	LocalPath      string                         `json:"local_path"`
 	MachineName    string                         `json:"machine_name"`
 	Manifest       *VirtualMachineCatalogManifest `json:"manifest"`

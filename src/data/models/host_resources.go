@@ -2,6 +2,7 @@ package models
 
 type HostResources struct {
 	CpuType        string           `json:"cpu_type,omitempty"`
+	CpuBrand       string           `json:"cpu_brand,omitempty"`
 	Total          HostResourceItem `json:"total,omitempty"`
 	TotalAvailable HostResourceItem `json:"total_available,omitempty"`
 	TotalInUse     HostResourceItem `json:"total_in_use,omitempty"`

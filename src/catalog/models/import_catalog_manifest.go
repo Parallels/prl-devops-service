@@ -10,6 +10,7 @@ import (
 type ImportCatalogManifestRequest struct {
 	CatalogId        string            `json:"catalog_id"`
 	Version          string            `json:"version"`
+	Architecture     string            `json:"architecture"`
 	Connection       string            `json:"connection,omitempty"`
 	ProviderMetadata map[string]string `json:"provider_metadata,omitempty"`
 }
@@ -26,11 +27,15 @@ func (r *ImportCatalogManifestRequest) Validate() error {
 		return ErrMissingConnection
 	}
 
+	if r.Architecture == "" {
+		return ErrMissingArchitecture
+	}
+
 	return nil
 }
 
 func (r *ImportCatalogManifestRequest) Name() string {
-	return fmt.Sprintf("%s-%s", helpers.NormalizeString(r.CatalogId), helpers.NormalizeString(r.Version))
+	return fmt.Sprintf("%s-%s-%s", helpers.NormalizeString(r.CatalogId), helpers.NormalizeString(r.Architecture), helpers.NormalizeString(r.Version))
 }
 
 type ImportCatalogManifestResponse struct {

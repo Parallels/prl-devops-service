@@ -131,6 +131,8 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 
 				j.data.OrchestratorHosts[index].UpdatedAt = helpers.GetUtcCurrentDateTime()
 				j.data.OrchestratorHosts[index].Host = host.Host
+				j.data.OrchestratorHosts[index].Architecture = host.Architecture
+				j.data.OrchestratorHosts[index].CpuModel = host.CpuModel
 				j.data.OrchestratorHosts[index].Port = host.Port
 				j.data.OrchestratorHosts[index].Authentication = host.Authentication
 				j.data.OrchestratorHosts[index].Resources = host.Resources

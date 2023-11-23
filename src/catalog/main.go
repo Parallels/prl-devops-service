@@ -69,11 +69,12 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 
 	manifest.Name = r.CatalogId
 	manifest.Path = r.LocalPath
+	manifest.Architecture = r.Architecture
 	manifest.ID = helpers.GenerateId()
 	manifest.CatalogId = helpers.NormalizeString(r.CatalogId)
 	manifest.Description = r.Description
 	manifest.Version = helpers.NormalizeString(r.Version)
-	manifest.Name = fmt.Sprintf("%v-%v", manifest.CatalogId, manifest.Version)
+	manifest.Name = fmt.Sprintf("%v-%v-%v", manifest.CatalogId, manifest.Architecture, manifest.Version)
 	manifestPackFileName := s.getPackFilename(manifest.Name)
 
 	if r.RequiredRoles != nil {

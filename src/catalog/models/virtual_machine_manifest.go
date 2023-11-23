@@ -15,6 +15,7 @@ type VirtualMachineCatalogManifest struct {
 	Description            string                              `json:"description"`
 	Version                string                              `json:"version"`
 	Name                   string                              `json:"name"`
+	Architecture           string                              `json:"architecture"`
 	Path                   string                              `json:"path,omitempty"`
 	PackFile               string                              `json:"pack_path,omitempty"`
 	MetadataFile           string                              `json:"metadata_path,omitempty"`
@@ -66,7 +67,15 @@ func (m *VirtualMachineCatalogManifest) Validate() error {
 		m.Version = constants.LATEST_TAG
 	}
 
-	m.Name = fmt.Sprintf("%s-%s", helpers.NormalizeString(m.CatalogId), helpers.NormalizeString(m.Version))
+	if m.Architecture == "" {
+		return errors.NewWithCode("Architecture is required", 400)
+	}
+
+	if m.Architecture != "x86_64" && m.Architecture != "arm64" {
+		return errors.NewWithCode("Architecture must be either x86_64 or arm64", 400)
+	}
+
+	m.Name = fmt.Sprintf("%s-%s-%s", helpers.NormalizeString(m.CatalogId), helpers.NormalizeString(m.Architecture), helpers.NormalizeString(m.Version))
 
 	if m.Path == "" {
 		return errors.NewWithCode("Path is required", 400)
@@ -121,4 +130,24 @@ type VirtualMachineManifestContentItem struct {
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 	DeletedAt string `json:"deleted_at"`
+}
+
+type VirtualMachineManifestArchitectureType string
+
+const (
+	VirtualMachineManifestArchitectureTypeX86_64 VirtualMachineManifestArchitectureType = "x86_64"
+	VirtualMachineManifestArchitectureTypeArm64  VirtualMachineManifestArchitectureType = "arm64"
+)
+
+func (t VirtualMachineManifestArchitectureType) String() string {
+	return string(t)
+}
+
+func (t VirtualMachineManifestArchitectureType) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + t.String() + `"`), nil
+}
+
+func (t *VirtualMachineManifestArchitectureType) UnmarshalJSON(b []byte) error {
+	*t = VirtualMachineManifestArchitectureType(b)
+	return nil
 }

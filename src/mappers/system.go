@@ -8,6 +8,7 @@ import (
 func MapHostResourcesFromSystemUsageResponse(m models.SystemUsageResponse) data_models.HostResources {
 	result := data_models.HostResources{
 		CpuType:        m.CpuType,
+		CpuBrand:       m.CpuBrand,
 		Total:          MapHostResourceItemFromSystemUsageItem(m.Total),
 		TotalAvailable: MapHostResourceItemFromSystemUsageItem(m.TotalAvailable),
 		TotalInUse:     MapHostResourceItemFromSystemUsageItem(m.TotalInUse),
@@ -31,6 +32,7 @@ func MapHostResourceItemFromSystemUsageItem(m models.SystemUsageItem) data_model
 func MapSystemUsageResponseFromHostResources(m data_models.HostResources) models.SystemUsageResponse {
 	result := models.SystemUsageResponse{
 		CpuType:        m.CpuType,
+		CpuBrand:       m.CpuBrand,
 		Total:          MapSystemUsageItemFromHostResourceItem(m.Total),
 		TotalAvailable: MapSystemUsageItemFromHostResourceItem(m.TotalAvailable),
 		TotalInUse:     MapSystemUsageItemFromHostResourceItem(m.TotalInUse),
