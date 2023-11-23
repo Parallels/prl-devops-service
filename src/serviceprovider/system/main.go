@@ -37,7 +37,7 @@ func New() *SystemService {
 
 	if globalSystemService.GetOperatingSystem() == "macos" && globalSystemService.FindPath() == "" {
 		logger.Warn("Running without support for brew")
-		return nil
+		return globalSystemService
 	} else {
 		globalSystemService.installed = true
 	}
@@ -64,6 +64,8 @@ func (s *SystemService) FindPath() string {
 	} else {
 		if _, err := os.Stat("/opt/homebrew/bin/brew"); err == nil {
 			s.brewExecutable = "/opt/homebrew/bin/brew"
+		} else if _, err := os.Stat("/usr/local/bin/brew"); err == nil {
+			s.brewExecutable = "/usr/local/bin/brew"
 		} else {
 			logger.Warn("Brew executable not found")
 			return s.brewExecutable
