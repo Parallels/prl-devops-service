@@ -103,14 +103,14 @@ func (m *CatalogManifestProvider) IsRemote() bool {
 }
 
 func (m *CatalogManifestProvider) GetUrl() string {
+	host := m.Host
 	if m.Host == "" {
-		return ""
+		return host
 	}
-	if m.Port == "" {
-		return m.Host
+	if m.Port != "" {
+		host = m.Host + ":" + m.Port
 	}
 
-	host := m.Host + ":" + m.Port
 	if strings.HasPrefix(host, "http://") || strings.HasPrefix(host, "https://") {
 		return host
 	} else {
