@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/constants"
@@ -365,20 +366,29 @@ func GetOrchestratorOverviewHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
 		response := models.HostResourceOverviewResponse{}
+		result := make([]models.HostResourceOverviewResponse, 0)
+
 		totalResources := dbService.GetOrchestratorTotalResources(ctx)
 		inUseResources := dbService.GetOrchestratorInUseResources(ctx)
 		availableResources := dbService.GetOrchestratorAvailableResources(ctx)
 		reservedResources := dbService.GetOrchestratorReservedResources(ctx)
 
-		response.Total = mappers.MapApiHostResourceItemFromHostResourceItem(totalResources)
-		response.TotalAvailable = mappers.MapApiHostResourceItemFromHostResourceItem(availableResources)
-		response.TotalInUse = mappers.MapApiHostResourceItemFromHostResourceItem(inUseResources)
-		response.TotalReserved = mappers.MapApiHostResourceItemFromHostResourceItem(reservedResources)
+		for key, value := range totalResources {
+			response.Total = mappers.MapApiHostResourceItemFromHostResourceItem(value)
+			response.TotalAvailable = mappers.MapApiHostResourceItemFromHostResourceItem(availableResources[key])
+			response.TotalInUse = mappers.MapApiHostResourceItemFromHostResourceItem(inUseResources[key])
+			response.TotalReserved = mappers.MapApiHostResourceItemFromHostResourceItem(reservedResources[key])
+			response.CpuType = key
+			result = append(result, response)
+		}
+		// response.Total = mappers.MapApiHostResourceItemFromHostResourceItem(totalResources)
+		// response.TotalAvailable = mappers.MapApiHostResourceItemFromHostResourceItem(availableResources)
+		// response.TotalInUse = mappers.MapApiHostResourceItemFromHostResourceItem(inUseResources)
+		// response.TotalReserved = mappers.MapApiHostResourceItemFromHostResourceItem(reservedResources)
 
 		w.WriteHeader(http.StatusAccepted)
-		_ = json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Returned successfully the orchestrator overview")
 	}
 }
@@ -1146,6 +1156,7 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 				Code:    http.StatusBadRequest,
 			})
 		}
+
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -1189,6 +1200,13 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			if orchestratorHost.Resources == nil {
 				apiError = &models.ApiErrorResponse{
 					Message: "Host does not have resources information",
+					Code:    400,
+				}
+				continue
+			}
+			if !strings.EqualFold(orchestratorHost.Architecture, request.Architecture) {
+				apiError = &models.ApiErrorResponse{
+					Message: "Host does not have the same architecture",
 					Code:    400,
 				}
 				continue

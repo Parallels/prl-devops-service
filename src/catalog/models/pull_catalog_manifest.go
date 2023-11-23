@@ -21,6 +21,7 @@ type PullCatalogManifestRequest struct {
 	architecture       string
 	CatalogId          string            `json:"catalog_id"`
 	Version            string            `json:"version,omitempty"`
+	Architecture       string            `json:"architecture,omitempty"`
 	Owner              string            `json:"owner,omitempty"`
 	MachineName        string            `json:"machine_name,omitempty"`
 	Path               string            `json:"path,omitempty"`

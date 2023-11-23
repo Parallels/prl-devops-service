@@ -1,5 +1,13 @@
 package models
 
+type HostResourceOverviewResponseItem struct {
+	CpuType        string           `json:"cpu_type,omitempty"`
+	Total          HostResourceItem `json:"total,omitempty"`
+	TotalAvailable HostResourceItem `json:"total_available,omitempty"`
+	TotalInUse     HostResourceItem `json:"total_in_use,omitempty"`
+	TotalReserved  HostResourceItem `json:"total_reserved,omitempty"`
+}
+
 type HostResources struct {
 	CpuType        string           `json:"cpu_type,omitempty"`
 	CpuBrand       string           `json:"cpu_brand,omitempty"`
@@ -30,6 +38,7 @@ func (c *HostResources) Diff(source HostResources) bool {
 }
 
 type HostResourceItem struct {
+	CpuType          string  `json:"cpu_type,omitempty"`
 	PhysicalCpuCount int64   `json:"physical_cpu_count,omitempty"`
 	LogicalCpuCount  int64   `json:"logical_cpu_count"`
 	MemorySize       float64 `json:"memory_size,omitempty"`

@@ -10,6 +10,7 @@ import (
 type CreateVagrantMachineRequest struct {
 	Box                   string                     `json:"box"`
 	Version               string                     `json:"version"`
+	Architecture          string                     `json:"architecture"`
 	Owner                 string                     `json:"owner"`
 	Name                  string                     `json:"name"`
 	Specs                 *CreateVirtualMachineSpecs `json:"specs,omitempty"`

@@ -10,6 +10,7 @@ import (
 type CreateVirtualMachineRequest struct {
 	Name            string                              `json:"name"`
 	Owner           string                              `json:"owner,omitempty"`
+	Architecture    string                              `json:"architecture,omitempty"`
 	PackerTemplate  *CreatePackerVirtualMachineRequest  `json:"packer_template,omitempty"`
 	VagrantBox      *CreateVagrantMachineRequest        `json:"vagrant_box,omitempty"`
 	CatalogManifest *CreateCatalogVirtualMachineRequest `json:"catalog_manifest,omitempty"`
@@ -25,12 +26,17 @@ func (r *CreateVirtualMachineRequest) Validate() error {
 		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
 	}
 
+	if r.Architecture == "" {
+		return errors.New("Architecture cannot be empty")
+	}
+
 	if r.PackerTemplate != nil {
 		if r.VagrantBox != nil || r.CatalogManifest != nil {
 			return errors.New("Only one of packer_template, vagrant_box or catalog_manifest can be specified")
 		}
 		r.PackerTemplate.Name = r.Name
 		r.PackerTemplate.Owner = r.Owner
+		r.Architecture = r.PackerTemplate.Architecture
 		return r.PackerTemplate.Validate()
 	}
 
@@ -40,6 +46,7 @@ func (r *CreateVirtualMachineRequest) Validate() error {
 		}
 		r.VagrantBox.Name = r.Name
 		r.VagrantBox.Owner = r.Owner
+		r.VagrantBox.Architecture = r.Architecture
 		return r.VagrantBox.Validate()
 	}
 
@@ -50,6 +57,7 @@ func (r *CreateVirtualMachineRequest) Validate() error {
 
 		r.CatalogManifest.MachineName = r.Name
 		r.CatalogManifest.Owner = r.Owner
+		r.CatalogManifest.Architecture = r.Architecture
 		return r.CatalogManifest.Validate()
 	}
 
