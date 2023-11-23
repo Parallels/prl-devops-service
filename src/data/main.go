@@ -56,7 +56,7 @@ func NewJsonDatabase(filename string) *JsonDatabase {
 
 	rootContext := basecontext.NewRootBaseContext()
 	go memoryDatabase.ProcessSaveQueue(rootContext)
-	memoryDatabase.Load(rootContext)
+	_ = memoryDatabase.Load(rootContext)
 
 	return memoryDatabase
 }

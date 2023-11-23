@@ -209,7 +209,9 @@ func (s *ParallelsService) Uninstall(asUser string, uninstallDependencies bool) 
 		}
 	}
 
-	s.DeactivateLicense()
+	if err := s.DeactivateLicense(); err != nil {
+		return err
+	}
 
 	if uninstallDependencies {
 		// Uninstall service dependency
@@ -806,7 +808,11 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 	}
 
 	overrideFileContent := helpers.ToHCL(overrideFile, 0)
-	helper.WriteToFile(overrideFileContent, overrideFilePath)
+	if err := helper.WriteToFile(overrideFileContent, overrideFilePath); err != nil {
+		ctx.LogError("Error writing override file %s: %s", overrideFilePath, err.Error())
+		return nil, err
+	}
+
 	ctx.LogInfo("Created override file")
 
 	ctx.LogInfo("Initializing packer repository")

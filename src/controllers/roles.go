@@ -71,8 +71,6 @@ func GetRolesHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		dtoRoles, err := dbService.GetRoles(ctx, GetFilterHeader(r))
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
@@ -82,7 +80,7 @@ func GetRolesHandler() restapi.ControllerHandler {
 		if len(dtoRoles) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.RoleResponse, 0)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Roles returned: %v", len(response))
 			return
 		}
@@ -90,7 +88,7 @@ func GetRolesHandler() restapi.ControllerHandler {
 		result := mappers.DtoRolesToApi(dtoRoles)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Roles returned successfully")
 	}
 }
@@ -115,8 +113,6 @@ func GetRoleHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		vars := mux.Vars(r)
 		id := vars["id"]
 
@@ -129,7 +125,7 @@ func GetRoleHandler() restapi.ControllerHandler {
 		response := mappers.DtoRoleToApi(*dtoRole)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("Role returned successfully")
 	}
 }
@@ -149,7 +145,12 @@ func CreateRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.RoleRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -164,8 +165,6 @@ func CreateRoleHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		dtoRole := mappers.ApiRoleToDto(request)
 
 		role, err := dbService.CreateRole(ctx, dtoRole)
@@ -177,7 +176,7 @@ func CreateRoleHandler() restapi.ControllerHandler {
 		response := mappers.DtoRoleToApi(*role)
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("Role created successfully")
 	}
 }
@@ -201,8 +200,6 @@ func DeleteRoleHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]

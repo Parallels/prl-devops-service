@@ -148,7 +148,9 @@ func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifes
 		}
 		if sibling.HasTag(constants.LATEST_TAG) {
 			sibling.RemoveTag(constants.LATEST_TAG)
-			j.UpdateCatalogManifestTags(ctx, sibling)
+			if err := j.UpdateCatalogManifestTags(ctx, sibling); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -189,7 +191,9 @@ func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifes
 
 	j.data.ManifestsCatalog = append(j.data.ManifestsCatalog, manifest)
 
-	j.Save(ctx)
+	if err := j.Save(ctx); err != nil {
+		return nil, err
+	}
 	return &manifest, nil
 }
 
@@ -210,9 +214,13 @@ func (j *JsonDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, catalog
 		}
 
 		deletedSomething := false
-		for i, manifest := range catalogManifests {
+		for _, manifest := range catalogManifests {
 			if strings.EqualFold(manifest.ID, catalogIdOrId) || strings.EqualFold(manifest.CatalogId, catalogIdOrId) {
-				j.data.ManifestsCatalog = append(j.data.ManifestsCatalog[:i], j.data.ManifestsCatalog[i+1:]...)
+				index, err := GetRecordIndex(j.data.ManifestsCatalog, "id", manifest.ID)
+				if err != nil {
+					return err
+				}
+				j.data.ManifestsCatalog = append(j.data.ManifestsCatalog[:index], j.data.ManifestsCatalog[index+1:]...)
 				deletedSomething = true
 				found = true
 				break
@@ -225,7 +233,9 @@ func (j *JsonDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, catalog
 	}
 
 	if found {
-		j.Save(ctx)
+		if err := j.Save(ctx); err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -250,7 +260,9 @@ func (j *JsonDatabase) DeleteCatalogManifestVersion(ctx basecontext.ApiContext, 
 		if (strings.EqualFold(manifest.ID, catalogIdOrId) || strings.EqualFold(manifest.CatalogId, catalogIdOrId)) &&
 			manifest.Version == version {
 			j.data.ManifestsCatalog = append(j.data.ManifestsCatalog[:i], j.data.ManifestsCatalog[i+1:]...)
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -290,7 +302,9 @@ func (j *JsonDatabase) UpdateCatalogManifest(ctx basecontext.ApiContext, record 
 			j.data.ManifestsCatalog[i].RequiredClaims = record.RequiredClaims
 			j.data.ManifestsCatalog[i].RequiredRoles = record.RequiredRoles
 
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return nil, err
+			}
 			return &j.data.ManifestsCatalog[i], nil
 		}
 	}
@@ -307,7 +321,9 @@ func (j *JsonDatabase) UpdateCatalogManifestTags(ctx basecontext.ApiContext, rec
 		if strings.EqualFold(manifest.ID, record.ID) || (strings.EqualFold(manifest.CatalogId, record.CatalogId) && strings.EqualFold(manifest.Version, record.Version)) {
 			j.data.ManifestsCatalog[i].Tags = record.Tags
 
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -332,7 +348,9 @@ func (j *JsonDatabase) UpdateCatalogManifestDownloadCount(ctx basecontext.ApiCon
 			j.data.ManifestsCatalog[i].LastDownloadedUser = downloadUser
 			j.data.ManifestsCatalog[i].DownloadCount = j.data.ManifestsCatalog[i].DownloadCount + 1
 
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -357,7 +375,9 @@ func (j *JsonDatabase) TaintCatalogManifestVersion(ctx basecontext.ApiContext, c
 			j.data.ManifestsCatalog[i].Tainted = true
 			j.data.ManifestsCatalog[i].TaintedBy = taintUser
 
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return nil, err
+			}
 			return &j.data.ManifestsCatalog[i], nil
 		}
 	}
@@ -383,7 +403,9 @@ func (j *JsonDatabase) UnTaintCatalogManifestVersion(ctx basecontext.ApiContext,
 			j.data.ManifestsCatalog[i].UnTaintedBy = unTaintUser
 			j.data.ManifestsCatalog[i].TaintedBy = ""
 
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return nil, err
+			}
 			return &j.data.ManifestsCatalog[i], nil
 		}
 	}
@@ -408,7 +430,9 @@ func (j *JsonDatabase) RevokeCatalogManifestVersion(ctx basecontext.ApiContext, 
 			j.data.ManifestsCatalog[i].Revoked = true
 			j.data.ManifestsCatalog[i].RevokedBy = revokeUser
 
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return nil, err
+			}
 			return &j.data.ManifestsCatalog[i], nil
 		}
 	}

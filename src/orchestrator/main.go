@@ -42,12 +42,12 @@ func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
 	return globalOrchestratorService
 }
 
-func (s *OrchestratorService) Start(waitForInit bool) error {
+func (s *OrchestratorService) Start(waitForInit bool) {
 	s.syncContext, s.cancel = context.WithCancel(context.Background())
 
 	dbService, err := serviceprovider.GetDatabaseService(s.ctx)
 	if err != nil {
-		return err
+		return
 	}
 
 	s.db = dbService
@@ -61,12 +61,12 @@ func (s *OrchestratorService) Start(waitForInit bool) error {
 	for {
 		select {
 		case <-s.syncContext.Done():
-			return nil
+			return
 		default:
 			var wg sync.WaitGroup
 			dtoOrchestratorHosts, err := s.db.GetOrchestratorHosts(s.ctx, "")
 			if err != nil {
-				return err
+				return
 			}
 
 			for _, host := range dtoOrchestratorHosts {
@@ -91,17 +91,15 @@ func (s *OrchestratorService) Stop() {
 	s.syncContext.Done()
 }
 
-func (s *OrchestratorService) Refresh() error {
+func (s *OrchestratorService) Refresh() {
 	dtoOrchestratorHosts, err := s.db.GetOrchestratorHosts(s.ctx, "")
 	if err != nil {
-		return err
+		return
 	}
 
 	for _, host := range dtoOrchestratorHosts {
 		go s.processHost(host)
 	}
-
-	return nil
 }
 
 func (s *OrchestratorService) processHostWaitingGroup(host models.OrchestratorHost, wg *sync.WaitGroup) {
@@ -122,7 +120,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	if healthCheck, err := s.GetHostSystemHealthCheck(&host); err != nil {
 		s.ctx.LogError("[Orchestrator] Error getting health check for host %s: %v", host.Host, err.Error())
 		host.SetUnhealthy(err.Error())
-		s.persistHost(&host)
+		_ = s.persistHost(&host)
 		return
 	} else {
 		host.SetHealthy()
@@ -134,7 +132,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	if err != nil {
 		s.ctx.LogError("[Orchestrator] Error getting hardware info for host %s: %v", host.Host, err.Error())
 		host.SetUnhealthy(err.Error())
-		s.persistHost(&host)
+		_ = s.persistHost(&host)
 		return
 	}
 
@@ -150,7 +148,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	if err != nil {
 		s.ctx.LogError("[Orchestrator] Error getting virtual machines for host %s: %v", host.Host, err.Error())
 		host.SetUnhealthy(err.Error())
-		s.persistHost(&host)
+		_ = s.persistHost(&host)
 		return
 	}
 
@@ -162,12 +160,12 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
 	}
 
-	s.persistHost(&host)
+	_ = s.persistHost(&host)
 }
 
 func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 	// persist the host
-	s.db.Connect(s.ctx)
+	_ = s.db.Connect(s.ctx)
 	if _, err := s.db.UpdateOrchestratorHost(s.ctx, host); err != nil {
 		s.ctx.LogError("[Orchestrator] Error saving host %s: %v", host.Host, err.Error())
 		return err

@@ -41,10 +41,10 @@ var versionSvc = version.Get()
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = "Parallels Desktop API Service"
@@ -129,13 +129,13 @@ func main() {
 		if rootPassword != "" {
 			db := serviceprovider.Get().JsonDatabase
 			ctx.LogInfo("Database connection found, updating password")
-			db.Connect(ctx)
+			_ = db.Connect(ctx)
 			if db != nil {
 				err := db.UpdateRootPassword(ctx, rootPassword)
 				if err != nil {
 					panic(err)
 				}
-				db.Disconnect(ctx)
+				_ = db.Disconnect(ctx)
 			} else {
 				panic(data.ErrDatabaseNotConnected)
 			}
@@ -161,12 +161,14 @@ func main() {
 	if os.Getenv(constants.ROOT_PASSWORD_ENV_VAR) != "" {
 		rootPassword := helpers.Sha256Hash(os.Getenv(constants.ROOT_PASSWORD_ENV_VAR))
 		db := serviceprovider.Get().JsonDatabase
-		db.Connect(ctx)
+		_ = db.Connect(ctx)
 		rootUser, _ := db.GetUser(ctx, "root")
 		if rootUser != nil {
 			if rootUser.Password != rootPassword {
 				ctx.LogInfo("Updating root password")
-				db.UpdateRootPassword(ctx, os.Getenv(constants.ROOT_PASSWORD_ENV_VAR))
+				if err := db.UpdateRootPassword(ctx, os.Getenv(constants.ROOT_PASSWORD_ENV_VAR)); err != nil {
+					panic(err)
+				}
 			}
 		}
 	}

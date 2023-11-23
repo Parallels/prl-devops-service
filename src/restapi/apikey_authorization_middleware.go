@@ -55,7 +55,7 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 			}
 			isValid := true
 			db := serviceprovider.Get().JsonDatabase
-			db.Connect(baseCtx)
+			_ = db.Connect(baseCtx)
 			dbApiKey, err := db.GetApiKey(baseCtx, apiKey.Key)
 
 			if err != nil || dbApiKey == nil {

@@ -17,8 +17,6 @@ func SeedDefaultRoles() error {
 		return err
 	}
 
-	defer db.Disconnect(ctx)
-
 	allSystemRoles := constants.AllSystemRoles
 
 	for _, role := range allSystemRoles {
@@ -36,7 +34,7 @@ func SeedDefaultRoles() error {
 		}
 	}
 
-	db.Disconnect(ctx)
+	_ = db.Disconnect(ctx)
 
 	return nil
 }

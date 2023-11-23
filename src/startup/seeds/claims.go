@@ -17,7 +17,6 @@ func SeedDefaultClaims() error {
 		return err
 	}
 
-	defer db.Disconnect(ctx)
 	allSystemClaims := constants.AllSystemClaims
 
 	for _, claim := range allSystemClaims {
@@ -35,7 +34,7 @@ func SeedDefaultClaims() error {
 		}
 	}
 
-	db.Disconnect(ctx)
+	_ = db.Disconnect(ctx)
 
 	return nil
 }

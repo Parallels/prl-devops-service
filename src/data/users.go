@@ -133,7 +133,9 @@ func (j *JsonDatabase) CreateUser(ctx basecontext.ApiContext, user models.User) 
 	user.UpdatedAt = helpers.GetUtcCurrentDateTime()
 	user.CreatedAt = helpers.GetUtcCurrentDateTime()
 	j.data.Users = append(j.data.Users, user)
-	j.Save(ctx)
+	if err := j.Save(ctx); err != nil {
+		return nil, err
+	}
 
 	return &user, nil
 }
@@ -157,7 +159,9 @@ func (j *JsonDatabase) UpdateUser(ctx basecontext.ApiContext, key models.User) e
 			}
 
 			j.data.Users[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -174,7 +178,9 @@ func (j *JsonDatabase) UpdateRootPassword(ctx basecontext.ApiContext, newPasswor
 		if user.Email == "root@localhost" {
 			j.data.Users[i].Password = helpers.Sha256Hash(newPassword)
 			j.data.Users[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -198,7 +204,9 @@ func (j *JsonDatabase) DeleteUser(ctx basecontext.ApiContext, id string) error {
 			}
 
 			j.data.Users = append(j.data.Users[:i], j.data.Users[i+1:]...)
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -238,7 +246,9 @@ func (j *JsonDatabase) AddRoleToUser(ctx basecontext.ApiContext, userId string, 
 	for i, c := range j.data.Users {
 		if c.ID == userId {
 			j.data.Users[i].Roles = append(j.data.Users[i].Roles, *role)
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -274,7 +284,9 @@ func (j *JsonDatabase) RemoveRoleFromUser(ctx basecontext.ApiContext, userId str
 			for e, r := range user.Roles {
 				if r.ID == role.ID {
 					j.data.Users[i].Roles = append(j.data.Users[i].Roles[:e], j.data.Users[i].Roles[e+1:]...)
-					j.Save(ctx)
+					if err := j.Save(ctx); err != nil {
+						return err
+					}
 					return nil
 				}
 			}
@@ -316,7 +328,9 @@ func (j *JsonDatabase) AddClaimToUser(ctx basecontext.ApiContext, userId string,
 	for i, c := range j.data.Users {
 		if c.ID == userId {
 			j.data.Users[i].Claims = append(j.data.Users[i].Claims, *claim)
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -352,7 +366,9 @@ func (j *JsonDatabase) RemoveClaimFromUser(ctx basecontext.ApiContext, userId st
 			for e, r := range user.Claims {
 				if r.ID == claim.ID {
 					j.data.Users[i].Claims = append(j.data.Users[i].Claims[:e], j.data.Users[i].Claims[e+1:]...)
-					j.Save(ctx)
+					if err := j.Save(ctx); err != nil {
+						return err
+					}
 					return nil
 				}
 			}

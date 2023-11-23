@@ -79,8 +79,6 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		result, err := dbService.GetPackerTemplates(ctx, GetFilterHeader(r))
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
@@ -90,13 +88,13 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 		if len(result) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.PackerTemplateResponse, 0)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			return
 		}
 
 		response := mappers.DtoPackerTemplatesToApResponse(result)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("Packer templates returned: %v", len(response))
 	}
 }
@@ -121,8 +119,6 @@ func GetPackerTemplateHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		params := mux.Vars(r)
 		name := params["id"]
 
@@ -142,7 +138,7 @@ func GetPackerTemplateHandler() restapi.ControllerHandler {
 
 		response := mappers.DtoPackerTemplateToApResponse(*result)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("Packer template returned: %v", response.ID)
 	}
 }
@@ -162,7 +158,12 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.CreatePackerTemplateRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -177,8 +178,6 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		dto := mappers.DtoPackerTemplateFromApiCreateRequest(request)
 		if result, err := dbService.AddPackerTemplate(ctx, &dto); err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
@@ -186,7 +185,7 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 		} else {
 			response := mappers.DtoPackerTemplateToApResponse(*result)
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Packer template created: %v", response.ID)
 		}
 	}
@@ -208,7 +207,12 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.CreatePackerTemplateRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -223,8 +227,6 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		params := mux.Vars(r)
 		id := params["id"]
 
@@ -236,7 +238,7 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 		} else {
 			response := mappers.DtoPackerTemplateToApResponse(*result)
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Packer template updated: %v", response.ID)
 		}
 	}
@@ -261,8 +263,6 @@ func DeletePackerTemplateHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		params := mux.Vars(r)
 		id := params["id"]

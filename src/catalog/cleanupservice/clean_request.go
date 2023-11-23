@@ -27,7 +27,7 @@ func (r *CleanupRequest) AddCleanupOperation(operation CleanupOperation) {
 func (r *CleanupRequest) Clean(ctx basecontext.ApiContext) []error {
 	errors := []error{}
 	for _, operation := range r.Operations {
-		operation.Clean(ctx)
+		_ = operation.Clean(ctx)
 		if operation.HasError() {
 			errors = append(errors, operation.Error)
 		}

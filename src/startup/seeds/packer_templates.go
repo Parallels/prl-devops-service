@@ -16,11 +16,9 @@ func SeedDefaultVirtualMachineTemplates() error {
 		return err
 	}
 
-	defer svc.Disconnect(ctx)
-
-	packertemplates.AddUbuntu23_04(ctx, svc)
-	packertemplates.AddKaliLinux2023_3_gnome(ctx, svc)
-	packertemplates.AddMacOs14_0Manual(ctx, svc)
+	_ = packertemplates.AddUbuntu23_04(ctx, svc)
+	_ = packertemplates.AddKaliLinux2023_3_gnome(ctx, svc)
+	_ = packertemplates.AddMacOs14_0Manual(ctx, svc)
 
 	return nil
 }

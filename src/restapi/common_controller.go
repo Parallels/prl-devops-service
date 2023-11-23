@@ -7,7 +7,7 @@ import (
 )
 
 func (s *HttpListener) ShutdownHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Shutdown server"))
+	_, _ = w.Write([]byte("Shutdown server"))
 
 	//Do nothing if shutdown request already issued
 	//if s.reqCount == 0 then set to 1, return true otherwise false

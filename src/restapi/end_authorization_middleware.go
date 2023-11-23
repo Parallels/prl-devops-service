@@ -18,7 +18,7 @@ func EndAuthorizationMiddlewareAdapter() Adapter {
 				auth := authorizationContext.(*basecontext.AuthorizationContext)
 				if !auth.IsAuthorized {
 					w.WriteHeader(http.StatusUnauthorized)
-					json.NewEncoder(w).Encode(auth.AuthorizationError)
+					_ = json.NewEncoder(w).Encode(auth.AuthorizationError)
 					baseCtx.LogInfo("Authorization layer finished with error")
 					return
 				}
@@ -32,7 +32,7 @@ func EndAuthorizationMiddlewareAdapter() Adapter {
 				}
 
 				w.WriteHeader(http.StatusUnauthorized)
-				json.NewEncoder(w).Encode(response)
+				_ = json.NewEncoder(w).Encode(response)
 				baseCtx.LogInfo("Authorization layer finished with error")
 				return
 			}

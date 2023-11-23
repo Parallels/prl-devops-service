@@ -17,8 +17,6 @@ func SeedDefaultUsers() error {
 		return err
 	}
 
-	defer db.Disconnect(ctx)
-
 	if exists, _ := db.GetUser(ctx, "root"); exists != nil {
 		return nil
 	}
@@ -48,7 +46,7 @@ func SeedDefaultUsers() error {
 		return err
 	}
 
-	db.Disconnect(ctx)
+	_ = db.Disconnect(ctx)
 
 	return nil
 }

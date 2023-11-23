@@ -27,7 +27,7 @@ func InitApi() *restapi.HttpListener {
 	listener.AddSwagger()
 	listener.AddJsonContent().AddLogger().AddHealthCheck()
 	listener.WithPublicUserRegistration()
-	controllers.RegisterV1Handlers(ctx)
+	_ = controllers.RegisterV1Handlers(ctx)
 
 	return listener
 }

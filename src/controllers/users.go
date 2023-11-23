@@ -125,8 +125,6 @@ func GetUsersHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		users, err := dbService.GetUsers(ctx, GetFilterHeader(r))
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
@@ -136,7 +134,7 @@ func GetUsersHandler() restapi.ControllerHandler {
 		if len(users) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.ApiUser, 0)
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfo("Users returned: %v", len(response))
 			return
 		}
@@ -144,7 +142,7 @@ func GetUsersHandler() restapi.ControllerHandler {
 		result := mappers.DtoUsersToApiResponse(users)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Users returned: %v", len(result))
 	}
 }
@@ -169,8 +167,6 @@ func GetUserHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		vars := mux.Vars(r)
 		id := vars["id"]
 
@@ -183,7 +179,7 @@ func GetUserHandler() restapi.ControllerHandler {
 		response := mappers.DtoUserToApiResponse(*user)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("User returned: %v", response.ID)
 	}
 }
@@ -203,7 +199,12 @@ func CreateUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.UserCreateRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -218,8 +219,6 @@ func CreateUserHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		dtoUser, err := dbService.CreateUser(ctx, mappers.ApiUserCreateRequestToDto(request))
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
@@ -229,7 +228,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 		response := mappers.DtoUserToApiResponse(*dtoUser)
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("User created: %v", response.ID)
 	}
 }
@@ -253,8 +252,6 @@ func DeleteUserHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -285,7 +282,12 @@ func UpdateUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.UserCreateRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -299,8 +301,6 @@ func UpdateUserHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -338,8 +338,6 @@ func GetUserRolesHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		vars := mux.Vars(r)
 		id := vars["id"]
 
@@ -353,7 +351,7 @@ func GetUserRolesHandler() restapi.ControllerHandler {
 		result := mappers.DtoRolesToApi(roles)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Roles returned: %v", len(result))
 	}
 }
@@ -374,7 +372,12 @@ func AddRoleToUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.RoleRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -389,8 +392,6 @@ func AddRoleToUserHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		vars := mux.Vars(r)
 		id := vars["id"]
 
@@ -399,10 +400,8 @@ func AddRoleToUserHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService.Disconnect(ctx)
-
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(request)
+		_ = json.NewEncoder(w).Encode(request)
 		ctx.LogInfo("Role added to user: %v", id)
 	}
 }
@@ -427,8 +426,6 @@ func RemoveRoleFromUserHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -464,8 +461,6 @@ func GetUserClaimsHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		vars := mux.Vars(r)
 		id := vars["id"]
 
@@ -479,7 +474,7 @@ func GetUserClaimsHandler() restapi.ControllerHandler {
 		result := mappers.DtoClaimsToApi(claims)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Claims returned: %v", len(result))
 	}
 }
@@ -500,7 +495,12 @@ func AddClaimToUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.ClaimRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -515,8 +515,6 @@ func AddClaimToUserHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		vars := mux.Vars(r)
 		id := vars["id"]
 
@@ -525,10 +523,8 @@ func AddClaimToUserHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService.Disconnect(ctx)
-
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(request)
+		_ = json.NewEncoder(w).Encode(request)
 		ctx.LogInfo("Claim added to user: %v", id)
 	}
 }
@@ -553,8 +549,6 @@ func RemoveClaimFromUserHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]

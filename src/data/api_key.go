@@ -63,7 +63,9 @@ func (j *JsonDatabase) CreateApiKey(ctx basecontext.ApiContext, apiKey models.Ap
 	apiKey.UpdatedAt = helpers.GetUtcCurrentDateTime()
 	apiKey.CreatedAt = helpers.GetUtcCurrentDateTime()
 	j.data.ApiKeys = append(j.data.ApiKeys, apiKey)
-	j.Save(ctx)
+	if err := j.Save(ctx); err != nil {
+		return nil, err
+	}
 
 	return &apiKey, nil
 }
@@ -80,7 +82,9 @@ func (j *JsonDatabase) DeleteApiKey(ctx basecontext.ApiContext, id string) error
 	for i, apiKey := range j.data.ApiKeys {
 		if strings.EqualFold(apiKey.ID, id) || strings.EqualFold(apiKey.Name, id) || strings.EqualFold(apiKey.Key, id) {
 			j.data.ApiKeys = append(j.data.ApiKeys[:i], j.data.ApiKeys[i+1:]...)
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -98,7 +102,9 @@ func (j *JsonDatabase) UpdateKey(ctx basecontext.ApiContext, key models.ApiKey) 
 			j.data.ApiKeys[i].Revoked = key.Revoked
 			j.data.ApiKeys[i].RevokedAt = key.RevokedAt
 			j.data.ApiKeys[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
-			j.Save(ctx)
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -126,7 +132,9 @@ func (j *JsonDatabase) RevokeKey(ctx basecontext.ApiContext, id string) error {
 
 	key.Revoked = true
 	key.RevokedAt = helpers.GetUtcCurrentDateTime()
-	j.UpdateKey(ctx, *key)
+	if err := j.UpdateKey(ctx, *key); err != nil {
+		return err
+	}
 
 	return nil
 }

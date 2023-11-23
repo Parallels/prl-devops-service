@@ -77,8 +77,6 @@ func GetApiKeysHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		dtoApiKeys, err := dbService.GetApiKeys(ctx, GetFilterHeader(r))
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
@@ -88,7 +86,7 @@ func GetApiKeysHandler() restapi.ControllerHandler {
 		result := mappers.ApiKeysDtoToApiKeyResponse(dtoApiKeys)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfo("Api Keys returned successfully")
 	}
 }
@@ -112,8 +110,6 @@ func DeleteApiKeyHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -149,8 +145,6 @@ func GetApiKeyHandler() restapi.ControllerHandler {
 			return
 		}
 
-		defer dbService.Disconnect(ctx)
-
 		vars := mux.Vars(r)
 		id := vars["id"]
 
@@ -163,7 +157,7 @@ func GetApiKeyHandler() restapi.ControllerHandler {
 		response := mappers.ApiKeyDtoToApiKeyResponse(*dtoApiKey)
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("Api Key returned successfully")
 	}
 }
@@ -183,7 +177,13 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		var request models.ApiKeyRequest
-		http_helper.MapRequestBody(r, &request)
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -213,7 +213,7 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfo("Api Key created successfully")
 	}
 }
@@ -237,8 +237,6 @@ func RevokeApiKeyHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
-
-		defer dbService.Disconnect(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]

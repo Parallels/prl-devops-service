@@ -19,7 +19,7 @@ func GetBaseContext(r *http.Request) *basecontext.BaseContext {
 func ReturnApiError(ctx basecontext.ApiContext, w http.ResponseWriter, err models.ApiErrorResponse) {
 	ctx.LogError("Error: %s", err.Message)
 	w.WriteHeader(err.Code)
-	json.NewEncoder(w).Encode(err)
+	_ = json.NewEncoder(w).Encode(err)
 }
 
 func ReturnApiCommonResponse(w http.ResponseWriter) {
@@ -27,7 +27,7 @@ func ReturnApiCommonResponse(w http.ResponseWriter) {
 	data := models.ApiCommonResponse{
 		Success: true,
 	}
-	json.NewEncoder(w).Encode(data)
+	_ = json.NewEncoder(w).Encode(data)
 }
 
 func ReturnApiCommonResponseWithCode(w http.ResponseWriter, code int) {
@@ -36,7 +36,7 @@ func ReturnApiCommonResponseWithCode(w http.ResponseWriter, code int) {
 		Success: true,
 		Code:    code,
 	}
-	json.NewEncoder(w).Encode(data)
+	_ = json.NewEncoder(w).Encode(data)
 }
 
 func ReturnApiCommonResponseWithData(w http.ResponseWriter, data interface{}) {
@@ -45,7 +45,7 @@ func ReturnApiCommonResponseWithData(w http.ResponseWriter, data interface{}) {
 		Success: true,
 		Data:    data,
 	}
-	json.NewEncoder(w).Encode(responseData)
+	_ = json.NewEncoder(w).Encode(responseData)
 }
 
 func ReturnApiCommonResponseWithDataAndCode(w http.ResponseWriter, data interface{}, code int) {
@@ -55,5 +55,5 @@ func ReturnApiCommonResponseWithDataAndCode(w http.ResponseWriter, data interfac
 		Data:    data,
 		Code:    code,
 	}
-	json.NewEncoder(w).Encode(responseData)
+	_ = json.NewEncoder(w).Encode(responseData)
 }
