@@ -4527,6 +4527,9 @@ const docTemplate = `{
                 "Public SSH keys synchronization": {
                     "type": "string"
                 },
+                "Rosetta Linux": {
+                    "type": "string"
+                },
                 "Share host location": {
                     "type": "string"
                 },
@@ -6389,7 +6392,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.3.2",
+	Version:          "0.4.0",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
