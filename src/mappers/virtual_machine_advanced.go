@@ -12,6 +12,7 @@ func MapDtoVirtualMachineAdvancedFromApi(m models.Advanced) data_models.VirtualM
 		ShowDeveloperTools:           m.ShowDeveloperTools,
 		SwipeFromEdges:               m.SwipeFromEdges,
 		ShareHostLocation:            m.ShareHostLocation,
+		RosettaLinux:                 m.RosettaLinux,
 	}
 
 	return mapped
@@ -24,6 +25,7 @@ func MapDtoVirtualMachineAdvancedToApi(m data_models.VirtualMachineAdvanced) mod
 		ShowDeveloperTools:           m.ShowDeveloperTools,
 		SwipeFromEdges:               m.SwipeFromEdges,
 		ShareHostLocation:            m.ShareHostLocation,
+		RosettaLinux:                 m.RosettaLinux,
 	}
 
 	return mapped

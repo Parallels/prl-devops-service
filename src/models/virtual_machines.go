@@ -54,6 +54,7 @@ type Advanced struct {
 	ShowDeveloperTools           string `json:"Show developer tools"`
 	SwipeFromEdges               string `json:"Swipe from edges"`
 	ShareHostLocation            string `json:"Share host location"`
+	RosettaLinux                 string `json:"Rosetta Linux"`
 }
 
 type Coherence struct {

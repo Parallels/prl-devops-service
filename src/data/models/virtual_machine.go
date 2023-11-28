@@ -202,6 +202,7 @@ type VirtualMachineAdvanced struct {
 	ShowDeveloperTools           string `json:"show_developer_tools"`
 	SwipeFromEdges               string `json:"swipe_from_edges"`
 	ShareHostLocation            string `json:"share_host_location"`
+	RosettaLinux                 string `json:"rosetta_linux"`
 }
 
 func (m *VirtualMachineAdvanced) Diff(source VirtualMachineAdvanced) bool {
@@ -218,6 +219,9 @@ func (m *VirtualMachineAdvanced) Diff(source VirtualMachineAdvanced) bool {
 		return true
 	}
 	if m.ShareHostLocation != source.ShareHostLocation {
+		return true
+	}
+	if m.RosettaLinux != source.RosettaLinux {
 		return true
 	}
 

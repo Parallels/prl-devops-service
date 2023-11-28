@@ -164,8 +164,8 @@ func (r *VirtualMachineConfigRequestOperation) Validate() error {
 		if r.Operation == "" {
 			return errors.ErrConfigOperationNotSupported(r.Group, r.Operation)
 		}
-		if r.Flags == nil || len(r.Flags) == 0 {
-			return errors.ErrConfigOperationNotSupported(r.Group, r.Operation)
+		if (r.Flags == nil || len(r.Flags) == 0) && (r.Options == nil || len(r.Options) == 0) {
+			return errors.ErrConfigOperationNoEnoughArguments(r.Group, r.Operation)
 		}
 	default:
 		return errors.ErrConfigOperationNotSupported(r.Group, r.Operation)
