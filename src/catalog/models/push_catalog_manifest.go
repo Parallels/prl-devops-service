@@ -67,6 +67,20 @@ func (r *PushCatalogManifestRequest) Validate() error {
 			return errors.NewWithCode("unable to determine architecture and none was set", 400)
 		}
 		r.Architecture = arch
+	} else {
+		if r.Architecture == "amd64" {
+			r.Architecture = "x86_64"
+		}
+		if r.Architecture == "arm" {
+			r.Architecture = "arm64"
+		}
+		if r.Architecture == "aarch64" {
+			r.Architecture = "arm64"
+		}
+
+		if r.Architecture != "x86_64" && r.Architecture != "arm64" {
+			return ErrInvalidArchitecture
+		}
 	}
 
 	if helpers.ContainsIllegalChars(r.Version) {

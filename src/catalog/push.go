@@ -180,6 +180,15 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 				manifest.MetadataFile = s.getMetaFilename(manifest.Name)
 				manifest.PackFile = s.getPackFilename(manifest.Name)
 				tempManifestContentFilePath := filepath.Join("/tmp", s.getMetaFilename(manifest.Name))
+				if manifest.Architecture == "amd64" {
+					manifest.Architecture = "x86_64"
+				}
+				if r.Architecture == "arm" {
+					manifest.Architecture = "arm64"
+				}
+				if manifest.Architecture == "aarch64" {
+					manifest.Architecture = "arm64"
+				}
 
 				if err := rs.CreateFolder(ctx, "/", manifest.Path); err != nil {
 					manifest.AddError(err)
