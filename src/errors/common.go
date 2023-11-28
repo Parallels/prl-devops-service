@@ -44,6 +44,10 @@ func ErrConfigOperationNotSupported(group, operation string) error {
 	return NewWithCodef(400, "operation %s not supported on group %s", operation, group)
 }
 
+func ErrConfigOperationNoEnoughArguments(group, operation string) error {
+	return NewWithCodef(400, "operation %s does not have enough arguments on group %s", operation, group)
+}
+
 func ErrConfigInvalidOperation(operation string) error {
 	return NewWithCodef(400, "invalid operation %s", operation)
 }

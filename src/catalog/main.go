@@ -290,6 +290,7 @@ func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, pat
 		return "", err
 	}
 
+	ctx.LogInfo("Finished compressing machine from %s to %s", path, tarFilePath)
 	return tarFilePath, nil
 }
 
@@ -340,5 +341,6 @@ func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, f
 		}
 	}
 
+	ctx.LogInfo("Finished decompressing machine from %s to %s", filePath, destination)
 	return nil
 }
