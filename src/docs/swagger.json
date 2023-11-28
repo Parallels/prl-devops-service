@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.3.2"
+        "version": "0.4.0"
     },
     "basePath": "/api",
     "paths": {
@@ -4518,6 +4518,9 @@
             "type": "object",
             "properties": {
                 "Public SSH keys synchronization": {
+                    "type": "string"
+                },
+                "Rosetta Linux": {
                     "type": "string"
                 },
                 "Share host location": {
