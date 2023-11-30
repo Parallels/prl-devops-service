@@ -95,7 +95,16 @@ func (r *VirtualMachineConfigRequestOperation) Validate() error {
 		if r.Value == "" {
 			return errors.ErrValueEmpty()
 		}
-		if r.Operation != "rename" {
+		if r.Operation != "rename" &&
+			r.Operation != "clone" &&
+			r.Operation != "archive" &&
+			r.Operation != "unarchive" &&
+			r.Operation != "pack" &&
+			r.Operation != "unpack" &&
+			r.Operation != "encrypt" &&
+			r.Operation != "decrypt" &&
+			r.Operation != "reset-uptime" &&
+			r.Operation != "install-tools" {
 			return errors.ErrConfigOperationNotSupported(r.Group, r.Operation)
 		}
 	case "cpu":

@@ -186,7 +186,12 @@ func (c *Config) GetCatalogCacheFolder() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	cacheFolder := filepath.Join(rootFolder, constants.DEFAULT_CATALOG_CACHE_FOLDER)
+	if os.Getenv(constants.CATALOG_CACHE_FOLDER_ENV_VAR) != "" {
+		cacheFolder = os.Getenv(constants.CATALOG_CACHE_FOLDER_ENV_VAR)
+	}
+
 	err = helpers.CreateDirIfNotExist(cacheFolder)
 	if err != nil {
 		return "", err
