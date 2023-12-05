@@ -1125,6 +1125,9 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 	if pullRequest.Architecture == "" {
 		pullRequest.Architecture = request.Architecture
 	}
+
+	pullRequest.StartAfterPull = request.StartOnCreate
+
 	if err := pullRequest.Validate(); err != nil {
 		return nil, err
 	}

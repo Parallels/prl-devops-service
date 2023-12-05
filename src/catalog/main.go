@@ -227,6 +227,7 @@ func (s *CatalogManifestService) getPackFilename(name string) string {
 }
 
 func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, path string, machineFileName string, destination string) (string, error) {
+	startingTime := time.Now()
 	tarFilename := machineFileName
 	tarFilePath := filepath.Join(destination, tarFilename)
 
@@ -290,11 +291,13 @@ func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, pat
 		return "", err
 	}
 
-	ctx.LogInfo("Finished compressing machine from %s to %s", path, tarFilePath)
+	endingTime := time.Now()
+	ctx.LogInfo("Finished compressing machine from %s to %s in %v", path, tarFilePath, endingTime.Sub(startingTime))
 	return tarFilePath, nil
 }
 
 func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, filePath string, destination string) error {
+	staringTime := time.Now()
 	tarFile, err := os.Open(filePath)
 	if err != nil {
 		return err
@@ -341,6 +344,7 @@ func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, f
 		}
 	}
 
-	ctx.LogInfo("Finished decompressing machine from %s to %s", filePath, destination)
+	endingTime := time.Now()
+	ctx.LogInfo("Finished decompressing machine from %s to %s, in %v", filePath, destination, endingTime.Sub(staringTime))
 	return nil
 }
