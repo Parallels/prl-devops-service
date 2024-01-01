@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/Azure/azure-storage-blob-go v0.15.0
-	github.com/aws/aws-sdk-go v1.49.4
+	github.com/aws/aws-sdk-go v1.49.13
 	github.com/cjlapao/common-go v0.0.39
 	github.com/cjlapao/common-go-logger v0.0.3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
