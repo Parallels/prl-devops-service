@@ -9,9 +9,7 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processInstall() {
-	ctx := basecontext.NewRootBaseContext()
-
+func processInstall(ctx basecontext.ApiContext) {
 	filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
 	if filePath != "" {
 		if err := install.InstallService(ctx, filePath); err != nil {

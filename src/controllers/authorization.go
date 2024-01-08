@@ -82,9 +82,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 			return
 		}
 
-		// Hash the password with SHA-256
-		hashedPassword := helpers.Sha256Hash(request.Password)
-		if hashedPassword != user.Password {
+		if err := helpers.BcryptCompare(request.Password, user.ID, user.Password); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid Password",
 				Code:    http.StatusUnauthorized,

@@ -14,23 +14,25 @@ func Process() {
 
 	switch command {
 	case constants.API_COMMAND:
-		processApi()
+		processApi(ctx)
 	case constants.GENERATE_SECURITY_KEY_COMMAND:
-		processGenerateSecurityKey()
+		processGenerateSecurityKey(ctx)
 	case constants.INSTALL_SERVICE_COMMAND:
-		processInstall()
+		processInstall(ctx)
 	case constants.UNINSTALL_SERVICE_COMMAND:
-		processUninstall()
+		processUninstall(ctx)
 	case constants.TEST_COMMAND:
-		processTestProviders()
+		processTestProviders(ctx)
 	case constants.VERSION_COMMAND:
 		processVersion()
 	case constants.HELP_COMMAND:
 		processHelp("")
 	case constants.CATALOG_COMMAND:
 		processCatalog(ctx)
+	case constants.UPDATE_ROOT_PASSWORD_COMMAND:
+		processRootPassword(ctx)
 	default:
-		processApi()
+		processApi(ctx)
 	}
 	os.Exit(0)
 }

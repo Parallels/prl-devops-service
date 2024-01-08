@@ -128,7 +128,11 @@ func (j *JsonDatabase) CreateUser(ctx basecontext.ApiContext, user models.User) 
 	}
 
 	// Hash the password with SHA-256
-	user.Password = helpers.Sha256Hash(user.Password)
+	hashedPassword, err := helpers.BcryptHash(user.Password, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	user.Password = hashedPassword
 
 	user.UpdatedAt = helpers.GetUtcCurrentDateTime()
 	user.CreatedAt = helpers.GetUtcCurrentDateTime()
@@ -155,7 +159,11 @@ func (j *JsonDatabase) UpdateUser(ctx basecontext.ApiContext, key models.User) e
 				j.data.Users[i].Name = key.Name
 			}
 			if key.Password != "" {
-				j.data.Users[i].Password = helpers.Sha256Hash(key.Password)
+				hashedPassword, err := helpers.BcryptHash(key.Password, key.ID)
+				if err != nil {
+					return err
+				}
+				j.data.Users[i].Password = hashedPassword
 			}
 
 			j.data.Users[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
@@ -176,7 +184,11 @@ func (j *JsonDatabase) UpdateRootPassword(ctx basecontext.ApiContext, newPasswor
 
 	for i, user := range j.data.Users {
 		if user.Email == "root@localhost" {
-			j.data.Users[i].Password = helpers.Sha256Hash(newPassword)
+			hashedPassword, err := helpers.BcryptHash(newPassword, user.ID)
+			if err != nil {
+				return err
+			}
+			j.data.Users[i].Password = hashedPassword
 			j.data.Users[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
 			if err := j.Save(ctx); err != nil {
 				return err

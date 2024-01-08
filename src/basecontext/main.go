@@ -41,7 +41,8 @@ func NewBaseContext() *BaseContext {
 
 func NewRootBaseContext() *BaseContext {
 	baseContext := &BaseContext{
-		ctx: context.Background(),
+		ctx:       context.Background(),
+		shouldLog: true,
 		authContext: &AuthorizationContext{
 			IsAuthorized: true,
 			AuthorizedBy: "RootAuthorization",

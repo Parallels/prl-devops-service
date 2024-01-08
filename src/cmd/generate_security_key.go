@@ -9,9 +9,7 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processGenerateSecurityKey() {
-	ctx := basecontext.NewRootBaseContext()
-
+func processGenerateSecurityKey(ctx basecontext.ApiContext) {
 	ctx.LogInfo("Generating security key")
 	filename := "private.key"
 

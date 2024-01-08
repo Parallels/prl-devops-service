@@ -69,8 +69,7 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 				}
 			}
 			if isValid {
-				hashedSecret := helpers.Sha256Hash(apiKey.Value)
-				if dbApiKey.Secret != hashedSecret {
+				if err := helpers.BcryptCompare(apiKey.Value, dbApiKey.ID, dbApiKey.Secret); err != nil {
 					isValid = false
 					authError.ErrorDescription = "Api Key is not Valid"
 				}

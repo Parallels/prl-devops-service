@@ -9,8 +9,7 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processTestProviders() {
-	ctx := basecontext.NewRootBaseContext()
+func processTestProviders(ctx basecontext.ApiContext) {
 	// Checking if we just want to test
 	if helper.GetFlagSwitch(constants.TEST_CATALOG_PROVIDERS_FLAG, false) {
 		if err := tests.TestCatalogProviders(ctx); err != nil {
