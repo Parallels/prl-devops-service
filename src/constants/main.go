@@ -64,6 +64,7 @@ const (
 	VERSION_COMMAND               = "version"
 	HELP_COMMAND                  = "help"
 	CATALOG_COMMAND               = "catalog"
+	UPDATE_ROOT_PASSWORD_COMMAND  = "update-root-pass"
 
 	TEST_FLAG                       = "test"
 	TEST_CATALOG_PROVIDERS_FLAG     = "catalog-providers"
@@ -72,6 +73,7 @@ const (
 	FILE_FLAG                       = "file"
 	MODE_FLAG                       = "mode"
 	HELP_FLAG                       = "help"
+	PASSWORD_FLAG                   = "password"
 	USE_ORCHESTRATOR_RESOURCES_FLAG = "use-orchestrator-resources"
 )
 

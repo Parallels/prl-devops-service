@@ -59,7 +59,11 @@ func (j *JsonDatabase) CreateApiKey(ctx basecontext.ApiContext, apiKey models.Ap
 	}
 
 	// Hash the password with SHA-256
-	apiKey.Secret = helpers.Sha256Hash(apiKey.Secret)
+	hashSecret, err := helpers.BcryptHash(apiKey.Secret, apiKey.ID)
+	if err != nil {
+		return nil, err
+	}
+	apiKey.Secret = hashSecret
 	apiKey.UpdatedAt = helpers.GetUtcCurrentDateTime()
 	apiKey.CreatedAt = helpers.GetUtcCurrentDateTime()
 	j.data.ApiKeys = append(j.data.ApiKeys, apiKey)

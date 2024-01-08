@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Parallels/pd-api-service/errors"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func GenerateId() string {
@@ -19,9 +20,45 @@ func GenerateId() string {
 	return hex.EncodeToString(bytes)
 }
 
-func Sha256Hash(input string) string {
+func Sha256Hash(input string) (string, error) {
 	hashedPassword := sha256.Sum256([]byte(input))
-	return hex.EncodeToString(hashedPassword[:])
+	return hex.EncodeToString(hashedPassword[:]), nil
+}
+
+func BcryptHash(input string, salt string) (string, error) {
+	cost := bcrypt.DefaultCost
+	// saltString := GenerateSalt(salt, cost)
+	inputBytes := []byte(input)
+	saltBytes := []byte(salt)
+	if len(inputBytes) > 40 {
+		return "", errors.New("password cannot be longer than 42 characters")
+	}
+	if len(saltBytes) > 32 {
+		saltBytes = saltBytes[:32]
+	}
+
+	saltedPwd := []byte(input + string(saltBytes))
+
+	bytes, err := bcrypt.GenerateFromPassword([]byte(saltedPwd), cost)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
+}
+
+func BcryptCompare(input string, salt string, hashedPwd string) error {
+	saltBytes := []byte(salt)
+	if len(saltBytes) > 32 {
+		saltBytes = saltBytes[:32]
+	}
+
+	saltedPwd := []byte(input + string(saltBytes))
+
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPwd), saltedPwd)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func ConvertByteToGigabyte(bytes float64) float64 {

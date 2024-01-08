@@ -7,9 +7,7 @@ import (
 	"github.com/Parallels/pd-api-service/install"
 )
 
-func processUninstall() {
-	ctx := basecontext.NewRootBaseContext()
-
+func processUninstall(ctx basecontext.ApiContext) {
 	if err := install.UninstallService(ctx); err != nil {
 		ctx.LogError(err.Error())
 		os.Exit(1)

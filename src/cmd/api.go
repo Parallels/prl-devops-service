@@ -8,7 +8,6 @@ import (
 	"github.com/Parallels/pd-api-service/common"
 	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/data"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/orchestrator"
 	"github.com/Parallels/pd-api-service/restapi"
@@ -17,7 +16,7 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processApi() {
+func processApi(ctx basecontext.ApiContext) {
 	// processing the command help
 	if helper.GetFlagSwitch(constants.HELP_FLAG, false) || helper.GetCommandAt(1) == "help" {
 		processHelp(constants.API_COMMAND)
@@ -25,8 +24,6 @@ func processApi() {
 	}
 
 	versionSvc.PrintAnsiHeader()
-
-	ctx := basecontext.NewRootBaseContext()
 	cfg := config.NewConfig()
 
 	if cfg.GetSecurityKey() == "" {
@@ -34,30 +31,6 @@ func processApi() {
 	}
 
 	startup.Start()
-
-	if helper.GetFlagSwitch(constants.UPDATE_ROOT_PASSWORD_FLAG, false) {
-		ctx.LogInfo("Updating root password")
-		rootPassword := helper.GetFlagValue("password", "")
-		if rootPassword != "" {
-			db := serviceprovider.Get().JsonDatabase
-			ctx.LogInfo("Database connection found, updating password")
-			_ = db.Connect(ctx)
-			if db != nil {
-				err := db.UpdateRootPassword(ctx, rootPassword)
-				if err != nil {
-					panic(err)
-				}
-				_ = db.Disconnect(ctx)
-			} else {
-				panic(data.ErrDatabaseNotConnected)
-			}
-		} else {
-			panic("No password provided")
-		}
-		ctx.LogInfo("Root password updated")
-
-		os.Exit(0)
-	}
 
 	currentUser, err := serviceprovider.Get().System.GetCurrentUser(ctx)
 	if err != nil {
@@ -71,12 +44,12 @@ func processApi() {
 
 	// updating the root password if the environment variable is set
 	if os.Getenv(constants.ROOT_PASSWORD_ENV_VAR) != "" {
-		rootPassword := helpers.Sha256Hash(os.Getenv(constants.ROOT_PASSWORD_ENV_VAR))
 		db := serviceprovider.Get().JsonDatabase
 		_ = db.Connect(ctx)
 		rootUser, _ := db.GetUser(ctx, "root")
+		rootPassword := os.Getenv(constants.ROOT_PASSWORD_ENV_VAR)
 		if rootUser != nil {
-			if rootUser.Password != rootPassword {
+			if err := helpers.BcryptCompare(rootPassword, rootUser.ID, rootUser.Password); err != nil {
 				ctx.LogInfo("Updating root password")
 				if err := db.UpdateRootPassword(ctx, os.Getenv(constants.ROOT_PASSWORD_ENV_VAR)); err != nil {
 					panic(err)
