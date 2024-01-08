@@ -16,6 +16,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/files/v2 v2.0.0
 	github.com/swaggo/swag v1.16.2
+	golang.org/x/crypto v0.17.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -73,7 +74,6 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
-	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
