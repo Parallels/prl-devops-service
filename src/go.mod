@@ -6,7 +6,7 @@ require (
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/aws/aws-sdk-go v1.49.16
 	github.com/cjlapao/common-go v0.0.39
-	github.com/cjlapao/common-go-logger v0.0.3
+	github.com/cjlapao/common-go-logger v0.0.5
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/google/uuid v1.5.0
