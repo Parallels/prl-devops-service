@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/common"
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/serviceprovider/interfaces"
@@ -16,26 +15,28 @@ import (
 )
 
 var globalGitService *GitService
-var logger = common.Logger
 
 type GitService struct {
+	ctx          basecontext.ApiContext
 	executable   string
 	installed    bool
 	dependencies []interfaces.Service
 }
 
-func Get() *GitService {
+func Get(ctx basecontext.ApiContext) *GitService {
 	if globalGitService != nil {
 		return globalGitService
 	}
 
-	return New()
+	return New(ctx)
 }
 
-func New() *GitService {
-	globalGitService = &GitService{}
+func New(ctx basecontext.ApiContext) *GitService {
+	globalGitService = &GitService{
+		ctx: ctx,
+	}
 	if globalGitService.FindPath() == "" {
-		logger.Warn("Running without support for git")
+		ctx.LogWarn("Running without support for git")
 		return nil
 	} else {
 		globalGitService.installed = true
@@ -50,23 +51,23 @@ func (s *GitService) Name() string {
 }
 
 func (s *GitService) FindPath() string {
-	logger.Info("Getting Git executable")
+	s.ctx.LogInfo("Getting Git executable")
 	out, err := commands.ExecuteWithNoOutput("which", "git")
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
-		logger.Warn("Git executable not found, trying to find it in the default locations")
+		s.ctx.LogWarn("Git executable not found, trying to find it in the default locations")
 	}
 
 	if path != "" {
 		s.executable = path
-		logger.Info("Git found at: %s", s.executable)
+		s.ctx.LogInfo("Git found at: %s", s.executable)
 	} else {
 		if _, err := os.Stat("/opt/homebrew/bin/git"); err == nil {
 			s.executable = "/opt/homebrew/bin/git"
 		} else {
-			logger.Warn("Git executable not found")
+			s.ctx.LogWarn("Git executable not found")
 		}
-		logger.Info("Git found at: %s", s.executable)
+		s.ctx.LogInfo("Git found at: %s", s.executable)
 	}
 
 	return s.executable
@@ -93,7 +94,7 @@ func (s *GitService) Version() string {
 
 func (s *GitService) Install(asUser, version string, flags map[string]string) error {
 	if s.installed {
-		logger.Info("%s already installed", s.Name())
+		s.ctx.LogInfo("%s already installed", s.Name())
 		return nil
 	}
 	// Installing service dependency
@@ -102,7 +103,7 @@ func (s *GitService) Install(asUser, version string, flags map[string]string) er
 			if dependency == nil {
 				return errors.New("Dependency is nil")
 			}
-			logger.Info("Installing dependency %s for %s", dependency.Name(), s.Name())
+			s.ctx.LogInfo("Installing dependency %s for %s", dependency.Name(), s.Name())
 			if err := dependency.Install(asUser, "latest", flags); err != nil {
 				return err
 			}
@@ -126,7 +127,7 @@ func (s *GitService) Install(asUser, version string, flags map[string]string) er
 		cmd.Args = append(cmd.Args, "install", "packer@"+version)
 	}
 
-	logger.Info("Installing %s with command: %v", s.Name(), cmd.String())
+	s.ctx.LogInfo("Installing %s with command: %v", s.Name(), cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -137,7 +138,7 @@ func (s *GitService) Install(asUser, version string, flags map[string]string) er
 
 func (s *GitService) Uninstall(asUser string, uninstallDependencies bool) error {
 	if s.installed {
-		logger.Info("Uninstalling %s", s.Name())
+		s.ctx.LogInfo("Uninstalling %s", s.Name())
 
 		var cmd helpers.Command
 		if asUser == "" {
@@ -165,7 +166,7 @@ func (s *GitService) Uninstall(asUser string, uninstallDependencies bool) error 
 				if dependency == nil {
 					continue
 				}
-				logger.Info("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
+				s.ctx.LogInfo("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
 				if err := dependency.Uninstall(asUser, uninstallDependencies); err != nil {
 					return err
 				}
@@ -197,7 +198,7 @@ func (s *GitService) Clone(ctx basecontext.ApiContext, repoURL string, owner str
 	if owner == "" || owner == "root" {
 		path = filepath.Join("/tmp", localPath)
 	} else {
-		home, err := system.Get().GetUserHome(ctx, owner)
+		home, err := system.Get(ctx).GetUserHome(ctx, owner)
 		if err != nil {
 			return "", err
 		}

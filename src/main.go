@@ -1,23 +1,8 @@
 package main
 
 import (
-	"os"
+	"github.com/Parallels/pd-api-service/cmd"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/common"
-	"github.com/Parallels/pd-api-service/config"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/data"
-	"github.com/Parallels/pd-api-service/helpers"
-	"github.com/Parallels/pd-api-service/install"
-	"github.com/Parallels/pd-api-service/orchestrator"
-	"github.com/Parallels/pd-api-service/restapi"
-	"github.com/Parallels/pd-api-service/security"
-	"github.com/Parallels/pd-api-service/serviceprovider"
-	"github.com/Parallels/pd-api-service/startup"
-	"github.com/Parallels/pd-api-service/tests"
-
-	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/version"
 )
 
@@ -41,10 +26,10 @@ var versionSvc = version.Get()
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = "Parallels Desktop API Service"
@@ -58,137 +43,5 @@ func main() {
 		versionSvc.Rev = strVer.Rev
 	}
 
-	if helper.GetFlagSwitch("version", false) {
-		println(versionSvc.String())
-		os.Exit(0)
-	}
-
-	versionSvc.PrintAnsiHeader()
-	ctx := basecontext.NewRootBaseContext()
-	cfg := config.NewConfig()
-
-	// Checking if we just want to test
-	if helper.GetFlagSwitch(constants.TEST_FLAG, false) {
-		if helper.GetFlagSwitch(constants.TEST_CATALOG_PROVIDERS_FLAG, false) {
-			if err := tests.TestCatalogProviders(ctx); err != nil {
-				ctx.LogError(err.Error())
-				os.Exit(1)
-			}
-		}
-
-		os.Exit(0)
-	}
-
-	if helper.GetFlagSwitch(constants.GENERATE_SECURITY_KEY_FLAG, false) {
-		ctx.LogInfo("Generating security key")
-		filename := "private.key"
-		if helper.GetFlagValue(constants.FILE_FLAG, "") != "" {
-			filename = helper.GetFlagValue(constants.FILE_FLAG, "")
-		}
-		err := security.GenPrivateRsaKey(filename)
-		if err != nil {
-			panic(err)
-		}
-
-		os.Exit(0)
-	}
-
-	if helper.GetFlagSwitch(constants.INSTALL_SERVICE_FLAG, false) {
-		filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
-		if filePath != "" {
-			if err := install.InstallService(ctx, filePath); err != nil {
-				ctx.LogError(err.Error())
-				os.Exit(1)
-			}
-		} else {
-			if err := install.InstallService(ctx, ""); err != nil {
-				ctx.LogError(err.Error())
-				os.Exit(1)
-			}
-		}
-		os.Exit(0)
-	}
-
-	if helper.GetFlagSwitch(constants.UNINSTALL_SERVICE_FLAG, false) {
-		if err := install.UninstallService(ctx); err != nil {
-			ctx.LogError(err.Error())
-			os.Exit(1)
-		}
-		os.Exit(0)
-	}
-
-	if cfg.GetSecurityKey() == "" {
-		common.Logger.Warn("No security key found, database will be unencrypted")
-	}
-
-	startup.Start()
-
-	if helper.GetFlagSwitch(constants.UPDATE_ROOT_PASSWORD_FLAG, false) {
-		ctx.LogInfo("Updating root password")
-		rootPassword := helper.GetFlagValue("password", "")
-		if rootPassword != "" {
-			db := serviceprovider.Get().JsonDatabase
-			ctx.LogInfo("Database connection found, updating password")
-			_ = db.Connect(ctx)
-			if db != nil {
-				err := db.UpdateRootPassword(ctx, rootPassword)
-				if err != nil {
-					panic(err)
-				}
-				_ = db.Disconnect(ctx)
-			} else {
-				panic(data.ErrDatabaseNotConnected)
-			}
-		} else {
-			panic("No password provided")
-		}
-		ctx.LogInfo("Root password updated")
-
-		os.Exit(0)
-	}
-
-	currentUser, err := serviceprovider.Get().System.GetCurrentUser(ctx)
-	if err != nil {
-		panic(err)
-	}
-	os.Setenv(constants.CURRENT_USER_ENV_VAR, currentUser)
-	currentUserEnv := os.Getenv(constants.CURRENT_USER_ENV_VAR)
-	if currentUserEnv != "" {
-		ctx.LogInfo("Running with user %s", currentUser)
-	}
-
-	// updating the root password if the environment variable is set
-	if os.Getenv(constants.ROOT_PASSWORD_ENV_VAR) != "" {
-		rootPassword := helpers.Sha256Hash(os.Getenv(constants.ROOT_PASSWORD_ENV_VAR))
-		db := serviceprovider.Get().JsonDatabase
-		_ = db.Connect(ctx)
-		rootUser, _ := db.GetUser(ctx, "root")
-		if rootUser != nil {
-			if rootUser.Password != rootPassword {
-				ctx.LogInfo("Updating root password")
-				if err := db.UpdateRootPassword(ctx, os.Getenv(constants.ROOT_PASSWORD_ENV_VAR)); err != nil {
-					panic(err)
-				}
-			}
-		}
-	}
-
-	// Serve the API
-	for {
-		listener := startup.InitApi()
-		restartChannel := restapi.GetRestartChannel()
-		listener.Start(versionSvc.Name, versionSvc.String())
-
-		needsRestart := <-restartChannel
-		if !needsRestart {
-			break
-		}
-		startup.Start()
-	}
-
-	if cfg.IsOrchestrator() {
-		ctx := basecontext.NewRootBaseContext()
-		orchestratorBackgroundService := orchestrator.NewOrchestratorService(ctx)
-		orchestratorBackgroundService.Stop()
-	}
+	cmd.Process()
 }

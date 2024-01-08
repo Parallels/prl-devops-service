@@ -1,59 +1,59 @@
 package models
 
 type CatalogManifest struct {
-	Name               string                        `json:"name"`
-	ID                 string                        `json:"id"`
-	CatalogId          string                        `json:"catalog_id"`
-	Description        string                        `json:"description"`
-	Architecture       string                        `json:"architecture"`
-	Version            string                        `json:"version"`
-	Type               string                        `json:"type"`
-	Tags               []string                      `json:"tags,omitempty"`
-	Size               string                        `json:"size,omitempty"`
-	Path               string                        `json:"path,omitempty"`
-	PackFilename       string                        `json:"pack_filename,omitempty"`
-	MetadataFilename   string                        `json:"metadata_filename,omitempty"`
-	Provider           *RemoteVirtualMachineProvider `json:"provider,omitempty"`
-	CreatedAt          string                        `json:"created_at,omitempty"`
-	UpdatedAt          string                        `json:"updated_at,omitempty"`
-	RequiredClaims     []string                      `json:"required_claims,omitempty"`
-	RequiredRoles      []string                      `json:"required_roles,omitempty"`
-	LastDownloadedAt   string                        `json:"last_downloaded_at,omitempty"`
-	LastDownloadedUser string                        `json:"last_downloaded_user,omitempty"`
-	DownloadCount      int                           `json:"download_count,omitempty"`
-	Tainted            bool                          `json:"tainted,omitempty"`
-	TaintedBy          string                        `json:"tainted_by,omitempty"`
-	TaintedAt          string                        `json:"tainted_at,omitempty"`
-	UnTaintedBy        string                        `json:"untainted_by,omitempty"`
-	Revoked            bool                          `json:"revoked,omitempty"`
-	RevokedAt          string                        `json:"revoked_at,omitempty"`
-	RevokedBy          string                        `json:"revoked_by,omitempty"`
-	PackContents       []CatalogManifestPackItem     `json:"pack_contents,omitempty"`
+	Name               string                        `json:"name" yaml:"name"`
+	ID                 string                        `json:"id,omitempty" yaml:"id,omitempty"`
+	CatalogId          string                        `json:"catalog_id,omitempty" yaml:"catalog_id,omitempty"`
+	Description        string                        `json:"description,omitempty" yaml:"description,omitempty"`
+	Architecture       string                        `json:"architecture,omitempty" yaml:"architecture,omitempty"`
+	Version            string                        `json:"version,omitempty" yaml:"version,omitempty"`
+	Type               string                        `json:"type,omitempty" yaml:"type,omitempty"`
+	Tags               []string                      `json:"tags,omitempty" yaml:"tags,omitempty"`
+	Size               string                        `json:"size,omitempty" yaml:"size,omitempty"`
+	Path               string                        `json:"path,omitempty" yaml:"path,omitempty"`
+	PackFilename       string                        `json:"pack_filename,omitempty" yaml:"pack_filename,omitempty"`
+	MetadataFilename   string                        `json:"metadata_filename,omitempty" yaml:"metadata_filename,omitempty"`
+	Provider           *RemoteVirtualMachineProvider `json:"provider,omitempty" yaml:"provider,omitempty"`
+	CreatedAt          string                        `json:"created_at,omitempty" yaml:"created_at,omitempty"`
+	UpdatedAt          string                        `json:"updated_at,omitempty" yaml:"updated_at,omitempty"`
+	RequiredClaims     []string                      `json:"required_claims,omitempty" yaml:"required_claims,omitempty"`
+	RequiredRoles      []string                      `json:"required_roles,omitempty" yaml:"required_roles,omitempty"`
+	LastDownloadedAt   string                        `json:"last_downloaded_at,omitempty" yaml:"last_downloaded_at,omitempty"`
+	LastDownloadedUser string                        `json:"last_downloaded_user,omitempty" yaml:"last_downloaded_user,omitempty"`
+	DownloadCount      int                           `json:"download_count,omitempty" yaml:"download_count,omitempty"`
+	Tainted            bool                          `json:"tainted,omitempty" yaml:"tainted,omitempty"`
+	TaintedBy          string                        `json:"tainted_by,omitempty" yaml:"tainted_by,omitempty"`
+	TaintedAt          string                        `json:"tainted_at,omitempty" yaml:"tainted_at,omitempty"`
+	UnTaintedBy        string                        `json:"untainted_by,omitempty" yaml:"untainted_by,omitempty"`
+	Revoked            bool                          `json:"revoked,omitempty" yaml:"revoked,omitempty"`
+	RevokedAt          string                        `json:"revoked_at,omitempty" yaml:"revoked_at,omitempty"`
+	RevokedBy          string                        `json:"revoked_by,omitempty" yaml:"revoked_by,omitempty"`
+	PackContents       []CatalogManifestPackItem     `json:"pack_contents,omitempty" yaml:"pack_contents,omitempty"`
 }
 
 type RemoteVirtualMachineProvider struct {
-	Type     string            `json:"type,omitempty"`
-	Host     string            `json:"host,omitempty"`
-	Port     string            `json:"port,omitempty"`
-	Username string            `json:"user,omitempty"`
-	Password string            `json:"password,omitempty"`
-	ApiKey   string            `json:"api_key,omitempty"`
-	Meta     map[string]string `json:"meta,omitempty"`
+	Type     string            `json:"type,omitempty" yaml:"type,omitempty"`
+	Host     string            `json:"host,omitempty" yaml:"host,omitempty"`
+	Port     string            `json:"port,omitempty" yaml:"port,omitempty"`
+	Username string            `json:"user,omitempty" yaml:"user,omitempty"`
+	Password string            `json:"password,omitempty" yaml:"password,omitempty"`
+	ApiKey   string            `json:"api_key,omitempty" yaml:"api_key,omitempty"`
+	Meta     map[string]string `json:"meta,omitempty" yaml:"meta,omitempty"`
 }
 
 type CatalogManifestPackItem struct {
-	IsDir bool   `json:"is_dir,omitempty"`
-	Name  string `json:"name,omitempty"`
-	Path  string `json:"path,omitempty"`
+	IsDir bool   `json:"is_dir,omitempty" yaml:"is_dir,omitempty"`
+	Name  string `json:"name,omitempty" yaml:"name,omitempty"`
+	Path  string `json:"path,omitempty" yaml:"path,omitempty"`
 }
 
 type PullCatalogManifestResponse struct {
-	ID          string           `json:"id"`
-	LocalPath   string           `json:"local_path"`
-	MachineName string           `json:"machine_name"`
-	Manifest    *CatalogManifest `json:"manifest"`
+	ID          string           `json:"id,omitempty" yaml:"id,omitempty"`
+	LocalPath   string           `json:"local_path,omitempty" yaml:"local_path,omitempty"`
+	MachineName string           `json:"machine_name,omitempty" yaml:"machine_name,omitempty"`
+	Manifest    *CatalogManifest `json:"manifest,omitempty" yaml:"manifest,omitempty"`
 }
 
 type ImportCatalogManifestResponse struct {
-	ID string `json:"id"`
+	ID string `json:"id,omitempty" yaml:"id,omitempty"`
 }

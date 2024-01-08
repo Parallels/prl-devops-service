@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/common"
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/models"
@@ -17,26 +16,28 @@ import (
 )
 
 var globalSystemService *SystemService
-var logger = common.Logger
 
 type SystemService struct {
+	ctx            basecontext.ApiContext
 	brewExecutable string
 	installed      bool
 	dependencies   []interfaces.Service
 }
 
-func Get() *SystemService {
+func Get(ctx basecontext.ApiContext) *SystemService {
 	if globalSystemService != nil {
 		return globalSystemService
 	}
-	return New()
+	return New(ctx)
 }
 
-func New() *SystemService {
-	globalSystemService = &SystemService{}
+func New(ctx basecontext.ApiContext) *SystemService {
+	globalSystemService = &SystemService{
+		ctx: ctx,
+	}
 
 	if globalSystemService.GetOperatingSystem() == "macos" && globalSystemService.FindPath() == "" {
-		logger.Warn("Running without support for brew")
+		ctx.LogWarn("Running without support for brew")
 		return globalSystemService
 	} else {
 		globalSystemService.installed = true
@@ -51,27 +52,27 @@ func (s *SystemService) Name() string {
 }
 
 func (s *SystemService) FindPath() string {
-	logger.Info("Getting brew executable")
+	s.ctx.LogInfo("Getting brew executable")
 	out, err := commands.ExecuteWithNoOutput("which", "packer")
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
-		logger.Warn("Brew executable not found, trying to find it in the default locations")
+		s.ctx.LogWarn("Brew executable not found, trying to find it in the default locations")
 	}
 
 	if path != "" {
 		s.brewExecutable = path
-		logger.Info("Brew found at: %s", s.brewExecutable)
+		s.ctx.LogInfo("Brew found at: %s", s.brewExecutable)
 	} else {
 		if _, err := os.Stat("/opt/homebrew/bin/brew"); err == nil {
 			s.brewExecutable = "/opt/homebrew/bin/brew"
 		} else if _, err := os.Stat("/usr/local/bin/brew"); err == nil {
 			s.brewExecutable = "/usr/local/bin/brew"
 		} else {
-			logger.Warn("Brew executable not found")
+			s.ctx.LogWarn("Brew executable not found")
 			return s.brewExecutable
 		}
 
-		logger.Info("Brew found at: %s", s.brewExecutable)
+		s.ctx.LogInfo("Brew found at: %s", s.brewExecutable)
 	}
 
 	return s.brewExecutable
@@ -98,7 +99,7 @@ func (s *SystemService) Version() string {
 
 func (s *SystemService) Install(asUser, version string, flags map[string]string) error {
 	if s.installed {
-		logger.Info("%s already installed", s.Name())
+		s.ctx.LogInfo("%s already installed", s.Name())
 		return nil
 	}
 
@@ -108,7 +109,7 @@ func (s *SystemService) Install(asUser, version string, flags map[string]string)
 			if dependency == nil {
 				return errors.New("Dependency is nil")
 			}
-			logger.Info("Installing dependency %s", dependency.Name())
+			s.ctx.LogInfo("Installing dependency %s", dependency.Name())
 			if err := dependency.Install(asUser, "latest", flags); err != nil {
 				return err
 			}
@@ -120,7 +121,7 @@ func (s *SystemService) Install(asUser, version string, flags map[string]string)
 		Args:    []string{"-c", "\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""},
 	}
 
-	logger.Info("Installing %s with command: %v", s.Name(), cmd.String())
+	s.ctx.LogInfo("Installing %s with command: %v", s.Name(), cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -132,7 +133,7 @@ func (s *SystemService) Install(asUser, version string, flags map[string]string)
 
 func (s *SystemService) Uninstall(asUser string, uninstallDependencies bool) error {
 	if s.installed {
-		logger.Info("Uninstalling %s", s.Name())
+		s.ctx.LogInfo("Uninstalling %s", s.Name())
 
 		cmd := helpers.Command{
 			Command: "/bin/bash",
@@ -152,7 +153,7 @@ func (s *SystemService) Uninstall(asUser string, uninstallDependencies bool) err
 				if dependency == nil {
 					continue
 				}
-				logger.Info("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
+				s.ctx.LogInfo("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
 				if err := dependency.Uninstall(asUser, uninstallDependencies); err != nil {
 					return err
 				}

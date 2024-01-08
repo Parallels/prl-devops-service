@@ -14,6 +14,10 @@ type ApiContext interface {
 	GetAuthorizationContext() *AuthorizationContext
 	GetRequestId() string
 	GetUser() *models.ApiUser
+	Verbose() bool
+	EnableLog()
+	DisableLog()
+	ToggleLogTimestamps(value bool)
 	LogInfo(format string, a ...interface{})
 	LogError(format string, a ...interface{})
 	LogDebug(format string, a ...interface{})
@@ -21,6 +25,7 @@ type ApiContext interface {
 }
 
 type BaseContext struct {
+	shouldLog   bool
 	ctx         context.Context
 	authContext *AuthorizationContext
 	User        models.ApiUser
@@ -96,7 +101,28 @@ func (c *BaseContext) GetUser() *models.ApiUser {
 	return nil
 }
 
+func (c *BaseContext) Verbose() bool {
+	return c.shouldLog
+}
+
+func (c *BaseContext) EnableLog() {
+	c.shouldLog = true
+}
+
+func (c *BaseContext) DisableLog() {
+	c.shouldLog = false
+}
+
+func (c *BaseContext) ToggleLogTimestamps(value bool) {
+	common.Logger.EnableTimestamp(value)
+}
+
 func (c *BaseContext) LogInfo(format string, a ...interface{}) {
+	// log is disabled, returning
+	if !c.shouldLog {
+		return
+	}
+
 	msg := ""
 	if c.GetRequestId() != "" {
 		msg = "[" + c.GetRequestId() + "] "
@@ -106,6 +132,11 @@ func (c *BaseContext) LogInfo(format string, a ...interface{}) {
 }
 
 func (c *BaseContext) LogError(format string, a ...interface{}) {
+	// log is disabled, returning
+	if !c.shouldLog {
+		return
+	}
+
 	msg := ""
 	if c.GetRequestId() != "" {
 		msg = "[" + c.GetRequestId() + "] "
@@ -115,6 +146,11 @@ func (c *BaseContext) LogError(format string, a ...interface{}) {
 }
 
 func (c *BaseContext) LogDebug(format string, a ...interface{}) {
+	// log is disabled, returning
+	if !c.shouldLog {
+		return
+	}
+
 	msg := ""
 	if c.GetRequestId() != "" {
 		msg = "[" + c.GetRequestId() + "] "
@@ -124,6 +160,11 @@ func (c *BaseContext) LogDebug(format string, a ...interface{}) {
 }
 
 func (c *BaseContext) LogWarn(format string, a ...interface{}) {
+	// log is disabled, returning
+	if !c.shouldLog {
+		return
+	}
+
 	msg := ""
 	if c.GetRequestId() != "" {
 		msg = "[" + c.GetRequestId() + "] "

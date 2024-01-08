@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/common"
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/serviceprovider/interfaces"
@@ -14,25 +13,27 @@ import (
 )
 
 var globalPackerService *PackerService
-var logger = common.Logger
 
 type PackerService struct {
+	ctx          basecontext.ApiContext
 	executable   string
 	installed    bool
 	dependencies []interfaces.Service
 }
 
-func Get() *PackerService {
+func Get(ctx basecontext.ApiContext) *PackerService {
 	if globalPackerService != nil {
 		return globalPackerService
 	}
-	return New()
+	return New(ctx)
 }
 
-func New() *PackerService {
-	globalPackerService = &PackerService{}
+func New(ctx basecontext.ApiContext) *PackerService {
+	globalPackerService = &PackerService{
+		ctx: ctx,
+	}
 	if globalPackerService.FindPath() == "" {
-		logger.Warn("Running without support for packer")
+		ctx.LogWarn("Running without support for packer")
 	} else {
 		globalPackerService.installed = true
 	}
@@ -46,25 +47,25 @@ func (s *PackerService) Name() string {
 }
 
 func (s *PackerService) FindPath() string {
-	logger.Info("Getting packer executable")
+	s.ctx.LogInfo("Getting packer executable")
 	out, err := commands.ExecuteWithNoOutput("which", "packer")
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
-		logger.Warn("Packer executable not found, trying to find it in the default locations")
+		s.ctx.LogWarn("Packer executable not found, trying to find it in the default locations")
 	}
 
 	if path != "" {
 		s.executable = path
-		logger.Info("Packer found at: %s", s.executable)
+		s.ctx.LogInfo("Packer found at: %s", s.executable)
 	} else {
 		if _, err := os.Stat("/opt/homebrew/bin/packer"); err == nil {
 			s.executable = "/opt/homebrew/bin/packer"
 		} else {
-			logger.Warn("Packer executable not found")
+			s.ctx.LogWarn("Packer executable not found")
 			return s.executable
 		}
 
-		logger.Info("Packer found at: %s", s.executable)
+		s.ctx.LogInfo("Packer found at: %s", s.executable)
 	}
 
 	return s.executable
@@ -86,7 +87,7 @@ func (s *PackerService) Version() string {
 
 func (s *PackerService) Install(asUser, version string, flags map[string]string) error {
 	if s.installed {
-		logger.Info("%s already installed", s.Name())
+		s.ctx.LogInfo("%s already installed", s.Name())
 		return nil
 	}
 
@@ -96,7 +97,7 @@ func (s *PackerService) Install(asUser, version string, flags map[string]string)
 			if dependency == nil {
 				return errors.New("Dependency is nil")
 			}
-			logger.Info("Installing dependency %s for %s", dependency.Name(), s.Name())
+			s.ctx.LogInfo("Installing dependency %s for %s", dependency.Name(), s.Name())
 			if err := dependency.Install(asUser, "latest", flags); err != nil {
 				return err
 			}
@@ -121,7 +122,7 @@ func (s *PackerService) Install(asUser, version string, flags map[string]string)
 		cmd.Args = append(cmd.Args, "install", "packer@"+version)
 	}
 
-	logger.Info("Installing %s with command: %v", s.Name(), cmd.String())
+	s.ctx.LogInfo("Installing %s with command: %v", s.Name(), cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -132,7 +133,7 @@ func (s *PackerService) Install(asUser, version string, flags map[string]string)
 
 func (s *PackerService) Uninstall(asUser string, uninstallDependencies bool) error {
 	if s.installed {
-		logger.Info("Uninstalling %s", s.Name())
+		s.ctx.LogInfo("Uninstalling %s", s.Name())
 
 		var cmd helpers.Command
 		if asUser == "" {
@@ -160,7 +161,7 @@ func (s *PackerService) Uninstall(asUser string, uninstallDependencies bool) err
 				if dependency == nil {
 					continue
 				}
-				logger.Info("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
+				s.ctx.LogInfo("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
 				if err := dependency.Uninstall(asUser, uninstallDependencies); err != nil {
 					return err
 				}

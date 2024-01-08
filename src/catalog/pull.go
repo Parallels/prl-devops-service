@@ -77,7 +77,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 		manifest = &models.VirtualMachineCatalogManifest{}
 		manifest.Provider = &provider
 		apiClient.SetAuthorization(GetAuthenticator(manifest.Provider))
-		srvCtl := system.Get()
+		srvCtl := system.Get(ctx)
 		arch, err := srvCtl.GetArchitecture(ctx)
 		if err != nil {
 			response.AddError(errors.New("unable to determine architecture"))

@@ -29,6 +29,7 @@ var globalParallelsService *ParallelsService
 var logger = common.Logger
 
 type ParallelsService struct {
+	ctx              basecontext.ApiContext
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
@@ -37,18 +38,20 @@ type ParallelsService struct {
 	dependencies     []interfaces.Service
 }
 
-func Get() *ParallelsService {
+func Get(ctx basecontext.ApiContext) *ParallelsService {
 	if globalParallelsService != nil {
 		return globalParallelsService
 	}
-	return New()
+	return New(ctx)
 }
 
-func New() *ParallelsService {
-	globalParallelsService = &ParallelsService{}
+func New(ctx basecontext.ApiContext) *ParallelsService {
+	globalParallelsService = &ParallelsService{
+		ctx: ctx,
+	}
 
 	if globalParallelsService.FindPath() == "" {
-		logger.Warn("Running without support for Parallels Desktop")
+		ctx.LogWarn("Running without support for Parallels Desktop")
 	} else {
 		globalParallelsService.installed = true
 	}
@@ -62,17 +65,17 @@ func (s *ParallelsService) Name() string {
 }
 
 func (s *ParallelsService) FindPath() string {
-	logger.Info("Getting prlctl executable")
+	s.ctx.LogInfo("Getting prlctl executable")
 	out, err := commands.ExecuteWithNoOutput("which", "prlctl")
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
-		logger.Warn("Parallels Desktop CLI executable not found, trying to find it in the default locations")
+		s.ctx.LogWarn("Parallels Desktop CLI executable not found, trying to find it in the default locations")
 	}
 
 	if path != "" {
 		s.executable = path
 		s.serverExecutable = strings.ReplaceAll(path, "prlctl", "prlsrvctl")
-		logger.Info("Parallels Desktop CLI found at: %s", s.executable)
+		s.ctx.LogInfo("Parallels Desktop CLI found at: %s", s.executable)
 	} else {
 		if _, err := os.Stat("/usr/bin/prlctl"); err == nil {
 			s.executable = "/usr/bin/prlctl"
@@ -83,11 +86,11 @@ func (s *ParallelsService) FindPath() string {
 			s.serverExecutable = "/usr/local/bin/prlsrvctl"
 			os.Setenv("PATH", os.Getenv("PATH")+":/usr/local/bin")
 		} else {
-			logger.Warn("Parallels Desktop CLI executable not found, trying to install it")
+			s.ctx.LogWarn("Parallels Desktop CLI executable not found, trying to install it")
 			return s.executable
 		}
 
-		logger.Info("Parallels Desktop CLI found at: %s", s.executable)
+		s.ctx.LogInfo("Parallels Desktop CLI found at: %s", s.executable)
 	}
 
 	return s.executable
@@ -115,7 +118,7 @@ func (s *ParallelsService) Version() string {
 
 func (s *ParallelsService) Install(asUser, version string, flags map[string]string) error {
 	if s.installed {
-		logger.Info("%s already installed", s.Name())
+		s.ctx.LogInfo("%s already installed", s.Name())
 	} else {
 
 		// Installing service dependency
@@ -124,7 +127,7 @@ func (s *ParallelsService) Install(asUser, version string, flags map[string]stri
 				if dependency == nil {
 					return errors.New("Dependency is nil")
 				}
-				logger.Info("Installing dependency %s for %s", dependency.Name(), s.Name())
+				s.ctx.LogInfo("Installing dependency %s for %s", dependency.Name(), s.Name())
 				if err := dependency.Install(asUser, "latest", flags); err != nil {
 					return err
 				}
@@ -149,7 +152,7 @@ func (s *ParallelsService) Install(asUser, version string, flags map[string]stri
 			cmd.Args = append(cmd.Args, "install", "parallels@"+version)
 		}
 
-		logger.Info("Installing %s with command: %v", s.Name(), cmd.String())
+		s.ctx.LogInfo("Installing %s with command: %v", s.Name(), cmd.String())
 		_, err := helpers.ExecuteWithNoOutput(cmd)
 		if err != nil {
 			return err
@@ -173,7 +176,7 @@ func (s *ParallelsService) Install(asUser, version string, flags map[string]stri
 	}
 
 	if license != "" {
-		logger.Info("Activating Parallels Desktop with license %s", license)
+		s.ctx.LogInfo("Activating Parallels Desktop with license %s", license)
 		if err := s.InstallLicense(license, username, password); err != nil {
 			return err
 		}
@@ -188,7 +191,7 @@ func (s *ParallelsService) Install(asUser, version string, flags map[string]stri
 
 func (s *ParallelsService) Uninstall(asUser string, uninstallDependencies bool) error {
 	if s.installed {
-		logger.Info("Uninstalling %s", s.Name())
+		s.ctx.LogInfo("Uninstalling %s", s.Name())
 
 		var cmd helpers.Command
 		if asUser == "" {
@@ -220,7 +223,7 @@ func (s *ParallelsService) Uninstall(asUser string, uninstallDependencies bool) 
 				if dependency == nil {
 					continue
 				}
-				logger.Info("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
+				s.ctx.LogInfo("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
 				if err := dependency.Uninstall(asUser, uninstallDependencies); err != nil {
 					return err
 				}
@@ -253,7 +256,7 @@ func (s *ParallelsService) IsLicensed() bool {
 
 func (s *ParallelsService) GetVms(ctx basecontext.ApiContext, filter string) ([]models.ParallelsVM, error) {
 	var systemMachines []models.ParallelsVM
-	users, err := system.Get().GetSystemUsers(ctx)
+	users, err := system.Get(ctx).GetSystemUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -647,7 +650,7 @@ func (s *ParallelsService) GetInfo() (*models.ParallelsDesktopInfo, error) {
 
 	s.Info = &info
 	if info.License.State != "valid" {
-		logger.Error("Parallels license is not active")
+		s.ctx.LogError("Parallels license is not active")
 	} else {
 		s.isLicensed = true
 	}
@@ -755,7 +758,7 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 		}
 	}
 
-	git := git.Get()
+	git := git.Get(ctx)
 	repoPath, err := git.Clone(ctx, "https://github.com/Parallels/packer-examples", template.Owner, "packer-examples")
 	if err != nil {
 		ctx.LogError("Error cloning packer-examples repository: %s", err.Error())
@@ -764,7 +767,7 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 
 	ctx.LogInfo("Cloned packer-examples repository to %s", repoPath)
 
-	packer := packer.Get()
+	packer := packer.Get(ctx)
 	scriptPath := fmt.Sprintf("%s/%s", repoPath, template.PackerFolder)
 	overrideFilePath := fmt.Sprintf("%s/%s/override.pkrvars.hcl", repoPath, template.PackerFolder)
 	overrideFile := make(map[string]interface{})
@@ -838,7 +841,7 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 
 	ctx.LogInfo("Built packer machine")
 
-	users, err := system.Get().GetSystemUsers(ctx)
+	users, err := system.Get(ctx).GetSystemUsers(ctx)
 	if err != nil {
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
 			ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
@@ -1426,7 +1429,7 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 		}
 	}
 
-	systemSrv := system.Get()
+	systemSrv := system.Get(ctx)
 	systemInfo, err := systemSrv.GetHardwareInfo(ctx)
 	if err != nil {
 		return nil, err

@@ -20,12 +20,13 @@ const (
 func Start() {
 	config := config.NewConfig()
 	config.GetLogLevel()
+	ctx := basecontext.NewBaseContext()
 
-	system := system.New()
+	system := system.New(ctx)
 	if system.GetOperatingSystem() != "macos" {
-		serviceprovider.InitCatalogServices()
+		serviceprovider.InitCatalogServices(ctx)
 	} else {
-		serviceprovider.InitServices()
+		serviceprovider.InitServices(ctx)
 	}
 
 	// Seeding defaults

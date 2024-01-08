@@ -894,7 +894,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 
 		// Attempt to get the architecture from the system
 		if request.Architecture == "" {
-			svcCtl := system.Get()
+			svcCtl := system.Get(ctx)
 			arch, err := svcCtl.GetArchitecture(ctx)
 			if err != nil {
 				ReturnApiError(ctx, w, models.ApiErrorResponse{

@@ -60,8 +60,8 @@ func (r *PushCatalogManifestRequest) Validate() error {
 	}
 
 	if r.Architecture == "" {
-		sysCtl := system.Get()
 		ctx := basecontext.NewRootBaseContext()
+		sysCtl := system.Get(ctx)
 		arch, err := sysCtl.GetArchitecture(ctx)
 		if err != nil {
 			return errors.NewWithCode("unable to determine architecture and none was set", 400)

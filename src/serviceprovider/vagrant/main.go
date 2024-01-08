@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 
 	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/common"
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/models"
@@ -21,25 +20,27 @@ import (
 )
 
 var globalVagrantService *VagrantService
-var logger = common.Logger
 
 type VagrantService struct {
+	ctx          basecontext.ApiContext
 	executable   string
 	installed    bool
 	dependencies []interfaces.Service
 }
 
-func Get() *VagrantService {
+func Get(ctx basecontext.ApiContext) *VagrantService {
 	if globalVagrantService != nil {
 		return globalVagrantService
 	}
-	return New()
+	return New(ctx)
 }
 
-func New() *VagrantService {
-	globalVagrantService = &VagrantService{}
+func New(ctx basecontext.ApiContext) *VagrantService {
+	globalVagrantService = &VagrantService{
+		ctx: ctx,
+	}
 	if globalVagrantService.FindPath() == "" {
-		logger.Warn("Running without support for Vagrant")
+		ctx.LogWarn("Running without support for Vagrant")
 	} else {
 		globalVagrantService.installed = true
 	}
@@ -53,27 +54,27 @@ func (s *VagrantService) Name() string {
 }
 
 func (s *VagrantService) FindPath() string {
-	logger.Info("Getting vagrant executable")
+	s.ctx.LogInfo("Getting vagrant executable")
 	out, err := commands.ExecuteWithNoOutput("which", "vagrant")
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
-		logger.Warn("Vagrant executable not found, trying to find it in the default locations")
+		s.ctx.LogWarn("Vagrant executable not found, trying to find it in the default locations")
 	}
 
 	if path != "" {
 		s.executable = path
-		logger.Info("Vagrant found at: %s", s.executable)
+		s.ctx.LogInfo("Vagrant found at: %s", s.executable)
 	} else {
 		if _, err := os.Stat("/usr/local/bin/vagrant"); err == nil {
 			s.executable = "/usr/local/bin/vagrant"
 		} else if _, err := os.Stat("/opt/homebrew/bin/vagrant"); err == nil {
 			s.executable = "/opt/homebrew/bin/vagrant"
 		} else {
-			logger.Warn("Vagrant executable not found, trying to install it")
+			s.ctx.LogWarn("Vagrant executable not found, trying to install it")
 			return s.executable
 		}
 
-		logger.Info("Vagrant found at: %s", s.executable)
+		s.ctx.LogInfo("Vagrant found at: %s", s.executable)
 	}
 
 	return s.executable
@@ -95,8 +96,8 @@ func (s *VagrantService) Version() string {
 
 func (s *VagrantService) Install(asUser, version string, flags map[string]string) error {
 	if s.installed {
-		logger.Info("%s already installed", s.Name())
-		// logger.Info("Updating %s plugins", s.Name())
+		s.ctx.LogInfo("%s already installed", s.Name())
+		// s.ctx.LogInfo("Updating %s plugins", s.Name())
 		// s.updatePlugins(asUser)
 		return nil
 	}
@@ -107,7 +108,7 @@ func (s *VagrantService) Install(asUser, version string, flags map[string]string
 			if dependency == nil {
 				return errors.New("Dependency is nil")
 			}
-			logger.Info("Installing dependency %s for %s", dependency.Name(), s.Name())
+			s.ctx.LogInfo("Installing dependency %s for %s", dependency.Name(), s.Name())
 			if err := dependency.Install(asUser, "latest", flags); err != nil {
 				return err
 			}
@@ -132,14 +133,14 @@ func (s *VagrantService) Install(asUser, version string, flags map[string]string
 		cmd.Args = append(cmd.Args, "install", "hashicorp-vagrant@"+version)
 	}
 
-	logger.Info("Installing %s with command: %v", s.Name(), cmd.String())
+	s.ctx.LogInfo("Installing %s with command: %v", s.Name(), cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
 	}
 
 	s.installed = true
-	logger.Info("Installing %s plugins", s.Name())
+	s.ctx.LogInfo("Installing %s plugins", s.Name())
 	if err := s.InstallParallelsDesktopPlugin(asUser); err != nil {
 		return err
 	}
@@ -148,7 +149,7 @@ func (s *VagrantService) Install(asUser, version string, flags map[string]string
 
 func (s *VagrantService) Uninstall(asUser string, uninstallDependencies bool) error {
 	if s.installed {
-		logger.Info("Uninstalling %s", s.Name())
+		s.ctx.LogInfo("Uninstalling %s", s.Name())
 		var cmd helpers.Command
 		if asUser == "" {
 			cmd = helpers.Command{
@@ -175,7 +176,7 @@ func (s *VagrantService) Uninstall(asUser string, uninstallDependencies bool) er
 				if dependency == nil {
 					continue
 				}
-				logger.Info("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
+				s.ctx.LogInfo("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
 				if err := dependency.Uninstall(asUser, uninstallDependencies); err != nil {
 					return err
 				}
@@ -204,7 +205,7 @@ func (s *VagrantService) Installed() bool {
 
 func (s *VagrantService) InstallParallelsDesktopPlugin(asUser string) error {
 	if s.installed {
-		logger.Info("Updating Parallels Desktop Plugin %s", s.Name())
+		s.ctx.LogInfo("Updating Parallels Desktop Plugin %s", s.Name())
 		var cmd helpers.Command
 		if asUser == "" {
 			cmd = helpers.Command{
@@ -228,7 +229,7 @@ func (s *VagrantService) InstallParallelsDesktopPlugin(asUser string) error {
 
 func (s *VagrantService) UpdatePlugins(asUser string) error {
 	if s.installed {
-		logger.Info("Updating Parallels Desktop Plugin %s", s.Name())
+		s.ctx.LogInfo("Updating Parallels Desktop Plugin %s", s.Name())
 		var cmd helpers.Command
 		if asUser == "" {
 			cmd = helpers.Command{
@@ -296,7 +297,7 @@ func (s *VagrantService) updateVagrantFile(ctx basecontext.ApiContext, filePath 
 }
 
 func (s *VagrantService) getVagrantFolderPath(ctx basecontext.ApiContext, request models.CreateVagrantMachineRequest) (string, error) {
-	system := system.Get()
+	system := system.Get(s.ctx)
 	rootDir, err := system.GetUserHome(ctx, request.Owner)
 	if err != nil {
 		return "", err
