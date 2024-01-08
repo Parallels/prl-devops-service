@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.5.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
-	github.com/jfrog/jfrog-client-go v1.35.5
+	github.com/jfrog/jfrog-client-go v1.35.6
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/files/v2 v2.0.0
 	github.com/swaggo/swag v1.16.2
@@ -46,8 +46,9 @@ require (
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/gookit/color v1.5.4 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
-	github.com/jfrog/build-info-go v1.9.19 // indirect
-	github.com/jfrog/gofrog v1.4.0 // indirect
+	github.com/jfrog/archiver/v3 v3.5.3 // indirect
+	github.com/jfrog/build-info-go v1.9.20 // indirect
+	github.com/jfrog/gofrog v1.4.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
@@ -58,7 +59,6 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-ieproxy v0.0.1 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mholt/archiver/v3 v3.5.1 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/nwaples/rardecode v1.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.2 // indirect
