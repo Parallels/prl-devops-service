@@ -56,16 +56,47 @@ const (
 )
 
 const (
+	TEST_COMMAND                  = "test"
+	API_COMMAND                   = "api"
+	GENERATE_SECURITY_KEY_COMMAND = "gen-rsa"
+	INSTALL_SERVICE_COMMAND       = "install"
+	UNINSTALL_SERVICE_COMMAND     = "uninstall"
+	VERSION_COMMAND               = "version"
+	HELP_COMMAND                  = "help"
+	CATALOG_COMMAND               = "catalog"
+
 	TEST_FLAG                       = "test"
 	TEST_CATALOG_PROVIDERS_FLAG     = "catalog-providers"
 	API_PORT_FLAG                   = "port"
 	UPDATE_ROOT_PASSWORD_FLAG       = "update-root-pass"
-	GENERATE_SECURITY_KEY_FLAG      = "gen-rsa"
 	FILE_FLAG                       = "file"
-	INSTALL_SERVICE_FLAG            = "install"
-	UNINSTALL_SERVICE_FLAG          = "uninstall"
 	MODE_FLAG                       = "mode"
+	HELP_FLAG                       = "help"
 	USE_ORCHESTRATOR_RESOURCES_FLAG = "use-orchestrator-resources"
+)
+
+const (
+	PD_FILE_FROM_FLAG             = "from"
+	PD_FILE_VERSION_FLAG          = "version"
+	PD_FILE_ARCHITECTURE_FLAG     = "architecture"
+	PD_FILE_LOCAL_PATH_FLAG       = "local-path"
+	PD_FILE_ROLE_FLAG             = "role"
+	PD_FILE_CLAIM_FLAG            = "claim"
+	PD_FILE_PROVIDER_FLAG         = "provider"
+	PD_FILE_DO_FLAG               = "do"
+	PD_FILE_RUN_FLAG              = "run"
+	PD_FILE_USERNAME_FLAG         = "username"
+	PD_FILE_PASSWORD_FLAG         = "password"
+	PD_FILE_API_KEY_FLAG          = "api-key"
+	PD_FILE_CATALOG_ID_FLAG       = "catalog-id"
+	PD_FILE_INSECURE_FLAG         = "insecure"
+	PD_FILE_OUTPUT_FLAG           = "output"
+	PD_FILE_DESTINATION_FLAG      = "destination"
+	PD_FILE_DESCRIPTION_FLAG      = "description"
+	PD_FILE_OWNER_FLAG            = "owner"
+	PD_FILE_START_AFTER_PULL_FLAG = "start-after-pull"
+	PD_FILE_MACHINE_NAME_FLAG     = "machine-name"
+	PD_FILE_TAG_FLAG              = "tag"
 )
 
 const (

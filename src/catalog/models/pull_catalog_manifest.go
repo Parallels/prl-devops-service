@@ -48,8 +48,8 @@ func (r *PullCatalogManifestRequest) Validate() error {
 		return ErrMissingConnection
 	}
 
-	svcCtl := system.Get()
 	ctx := basecontext.NewRootBaseContext()
+	svcCtl := system.Get(ctx)
 	arch, err := svcCtl.GetArchitecture(ctx)
 	if err != nil {
 		return errors.New("unable to determine architecture")

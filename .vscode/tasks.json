@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "go",
+      "hide": true,
+      "isBackground": true,
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "args": [
+        "build",
+        "-o",
+        "${workspaceFolder}/bin/pd-api-service",
+        "${workspaceFolder}/src",
+        "&&",
+        "chmod",
+        "+x",
+        "${workspaceFolder}/bin/pd-api-service"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

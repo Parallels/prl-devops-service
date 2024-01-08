@@ -151,8 +151,8 @@ func (c *Config) GetTokenDurationMinutes() int {
 }
 
 func (c *Config) GetRootFolder() (string, error) {
-	srv := system.Get()
 	ctx := basecontext.NewRootBaseContext()
+	srv := system.Get(ctx)
 	currentUser, err := srv.GetCurrentUser(ctx)
 	if err != nil {
 		currentUser = "root"

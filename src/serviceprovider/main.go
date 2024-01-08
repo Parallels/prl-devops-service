@@ -45,16 +45,15 @@ type ServiceProvider struct {
 
 var globalProvider *ServiceProvider
 
-func InitCatalogServices() {
+func InitCatalogServices(ctx basecontext.ApiContext) {
 	cfg := config.NewConfig()
 	globalProvider = &ServiceProvider{
 		Logger: common.Logger,
 	}
 
-	globalProvider.System = system.New()
+	globalProvider.System = system.New(ctx)
 	globalProvider.System.SetDependencies([]interfaces.Service{})
 	globalProvider.Services = append(globalProvider.Services, globalProvider.System)
-	ctx := basecontext.NewBaseContext()
 
 	currentUser := "root"
 	globalProvider.CurrentSystemUser = currentUser
@@ -73,7 +72,7 @@ func InitCatalogServices() {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}
 		_ = globalProvider.JsonDatabase.Connect(ctx)
-		globalProvider.Logger.Info("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
+		ctx.LogInfo("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 		_ = globalProvider.JsonDatabase.Save(ctx)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
@@ -92,7 +91,7 @@ func InitCatalogServices() {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}
 		_ = globalProvider.JsonDatabase.Connect(ctx)
-		globalProvider.Logger.Info("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
+		ctx.LogInfo("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 
 	key := "00000000-0000-0000-0000-000000000000"
@@ -110,29 +109,28 @@ func InitCatalogServices() {
 	}
 }
 
-func InitServices() {
+func InitServices(ctx basecontext.ApiContext) {
 	// Create a new Services struct and add the DB service
 	cfg := config.NewConfig()
 	globalProvider = &ServiceProvider{
 		Logger: common.Logger,
 	}
 
-	globalProvider.System = system.New()
+	globalProvider.System = system.New(ctx)
 	globalProvider.System.SetDependencies([]interfaces.Service{})
 	globalProvider.Services = append(globalProvider.Services, globalProvider.System)
-	globalProvider.GitService = git.New()
+	globalProvider.GitService = git.New(ctx)
 	globalProvider.GitService.SetDependencies([]interfaces.Service{globalProvider.System})
 	globalProvider.Services = append(globalProvider.Services, globalProvider.GitService)
-	globalProvider.PackerService = packer.New()
+	globalProvider.PackerService = packer.New(ctx)
 	globalProvider.PackerService.SetDependencies([]interfaces.Service{globalProvider.System, globalProvider.GitService})
 	globalProvider.Services = append(globalProvider.Services, globalProvider.PackerService)
-	globalProvider.VagrantService = vagrant.New()
+	globalProvider.VagrantService = vagrant.New(ctx)
 	globalProvider.VagrantService.SetDependencies([]interfaces.Service{globalProvider.System})
 	globalProvider.Services = append(globalProvider.Services, globalProvider.VagrantService)
-	globalProvider.ParallelsDesktopService = parallelsdesktop.New()
+	globalProvider.ParallelsDesktopService = parallelsdesktop.New(ctx)
 	globalProvider.ParallelsDesktopService.SetDependencies([]interfaces.Service{})
 	globalProvider.Services = append(globalProvider.Services, globalProvider.ParallelsDesktopService)
-	ctx := basecontext.NewBaseContext()
 
 	currentUser, err := globalProvider.System.GetCurrentUser(ctx)
 	if err != nil {
@@ -156,7 +154,7 @@ func InitServices() {
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
-		globalProvider.Logger.Info("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
+		ctx.LogInfo("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 		_ = globalProvider.JsonDatabase.Save(ctx)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
@@ -176,7 +174,7 @@ func InitServices() {
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
-		globalProvider.Logger.Info("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
+		ctx.LogInfo("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 
 	key := "00000000-0000-0000-0000-000000000000"

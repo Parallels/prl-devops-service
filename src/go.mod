@@ -16,6 +16,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/files/v2 v2.0.0
 	github.com/swaggo/swag v1.16.2
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -81,5 +82,4 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.16.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
