@@ -18,19 +18,21 @@ import (
 var globalOrchestratorService *OrchestratorService
 
 type OrchestratorService struct {
-	ctx             basecontext.ApiContext
-	timeout         time.Duration
-	refreshInterval time.Duration
-	syncContext     context.Context
-	cancel          context.CancelFunc
-	db              *data.JsonDatabase
+	ctx                basecontext.ApiContext
+	timeout            time.Duration
+	healthCheckTimeout time.Duration
+	refreshInterval    time.Duration
+	syncContext        context.Context
+	cancel             context.CancelFunc
+	db                 *data.JsonDatabase
 }
 
 func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
 	if globalOrchestratorService == nil {
 		globalOrchestratorService = &OrchestratorService{
-			ctx:     ctx,
-			timeout: 2 * time.Minute,
+			ctx:                ctx,
+			timeout:            2 * time.Minute,
+			healthCheckTimeout: 5 * time.Second,
 		}
 		cfg := config.NewConfig()
 		globalOrchestratorService.refreshInterval = time.Duration(cfg.GetOrchestratorPullFrequency()) * time.Second
@@ -179,4 +181,8 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 func (s *OrchestratorService) GetResources() error {
 
 	return nil
+}
+
+func (s *OrchestratorService) SetHealthCheckTimeout(timeout time.Duration) {
+	s.healthCheckTimeout = timeout
 }

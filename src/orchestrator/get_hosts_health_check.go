@@ -10,6 +10,7 @@ import (
 
 func (s *OrchestratorService) GetHostHealthProbeCheck(host *models.OrchestratorHost) (*restapi.HealthProbeResponse, error) {
 	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(s.healthCheckTimeout)
 
 	path := "/health/probe"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
