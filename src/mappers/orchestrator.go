@@ -17,6 +17,7 @@ func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.O
 		Tags:           dto.Tags,
 		RequiredClaims: dto.RequiredClaims,
 		RequiredRoles:  dto.RequiredRoles,
+		State:          dto.State,
 	}
 
 	if dto.Resources != nil {

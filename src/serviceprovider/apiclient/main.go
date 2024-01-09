@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/models"
@@ -21,6 +23,7 @@ const (
 )
 
 type HttpClientService struct {
+	timeout       time.Duration
 	context       context.Context
 	ctx           basecontext.ApiContext
 	headers       map[string]string
@@ -57,6 +60,15 @@ func (c *HttpClientService) WithHeaders(headers map[string]string) *HttpClientSe
 	for k, v := range headers {
 		c.headers[k] = v
 	}
+	return c
+}
+
+func (c *HttpClientService) WithTimeout(duration time.Duration) *HttpClientService {
+	// context, cancel := context.WithTimeout(context.Background(), duration)
+	// defer cancel()
+
+	// c.context = context
+	c.timeout = duration
 	return c
 }
 
@@ -117,8 +129,36 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 		return &apiResponse, errors.New("url cannot be empty")
 	}
 
-	client := http.DefaultClient
+	var client *http.Client
 	var req *http.Request
+	if c.timeout > 0 {
+		fmt.Printf("Setting timeout to %v for host %v\n", c.timeout, url)
+		client = &http.Client{
+			Transport: &http.Transport{
+				TLSHandshakeTimeout: c.timeout,
+				IdleConnTimeout:     c.timeout,
+				Dial: (&net.Dialer{
+					Timeout:   c.timeout,
+					KeepAlive: c.timeout,
+					Deadline:  time.Now().Add(c.timeout),
+				}).Dial,
+				DialContext: (&net.Dialer{
+					Timeout:   c.timeout,
+					KeepAlive: c.timeout,
+					Deadline:  time.Now().Add(c.timeout),
+				}).DialContext,
+				ResponseHeaderTimeout: c.timeout,
+				ExpectContinueTimeout: c.timeout,
+			},
+			Timeout: c.timeout,
+		}
+		context, cancel := context.WithTimeout(context.Background(), c.timeout)
+		c.context = context
+
+		defer cancel()
+	} else {
+		client = http.DefaultClient
+	}
 
 	if data != nil {
 		reqBody, err := json.MarshalIndent(data, "", "  ")

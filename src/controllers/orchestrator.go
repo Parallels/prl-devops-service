@@ -2,8 +2,11 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/constants"
@@ -201,13 +204,35 @@ func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 		response := make([]models.OrchestratorHostResponse, 0)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
-		// Checking the orchestrator hosts health
-		for _, host := range dtoOrchestratorHosts {
-			rHost := mappers.DtoOrchestratorHostToApiResponse(host)
-			rHost.State = orchestratorSvc.GetHostHealthCheckState(&host)
+		// // Checking the orchestrator hosts health
+		// for _, host := range dtoOrchestratorHosts {
+		// 	rHost := mappers.DtoOrchestratorHostToApiResponse(host)
+		// 	rHost.State = orchestratorSvc.GetHostHealthCheckState(&host)
 
-			response = append(response, rHost)
+		// 	response = append(response, rHost)
+		// }
+
+		var wg sync.WaitGroup
+		mutex := sync.Mutex{}
+
+		for _, host := range dtoOrchestratorHosts {
+			starTime := time.Now()
+			wg.Add(1)
+			go func(host data_models.OrchestratorHost) {
+				fmt.Printf("Host: %v\n", host.Host)
+				defer wg.Done()
+
+				rHost := mappers.DtoOrchestratorHostToApiResponse(host)
+				rHost.State = orchestratorSvc.GetHostHealthCheckState(&host)
+
+				mutex.Lock()
+				response = append(response, rHost)
+				mutex.Unlock()
+				fmt.Printf("Host: %v - Time: %v\n", host.Host, time.Since(starTime))
+			}(host)
 		}
+
+		wg.Wait()
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
