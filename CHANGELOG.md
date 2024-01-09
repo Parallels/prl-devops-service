@@ -18,10 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - added parallels calls when checking the host's health
 - added the ability for the apiclient to have a timeout
 
-### Changed
-
-- Update to Feature C
-
 ### Fixed
 
 - fixed a bug where a host would not show it status correctly
