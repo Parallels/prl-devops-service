@@ -7,6 +7,7 @@ import (
 	"github.com/Parallels/pd-api-service/data/models"
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/security/password"
 )
 
 var (
@@ -58,8 +59,8 @@ func (j *JsonDatabase) CreateApiKey(ctx basecontext.ApiContext, apiKey models.Ap
 		return nil, ErrApiKeyAlreadyExists
 	}
 
-	// Hash the password with SHA-256
-	hashSecret, err := helpers.BcryptHash(apiKey.Secret, apiKey.ID)
+	passwdSvc := password.Get()
+	hashSecret, err := passwdSvc.Hash(apiKey.Secret, apiKey.ID)
 	if err != nil {
 		return nil, err
 	}

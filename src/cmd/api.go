@@ -8,9 +8,9 @@ import (
 	"github.com/Parallels/pd-api-service/common"
 	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/orchestrator"
 	"github.com/Parallels/pd-api-service/restapi"
+	"github.com/Parallels/pd-api-service/security/password"
 	"github.com/Parallels/pd-api-service/serviceprovider"
 	"github.com/Parallels/pd-api-service/startup"
 	"github.com/cjlapao/common-go/helper"
@@ -29,8 +29,8 @@ func processApi(ctx basecontext.ApiContext) {
 	if cfg.GetSecurityKey() == "" {
 		common.Logger.Warn("No security key found, database will be unencrypted")
 	}
-
 	startup.Start()
+	startup.Init()
 
 	currentUser, err := serviceprovider.Get().System.GetCurrentUser(ctx)
 	if err != nil {
@@ -49,7 +49,8 @@ func processApi(ctx basecontext.ApiContext) {
 		rootUser, _ := db.GetUser(ctx, "root")
 		rootPassword := os.Getenv(constants.ROOT_PASSWORD_ENV_VAR)
 		if rootUser != nil {
-			if err := helpers.BcryptCompare(rootPassword, rootUser.ID, rootUser.Password); err != nil {
+			passwdSvc := password.Get()
+			if err := passwdSvc.Compare(rootPassword, rootUser.ID, rootUser.Password); err != nil {
 				ctx.LogInfo("Updating root password")
 				if err := db.UpdateRootPassword(ctx, os.Getenv(constants.ROOT_PASSWORD_ENV_VAR)); err != nil {
 					panic(err)

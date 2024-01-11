@@ -34,5 +34,6 @@ func Process() {
 	default:
 		processApi(ctx)
 	}
+
 	os.Exit(0)
 }

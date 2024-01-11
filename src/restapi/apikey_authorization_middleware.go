@@ -7,8 +7,8 @@ import (
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/security/password"
 	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	"net/http"
@@ -69,7 +69,8 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 				}
 			}
 			if isValid {
-				if err := helpers.BcryptCompare(apiKey.Value, dbApiKey.ID, dbApiKey.Secret); err != nil {
+				passwdSvc := password.Get()
+				if err := passwdSvc.Compare(apiKey.Value, dbApiKey.ID, dbApiKey.Secret); err != nil {
 					isValid = false
 					authError.ErrorDescription = "Api Key is not Valid"
 				}

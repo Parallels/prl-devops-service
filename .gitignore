@@ -11,3 +11,4 @@ __debug_*
 *.key
 .env
 **/*.local.*
+**/*.pem

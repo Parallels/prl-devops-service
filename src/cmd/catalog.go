@@ -70,7 +70,7 @@ func catalogInitPdFile(ctx basecontext.ApiContext, cmd string) *pdfile.PDFile {
 	}
 
 	if pdFile.Owner == "" {
-		user, _ := system.Get(ctx).GetCurrentUser(ctx)
+		user, _ := system.Get().GetCurrentUser(ctx)
 		if user != "" {
 			pdFile.Owner = user
 		}

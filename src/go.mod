@@ -6,9 +6,11 @@ require (
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/aws/aws-sdk-go v1.49.16
 	github.com/cjlapao/common-go v0.0.39
+	github.com/cjlapao/common-go-cryptorand v0.0.5
 	github.com/cjlapao/common-go-logger v0.0.5
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-sql-driver/mysql v1.7.1
+	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.5.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
@@ -17,6 +19,7 @@ require (
 	github.com/swaggo/files/v2 v2.0.0
 	github.com/swaggo/swag v1.16.2
 	golang.org/x/crypto v0.17.0
+	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -43,7 +46,6 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/spec v0.20.9 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
-	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/gookit/color v1.5.4 // indirect

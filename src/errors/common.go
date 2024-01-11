@@ -1,5 +1,9 @@
 package errors
 
+func ErrNotFound() error {
+	return NewWithCode("not found", 404)
+}
+
 func ErrValueEmpty() error {
 	return NewWithCode("value cannot be empty", 400)
 }

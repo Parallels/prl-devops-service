@@ -49,7 +49,7 @@ func (r *PullCatalogManifestRequest) Validate() error {
 	}
 
 	ctx := basecontext.NewRootBaseContext()
-	svcCtl := system.Get(ctx)
+	svcCtl := system.Get()
 	arch, err := svcCtl.GetArchitecture(ctx)
 	if err != nil {
 		return errors.New("unable to determine architecture")

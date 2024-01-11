@@ -7,15 +7,14 @@ import (
 	"strings"
 
 	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/constants"
 	data_modules "github.com/Parallels/pd-api-service/data/models"
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/pd-api-service/security/jwt"
 	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
-	"github.com/dgrijalva/jwt-go"
 )
 
 // TokenAuthorizationMiddlewareAdapter validates a Authorization Bearer during a rest api call
@@ -26,7 +25,6 @@ import (
 func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapter {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cfg := config.NewConfig()
 			baseCtx := basecontext.NewBaseContextFromRequest(r)
 			var authorizationContext *basecontext.AuthorizationContext
 			authCtxFromRequest := baseCtx.GetAuthorizationContext()
@@ -77,23 +75,18 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 
 			// Validating userToken against the keys
 			if authorized {
-				token, err := jwt.Parse(jwt_token, func(token *jwt.Token) (interface{}, error) {
-					// Validate the algorithm
-					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-						return nil, jwt.ErrSignatureInvalid
+				jwtSvc := jwt.Get()
+				token, err := jwtSvc.Parse(jwt_token)
+				if err != nil {
+					authorized = false
+					response := models.OAuthErrorResponse{
+						Error:            models.OAuthUnauthorizedClient,
+						ErrorDescription: err.Error(),
 					}
-
-					// Return the secret key used to sign the token
-					// We either signing the token with the HMAC secret or the secret from the config
-					var key []byte
-					if cfg.GetHmacSecret() == "" {
-						key = []byte(cfg.GetHmacSecret())
-					} else {
-						key = []byte(serviceprovider.Get().HardwareSecret)
-					}
-					return key, nil
-				})
-
+					authorizationContext.AuthorizationError = &response
+					baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
+				}
+				email, err := token.GetClaim("email")
 				if err != nil {
 					authorized = false
 					response := models.OAuthErrorResponse{
@@ -106,103 +99,101 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 
 				if authorized {
 					// Check if the token is valid
-					if jwtClaims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-						db := serviceprovider.Get().JsonDatabase
-						var dbUser *data_modules.User
-						var err error
-						if err = db.Connect(baseCtx); err != nil {
-							authorized = false
-						} else {
-							dbUser, err = db.GetUser(baseCtx, jwtClaims["email"].(string))
-							if err != nil || dbUser == nil {
-								authorized = false
-							}
-							// Checking for the Super Duper User
-							authorizationContext.IsSuperUser = false
-							for _, userRole := range dbUser.Roles {
-								if strings.EqualFold(constants.SUPER_USER_ROLE, userRole.Name) {
-									authorizationContext.IsSuperUser = true
-									break
-								}
-							}
-							if !authorizationContext.IsSuperUser {
-								// Checking if the user has the correct role required by the controller
-								if len(roles) > 0 {
-									contains := false
-									for _, role := range roles {
-										for _, userRole := range dbUser.Roles {
-											if strings.EqualFold(role, userRole.Name) {
-												contains = true
-												break
-											}
-										}
-										if contains {
-											break
-										}
-									}
-									if !contains {
-										authorized = false
-										response := models.OAuthErrorResponse{
-											Error:            models.OAuthUnauthorizedClient,
-											ErrorDescription: "User does not contain enough permissions, not in role",
-										}
-										authorizationContext.IsAuthorized = false
-										authorizationContext.AuthorizationError = &response
-										baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
-									}
-								}
-
-								if len(claims) > 0 {
-									contains := false
-									for _, claim := range claims {
-										for _, userClaim := range dbUser.Claims {
-											if strings.EqualFold(claim, userClaim.Name) {
-												contains = true
-												break
-											}
-										}
-										if contains {
-											break
-										}
-									}
-									if !contains {
-										authorized = false
-										response := models.OAuthErrorResponse{
-											Error:            models.OAuthUnauthorizedClient,
-											ErrorDescription: "User does not contain enough permissions, does not have claim",
-										}
-										authorizationContext.IsAuthorized = false
-										authorizationContext.AuthorizationError = &response
-										baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
-									}
-								}
-							}
-						}
-						if !authorized {
-							response := models.OAuthErrorResponse{
-								Error:            models.OAuthUnauthorizedClient,
-								ErrorDescription: "User not found",
-							}
-							authorizationContext.IsAuthorized = false
-							if authorizationContext.AuthorizationError == nil {
-								authorizationContext.AuthorizationError = &response
-							}
-							baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
-						} else {
-							user := mappers.DtoUserToApiResponse(*dbUser)
-							authorizationContext.User = &user
-							authorizationContext.IsAuthorized = true
-							authorizationContext.AuthorizedBy = "TokenAuthorization"
-						}
+					db := serviceprovider.Get().JsonDatabase
+					var dbUser *data_modules.User
+					var err error
+					if err = db.Connect(baseCtx); err != nil {
+						authorized = false
 					} else {
+						dbUser, err = db.GetUser(baseCtx, email.(string))
+						if err != nil || dbUser == nil {
+							authorized = false
+						}
+						// Checking for the Super Duper User
+						authorizationContext.IsSuperUser = false
+						for _, userRole := range dbUser.Roles {
+							if strings.EqualFold(constants.SUPER_USER_ROLE, userRole.Name) {
+								authorizationContext.IsSuperUser = true
+								break
+							}
+						}
+						if !authorizationContext.IsSuperUser {
+							// Checking if the user has the correct role required by the controller
+							if len(roles) > 0 {
+								contains := false
+								for _, role := range roles {
+									for _, userRole := range dbUser.Roles {
+										if strings.EqualFold(role, userRole.Name) {
+											contains = true
+											break
+										}
+									}
+									if contains {
+										break
+									}
+								}
+								if !contains {
+									authorized = false
+									response := models.OAuthErrorResponse{
+										Error:            models.OAuthUnauthorizedClient,
+										ErrorDescription: "User does not contain enough permissions, not in role",
+									}
+									authorizationContext.IsAuthorized = false
+									authorizationContext.AuthorizationError = &response
+									baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
+								}
+							}
+
+							if len(claims) > 0 {
+								contains := false
+								for _, claim := range claims {
+									for _, userClaim := range dbUser.Claims {
+										if strings.EqualFold(claim, userClaim.Name) {
+											contains = true
+											break
+										}
+									}
+									if contains {
+										break
+									}
+								}
+								if !contains {
+									authorized = false
+									response := models.OAuthErrorResponse{
+										Error:            models.OAuthUnauthorizedClient,
+										ErrorDescription: "User does not contain enough permissions, does not have claim",
+									}
+									authorizationContext.IsAuthorized = false
+									authorizationContext.AuthorizationError = &response
+									baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
+								}
+							}
+						}
+					}
+					if !authorized {
 						response := models.OAuthErrorResponse{
 							Error:            models.OAuthUnauthorizedClient,
-							ErrorDescription: "Token is not valid",
+							ErrorDescription: "User not found",
 						}
 						authorizationContext.IsAuthorized = false
-						authorizationContext.AuthorizationError = &response
+						if authorizationContext.AuthorizationError == nil {
+							authorizationContext.AuthorizationError = &response
+						}
 						baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
+					} else {
+						user := mappers.DtoUserToApiResponse(*dbUser)
+						authorizationContext.User = &user
+						authorizationContext.IsAuthorized = true
+						authorizationContext.AuthorizedBy = "TokenAuthorization"
 					}
+				} else {
+					response := models.OAuthErrorResponse{
+						Error:            models.OAuthUnauthorizedClient,
+						ErrorDescription: "Token is not valid",
+					}
+					authorizationContext.IsAuthorized = false
+					authorizationContext.AuthorizationError = &response
+					baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
 				}
 			}
 
