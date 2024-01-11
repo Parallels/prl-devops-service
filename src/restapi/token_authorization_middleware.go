@@ -74,10 +74,12 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 			}
 
 			// Validating userToken against the keys
+			var token *jwt.JwtSystemToken
 			if authorized {
 				jwtSvc := jwt.Get()
-				token, err := jwtSvc.Parse(jwt_token)
-				if err != nil {
+				var err error
+				token, err = jwtSvc.Parse(jwt_token)
+				if err != nil || token == nil {
 					authorized = false
 					response := models.OAuthErrorResponse{
 						Error:            models.OAuthUnauthorizedClient,
@@ -86,6 +88,22 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 					authorizationContext.AuthorizationError = &response
 					baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
 				}
+			}
+
+			if authorized {
+				valid, err := token.Valid()
+				if err != nil || !valid {
+					authorized = false
+					response := models.OAuthErrorResponse{
+						Error:            models.OAuthUnauthorizedClient,
+						ErrorDescription: "invalid token",
+					}
+					authorizationContext.AuthorizationError = &response
+					baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
+				}
+			}
+
+			if authorized {
 				email, err := token.GetClaim("email")
 				if err != nil {
 					authorized = false
