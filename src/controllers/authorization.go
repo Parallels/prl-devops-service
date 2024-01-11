@@ -92,7 +92,9 @@ func GetTokenHandler() restapi.ControllerHandler {
 				Code:    http.StatusUnauthorized,
 			})
 
-			bruteForceSvc.Process(user.ID, false, "Invalid Password")
+			if diag := bruteForceSvc.Process(user.ID, false, "Invalid Password"); diag.HasErrors() {
+				ctx.LogError("Error processing brute force guard: %v", diag)
+			}
 			return
 		}
 
@@ -115,13 +117,17 @@ func GetTokenHandler() restapi.ControllerHandler {
 		tokenStr, err := tokenSvc.Sign(claims)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 401))
-			bruteForceSvc.Process(user.ID, false, err.Error())
+			if diag := bruteForceSvc.Process(user.ID, false, err.Error()); diag.HasErrors() {
+				ctx.LogError("Error processing brute force guard: %v", diag)
+			}
 			return
 		}
 		token, err := tokenSvc.Parse(tokenStr)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 401))
-			bruteForceSvc.Process(user.ID, false, err.Error())
+			if diag := bruteForceSvc.Process(user.ID, false, err.Error()); diag.HasErrors() {
+				ctx.LogError("Error processing brute force guard: %v", diag)
+			}
 			return
 		}
 
@@ -131,7 +137,9 @@ func GetTokenHandler() restapi.ControllerHandler {
 			ExpiresAt: int64(token.Claims["exp"].(float64)),
 		}
 
-		bruteForceSvc.Process(user.ID, true, "Success")
+		if diag := bruteForceSvc.Process(user.ID, true, "Success"); diag.HasErrors() {
+			ctx.LogError("Error processing brute force guard: %v", diag)
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)

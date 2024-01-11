@@ -36,7 +36,7 @@ func GenPrivateRsaKey(filename string, size int) error {
 		size = 2048
 	}
 
-	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	privKey, err := rsa.GenerateKey(rand.Reader, size)
 	if err != nil {
 		return err
 	}

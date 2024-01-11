@@ -218,7 +218,7 @@ func (s *JwtService) Parse(token string) (*JwtSystemToken, error) {
 		token:    token,
 		tokenObj: tokenObj,
 	}
-	systemToken.GetTokenClaims()
+	_, _ = systemToken.GetTokenClaims()
 
 	return systemToken, nil
 }

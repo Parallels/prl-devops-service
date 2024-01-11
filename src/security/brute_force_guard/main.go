@@ -80,7 +80,10 @@ func (s *BruteForceGuard) Process(userId string, loginState bool, reason string)
 		user.BlockedSince = ""
 		user.Blocked = false
 		user.BlockedReason = ""
-		dbService.UpdateUserBlockStatus(s.ctx, *user)
+		err := dbService.UpdateUserBlockStatus(s.ctx, *user)
+		if err != nil {
+			diag.AddError(err)
+		}
 		return diag
 	} else {
 		user.FailedLoginAttempts++
@@ -89,7 +92,11 @@ func (s *BruteForceGuard) Process(userId string, loginState bool, reason string)
 			user.Blocked = true
 			user.BlockedSince = time.Now().Format(time.RFC3339)
 			user.BlockedReason = reason
-			dbService.UpdateUserBlockStatus(s.ctx, *user)
+			err := dbService.UpdateUserBlockStatus(s.ctx, *user)
+			if err != nil {
+				diag.AddError(err)
+				return diag
+			}
 			if s.options.IncrementalWait() {
 				countExtraAttempts := user.FailedLoginAttempts - (s.options.MaxLoginAttempts() - 1)
 				sleepFor := time.Duration(s.options.BlockDuration().Seconds()*float64(countExtraAttempts)) * time.Second
@@ -99,7 +106,11 @@ func (s *BruteForceGuard) Process(userId string, loginState bool, reason string)
 				time.Sleep(sleepFor)
 			}
 		} else {
-			dbService.UpdateUserBlockStatus(s.ctx, *user)
+			err := dbService.UpdateUserBlockStatus(s.ctx, *user)
+			if err != nil {
+				diag.AddError(err)
+				return diag
+			}
 		}
 	}
 
