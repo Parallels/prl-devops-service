@@ -36,7 +36,7 @@ func New(ctx basecontext.ApiContext) *JwtService {
 
 func Get() *JwtService {
 	if globalJwtService == nil {
-		ctx := basecontext.NewRootBaseContext()
+		ctx := basecontext.NewBaseContext()
 		return New(ctx)
 	}
 
@@ -213,6 +213,9 @@ func (s *JwtService) Parse(token string) (*JwtSystemToken, error) {
 	tokenObj, _ := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		return key, nil
 	})
+	if tokenObj == nil {
+		return nil, errors.New("token is invalid")
+	}
 
 	systemToken := &JwtSystemToken{
 		token:    token,
@@ -224,7 +227,7 @@ func (s *JwtService) Parse(token string) (*JwtSystemToken, error) {
 }
 
 func (s *JwtService) processEnvironmentVariables() error {
-	cfg := config.NewConfig()
+	cfg := config.Get()
 	if cfg.GetKey(constants.JWT_SIGN_ALGORITHM_ENV_VAR) != "" {
 		algorithm := JwtSigningAlgorithm(cfg.GetKey(constants.JWT_SIGN_ALGORITHM_ENV_VAR))
 		switch algorithm {

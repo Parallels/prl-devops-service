@@ -404,8 +404,8 @@ func (s *SystemService) getMacCurrentUser(ctx basecontext.ApiContext) (string, e
 }
 
 func (s *SystemService) getLinuxCurrentUser(ctx basecontext.ApiContext) (string, error) {
-	user := os.Getenv("USER")
-	if user != "" {
+	user, exists := os.LookupEnv("USER")
+	if user != "" && !exists {
 		user = "root"
 	}
 

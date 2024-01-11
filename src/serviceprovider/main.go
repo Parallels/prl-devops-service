@@ -46,7 +46,7 @@ type ServiceProvider struct {
 var globalProvider *ServiceProvider
 
 func InitCatalogServices(ctx basecontext.ApiContext) {
-	cfg := config.NewConfig()
+	cfg := config.Get()
 	globalProvider = &ServiceProvider{
 		Logger: common.Logger,
 	}
@@ -66,8 +66,8 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 			panic(err)
 		}
 
-		if cfg.GetDatabaseFolder() != "" {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.GetDatabaseFolder(), "/data.json"))
+		if cfg.DatabaseFolder() != "" {
+			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.DatabaseFolder(), "/data.json"))
 		} else {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}
@@ -85,8 +85,8 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 			panic(err)
 		}
 
-		if cfg.GetDatabaseFolder() != "" {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.GetDatabaseFolder(), "/data.json"))
+		if cfg.DatabaseFolder() != "" {
+			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.DatabaseFolder(), "/data.json"))
 		} else {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}
@@ -111,7 +111,7 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 
 func InitServices(ctx basecontext.ApiContext) {
 	// Create a new Services struct and add the DB service
-	cfg := config.NewConfig()
+	cfg := config.Get()
 	globalProvider = &ServiceProvider{
 		Logger: common.Logger,
 	}
@@ -147,8 +147,8 @@ func InitServices(ctx basecontext.ApiContext) {
 			panic(err)
 		}
 
-		if cfg.GetDatabaseFolder() != "" {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.GetDatabaseFolder(), "/data.json"))
+		if cfg.DatabaseFolder() != "" {
+			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.DatabaseFolder(), "/data.json"))
 		} else {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}
@@ -167,8 +167,8 @@ func InitServices(ctx basecontext.ApiContext) {
 			panic(err)
 		}
 
-		if cfg.GetDatabaseFolder() != "" {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.GetDatabaseFolder(), "/data.json"))
+		if cfg.DatabaseFolder() != "" {
+			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.DatabaseFolder(), "/data.json"))
 		} else {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}

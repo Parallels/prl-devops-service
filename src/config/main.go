@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -11,29 +13,104 @@ import (
 	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/serviceprovider/system"
+	"gopkg.in/yaml.v3"
 
 	log "github.com/cjlapao/common-go-logger"
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/security"
 )
 
+var globalConfig *Config
+
+var extensions = []string{
+	".local.yaml",
+	".local.yml",
+	".local.json",
+	".yaml",
+	".yml",
+	".json",
+}
+
 type Config struct {
+	ctx                 basecontext.ApiContext
 	mode                string
 	includeOwnResources bool
+	config              map[string]string
 }
 
-func NewConfig() *Config {
-	return &Config{
-		mode: "api",
+func New(ctx basecontext.ApiContext) *Config {
+	globalConfig = &Config{
+		mode:   "api",
+		ctx:    ctx,
+		config: make(map[string]string),
 	}
+
+	globalConfig.LogLevel()
+	return globalConfig
 }
 
-func (c *Config) GetApiPort() string {
-	port := helper.GetFlagValue(constants.API_PORT_FLAG, "")
-
-	if port == "" {
-		port = os.Getenv(constants.API_PORT_ENV_VAR)
+func Get() *Config {
+	if globalConfig == nil {
+		ctx := basecontext.NewBaseContext()
+		return New(ctx)
 	}
+
+	return globalConfig
+}
+
+func (c *Config) Load() bool {
+	fileName := ""
+	configFileName := helper.GetFlagValue(constants.CONFIG_FILE_FLAG, "")
+	if configFileName != "" {
+		if _, err := os.Stat(configFileName); !os.IsNotExist(err) {
+			fileName = configFileName
+		}
+
+	} else {
+		for _, extension := range extensions {
+			if _, err := os.Stat(fmt.Sprintf("config%s", extension)); !os.IsNotExist(err) {
+				fileName = fmt.Sprintf("config%s", extension)
+				break
+			}
+		}
+	}
+
+	if fileName == "" {
+		c.ctx.LogInfo("No configuration file found")
+		return false
+	}
+
+	c.ctx.LogInfo("Loading configuration from %s", fileName)
+	content, err := helper.ReadFromFile(fileName)
+	if err != nil {
+		c.ctx.LogError("Error reading configuration file: %s", err.Error())
+		return false
+	}
+
+	if content == nil {
+		c.ctx.LogError("Error reading configuration file: %s", err.Error())
+		return false
+	}
+
+	if strings.HasSuffix(fileName, ".json") {
+		err = json.Unmarshal(content, &c.config)
+		if err != nil {
+			c.ctx.LogError("Error reading configuration file: %s", err.Error())
+			return false
+		}
+	} else {
+		err = yaml.Unmarshal(content, &c.config)
+		if err != nil {
+			c.ctx.LogError("Error reading configuration file: %s", err.Error())
+			return false
+		}
+	}
+
+	return true
+}
+
+func (c *Config) ApiPort() string {
+	port := c.GetKey(constants.API_PORT_ENV_VAR)
 
 	if port == "" {
 		port = constants.DEFAULT_API_PORT
@@ -42,8 +119,8 @@ func (c *Config) GetApiPort() string {
 	return port
 }
 
-func (c *Config) GetApiPrefix() string {
-	apiPrefix := os.Getenv(constants.API_PREFIX_ENV_VAR)
+func (c *Config) ApiPrefix() string {
+	apiPrefix := c.GetKey(constants.API_PREFIX_ENV_VAR)
 	if apiPrefix == "" {
 		apiPrefix = constants.DEFAULT_API_PREFIX
 	}
@@ -51,13 +128,8 @@ func (c *Config) GetApiPrefix() string {
 	return apiPrefix
 }
 
-func (c *Config) GetHmacSecret() string {
-	hmacSecret := os.Getenv(constants.HMAC_SECRET_ENV_VAR)
-	return hmacSecret
-}
-
-func (c *Config) GetLogLevel() string {
-	logLevel := os.Getenv(constants.LOG_LEVEL_ENV_VAR)
+func (c *Config) LogLevel() string {
+	logLevel := c.GetKey(constants.LOG_LEVEL_ENV_VAR)
 	if logLevel != "" {
 		common.Logger.Info("Log Level set to %v", logLevel)
 	}
@@ -79,8 +151,8 @@ func (c *Config) GetLogLevel() string {
 	return logLevel
 }
 
-func (c *Config) GetSecurityKey() string {
-	securityKey := os.Getenv(constants.SECURITY_KEY_ENV_VAR)
+func (c *Config) EncryptionPrivateKey() string {
+	securityKey := c.GetKey(constants.ENCRYPTION_SECURITY_KEY_ENV_VAR)
 	if securityKey == "" {
 		return ""
 	}
@@ -94,8 +166,8 @@ func (c *Config) GetSecurityKey() string {
 	return securityKey
 }
 
-func (c *Config) GetTlsCertificate() string {
-	tlsCertificate := os.Getenv(constants.TLS_CERTIFICATE_ENV_VAR)
+func (c *Config) TlsCertificate() string {
+	tlsCertificate := c.GetKey(constants.TLS_CERTIFICATE_ENV_VAR)
 	decoded, err := security.DecodeBase64String(tlsCertificate)
 	if err != nil {
 		common.Logger.Error("Error decoding TLS Private Key: %v", err.Error())
@@ -105,8 +177,8 @@ func (c *Config) GetTlsCertificate() string {
 	return tlsCertificate
 }
 
-func (c *Config) GetTlsPrivateKey() string {
-	tlsPrivateKey := os.Getenv(constants.TLS_PRIVATE_KEY_ENV_VAR)
+func (c *Config) TlsPrivateKey() string {
+	tlsPrivateKey := c.GetKey(constants.TLS_PRIVATE_KEY_ENV_VAR)
 	decoded, err := security.DecodeBase64String(tlsPrivateKey)
 	if err != nil {
 		common.Logger.Error("Error decoding TLS Private Key: %v", err.Error())
@@ -117,8 +189,8 @@ func (c *Config) GetTlsPrivateKey() string {
 	return tlsPrivateKey
 }
 
-func (c *Config) GetTLSPort() string {
-	tlsPort := os.Getenv(constants.TLS_PORT_ENV_VAR)
+func (c *Config) TlsPort() string {
+	tlsPort := c.GetKey(constants.TLS_PORT_ENV_VAR)
 	if tlsPort == "" {
 		tlsPort = constants.DEFAULT_API_TLS_PORT
 	}
@@ -126,31 +198,18 @@ func (c *Config) GetTLSPort() string {
 	return tlsPort
 }
 
-func (c *Config) TLSEnabled() bool {
-	TLSEnabled := os.Getenv(constants.TLS_ENABLED_ENV_VAR)
+func (c *Config) TlsEnabled() bool {
+	TLSEnabled := c.GetKey(constants.TLS_ENABLED_ENV_VAR)
 	if TLSEnabled == "" || TLSEnabled == "false" {
 		return false
 	}
-	if c.GetTlsCertificate() == "" || c.GetTlsPrivateKey() == "" {
+	if c.TlsCertificate() == "" || c.TlsPrivateKey() == "" {
 		return false
 	}
 	return true
 }
 
-func (c *Config) GetTokenDurationMinutes() int {
-	tokenDuration := os.Getenv(constants.TOKEN_DURATION_MINUTES_ENV_VAR)
-	if tokenDuration != "" {
-		return constants.DEFAULT_TOKEN_DURATION_MINUTES
-	}
-
-	intVal, err := strconv.Atoi(tokenDuration)
-	if err != nil {
-		return constants.DEFAULT_TOKEN_DURATION_MINUTES
-	}
-	return intVal
-}
-
-func (c *Config) GetRootFolder() (string, error) {
+func (c *Config) RootFolder() (string, error) {
 	ctx := basecontext.NewRootBaseContext()
 	srv := system.Get()
 	currentUser, err := srv.GetCurrentUser(ctx)
@@ -181,15 +240,15 @@ func (c *Config) GetRootFolder() (string, error) {
 	}
 }
 
-func (c *Config) GetCatalogCacheFolder() (string, error) {
-	rootFolder, err := c.GetRootFolder()
+func (c *Config) CatalogCacheFolder() (string, error) {
+	rootFolder, err := c.RootFolder()
 	if err != nil {
 		return "", err
 	}
 
 	cacheFolder := filepath.Join(rootFolder, constants.DEFAULT_CATALOG_CACHE_FOLDER)
-	if os.Getenv(constants.CATALOG_CACHE_FOLDER_ENV_VAR) != "" {
-		cacheFolder = os.Getenv(constants.CATALOG_CACHE_FOLDER_ENV_VAR)
+	if c.GetKey(constants.CATALOG_CACHE_FOLDER_ENV_VAR) != "" {
+		cacheFolder = c.GetKey(constants.CATALOG_CACHE_FOLDER_ENV_VAR)
 	}
 
 	err = helpers.CreateDirIfNotExist(cacheFolder)
@@ -201,7 +260,7 @@ func (c *Config) GetCatalogCacheFolder() (string, error) {
 }
 
 func (c *Config) IsCatalogCachingEnable() bool {
-	envVar := os.Getenv(constants.DISABLE_CATALOG_CACHING_ENV_VAR)
+	envVar := c.GetKey(constants.DISABLE_CATALOG_CACHING_ENV_VAR)
 	if envVar == "true" || envVar == "1" {
 		return false
 	}
@@ -209,22 +268,17 @@ func (c *Config) IsCatalogCachingEnable() bool {
 	return true
 }
 
-func (c *Config) GetSystemMode() string {
-	c.mode = os.Getenv(constants.MODE_ENV_VAR)
+func (c *Config) Mode() string {
+	c.mode = c.GetKey(constants.MODE_ENV_VAR)
 	if c.mode != "" {
 		return c.mode
-	}
-
-	c.mode = helper.GetFlagValue(constants.MODE_FLAG, "unknown")
-	if c.mode == "" {
-		c.mode = "api"
 	}
 
 	return c.mode
 }
 
-func (c *Config) GetOrchestratorPullFrequency() int {
-	frequency := os.Getenv(constants.ORCHESTRATOR_PULL_FREQUENCY_SECONDS_ENV_VAR)
+func (c *Config) OrchestratorPullFrequency() int {
+	frequency := c.GetKey(constants.ORCHESTRATOR_PULL_FREQUENCY_SECONDS_ENV_VAR)
 	if frequency == "" {
 		return constants.DEFAULT_ORCHESTRATOR_PULL_FREQUENCY_SEC
 	}
@@ -237,44 +291,36 @@ func (c *Config) GetOrchestratorPullFrequency() int {
 	return intVal
 }
 
-func (c *Config) GetDatabaseFolder() string {
-	return os.Getenv(constants.DATABASE_FOLDER_ENV_VAR)
+func (c *Config) DatabaseFolder() string {
+	return c.GetKey(constants.DATABASE_FOLDER_ENV_VAR)
 }
 
-func (c *Config) GetLocalhost() string {
+func (c *Config) Localhost() string {
 	schema := "http"
 	host := "localhost"
-	port := c.GetApiPort()
-	if c.TLSEnabled() {
+	port := c.ApiPort()
+	if c.TlsEnabled() {
 		schema = "https"
-		port = c.GetTLSPort()
+		port = c.TlsPort()
 	}
 
 	return schema + "://" + host + ":" + port
 }
 
 func (c *Config) IsOrchestrator() bool {
-	return c.GetSystemMode() == constants.ORCHESTRATOR_MODE
+	return c.Mode() == constants.ORCHESTRATOR_MODE
 }
 
 func (c *Config) IsCatalog() bool {
-	return c.GetSystemMode() == constants.CATALOG_MODE
+	return c.Mode() == constants.CATALOG_MODE
 }
 
 func (c *Config) IsApi() bool {
-	return c.GetSystemMode() == constants.API_MODE
+	return c.Mode() == constants.API_MODE
 }
 
 func (c *Config) UseOrchestratorResources() bool {
-	ownResources := os.Getenv(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR)
-	if ownResources != "" {
-		if ownResources == "true" || ownResources == "1" {
-			c.includeOwnResources = true
-			return true
-		}
-	}
-
-	ownResources = helper.GetFlagValue(constants.USE_ORCHESTRATOR_RESOURCES_FLAG, "unknown")
+	ownResources := c.GetKey(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR)
 	if ownResources != "" {
 		if ownResources == "true" || ownResources == "1" {
 			c.includeOwnResources = true
@@ -286,9 +332,19 @@ func (c *Config) UseOrchestratorResources() bool {
 }
 
 func (c *Config) GetKey(key string) string {
-	value := os.Getenv(key)
+	value := helper.GetFlagValue(key, "")
+	exists := false
+
 	if value == "" {
-		value = helper.GetFlagValue(key, "")
+		value, exists = os.LookupEnv(key)
+		if value == "" && !exists {
+			for k, v := range c.config {
+				if strings.EqualFold(k, key) {
+					value = v
+					break
+				}
+			}
+		}
 	}
 
 	return value

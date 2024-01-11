@@ -24,35 +24,36 @@ func processApi(ctx basecontext.ApiContext) {
 	}
 
 	versionSvc.PrintAnsiHeader()
-	cfg := config.NewConfig()
+	startup.Init(ctx)
 
-	if cfg.GetSecurityKey() == "" {
+	startup.Start(ctx)
+	cfg := config.Get()
+
+	if cfg.EncryptionPrivateKey() == "" {
 		common.Logger.Warn("No security key found, database will be unencrypted")
 	}
-	startup.Start()
-	startup.Init()
 
 	currentUser, err := serviceprovider.Get().System.GetCurrentUser(ctx)
 	if err != nil {
 		panic(err)
 	}
 	os.Setenv(constants.CURRENT_USER_ENV_VAR, currentUser)
-	currentUserEnv := os.Getenv(constants.CURRENT_USER_ENV_VAR)
+	currentUserEnv := cfg.GetKey(constants.CURRENT_USER_ENV_VAR)
 	if currentUserEnv != "" {
 		ctx.LogInfo("Running with user %s", currentUser)
 	}
 
 	// updating the root password if the environment variable is set
-	if os.Getenv(constants.ROOT_PASSWORD_ENV_VAR) != "" {
+	if cfg.GetKey(constants.ROOT_PASSWORD_ENV_VAR) != "" {
 		db := serviceprovider.Get().JsonDatabase
 		_ = db.Connect(ctx)
 		rootUser, _ := db.GetUser(ctx, "root")
-		rootPassword := os.Getenv(constants.ROOT_PASSWORD_ENV_VAR)
+		rootPassword := cfg.GetKey(constants.ROOT_PASSWORD_ENV_VAR)
 		if rootUser != nil {
 			passwdSvc := password.Get()
 			if err := passwdSvc.Compare(rootPassword, rootUser.ID, rootUser.Password); err != nil {
 				ctx.LogInfo("Updating root password")
-				if err := db.UpdateRootPassword(ctx, os.Getenv(constants.ROOT_PASSWORD_ENV_VAR)); err != nil {
+				if err := db.UpdateRootPassword(ctx, cfg.GetKey(constants.ROOT_PASSWORD_ENV_VAR)); err != nil {
 					panic(err)
 				}
 			}
@@ -69,7 +70,7 @@ func processApi(ctx basecontext.ApiContext) {
 		if !needsRestart {
 			break
 		}
-		startup.Start()
+		startup.Start(ctx)
 	}
 
 	if cfg.IsOrchestrator() {

@@ -64,7 +64,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 
 	var manifest *models.VirtualMachineCatalogManifest
 	provider := models.CatalogManifestProvider{}
-	cfg := config.NewConfig()
+	cfg := config.Get()
 
 	if err := provider.Parse(r.Connection); err != nil {
 		response.AddError(err)
@@ -240,7 +240,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 				cacheFileName := fmt.Sprintf("%s.pdpack", fileChecksum)
 				needsPulling := false
 				if cfg.IsCatalogCachingEnable() {
-					destinationFolder, err = cfg.GetCatalogCacheFolder()
+					destinationFolder, err = cfg.CatalogCacheFolder()
 					if err != nil {
 						destinationFolder = r.Path
 					}

@@ -132,7 +132,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 	var client *http.Client
 	var req *http.Request
 	if c.timeout > 0 {
-		fmt.Printf("Setting timeout to %v for host %v\n", c.timeout, url)
+		c.ctx.LogDebug("[Api Client] Setting timeout to %v for host %v\n", c.timeout, url)
 		client = &http.Client{
 			Transport: &http.Transport{
 				TLSHandshakeTimeout: c.timeout,
@@ -162,7 +162,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 
 	if data != nil {
 		reqBody, err := json.MarshalIndent(data, "", "  ")
-		c.ctx.LogInfo("[Api Client] Request body: \n%s", string(reqBody))
+		c.ctx.LogDebug("[Api Client] Request body: \n%s", string(reqBody))
 		if err != nil {
 			return &apiResponse, fmt.Errorf("error marshalling data, err: %v", err)
 		}
@@ -203,7 +203,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 			}
 		}
 		if c.authorization.Username != "" && c.authorization.Password != "" {
-			c.ctx.LogInfo("[Api Client] Getting Client Authorization with username %s ", c.authorization.Username)
+			c.ctx.LogDebug("[Api Client] Getting Client Authorization with username %s ", c.authorization.Username)
 			token, err := getJwtToken(c.ctx, url, c.authorization.Username, c.authorization.Password)
 			if err != nil {
 				apiResponse.StatusCode = 401

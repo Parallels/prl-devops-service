@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
@@ -159,53 +160,54 @@ func uninstallServiceOnLinux(ctx basecontext.ApiContext) error {
 }
 
 func getConfigFromEnv() ApiServiceConfig {
+	cfg := config.Get()
 	config := ApiServiceConfig{}
-	if os.Getenv(constants.API_PORT_ENV_VAR) != "" {
-		config.Port = os.Getenv(constants.API_PORT_ENV_VAR)
+	if cfg.GetKey(constants.API_PORT_ENV_VAR) != "" {
+		config.Port = cfg.GetKey(constants.API_PORT_ENV_VAR)
 	} else {
 		config.Port = constants.DEFAULT_API_PORT
 	}
-	if os.Getenv(constants.API_PREFIX_ENV_VAR) != "" {
-		config.Prefix = os.Getenv(constants.API_PREFIX_ENV_VAR)
+	if cfg.GetKey(constants.API_PREFIX_ENV_VAR) != "" {
+		config.Prefix = cfg.GetKey(constants.API_PREFIX_ENV_VAR)
 	} else {
 		config.Prefix = constants.DEFAULT_API_PREFIX
 	}
-	if os.Getenv(constants.LOG_LEVEL_ENV_VAR) != "" {
-		config.LogLevel = os.Getenv(constants.LOG_LEVEL_ENV_VAR)
+	if cfg.GetKey(constants.LOG_LEVEL_ENV_VAR) != "" {
+		config.LogLevel = cfg.GetKey(constants.LOG_LEVEL_ENV_VAR)
 	} else {
 		config.LogLevel = "INFO"
 	}
-	if os.Getenv(constants.SECURITY_KEY_ENV_VAR) != "" {
-		config.EncryptionRsaKey = os.Getenv(constants.SECURITY_KEY_ENV_VAR)
+	if cfg.GetKey(constants.ENCRYPTION_SECURITY_KEY_ENV_VAR) != "" {
+		config.EncryptionRsaKey = cfg.GetKey(constants.ENCRYPTION_SECURITY_KEY_ENV_VAR)
 	}
-	if os.Getenv(constants.HMAC_SECRET_ENV_VAR) != "" {
-		config.HmacSecret = os.Getenv(constants.HMAC_SECRET_ENV_VAR)
+	if cfg.GetKey(constants.HMAC_SECRET_ENV_VAR) != "" {
+		config.HmacSecret = cfg.GetKey(constants.HMAC_SECRET_ENV_VAR)
 	}
-	if os.Getenv(constants.TLS_ENABLED_ENV_VAR) != "" {
-		config.EnableTLS = os.Getenv(constants.TLS_ENABLED_ENV_VAR) == "true"
+	if cfg.GetKey(constants.TLS_ENABLED_ENV_VAR) != "" {
+		config.EnableTLS = cfg.GetKey(constants.TLS_ENABLED_ENV_VAR) == "true"
 	} else {
 		config.EnableTLS = false
 	}
-	if os.Getenv(constants.TLS_CERTIFICATE_ENV_VAR) != "" {
-		config.TLSPrivateKey = os.Getenv(constants.TLS_CERTIFICATE_ENV_VAR)
+	if cfg.GetKey(constants.TLS_CERTIFICATE_ENV_VAR) != "" {
+		config.TLSPrivateKey = cfg.GetKey(constants.TLS_CERTIFICATE_ENV_VAR)
 	}
-	if os.Getenv(constants.TLS_PRIVATE_KEY_ENV_VAR) != "" {
-		config.TLSPrivateKey = os.Getenv(constants.TLS_PRIVATE_KEY_ENV_VAR)
+	if cfg.GetKey(constants.TLS_PRIVATE_KEY_ENV_VAR) != "" {
+		config.TLSPrivateKey = cfg.GetKey(constants.TLS_PRIVATE_KEY_ENV_VAR)
 	}
-	if os.Getenv(constants.ROOT_PASSWORD_ENV_VAR) != "" {
-		config.RootPassword = os.Getenv(constants.ROOT_PASSWORD_ENV_VAR)
+	if cfg.GetKey(constants.ROOT_PASSWORD_ENV_VAR) != "" {
+		config.RootPassword = cfg.GetKey(constants.ROOT_PASSWORD_ENV_VAR)
 	}
-	if os.Getenv(constants.DISABLE_CATALOG_CACHING_ENV_VAR) != "" {
-		config.DisableCatalogCaching = os.Getenv(constants.ROOT_PASSWORD_ENV_VAR) == "true"
+	if cfg.GetKey(constants.DISABLE_CATALOG_CACHING_ENV_VAR) != "" {
+		config.DisableCatalogCaching = cfg.GetKey(constants.ROOT_PASSWORD_ENV_VAR) == "true"
 	}
-	if os.Getenv(constants.TOKEN_DURATION_MINUTES_ENV_VAR) != "" {
-		config.DisableCatalogCaching = os.Getenv(constants.TOKEN_DURATION_MINUTES_ENV_VAR) == "true"
+	if cfg.GetKey(constants.TOKEN_DURATION_MINUTES_ENV_VAR) != "" {
+		config.DisableCatalogCaching = cfg.GetKey(constants.TOKEN_DURATION_MINUTES_ENV_VAR) == "true"
 	}
-	if os.Getenv(constants.MODE_ENV_VAR) != "" {
-		config.Mode = os.Getenv(constants.MODE_ENV_VAR)
+	if cfg.GetKey(constants.MODE_ENV_VAR) != "" {
+		config.Mode = cfg.GetKey(constants.MODE_ENV_VAR)
 	}
-	if os.Getenv(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR) != "" {
-		config.UseOrchestratorResources = os.Getenv(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR) == "true"
+	if cfg.GetKey(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR) != "" {
+		config.UseOrchestratorResources = cfg.GetKey(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR) == "true"
 	}
 
 	return config

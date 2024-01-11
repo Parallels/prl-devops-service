@@ -86,15 +86,18 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 					authorizationContext.AuthorizationError = &response
 					baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
 				}
-				email, err := token.GetClaim("email")
-				if err != nil {
-					authorized = false
-					response := models.OAuthErrorResponse{
-						Error:            models.OAuthUnauthorizedClient,
-						ErrorDescription: err.Error(),
+				var email interface{}
+				if authorized {
+					email, err = token.GetClaim("email")
+					if err != nil {
+						authorized = false
+						response := models.OAuthErrorResponse{
+							Error:            models.OAuthUnauthorizedClient,
+							ErrorDescription: err.Error(),
+						}
+						authorizationContext.AuthorizationError = &response
+						baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
 					}
-					authorizationContext.AuthorizationError = &response
-					baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
 				}
 
 				if authorized {

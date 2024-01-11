@@ -136,7 +136,7 @@ func (s *BruteForceGuard) IsBlocked(userId string) bool {
 }
 
 func (s *BruteForceGuard) processEnvironmentVariables() {
-	cfg := config.NewConfig()
+	cfg := config.Get()
 	if cfg.GetKey(constants.BRUTE_FORCE_MAX_LOGIN_ATTEMPTS_ENV_VAR) != "" {
 		maxLoginAttempts, err := strconv.Atoi(cfg.GetKey(constants.BRUTE_FORCE_MAX_LOGIN_ATTEMPTS_ENV_VAR))
 		if err != nil {

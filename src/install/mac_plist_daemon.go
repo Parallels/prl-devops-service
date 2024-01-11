@@ -52,7 +52,7 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     <string>{{ .RootPassword }}</string>
     {{- end }}
     {{- if .EncryptionRsaKey }}
-    <key>` + constants.SECURITY_KEY_ENV_VAR + `</key>
+    <key>` + constants.ENCRYPTION_SECURITY_KEY_ENV_VAR + `</key>
     <string>{{ .EncryptionRsaKey }}</string>
     {{- end }}
     {{- if .HmacSecret }}

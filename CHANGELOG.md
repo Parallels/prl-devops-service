@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.5] - 2024-01-13
+
+### Added
+
+- added the ability to have a config file for the apiclient, this will help
+  users to configure the api with more ease and also will allow them to share
+  that same configuration. It will either look for a config file in the current
+  directory with the following rules, `config.json`, `config.yaml`, `config.yml`
+  you can also add the `.local` before the extension to make it a local config
+  you can also specify the path to the config file using the `--config` flag
+
+### Fixed
+
+- fixed a bug where if the JWT token was invalid or empty the client would reset
+  the connection without a proper error handling
+- fixed a bug if the user would setup the current instance to also be part of the
+  orchestrator and the API key would change, then the orchestrator would not be
+  able to authenticate
+
+### Changed
+
+- The system will now use the config class to read all of the configuration, this
+  will allow us to have a more consistent way of reading the configuration and where
+  to search for those values, this allows for example for a parameter to be set in
+  either a environment variable, a config file or a command line flag, the order
+  of precedence is the following, command line flag, environment variable, config
+  file
+
 ## [0.4.4] - 2024-01-12
 
 ### Added

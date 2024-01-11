@@ -10,7 +10,7 @@
       // Comment out if you need to setup environment variables for the module
       "envFile": "${workspaceFolder}/.env",
       // "args": [
-      //   "--BRUTE_FORCE_MAX_LOGIN_ATTEMPTS=10",
+      //   "--API_PORT=8080",
       // ]
     },
     {

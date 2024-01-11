@@ -1,16 +1,16 @@
 package tests
 
 import (
-	"os"
-
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/catalog/tester"
+	"github.com/Parallels/pd-api-service/config"
 )
 
 func TestCatalogProviders(ctx basecontext.ApiContext) error {
-	if os.Getenv("ARTIFACTORY_TEST_CONNECTION") != "" {
+	cfg := config.Get()
+	if cfg.GetKey("ARTIFACTORY_TEST_CONNECTION") != "" {
 		ctx.LogInfo("Testing connection to Artifactory")
-		test := tester.NewTestProvider(ctx, os.Getenv("ARTIFACTORY_TEST_CONNECTION"))
+		test := tester.NewTestProvider(ctx, cfg.GetKey("ARTIFACTORY_TEST_CONNECTION"))
 		err := test.Test()
 		if err != nil {
 			ctx.LogError(err.Error())
@@ -20,9 +20,9 @@ func TestCatalogProviders(ctx basecontext.ApiContext) error {
 		}
 	}
 
-	if os.Getenv("AZURE_SA_TEST_CONNECTION") != "" {
+	if cfg.GetKey("AZURE_SA_TEST_CONNECTION") != "" {
 		ctx.LogInfo("Testing connection to Azure Storage Account")
-		test := tester.NewTestProvider(ctx, os.Getenv("AZURE_SA_TEST_CONNECTION"))
+		test := tester.NewTestProvider(ctx, cfg.GetKey("AZURE_SA_TEST_CONNECTION"))
 		err := test.Test()
 		if err != nil {
 			ctx.LogError(err.Error())
@@ -32,9 +32,9 @@ func TestCatalogProviders(ctx basecontext.ApiContext) error {
 		}
 	}
 
-	if os.Getenv("AWS_S3_TEST_CONNECTION") != "" {
+	if cfg.GetKey("AWS_S3_TEST_CONNECTION") != "" {
 		ctx.LogInfo("Testing connection to AWS S3")
-		test := tester.NewTestProvider(ctx, os.Getenv("AWS_S3_TEST_CONNECTION"))
+		test := tester.NewTestProvider(ctx, cfg.GetKey("AWS_S3_TEST_CONNECTION"))
 		err := test.Test()
 		if err != nil {
 			ctx.LogError(err.Error())
