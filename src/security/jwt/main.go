@@ -2,7 +2,6 @@ package jwt
 
 import (
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/Parallels/pd-api-service/basecontext"
@@ -43,8 +42,8 @@ func Get() *JwtService {
 	return globalJwtService
 }
 
-func (s *JwtService) WithTokenDuration(durationInMinutes float64) *JwtService {
-	s.Options.WithTokenDuration(durationInMinutes)
+func (s *JwtService) WithTokenDuration(duration string) *JwtService {
+	s.Options.WithTokenDuration(duration)
 	return s
 }
 
@@ -68,7 +67,12 @@ func (s *JwtService) Sign(claims map[string]interface{}) (string, error) {
 		return "", errors.New("email cannot be empty")
 	}
 
-	expiresAt := time.Now().Add(s.Options.TokenDuration).Unix()
+	duration, err := time.ParseDuration(s.Options.TokenDuration)
+	if err != nil {
+		duration = time.Minute * 15
+	}
+
+	expiresAt := time.Now().Add(duration).Unix()
 	var method jwt.SigningMethod
 
 	switch s.Options.Algorithm {
@@ -249,11 +253,12 @@ func (s *JwtService) processEnvironmentVariables() error {
 	}
 
 	if cfg.GetKey(constants.JWT_DURATION_ENV_VAR) != "" {
-		durationInMinutes, err := strconv.ParseFloat(cfg.GetKey(constants.JWT_DURATION_ENV_VAR), 64)
+		_, err := time.ParseDuration(cfg.GetKey(constants.JWT_DURATION_ENV_VAR))
 		if err != nil {
 			return err
 		}
-		s.Options.WithTokenDuration(durationInMinutes)
+
+		s.Options.WithTokenDuration(cfg.GetKey(constants.JWT_DURATION_ENV_VAR))
 	}
 
 	// generating a default secret if none is provided

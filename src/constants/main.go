@@ -71,7 +71,7 @@ const (
 	API_PORT_FLAG                   = "port"
 	UPDATE_ROOT_PASSWORD_FLAG       = "update-root-pass"
 	FILE_FLAG                       = "file"
-	SIZE_FLAG                       = "size"
+	RSA_KEY_SIZE                    = "rsa-key-size"
 	MODE_FLAG                       = "mode"
 	HELP_FLAG                       = "help"
 	PASSWORD_FLAG                   = "password"

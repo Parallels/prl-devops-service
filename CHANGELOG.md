@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   either a environment variable, a config file or a command line flag, the order
   of precedence is the following, command line flag, environment variable, config
   file
+- updated documentation to reflect the changes in the configuration
 
 ## [0.4.4] - 2024-01-12
 

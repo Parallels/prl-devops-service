@@ -58,20 +58,111 @@ spec:
                   key: LOG_LEVEL
             {{- end }}
             {{- if .Values.security.key }}
-            - name: SECURITY_PRIVATE_KEY 
+            - name: ENCRYPTION_PRIVATE_KEY 
               valueFrom: 
                 secretKeyRef:
                   name: {{ include "helm.fullname" . }}
-                  key: SECURITY_PRIVATE_KEY
+                  key: ENCRYPTION_PRIVATE_KEY
             {{- end }}
-            {{- if .Values.security.hmacSecret }}
-            - name: HMAC_SECRET 
+            {{- if .Values.security.jwt.hmac_secret }}
+            - name: JWT_HMACS_SECRET 
               valueFrom: 
                 secretKeyRef:
                   name: {{ include "helm.fullname" . }}
-                  key: HMAC_SECRET
+                  key: JWT_HMACS_SECRET
             {{- end }}
-            {{- if .Values.security.rootPassword }}
+            {{- if .Values.security.jwt.rsa_private_key }}
+            - name: JWT_PRIVATE_KEY 
+              valueFrom: 
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: JWT_PRIVATE_KEY
+            {{- end }}
+            {{- if .Values.security.jwt.duration }}
+            - name: JWT_DURATION
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: JWT_DURATION
+            {{- end }}
+            {{- if .Values.security.jwt.signing_method }}
+            - name: JWT_SIGN_ALGORITHM
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: JWT_SIGN_ALGORITHM
+            {{- end }}
+            {{- if .Values.security.password.min_password_length }}
+            - name: SECURITY_PASSWORD_MIN_PASSWORD_LENGTH
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: SECURITY_PASSWORD_MIN_PASSWORD_LENGTH
+            {{- end }}
+            {{- if .Values.security.password.max_password_length }}
+            - name: SECURITY_PASSWORD_MAX_PASSWORD_LENGTH
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: SECURITY_PASSWORD_MAX_PASSWORD_LENGTH
+            {{- end }}
+            {{- if .Values.security.password.require_lowercase }}
+            - name: SECURITY_PASSWORD_REQUIRE_LOWERCASE
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: SECURITY_PASSWORD_REQUIRE_LOWERCASE
+            {{- end }}
+            {{- if .Values.security.password.require_uppercase }}
+            - name: SECURITY_PASSWORD_REQUIRE_UPPERCASE
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: SECURITY_PASSWORD_REQUIRE_UPPERCASE
+            {{- end }}
+            {{- if .Values.security.password.require_number }}
+            - name: SECURITY_PASSWORD_REQUIRE_NUMBER
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: SECURITY_PASSWORD_REQUIRE_NUMBER
+            {{- end }}
+            {{- if .Values.security.password.require_special_characters }}
+            - name: SECURITY_PASSWORD_REQUIRE_SPECIAL_CHAR
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: SECURITY_PASSWORD_REQUIRE_SPECIAL_CHAR
+            {{- end }}
+            {{- if .Values.security.password.salt_password }}
+            - name: SECURITY_PASSWORD_SALT_PASSWORD
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: SECURITY_PASSWORD_SALT_PASSWORD
+            {{- end }}
+            {{- if .Values.security.brute_force.max_login_attempts }}
+            - name: BRUTE_FORCE_MAX_LOGIN_ATTEMPTS
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: BRUTE_FORCE_MAX_LOGIN_ATTEMPTS
+            {{- end }}
+            {{- if .Values.security.brute_force.lockout_duration }}
+            - name: BRUTE_FORCE_LOCKOUT_DURATION
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: BRUTE_FORCE_LOCKOUT_DURATION
+            {{- end }}
+            {{- if .Values.security.brute_force.increment_lockout_duration }}
+            - name: BRUTE_FORCE_INCREMENTAL_WAIT
+              valueFrom: 
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: BRUTE_FORCE_INCREMENTAL_WAIT
+            {{- end }}
+            {{- if .Values.security.root_password }}
             - name: ROOT_PASSWORD 
               valueFrom: 
                 secretKeyRef:

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/constants"
@@ -12,7 +11,7 @@ import (
 )
 
 func TestGet(t *testing.T) {
-	ctx := basecontext.NewRootBaseContext()
+	ctx := basecontext.NewBaseContext()
 	globalJwtService = nil
 
 	svc := Get()
@@ -26,7 +25,7 @@ func TestGet(t *testing.T) {
 
 func TestJwtService_SignHS256(t *testing.T) {
 	// Create a new instance of JwtService
-	ctx := basecontext.NewRootBaseContext()
+	ctx := basecontext.NewBaseContext()
 	svc := New(ctx)
 	svc.WithSecret("secret")
 
@@ -65,7 +64,7 @@ func TestJwtService_SignHS256(t *testing.T) {
 
 func TestJwtService_SignHS384(t *testing.T) {
 	// Create a new instance of JwtService
-	ctx := basecontext.NewRootBaseContext()
+	ctx := basecontext.NewBaseContext()
 	svc := New(ctx)
 	svc.WithSecret("secret")
 	svc.WithAlgorithm(JwtSigningAlgorithmHS384)
@@ -105,7 +104,7 @@ func TestJwtService_SignHS384(t *testing.T) {
 
 func TestJwtService_SignHS512(t *testing.T) {
 	// Create a new instance of JwtService
-	ctx := basecontext.NewRootBaseContext()
+	ctx := basecontext.NewBaseContext()
 	svc := New(ctx)
 	svc.WithSecret("secret")
 	svc.WithAlgorithm(JwtSigningAlgorithmHS512)
@@ -145,7 +144,7 @@ func TestJwtService_SignHS512(t *testing.T) {
 
 func TestJwtService_SignRandomSecret(t *testing.T) {
 	// Create a new instance of JwtService
-	ctx := basecontext.NewRootBaseContext()
+	ctx := basecontext.NewBaseContext()
 	svc := New(ctx)
 
 	// Test case 1: Sign with valid input
@@ -162,7 +161,7 @@ func TestJwtService_SignRandomSecret(t *testing.T) {
 
 func TestJwtService_SignRS256(t *testing.T) {
 	// Create a new instance of JwtService
-	ctx := basecontext.NewRootBaseContext()
+	ctx := basecontext.NewBaseContext()
 	svc := New(ctx)
 	svc.WithPrivateKey("LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBclJNKzFQaWIwb2VGQ0dPbzVtTmpzTjh4T3JML242SXQwTXZ1TzN3UmRwQ2V3SmZzClY3SVJwWW5MNU5MenRXZnVoNm9rbGd2cTIwak00NDUxQXpIM2tuZGt4NFhqY090Zmg5WklSby9xQlhYeEdGOVgKSldXem1zMjFqWkJzOTVaL3p3VFpncEJVL21WaEhSejVuOStVR1NlRVpZZnU4WnlMeEZGQ3JvQlY1Uk5rTnJIQwowSWJOT1ZuOFJ1Snprczg5dnl2UzZES2xLY29IZmppVVgwTE1hNUZxcStuRSs5R3kzUURzcWRrYUtwR0JUbmFrCnNlWkIraEV2TFBGWDFUMFRHZDhzQTQ4SzEyWjVZaklaNjBPRHppTnB5dktuL24zWW9qWjFMZno5QzFSbDYwM3EKb2VuYzF3Y3hZYis1WGxYempVZDdKU0ZxZlRPSHR4L21jb3J6RVFJREFRQUJBb0lCQUd6QkJDRlZHcXoreFNSUgpZMGRwdXJIZ2ZaR3grcGgza3l4NWlIaE9iTGJCQjFCajVubndoZEFzTnpmUktweVo4elBDUVAwYi9mYk8xeGhDCll0cWdJajRoMGV6aC85bnJ2UHFoTm9kSVZUZ2JOV1VvTzUxZk82MlJoM3l0L1JyU3Nmc0d4QnFiMFJ5TjNha3EKbE56VjQ3eXVyUzRUYlp6YXpxU01uMGNCazNlK1gvQ1dneTAvRGJ0WTRWZytXVVZybXRyNnY4cEpSYkE3ajRYago0ZG40MlNlbmdLaU1lU040SktjQ3JudkNMbG5lVDA4TDJOd2dNUjk2cFZzdldobGc4YUlVdnN5OUpsamw0UE5tClRQSXhOWHhEOUdQNUJacjBmSlgwRk94Mk1vdWh3TVNtcldBcmxta1gvTnprK1JkMGUvMm5RazF1M21ZMHIzS1MKcm9UckFSVUNnWUVBMmRCNW0xN2tOK0g5MHJON2ROWjlmTWYvdDdGRlY0THh1WUEyTXZ3WllDOFNGR2FNbWRneAoyMExHTkJrNER4OU16NHA4dDA2Q1kvOVQvMERqazlGOFVSbHJRSmw3dHpWTjhRcStGSGNuakFZOXpWL0RJTmZiCkFXb1E0WlFUM0k4c3lpTWJBSzh1T0s3ZWhYYlI5SWJhaWtmSmpKYzVkOVZnMkJOQUFDR1JMNjhDZ1lFQXkycmYKWnpVbHcySlNjUmhxOVQwQnpWdUZWU09wYWQxM3FLelZEczEzRW1Gb0dxazMxWnQxRW52YWl3VTd1R3UyYkdUVApnUUs2NVY5MEM1emdaVzA3eXoxQTd0U1ZHRURXZ2kzcll6bk1RekNVVUhYUng3Y1g5aTVHOE9uQkRLRnpuVnZHClhLU09GVnEzQVAyY09rcjN4bUYyNVNUKyt4d0cyQ2EwbFROQitUOENnWUVBb1hReUlDUkhvTkRJdUIxSXZ3T2IKQXhxeEI3WEVnNmpSaTBKcGFvT0tQOHpFWnhEWTJkVHlwK2VvU2NnRDBOblBzdXVocExMeVhqTk9UU0FKVVhIdgo1NkdpNmNDYmZ1TnBRZXBIbVozMVY0cnMxc1pNT3BVbWhyYmJpb3FiNmxyS3hZOGVIZlM4bTFHc0tsdzRKenlxCjArT0FsOUVrelJvQzdrZmVvZm8veDRzQ2dZQmE1WDNBbTZJdFJiRTdNa01SSk5xNlRnd3RlRXNLc0ZqNCtZb1gKSEQ3NTZxYmZTd0JWSml0UlFDRHZBRDZvY1JGS0xGL0toVkxJampmSHZLa1ZDWk92aE1hUU1sUVJTMS9QT2YrMgpEaXkxVlc3ZzZWVDlYbGFKdmpJYkV3a2R3TU50N0lXZC9qWXpXcDd1QldXYk1zYTNVZlFUL3MwbG5tZDhqUWNpCnFJM3hkd0tCZ1FDNmFiVHZzc20xRm53RFgzN0ZoS0NWeHpmYmpiY05MNmNmUG16ZXhiNFIxZmZBb2tJYlVEak0KV2xEZUExTndHMGlVRXdod0JCaXlrbFVUdnh6RkFLaG5rUDBHdllFa0Z4TXM1TFMwNjlITkxKcHhlMklFTXJSMwp4MW4veXQvV2w4T0RVYTM2S3czMGxwU0E4aE41UHR2NVpvRUVzWFA5L21aWWZTOHIzdCtjQkE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQ==")
 	svc.WithAlgorithm(JwtSigningAlgorithmRS256)
@@ -203,7 +202,7 @@ func TestJwtService_SignRS256(t *testing.T) {
 
 func TestJwtService_SignRS384(t *testing.T) {
 	// Create a new instance of JwtService
-	ctx := basecontext.NewRootBaseContext()
+	ctx := basecontext.NewBaseContext()
 	svc := New(ctx)
 	svc.WithPrivateKey("LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBclJNKzFQaWIwb2VGQ0dPbzVtTmpzTjh4T3JML242SXQwTXZ1TzN3UmRwQ2V3SmZzClY3SVJwWW5MNU5MenRXZnVoNm9rbGd2cTIwak00NDUxQXpIM2tuZGt4NFhqY090Zmg5WklSby9xQlhYeEdGOVgKSldXem1zMjFqWkJzOTVaL3p3VFpncEJVL21WaEhSejVuOStVR1NlRVpZZnU4WnlMeEZGQ3JvQlY1Uk5rTnJIQwowSWJOT1ZuOFJ1Snprczg5dnl2UzZES2xLY29IZmppVVgwTE1hNUZxcStuRSs5R3kzUURzcWRrYUtwR0JUbmFrCnNlWkIraEV2TFBGWDFUMFRHZDhzQTQ4SzEyWjVZaklaNjBPRHppTnB5dktuL24zWW9qWjFMZno5QzFSbDYwM3EKb2VuYzF3Y3hZYis1WGxYempVZDdKU0ZxZlRPSHR4L21jb3J6RVFJREFRQUJBb0lCQUd6QkJDRlZHcXoreFNSUgpZMGRwdXJIZ2ZaR3grcGgza3l4NWlIaE9iTGJCQjFCajVubndoZEFzTnpmUktweVo4elBDUVAwYi9mYk8xeGhDCll0cWdJajRoMGV6aC85bnJ2UHFoTm9kSVZUZ2JOV1VvTzUxZk82MlJoM3l0L1JyU3Nmc0d4QnFiMFJ5TjNha3EKbE56VjQ3eXVyUzRUYlp6YXpxU01uMGNCazNlK1gvQ1dneTAvRGJ0WTRWZytXVVZybXRyNnY4cEpSYkE3ajRYago0ZG40MlNlbmdLaU1lU040SktjQ3JudkNMbG5lVDA4TDJOd2dNUjk2cFZzdldobGc4YUlVdnN5OUpsamw0UE5tClRQSXhOWHhEOUdQNUJacjBmSlgwRk94Mk1vdWh3TVNtcldBcmxta1gvTnprK1JkMGUvMm5RazF1M21ZMHIzS1MKcm9UckFSVUNnWUVBMmRCNW0xN2tOK0g5MHJON2ROWjlmTWYvdDdGRlY0THh1WUEyTXZ3WllDOFNGR2FNbWRneAoyMExHTkJrNER4OU16NHA4dDA2Q1kvOVQvMERqazlGOFVSbHJRSmw3dHpWTjhRcStGSGNuakFZOXpWL0RJTmZiCkFXb1E0WlFUM0k4c3lpTWJBSzh1T0s3ZWhYYlI5SWJhaWtmSmpKYzVkOVZnMkJOQUFDR1JMNjhDZ1lFQXkycmYKWnpVbHcySlNjUmhxOVQwQnpWdUZWU09wYWQxM3FLelZEczEzRW1Gb0dxazMxWnQxRW52YWl3VTd1R3UyYkdUVApnUUs2NVY5MEM1emdaVzA3eXoxQTd0U1ZHRURXZ2kzcll6bk1RekNVVUhYUng3Y1g5aTVHOE9uQkRLRnpuVnZHClhLU09GVnEzQVAyY09rcjN4bUYyNVNUKyt4d0cyQ2EwbFROQitUOENnWUVBb1hReUlDUkhvTkRJdUIxSXZ3T2IKQXhxeEI3WEVnNmpSaTBKcGFvT0tQOHpFWnhEWTJkVHlwK2VvU2NnRDBOblBzdXVocExMeVhqTk9UU0FKVVhIdgo1NkdpNmNDYmZ1TnBRZXBIbVozMVY0cnMxc1pNT3BVbWhyYmJpb3FiNmxyS3hZOGVIZlM4bTFHc0tsdzRKenlxCjArT0FsOUVrelJvQzdrZmVvZm8veDRzQ2dZQmE1WDNBbTZJdFJiRTdNa01SSk5xNlRnd3RlRXNLc0ZqNCtZb1gKSEQ3NTZxYmZTd0JWSml0UlFDRHZBRDZvY1JGS0xGL0toVkxJampmSHZLa1ZDWk92aE1hUU1sUVJTMS9QT2YrMgpEaXkxVlc3ZzZWVDlYbGFKdmpJYkV3a2R3TU50N0lXZC9qWXpXcDd1QldXYk1zYTNVZlFUL3MwbG5tZDhqUWNpCnFJM3hkd0tCZ1FDNmFiVHZzc20xRm53RFgzN0ZoS0NWeHpmYmpiY05MNmNmUG16ZXhiNFIxZmZBb2tJYlVEak0KV2xEZUExTndHMGlVRXdod0JCaXlrbFVUdnh6RkFLaG5rUDBHdllFa0Z4TXM1TFMwNjlITkxKcHhlMklFTXJSMwp4MW4veXQvV2w4T0RVYTM2S3czMGxwU0E4aE41UHR2NVpvRUVzWFA5L21aWWZTOHIzdCtjQkE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQ==")
 	svc.WithAlgorithm(JwtSigningAlgorithmRS384)
@@ -244,7 +243,7 @@ func TestJwtService_SignRS384(t *testing.T) {
 
 func TestJwtService_SignRS512(t *testing.T) {
 	// Create a new instance of JwtService
-	ctx := basecontext.NewRootBaseContext()
+	ctx := basecontext.NewBaseContext()
 	svc := New(ctx)
 	svc.WithPrivateKey("LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBclJNKzFQaWIwb2VGQ0dPbzVtTmpzTjh4T3JML242SXQwTXZ1TzN3UmRwQ2V3SmZzClY3SVJwWW5MNU5MenRXZnVoNm9rbGd2cTIwak00NDUxQXpIM2tuZGt4NFhqY090Zmg5WklSby9xQlhYeEdGOVgKSldXem1zMjFqWkJzOTVaL3p3VFpncEJVL21WaEhSejVuOStVR1NlRVpZZnU4WnlMeEZGQ3JvQlY1Uk5rTnJIQwowSWJOT1ZuOFJ1Snprczg5dnl2UzZES2xLY29IZmppVVgwTE1hNUZxcStuRSs5R3kzUURzcWRrYUtwR0JUbmFrCnNlWkIraEV2TFBGWDFUMFRHZDhzQTQ4SzEyWjVZaklaNjBPRHppTnB5dktuL24zWW9qWjFMZno5QzFSbDYwM3EKb2VuYzF3Y3hZYis1WGxYempVZDdKU0ZxZlRPSHR4L21jb3J6RVFJREFRQUJBb0lCQUd6QkJDRlZHcXoreFNSUgpZMGRwdXJIZ2ZaR3grcGgza3l4NWlIaE9iTGJCQjFCajVubndoZEFzTnpmUktweVo4elBDUVAwYi9mYk8xeGhDCll0cWdJajRoMGV6aC85bnJ2UHFoTm9kSVZUZ2JOV1VvTzUxZk82MlJoM3l0L1JyU3Nmc0d4QnFiMFJ5TjNha3EKbE56VjQ3eXVyUzRUYlp6YXpxU01uMGNCazNlK1gvQ1dneTAvRGJ0WTRWZytXVVZybXRyNnY4cEpSYkE3ajRYago0ZG40MlNlbmdLaU1lU040SktjQ3JudkNMbG5lVDA4TDJOd2dNUjk2cFZzdldobGc4YUlVdnN5OUpsamw0UE5tClRQSXhOWHhEOUdQNUJacjBmSlgwRk94Mk1vdWh3TVNtcldBcmxta1gvTnprK1JkMGUvMm5RazF1M21ZMHIzS1MKcm9UckFSVUNnWUVBMmRCNW0xN2tOK0g5MHJON2ROWjlmTWYvdDdGRlY0THh1WUEyTXZ3WllDOFNGR2FNbWRneAoyMExHTkJrNER4OU16NHA4dDA2Q1kvOVQvMERqazlGOFVSbHJRSmw3dHpWTjhRcStGSGNuakFZOXpWL0RJTmZiCkFXb1E0WlFUM0k4c3lpTWJBSzh1T0s3ZWhYYlI5SWJhaWtmSmpKYzVkOVZnMkJOQUFDR1JMNjhDZ1lFQXkycmYKWnpVbHcySlNjUmhxOVQwQnpWdUZWU09wYWQxM3FLelZEczEzRW1Gb0dxazMxWnQxRW52YWl3VTd1R3UyYkdUVApnUUs2NVY5MEM1emdaVzA3eXoxQTd0U1ZHRURXZ2kzcll6bk1RekNVVUhYUng3Y1g5aTVHOE9uQkRLRnpuVnZHClhLU09GVnEzQVAyY09rcjN4bUYyNVNUKyt4d0cyQ2EwbFROQitUOENnWUVBb1hReUlDUkhvTkRJdUIxSXZ3T2IKQXhxeEI3WEVnNmpSaTBKcGFvT0tQOHpFWnhEWTJkVHlwK2VvU2NnRDBOblBzdXVocExMeVhqTk9UU0FKVVhIdgo1NkdpNmNDYmZ1TnBRZXBIbVozMVY0cnMxc1pNT3BVbWhyYmJpb3FiNmxyS3hZOGVIZlM4bTFHc0tsdzRKenlxCjArT0FsOUVrelJvQzdrZmVvZm8veDRzQ2dZQmE1WDNBbTZJdFJiRTdNa01SSk5xNlRnd3RlRXNLc0ZqNCtZb1gKSEQ3NTZxYmZTd0JWSml0UlFDRHZBRDZvY1JGS0xGL0toVkxJampmSHZLa1ZDWk92aE1hUU1sUVJTMS9QT2YrMgpEaXkxVlc3ZzZWVDlYbGFKdmpJYkV3a2R3TU50N0lXZC9qWXpXcDd1QldXYk1zYTNVZlFUL3MwbG5tZDhqUWNpCnFJM3hkd0tCZ1FDNmFiVHZzc20xRm53RFgzN0ZoS0NWeHpmYmpiY05MNmNmUG16ZXhiNFIxZmZBb2tJYlVEak0KV2xEZUExTndHMGlVRXdod0JCaXlrbFVUdnh6RkFLaG5rUDBHdllFa0Z4TXM1TFMwNjlITkxKcHhlMklFTXJSMwp4MW4veXQvV2w4T0RVYTM2S3czMGxwU0E4aE41UHR2NVpvRUVzWFA5L21aWWZTOHIzdCtjQkE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQ==")
 	svc.WithAlgorithm(JwtSigningAlgorithmRS512)
@@ -285,7 +284,7 @@ func TestJwtService_SignRS512(t *testing.T) {
 
 func TestJwtService_SignDefault(t *testing.T) {
 	// Create a new instance of JwtService
-	ctx := basecontext.NewRootBaseContext()
+	ctx := basecontext.NewBaseContext()
 	svc := New(ctx)
 	svc.WithSecret("secret")
 	svc.WithAlgorithm("")
@@ -326,7 +325,7 @@ func TestJwtService_SignDefault(t *testing.T) {
 
 func TestJwtService_SignNoPrivateKey(t *testing.T) {
 	// Create a new instance of JwtService
-	ctx := basecontext.NewRootBaseContext()
+	ctx := basecontext.NewBaseContext()
 	svc := New(ctx)
 	svc.WithPrivateKey("")
 	svc.WithAlgorithm(JwtSigningAlgorithmRS256)
@@ -566,13 +565,13 @@ func TestJwtService_processEnvironmentVariables(t *testing.T) {
 
 	t.Run("SetTokenDuration", func(t *testing.T) {
 		os.Clearenv()
-		err := os.Setenv(constants.JWT_DURATION_ENV_VAR, "60")
+		err := os.Setenv(constants.JWT_DURATION_ENV_VAR, "60m")
 		assert.NoError(t, err)
 
 		err = svc.processEnvironmentVariables()
 		assert.NoError(t, err)
 
-		assert.Equal(t, time.Duration(60)*time.Minute, svc.Options.TokenDuration)
+		assert.Equal(t, "60m", svc.Options.TokenDuration)
 	})
 
 	t.Run("InvalidTokenDuration", func(t *testing.T) {
