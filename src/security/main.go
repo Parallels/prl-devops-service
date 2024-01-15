@@ -22,7 +22,10 @@ func GenerateCryptoRandomString(length int) (string, error) {
 		return "", errors.New("length must be greater than 0")
 	}
 
-	result := cryptorand.GetAlphaNumericRandomString(length)
+	result, err := cryptorand.GetAlphaNumericRandomString(length)
+	if err != nil {
+		return "", err
+	}
 
 	return result, nil
 }
