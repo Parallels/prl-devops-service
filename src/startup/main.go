@@ -27,7 +27,6 @@ func Init(ctx basecontext.ApiContext) {
 	password.New(ctx)
 	jwt.New(ctx)
 	bruteforceguard.New(ctx)
-
 }
 
 func Start(ctx basecontext.ApiContext) {
