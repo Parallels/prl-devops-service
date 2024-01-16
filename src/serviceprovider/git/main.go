@@ -198,7 +198,7 @@ func (s *GitService) Clone(ctx basecontext.ApiContext, repoURL string, owner str
 	if owner == "" || owner == "root" {
 		path = filepath.Join("/tmp", localPath)
 	} else {
-		home, err := system.Get(ctx).GetUserHome(ctx, owner)
+		home, err := system.Get().GetUserHome(ctx, owner)
 		if err != nil {
 			return "", err
 		}

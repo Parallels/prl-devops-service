@@ -8,6 +8,7 @@ import (
 	"github.com/Parallels/pd-api-service/data/models"
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/pd-api-service/security/password"
 )
 
 var (
@@ -127,8 +128,8 @@ func (j *JsonDatabase) CreateUser(ctx basecontext.ApiContext, user models.User) 
 		}
 	}
 
-	// Hash the password with SHA-256
-	hashedPassword, err := helpers.BcryptHash(user.Password, user.ID)
+	passwdSvc := password.Get()
+	hashedPassword, err := passwdSvc.Hash(user.Password, user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -159,13 +160,36 @@ func (j *JsonDatabase) UpdateUser(ctx basecontext.ApiContext, key models.User) e
 				j.data.Users[i].Name = key.Name
 			}
 			if key.Password != "" {
-				hashedPassword, err := helpers.BcryptHash(key.Password, key.ID)
+				passwdSvc := password.Get()
+				hashedPassword, err := passwdSvc.Hash(key.Password, key.ID)
 				if err != nil {
 					return err
 				}
 				j.data.Users[i].Password = hashedPassword
 			}
 
+			j.data.Users[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return ErrUserNotFound
+}
+
+func (j *JsonDatabase) UpdateUserBlockStatus(ctx basecontext.ApiContext, key models.User) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	for i, user := range j.data.Users {
+		if user.ID == key.ID {
+			j.data.Users[i].Blocked = key.Blocked
+			j.data.Users[i].BlockedSince = key.BlockedSince
+			j.data.Users[i].BlockedReason = key.BlockedReason
+			j.data.Users[i].FailedLoginAttempts = key.FailedLoginAttempts
 			j.data.Users[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
 			if err := j.Save(ctx); err != nil {
 				return err
@@ -184,7 +208,8 @@ func (j *JsonDatabase) UpdateRootPassword(ctx basecontext.ApiContext, newPasswor
 
 	for i, user := range j.data.Users {
 		if user.Email == "root@localhost" {
-			hashedPassword, err := helpers.BcryptHash(newPassword, user.ID)
+			passwdSvc := password.Get()
+			hashedPassword, err := passwdSvc.Hash(newPassword, user.ID)
 			if err != nil {
 				return err
 			}

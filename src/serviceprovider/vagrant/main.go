@@ -297,7 +297,7 @@ func (s *VagrantService) updateVagrantFile(ctx basecontext.ApiContext, filePath 
 }
 
 func (s *VagrantService) getVagrantFolderPath(ctx basecontext.ApiContext, request models.CreateVagrantMachineRequest) (string, error) {
-	system := system.Get(s.ctx)
+	system := system.Get()
 	rootDir, err := system.GetUserHome(ctx, request.Owner)
 	if err != nil {
 		return "", err

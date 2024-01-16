@@ -9,6 +9,9 @@ import (
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/helpers"
 	"github.com/Parallels/pd-api-service/orchestrator"
+	bruteforceguard "github.com/Parallels/pd-api-service/security/brute_force_guard"
+	"github.com/Parallels/pd-api-service/security/jwt"
+	"github.com/Parallels/pd-api-service/security/password"
 	"github.com/Parallels/pd-api-service/serviceprovider"
 	"github.com/Parallels/pd-api-service/serviceprovider/system"
 )
@@ -16,6 +19,14 @@ import (
 const (
 	ORCHESTRATOR_KEY_NAME = "orchestrator_key"
 )
+
+func Init() {
+	ctx := basecontext.NewRootBaseContext()
+
+	password.New(ctx)
+	jwt.New(ctx)
+	bruteforceguard.New(ctx)
+}
 
 func Start() {
 	config := config.NewConfig()

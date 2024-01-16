@@ -103,16 +103,7 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 	}
 
 	globalProvider.HardwareId = hid
-	secretKey := strings.ReplaceAll(key, "-", "")
-	secretHid := strings.ReplaceAll(hid, "-", "")
-	if len(secretKey) > 12 {
-		secretKey = secretKey[:12]
-	}
-	if len(secretHid) > 12 {
-		secretHid = secretHid[:12]
-	}
-
-	globalProvider.HardwareSecret = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s%s", secretKey, secretHid)))
+	globalProvider.HardwareSecret = getHardwareSecret(key, hid)
 	if systemHardwareInfo, err := globalProvider.System.GetHardwareInfo(ctx); err == nil {
 		globalProvider.SystemHardwareInfo = systemHardwareInfo
 	}
@@ -204,7 +195,7 @@ func InitServices(ctx basecontext.ApiContext) {
 	}
 
 	globalProvider.HardwareId = hid
-	globalProvider.HardwareSecret = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", key, hid)))
+	globalProvider.HardwareSecret = getHardwareSecret(key, hid)
 	if systemHardwareInfo, err := globalProvider.System.GetHardwareInfo(ctx); err == nil {
 		globalProvider.SystemHardwareInfo = systemHardwareInfo
 	}
@@ -289,4 +280,17 @@ func GetService[T *any](name string) (T, error) {
 	}
 
 	return nil, errors.New("Service not found")
+}
+
+func getHardwareSecret(key, hid string) string {
+	secretKey := strings.ReplaceAll(key, "-", "")
+	secretHid := strings.ReplaceAll(hid, "-", "")
+	if len(secretKey) > 12 {
+		secretKey = secretKey[:12]
+	}
+	if len(secretHid) > 12 {
+		secretHid = secretHid[:12]
+	}
+
+	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s%s", secretKey, secretHid)))
 }

@@ -256,7 +256,7 @@ func (s *ParallelsService) IsLicensed() bool {
 
 func (s *ParallelsService) GetVms(ctx basecontext.ApiContext, filter string) ([]models.ParallelsVM, error) {
 	var systemMachines []models.ParallelsVM
-	users, err := system.Get(ctx).GetSystemUsers(ctx)
+	users, err := system.Get().GetSystemUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -841,7 +841,7 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 
 	ctx.LogInfo("Built packer machine")
 
-	users, err := system.Get(ctx).GetSystemUsers(ctx)
+	users, err := system.Get().GetSystemUsers(ctx)
 	if err != nil {
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
 			ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
@@ -1429,7 +1429,7 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 		}
 	}
 
-	systemSrv := system.Get(ctx)
+	systemSrv := system.Get()
 	systemInfo, err := systemSrv.GetHardwareInfo(ctx)
 	if err != nil {
 		return nil, err

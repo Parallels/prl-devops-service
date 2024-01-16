@@ -9,6 +9,7 @@ import (
 	"github.com/Parallels/pd-api-service/mappers"
 	"github.com/Parallels/pd-api-service/models"
 	"github.com/Parallels/pd-api-service/restapi"
+	"github.com/Parallels/pd-api-service/security/password"
 	"github.com/Parallels/pd-api-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
@@ -211,6 +212,24 @@ func CreateUserHandler() restapi.ControllerHandler {
 				Code:    http.StatusBadRequest,
 			})
 			return
+		}
+		if request.Password != "" {
+			passwordSvc := password.Get()
+			if valid, diag := passwordSvc.CheckPasswordComplexity(request.Password); diag.HasErrors() {
+				ReturnApiError(ctx, w, models.ApiErrorResponse{
+					Message: diag.Error(),
+					Code:    http.StatusBadRequest,
+				})
+				return
+			} else {
+				if !valid {
+					ReturnApiError(ctx, w, models.ApiErrorResponse{
+						Message: "Invalid Password, please check complexity rules",
+						Code:    http.StatusBadRequest,
+					})
+					return
+				}
+			}
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)

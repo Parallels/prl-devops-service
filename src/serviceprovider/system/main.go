@@ -24,10 +24,13 @@ type SystemService struct {
 	dependencies   []interfaces.Service
 }
 
-func Get(ctx basecontext.ApiContext) *SystemService {
+func Get() *SystemService {
 	if globalSystemService != nil {
 		return globalSystemService
 	}
+
+	ctx := basecontext.NewBaseContext()
+
 	return New(ctx)
 }
 

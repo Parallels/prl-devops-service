@@ -152,7 +152,7 @@ func (c *Config) GetTokenDurationMinutes() int {
 
 func (c *Config) GetRootFolder() (string, error) {
 	ctx := basecontext.NewRootBaseContext()
-	srv := system.Get(ctx)
+	srv := system.Get()
 	currentUser, err := srv.GetCurrentUser(ctx)
 	if err != nil {
 		currentUser = "root"
@@ -283,4 +283,41 @@ func (c *Config) UseOrchestratorResources() bool {
 	}
 
 	return false
+}
+
+func (c *Config) GetKey(key string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		value = helper.GetFlagValue(key, "")
+	}
+
+	return value
+}
+
+func (c *Config) GetIntKey(key string) int {
+	value := c.GetKey(key)
+	if value == "" {
+		return 0
+	}
+
+	intVal, err := strconv.Atoi(value)
+	if err != nil {
+		return 0
+	}
+
+	return intVal
+}
+
+func (c *Config) GetBoolKey(key string) bool {
+	value := c.GetKey(key)
+	if value == "" {
+		return false
+	}
+
+	boolVal, err := strconv.ParseBool(value)
+	if err != nil {
+		return false
+	}
+
+	return boolVal
 }

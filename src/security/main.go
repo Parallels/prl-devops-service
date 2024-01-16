@@ -5,20 +5,41 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/pem"
 	"io"
 	"os"
 
 	"github.com/Parallels/pd-api-service/errors"
+	cryptorand "github.com/cjlapao/common-go-cryptorand"
 )
 
-func GenPrivateRsaKey(filename string) error {
+func GenerateCryptoRandomString(length int) (string, error) {
+	if length <= 0 {
+		return "", errors.New("length must be greater than 0")
+	}
+
+	result, err := cryptorand.GetAlphaNumericRandomString(length)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
+}
+
+func GenPrivateRsaKey(filename string, size int) error {
 	if filename == "" {
 		return errors.New("filename is empty")
 	}
 
-	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if size <= 0 {
+		size = 2048
+	}
+
+	privKey, err := rsa.GenerateKey(rand.Reader, size)
 	if err != nil {
 		return err
 	}
@@ -108,4 +129,22 @@ func DecryptString(privateKey string, cipherText []byte) (string, error) {
 	stream.XORKeyStream(plaintext, cipherText)
 
 	return string(plaintext), nil
+}
+
+func Base64Decode(input string) ([]byte, error) {
+	decoded, err := base64.StdEncoding.DecodeString(input)
+	if err != nil {
+		return nil, err
+	}
+	return decoded, nil
+}
+
+func Base64Encode(input []byte) string {
+	return base64.StdEncoding.EncodeToString(input)
+}
+
+func CalculatePrivateKeyThumbprint(privateKey *rsa.PrivateKey) (string, error) {
+	publicKeyDer := x509.MarshalPKCS1PublicKey(&privateKey.PublicKey)
+	hash := sha1.Sum(publicKeyDer)
+	return hex.EncodeToString(hash[:]), nil
 }
