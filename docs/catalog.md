@@ -207,7 +207,7 @@ pd-api-service catalog push --file=./example.pdfile
 for pulling it will be a very similar process:
 
 ```bash
-FROM parallels.carloslapao.com
+FROM example.com
 INSECURE true
 
 AUTHENTICATE USERNAME root
@@ -218,8 +218,8 @@ VERSION v1
 ARCHITECTURE arm64
 
 MACHINE_NAME test_pull_1
-OWNER cjlapao
-DESTINATION /Users/cjlapao/Parallels
+OWNER foobar
+DESTINATION /Users/foobar/Parallels
 START_AFTER_PULL false
 ```
 
