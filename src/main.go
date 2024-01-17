@@ -6,11 +6,11 @@ import (
 	"github.com/cjlapao/common-go/version"
 )
 
-var ver = "0.4.4"
+var ver = "0.4.5"
 var versionSvc = version.Get()
 
 //	@title			Parallels Desktop API
-//	@version		0.4.4
+//	@version		0.4.5
 //	@description	Parallels Desktop API Service
 //	@termsOfService	http://swagger.io/terms/
 
@@ -26,10 +26,10 @@ var versionSvc = version.Get()
 //	@in							header
 //	@name						X-Api-Key
 
-// @securityDefinitions.apikey	BearerAuth
-// @description				Type "Bearer" followed by a space and JWT token.
-// @in							header
-// @name						Authorization
+//	@securityDefinitions.apikey	BearerAuth
+//	@description				Type "Bearer" followed by a space and JWT token.
+//	@in							header
+//	@name						Authorization
 func main() {
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = "Parallels Desktop API Service"
