@@ -187,13 +187,6 @@ spec:
             - name: DISABLE_CATALOG_CACHING 
               value: "true"
             {{- end }}
-            {{- if .Values.logLevel }}
-            - name: TOKEN_DURATION_MINUTES
-              valueFrom: 
-                configMapKeyRef:
-                  name: {{ include "helm.fullname" . }}
-                  key: TOKEN_DURATION_MINUTES
-            {{- end }}
             {{- if .Values.config.mode }}
             - name: MODE
               valueFrom: 
