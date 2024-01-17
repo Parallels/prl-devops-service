@@ -34,7 +34,7 @@ type PasswordService struct {
 
 func Get() *PasswordService {
 	if globalPasswordService == nil {
-		ctx := basecontext.NewRootBaseContext()
+		ctx := basecontext.NewBaseContext()
 		return New(ctx)
 	}
 
@@ -194,7 +194,7 @@ func (s *PasswordService) saltPassword(password string, salt string) ([]byte, er
 }
 
 func (s *PasswordService) processEnvironmentVariables() error {
-	cfg := config.NewConfig()
+	cfg := config.Get()
 	if cfg.GetKey(constants.SECURITY_PASSWORD_MIN_PASSWORD_LENGTH_ENV_VAR) != "" {
 		minPasswordLength, err := strconv.Atoi(cfg.GetKey(constants.SECURITY_PASSWORD_MIN_PASSWORD_LENGTH_ENV_VAR))
 		if err != nil {

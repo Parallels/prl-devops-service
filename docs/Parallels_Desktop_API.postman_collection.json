@@ -15,7 +15,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{protocol}}://{{host}}/api/health/system",
+							"raw": "{{protocol}}://{{host}}/api/health/system?full=true",
 							"protocol": "{{protocol}}",
 							"host": [
 								"{{host}}"
@@ -28,8 +28,7 @@
 							"query": [
 								{
 									"key": "full",
-									"value": "true",
-									"disabled": true
+									"value": "true"
 								}
 							]
 						}
@@ -42,7 +41,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{protocol}}://{{host}}/api/health/system",
+							"raw": "{{protocol}}://{{host}}/api/health/probe",
 							"protocol": "{{protocol}}",
 							"host": [
 								"{{host}}"
@@ -50,7 +49,7 @@
 							"path": [
 								"api",
 								"health",
-								"system"
+								"probe"
 							],
 							"query": [
 								{
@@ -193,7 +192,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"all\": false,\n    \"run_as\": \"ec2-user\",\n    \"tools\": {\n        \"packer\": {\n            \"version\": \"latest\"\n        },\n        \"parallels\": {\n            \"version\": \"latest\",\n            \"flags\": {\n                \"license\": \"6J9W67-SG4ANH-4V2BEE-6P4EJE-3D7H2X\"\n            }\n        },\n        \"vagrant\": {\n            \"version\": \"latest\"\n        },\n    }\n}",
+							"raw": "",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -404,6 +403,699 @@
 			]
 		},
 		{
+			"name": "Orchestrator",
+			"item": [
+				{
+					"name": "Overview",
+					"item": [
+						{
+							"name": "Get Orchestrator Resources",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/overview/resources",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"overview",
+										"resources"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Orchestrator Host Resources",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/overview/{{HOST-ID}}/resources",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"overview",
+										"{{HOST-ID}}",
+										"resources"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Host",
+					"item": [
+						{
+							"name": "Machines",
+							"item": [
+								{
+									"name": "Get Host Virtual Machines",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "X-Filter",
+												"value": "name=test",
+												"type": "text",
+												"disabled": true
+											}
+										],
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Host Virtual Machine",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "X-Filter",
+												"value": "name=test",
+												"type": "text",
+												"disabled": true
+											}
+										],
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines/{{MACHINE-ID}}",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines",
+												"{{MACHINE-ID}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Host Virtual Machine Status",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines/{{MACHINE-ID}}/status",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines",
+												"{{MACHINE-ID}}",
+												"status"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Host Virtual Machine",
+									"request": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "X-Filter",
+												"value": "name=test",
+												"type": "text",
+												"disabled": true
+											}
+										],
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines/{{MACHINE-ID}}",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines",
+												"{{MACHINE-ID}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Create Packer Host Machine",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"\",\n    \"owner\": \"\",\n    \"packer_template\": {\n        \"template\": \"\",\n        \"memory\": \"\",\n        \"cpu\": \"\",\n        \"disk\": \"\"\n    }\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Create Host Vagrant Machine",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"Test1\",\n    \"owner\": \"cjlapao\",\n    \"startOnCreate\": false,\n    \"vagrant_box\": {\n        \"vagrant_file_path\": \"/Users/cjlapao/VagrantTest/Vagrantfile\",\n        \"box\":\"\",\n        \"version\":\"\",\n        \"custom_vagrant_config\":\"\",\n        \"custom_parallels_config\":\"\"\n    }\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Create Host Catalog Manifest Machine",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"\",\n    \"owner\": \"\",\n    \"startOnCreate\": false,\n    \"catalog_manifest\": {\n        \"catalog_id\": \"\",\n        \"version\": \"\",\n        \"connection\": \"\",\n        \"path\": \"\",\n        \"specs\": {\n            \"cpu\": \"4\"\n        }\n    }\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Rename Host Virtual Machine",
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"new_name\": \"\",\n    \"description\": \"\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines/{{MACHINE-ID}}/rename",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines",
+												"{{MACHINE-ID}}",
+												"rename"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Configure Host Virtual Machine",
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"operations\": [\n        {\n            \"group\": \"state\",\n            \"operation\": \"start\",\n            \"value\": \"\"\n        }\n    ]\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines/{{MACHINE-ID}}/set",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines",
+												"{{MACHINE-ID}}",
+												"set"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Execute On Host Virtual Machine",
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"command\": \"ls -la\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines/{{MACHINE-ID}}/execute",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines",
+												"{{MACHINE-ID}}",
+												"execute"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Register Host Virtual Machine",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"path\": \"\",\n    \"owner\": \"\",\n    \"machine_name\": \"\",\n    \"regenerate_source_uuid\": true,\n    \"force\": false,\n    \"delay_applying_restrictions\": false\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines/register",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines",
+												"register"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Unregister Host Virtual Machine",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"clean_source_uuid\": false\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines/unregister",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines",
+												"unregister"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Get Orchestrator Host",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"hosts",
+										"{{HOST-ID}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Orchestrator Host",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"hosts",
+										"{{HOST-ID}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Virtual Machines",
+					"item": [
+						{
+							"name": "Get All Virtual Machines",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Filter",
+										"value": "name=test",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/machines",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"machines"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Orchestrator Packer Machine",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"\",\n    \"owner\": \"\",\n    \"packer_template\": {\n        \"template\": \"\",\n        \"memory\": \"\",\n        \"cpu\": \"\",\n        \"disk\": \"\"\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/machines",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"machines"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Orchestrator Vagrant Machine",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"\",\n    \"owner\": \"\",\n    \"startOnCreate\": false,\n    \"vagrant_box\": {\n        \"vagrant_file_path\": \"\",\n        \"box\":\"\",\n        \"version\":\"\",\n        \"custom_vagrant_config\":\"\",\n        \"custom_parallels_config\":\"\"\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/machines",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"machines"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Orchestrator Catalog Manifest Machine",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"\",\n    \"owner\": \"\",\n    \"architecture\": \"\",\n    \"startOnCreate\": true,\n    \"catalog_manifest\": {\n        \"catalog_id\": \"\",\n        \"version\": \"\",\n        \"connection\": \"\",\n        \"path\": \"\",\n        \"specs\": {\n            \"cpu\": \"4\"\n        }\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/machines",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"machines"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Get All Hosts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Filter",
+								"value": "tags=local",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orchestrator",
+								"hosts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register Orchestrator Host",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"host\": \"\",\n    \"description\": \"\",\n    \"tags\": [\n        \"\"\n    ],\n    \"authentication\": {\n        \"username\": \"\",\n        \"password\": \"\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orchestrator",
+								"hosts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unregister Orchestrator Host",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orchestrator",
+								"hosts",
+								"{{HOST-ID}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Api Key",
 			"item": [
 				{
@@ -504,7 +1196,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"Test 1\",\n    \"key\": \"testing\",\n    \"secret\": \"password\"\n}",
+							"raw": "",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1213,11 +1905,11 @@
 						{
 							"name": "Set",
 							"request": {
-								"method": "POST",
+								"method": "PUT",
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"operations\": [\n        {\n            \"group\": \"\",\n            \"operation\": \"\",\n            \"value\": \"\"\n        }\n    ]\n}",
+									"raw": "{\n    \"operations\": [\n        {\n            \"group\": \"cmd\",\n            \"operation\": \"set\",\n            \"options\": [\n                {\n                \"flag\": \"rosetta-linux\",\n                \"value\": \"on\"\n                }\n            ]\n        }\n    ]\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1377,28 +2069,6 @@
 								}
 							},
 							"response": []
-						},
-						{
-							"name": "Get Machine Status",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/status",
-									"protocol": "{{protocol}}",
-									"host": [
-										"{{host}}"
-									],
-									"path": [
-										"api",
-										"v1",
-										"machines",
-										"{{MACHINE-ID}}",
-										"status"
-									]
-								}
-							},
-							"response": []
 						}
 					]
 				},
@@ -1451,6 +2121,28 @@
 					"response": []
 				},
 				{
+					"name": "Get Machine Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/status",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines",
+								"{{MACHINE-ID}}",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Create Packer Machine",
 					"request": {
 						"method": "POST",
@@ -1486,7 +2178,36 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"\",\n    \"owner\": \"\",\n    \"vagrant_box\": {\n        \"vagrant_file_path\": \"\",\n        \"box\":\"\",\n        \"version\":\"\",\n        \"custom_vagrant_config\":\"\",\n        \"custom_parallels_config\":\"\"\n    }\n}",
+							"raw": "{\n    \"name\": \"\",\n    \"owner\": \"\",\n    \"startOnCreate\": false,\n    \"vagrant_box\": {\n        \"vagrant_file_path\": \"\",\n        \"box\":\"\",\n        \"version\":\"\",\n        \"custom_vagrant_config\":\"\",\n        \"custom_parallels_config\":\"\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Catalog Manifest Machine",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"\",\n    \"owner\": \"\",\n    \"startOnCreate\": false,\n    \"catalog_manifest\": {\n        \"catalog_id\": \"\",\n        \"version\": \"v1\",\n        \"connection\": \"\",\n        \"path\": \"\",\n        \"specs\": {\n            \"cpu\": \"4\"\n        }\n    }\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1560,38 +2281,7 @@
 					"response": []
 				},
 				{
-					"name": "Rename Machine",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"new_name\": \"\",\n    \"description\": \"\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/rename",
-							"protocol": "{{protocol}}",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"machines",
-								"{{MACHINE-ID}}",
-								"rename"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Unregister",
+					"name": "Unregister Machine",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -1622,13 +2312,44 @@
 					"response": []
 				},
 				{
-					"name": "Execute",
+					"name": "Rename Machine",
 					"request": {
-						"method": "POST",
+						"method": "PUT",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"command\": \"\"\n}",
+							"raw": "{\n    \"new_name\": \"\",\n    \"description\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/rename",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines",
+								"{{MACHINE-ID}}",
+								"rename"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Execute on Machine",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"command\": \"ls -la\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1884,29 +2605,6 @@
 					"response": []
 				},
 				{
-					"name": "Download Catalog Manifest",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/download",
-							"protocol": "{{protocol}}",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"catalog",
-								"{{CATALOG-ID}}",
-								"{{CATALOG-VERSION}}",
-								"download"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "Get Catalog Manifest Version",
 					"request": {
 						"method": "GET",
@@ -1923,6 +2621,29 @@
 								"catalog",
 								"{{CATALOG-ID}}",
 								"{{CATALOG-VERSION}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Catalog Manifest Version Architecture",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/{{CATALOG-ARCHITECTURE}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"{{CATALOG-ID}}",
+								"{{CATALOG-VERSION}}",
+								"{{CATALOG-ARCHITECTURE}}"
 							]
 						}
 					},
@@ -1979,13 +2700,60 @@
 					"response": []
 				},
 				{
+					"name": "Delete Catalog Manifest Version Copy",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/{{CATALOG-ARCHITECTURE}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"{{CATALOG-ID}}",
+								"{{CATALOG-VERSION}}",
+								"{{CATALOG-ARCHITECTURE}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Download Catalog Manifest",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/{{CATALOG-ARCHITECTURE}}/download",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"catalog",
+								"{{CATALOG-ID}}",
+								"{{CATALOG-VERSION}}",
+								"{{CATALOG-ARCHITECTURE}}",
+								"download"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Push Catalog",
 					"request": {
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"catalog_id\": \"\",\n    \"version\": \"\",\n    \"connection\": \"\",\n    \"local_path\": \"\",\n    \"required_roles\": [],\n    \"required_claims\": []\n}",
+							"raw": "{\n    \"catalog_id\": \"\",\n    \"version\": \"\",\n    \"architecture\": \"\",\n    \"connection\": \"\",\n    \"required_roles\": [\n        \"\"\n    ],\n    \"required_claims\": [\n    ]\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -2045,7 +2813,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"catalog_id\": \"\",\n    \"version\": \"\",\n    \"connection\": \"\"\n}",
+							"raw": "{\n    \"catalog_id\": \"\",\n    \"version\": \"\",\n    \"architecture\": \"\",\n    \"connection\": \"\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -2074,7 +2842,7 @@
 						"method": "PATCH",
 						"header": [],
 						"url": {
-							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/taint",
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/{{CATALOG-ARCHITECTURE}}/taint",
 							"protocol": "{{protocol}}",
 							"host": [
 								"{{host}}"
@@ -2085,6 +2853,7 @@
 								"catalog",
 								"{{CATALOG-ID}}",
 								"{{CATALOG-VERSION}}",
+								"{{CATALOG-ARCHITECTURE}}",
 								"taint"
 							]
 						}
@@ -2097,7 +2866,7 @@
 						"method": "PATCH",
 						"header": [],
 						"url": {
-							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/untaint",
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/{{CATALOG-ARCHITECTURE}}/untaint",
 							"protocol": "{{protocol}}",
 							"host": [
 								"{{host}}"
@@ -2108,6 +2877,7 @@
 								"catalog",
 								"{{CATALOG-ID}}",
 								"{{CATALOG-VERSION}}",
+								"{{CATALOG-ARCHITECTURE}}",
 								"untaint"
 							]
 						}
@@ -2120,7 +2890,7 @@
 						"method": "PATCH",
 						"header": [],
 						"url": {
-							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/revoke",
+							"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/{{CATALOG-ARCHITECTURE}}/revoke",
 							"protocol": "{{protocol}}",
 							"host": [
 								"{{host}}"
@@ -2131,6 +2901,7 @@
 								"catalog",
 								"{{CATALOG-ID}}",
 								"{{CATALOG-VERSION}}",
+								"{{CATALOG-ARCHITECTURE}}",
 								"revoke"
 							]
 						}

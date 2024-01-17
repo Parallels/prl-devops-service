@@ -33,10 +33,25 @@ storage:
   databasePath: '/go/bin/db'
 
 security:
-  hmacSecret: ""
-  key: ""
-  tokenDurationMinutes: 60
-  rootPassword: ""
+  jwt:
+    rsa_private_key: ""
+    hmac_secret: ""
+    duration: "15m"
+    signing_method: "HS256"
+  password:
+    min_password_length: 12
+    max_password_length: 40
+    require_uppercase: true
+    require_lowercase: true
+    require_numbers: true
+    require_special_characters: true
+    salt_password: true
+  brute_force:
+    max_login_attempts: 5
+    lockout_duration: 10s
+    increment_lockout_duration: true
+  encryption_private_key: ""
+  root_password: ""
 
 service:
   type: ClusterIP

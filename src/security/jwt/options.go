@@ -1,8 +1,6 @@
 package jwt
 
 import (
-	"time"
-
 	"github.com/Parallels/pd-api-service/basecontext"
 )
 
@@ -22,7 +20,7 @@ type JwtOptions struct {
 	Algorithm     JwtSigningAlgorithm
 	Secret        string
 	PrivateKey    string
-	TokenDuration time.Duration
+	TokenDuration string
 }
 
 func NewDefaultOptions(ctx basecontext.ApiContext) *JwtOptions {
@@ -33,7 +31,7 @@ func NewDefaultOptions(ctx basecontext.ApiContext) *JwtOptions {
 	return &JwtOptions{
 		ctx:           ctx,
 		Algorithm:     JwtSigningAlgorithmHS256,
-		TokenDuration: time.Duration(20) * time.Minute,
+		TokenDuration: "15m",
 	}
 }
 
@@ -52,7 +50,7 @@ func (o *JwtOptions) WithPrivateKey(privateKey string) *JwtOptions {
 	return o
 }
 
-func (o *JwtOptions) WithTokenDuration(durationInMinutes float64) *JwtOptions {
-	o.TokenDuration = time.Duration(durationInMinutes) * time.Minute
+func (o *JwtOptions) WithTokenDuration(duration string) *JwtOptions {
+	o.TokenDuration = duration
 	return o
 }

@@ -1,10 +1,9 @@
 package models
 
 import (
-	"os"
-
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/catalog/cleanupservice"
+	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/errors"
 	"github.com/Parallels/pd-api-service/serviceprovider/system"
@@ -50,6 +49,7 @@ func (r *PullCatalogManifestRequest) Validate() error {
 
 	ctx := basecontext.NewRootBaseContext()
 	svcCtl := system.Get()
+	cfg := config.Get()
 	arch, err := svcCtl.GetArchitecture(ctx)
 	if err != nil {
 		return errors.New("unable to determine architecture")
@@ -57,7 +57,7 @@ func (r *PullCatalogManifestRequest) Validate() error {
 	r.architecture = arch
 
 	if r.Owner == "" {
-		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
+		r.Owner = cfg.GetKey(constants.CURRENT_USER_ENV_VAR)
 	}
 
 	return nil

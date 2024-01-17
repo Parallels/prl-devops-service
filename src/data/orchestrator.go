@@ -54,8 +54,8 @@ func (j *JsonDatabase) GetOrchestratorHost(ctx basecontext.ApiContext, idOrHost 
 
 	for _, host := range hosts {
 		hostname := fmt.Sprintf("%s%s", idOrHost, host.PathPrefix)
-		t := host.GetHost()
-		println(t)
+		dbHost := host.GetHost()
+		ctx.LogDebug("host: %s", dbHost)
 		if strings.EqualFold(host.ID, idOrHost) || strings.EqualFold(host.Host, idOrHost) || strings.EqualFold(host.GetHost(), hostname) {
 			return &host, nil
 		}

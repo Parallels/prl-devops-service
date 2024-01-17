@@ -40,7 +40,7 @@ const (
 	API_PREFIX_ENV_VAR                          = "API_PREFIX"
 	HMAC_SECRET_ENV_VAR                         = "HMAC_SECRET"
 	LOG_LEVEL_ENV_VAR                           = "LOG_LEVEL"
-	SECURITY_KEY_ENV_VAR                        = "SECURITY_PRIVATE_KEY"
+	ENCRYPTION_SECURITY_KEY_ENV_VAR             = "ENCRYPTION_PRIVATE_KEY"
 	TLS_ENABLED_ENV_VAR                         = "TLS_ENABLED"
 	TLS_PORT_ENV_VAR                            = "TLS_PORT"
 	TLS_CERTIFICATE_ENV_VAR                     = "TLS_CERTIFICATE"
@@ -71,11 +71,12 @@ const (
 	API_PORT_FLAG                   = "port"
 	UPDATE_ROOT_PASSWORD_FLAG       = "update-root-pass"
 	FILE_FLAG                       = "file"
-	SIZE_FLAG                       = "size"
+	RSA_KEY_SIZE                    = "rsa-key-size"
 	MODE_FLAG                       = "mode"
 	HELP_FLAG                       = "help"
 	PASSWORD_FLAG                   = "password"
 	USE_ORCHESTRATOR_RESOURCES_FLAG = "use-orchestrator-resources"
+	CONFIG_FILE_FLAG                = "config"
 )
 
 const (

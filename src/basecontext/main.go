@@ -33,7 +33,8 @@ type BaseContext struct {
 
 func NewBaseContext() *BaseContext {
 	baseContext := &BaseContext{
-		ctx: context.Background(),
+		shouldLog: true,
+		ctx:       context.Background(),
 	}
 
 	return baseContext

@@ -2,7 +2,6 @@ package jwt
 
 import (
 	"testing"
-	"time"
 
 	"github.com/Parallels/pd-api-service/basecontext"
 )
@@ -45,8 +44,8 @@ func TestWithPrivateKey(t *testing.T) {
 func TestWithTokenDuration(t *testing.T) {
 	ctx := basecontext.NewRootBaseContext()
 	options := NewDefaultOptions(ctx)
-	options.WithTokenDuration(20)
-	if options.TokenDuration != time.Duration(20)*time.Minute {
+	options.WithTokenDuration("20m")
+	if options.TokenDuration != "20m" {
 		t.Errorf("WithTokenDuration did not set TokenDuration")
 	}
 }

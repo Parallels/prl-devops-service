@@ -20,18 +20,17 @@ const (
 	ORCHESTRATOR_KEY_NAME = "orchestrator_key"
 )
 
-func Init() {
-	ctx := basecontext.NewRootBaseContext()
+func Init(ctx basecontext.ApiContext) {
+	cfg := config.New(ctx)
+	cfg.Load()
 
 	password.New(ctx)
 	jwt.New(ctx)
 	bruteforceguard.New(ctx)
 }
 
-func Start() {
-	config := config.NewConfig()
-	config.GetLogLevel()
-	ctx := basecontext.NewBaseContext()
+func Start(ctx basecontext.ApiContext) {
+	cfg := config.Get()
 
 	system := system.New(ctx)
 	if system.GetOperatingSystem() != "macos" {
@@ -45,15 +44,17 @@ func Start() {
 		panic(err)
 	}
 
-	if config.IsOrchestrator() {
+	if cfg.IsOrchestrator() {
 		ctx := basecontext.NewRootBaseContext()
 		ctx.LogInfo("Starting Orchestrator Background Service")
 		// Checking if we need to add the current host to the orchestrator hosts
-		if config.UseOrchestratorResources() {
+		if cfg.UseOrchestratorResources() {
 			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
-				hostName := config.GetLocalhost()
+				hostName := cfg.Localhost()
+				createdKey := false
 				localhost, _ := dbService.GetOrchestratorHost(ctx, hostName)
 				apiKey, err := dbService.GetApiKey(ctx, ORCHESTRATOR_KEY_NAME)
+				secret := serviceprovider.Get().HardwareSecret
 				if err != nil {
 					if errors.GetSystemErrorCode(err) != 404 {
 						ctx.LogError("Error getting orchestrator key: %v", err)
@@ -65,7 +66,7 @@ func Start() {
 					_, err := dbService.CreateApiKey(ctx, models.ApiKey{
 						Key:    ORCHESTRATOR_KEY_NAME,
 						Name:   ORCHESTRATOR_KEY_NAME,
-						Secret: serviceprovider.Get().HardwareSecret,
+						Secret: secret,
 					})
 					if err != nil {
 						if errors.GetSystemErrorCode(err) != 404 {
@@ -73,6 +74,7 @@ func Start() {
 							panic(err)
 						}
 					}
+					createdKey = true
 				}
 
 				if localhost == nil {
@@ -82,19 +84,30 @@ func Start() {
 						Host:        "localhost",
 						Description: "Local Orchestrator",
 						Tags:        []string{"localhost", "local"},
-						PathPrefix:  config.GetApiPrefix(),
+						PathPrefix:  cfg.ApiPrefix(),
 						Schema:      "http",
-						Port:        config.GetApiPort(),
+						Port:        cfg.ApiPort(),
 						Authentication: &models.OrchestratorHostAuthentication{
-							ApiKey: base64.StdEncoding.EncodeToString([]byte(ORCHESTRATOR_KEY_NAME + serviceprovider.Get().HardwareSecret)),
+							ApiKey: base64.StdEncoding.EncodeToString([]byte(ORCHESTRATOR_KEY_NAME + ":" + secret)),
 						},
 					})
+				} else {
+					if createdKey {
+						secret := serviceprovider.Get().HardwareSecret
+						localhost.Authentication = &models.OrchestratorHostAuthentication{
+							ApiKey: base64.StdEncoding.EncodeToString([]byte(ORCHESTRATOR_KEY_NAME + ":" + secret)),
+						}
+						_, _ = dbService.UpdateOrchestratorHost(
+							ctx,
+							localhost,
+						)
+					}
 				}
 			}
 		} else {
 			// checking if we need to remove the current host from the orchestrator hosts
 			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
-				hostName := config.GetLocalhost()
+				hostName := cfg.Localhost()
 				localhost, _ := dbService.GetOrchestratorHost(ctx, hostName)
 				if localhost != nil {
 					ctx.LogInfo("Removing local orchestrator host")

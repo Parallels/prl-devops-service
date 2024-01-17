@@ -2,7 +2,6 @@ package jwt
 
 import (
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/Parallels/pd-api-service/basecontext"
@@ -36,15 +35,15 @@ func New(ctx basecontext.ApiContext) *JwtService {
 
 func Get() *JwtService {
 	if globalJwtService == nil {
-		ctx := basecontext.NewRootBaseContext()
+		ctx := basecontext.NewBaseContext()
 		return New(ctx)
 	}
 
 	return globalJwtService
 }
 
-func (s *JwtService) WithTokenDuration(durationInMinutes float64) *JwtService {
-	s.Options.WithTokenDuration(durationInMinutes)
+func (s *JwtService) WithTokenDuration(duration string) *JwtService {
+	s.Options.WithTokenDuration(duration)
 	return s
 }
 
@@ -68,7 +67,12 @@ func (s *JwtService) Sign(claims map[string]interface{}) (string, error) {
 		return "", errors.New("email cannot be empty")
 	}
 
-	expiresAt := time.Now().Add(s.Options.TokenDuration).Unix()
+	duration, err := time.ParseDuration(s.Options.TokenDuration)
+	if err != nil {
+		duration = time.Minute * 15
+	}
+
+	expiresAt := time.Now().Add(duration).Unix()
 	var method jwt.SigningMethod
 
 	switch s.Options.Algorithm {
@@ -213,6 +217,9 @@ func (s *JwtService) Parse(token string) (*JwtSystemToken, error) {
 	tokenObj, _ := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		return key, nil
 	})
+	if tokenObj == nil {
+		return nil, errors.New("token is invalid")
+	}
 
 	systemToken := &JwtSystemToken{
 		token:    token,
@@ -224,7 +231,7 @@ func (s *JwtService) Parse(token string) (*JwtSystemToken, error) {
 }
 
 func (s *JwtService) processEnvironmentVariables() error {
-	cfg := config.NewConfig()
+	cfg := config.Get()
 	if cfg.GetKey(constants.JWT_SIGN_ALGORITHM_ENV_VAR) != "" {
 		algorithm := JwtSigningAlgorithm(cfg.GetKey(constants.JWT_SIGN_ALGORITHM_ENV_VAR))
 		switch algorithm {
@@ -246,11 +253,12 @@ func (s *JwtService) processEnvironmentVariables() error {
 	}
 
 	if cfg.GetKey(constants.JWT_DURATION_ENV_VAR) != "" {
-		durationInMinutes, err := strconv.ParseFloat(cfg.GetKey(constants.JWT_DURATION_ENV_VAR), 64)
+		_, err := time.ParseDuration(cfg.GetKey(constants.JWT_DURATION_ENV_VAR))
 		if err != nil {
 			return err
 		}
-		s.Options.WithTokenDuration(durationInMinutes)
+
+		s.Options.WithTokenDuration(cfg.GetKey(constants.JWT_DURATION_ENV_VAR))
 	}
 
 	// generating a default secret if none is provided

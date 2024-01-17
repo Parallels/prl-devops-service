@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -219,7 +218,7 @@ func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 			starTime := time.Now()
 			wg.Add(1)
 			go func(host data_models.OrchestratorHost) {
-				fmt.Printf("Host: %v\n", host.Host)
+				ctx.LogDebug("Processing Host: %v\n", host.Host)
 				defer wg.Done()
 
 				rHost := mappers.DtoOrchestratorHostToApiResponse(host)
@@ -228,7 +227,7 @@ func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 				mutex.Lock()
 				response = append(response, rHost)
 				mutex.Unlock()
-				fmt.Printf("Host: %v - Time: %v\n", host.Host, time.Since(starTime))
+				ctx.LogDebug("Processing Host: %v - Time: %v\n", host.Host, time.Since(starTime))
 			}(host)
 		}
 

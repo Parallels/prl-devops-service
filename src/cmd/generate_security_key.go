@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/pd-api-service/config"
 	"github.com/Parallels/pd-api-service/constants"
 	"github.com/Parallels/pd-api-service/security"
 	"github.com/cjlapao/common-go/helper"
@@ -12,13 +13,14 @@ import (
 
 func processGenerateSecurityKey(ctx basecontext.ApiContext) {
 	filename := "private.key"
+	cfg := config.Get()
 
-	if helper.GetFlagValue(constants.FILE_FLAG, "") != "" {
+	if cfg.GetKey(constants.FILE_FLAG) != "" {
 		filename = helper.GetFlagValue(constants.FILE_FLAG, "")
 	}
 	keySize := 2048
-	if helper.GetFlagValue(constants.SIZE_FLAG, "") != "" {
-		size, err := strconv.Atoi(helper.GetFlagValue(constants.SIZE_FLAG, "0"))
+	if cfg.GetKey(constants.RSA_KEY_SIZE) != "" {
+		size, err := strconv.Atoi(cfg.GetKey(constants.RSA_KEY_SIZE))
 		if err != nil {
 			ctx.LogError("Error parsing size flag: %s", err.Error())
 		} else {

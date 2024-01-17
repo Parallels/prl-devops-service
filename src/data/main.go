@@ -139,13 +139,13 @@ func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
 		err = json.Unmarshal(content, &data)
 		if err != nil {
 			// Trying to read the file encrypted
-			cfg := config.NewConfig()
-			if cfg.GetSecurityKey() == "" {
+			cfg := config.Get()
+			if cfg.EncryptionPrivateKey() == "" {
 				ctx.LogError("[Database] Error reading database file: %v", err)
 				return err
 			}
 
-			content, err := security.DecryptString(cfg.GetSecurityKey(), content)
+			content, err := security.DecryptString(cfg.EncryptionPrivateKey(), content)
 			if err != nil {
 				ctx.LogError("[Database] Error decrypting database file: %v", err)
 				return err
@@ -217,7 +217,7 @@ func (j *JsonDatabase) ProcessSaveQueue(ctx basecontext.ApiContext) {
 func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 	j.saveMutex.Lock()
 
-	cfg := config.NewConfig()
+	cfg := config.Get()
 	// Backup the file before attempting to read it
 	backupFilename := j.filename + ".save.bak"
 	err := helper.CopyFile(j.filename, backupFilename)
@@ -252,8 +252,8 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 		return errors.NewFromError(err)
 	}
 
-	if cfg.GetSecurityKey() != "" {
-		encJsonString, err := security.EncryptString(cfg.GetSecurityKey(), string(jsonString))
+	if cfg.EncryptionPrivateKey() != "" {
+		encJsonString, err := security.EncryptString(cfg.EncryptionPrivateKey(), string(jsonString))
 		if err != nil {
 			_, saveErr := file.Write(jsonString)
 			if saveErr != nil {

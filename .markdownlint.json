@@ -1,5 +1,9 @@
 {
     "no-duplicate-heading": {
         "siblings_only": true
+    },
+    "line-length": {
+        "line_length": 80,
+        "tables": false
     }
 }

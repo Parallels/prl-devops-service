@@ -26,10 +26,10 @@ var versionSvc = version.Get()
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = "Parallels Desktop API Service"

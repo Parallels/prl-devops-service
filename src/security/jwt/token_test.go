@@ -52,7 +52,7 @@ func TestValidExpired(t *testing.T) {
 	ctx := basecontext.NewRootBaseContext()
 	svc := New(ctx)
 	svc.Options.WithSecret("secret")
-	svc.Options.WithTokenDuration(0.1)
+	svc.Options.WithTokenDuration("100ms")
 
 	// Test case 1: Sign with valid input
 	claimsMap := map[string]interface{}{
@@ -67,7 +67,7 @@ func TestValidExpired(t *testing.T) {
 
 	token, err := svc.Parse(tokenStr)
 	assert.NoError(t, err)
-	time.Sleep(10 * time.Second)
+	time.Sleep(300 * time.Millisecond)
 
 	valid, err := token.Valid()
 	assert.Errorf(t, err, "Token is expired")

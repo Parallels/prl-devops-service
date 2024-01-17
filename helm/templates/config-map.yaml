@@ -7,7 +7,6 @@ metadata:
 data:
   LOG_LEVEL: {{ .Values.logLevel }}
   TLS_PORT: {{ .Values.ingress.tls.port | quote }}
-  TOKEN_DURATION_MINUTES: {{ .Values.security.tokenDurationMinutes | quote }}
   API_PORT: {{ .Values.ingress.apiPort | quote }}
   API_PREFIX: {{ .Values.ingress.apiPrefix }}
   DATABASE_FOLDER: {{ .Values.storage.databasePath }}
@@ -16,4 +15,15 @@ data:
   {{- else }}
   MODE: "api"
   {{- end }}
-  
+  JWT_DURATION: {{ .Values.security.jwt.duration | quote }}
+  JWT_SIGN_ALGORITHM: {{ .Values.security.jwt.signing_method | quote }}
+  SECURITY_PASSWORD_MIN_PASSWORD_LENGTH: {{ .Values.security.password.min_password_length | quote }}
+  SECURITY_PASSWORD_MAX_PASSWORD_LENGTH: {{ .Values.security.password.max_password_length | quote }}
+  SECURITY_PASSWORD_REQUIRE_LOWERCASE: {{ .Values.security.password.require_lowercase | quote }}
+  SECURITY_PASSWORD_REQUIRE_UPPERCASE: {{ .Values.security.password.require_uppercase | quote }}
+  SECURITY_PASSWORD_REQUIRE_NUMBER: {{ .Values.security.password.require_numbers | quote }}
+  SECURITY_PASSWORD_REQUIRE_SPECIAL_CHAR: {{ .Values.security.password.require_special_characters | quote }}
+  SECURITY_PASSWORD_SALT_PASSWORD: {{ .Values.security.password.salt_password | quote }}
+  BRUTE_FORCE_MAX_LOGIN_ATTEMPTS: {{ .Values.security.brute_force.max_login_attempts | quote }}
+  BRUTE_FORCE_LOCKOUT_DURATION: {{ .Values.security.brute_force.lockout_duration | quote }}
+  BRUTE_FORCE_INCREMENTAL_WAIT: {{ .Values.security.brute_force.increment_lockout_duration | quote }}
