@@ -9,21 +9,6 @@ import (
 	"github.com/Parallels/pd-api-service/models"
 )
 
-type ApiContext interface {
-	Context() context.Context
-	GetAuthorizationContext() *AuthorizationContext
-	GetRequestId() string
-	GetUser() *models.ApiUser
-	Verbose() bool
-	EnableLog()
-	DisableLog()
-	ToggleLogTimestamps(value bool)
-	LogInfo(format string, a ...interface{})
-	LogError(format string, a ...interface{})
-	LogDebug(format string, a ...interface{})
-	LogWarn(format string, a ...interface{})
-}
-
 type BaseContext struct {
 	shouldLog   bool
 	ctx         context.Context
@@ -55,7 +40,8 @@ func NewRootBaseContext() *BaseContext {
 
 func NewBaseContextFromRequest(r *http.Request) *BaseContext {
 	baseContext := &BaseContext{
-		ctx: r.Context(),
+		shouldLog: true,
+		ctx:       r.Context(),
 	}
 
 	authContext := baseContext.ctx.Value(constants.AUTHORIZATION_CONTEXT_KEY)
@@ -68,7 +54,8 @@ func NewBaseContextFromRequest(r *http.Request) *BaseContext {
 
 func NewBaseContextFromContext(c context.Context) *BaseContext {
 	baseContext := &BaseContext{
-		ctx: c,
+		shouldLog: true,
+		ctx:       c,
 	}
 
 	authContext := baseContext.ctx.Value(constants.AUTHORIZATION_CONTEXT_KEY)
@@ -88,10 +75,15 @@ func (c *BaseContext) Context() context.Context {
 }
 
 func (c *BaseContext) GetRequestId() string {
+	if c.ctx == nil {
+		return ""
+	}
+
 	id := c.ctx.Value(constants.REQUEST_ID_KEY)
 	if id == nil {
 		return ""
 	}
+
 	return id.(string)
 }
 
