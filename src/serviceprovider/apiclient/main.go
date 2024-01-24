@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"reflect"
 	"time"
 
@@ -119,7 +120,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 	}
 
 	if destination != nil {
-		var destType = reflect.TypeOf(destination)
+		destType := reflect.TypeOf(destination)
 		if destType.Kind() != reflect.Ptr {
 			return &apiResponse, errors.New("dest must be a pointer type")
 		}
@@ -288,15 +289,19 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 
 func (c *HttpClientService) GetFileFromUrl(fileUrl string, destinationPath string) error {
 	// Create the file in the tmp folder
-	file, err := os.Create(destinationPath)
+	file, err := os.Create(filepath.Clean(destinationPath))
 	if err != nil {
 		return err
 	}
 
 	defer file.Close()
+	httpRequest, err := http.NewRequest("GET", fileUrl, nil)
+	if err != nil {
+		return err
+	}
 
 	// Download the file from the URL
-	resp, err := http.Get(fileUrl)
+	resp, err := http.DefaultClient.Do(httpRequest)
 	if err != nil {
 		return err
 	}

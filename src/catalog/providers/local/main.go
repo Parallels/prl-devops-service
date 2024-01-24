@@ -96,13 +96,13 @@ func (s *LocalProvider) PushFile(ctx basecontext.ApiContext, localRoot, path, fi
 		destPath = filepath.Join(s.Config.Path, destPath)
 	}
 
-	srcFile, err := os.Open(srcPath)
+	srcFile, err := os.Open(filepath.Clean(srcPath))
 	if err != nil {
 		return err
 	}
 	defer srcFile.Close()
 
-	destFile, err := os.Create(destPath)
+	destFile, err := os.Create(filepath.Clean(destPath))
 	if err != nil {
 		return err
 	}
@@ -123,13 +123,13 @@ func (s *LocalProvider) PullFile(ctx basecontext.ApiContext, path, filename, des
 		srcPath = filepath.Join(s.Config.Path, srcPath)
 	}
 
-	srcFile, err := os.Open(srcPath)
+	srcFile, err := os.Open(filepath.Clean(srcPath))
 	if err != nil {
 		return err
 	}
 	defer srcFile.Close()
 
-	destFile, err := os.Create(destPath)
+	destFile, err := os.Create(filepath.Clean(destPath))
 	if err != nil {
 		return err
 	}

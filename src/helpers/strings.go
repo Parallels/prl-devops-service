@@ -3,7 +3,9 @@ package helpers
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"math"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -105,4 +107,13 @@ func CleanOutputString(s string) string {
 	}
 
 	return strings.TrimSpace(s)
+}
+
+func SanitizeArchivePath(d, t string) (v string, err error) {
+	v = filepath.Join(d, t)
+	if strings.HasPrefix(v, filepath.Clean(d)) {
+		return v, nil
+	}
+
+	return "", fmt.Errorf("%s: %s", "content filepath is tainted", t)
 }

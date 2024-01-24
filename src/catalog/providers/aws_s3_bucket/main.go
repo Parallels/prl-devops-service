@@ -113,7 +113,7 @@ func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 	})
 
 	// Open the file for reading.
-	file, err := os.Open(localFilePath)
+	file, err := os.Open(filepath.Clean(localFilePath))
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 	})
 
 	// Create a file to write the S3 Object contents to.
-	f, err := os.Create(destinationFilePath)
+	f, err := os.Create(filepath.Clean(destinationFilePath))
 	if err != nil {
 		return err
 	}
@@ -206,7 +206,6 @@ func (s *AwsS3BucketProvider) FileChecksum(ctx basecontext.ApiContext, path stri
 		Bucket: aws.String(s.Bucket.Name),
 		Key:    aws.String(fullPath),
 	})
-
 	if err != nil {
 		return "", err
 	}
@@ -242,7 +241,6 @@ func (s *AwsS3BucketProvider) FileExists(ctx basecontext.ApiContext, path string
 }
 
 func (s *AwsS3BucketProvider) CreateFolder(ctx basecontext.ApiContext, folderPath string, folderName string) error {
-
 	fullPath := filepath.Join(folderPath, folderName)
 	// Create a new session using the default region and credentials.
 	var err error

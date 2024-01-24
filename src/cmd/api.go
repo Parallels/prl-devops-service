@@ -37,7 +37,11 @@ func processApi(ctx basecontext.ApiContext) {
 	if err != nil {
 		panic(err)
 	}
-	os.Setenv(constants.CURRENT_USER_ENV_VAR, currentUser)
+
+	if err := os.Setenv(constants.CURRENT_USER_ENV_VAR, currentUser); err != nil {
+		panic(err)
+	}
+
 	currentUserEnv := cfg.GetKey(constants.CURRENT_USER_ENV_VAR)
 	if currentUserEnv != "" {
 		ctx.LogInfo("Running with user %s", currentUser)

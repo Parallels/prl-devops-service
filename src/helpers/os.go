@@ -1,15 +1,17 @@
 package helpers
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
-	"crypto/md5"
-	"crypto/sha1"
+	"crypto/md5"  // #nosec G501 This is not a cryptographic function, it is used to calculate a file checksum
+	"crypto/sha1" // #nosec G505 This is not a cryptographic function, it is used to calculate a file checksum
 	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -25,7 +27,7 @@ func (c *Command) String() string {
 
 func CreateDirIfNotExist(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		err = os.MkdirAll(path, 0755)
+		err = os.MkdirAll(path, 0o750)
 		if err != nil {
 			return fmt.Errorf("failed to create directory: %v", err)
 		}
@@ -35,7 +37,7 @@ func CreateDirIfNotExist(path string) error {
 }
 
 func ExecuteWithNoOutput(command Command) (string, error) {
-	cmd := exec.Command(command.Command, command.Args...)
+	cmd := exec.Command(command.Command, command.Args...) // #nosec G204 This is not a user input, it is a helper function
 	if command.WorkingDirectory != "" {
 		cmd.Dir = command.WorkingDirectory
 	}
@@ -58,7 +60,7 @@ func ExecuteWithNoOutput(command Command) (string, error) {
 }
 
 func ExecuteWithOutput(command Command) (stdout string, stderr string, exitCode int, err error) {
-	cmd := exec.Command(command.Command, command.Args...)
+	cmd := exec.Command(command.Command, command.Args...) // #nosec G204 This is not a user input, it is a helper function
 	if command.WorkingDirectory != "" {
 		cmd.Dir = command.WorkingDirectory
 	}
@@ -90,7 +92,7 @@ func ExecuteAndWatch(command Command) (stdout string, stderr string, exitCode in
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, command.Command, command.Args...)
+	cmd := exec.CommandContext(ctx, command.Command, command.Args...) // #nosec G204 This is not a user input, it is a helper function
 	if command.WorkingDirectory != "" {
 		cmd.Dir = command.WorkingDirectory
 	}
@@ -228,13 +230,13 @@ func IsDirectory(path string) (bool, error) {
 }
 
 func GetFileChecksum(path string) (string, error) {
-	file, err := os.Open(path)
+	file, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 
-	hash := sha1.New()
+	hash := sha1.New() // #nosec G401 This is not a cryptographic function, it is used to calculate a file checksum
 	if _, err := io.Copy(hash, file); err != nil {
 		return "", err
 	}
@@ -253,17 +255,31 @@ func GetCurrentDirectory() (string, error) {
 }
 
 func GetFileMD5Checksum(path string) (string, error) {
-	file, err := os.Open(path)
+	file, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 
-	hash := md5.New()
+	hash := md5.New() // #nosec G401 This is not a cryptographic function, it is used to calculate a file checksum
 	if _, err := io.Copy(hash, file); err != nil {
 		return "", err
 	}
 
 	checksum := hex.EncodeToString(hash.Sum(nil))
 	return checksum, nil
+}
+
+func CopyTarChunks(file *os.File, reader *tar.Reader) error {
+	for {
+		_, err := io.CopyN(file, reader, 1024)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+	}
+
+	return nil
 }

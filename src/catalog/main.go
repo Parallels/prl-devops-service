@@ -229,9 +229,9 @@ func (s *CatalogManifestService) getPackFilename(name string) string {
 func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, path string, machineFileName string, destination string) (string, error) {
 	startingTime := time.Now()
 	tarFilename := machineFileName
-	tarFilePath := filepath.Join(destination, tarFilename)
+	tarFilePath := filepath.Join(destination, filepath.Clean(tarFilename))
 
-	tarFile, err := os.Create(tarFilePath)
+	tarFile, err := os.Create(filepath.Clean(tarFilePath))
 	if err != nil {
 		return "", err
 	}
@@ -255,8 +255,8 @@ func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, pat
 	}
 
 	compressed := 1
-	err = filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
-		ctx.LogInfo("[%v/%v] Compressing file %v", compressed, countFiles, filePath)
+	err = filepath.Walk(path, func(machineFilePath string, info os.FileInfo, err error) error {
+		ctx.LogInfo("[%v/%v] Compressing file %v", compressed, countFiles, machineFilePath)
 		compressed += 1
 		if err != nil {
 			return err
@@ -267,13 +267,13 @@ func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, pat
 			return nil
 		}
 
-		f, err := os.Open(filePath)
+		f, err := os.Open(filepath.Clean(machineFilePath))
 		if err != nil {
 			return err
 		}
 		defer f.Close()
 
-		relPath := strings.TrimPrefix(filePath, path)
+		relPath := strings.TrimPrefix(machineFilePath, path)
 		hdr := &tar.Header{
 			Name: relPath,
 			Mode: int64(info.Mode()),
@@ -296,9 +296,9 @@ func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, pat
 	return tarFilePath, nil
 }
 
-func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, filePath string, destination string) error {
+func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, machineFilePath string, destination string) error {
 	staringTime := time.Now()
-	tarFile, err := os.Open(filePath)
+	tarFile, err := os.Open(filepath.Clean(machineFilePath))
 	if err != nil {
 		return err
 	}
@@ -315,36 +315,40 @@ func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, f
 			return err
 		}
 
-		filePath := filepath.Join(destination, header.Name)
+		machineFilePath, err := helpers.SanitizeArchivePath(destination, header.Name)
+		if err != nil {
+			return err
+		}
+
 		// Creating the basedir if it does not exist
-		baseDir := filepath.Dir(filePath)
+		baseDir := filepath.Dir(machineFilePath)
 		if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-			if err := os.MkdirAll(baseDir, 0755); err != nil {
+			if err := os.MkdirAll(baseDir, 0o750); err != nil {
 				return err
 			}
 		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if _, err := os.Stat(filePath); os.IsNotExist(err) {
-				if err := os.MkdirAll(filePath, os.FileMode(header.Mode)); err != nil {
+			if _, err := os.Stat(machineFilePath); os.IsNotExist(err) {
+				if err := os.MkdirAll(machineFilePath, os.FileMode(header.Mode)); err != nil {
 					return err
 				}
 			}
 		case tar.TypeReg:
-			file, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(header.Mode))
+			file, err := os.OpenFile(filepath.Clean(machineFilePath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(header.Mode))
 			if err != nil {
 				return err
 			}
 			defer file.Close()
 
-			if _, err := io.Copy(file, tarReader); err != nil {
+			if err := helpers.CopyTarChunks(file, tarReader); err != nil {
 				return err
 			}
 		}
 	}
 
 	endingTime := time.Now()
-	ctx.LogInfo("Finished decompressing machine from %s to %s, in %v", filePath, destination, endingTime.Sub(staringTime))
+	ctx.LogInfo("Finished decompressing machine from %s to %s, in %v", machineFilePath, destination, endingTime.Sub(staringTime))
 	return nil
 }

@@ -16,7 +16,7 @@ type Controller struct {
 	listener       *HttpListener
 	path           string
 	Handler        ControllerHandler
-	Version        *HttpVersion
+	Version        HttpVersion
 	Method         HttpControllerMethod
 	RequiredRoles  []string
 	RequiredClaims []string
@@ -49,7 +49,7 @@ func (c *Controller) WithVersion(versionPath string) *Controller {
 		listenerVersionPath := http_helper.JoinUrl(versionPath)
 		path := http_helper.JoinUrl(version.Path)
 		if strings.EqualFold(listenerVersionPath, path) {
-			c.Version = &version
+			c.Version = version
 			break
 		}
 	}
@@ -111,7 +111,7 @@ func (c *Controller) Serve() error {
 		c.listener.AddHandler(c.Handler, c.Path(), string(c.Method))
 	}
 
-	if c.Version != nil {
+	if c.Version.Version != "" {
 		needsDefaultApiController := true
 		prefixPath := http_helper.JoinUrl(c.listener.Options.ApiPrefix, c.path)
 		for _, controller := range c.listener.Controllers {
@@ -137,7 +137,7 @@ func (c *Controller) GetHandler() ControllerHandler {
 	return c.Handler
 }
 
-func (c *Controller) GetVersion() *HttpVersion {
+func (c *Controller) GetVersion() HttpVersion {
 	return c.Version
 }
 
@@ -147,7 +147,7 @@ func (c *Controller) Path() string {
 		return ""
 	}
 
-	if c.Version == nil {
+	if c.Version.Version == "" {
 		path = http_helper.JoinUrl(c.listener.Options.ApiPrefix, path)
 	} else {
 		path = http_helper.JoinUrl(c.listener.Options.ApiPrefix, c.Version.Path, path)

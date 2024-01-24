@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"sync"
@@ -1141,7 +1142,7 @@ func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.CreateHostVirtualMachine(host, request)
+		response, err := orchestratorSvc.CreateHostVirtualMachine(*host, request)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1209,7 +1210,7 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		var host *data_models.OrchestratorHost
+		var hostErr error
 		var response models.CreateVirtualMachineResponse
 		var apiError *models.ApiErrorResponse
 
@@ -1237,14 +1238,13 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			}
 			if orchestratorHost.Resources.TotalAvailable.LogicalCpuCount > specs.GetCpuCount() &&
 				orchestratorHost.Resources.TotalAvailable.MemorySize > specs.GetMemorySize() {
-				host = &orchestratorHost
 
 				if orchestratorHost.State != "healthy" {
 					apiError = &models.ApiErrorResponse{
 						Message: "Host is not healthy",
 						Code:    400,
 					}
-					host = nil
+					hostErr = errors.New("host is not healthy")
 					continue
 				}
 
@@ -1253,7 +1253,7 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 						Message: "Host does not have enough CPU resources",
 						Code:    400,
 					}
-					host = nil
+					hostErr = errors.New("host does not have enough CPU resources")
 					continue
 				}
 				if orchestratorHost.Resources.TotalAvailable.MemorySize < 2048 {
@@ -1261,16 +1261,16 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 						Message: "Host does not have enough Memory resources",
 						Code:    400,
 					}
-					host = nil
+					hostErr = errors.New("host does not have enough Memory resources")
 					continue
 				}
 
 				orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-				resp, err := orchestratorSvc.CreateHostVirtualMachine(host, request)
+				resp, err := orchestratorSvc.CreateHostVirtualMachine(orchestratorHost, request)
 				if err != nil {
 					e := models.NewFromError(err)
 					apiError = &e
-					host = nil
+					hostErr = err
 					break
 				} else {
 					response = *resp
@@ -1279,7 +1279,7 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			}
 		}
 
-		if host == nil {
+		if hostErr == nil {
 			if apiError != nil {
 				ReturnApiError(ctx, w, *apiError)
 			} else {

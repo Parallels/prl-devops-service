@@ -37,12 +37,12 @@ func processCatalog(ctx basecontext.ApiContext) {
 
 func processCatalogHelp() {
 	fmt.Println("Usage: pd-api-service catalog <command>")
-	fmt.Println("  run\t\t\t\t\t\t\tRun a catalog file")
-	fmt.Println("  list\t\t\t\t\t\tList all catalogs")
-	fmt.Println("  push <catalog>\t\t\t\t\tPush a catalog to the server")
-	fmt.Println("  pull <catalog>\t\t\t\t\tPull a catalog from the server")
-	fmt.Println("  delete <catalog>\t\t\t\t\tDelete a catalog from the server")
-	fmt.Println("  import <catalog> <file>\t\t\t\tImport a catalog from a file")
+	fmt.Println("  run\t\t\t\t\tRun a catalog file")
+	fmt.Println("  list\t\t\t\t\tList all catalogs")
+	fmt.Println("  push <catalog>\t\t\tPush a catalog to the server")
+	fmt.Println("  pull <catalog>\t\t\tPull a catalog from the server")
+	fmt.Println("  delete <catalog>\t\t\tDelete a catalog from the server")
+	fmt.Println("  import <catalog> <file>\t\tImport a catalog from a file")
 }
 
 func catalogInitPdFile(ctx basecontext.ApiContext, cmd string) *pdfile.PDFile {

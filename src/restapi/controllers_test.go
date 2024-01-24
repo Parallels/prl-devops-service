@@ -53,7 +53,7 @@ func TestController_WithVersion(t *testing.T) {
 	controller.WithVersion(versionPath)
 
 	// Check if the version was set correctly
-	if controller.Version == nil {
+	if controller.Version.Version != "" {
 		t.Errorf("Expected version to be set, but it was nil")
 	}
 
@@ -61,6 +61,7 @@ func TestController_WithVersion(t *testing.T) {
 		t.Errorf("Expected version path %s, but got %s", versionPath, controller.Version.Path)
 	}
 }
+
 func TestController_WithMethod(t *testing.T) {
 	controller := NewController()
 	method := POST

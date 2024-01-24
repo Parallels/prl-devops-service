@@ -25,8 +25,10 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-var globalParallelsService *ParallelsService
-var logger = common.Logger
+var (
+	globalParallelsService *ParallelsService
+	logger                 = common.Logger
+)
 
 type ParallelsService struct {
 	ctx              basecontext.ApiContext
@@ -80,11 +82,15 @@ func (s *ParallelsService) FindPath() string {
 		if _, err := os.Stat("/usr/bin/prlctl"); err == nil {
 			s.executable = "/usr/bin/prlctl"
 			s.serverExecutable = "/usr/bin/prlsrvctl"
-			os.Setenv("PATH", os.Getenv("PATH")+":/usr/bin")
+			if err := os.Setenv("PATH", os.Getenv("PATH")+":/usr/bin"); err != nil {
+				s.ctx.LogWarn("Error setting PATH environment variable: %v", err)
+			}
 		} else if _, err := os.Stat("/usr/local/bin/prlctl"); err == nil {
 			s.executable = "/usr/local/bin/prlctl"
 			s.serverExecutable = "/usr/local/bin/prlsrvctl"
-			os.Setenv("PATH", os.Getenv("PATH")+":/usr/local/bin")
+			if err := os.Setenv("PATH", os.Getenv("PATH")+":/usr/local/bin"); err != nil {
+				s.ctx.LogWarn("Error setting PATH environment variable: %v", err)
+			}
 		} else {
 			s.ctx.LogWarn("Parallels Desktop CLI executable not found, trying to install it")
 			return s.executable
@@ -580,7 +586,6 @@ func (s *ParallelsService) RenameVm(ctx basecontext.ApiContext, r models.RenameV
 }
 
 func (s *ParallelsService) PackVm(ctx basecontext.ApiContext, idOrName string) error {
-
 	vm, err := s.findVm(ctx, idOrName)
 	if err != nil {
 		return err
@@ -605,7 +610,6 @@ func (s *ParallelsService) PackVm(ctx basecontext.ApiContext, idOrName string) e
 }
 
 func (s *ParallelsService) UnpackVm(ctx basecontext.ApiContext, idOrName string) error {
-
 	vm, err := s.findVm(ctx, idOrName)
 	if err != nil {
 		return err
@@ -1335,7 +1339,7 @@ func (s *ParallelsService) ReplaceMachineNameInConfigPvs(path string, newName st
 	// uid := sys.Uid
 	// gid := int(sys.Gid)
 
-	file, err := os.Open(configPath)
+	file, err := os.Open(filepath.Clean(configPath))
 	if err != nil {
 		return err
 	}

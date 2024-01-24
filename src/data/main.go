@@ -78,7 +78,9 @@ func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
 			ctx.LogError("[Database] Error creating database file: %v", err)
 			return err
 		}
-		file.Close()
+		if err := file.Close(); err != nil {
+			return err
+		}
 	}
 
 	file, err := os.Open(j.filename)
@@ -237,7 +239,7 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 	var file *os.File
 	for {
 		var fileOpenError error
-		file, fileOpenError = os.OpenFile(j.filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+		file, fileOpenError = os.OpenFile(j.filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 		if fileOpenError == nil {
 			break
 		}

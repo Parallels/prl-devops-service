@@ -3,14 +3,15 @@ package pdfile
 import (
 	"bufio"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
-func Load(filepath string) (*PDFile, *PDFileDiagnostics) {
+func Load(pdFilepath string) (*PDFile, *PDFileDiagnostics) {
 	lines := []string{}
 	diag := NewPDFileDiagnostics()
 
-	file, err := os.Open(filepath)
+	file, err := os.Open(filepath.Clean(pdFilepath))
 	if err != nil {
 		diag.AddError(err)
 		return nil, diag
