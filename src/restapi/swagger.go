@@ -78,7 +78,7 @@ func SwaggerPlugins(plugins []string) func(*SwaggerConfig) {
 	return func(c *SwaggerConfig) {
 		vs := make([]template.JS, len(plugins))
 		for i, v := range plugins {
-			vs[i] = template.JS(v)
+			vs[i] = template.JS(v) // #nosec G203 thi
 		}
 		c.Plugins = vs
 	}
@@ -89,7 +89,7 @@ func SwaggerUIConfig(props map[string]string) func(*SwaggerConfig) {
 	return func(c *SwaggerConfig) {
 		vs := make(map[template.JS]template.JS, len(props))
 		for k, v := range props {
-			vs[template.JS(k)] = template.JS(v)
+			vs[template.JS(k)] = template.JS(v) // #nosec G203 the user does not have access to this
 		}
 		c.UIConfig = vs
 	}
@@ -98,7 +98,7 @@ func SwaggerUIConfig(props map[string]string) func(*SwaggerConfig) {
 // SwaggerBeforeScript holds JavaScript to be run right before the Swagger UI object is created.
 func SwaggerBeforeScript(js string) func(*SwaggerConfig) {
 	return func(c *SwaggerConfig) {
-		c.BeforeScript = template.JS(js)
+		c.BeforeScript = template.JS(js) // #nosec G203 the user does not have access to this
 	}
 }
 
@@ -106,7 +106,7 @@ func SwaggerBeforeScript(js string) func(*SwaggerConfig) {
 // and set on the window.
 func SwaggerAfterScript(js string) func(*SwaggerConfig) {
 	return func(c *SwaggerConfig) {
-		c.AfterScript = template.JS(js)
+		c.AfterScript = template.JS(js) // #nosec G203 the user does not have access to this
 	}
 }
 
@@ -164,7 +164,6 @@ func swaggerNewConfig(configFns ...func(*SwaggerConfig)) *SwaggerConfig {
 
 // SwaggerHandler wraps `http.SwaggerHandler` into `http.HandlerFunc`.
 func SwaggerHandler(configFns ...func(*SwaggerConfig)) http.HandlerFunc {
-
 	config := swaggerNewConfig(configFns...)
 
 	// create a template with name

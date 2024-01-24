@@ -6,8 +6,8 @@ import (
 	"github.com/Parallels/pd-api-service/models"
 )
 
-func (s *OrchestratorService) CreateHostVirtualMachine(host *data_models.OrchestratorHost, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
-	httpClient := s.getApiClient(*host)
+func (s *OrchestratorService) CreateHostVirtualMachine(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
+	httpClient := s.getApiClient(host)
 	path := "/machines"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {

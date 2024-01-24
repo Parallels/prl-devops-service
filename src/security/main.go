@@ -5,13 +5,14 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 This is not a cryptographic function, it is used to calculate the certificate thumbprint
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/Parallels/pd-api-service/errors"
 	cryptorand "github.com/cjlapao/common-go-cryptorand"
@@ -44,7 +45,7 @@ func GenPrivateRsaKey(filename string, size int) error {
 		return err
 	}
 
-	privFile, err := os.Create(filename)
+	privFile, err := os.Create(filepath.Clean(filename))
 	if err != nil {
 		return err
 	}
@@ -59,7 +60,9 @@ func GenPrivateRsaKey(filename string, size int) error {
 		return err
 	}
 
-	privFile.Close()
+	if err := privFile.Close(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -145,6 +148,6 @@ func Base64Encode(input []byte) string {
 
 func CalculatePrivateKeyThumbprint(privateKey *rsa.PrivateKey) (string, error) {
 	publicKeyDer := x509.MarshalPKCS1PublicKey(&privateKey.PublicKey)
-	hash := sha1.Sum(publicKeyDer)
+	hash := sha1.Sum(publicKeyDer) // #nosec G401 This is not a cryptographic function, it is used to calculate the certificate thumbprint
 	return hex.EncodeToString(hash[:]), nil
 }

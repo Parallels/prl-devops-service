@@ -16,6 +16,8 @@ func processHelp(command string) {
 		processApiHelp()
 	case constants.CATALOG_COMMAND:
 		processCatalogHelp()
+	case constants.TEST_COMMAND:
+		processTestHelp()
 	default:
 		processDefaultHelp()
 	}

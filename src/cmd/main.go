@@ -32,6 +32,10 @@ func Process() {
 	case constants.UPDATE_ROOT_PASSWORD_COMMAND:
 		processRootPassword(ctx)
 	default:
+		if helper.GetFlagSwitch("help", false) {
+			processHelp("")
+			os.Exit(0)
+		}
 		processApi(ctx)
 	}
 

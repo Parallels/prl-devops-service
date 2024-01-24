@@ -35,3 +35,7 @@ jobs:
       - name: Run tests
         working-directory: ${{ github.workspace }}/src
         run: go test -v ./...
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...

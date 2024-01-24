@@ -21,6 +21,7 @@ func TestCatalogProviders(ctx basecontext.ApiContext) error {
 	}
 
 	if cfg.GetKey("AZURE_SA_TEST_CONNECTION") != "" {
+		ctx.LogInfo("Testing %v", cfg.GetKey("AZURE_SA_TEST_CONNECTION"))
 		ctx.LogInfo("Testing connection to Azure Storage Account")
 		test := tester.NewTestProvider(ctx, cfg.GetKey("AZURE_SA_TEST_CONNECTION"))
 		err := test.Test()
@@ -33,6 +34,7 @@ func TestCatalogProviders(ctx basecontext.ApiContext) error {
 	}
 
 	if cfg.GetKey("AWS_S3_TEST_CONNECTION") != "" {
+		ctx.LogInfo("Testing %v", cfg.GetKey("AWS_S3_TEST_CONNECTION"))
 		ctx.LogInfo("Testing connection to AWS S3")
 		test := tester.NewTestProvider(ctx, cfg.GetKey("AWS_S3_TEST_CONNECTION"))
 		err := test.Test()

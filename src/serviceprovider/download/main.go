@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -34,7 +35,7 @@ func NewDownloadService() *DownloadService {
 }
 
 func (s *DownloadService) DownloadFile(url string, headers map[string]string, destination string) error {
-	file, err := os.Create(destination)
+	file, err := os.Create(filepath.Clean(destination))
 	if err != nil {
 		return err
 	}
@@ -68,9 +69,11 @@ func (s *DownloadService) DownloadFile(url string, headers map[string]string, de
 		if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusPartialContent {
 			return fmt.Errorf("HTTP request failed with status code %d", res.StatusCode)
 		}
-		_, err = io.Copy(file, res.Body)
-		res.Body.Close()
-		if err != nil {
+		if _, err = io.Copy(file, res.Body); err != nil {
+			return err
+		}
+
+		if err := res.Body.Close(); err != nil {
 			return err
 		}
 

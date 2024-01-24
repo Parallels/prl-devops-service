@@ -98,7 +98,7 @@ func (s *AzureStorageAccountProvider) PushFile(ctx basecontext.ApiContext, rootL
 
 	blobUrl := azblob.NewBlockBlobURL(*URL, azblob.NewPipeline(credential, azblob.PipelineOptions{}))
 
-	file, err := os.Open(localFilePath)
+	file, err := os.Open(filepath.Clean(localFilePath))
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (s *AzureStorageAccountProvider) PullFile(ctx basecontext.ApiContext, path 
 		},
 	}))
 
-	file, err := os.Create(destinationFilePath)
+	file, err := os.Create(filepath.Clean(destinationFilePath))
 	if err != nil {
 		return err
 	}

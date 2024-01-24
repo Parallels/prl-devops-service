@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -14,8 +15,6 @@ import (
 	"github.com/Parallels/pd-api-service/basecontext"
 	"github.com/Parallels/pd-api-service/common"
 	"github.com/Parallels/pd-api-service/serviceprovider"
-
-	"net/http"
 
 	_ "github.com/Parallels/pd-api-service/docs"
 	log "github.com/cjlapao/common-go-logger"
@@ -62,10 +61,12 @@ type HttpListener struct {
 	needsRestart        bool
 }
 
-var globalHttpListener *HttpListener
-var shutdown chan bool
-var Initialized chan bool = make(chan bool, 1)
-var needsRestart chan bool
+var (
+	globalHttpListener *HttpListener
+	shutdown           chan bool
+	Initialized        chan bool = make(chan bool, 1)
+	needsRestart       chan bool
+)
 
 func Get() *HttpListener {
 	return globalHttpListener
@@ -129,7 +130,6 @@ func (l *HttpListener) GetApiPrefix() string {
 }
 
 func (l *HttpListener) AddHealthCheck() *HttpListener {
-
 	l.AddHandler(l.Probe(), http_helper.JoinUrl("health", "probe"), "GET")
 	return l
 }
@@ -259,8 +259,9 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 
 	// Creating and starting the http server
 	srv := &http.Server{
-		Addr:    ":" + l.Options.HttpPort,
-		Handler: handlers.CORS(originsOk, headersOk, methodsOk)(l.Router),
+		Addr:              ":" + l.Options.HttpPort,
+		Handler:           handlers.CORS(originsOk, headersOk, methodsOk)(l.Router),
+		ReadHeaderTimeout: time.Duration(30) * time.Second,
 	}
 
 	l.Servers = append(l.Servers, srv)
@@ -285,12 +286,14 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 		if err == nil {
 			tlsConfig := &tls.Config{
 				Certificates: []tls.Certificate{cert},
+				MinVersion:   tls.VersionTLS12,
 			}
 
 			sslSrv := &http.Server{
-				Addr:      ":" + l.Options.TLSPort,
-				TLSConfig: tlsConfig,
-				Handler:   l.Router,
+				Addr:              ":" + l.Options.TLSPort,
+				TLSConfig:         tlsConfig,
+				Handler:           l.Router,
+				ReadHeaderTimeout: time.Duration(30) * time.Second,
 			}
 
 			l.Servers = append(l.Servers, sslSrv)
@@ -337,11 +340,11 @@ func (l *HttpListener) WaitAndShutdown() {
 
 	l.Logger.Info("Stopping the server...")
 
-	//Create shutdown context with 10 second timeout
+	// Create shutdown context with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	//Create shutdown context with 10 second timeout
+	// Create shutdown context with 10 second timeout
 	for _, s := range l.Servers {
 		err := s.Shutdown(ctx)
 		if err != nil {
@@ -429,4 +432,4 @@ func (l *HttpListener) AddSwagger() *HttpListener {
 	return l
 }
 
-//endregion
+// endregion
