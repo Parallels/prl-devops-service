@@ -147,7 +147,7 @@ func (c *Controller) Path() string {
 		return ""
 	}
 
-	if c.Version.Version != "" {
+	if c.Version.Version == "" {
 		path = http_helper.JoinUrl(c.listener.Options.ApiPrefix, path)
 	} else {
 		path = http_helper.JoinUrl(c.listener.Options.ApiPrefix, c.Version.Path, path)
