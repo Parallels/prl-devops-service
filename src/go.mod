@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/Azure/azure-storage-blob-go v0.15.0
-	github.com/aws/aws-sdk-go v1.50.0
+	github.com/aws/aws-sdk-go v1.50.9
 	github.com/cjlapao/common-go v0.0.39
 	github.com/cjlapao/common-go-cryptorand v0.0.6
 	github.com/cjlapao/common-go-logger v0.0.5
