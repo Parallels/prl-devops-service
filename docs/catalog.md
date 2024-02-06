@@ -20,7 +20,7 @@ distributing virtual machines.
 This will make the management of a global catalog of virtual machines very easy
 and secure and in s centralized way.
 
-![Catalog Manifest Architecture](./images/catalog_manifest_architecture_overview.drawio.png)
+![Catalog Manifest Architecture](./images/catalog_diagram.drawio.png)
 
 ## Concepts
 

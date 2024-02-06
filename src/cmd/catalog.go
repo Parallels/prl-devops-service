@@ -13,6 +13,12 @@ import (
 
 func processCatalog(ctx basecontext.ApiContext) {
 	subcommand := helper.GetCommandAt(1)
+	// processing the command help
+	if helper.GetFlagSwitch(constants.HELP_FLAG, false) || helper.GetCommandAt(1) == "help" {
+		processHelp(constants.API_COMMAND)
+		os.Exit(0)
+	}
+
 	switch subcommand {
 	case "run":
 		processCatalogRunCmd(ctx)
@@ -36,7 +42,10 @@ func processCatalog(ctx basecontext.ApiContext) {
 }
 
 func processCatalogHelp() {
-	fmt.Println("Usage: pd-api-service catalog <command>")
+	fmt.Println("Usage:")
+	fmt.Printf("  %v %v <command>\n", constants.ExecutableName, constants.CATALOG_COMMAND)
+	fmt.Println()
+	fmt.Println("Commands:")
 	fmt.Println("  run\t\t\t\t\tRun a catalog file")
 	fmt.Println("  list\t\t\t\t\tList all catalogs")
 	fmt.Println("  push <catalog>\t\t\tPush a catalog to the server")

@@ -7,9 +7,9 @@ import (
 )
 
 func processHelp(command string) {
-	fmt.Printf("Parallels Desktop API Service manager\n")
+	fmt.Printf("%v\n", constants.Name)
 	fmt.Printf("\n")
-	fmt.Printf("  Find out more at: https://github.com/Parallesl/pd-api-service\n")
+	fmt.Printf("  Find out more at: https://github.com/Parallesl/pd-devops-toolset\n")
 	fmt.Printf("\n")
 	switch command {
 	case constants.API_COMMAND:
@@ -18,6 +18,8 @@ func processHelp(command string) {
 		processCatalogHelp()
 	case constants.TEST_COMMAND:
 		processTestHelp()
+	case constants.GENERATE_SECURITY_KEY_COMMAND:
+		processGenerateSecurityKeyHelp()
 	default:
 		processDefaultHelp()
 	}

@@ -65,7 +65,6 @@ func (c *Config) Load() bool {
 		if _, err := os.Stat(configFileName); !os.IsNotExist(err) {
 			fileName = configFileName
 		}
-
 	} else {
 		for _, extension := range extensions {
 			if _, err := os.Stat(fmt.Sprintf("config%s", extension)); !os.IsNotExist(err) {
