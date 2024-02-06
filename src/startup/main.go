@@ -119,7 +119,6 @@ func Start(ctx basecontext.ApiContext) {
 					_ = dbService.DeleteApiKey(ctx, apiKey.ID)
 				}
 			}
-
 		}
 		orchestratorBackgroundService := orchestrator.NewOrchestratorService(ctx)
 		go orchestratorBackgroundService.Start(true)

@@ -12,3 +12,5 @@ __debug_*
 .env
 **/*.local.*
 **/*.pem
+.DS_Store
+**/pd-devops

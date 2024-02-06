@@ -1,9 +1,9 @@
 # Parallels Desktop Rest API Service
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Fair Source](https://img.shields.io/badge/license-fair-source.svg](https://fair.io/)
 [![Build](https://github.com/Parallels/pd-api-service/actions/workflows/pr.yml/badge.svg)](https://github.com/Parallels/pd-api-service/actions/workflows/pr.yml)
 [![Publish](https://github.com/Parallels/pd-api-service/actions/workflows/publish.yml/badge.svg)](https://github.com/Parallels/pd-api-service/actions/workflows/publish.yml)
-[![](https://dcbadge.vercel.app/api/server/pEwZ254C3d?style=flat&theme=default)](https://discord.gg/pEwZ254C3d)
+[![discord](https://dcbadge.vercel.app/api/server/pEwZ254C3d?style=flat&theme=default)](https://discord.gg/pEwZ254C3d)
 
 ## Description
 
@@ -193,7 +193,7 @@ configure the service.
 | DISABLE_CATALOG_CACHING | If the service should disable the catalog caching | false |
 | MODE | The mode that the service will run in, this can be either `api` or `orchestrator` | api |
 | USE_ORCHESTRATOR_RESOURCES | If the service is running in orchestrator mode, this will allow the service to use the resources of the orchestrator | false |
-| ORCHESTRATOR_PULL_FREQUENCY_SECONDS_ENV_VAR | The frequency in seconds that the orchestrator will sync with the other hosts in seconds | 30 |
+| ORCHESTRATOR_PULL_FREQUENCY_SECONDS | The frequency in seconds that the orchestrator will sync with the other hosts in seconds | 30 |
 | DATABASE_FOLDER_ENV_VAR | The folder where the database will be stored | /User/Folder/.pd-api-service |
 | CATALOG_CACHE_FOLDER | The folder where the catalog cache will be stored | /User/Folder/.pd-api-service/catalog |
 | Json Web Tokens | | |
@@ -202,7 +202,7 @@ configure the service.
 | JWT_HMACS_SECRET | The secret that will be used to sign the jwt tokens, this is only required if you are using `HS256`, `HS384` or `HS512` | Defaults to random |
 | JWT_DURATION | The duration that the jwt token will be valid for, you can use the following format, for example, 5 minutes would be `5m` or 1 hour would be `1h` | 15m |
 | Password Complexity | | |
-|SECURITY_PASSWORD_MIN_PASSWORD_LENGTH | The minimum length that the password should be, min is 8 | 12 |
+| SECURITY_PASSWORD_MIN_PASSWORD_LENGTH | The minimum length that the password should be, min is 8 | 12 |
 | SECURITY_PASSWORD_MAX_PASSWORD_LENGTH | The maximum length that the password should be, max is 40 | 40 |
 | SECURITY_PASSWORD_REQUIRE_UPPERCASE | If the password should require at least one uppercase character | true |
 | SECURITY_PASSWORD_REQUIRE_LOWERCASE | If the password should require at least one lowercase character | true |

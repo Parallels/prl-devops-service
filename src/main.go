@@ -2,12 +2,15 @@ package main
 
 import (
 	"github.com/Parallels/pd-api-service/cmd"
+	"github.com/Parallels/pd-api-service/constants"
 
 	"github.com/cjlapao/common-go/version"
 )
 
-var ver = "0.4.5"
-var versionSvc = version.Get()
+var (
+	ver        = "0.4.5"
+	versionSvc = version.Get()
+)
 
 //	@title			Parallels Desktop API
 //	@version		0.4.5
@@ -26,14 +29,14 @@ var versionSvc = version.Get()
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	versionSvc.Author = "Carlos Lapao"
-	versionSvc.Name = "Parallels Desktop API Service"
-	versionSvc.License = "MIT"
+	versionSvc.Name = constants.Name
+	versionSvc.License = "Fair Source (https://fair.io)"
 	// Reading the version from a string
 	strVer, err := version.FromString(ver)
 	if err == nil {

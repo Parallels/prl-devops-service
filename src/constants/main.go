@@ -2,7 +2,11 @@ package constants
 
 type AuthorizationContextKey string
 
-var AUTHORIZATION_CONTEXT_KEY AuthorizationContextKey = "AUTHORIZATION_CONTEXT"
+var (
+	Name                                              = "Parallels Desktop DevOps ToolSet"
+	ExecutableName                                    = "pd-devops"
+	AUTHORIZATION_CONTEXT_KEY AuthorizationContextKey = "AUTHORIZATION_CONTEXT"
+)
 
 type RequestIdKey string
 
