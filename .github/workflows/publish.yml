@@ -104,7 +104,7 @@ jobs:
         goarch: ${{ matrix.goarch }}
         goversion: "https://dl.google.com/go/go1.21.1.linux-amd64.tar.gz"
         project_path: "./src"
-        binary_name: "pd-api-service"
+        binary_name: "prldevops"
         release_name: "v${{ env.EXT_VERSION }}"
   build-containers:
     needs: release
@@ -126,6 +126,6 @@ jobs:
         platforms: linux/amd64,linux/arm64
         push: true
         tags: |
-          ${{ secrets.DOCKER_USERNAME }}/pd-api-service:latest
-          ${{ secrets.DOCKER_USERNAME }}/pd-api-service:${{ env.EXT_VERSION }}
+          ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:latest
+          ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:${{ env.EXT_VERSION }}
         

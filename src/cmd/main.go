@@ -31,6 +31,8 @@ func Process() {
 		processCatalog(ctx)
 	case constants.UPDATE_ROOT_PASSWORD_COMMAND:
 		processRootPassword(ctx)
+	case constants.REVERSE_PROXY_COMMAND:
+		processReverseProxy(ctx)
 	default:
 		if helper.GetFlagSwitch("help", false) {
 			processHelp("")

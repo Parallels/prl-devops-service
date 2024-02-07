@@ -35,17 +35,17 @@ type Config struct {
 	ctx                 basecontext.ApiContext
 	mode                string
 	includeOwnResources bool
-	config              map[string]string
+	config              ConfigFile
 }
 
 func New(ctx basecontext.ApiContext) *Config {
 	globalConfig = &Config{
 		mode:   "api",
 		ctx:    ctx,
-		config: make(map[string]string),
+		config: ConfigFile{},
 	}
 
-	globalConfig.LogLevel()
+	globalConfig.LogLevel(false)
 	return globalConfig
 }
 
@@ -105,6 +105,7 @@ func (c *Config) Load() bool {
 		}
 	}
 
+	c.LogLevel(true)
 	return true
 }
 
@@ -127,9 +128,9 @@ func (c *Config) ApiPrefix() string {
 	return apiPrefix
 }
 
-func (c *Config) LogLevel() string {
+func (c *Config) LogLevel(silent bool) string {
 	logLevel := c.GetKey(constants.LOG_LEVEL_ENV_VAR)
-	if logLevel != "" {
+	if logLevel != "" && !silent {
 		common.Logger.Info("Log Level set to %v", logLevel)
 	}
 	switch strings.ToLower(logLevel) {
@@ -330,6 +331,10 @@ func (c *Config) UseOrchestratorResources() bool {
 	return false
 }
 
+func (c *Config) GetReverseProxyConfig() *ReverseProxyConfig {
+	return c.config.ReverseProxy
+}
+
 func (c *Config) GetKey(key string) string {
 	value := helper.GetFlagValue(key, "")
 	exists := false
@@ -337,7 +342,7 @@ func (c *Config) GetKey(key string) string {
 	if value == "" {
 		value, exists = os.LookupEnv(key)
 		if value == "" && !exists {
-			for k, v := range c.config {
+			for k, v := range c.config.Environment {
 				if strings.EqualFold(k, key) {
 					value = v
 					break
