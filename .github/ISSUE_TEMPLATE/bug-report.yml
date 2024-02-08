@@ -35,7 +35,7 @@ body:
       required: true
   - type: textarea
     attributes:
-      label: Super-Linter version
+      label: DevOps Service version
       description: |
         DevOps Service version where you observed this issue
       placeholder: |
