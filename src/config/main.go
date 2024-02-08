@@ -35,17 +35,21 @@ type Config struct {
 	ctx                 basecontext.ApiContext
 	mode                string
 	includeOwnResources bool
-	config              map[string]string
+	fileFormat          string
+	filename            string
+	config              ConfigFile
 }
 
 func New(ctx basecontext.ApiContext) *Config {
 	globalConfig = &Config{
-		mode:   "api",
-		ctx:    ctx,
-		config: make(map[string]string),
+		mode:       "api",
+		ctx:        ctx,
+		fileFormat: "yaml",
+		filename:   "config.yml",
+		config:     ConfigFile{},
 	}
 
-	globalConfig.LogLevel()
+	globalConfig.LogLevel(false)
 	return globalConfig
 }
 
@@ -97,12 +101,44 @@ func (c *Config) Load() bool {
 			c.ctx.LogError("Error reading configuration file: %s", err.Error())
 			return false
 		}
+		c.fileFormat = "json"
 	} else {
 		err = yaml.Unmarshal(content, &c.config)
 		if err != nil {
 			c.ctx.LogError("Error reading configuration file: %s", err.Error())
 			return false
 		}
+		c.fileFormat = "yaml"
+	}
+
+	c.LogLevel(true)
+	c.filename = fileName
+	return true
+}
+
+func (c *Config) Save() bool {
+	var content []byte
+	var err error
+
+	switch c.fileFormat {
+	case "json":
+		content, err = json.Marshal(c.config)
+		if err != nil {
+			c.ctx.LogError("Error saving configuration file: %s", err.Error())
+			return false
+		}
+	case "yaml":
+		content, err = yaml.Marshal(c.config)
+		if err != nil {
+			c.ctx.LogError("Error saving configuration file: %s", err.Error())
+			return false
+		}
+	}
+
+	err = helper.WriteToFile(string(content), c.filename)
+	if err != nil {
+		c.ctx.LogError("Error saving configuration file: %s", err.Error())
+		return false
 	}
 
 	return true
@@ -127,9 +163,9 @@ func (c *Config) ApiPrefix() string {
 	return apiPrefix
 }
 
-func (c *Config) LogLevel() string {
+func (c *Config) LogLevel(silent bool) string {
 	logLevel := c.GetKey(constants.LOG_LEVEL_ENV_VAR)
-	if logLevel != "" {
+	if logLevel != "" && !silent {
 		common.Logger.Info("Log Level set to %v", logLevel)
 	}
 	switch strings.ToLower(logLevel) {
@@ -330,6 +366,10 @@ func (c *Config) UseOrchestratorResources() bool {
 	return false
 }
 
+func (c *Config) GetReverseProxyConfig() *ReverseProxyConfig {
+	return c.config.ReverseProxy
+}
+
 func (c *Config) GetKey(key string) string {
 	value := helper.GetFlagValue(key, "")
 	exists := false
@@ -337,7 +377,7 @@ func (c *Config) GetKey(key string) string {
 	if value == "" {
 		value, exists = os.LookupEnv(key)
 		if value == "" && !exists {
-			for k, v := range c.config {
+			for k, v := range c.config.Environment {
 				if strings.EqualFold(k, key) {
 					value = v
 					break

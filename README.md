@@ -1,4 +1,4 @@
-# Parallels Desktop Rest API Service
+# Parallels Desktop DevOps Service
 
 [![License: Fair Source](https://img.shields.io/badge/license-fair-source.svg](https://fair.io/)
 [![Build](https://github.com/Parallels/pd-api-service/actions/workflows/pr.yml/badge.svg)](https://github.com/Parallels/pd-api-service/actions/workflows/pr.yml)
@@ -7,14 +7,18 @@
 
 ## Description
 
-This service is a wrapper for the Parallels Desktop Rest API. It allows you to
-start, stop, pause, resume, and reset a virtual machine. It also allows you to
+This service is a wrapper for the Parallels Desktop DevOps Service. It allows you
+to start, stop, pause, resume, and reset a virtual machine. It also allows you to
 get the status of a virtual machine.
+
+## Licensing
+
+
 
 ## Architecture
 
-The Parallels Desktop Rest API Service is a service that is written in Go and it
-is a very light height designed to provide some of the missing remote management
+The Parallels Desktop DevOps is a service that is written in Go and it is a very
+light height designed to provide some of the missing remote management
 tools for virtual machines running remotely in Parallels Desktop. It uses rest
 api to execute the necessary steps. It also has RBAC (Role Based Access Control)
 to allow for a secure way of managing virtual machines. You can manage most of
@@ -73,8 +77,9 @@ using the `--config` flag.
 Here is an example of a config file:
 
 ```yaml
-API_PORT: 5570
-LOG_LEVEL: DEBUG
+environment:
+  api_port: 5570
+  log_level: DEBUG
 ```
 
 ## Docker Container

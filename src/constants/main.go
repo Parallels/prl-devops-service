@@ -3,8 +3,8 @@ package constants
 type AuthorizationContextKey string
 
 var (
-	Name                                              = "Parallels Desktop DevOps ToolSet"
-	ExecutableName                                    = "pd-devops"
+	Name                                              = "Parallels Desktop DevOps Service"
+	ExecutableName                                    = "prldevops"
 	AUTHORIZATION_CONTEXT_KEY AuthorizationContextKey = "AUTHORIZATION_CONTEXT"
 )
 
@@ -62,6 +62,7 @@ const (
 const (
 	TEST_COMMAND                  = "test"
 	API_COMMAND                   = "api"
+	REVERSE_PROXY_COMMAND         = "reverse-proxy"
 	GENERATE_SECURITY_KEY_COMMAND = "gen-rsa"
 	INSTALL_SERVICE_COMMAND       = "install"
 	UNINSTALL_SERVICE_COMMAND     = "uninstall"
