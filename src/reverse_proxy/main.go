@@ -3,7 +3,6 @@ package reverse_proxy
 import (
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -58,6 +57,28 @@ func (rps *ReverseProxyService) Start() error {
 	}
 
 	select {}
+}
+
+func (rps *ReverseProxyService) Stop() error {
+	for _, listener := range rps.tcpListeners {
+		if err := listener.Close(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (rps *ReverseProxyService) Restart() error {
+	if err := rps.Stop(); err != nil {
+		return err
+	}
+
+	if err := rps.Start(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (rps *ReverseProxyService) startServer(host *config.ReverseProxyConfigHost) {
@@ -223,7 +244,11 @@ func (rps *ReverseProxyService) listenHttpRoute(host *config.ReverseProxyConfigH
 
 	rps.ctx.LogInfo("[HTTP Route] Listening to %s on port %s...", host.Host, host.Port)
 	hostTarget := fmt.Sprintf("%s:%s", host.Host, host.Port)
-	log.Fatal(http.ListenAndServe(hostTarget, mux))
+	if err := http.ListenAndServe(hostTarget, mux); err != nil {
+		if !strings.Contains(err.Error(), "http: Server closed") {
+			rps.ctx.LogError("There was an error shutting down the https server: %v", err.Error())
+		}
+	}
 
 	return nil
 }
@@ -254,6 +279,5 @@ func (rps *ReverseProxyService) handleTcpTraffic(src net.Conn, host string, targ
 
 func newReverseProxy(target string) *httputil.ReverseProxy {
 	url, _ := url.Parse(target)
-
 	return httputil.NewSingleHostReverseProxy(url)
 }

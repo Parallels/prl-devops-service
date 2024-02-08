@@ -35,14 +35,18 @@ type Config struct {
 	ctx                 basecontext.ApiContext
 	mode                string
 	includeOwnResources bool
+	fileFormat          string
+	filename            string
 	config              ConfigFile
 }
 
 func New(ctx basecontext.ApiContext) *Config {
 	globalConfig = &Config{
-		mode:   "api",
-		ctx:    ctx,
-		config: ConfigFile{},
+		mode:       "api",
+		ctx:        ctx,
+		fileFormat: "yaml",
+		filename:   "config.yml",
+		config:     ConfigFile{},
 	}
 
 	globalConfig.LogLevel(false)
@@ -97,15 +101,46 @@ func (c *Config) Load() bool {
 			c.ctx.LogError("Error reading configuration file: %s", err.Error())
 			return false
 		}
+		c.fileFormat = "json"
 	} else {
 		err = yaml.Unmarshal(content, &c.config)
 		if err != nil {
 			c.ctx.LogError("Error reading configuration file: %s", err.Error())
 			return false
 		}
+		c.fileFormat = "yaml"
 	}
 
 	c.LogLevel(true)
+	c.filename = fileName
+	return true
+}
+
+func (c *Config) Save() bool {
+	var content []byte
+	var err error
+
+	switch c.fileFormat {
+	case "json":
+		content, err = json.Marshal(c.config)
+		if err != nil {
+			c.ctx.LogError("Error saving configuration file: %s", err.Error())
+			return false
+		}
+	case "yaml":
+		content, err = yaml.Marshal(c.config)
+		if err != nil {
+			c.ctx.LogError("Error saving configuration file: %s", err.Error())
+			return false
+		}
+	}
+
+	err = helper.WriteToFile(string(content), c.filename)
+	if err != nil {
+		c.ctx.LogError("Error saving configuration file: %s", err.Error())
+		return false
+	}
+
 	return true
 }
 

@@ -20,7 +20,7 @@ distributing virtual machines.
 This will make the management of a global catalog of virtual machines very easy
 and secure and in s centralized way.
 
-![Catalog Manifest Architecture](./images/catalog_diagram.drawio.png)
+![Catalog Manifest Architecture](./images/devtools_service-catalog_manifest.drawio.png)
 
 ## Concepts
 
@@ -137,6 +137,10 @@ storage container and then push the metadata to the service. This will allow
 for a very flexible way of pushing the virtual machines to the service and not
 requiring heavy lifting from the service itself.
 
+### Pushing a Virtual Machine Diagram
+
+![Pushing a Virtual Machine](./images//devtools_service-catalog_manifest_pushing.drawio.png)
+
 ## Pull
 
 Pull is the ability to pull a virtual machine from the service, this will allow
@@ -152,6 +156,10 @@ is pulling will follow these steps:
 This will allow for once again the heavy lifting to be done by the client and
 not the service itself. Also allows for the secure connection between the client
 and the storage provider.
+
+### Pulling a Virtual Machine Diagram
+
+![Pulling a Virtual Machine](./images//devtools_service-catalog_manifest_pulling.drawio.png)
 
 ## Caching
 

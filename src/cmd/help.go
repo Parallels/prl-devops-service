@@ -9,7 +9,7 @@ import (
 func processHelp(command string) {
 	fmt.Printf("%v\n", constants.Name)
 	fmt.Printf("\n")
-	fmt.Printf("  Find out more at: https://github.com/Parallesl/pd-devops-toolset\n")
+	fmt.Printf("  Find out more at: https://github.com/Parallesl/prl-devops-service\n")
 	fmt.Printf("\n")
 	switch command {
 	case constants.API_COMMAND:
@@ -31,12 +31,12 @@ func processHelp(command string) {
 func processDefaultHelp() {
 	fmt.Printf("Usage:\n")
 	fmt.Printf("\n")
-	fmt.Printf("  pd-api-service [command] [flags]\n")
+	fmt.Printf("  %v [command] [flags]\n", constants.ExecutableName)
 	fmt.Printf("\n")
 	fmt.Printf("Available Commands:\n")
 	fmt.Printf("\n")
 	fmt.Printf("  %s\t\t Starts the API Service\n", constants.API_COMMAND)
-	fmt.Printf("  %s\t\t Starts the Reverse Proxy Service\n", constants.REVERSE_PROXY_COMMAND)
+	fmt.Printf("  %s\t Starts the Reverse Proxy Service\n", constants.REVERSE_PROXY_COMMAND)
 	fmt.Printf("  %s\t Prints the API Catalog\n", constants.CATALOG_COMMAND)
 	fmt.Printf("  %s\t Generates a new Security Key\n", constants.GENERATE_SECURITY_KEY_COMMAND)
 	fmt.Printf("  %s\t Installs the API Service\n", constants.INSTALL_SERVICE_COMMAND)

@@ -41,6 +41,6 @@ func processReverseProxyHelp() {
 	fmt.Printf("  %v %v <options>\n", constants.ExecutableName, constants.REVERSE_PROXY_COMMAND)
 	fmt.Println()
 	fmt.Println("Example:")
-	fmt.Printf("  %v %v\n", constants.ExecutableName, constants.GENERATE_SECURITY_KEY_COMMAND, constants.FILE_FLAG, constants.RSA_KEY_SIZE)
+	fmt.Printf("  %v %v\n", constants.ExecutableName, constants.REVERSE_PROXY_COMMAND)
 	fmt.Println()
 }
