@@ -4,8 +4,6 @@ title: '[FEATURE]'
 labels:
 - triage
 - feature request
-projects: 
-  - Parallels/projects/6
 body:
 - type: textarea
   id: feature_description
