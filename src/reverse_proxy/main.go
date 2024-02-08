@@ -115,7 +115,10 @@ func (rps *ReverseProxyService) listenTcpRoute(host *config.ReverseProxyConfigHo
 		}
 		if err := conn.SetDeadline(time.Now().Add(30 * time.Second)); err != nil {
 			rps.ctx.LogError("[TCP Route] Error setting deadline for connection: %s", err)
-			conn.Close()
+			if err := conn.Close(); err != nil {
+				rps.ctx.LogError("[TCP Route] Error closing connection: %s", err)
+				return err
+			}
 		}
 
 		go rps.handleTcpTraffic(conn, host.Host, fmt.Sprintf("%s:%s", host.TcpRoute.TargetHost, host.TcpRoute.TargetPort))
@@ -244,7 +247,13 @@ func (rps *ReverseProxyService) listenHttpRoute(host *config.ReverseProxyConfigH
 
 	rps.ctx.LogInfo("[HTTP Route] Listening to %s on port %s...", host.Host, host.Port)
 	hostTarget := fmt.Sprintf("%s:%s", host.Host, host.Port)
-	if err := http.ListenAndServe(hostTarget, mux); err != nil {
+	server := &http.Server{
+		Addr:              hostTarget,
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
 		if !strings.Contains(err.Error(), "http: Server closed") {
 			rps.ctx.LogError("There was an error shutting down the https server: %v", err.Error())
 		}
@@ -259,7 +268,11 @@ func (rps *ReverseProxyService) handleTcpTraffic(src net.Conn, host string, targ
 	dst, err := net.Dial("tcp", target)
 	if err != nil {
 		rps.ctx.LogError("[TCP Route] Unable to connect to target: %s", err)
-		src.Close()
+		if err := src.Close(); err != nil {
+			rps.ctx.LogError("[TCP Route] Unable to close source connection: %s", err)
+			rps.error <- err
+		}
+
 		rps.error <- err
 	}
 	defer dst.Close()
