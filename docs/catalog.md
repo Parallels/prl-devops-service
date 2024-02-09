@@ -13,7 +13,7 @@ want to distribute a virtual machine to your users.
 
 The Catalog Manifest is a service that is written in Go and it is a very light
 height service that can be deployed in a container or on a virtual machine. It
-uses rest api to execute the necessary steps. It also has RBAC (Role Based
+uses rest API to execute the necessary steps. It also has RBAC (Role Based
 Access Control) to allow for a secure way of distributing virtual machines. We
 also use the concept of **Taint** and **Revoke** to allow for a secure way of
 distributing virtual machines.
@@ -32,7 +32,7 @@ in the same state as it existed previously. It will also contain the information
 on where it will be stored using the selected
 [Storage Provider](#storage-providers). The Service does not store any parts of
 the Virtual Machine, all this is passed to the storage provider making it a light
-height approach to distributing the api.
+height approach to distributing the API.
 
 ## Storage Providers
 
@@ -76,7 +76,7 @@ provider=artifactory;url=<artifactory_url_without_artifact>;repo=<repo_name>;acc
 
 ## Catalog Manifest and Versions
 
-Each Catalog Manifest has an id and a version, the id is a unique identifier for
+Each Catalog Manifest has an ID and a version, the ID is a unique identifier for
 the manifest and the version is the version of the manifest. The version is used
 to track the changes in the manifest and it is used to track the changes in the
 virtual machines. Each time a virtual machine is updated, you need to define a
@@ -173,11 +173,11 @@ will allow for a very fast way of pulling the virtual machine.
 ## Usage
 
 This feature is bundled with Parallels Desktop RestAPI and it can be used by
-ether using command line or the rest api endpoints
+ether using command-line or the rest API endpoints
 
-## Command Line
+## Command-line
 
-With the command line we can either pass flags with the parameters we want to
+With the command-line we can either pass flags with the parameters we want to
 use or we can use the `pdfile` configuration file. The configuration file
 resembles the *dockerfile* and uses the same approach to define the parameters
 
@@ -256,7 +256,7 @@ pd-api-service catalog pull --file=./example.pdfile
 
 Where:
 
-* `catalog_id` is the name of the catalog id you want to push, this should not
+* `catalog_id` is the name of the catalog ID you want to push, this should not
   contain spaces, for example test-catalog
 * `version` is the version of the catalog you want to push, this can be any
 * `connection` is the connection string to the storage provider, this can be
@@ -282,13 +282,13 @@ Where:
 
 Where:
 
-* `catalog_id` is the name of the catalog id you want to pull, this should not
+* `catalog_id` is the name of the catalog ID you want to pull, this should not
   contain spaces, for example test-catalog
 * `version` is the version of the catalog you want to pull, this can be any
 * `machine_name` is the name of the virtual machine, this is the name that will
   be used in Parallels Desktop
 * `owner` is the owner of the virtual machine, this is the owner that will be
-* `connection` is the connection string to the Parallels Desktop Api Service
+* `connection` is the connection string to the Parallels Desktop API Service
 * `path` is the path where the virtual machine will be stored locally
 * `start_after_pull` is a boolean that will indicate if the virtual machine
   should be started after pulling it
@@ -305,7 +305,7 @@ Where:
 
 Where:
 
-* `catalog_id` is the name of the catalog id you want to import, this should not
+* `catalog_id` is the name of the catalog ID you want to import, this should not
   contain spaces, for example test-catalog
 * `version` is the version of the catalog you want to import, this can be any
 * `connection` is the connection string to the storage provider, this can be

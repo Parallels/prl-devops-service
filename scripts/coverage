@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+while getopts ":d:" opt; do
+  case $opt in
+  d)
+    DIRECTORY=$OPTARG
+    ;;
+  \?)
+    echo "Invalid option: -$OPTARG" >&2
+    exit 1
+    ;;
+  esac
+done
+
+COVERAGE_DIR="coverage"
+
+if [ -z "$DIRECTORY" ]; then
+  echo "You need to specify the source directory with the -d flag"
+fi
+
+if [ ! -d "$DIRECTORY" ]; then
+  echo "Directory $DIRECTORY does not exist"
+fi
+
+if [ ! -d "$COVERAGE_DIR" ]; then
+  mkdir "$COVERAGE_DIR"
+fi
+
+cd "$DIRECTORY" || exit 1
+go test -coverprofile coverage.txt -covermode count -v ./...
+gocov convert coverage.txt | gocov-xml >../"$COVERAGE_DIR"/cobertura-coverage.xml
+rm coverage.txt

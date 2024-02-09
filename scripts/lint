@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# Generate a random string
+NAME="prl-devops-service-linter"
+docker ps -a -f "name=$NAME"
+
+if [ $? -eq 1 ]; then
+  docker start "$NAME" --attach
+  exit $?
+fi
+
+docker run --name "$NAME" -e RUN_LOCAL=true -e VALIDATE_ALL_CODEBASE=true -e VALIDATE_JSCPD=false -v .:/tmp/lint ghcr.io/super-linter/super-linter:slim-v5
+EXEC_CODE=$?
+# docker rm "$NAME"
+exit $EXEC_CODE

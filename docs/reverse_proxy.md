@@ -14,7 +14,7 @@ ports are allowed to be used.
 ## Architecture
 
 The Parallels Desktop DevOps Service Reverse Proxy is written in go and uses the
-same base code as the Parallels Desktop Api Service. One single executable that depending
+same base code as the Parallels Desktop API Service. One single executable that depending
 on how you run it it will behave in a different way, this allows for a simpler way
 for deploying it.
 
@@ -77,7 +77,7 @@ reverse_proxy:
 ## Getting Started
 
 To start the reverse proxy you just need to start the binary and add the
-`reverse_proxy` as the command line argument.
+`reverse_proxy` as the command-line argument.
 
 ```bash
 ./prldevops reverse_proxy

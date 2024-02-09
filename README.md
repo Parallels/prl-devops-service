@@ -20,7 +20,7 @@ get the status of a virtual machine.
 The Parallels Desktop DevOps is a service that is written in Go and it is a very
 light height designed to provide some of the missing remote management
 tools for virtual machines running remotely in Parallels Desktop. It uses rest
-api to execute the necessary steps. It also has RBAC (Role Based Access Control)
+API to execute the necessary steps. It also has RBAC (Role Based Access Control)
 to allow for a secure way of managing virtual machines. You can manage most of
 the operations for a Virtual Machine Lifecycle.
 
@@ -28,7 +28,7 @@ the operations for a Virtual Machine Lifecycle.
 
 If you want to run the service locally, you can either build the source code by
 cloning this repository or you can use the already provided binaries in the
-github releases.
+GitHub releases.
 
 ### Build from source
 
@@ -51,7 +51,7 @@ have downloaded the binary, you can run it to start the service.
 
 ## Usage
 
-Once you start the api it will by default be listening on
+Once you start the API it will by default be listening on
 [localhost:8080](http://localhost:8080), you can change the port by passing the
 `--port=<port_number>` flag.
 
@@ -64,8 +64,8 @@ You can download the collection from [here](docs/Parallels_Desktop_API.postman_c
 
 ### Configuration
 
-The service can be configured using either command line flags, environment variables
-or a config file. The order of precedence is the following, command line flag,
+The service can be configured using either command-line flags, environment variables
+or a config file. The order of precedence is the following, command-line flag,
 environment variable, config file.
 
 To use the configuration file just create a yaml file with the environment
@@ -133,7 +133,7 @@ If no secret is defined, the service will generate a random secret and use it to
 sign the tokens, this will be a random string of characters.
 
 We also will create a default `Super User` with the username `root` and the password
-will be based in the hardware id and your Parallels Desktop license. You can change
+will be based in the hardware ID and your Parallels Desktop license. You can change
 the password by passing the `--update-root-password` flag or the `ROOT_PASSWORD`
 environment variable.
 This will update that password when the service starts.
@@ -175,7 +175,7 @@ the database and you will lose all the data.
 ## Configuration
 
 You can configure the service by running it with either flags, environment variables
-or have a config file. The order of precedence is the following, command line flag,
+or have a config file. The order of precedence is the following, command-line flag,
 environment variable, config file.
 
 This is the list of available flags/environment variables that you can use to
@@ -186,7 +186,7 @@ configure the service.
 | Flag | Description | Default Value |
 | ---- | ----------- | ------------- |
 | API_PORT | The port that the service will listen on | 8080 |
-| API_PREFIX | The prefix that will be used for the api endpoints | /api |
+| API_PREFIX | The prefix that will be used for the API endpoints | /API |
 | LOG_LEVEL | The log level of the service | info |
 | HMAC_SECRET | The secret that will be used to sign the jwt tokens | |
 | ENCRYPTION_PRIVATE_KEY | The private key that will be used to encrypt the database at rest, you can generate one with the `gen-rsa` command | |
@@ -196,10 +196,10 @@ configure the service.
 | TLS_PRIVATE_KEY | A base64 encoded private key string | |
 | ROOT_PASSWORD | The root password that will be used to update the root password of the virtual machine | |
 | DISABLE_CATALOG_CACHING | If the service should disable the catalog caching | false |
-| MODE | The mode that the service will run in, this can be either `api` or `orchestrator` | api |
+| MODE | The mode that the service will run in, this can be either `api` or `orchestrator` | API |
 | USE_ORCHESTRATOR_RESOURCES | If the service is running in orchestrator mode, this will allow the service to use the resources of the orchestrator | false |
 | ORCHESTRATOR_PULL_FREQUENCY_SECONDS | The frequency in seconds that the orchestrator will sync with the other hosts in seconds | 30 |
-| DATABASE_FOLDER_ENV_VAR | The folder where the database will be stored | /User/Folder/.pd-api-service |
+| DATABASE_FOLDER | The folder where the database will be stored | /User/Folder/.pd-api-service |
 | CATALOG_CACHE_FOLDER | The folder where the catalog cache will be stored | /User/Folder/.pd-api-service/catalog |
 | Json Web Tokens | | |
 | JWT_SIGN_ALGORITHM | The algorithm that will be used to sign the jwt tokens, this can be either `HS256`, `RS256`, `HS384`, `RS384`, `HS512`, `RS512` | HS256 |
@@ -230,8 +230,8 @@ machines to know more please check the [Catalog Manifests](docs/catalog.md) docu
 
 The Parallels Desktop Orchestrator Service is a service that can run in a
 container or directly in a host and will allow you to orchestrate and manage
-multiple Parallels Desktop Api Services. This will allow in a simple way to have
-a single pane of glass to manage multiple Parallels Desktop Api Services and
+multiple Parallels Desktop API Services. This will allow in a simple way to have
+a single pane of glass to manage multiple Parallels Desktop API Services and
 check their status. To know more please check the
 [Orchestrator](docs/orchestrator.md) documentation.
 

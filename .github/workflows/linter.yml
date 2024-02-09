@@ -1,0 +1,47 @@
+name: Lint Codebase
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  packages: read
+  statuses: write
+
+jobs:
+  lint:
+    # Disabled at the moment due to a bug in the super-linter
+    if: false 
+    name: Lint Codebase
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.x'
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
+
+      - name: Clean and Tidy
+        working-directory: ${{ github.workspace }}/src
+        run: |
+          go clean -modcache
+          go mod tidy
+
+      - name: Build
+        working-directory: ${{ github.workspace }}/src
+        run: go build -v ./...
+
+      - name: Lint Codebase
+        id: super-linter
+        uses: super-linter/super-linter/slim@v5
+        env:
+          DEFAULT_BRANCH: main
+          FILTER_REGEX_EXCLUDE: bin/**/*
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_ALL_CODEBASE: true
+          VALIDATE_JSCPD: false

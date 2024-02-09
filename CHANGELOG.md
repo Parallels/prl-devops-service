@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed an issue where the api base context was not setting the log correctly
+- Fixed an issue where the API base context was not setting the log correctly
   resulting in missing log lines
 
 ## [0.4.5] - 2024-01-16
@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - added the ability to have a config file for the apiclient, this will help
-  users to configure the api with more ease and also will allow them to share
+  users to configure the API with more ease and also will allow them to share
   that same configuration. It will either look for a config file in the current
   directory with the following rules, `config.json`, `config.yaml`, `config.yml`
   you can also add the `.local` before the extension to make it a local config
@@ -36,8 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The system will now use the config class to read all of the configuration, this
   will allow us to have a more consistent way of reading the configuration and where
   to search for those values, this allows for example for a parameter to be set in
-  either a environment variable, a config file or a command line flag, the order
-  of precedence is the following, command line flag, environment variable, config
+  either a environment variable, a config file or a command-line flag, the order
+  of precedence is the following, command-line flag, environment variable, config
   file
 - updated documentation to reflect the changes in the configuration
 
@@ -52,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   use HS256, but you can change it to RS256, HS384, RS384, HS512, RS512, this will
   cater for the request we had for asymmetric keys
 - added a random secret generator for the default HS256 is none is provided, this
-  is a change from previous versions where we used the machine id as the secret
+  is a change from previous versions where we used the machine ID as the secret
   this will increment the security of the default installation
 - added a password complexity pipeline for checking if the users passwords adhere
   to the complexity requirements, this can be disabled if required, by default the
