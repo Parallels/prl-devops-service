@@ -1,4 +1,4 @@
-NAME ?= "prldevops"
+NAME ?= prldevops
 export PACKAGE_NAME ?= $(NAME)
 export VERSION=$(shell ./scripts/workflows/current-version.sh -f VERSION)
 
@@ -13,8 +13,8 @@ GOSEC = gosec
 SWAG = swag
 
 DEVELOPMENT_TOOLS = $(GOX) $(COBERTURA) $(GOLANGCI_LINT) $(SWAG)
-
 SECURITY_TOOLS = $(GOSEC)
+GET_CURRENT_LINT_CONTAINER = $(shell docker ps -a -q -f "name=$(PACKAGE_NAME)-linter")
 
 .PHONY: help
 help:
@@ -34,12 +34,23 @@ test:
 .PHONY: coverage
 coverage:
 	@echo "Running coverage report..."
-	@scripts/coverage -d ./src
+	@cd src && go test -coverprofile coverage.txt -covermode count -v ./...
+	@gocov convert coverage.txt | gocov-xml >../"$COVERAGE_DIR"/cobertura-coverage.xml
+	@rm coverage.txt
 
 .PHONY: lint
 lint:
 	@echo "Running linter..."
-	@scripts/lint
+ifeq ($(GET_CURRENT_LINT_CONTAINER),)
+	@echo "Linter container does not exist, creating it..."
+	@-docker run --name $(PACKAGE_NAME)-linter -e RUN_LOCAL=true -e VALIDATE_ALL_CODEBASE=true -e VALIDATE_JSCPD=false -e CREATE_LOG_FILE=true -v .:/tmp/lint ghcr.io/super-linter/super-linter:slim-v5
+else
+	@echo "Linter container already exists, starting it..."
+	@-docker start $(PACKAGE_NAME)-linter --attach
+endif
+	@docker cp $(PACKAGE_NAME)-linter:/tmp/lint/super-linter.log ./super-linter.log
+	@echo "Linter report saved to super-linter.log"
+	@echo "Linter finished."
 
 .PHONY: security
 security-check:
@@ -49,12 +60,34 @@ security-check:
 .PHONY: build
 build:
 	@echo "Building..."
-	@scripts/build -d ./src -p $(PACKAGE_NAME)
+ifneq ("$(wildcard out)","")
+	@echo "Creating out directory..."
+	@mkdir out
+	@mkdir out/binaries
+endif
+	@cd src && go build -o ../out/binaries/$(PACKAGE_NAME)
+	@echo "Build finished."
 
 .PHONY: clean
 clean:
 	@echo "Cleaning..."
-	@scripts/clean
+ifneq ("$(wildcard bin)","")
+	@echo "Removing bin directory..."
+	@rm -rf bin
+endif
+ifneq ("$(wildcard out)","")
+	@echo "Removing out directory..."
+	@rm -rf out
+endif
+ifneq ("$(wildcard coverage)","")
+	@echo "Removing coverage directory..."
+	@rm -rf out
+endif
+ifneq ("$(wildcard tmp)","")
+	@echo "Removing tmp directory..."
+	@rm -rf out
+endif
+	@echo "Clean finished."
 
 .PHONY: generate-swagger
 generate-swagger:

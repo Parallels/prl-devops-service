@@ -16,3 +16,4 @@ __debug_*
 **/pd-devops
 bin/
 coverage/
+super-linter.log
