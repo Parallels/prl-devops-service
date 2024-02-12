@@ -13,7 +13,11 @@ get the status of a virtual machine.
 
 ## Licensing
 
-
+You can use the service for free with up to 10 users, without needing any
+Parallels Desktop Business license. However, if you want to continue using the
+service beyond 10 users, you will need to purchase a Parallels Desktop Business
+license. The good news is that no extra license is required for this service
+once you have purchased the Parallels Desktop Business license.
 
 ## Architecture
 
