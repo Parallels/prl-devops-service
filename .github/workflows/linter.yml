@@ -10,8 +10,6 @@ permissions:
 
 jobs:
   lint:
-    # Disabled at the moment due to a bug in the super-linter
-    if: false 
     name: Lint Codebase
     runs-on: ubuntu-latest
 

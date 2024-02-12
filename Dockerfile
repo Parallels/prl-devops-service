@@ -11,11 +11,8 @@ WORKDIR /go/src
 
 COPY ./src .
 
-# Using go get.
-RUN go get -d -v
-
 # Build the binary.
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/pd-api-service
+RUN go get -d -v && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/pd-api-service
 
 ############################
 # STEP 2 build a small image

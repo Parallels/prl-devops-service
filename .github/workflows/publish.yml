@@ -60,7 +60,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Parse version from package.json
         run: |
-          echo "EXT_VERSION=$(node -p -e "require('./version.json').version")" >> $GITHUB_ENV
+          echo "EXT_VERSION=$(node -p -e "require('./version.json').version")" >> "$GITHUB_ENV"
       - name: Create release and upload release asset
         uses: actions/github-script@v6
         with:

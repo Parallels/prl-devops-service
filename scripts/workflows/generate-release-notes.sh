@@ -15,7 +15,7 @@ LAST_RELEASE_PR=$1
 NEW_RELEASE=$2
 
 #get when the last release was merged
-LAST_RELEASE_MERGED_AT=$(gh pr view $LAST_RELEASE_PR --repo Parallels/pd-api-service --json mergedAt | jq -r '.mergedAt')
+LAST_RELEASE_MERGED_AT=$(gh pr view "$LAST_RELEASE_PR" --repo Parallels/pd-api-service --json mergedAt | jq -r '.mergedAt')
 
 CHANGELIST=$(gh pr list --repo Parallels/pd-api-service --base main --state merged --json title --search "merged:>$LAST_RELEASE_MERGED_AT -label:no-release")
 
@@ -23,7 +23,7 @@ CHANGELIST=$(gh pr list --repo Parallels/pd-api-service --base main --state merg
 
 echo "Release $NEW_RELEASE" >>releasenotes.md
 
-echo $CHANGELIST | jq -r '.[].title' | while read line; do
+echo "$CHANGELIST" | jq -r '.[].title' | while read -r line; do
   echo " - $line" >>releasenotes.md
 done
 

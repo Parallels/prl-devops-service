@@ -1,6 +1,10 @@
 NAME ?= prldevops
 export PACKAGE_NAME ?= $(NAME)
-export VERSION=$(shell ./scripts/workflows/current-version.sh -f VERSION)
+ifeq ($(OS),Windows_NT)
+	export VERSION=$(shell type VERSION)
+else
+	export VERSION=$(shell cat VERSION)
+endif
 
 COBERTURA = cobertura
 
@@ -12,9 +16,10 @@ GOSEC = gosec
 
 SWAG = swag
 
+START_SUPER_LINTER_CONTAINER = start_super_linter_container
+
 DEVELOPMENT_TOOLS = $(GOX) $(COBERTURA) $(GOLANGCI_LINT) $(SWAG)
 SECURITY_TOOLS = $(GOSEC)
-GET_CURRENT_LINT_CONTAINER = $(shell docker ps -a -q -f "name=$(PACKAGE_NAME)-linter")
 
 .PHONY: help
 help:
@@ -34,22 +39,20 @@ test:
 .PHONY: coverage
 coverage:
 	@echo "Running coverage report..."
+ifeq ("$(wildcard coverage)","")
+	@echo "Creating coverage directory..."
+	@mkdir coverage
+endif
 	@cd src && go test -coverprofile coverage.txt -covermode count -v ./...
-	@gocov convert coverage.txt | gocov-xml >../"$COVERAGE_DIR"/cobertura-coverage.xml
-	@rm coverage.txt
+	@cd src && gocov convert coverage.txt | gocov-xml >../coverage/cobertura-coverage.xml
+	@cd src && rm coverage.txt
 
 .PHONY: lint
-lint:
+lint: $(START_SUPER_LINTER_CONTAINER)
 	@echo "Running linter..."
-ifeq ($(GET_CURRENT_LINT_CONTAINER),)
-	@echo "Linter container does not exist, creating it..."
-	@-docker run --name $(PACKAGE_NAME)-linter -e RUN_LOCAL=true -e VALIDATE_ALL_CODEBASE=true -e VALIDATE_JSCPD=false -e CREATE_LOG_FILE=true -v .:/tmp/lint ghcr.io/super-linter/super-linter:slim-v5
-else
-	@echo "Linter container already exists, starting it..."
-	@-docker start $(PACKAGE_NAME)-linter --attach
-endif
-	@docker cp $(PACKAGE_NAME)-linter:/tmp/lint/super-linter.log ./super-linter.log
+	@docker cp $(PACKAGE_NAME)-linter:/tmp/lint/super-linter.log .
 	@echo "Linter report saved to super-linter.log"
+	@docker stop $(PACKAGE_NAME)-linter
 	@echo "Linter finished."
 
 .PHONY: security
@@ -123,3 +126,13 @@ $(GOSEC):
 $(SWAG):
 	@echo "Installing swag..."
 	@go install github.com/swaggo/swag/cmd/swag@latest
+
+$(START_SUPER_LINTER_CONTAINER):
+	$(eval CONTAINER_ID := $(shell docker ps -a | grep $(PACKAGE_NAME)-linter | awk '{print $$1}'))
+	@if [ -z $(CONTAINER_ID) ]; then \
+	echo "Linter container does not exist, creating it..."; \
+	docker run --name $(PACKAGE_NAME)-linter -e RUN_LOCAL=true -e VALIDATE_ALL_CODEBASE=true -e VALIDATE_JSCPD=false -e CREATE_LOG_FILE=true -e VALIDATE_GO=false -v .:/tmp/lint ghcr.io/super-linter/super-linter:slim-v5; \
+	else \
+	echo "Linter container already exists $(CONTAINER_ID), starting it..."; \
+	docker start $(PACKAGE_NAME)-linter --attach; \
+	fi
