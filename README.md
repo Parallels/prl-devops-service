@@ -5,6 +5,8 @@
 [![Publish](https://github.com/Parallels/prl-devops-service/actions/workflows/publish.yml/badge.svg)](https://github.com/Parallels/prl-devops-service/actions/workflows/publish.yml)
 [![discord](https://dcbadge.vercel.app/api/server/pEwZ254C3d?style=flat&theme=default)](https://discord.gg/pEwZ254C3d)
 
+teste
+
 ## Description
 
 This service is a wrapper for the Parallels Desktop DevOps Service. It allows you
