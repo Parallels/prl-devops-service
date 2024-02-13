@@ -1,10 +1,10 @@
 package orchestrator
 
 import (
-	"github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/helpers"
-	api_models "github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
+	api_models "github.com/Parallels/prl-devops-service/models"
 )
 
 func (s *OrchestratorService) GetHostHardwareInfo(host *models.OrchestratorHost) (*api_models.SystemUsageResponse, error) {

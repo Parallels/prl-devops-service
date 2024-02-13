@@ -18,12 +18,12 @@
       "args": [
         "build",
         "-o",
-        "${workspaceFolder}/bin/pd-api-service",
+        "${workspaceFolder}/bin/prl-devops-service",
         "${workspaceFolder}/src",
         "&&",
         "chmod",
         "+x",
-        "${workspaceFolder}/bin/pd-api-service"
+        "${workspaceFolder}/bin/prl-devops-service"
       ],
       "problemMatcher": []
     }

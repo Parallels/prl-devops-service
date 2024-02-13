@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/Parallels/pd-api-service/common"
-	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/prl-devops-service/common"
+	"github.com/Parallels/prl-devops-service/constants"
 
 	"github.com/google/uuid"
 )

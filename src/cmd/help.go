@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/prl-devops-service/constants"
 )
 
 func processHelp(command string) {

@@ -3,8 +3,8 @@ package vagrant
 import (
 	"strings"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/cjlapao/common-go/helper"
 )
 
@@ -90,7 +90,6 @@ func (s *VagrantFile) GetConfigBlockByTypeName(typeName string) []*VagrantConfig
 	result := make([]*VagrantConfigBlock, 0)
 	if strings.EqualFold(s.Root.Type, typeName) {
 		result = append(result, s.Root)
-
 	}
 
 	for _, child := range s.Root.Children {

@@ -4,7 +4,7 @@ package azurestorageaccount
 // 	"fmt"
 // 	"io"
 
-// 	"github.com/Parallels/pd-api-service/basecontext"
+// 	"github.com/Parallels/prl-devops-service/basecontext"
 // )
 
 // type progressReader struct {

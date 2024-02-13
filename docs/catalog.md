@@ -209,7 +209,7 @@ PROVIDER SECRET_KEY SOMESECRETKEY
 Then you can run the command:
 
 ```bash
-pd-api-service catalog push --file=./example.pdfile 
+prldevops catalog push --file=./example.pdfile 
 ```
 
 for pulling it will be a very similar process:
@@ -234,7 +234,7 @@ START_AFTER_PULL false
 Then you can run the command:
 
 ```bash
-pd-api-service catalog pull --file=./example.pdfile 
+prldevops catalog pull --file=./example.pdfile 
 ```
 
 ## Rest API

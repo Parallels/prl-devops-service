@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/helpers"
-	"github.com/Parallels/pd-api-service/models"
-	"github.com/Parallels/pd-api-service/serviceprovider/interfaces"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 
 	"github.com/cjlapao/common-go/commands"
 )
@@ -56,7 +56,7 @@ func (s *SystemService) Name() string {
 
 func (s *SystemService) FindPath() string {
 	s.ctx.LogInfo("Getting brew executable")
-	out, err := commands.ExecuteWithNoOutput("which", "packer")
+	out, err := commands.ExecuteWithNoOutput("which", "brew")
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
 		s.ctx.LogWarn("Brew executable not found, trying to find it in the default locations")
@@ -463,7 +463,6 @@ func (s *SystemService) ChangeFileUserOwner(ctx basecontext.ApiContext, userName
 	default:
 		return errors.New("Not implemented")
 	}
-
 }
 
 func (s *SystemService) changeMacFileUserOwner(userName string, filePath string) error {

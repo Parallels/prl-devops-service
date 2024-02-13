@@ -1,8 +1,8 @@
 package mappers
 
 import (
-	catalog_models "github.com/Parallels/pd-api-service/catalog/models"
-	"github.com/Parallels/pd-api-service/models"
+	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 func MapPullCatalogManifestRequestFromCreateCatalogVirtualMachineRequest(m models.CreateCatalogVirtualMachineRequest) catalog_models.PullCatalogManifestRequest {

@@ -1,9 +1,9 @@
 package orchestrator
 
 import (
-	"github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 func (s *OrchestratorService) DeleteHostVirtualMachine(host *models.OrchestratorHost, vmId string) error {

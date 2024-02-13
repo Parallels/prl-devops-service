@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Parallels/pd-api-service/common"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/prl-devops-service/common"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 type BaseContext struct {

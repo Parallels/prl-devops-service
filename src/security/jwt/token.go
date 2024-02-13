@@ -3,7 +3,7 @@ package jwt
 import (
 	"time"
 
-	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/golang-jwt/jwt/v4"
 )
 

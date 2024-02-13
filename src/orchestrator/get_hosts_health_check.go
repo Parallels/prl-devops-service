@@ -1,11 +1,11 @@
 package orchestrator
 
 import (
-	"github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/helpers"
-	api_models "github.com/Parallels/pd-api-service/models"
-	"github.com/Parallels/pd-api-service/restapi"
+	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
+	api_models "github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/restapi"
 )
 
 func (s *OrchestratorService) GetHostHealthProbeCheck(host *models.OrchestratorHost) (*restapi.HealthProbeResponse, error) {

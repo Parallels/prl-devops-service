@@ -1,7 +1,7 @@
 # Contributing
 
-[fork]: https://github.com/Parallels/pd-api-service/fork
-[pr]: https://github.com/Parallels/pd-api-service/compare
+[fork]: https://github.com/Parallels/prl-devops-service/fork
+[pr]: https://github.com/Parallels/prl-devops-service/compare
 [code-of-conduct]: CODE_OF_CONDUCT.md
 
 Hi there! We're thrilled that you'd like to contribute to this project. Your help
@@ -107,5 +107,5 @@ request being accepted:
 * [Using Pull Requests](https://help.github.com/articles/about-pull-requests/)
 * [GitHub Help](https://help.github.com)
 
-[bug issues]: https://github.com/Parallels/pd-api-service/labels/bug
-[feature request issues]: https://github.com/Parallels/pd-api-service/labels/enhancement
+[bug issues]: https://github.com/Parallels/prl-devops-service/labels/bug
+[feature request issues]: https://github.com/Parallels/prl-devops-service/labels/enhancement

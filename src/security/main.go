@@ -14,7 +14,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/prl-devops-service/errors"
 	cryptorand "github.com/cjlapao/common-go-cryptorand"
 )
 

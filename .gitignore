@@ -2,6 +2,8 @@
 *.override.yml
 pd-api-service
 pd-api-service.exe
+prldevops
+prldevops.exe
 data.json
 *.sql
 /out/*

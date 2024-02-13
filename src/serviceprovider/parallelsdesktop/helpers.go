@@ -3,8 +3,8 @@ package parallelsdesktop
 import (
 	"strings"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 func (s *ParallelsService) findVm(ctx basecontext.ApiContext, idOrName string) (*models.ParallelsVM, error) {

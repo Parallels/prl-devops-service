@@ -3,8 +3,8 @@ package models
 import (
 	"strings"
 
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 type ApiKeyRequest struct {

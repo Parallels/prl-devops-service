@@ -1,9 +1,9 @@
 package tests
 
 import (
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/catalog/tester"
-	"github.com/Parallels/pd-api-service/config"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/catalog/tester"
+	"github.com/Parallels/prl-devops-service/config"
 )
 
 func TestCatalogProviders(ctx basecontext.ApiContext) error {

@@ -7,18 +7,18 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/catalog/models"
-	"github.com/Parallels/pd-api-service/config"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/data"
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/helpers"
-	"github.com/Parallels/pd-api-service/mappers"
-	api_models "github.com/Parallels/pd-api-service/models"
-	"github.com/Parallels/pd-api-service/serviceprovider"
-	"github.com/Parallels/pd-api-service/serviceprovider/apiclient"
-	"github.com/Parallels/pd-api-service/serviceprovider/system"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/catalog/models"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/data"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/mappers"
+	api_models "github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/serviceprovider/apiclient"
+	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/helper/http_helper"
@@ -312,7 +312,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 	// Renaming
 	s.renameMachineWithParallelsDesktop(ctx, r, response)
 
-	//starting the machine
+	// starting the machine
 	if r.StartAfterPull {
 		s.startMachineWithParallelsDesktop(ctx, r, response)
 	}

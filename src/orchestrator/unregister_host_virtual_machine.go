@@ -1,9 +1,9 @@
 package orchestrator
 
 import (
-	data_models "github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/helpers"
-	"github.com/Parallels/pd-api-service/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 func (s *OrchestratorService) UnregisterHostVirtualMachine(host *data_models.OrchestratorHost, vmId string, request models.UnregisterVirtualMachineRequest) (*models.ParallelsVM, error) {

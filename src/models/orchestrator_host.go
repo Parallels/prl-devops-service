@@ -1,6 +1,6 @@
 package models
 
-import "github.com/Parallels/pd-api-service/errors"
+import "github.com/Parallels/prl-devops-service/errors"
 
 type HostResourceItem struct {
 	PhysicalCpuCount int64   `json:"physical_cpu_count,omitempty"`

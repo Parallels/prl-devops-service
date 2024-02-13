@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/catalog/common"
-	"github.com/Parallels/pd-api-service/serviceprovider/download"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/catalog/common"
+	"github.com/Parallels/prl-devops-service/serviceprovider/download"
 	"github.com/jfrog/jfrog-client-go/artifactory"
 	"github.com/jfrog/jfrog-client-go/artifactory/auth"
 	"github.com/jfrog/jfrog-client-go/artifactory/services"
@@ -364,7 +364,6 @@ func (s *ArtifactoryProvider) getClient(ctx basecontext.ApiContext) (artifactory
 		SetOverallRequestTimeout(60 * time.Minute).
 		SetHttpRetries(8).
 		Build()
-
 	if err != nil {
 		return nil, err
 	}

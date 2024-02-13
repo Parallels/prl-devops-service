@@ -1,8 +1,8 @@
 # Parallels Desktop DevOps Service
 
 [![License: Fair Source](https://img.shields.io/badge/license-fair-source.svg)](https://fair.io/)
-[![Build](https://github.com/Parallels/pd-api-service/actions/workflows/pr.yml/badge.svg)](https://github.com/Parallels/pd-api-service/actions/workflows/pr.yml)
-[![Publish](https://github.com/Parallels/pd-api-service/actions/workflows/publish.yml/badge.svg)](https://github.com/Parallels/pd-api-service/actions/workflows/publish.yml)
+[![Build](https://github.com/Parallels/prl-devops-service/actions/workflows/pr.yml/badge.svg)](https://github.com/Parallels/prl-devops-service/actions/workflows/pr.yml)
+[![Publish](https://github.com/Parallels/prl-devops-service/actions/workflows/publish.yml/badge.svg)](https://github.com/Parallels/prl-devops-service/actions/workflows/publish.yml)
 [![discord](https://dcbadge.vercel.app/api/server/pEwZ254C3d?style=flat&theme=default)](https://discord.gg/pEwZ254C3d)
 
 ## Description
@@ -44,13 +44,13 @@ can clone this repository and run the following command:
 go build ./src
 ```
 
-This will create a binary called `pd-api-service` in the root directory of the
+This will create a binary called `prldevops` in the root directory of the
 repository. You can then run this binary to start the service.
 
 ### Download the binary
 
 You can download the binary from the
-[releases](https://github.com/Parallels/pd-api-service/releases) page. Once you
+[releases](https://github.com/Parallels/prl-devops-service/releases) page. Once you
 have downloaded the binary, you can run it to start the service.
 
 ## Usage
@@ -94,13 +94,13 @@ have the Parallels Desktop inside the container You can build the container by
 running the following command:
 
 ```bash
-docker build -t pd-api-service .
+docker build -t prldevops .
 ```
 
 You can then run the container by running the following command:
 
 ```bash
-docker run -p 8080:8080 pd-api-service
+docker run -p 8080:8080 prldevops
 ```
 
 We also provide a docker compose file that will run the service and the database
@@ -203,8 +203,8 @@ configure the service.
 | MODE | The mode that the service will run in, this can be either `api` or `orchestrator` | api |
 | USE_ORCHESTRATOR_RESOURCES | If the service is running in orchestrator mode, this will allow the service to use the resources of the orchestrator | false |
 | ORCHESTRATOR_PULL_FREQUENCY_SECONDS | The frequency in seconds that the orchestrator will sync with the other hosts in seconds | 30 |
-| DATABASE_FOLDER_ENV_VAR | The folder where the database will be stored | /User/Folder/.pd-api-service |
-| CATALOG_CACHE_FOLDER | The folder where the catalog cache will be stored | /User/Folder/.pd-api-service/catalog |
+| DATABASE_FOLDER_ENV_VAR | The folder where the database will be stored | /User/Folder/.prl-devops-service |
+| CATALOG_CACHE_FOLDER | The folder where the catalog cache will be stored | /User/Folder/.prl-devops-service/catalog |
 | Json Web Tokens | | |
 | JWT_SIGN_ALGORITHM | The algorithm that will be used to sign the jwt tokens, this can be either `HS256`, `RS256`, `HS384`, `RS384`, `HS512`, `RS512` | HS256 |
 | JWT_PRIVATE_KEY | The private key that will be used to sign the jwt tokens, this is only required if you are using `RS256`, `RS384` or `RS512` | |

@@ -15,7 +15,7 @@ COPY ./src .
 RUN go get -d -v
 
 # Build the binary.
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/pd-api-service
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/prl-devops-service
 
 ############################
 # STEP 2 build a small image
@@ -32,8 +32,8 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /tmp/
 
 
-COPY --from=builder /go/bin/pd-api-service /go/bin/pd-api-service
+COPY --from=builder /go/bin/prl-devops-service /go/bin/prl-devops-service
 
 EXPOSE 80
 
-ENTRYPOINT ["/go/bin/pd-api-service"]
+ENTRYPOINT ["/go/bin/prl-devops-service"]

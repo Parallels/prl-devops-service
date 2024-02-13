@@ -1,7 +1,5 @@
 package parallelsdesktop
 
-import "github.com/Parallels/pd-api-service/errors"
+import "github.com/Parallels/prl-devops-service/errors"
 
-var (
-	ErrVirtualMachineNotFound = errors.NewWithCode("Virtual machine not found", 404)
-)
+var ErrVirtualMachineNotFound = errors.NewWithCode("Virtual machine not found", 404)

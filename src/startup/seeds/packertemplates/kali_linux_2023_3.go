@@ -1,11 +1,11 @@
 package packertemplates
 
 import (
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/common"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/data"
-	"github.com/Parallels/pd-api-service/data/models"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/common"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/data"
+	"github.com/Parallels/prl-devops-service/data/models"
 )
 
 func AddKaliLinux2023_3_gnome(ctx *basecontext.BaseContext, svc *data.JsonDatabase) error {

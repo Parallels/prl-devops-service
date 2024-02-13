@@ -3,16 +3,15 @@ package restapi
 import (
 	"context"
 	"encoding/base64"
-
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/models"
-	"github.com/Parallels/pd-api-service/security/password"
-	"github.com/Parallels/pd-api-service/serviceprovider"
-
 	"net/http"
 	"strings"
+
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/security/password"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
 type ApiKeyHeader struct {

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/models"
-	"github.com/Parallels/pd-api-service/restapi"
-	"github.com/Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/restapi"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 )
@@ -88,7 +88,6 @@ func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 		}
 
 		license, err := provider.ParallelsDesktopService.GetLicense()
-
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return

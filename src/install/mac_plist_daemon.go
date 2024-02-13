@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"text/template"
 
-	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/prl-devops-service/constants"
 )
 
 type PlistTemplateData struct {
@@ -35,7 +35,7 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
   <string>com.parallels.api-service</string>
   <key>ProgramArguments</key>
   <array>
-    <string>{{ .Path }}/pd-api-service</string>
+    <string>{{ .Path }}/prl-devops-service</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>
