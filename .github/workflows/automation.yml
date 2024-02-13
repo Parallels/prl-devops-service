@@ -27,11 +27,6 @@ jobs:
       repo: ${{ github.head_ref }}
     runs-on: ubuntu-latest
     steps:
-      - name: I
-        run: |
-          echo ${{ github.event_name }}
-          echo ${{ github.event.sender.name  }}
-          echo ${{ github.event.pull_request.author_association }}
       - name: Assign Security Label
         if: ${{ github.event.pull_request.draft == false && contains(github.event.pull_request.title, 'security')}}
         env:
@@ -39,7 +34,7 @@ jobs:
         run: |
           gh pr edit ${{ github.event.number }} --add-label "security"
   assign-triage-pr:
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.author_association  != 'COLLABORATOR'}}
     name: Assign Triage Label
     env:
       repo: ${{ github.head_ref }}
@@ -50,10 +45,27 @@ jobs:
       - name: I
         run: |
           echo ${{ github.event_name }}
-          echo ${{ github.event.sender.name  }}
+          echo ${{ github.event.sender.id }}
           echo ${{ github.event.pull_request.author_association }}
       - name: Assign Security Label
-        if: ${{ github.event.pull_request.draft == false && contains(github.event.pull_request.title, 'security')}}
+        if: ${{ github.event.pull_request.draft == false }}
+        env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ${{ github.event.sender.name  }}
+          ${{ github.event.pull_request.author_association }}
+          gh pr edit ${{ github.event.number }} --add-label "triage"
+  assign-community-pr:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.author_association  != 'COLLABORATOR'}}
+    name: Assign Triage Label
+    env:
+      repo: ${{ github.head_ref }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+      - name: Assign Security Label
+        if: ${{ github.event.pull_request.draft == false }}
         env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
