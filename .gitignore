@@ -15,3 +15,5 @@ __debug_*
 .DS_Store
 **/pd-devops
 bin/
+coverage/
+super-linter.log
