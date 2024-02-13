@@ -7,8 +7,40 @@ on:
     types: [opened, reopened]
 
 jobs:
-  assign-security:
+  assign-security-issue:
+    if: ${{ github.event_name == 'issues' }}
     name: Assign Security Label
+    env:
+      repo: ${{ github.head_ref }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign Security Label
+        if: ${{ contains(github.event.issue.title, 'security')}}
+        env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} --add-label "security"
+  assign-security-pr:
+    if: ${{ github.event_name == 'pull_request' }}
+    name: Assign Security Label
+    env:
+      repo: ${{ github.head_ref }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: I
+        run: |
+          echo ${{ github.event_name }}
+          echo ${{ github.event.sender.name  }}
+          echo ${{ github.event.pull_request.author_association }}
+      - name: Assign Security Label
+        if: ${{ github.event.pull_request.draft == false && contains(github.event.pull_request.title, 'security')}}
+        env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr edit ${{ github.event.number }} --add-label "security"
+  assign-triage-pr:
+    if: ${{ github.event_name == 'pull_request' }}
+    name: Assign Triage Label
     env:
       repo: ${{ github.head_ref }}
     runs-on: ubuntu-latest
@@ -21,29 +53,7 @@ jobs:
           echo ${{ github.event.sender.name  }}
           echo ${{ github.event.pull_request.author_association }}
       - name: Assign Security Label
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && contains(github.event.pull_request.title, 'security')}}
-        env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr edit ${{ github.event.number }} --add-label "security"
-      - name: Assign Security Label
-        if: ${{ github.event_name == 'issues' && contains(github.event.issue.title, 'security')}}
-        env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh issue edit ${{ github.event.issue.number }} --add-label "security"
-  assign-triage:
-    name: Assign Security Label
-    env:
-      repo: ${{ github.head_ref }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: git checkout
-        uses: actions/checkout@v3
-      - name: I
-        run: echo ${{ github.event_name }}
-      - name: Assign Security Label
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && contains(github.event.pull_request.title, 'security')}}
+        if: ${{ github.event.pull_request.draft == false && contains(github.event.pull_request.title, 'security')}}
         env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
