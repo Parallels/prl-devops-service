@@ -1,11 +1,11 @@
 package seeds
 
 import (
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/common"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/common"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
 func SeedDefaultClaims() error {

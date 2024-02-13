@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/prl-devops-service/errors"
 )
 
 func JoinUrl(segments []string) (*url.URL, error) {

@@ -1,6 +1,6 @@
 basePath: /api
 definitions:
-  github_com_Parallels_pd-api-service_models.CatalogManifest:
+  github_com_Parallels_prl-devops-service_models.CatalogManifest:
     properties:
       architecture:
         type: string
@@ -67,7 +67,7 @@ definitions:
       version:
         type: string
     type: object
-  github_com_Parallels_pd-api-service_models.HostResourceItem:
+  github_com_Parallels_prl-devops-service_models.HostResourceItem:
     properties:
       disk_size:
         type: number
@@ -80,12 +80,12 @@ definitions:
       physical_cpu_count:
         type: integer
     type: object
-  github_com_Parallels_pd-api-service_models.ImportCatalogManifestResponse:
+  github_com_Parallels_prl-devops-service_models.ImportCatalogManifestResponse:
     properties:
       id:
         type: string
     type: object
-  github_com_Parallels_pd-api-service_models.PullCatalogManifestResponse:
+  github_com_Parallels_prl-devops-service_models.PullCatalogManifestResponse:
     properties:
       id:
         type: string
@@ -94,7 +94,7 @@ definitions:
       machine_name:
         type: string
       manifest:
-        $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
     type: object
   models.Advanced:
     properties:
@@ -454,13 +454,13 @@ definitions:
       cpu_type:
         type: string
       total:
-        $ref: '#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem'
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
       total_available:
-        $ref: '#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem'
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
       total_in_use:
-        $ref: '#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem'
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
       total_reserved:
-        $ref: '#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem'
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
     type: object
   models.ImportCatalogManifestRequest:
     properties:
@@ -707,7 +707,7 @@ definitions:
           type: string
         type: array
       resources:
-        $ref: '#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem'
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
       state:
         type: string
       tags:
@@ -2143,7 +2143,7 @@ paths:
             items:
               additionalProperties:
                 items:
-                  $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+                  $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
                 type: array
               type: object
             type: array
@@ -2204,7 +2204,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
             type: array
         "400":
           description: Bad Request
@@ -2272,7 +2272,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
         "400":
           description: Bad Request
           schema:
@@ -2349,7 +2349,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
         "400":
           description: Bad Request
           schema:
@@ -2389,7 +2389,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
         "400":
           description: Bad Request
           schema:
@@ -2429,7 +2429,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
         "400":
           description: Bad Request
           schema:
@@ -2469,7 +2469,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
         "400":
           description: Bad Request
           schema:
@@ -2509,7 +2509,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
         "400":
           description: Bad Request
           schema:
@@ -2541,7 +2541,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.ImportCatalogManifestResponse'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ImportCatalogManifestResponse'
         "400":
           description: Bad Request
           schema:
@@ -2572,7 +2572,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.PullCatalogManifestResponse'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.PullCatalogManifestResponse'
         "400":
           description: Bad Request
           schema:
@@ -2603,7 +2603,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
         "400":
           description: Bad Request
           schema:

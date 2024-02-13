@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/pdfile"
-	"github.com/Parallels/pd-api-service/serviceprovider/system"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/pdfile"
+	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/cjlapao/common-go/helper"
 )
 

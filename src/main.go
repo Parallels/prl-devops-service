@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/Parallels/pd-api-service/cmd"
-	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/prl-devops-service/cmd"
+	"github.com/Parallels/prl-devops-service/constants"
 
 	"github.com/cjlapao/common-go/version"
 )

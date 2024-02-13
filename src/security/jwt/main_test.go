@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -197,7 +197,6 @@ func TestJwtService_SignRS256(t *testing.T) {
 	token, err = svc.Sign(claims)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
-
 }
 
 func TestJwtService_SignRS384(t *testing.T) {
@@ -238,7 +237,6 @@ func TestJwtService_SignRS384(t *testing.T) {
 	token, err = svc.Sign(claims)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
-
 }
 
 func TestJwtService_SignRS512(t *testing.T) {
@@ -279,7 +277,6 @@ func TestJwtService_SignRS512(t *testing.T) {
 	token, err = svc.Sign(claims)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
-
 }
 
 func TestJwtService_SignDefault(t *testing.T) {
@@ -320,7 +317,6 @@ func TestJwtService_SignDefault(t *testing.T) {
 	token, err = svc.Sign(claims)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
-
 }
 
 func TestJwtService_SignNoPrivateKey(t *testing.T) {

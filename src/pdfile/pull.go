@@ -5,11 +5,11 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/catalog"
-	"github.com/Parallels/pd-api-service/catalog/models"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/catalog"
+	"github.com/Parallels/prl-devops-service/catalog/models"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/cjlapao/common-go/helper"
 	"gopkg.in/yaml.v3"
 )

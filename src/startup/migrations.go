@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 
 	_ "github.com/go-sql-driver/mysql"
 )

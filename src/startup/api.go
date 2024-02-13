@@ -1,10 +1,10 @@
 package startup
 
 import (
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/config"
-	"github.com/Parallels/pd-api-service/controllers"
-	"github.com/Parallels/pd-api-service/restapi"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/controllers"
+	"github.com/Parallels/prl-devops-service/restapi"
 )
 
 var listener *restapi.HttpListener

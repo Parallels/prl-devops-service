@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/cjlapao/common-go/helper/http_helper"
 )
 

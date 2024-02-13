@@ -3,7 +3,7 @@ package password
 import (
 	"testing"
 
-	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/stretchr/testify/assert"
 )
 

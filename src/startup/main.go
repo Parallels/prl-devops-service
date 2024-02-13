@@ -3,17 +3,17 @@ package startup
 import (
 	"encoding/base64"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/config"
-	"github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/helpers"
-	"github.com/Parallels/pd-api-service/orchestrator"
-	bruteforceguard "github.com/Parallels/pd-api-service/security/brute_force_guard"
-	"github.com/Parallels/pd-api-service/security/jwt"
-	"github.com/Parallels/pd-api-service/security/password"
-	"github.com/Parallels/pd-api-service/serviceprovider"
-	"github.com/Parallels/pd-api-service/serviceprovider/system"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/orchestrator"
+	bruteforceguard "github.com/Parallels/prl-devops-service/security/brute_force_guard"
+	"github.com/Parallels/prl-devops-service/security/jwt"
+	"github.com/Parallels/prl-devops-service/security/password"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 )
 
 const (

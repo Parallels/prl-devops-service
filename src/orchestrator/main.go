@@ -5,14 +5,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/config"
-	"github.com/Parallels/pd-api-service/data"
-	"github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/mappers"
-	apimodels "github.com/Parallels/pd-api-service/models"
-	"github.com/Parallels/pd-api-service/restapi"
-	"github.com/Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/data"
+	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/mappers"
+	apimodels "github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/restapi"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
 var globalOrchestratorService *OrchestratorService
@@ -179,7 +179,6 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 }
 
 func (s *OrchestratorService) GetResources() error {
-
 	return nil
 }
 

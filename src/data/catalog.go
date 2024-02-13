@@ -3,11 +3,11 @@ package data
 import (
 	"strings"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 var (
@@ -345,7 +345,6 @@ func (j *JsonDatabase) UpdateCatalogManifest(ctx basecontext.ApiContext, record 
 	}
 
 	for i, manifest := range j.data.ManifestsCatalog {
-
 		if strings.EqualFold(manifest.ID, record.ID) {
 			if !strings.EqualFold(manifest.Version, record.Version) {
 				return nil, errors.Newf("cannot update version of catalog manifest %s, it is trying to change the version %s to version %s, not allowed", record.ID, j.data.ManifestsCatalog[i].Version, record.Version)

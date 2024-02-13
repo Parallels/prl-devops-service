@@ -6,20 +6,20 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/common"
-	"github.com/Parallels/pd-api-service/config"
-	"github.com/Parallels/pd-api-service/data"
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/helpers"
-	"github.com/Parallels/pd-api-service/models"
-	"github.com/Parallels/pd-api-service/serviceprovider/git"
-	"github.com/Parallels/pd-api-service/serviceprovider/interfaces"
-	"github.com/Parallels/pd-api-service/serviceprovider/packer"
-	"github.com/Parallels/pd-api-service/serviceprovider/parallelsdesktop"
-	"github.com/Parallels/pd-api-service/serviceprovider/system"
-	"github.com/Parallels/pd-api-service/serviceprovider/vagrant"
-	sql_database "github.com/Parallels/pd-api-service/sql"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/common"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/data"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/serviceprovider/git"
+	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
+	"github.com/Parallels/prl-devops-service/serviceprovider/packer"
+	"github.com/Parallels/prl-devops-service/serviceprovider/parallelsdesktop"
+	"github.com/Parallels/prl-devops-service/serviceprovider/system"
+	"github.com/Parallels/prl-devops-service/serviceprovider/vagrant"
+	sql_database "github.com/Parallels/prl-devops-service/sql"
 
 	log "github.com/cjlapao/common-go-logger"
 )
@@ -60,7 +60,7 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 	globalProvider.RunningUser = currentUser
 
 	if globalProvider.RunningUser == "root" {
-		dbLocation := "/etc/parallels-api-service"
+		dbLocation := "/etc/parallels-devops"
 		err := helpers.CreateDirIfNotExist(dbLocation)
 		if err != nil {
 			panic(err)
@@ -71,6 +71,7 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 		} else {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}
+
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 		ctx.LogInfo("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 		_ = globalProvider.JsonDatabase.Save(ctx)
@@ -79,7 +80,7 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 		if err != nil {
 			panic(err)
 		}
-		dbLocation := userHome + "/.parallels-api-service"
+		dbLocation := userHome + "/.parallels-devops"
 		err = helpers.CreateDirIfNotExist(dbLocation)
 		if err != nil {
 			panic(err)
@@ -161,7 +162,7 @@ func InitServices(ctx basecontext.ApiContext) {
 		if err != nil {
 			panic(err)
 		}
-		dbLocation := userHome + "/.parallels-api-service"
+		dbLocation := userHome + "/.parallels-devops"
 		err = helpers.CreateDirIfNotExist(dbLocation)
 		if err != nil {
 			panic(err)

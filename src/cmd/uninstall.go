@@ -3,8 +3,8 @@ package cmd
 import (
 	"os"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/install"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/install"
 )
 
 func processUninstall(ctx basecontext.ApiContext) {

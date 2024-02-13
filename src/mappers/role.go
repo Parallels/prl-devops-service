@@ -3,9 +3,9 @@ package mappers
 import (
 	"strings"
 
-	data_models "github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/helpers"
-	"github.com/Parallels/pd-api-service/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 func DtoRoleToApi(model data_models.Role) models.RoleResponse {

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/prl-devops-service/constants"
 )
 
 func SetContentType(contentType string, w http.ResponseWriter) {

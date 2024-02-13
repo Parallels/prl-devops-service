@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/tests"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/tests"
 	"github.com/cjlapao/common-go/helper"
 )
 
@@ -27,6 +27,6 @@ func processTestProviders(ctx basecontext.ApiContext) {
 }
 
 func processTestHelp() {
-	fmt.Println("Usage: pd-api-service test <command>")
+	fmt.Println("Usage: prl-devops-service test <command>")
 	fmt.Println("  catalog-providers\t\t\tRun a test on all the catalog providers")
 }

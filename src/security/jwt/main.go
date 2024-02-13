@@ -4,10 +4,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/config"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/security"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/security"
 	"github.com/golang-jwt/jwt/v4"
 	"gopkg.in/square/go-jose.v2"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/prl-devops-service/constants"
 
 	log "github.com/cjlapao/common-go-logger"
 )

@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 type AuthorizationContext struct {
@@ -22,9 +22,7 @@ type AuthorizationContext struct {
 	AuthorizationError *models.OAuthErrorResponse
 }
 
-var (
-	baseAuthorizationCtx *AuthorizationContext
-)
+var baseAuthorizationCtx *AuthorizationContext
 
 func InitAuthorizationContext() *AuthorizationContext {
 	if baseAuthorizationCtx == nil {

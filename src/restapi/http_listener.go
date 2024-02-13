@@ -12,11 +12,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/common"
-	"github.com/Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/common"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 
-	_ "github.com/Parallels/pd-api-service/docs"
+	_ "github.com/Parallels/prl-devops-service/docs"
 	log "github.com/cjlapao/common-go-logger"
 	"github.com/cjlapao/common-go/configuration"
 	"github.com/cjlapao/common-go/helper/http_helper"

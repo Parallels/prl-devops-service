@@ -1,6 +1,6 @@
 package models
 
-import "github.com/Parallels/pd-api-service/errors"
+import "github.com/Parallels/prl-devops-service/errors"
 
 type InstallToolsRequest struct {
 	All   bool                               `json:"all"`

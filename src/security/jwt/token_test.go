@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Parallels/pd-api-service/basecontext"
+	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"
 )

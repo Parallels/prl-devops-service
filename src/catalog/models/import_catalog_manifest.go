@@ -3,8 +3,8 @@ package models
 import (
 	"fmt"
 
-	"github.com/Parallels/pd-api-service/catalog/cleanupservice"
-	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
+	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 type ImportCatalogManifestRequest struct {

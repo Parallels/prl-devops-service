@@ -4,7 +4,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/prl-devops-service/constants"
 )
 
 type RegisterVirtualMachineRequest struct {

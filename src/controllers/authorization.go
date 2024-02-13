@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/models"
-	"github.com/Parallels/pd-api-service/restapi"
-	bruteforceguard "github.com/Parallels/pd-api-service/security/brute_force_guard"
-	"github.com/Parallels/pd-api-service/security/jwt"
-	"github.com/Parallels/pd-api-service/security/password"
-	"github.com/Parallels/pd-api-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/restapi"
+	bruteforceguard "github.com/Parallels/prl-devops-service/security/brute_force_guard"
+	"github.com/Parallels/prl-devops-service/security/jwt"
+	"github.com/Parallels/prl-devops-service/security/password"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 )

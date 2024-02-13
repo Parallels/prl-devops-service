@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/serviceprovider/apiclient"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/serviceprovider/apiclient"
 	"github.com/cjlapao/common-go/helper"
 	"gopkg.in/yaml.v3"
 )

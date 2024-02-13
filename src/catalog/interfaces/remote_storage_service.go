@@ -1,6 +1,6 @@
 package interfaces
 
-import "github.com/Parallels/pd-api-service/basecontext"
+import "github.com/Parallels/prl-devops-service/basecontext"
 
 type RemoteStorageService interface {
 	Name() string

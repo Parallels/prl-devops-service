@@ -15,8 +15,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 const (

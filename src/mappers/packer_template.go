@@ -1,9 +1,9 @@
 package mappers
 
 import (
-	data_models "github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/helpers"
-	"github.com/Parallels/pd-api-service/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 func DtoPackerTemplateFromApiCreateRequest(m models.CreatePackerTemplateRequest) data_models.PackerTemplate {

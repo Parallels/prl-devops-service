@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/helpers"
-	"github.com/Parallels/pd-api-service/serviceprovider/interfaces"
-	"github.com/Parallels/pd-api-service/serviceprovider/system"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
+	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 
 	"github.com/cjlapao/common-go/commands"
 )

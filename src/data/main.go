@@ -5,11 +5,11 @@ import (
 	"os"
 	"sync"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/config"
-	"github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/security"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/security"
 
 	"github.com/cjlapao/common-go/helper"
 )
