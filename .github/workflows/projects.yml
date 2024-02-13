@@ -1,0 +1,23 @@
+name: Assign Projects
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  assign-projects:
+    name: Assign Projects
+    env:
+      repo: ${{ github.head_ref }}
+      project: "Parallels Desktop DevOps Service"
+    runs-on: ubuntu-latest
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: Assign Project
+        env:
+            GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+        run: |
+            gh pr edit  ${{ env.repo }} --add-project "${{ env.project }}"
+

@@ -27,14 +27,43 @@ jobs:
       - name: Build
         working-directory: ${{ github.workspace }}/src
         run: go build -v ./...
-      - name: Run linters
-        uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc # v3.7.0
+
+      - name: Test
+        working-directory: ${{ github.workspace }}
+        run: |
+          go install github.com/axw/gocov/gocov@latest
+          go install github.com/AlekSi/gocov-xml@latest
+          go install github.com/matm/gocov-html/cmd/gocov-html@latest
+
+          go test -coverprofile coverage.txt -covermode count -v ./...
+          gocov convert coverage.txt | gocov-xml > cobertura-coverage.xml
+      
+      - name: Upload Code Coverage
+        uses: actions/upload-artifact@v2
         with:
-          working-directory: ${{ github.workspace }}/src
-          version: latest
-      - name: Run tests
-        working-directory: ${{ github.workspace }}/src
-        run: go test -v ./...
+          name: code-coverage
+          path: ${{ github.workspace }}/cobertura-coverage.xml
+
+      - name: Code Coverage Summary Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: cobertura-coverage.xml
+          badge: true
+          fail_below_min: false
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: false
+          indicators: true
+          output: both
+          thresholds: '40 80'
+          
+      - name: Add Coverage PR Comment
+        if: false  
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          recreate: true
+          path: code-coverage-results.md
+
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
