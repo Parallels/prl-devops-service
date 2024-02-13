@@ -4,13 +4,20 @@ updates:
     allow:
       - dependency-name: "github.com/dependabot-test/go-modules-public"
         dependency-type: "all"
-    timezone: "Europe/Amsterdam"
-    update-types: ["security", "dependencies"]
-    insecure-external-code-execution: "allow"
+    labels: 
+     - "gomod"
+     - "security"
+     - "dependencies"
     directory: "/"
     schedule:
       interval: "weekly"
+      timezone: "Europe/London"
   - package-ecosystem: "docker"
     directory: "/"
+    labels: 
+     - "docker"
+     - "security"
+     - "dependencies"
     schedule:
       interval: "weekly"
+      timezone: "Europe/London"
