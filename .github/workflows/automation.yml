@@ -24,7 +24,7 @@ jobs:
         run: |
           gh pr edit ${{ github.event.number }} --add-label "security"
       - name: Assign Security Label
-        if: ${{ github.event_name == 'issue' && contains(github.event.issue.title, 'security')}}
+        if: ${{ github.event_name == 'issues' && contains(github.event.issue.title, 'security')}}
         env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
