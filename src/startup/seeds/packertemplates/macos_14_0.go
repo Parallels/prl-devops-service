@@ -37,16 +37,16 @@ func AddMacOs14_0Manual(ctx *basecontext.BaseContext, svc *data.JsonDatabase) er
 	}
 
 	if err := ubuntu2304Template.Validate(); err != nil {
-		common.Logger.Error("Error validating Kali Linux 2023.3 template: %s", err.Error())
+		common.Logger.Error("Error validating macOS Sonoma 14.0 template: %s", err.Error())
 		return err
 	} else {
 		if _, err := svc.AddPackerTemplate(ctx, &ubuntu2304Template); err != nil {
 			if err.Error() != data.ErrPackerTemplateAlreadyExists.Error() {
-				common.Logger.Error("Error adding Kali Linux 2023.3 template: %s", err.Error())
+				common.Logger.Error("Error adding macOS Sonoma 14.0 template: %s", err.Error())
 				return err
 			}
 		} else {
-			common.Logger.Info("Kali Linux 2023.3 template added")
+			common.Logger.Info("macOS Sonoma 14.0 template added")
 		}
 	}
 

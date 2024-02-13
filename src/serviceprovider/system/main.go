@@ -56,7 +56,7 @@ func (s *SystemService) Name() string {
 
 func (s *SystemService) FindPath() string {
 	s.ctx.LogInfo("Getting brew executable")
-	out, err := commands.ExecuteWithNoOutput("which", "packer")
+	out, err := commands.ExecuteWithNoOutput("which", "brew")
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
 		s.ctx.LogWarn("Brew executable not found, trying to find it in the default locations")
