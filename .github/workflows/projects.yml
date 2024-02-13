@@ -6,6 +6,7 @@ on:
 
 jobs:
   assign-projects:
+    if: ${{ github.event.pull_request.draft == false && !startsWith(github.event.pull_request, 'BUMP')}}
     name: Assign Projects
     env:
       repo: ${{ github.head_ref }}
