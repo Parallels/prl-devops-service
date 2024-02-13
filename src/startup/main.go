@@ -32,7 +32,7 @@ func Init(ctx basecontext.ApiContext) {
 func Start(ctx basecontext.ApiContext) {
 	cfg := config.Get()
 
-	system := system.New(ctx)
+	system := system.SystemService{}
 	if system.GetOperatingSystem() != "macos" {
 		serviceprovider.InitCatalogServices(ctx)
 	} else {
