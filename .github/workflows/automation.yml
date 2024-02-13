@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: git checkout
         uses: actions/checkout@v3
+      - name: I
+        run: echo ${{ github.event_name }}
       - name: Assign Security Label
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false && contains(github.event.pull_request.title, 'security')}}
         env:
