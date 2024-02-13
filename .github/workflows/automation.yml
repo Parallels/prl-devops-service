@@ -34,7 +34,7 @@ jobs:
         run: |
           gh pr edit ${{ github.event.number }} --add-label "security"
   assign-triage-pr:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.author_association  != 'COLLABORATOR'}}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.author_association  != 'COLLABORATOR' && !startsWith(github.event.pull_request, 'BUMP')}}
     name: Assign Triage Label
     env:
       repo: ${{ github.head_ref }}
@@ -56,7 +56,7 @@ jobs:
           ${{ github.event.pull_request.author_association }}
           gh pr edit ${{ github.event.number }} --add-label "triage"
   assign-community-pr:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.author_association  != 'COLLABORATOR'}}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.author_association  != 'COLLABORATOR' && !startsWith(github.event.pull_request, 'BUMP')}}
     name: Assign Triage Label
     env:
       repo: ${{ github.head_ref }}
