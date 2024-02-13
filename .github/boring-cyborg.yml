@@ -7,13 +7,13 @@ labelPRBasedOnFilePath:
     - CODE_OF_CONDUCT.md
 
   test:
-    - pkg/**/*_test.go
+    - src/**/*_test.go
   triage:
-    - "pkg/**/*"
+    - "src/**/*"
     - "test/**/"
     - "docs/**/*"
   community contribution:
-    - "pkg/**/*"
+    - "src/**/*"
     - "test/**/*"
     - "docs/**/*"
 
