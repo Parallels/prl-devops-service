@@ -1,8 +1,8 @@
 package orchestrator
 
 import (
-	"github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/serviceprovider/apiclient"
+	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/serviceprovider/apiclient"
 )
 
 func (s *OrchestratorService) getApiClient(request models.OrchestratorHost) *apiclient.HttpClientService {

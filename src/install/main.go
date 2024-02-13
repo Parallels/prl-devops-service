@@ -7,17 +7,17 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/config"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/errors"
-	"github.com/Parallels/pd-api-service/helpers"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/cjlapao/common-go/helper"
 )
 
 const (
 	MAC_PLIST_DAEMON_PATH = "/Library/LaunchDaemons"
-	MAC_PLIST_DAEMON_NAME = "com.parallels.pd-api-service.plist"
+	MAC_PLIST_DAEMON_NAME = "com.parallels.prl-devops-service.plist"
 )
 
 func InstallService(ctx basecontext.ApiContext, configFilePath string) error {

@@ -1,4 +1,4 @@
-module github.com/Parallels/pd-api-service
+module github.com/Parallels/prl-devops-service
 
 go 1.21
 

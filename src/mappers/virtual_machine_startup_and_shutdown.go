@@ -1,8 +1,8 @@
 package mappers
 
 import (
-	data_models "github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 func MapDtoVirtualMachineStartupAndShutdownFromApi(m models.StartupAndShutdown) data_models.VirtualMachineStartupAndShutdown {

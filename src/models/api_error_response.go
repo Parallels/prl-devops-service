@@ -1,6 +1,6 @@
 package models
 
-import "github.com/Parallels/pd-api-service/errors"
+import "github.com/Parallels/prl-devops-service/errors"
 
 type ApiErrorResponse struct {
 	Message string `json:"message"`

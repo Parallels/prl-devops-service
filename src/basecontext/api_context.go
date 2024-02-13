@@ -3,7 +3,7 @@ package basecontext
 import (
 	"context"
 
-	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 type ApiContext interface {

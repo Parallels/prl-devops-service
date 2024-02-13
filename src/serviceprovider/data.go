@@ -1,8 +1,8 @@
 package serviceprovider
 
 import (
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/data"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/data"
 )
 
 func GetDatabaseService(ctx basecontext.ApiContext) (*data.JsonDatabase, error) {

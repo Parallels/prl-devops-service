@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/constants"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -344,6 +344,7 @@ func TestCompareWithSHA256SaltError(t *testing.T) {
 	err = svc.Compare(LongInput, salt, "")
 	assert.EqualError(t, err, "error: password cannot be longer than 40 characters")
 }
+
 func TestPasswordService_processEnvironmentVariables(t *testing.T) {
 	svc := New(nil)
 

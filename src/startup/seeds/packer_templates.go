@@ -1,10 +1,10 @@
 package seeds
 
 import (
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/common"
-	"github.com/Parallels/pd-api-service/serviceprovider"
-	"github.com/Parallels/pd-api-service/startup/seeds/packertemplates"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/common"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/startup/seeds/packertemplates"
 )
 
 func SeedDefaultVirtualMachineTemplates() error {

@@ -1,9 +1,9 @@
 package orchestrator
 
 import (
-	data_models "github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/helpers"
-	"github.com/Parallels/pd-api-service/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 func (s *OrchestratorService) ConfigureHostVirtualMachine(host *data_models.OrchestratorHost, vmId string, request models.VirtualMachineConfigRequest) (*models.VirtualMachineConfigResponse, error) {

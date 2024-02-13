@@ -1360,7 +1360,7 @@ const docTemplate = `{
                                 "additionalProperties": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                                        "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                                     }
                                 }
                             }
@@ -1414,7 +1414,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.ImportCatalogManifestResponse"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ImportCatalogManifestResponse"
                         }
                     },
                     "400": {
@@ -1465,7 +1465,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.PullCatalogManifestResponse"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.PullCatalogManifestResponse"
                         }
                     },
                     "400": {
@@ -1516,7 +1516,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -1567,7 +1567,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                             }
                         }
                     },
@@ -1668,7 +1668,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -1782,7 +1782,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -1903,7 +1903,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -1966,7 +1966,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -2029,7 +2029,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -2092,7 +2092,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -4375,7 +4375,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_Parallels_pd-api-service_models.CatalogManifest": {
+        "github_com_Parallels_prl-devops-service_models.CatalogManifest": {
             "type": "object",
             "properties": {
                 "architecture": {
@@ -4476,7 +4476,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_Parallels_pd-api-service_models.HostResourceItem": {
+        "github_com_Parallels_prl-devops-service_models.HostResourceItem": {
             "type": "object",
             "properties": {
                 "disk_size": {
@@ -4496,7 +4496,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_Parallels_pd-api-service_models.ImportCatalogManifestResponse": {
+        "github_com_Parallels_prl-devops-service_models.ImportCatalogManifestResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -4504,7 +4504,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_Parallels_pd-api-service_models.PullCatalogManifestResponse": {
+        "github_com_Parallels_prl-devops-service_models.PullCatalogManifestResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -4517,7 +4517,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "manifest": {
-                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                 }
             }
         },
@@ -5069,16 +5069,16 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "total": {
-                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
                 },
                 "total_available": {
-                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
                 },
                 "total_in_use": {
-                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
                 },
                 "total_reserved": {
-                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
                 }
             }
         },
@@ -5446,7 +5446,7 @@ const docTemplate = `{
                     }
                 },
                 "resources": {
-                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
                 },
                 "state": {
                     "type": "string"

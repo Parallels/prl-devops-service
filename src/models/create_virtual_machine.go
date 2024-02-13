@@ -3,8 +3,8 @@ package models
 import (
 	"os"
 
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/errors"
 )
 
 type CreateVirtualMachineRequest struct {

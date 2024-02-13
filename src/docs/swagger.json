@@ -1353,7 +1353,7 @@
                                 "additionalProperties": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                                        "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                                     }
                                 }
                             }
@@ -1407,7 +1407,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.ImportCatalogManifestResponse"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ImportCatalogManifestResponse"
                         }
                     },
                     "400": {
@@ -1458,7 +1458,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.PullCatalogManifestResponse"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.PullCatalogManifestResponse"
                         }
                     },
                     "400": {
@@ -1509,7 +1509,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -1560,7 +1560,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                             }
                         }
                     },
@@ -1661,7 +1661,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -1775,7 +1775,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -1896,7 +1896,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -1959,7 +1959,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -2022,7 +2022,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -2085,7 +2085,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                         }
                     },
                     "400": {
@@ -4368,7 +4368,7 @@
         }
     },
     "definitions": {
-        "github_com_Parallels_pd-api-service_models.CatalogManifest": {
+        "github_com_Parallels_prl-devops-service_models.CatalogManifest": {
             "type": "object",
             "properties": {
                 "architecture": {
@@ -4469,7 +4469,7 @@
                 }
             }
         },
-        "github_com_Parallels_pd-api-service_models.HostResourceItem": {
+        "github_com_Parallels_prl-devops-service_models.HostResourceItem": {
             "type": "object",
             "properties": {
                 "disk_size": {
@@ -4489,7 +4489,7 @@
                 }
             }
         },
-        "github_com_Parallels_pd-api-service_models.ImportCatalogManifestResponse": {
+        "github_com_Parallels_prl-devops-service_models.ImportCatalogManifestResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -4497,7 +4497,7 @@
                 }
             }
         },
-        "github_com_Parallels_pd-api-service_models.PullCatalogManifestResponse": {
+        "github_com_Parallels_prl-devops-service_models.PullCatalogManifestResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -4510,7 +4510,7 @@
                     "type": "string"
                 },
                 "manifest": {
-                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.CatalogManifest"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
                 }
             }
         },
@@ -5062,16 +5062,16 @@
                     "type": "string"
                 },
                 "total": {
-                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
                 },
                 "total_available": {
-                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
                 },
                 "total_in_use": {
-                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
                 },
                 "total_reserved": {
-                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
                 }
             }
         },
@@ -5439,7 +5439,7 @@
                     }
                 },
                 "resources": {
-                    "$ref": "#/definitions/github_com_Parallels_pd-api-service_models.HostResourceItem"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
                 },
                 "state": {
                     "type": "string"

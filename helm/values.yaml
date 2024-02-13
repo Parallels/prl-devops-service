@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: cjlapao/pd-api-service
+  repository: cjlapao/prl-devops-service
   pullPolicy: IfNotPresent
   tag: "latest"
 

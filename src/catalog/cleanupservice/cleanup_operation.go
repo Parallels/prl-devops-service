@@ -3,9 +3,9 @@ package cleanupservice
 import (
 	"path/filepath"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/catalog/interfaces"
-	"github.com/Parallels/pd-api-service/errors"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/catalog/interfaces"
+	"github.com/Parallels/prl-devops-service/errors"
 
 	"github.com/cjlapao/common-go/helper"
 )

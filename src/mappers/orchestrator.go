@@ -3,8 +3,8 @@ package mappers
 import (
 	"net/url"
 
-	data_models "github.com/Parallels/pd-api-service/data/models"
-	"github.com/Parallels/pd-api-service/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.OrchestratorHostResponse {

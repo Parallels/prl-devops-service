@@ -1,8 +1,8 @@
 package catalog
 
 import (
-	"github.com/Parallels/pd-api-service/catalog/models"
-	"github.com/Parallels/pd-api-service/serviceprovider/apiclient"
+	"github.com/Parallels/prl-devops-service/catalog/models"
+	"github.com/Parallels/prl-devops-service/serviceprovider/apiclient"
 )
 
 func GetAuthenticator(provider *models.CatalogManifestProvider) apiclient.HttpClientServiceAuthorization {

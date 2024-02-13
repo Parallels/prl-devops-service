@@ -3,8 +3,8 @@ package models
 import (
 	"strings"
 
-	"github.com/Parallels/pd-api-service/helpers"
-	"github.com/Parallels/pd-api-service/models"
+	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/models"
 )
 
 type OrchestratorHost struct {

@@ -3,9 +3,9 @@ package cmd
 import (
 	"os"
 
-	"github.com/Parallels/pd-api-service/basecontext"
-	"github.com/Parallels/pd-api-service/constants"
-	"github.com/Parallels/pd-api-service/install"
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/install"
 	"github.com/cjlapao/common-go/helper"
 )
 
