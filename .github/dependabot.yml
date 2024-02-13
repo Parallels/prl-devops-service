@@ -5,7 +5,7 @@ updates:
       - dependency-name: "github.com/dependabot-test/go-modules-public"
         dependency-type: "all"
     timezone: "Europe/Amsterdam"
-    update-types: ["securit1y", "dependencies"]
+    update-types: ["security", "dependencies"]
     insecure-external-code-execution: "allow"
     directory: "/"
     schedule:
