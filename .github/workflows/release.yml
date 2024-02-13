@@ -17,7 +17,6 @@ on:
 jobs:
   create-release-pr:
     name: Create release PR
-
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -39,14 +38,14 @@ jobs:
           git config --global user.email "cjlapao@gmail.com"
           git config --global user.name "cjlapao"
 
-          NEW_VERSION=$(./scripts/workflows/increment-version.sh ${{ inputs.version }})
-          jq --arg new_version "$NEW_VERSION" '.version = $new_version' version.json > "tmp.json" && mv "tmp.json" "version.json"
+          NEW_VERSION=$(./.github/workflow_scripts/increment-version.sh -t ${{ inputs.version }} -f VERSION)
+          echo "$NEW_VERSION" > ./VERSION
           sed -i "/^version:/c\version: \"$NEW_VERSION\"" ./helm/Chart.yaml
           sed -i "/^appVersion:/c\appVersion: \"$NEW_VERSION\"" ./helm/Chart.yaml
           sed -i "/^var ver =/c\var ver = \"$NEW_VERSION\"" ./src/main.go
           sed -i "/^\/\/	@version/c\\//	@version $NEW_VERSION" ./src/main.go
-          
-          git checkout -b release/$NEW_VERSION
+
+          git checkout -b release/"$NEW_VERSION"
 
           go install github.com/swaggo/swag/cmd/swag@latest
           cd src
@@ -55,12 +54,12 @@ jobs:
           swag init -g main.go
           cd ..
 
-          git add version.json ./src/* ./helm/Chart.yaml
+          git add VERSION./src/* ./helm/Chart.yaml ./badges/*
           git commit -m "Release extension version $NEW_VERSION"
 
           git push --set-upstream origin release/$NEW_VERSION
 
-          echo "new_version=$NEW_VERSION" >> $GITHUB_ENV
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_ENV"
 
       - name: Create PR
         run: |
@@ -71,5 +70,6 @@ jobs:
             --body-file releasenotes.md \
             --base main \
             --head release/${{ env.new_version }}
+          gh pr edit --add-label release-request
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}

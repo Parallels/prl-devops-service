@@ -1,0 +1,25 @@
+name: Assign Milestone
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  assign-milestone:
+    name: Assign Milestone
+    env:
+      repo: ${{ github.head_ref }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: Assign Milestone
+        env:
+            GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+        run: |
+            gh extension install valeriobelli/gh-milestone
+            NEXT_MILESTONE=$(gh milestone list --json title --jq ".[-1].title")
+            if [ -n "$NEXT_MILESTONE" ]; then
+                gh pr edit  ${{ env.repo }} --milestone "$NEXT_MILESTONE"
+            fi
