@@ -8,14 +8,6 @@ labelPRBasedOnFilePath:
 
   test:
     - src/**/*_test.go
-  triage:
-    - "src/**/*"
-    - "test/**/"
-    - "docs/**/*"
-  community contribution:
-    - "src/**/*"
-    - "test/**/*"
-    - "docs/**/*"
 
 firstPRWelcomeComment: >
   Thanks for opening this pull request! Please check out our contributing guidelines.

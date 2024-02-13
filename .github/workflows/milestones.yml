@@ -1,12 +1,14 @@
 name: Assign Milestone
 
 on:
+  issues: 
+    types: [opened, reopened]
   pull_request:
     types: [opened, reopened]
 
 jobs:
   assign-milestone:
-    if: ${{ github.event.pull_request.draft == false && !startsWith(github.event.pull_request, 'BUMP')}}
+    if: ${{ github.event.pull_request.draft == false && !startsWith(github.event.pull_request, 'BUMP') && !startsWith(github.head_ref, 'release/')}}
     name: Assign Milestone
     env:
       repo: ${{ github.head_ref }}
