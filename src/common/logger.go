@@ -11,7 +11,7 @@ import (
 
 var Logger = log.Get().WithTimestamp()
 
-func LogInfo(ctx context.Context, format string, args ...string) {
+func LogInfof(ctx context.Context, format string, args ...string) {
 	id := ctx.Value(constants.REQUEST_ID_KEY)
 	if id != nil && id.(string) != "" {
 		Logger.Info(fmt.Sprintf("[%s] %s", id.(string), fmt.Sprintf(format, args)))

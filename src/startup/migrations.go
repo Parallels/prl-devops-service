@@ -21,8 +21,6 @@ func ExecuteMigrations() {
 		log.Fatal(err)
 	}
 
-	defer db.Close()
-
 	// Execute the create table script
 	_, err = db.Exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -37,6 +35,8 @@ func ExecuteMigrations() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	defer db.Close()
 
 	fmt.Println("Table created successfully")
 }

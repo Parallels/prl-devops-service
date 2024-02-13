@@ -44,7 +44,7 @@ func processApi(ctx basecontext.ApiContext) {
 
 	currentUserEnv := cfg.GetKey(constants.CURRENT_USER_ENV_VAR)
 	if currentUserEnv != "" {
-		ctx.LogInfo("Running with user %s", currentUser)
+		ctx.LogInfof("Running with user %s", currentUser)
 	}
 
 	// updating the root password if the environment variable is set
@@ -56,7 +56,7 @@ func processApi(ctx basecontext.ApiContext) {
 		if rootUser != nil {
 			passwdSvc := password.Get()
 			if err := passwdSvc.Compare(rootPassword, rootUser.ID, rootUser.Password); err != nil {
-				ctx.LogInfo("Updating root password")
+				ctx.LogInfof("Updating root password")
 				if err := db.UpdateRootPassword(ctx, cfg.GetKey(constants.ROOT_PASSWORD_ENV_VAR)); err != nil {
 					panic(err)
 				}

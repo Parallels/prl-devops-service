@@ -17,7 +17,7 @@ func GetBaseContext(r *http.Request) *basecontext.BaseContext {
 }
 
 func ReturnApiError(ctx basecontext.ApiContext, w http.ResponseWriter, err models.ApiErrorResponse) {
-	ctx.LogError("Error: %s", err.Message)
+	ctx.LogErrorf("Error: %s", err.Message)
 	w.WriteHeader(err.Code)
 	_ = json.NewEncoder(w).Encode(err)
 }

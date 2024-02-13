@@ -73,7 +73,7 @@ func (s *ArtifactoryProvider) Check(ctx basecontext.ApiContext, connection strin
 		}
 	}
 	if provider == "" || !strings.EqualFold(provider, providerName) {
-		ctx.LogDebug("Provider %s is not %s, skipping", providerName, provider)
+		ctx.LogDebugf("Provider %s is not %s, skipping", providerName, provider)
 		return false, nil
 	}
 
@@ -92,7 +92,7 @@ func (s *ArtifactoryProvider) Check(ctx basecontext.ApiContext, connection strin
 
 // uploadFile uploads a file to an S3 bucket
 func (s *ArtifactoryProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath string, path string, filename string) error {
-	ctx.LogInfo("[%s] Pushing file %s", s.Name(), filename)
+	ctx.LogInfof("[%s] Pushing file %s", s.Name(), filename)
 	localFilePath := filepath.Join(rootLocalPath, filename)
 	remoteFilePath := filepath.Join(s.Repo.RepoName, path, filename)
 	if !strings.HasPrefix(remoteFilePath, "/") {
@@ -121,13 +121,13 @@ func (s *ArtifactoryProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 		return fmt.Errorf("failed to upload %s", filename)
 	}
 
-	ctx.LogInfo("[%s] Uploaded %s", s.Name(), filename)
+	ctx.LogInfof("[%s] Uploaded %s", s.Name(), filename)
 
 	return nil
 }
 
 func (s *ArtifactoryProvider) PullFile(ctx basecontext.ApiContext, path string, filename string, destination string) error {
-	ctx.LogInfo("[%s] Pulling file %s", s.Name(), filename)
+	ctx.LogInfof("[%s] Pulling file %s", s.Name(), filename)
 	destinationFilePath := filepath.Join(destination, filename)
 	remoteFilePath := filepath.Join(s.Repo.RepoName, path, filename)
 	remoteFilePath = strings.TrimPrefix(remoteFilePath, "/")
@@ -150,7 +150,7 @@ func (s *ArtifactoryProvider) PullFile(ctx basecontext.ApiContext, path string, 
 }
 
 func (s *ArtifactoryProvider) DeleteFile(ctx basecontext.ApiContext, path string, fileName string) error {
-	ctx.LogInfo("[%s] Deleting file %s", s.Name(), fileName)
+	ctx.LogInfof("[%s] Deleting file %s", s.Name(), fileName)
 	fullPath := filepath.Join(s.Repo.RepoName, path, fileName)
 	fullPath = strings.TrimPrefix(fullPath, "/")
 	fullPath = strings.TrimSuffix(fullPath, "/")
@@ -180,7 +180,7 @@ func (s *ArtifactoryProvider) DeleteFile(ctx basecontext.ApiContext, path string
 }
 
 func (s *ArtifactoryProvider) FileChecksum(ctx basecontext.ApiContext, path string, fileName string) (string, error) {
-	ctx.LogInfo("[%s] Getting checksum for file %s", s.Name(), fileName)
+	ctx.LogInfof("[%s] Getting checksum for file %s", s.Name(), fileName)
 	fullPath := filepath.Join(s.Repo.RepoName, path, fileName)
 	fullPath = strings.TrimPrefix(fullPath, "/")
 	fullPath = strings.TrimSuffix(fullPath, "/")
@@ -215,7 +215,7 @@ func (s *ArtifactoryProvider) FileChecksum(ctx basecontext.ApiContext, path stri
 }
 
 func (s *ArtifactoryProvider) FileExists(ctx basecontext.ApiContext, path string, fileName string) (bool, error) {
-	ctx.LogInfo("[%s] Checking if file %s exists", s.Name(), fileName)
+	ctx.LogInfof("[%s] Checking if file %s exists", s.Name(), fileName)
 	fullPath := filepath.Join(s.Repo.RepoName, path, fileName)
 	fullPath = strings.TrimPrefix(fullPath, "/")
 	fullPath = strings.TrimSuffix(fullPath, "/")
@@ -245,7 +245,7 @@ func (s *ArtifactoryProvider) FileExists(ctx basecontext.ApiContext, path string
 }
 
 func (s *ArtifactoryProvider) CreateFolder(ctx basecontext.ApiContext, folderPath string, folderName string) error {
-	ctx.LogInfo("[%s] Creating folder %s", s.Name(), folderName)
+	ctx.LogInfof("[%s] Creating folder %s", s.Name(), folderName)
 	fullPath := filepath.Join(s.Repo.RepoName, folderPath, folderName)
 	fullPath = strings.TrimPrefix(fullPath, "/")
 	if !strings.HasSuffix(fullPath, "/") {
@@ -277,7 +277,7 @@ func (s *ArtifactoryProvider) CreateFolder(ctx basecontext.ApiContext, folderPat
 }
 
 func (s *ArtifactoryProvider) DeleteFolder(ctx basecontext.ApiContext, folderPath string, folderName string) error {
-	ctx.LogInfo("[%s] Deleting folder %s", s.Name(), folderName)
+	ctx.LogInfof("[%s] Deleting folder %s", s.Name(), folderName)
 	fullPath := filepath.Join(s.Repo.RepoName, folderPath, folderName)
 	fullPath = strings.TrimPrefix(fullPath, "/")
 	if !strings.HasSuffix(fullPath, "/") {
@@ -308,7 +308,7 @@ func (s *ArtifactoryProvider) DeleteFolder(ctx basecontext.ApiContext, folderPat
 }
 
 func (s *ArtifactoryProvider) FolderExists(ctx basecontext.ApiContext, folderPath string, folderName string) (bool, error) {
-	ctx.LogInfo("[%s] Checking if folder %s exists", s.Name(), folderName)
+	ctx.LogInfof("[%s] Checking if folder %s exists", s.Name(), folderName)
 	fullPath := filepath.Join(s.Repo.RepoName, folderPath, folderName)
 	fullPath = strings.TrimPrefix(fullPath, "/")
 	if !strings.HasSuffix(fullPath, "/") {
@@ -364,7 +364,6 @@ func (s *ArtifactoryProvider) getClient(ctx basecontext.ApiContext) (artifactory
 		SetOverallRequestTimeout(60 * time.Minute).
 		SetHttpRetries(8).
 		Build()
-
 	if err != nil {
 		return nil, err
 	}

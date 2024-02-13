@@ -62,9 +62,9 @@ func catalogInitPdFile(ctx basecontext.ApiContext, cmd string) *pdfile.PDFile {
 		if diag.HasErrors() {
 			ctx.EnableLog()
 			ctx.ToggleLogTimestamps(false)
-			ctx.LogError("There was errors loading the pd file:")
+			ctx.LogErrorf("There was errors loading the pd file:")
 			for _, err := range diag.Errors() {
-				ctx.LogError("  - %v", err)
+				ctx.LogErrorf("  - %v", err)
 			}
 			os.Exit(1)
 		}
@@ -89,9 +89,9 @@ func catalogInitPdFile(ctx basecontext.ApiContext, cmd string) *pdfile.PDFile {
 	if validationDiag.HasErrors() {
 		ctx.EnableLog()
 		ctx.ToggleLogTimestamps(false)
-		ctx.LogError("There was errors validating the pd file:")
+		ctx.LogErrorf("There was errors validating the pd file:")
 		for _, err := range validationDiag.Errors() {
-			ctx.LogError("  - %v", err)
+			ctx.LogErrorf("  - %v", err)
 		}
 
 		os.Exit(1)

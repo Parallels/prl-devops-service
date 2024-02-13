@@ -36,10 +36,8 @@ func (c *VagrantConfigBlock) String() string {
 	result += fmt.Sprintf("%s%s\n", strings.Repeat("  ", c.Indent), c.Header)
 
 	for _, line := range c.Content {
-
 		lineIndent := c.Indent + 1
 		result += fmt.Sprintf("%s%s\n", strings.Repeat("  ", lineIndent), line)
-
 	}
 
 	for _, child := range c.Children {

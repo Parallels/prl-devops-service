@@ -140,24 +140,24 @@ func (s *BruteForceGuard) processEnvironmentVariables() {
 	if cfg.GetKey(constants.BRUTE_FORCE_MAX_LOGIN_ATTEMPTS_ENV_VAR) != "" {
 		maxLoginAttempts, err := strconv.Atoi(cfg.GetKey(constants.BRUTE_FORCE_MAX_LOGIN_ATTEMPTS_ENV_VAR))
 		if err != nil {
-			s.ctx.LogWarn("[BruteForceGuard] Invalid value for %s: %s", constants.BRUTE_FORCE_MAX_LOGIN_ATTEMPTS_ENV_VAR, err.Error())
+			s.ctx.LogWarnf("[BruteForceGuard] Invalid value for %s: %s", constants.BRUTE_FORCE_MAX_LOGIN_ATTEMPTS_ENV_VAR, err.Error())
 		} else {
-			s.ctx.LogDebug("[BruteForceGuard] Setting %s to %d", constants.BRUTE_FORCE_MAX_LOGIN_ATTEMPTS_ENV_VAR, maxLoginAttempts)
+			s.ctx.LogDebugf("[BruteForceGuard] Setting %s to %d", constants.BRUTE_FORCE_MAX_LOGIN_ATTEMPTS_ENV_VAR, maxLoginAttempts)
 			s.options.WithMaxLoginAttempts(maxLoginAttempts)
 		}
 	}
 
 	if cfg.GetKey(constants.BRUTE_FORCE_LOCKOUT_DURATION_ENV_VAR) != "" {
-		s.ctx.LogDebug("[BruteForceGuard] Setting %s to %s", constants.BRUTE_FORCE_LOCKOUT_DURATION_ENV_VAR, cfg.GetKey(constants.BRUTE_FORCE_LOCKOUT_DURATION_ENV_VAR))
+		s.ctx.LogDebugf("[BruteForceGuard] Setting %s to %s", constants.BRUTE_FORCE_LOCKOUT_DURATION_ENV_VAR, cfg.GetKey(constants.BRUTE_FORCE_LOCKOUT_DURATION_ENV_VAR))
 		s.options.WithBlockDuration(cfg.GetKey(constants.BRUTE_FORCE_LOCKOUT_DURATION_ENV_VAR))
 	}
 
 	if cfg.GetKey(constants.BRUTE_FORCE_INCREMENTAL_WAIT_ENV_VAR) != "" {
 		incrementalWait, err := strconv.ParseBool(cfg.GetKey(constants.BRUTE_FORCE_INCREMENTAL_WAIT_ENV_VAR))
 		if err != nil {
-			s.ctx.LogWarn("[BruteForceGuard] Invalid value for %s: %s", constants.BRUTE_FORCE_INCREMENTAL_WAIT_ENV_VAR, err.Error())
+			s.ctx.LogWarnf("[BruteForceGuard] Invalid value for %s: %s", constants.BRUTE_FORCE_INCREMENTAL_WAIT_ENV_VAR, err.Error())
 		} else {
-			s.ctx.LogInfo("[BruteForceGuard] Setting %s to %v", constants.BRUTE_FORCE_INCREMENTAL_WAIT_ENV_VAR, incrementalWait)
+			s.ctx.LogInfof("[BruteForceGuard] Setting %s to %v", constants.BRUTE_FORCE_INCREMENTAL_WAIT_ENV_VAR, incrementalWait)
 			s.options.WithIncrementalWait(incrementalWait)
 		}
 	}

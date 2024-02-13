@@ -111,7 +111,7 @@ func (c *BaseContext) ToggleLogTimestamps(value bool) {
 	common.Logger.EnableTimestamp(value)
 }
 
-func (c *BaseContext) LogInfo(format string, a ...interface{}) {
+func (c *BaseContext) LogInfof(format string, a ...interface{}) {
 	// log is disabled, returning
 	if !c.shouldLog {
 		return
@@ -125,7 +125,7 @@ func (c *BaseContext) LogInfo(format string, a ...interface{}) {
 	common.Logger.Info(msg, a...)
 }
 
-func (c *BaseContext) LogError(format string, a ...interface{}) {
+func (c *BaseContext) LogErrorf(format string, a ...interface{}) {
 	// log is disabled, returning
 	if !c.shouldLog {
 		return
@@ -139,7 +139,7 @@ func (c *BaseContext) LogError(format string, a ...interface{}) {
 	common.Logger.Error(msg, a...)
 }
 
-func (c *BaseContext) LogDebug(format string, a ...interface{}) {
+func (c *BaseContext) LogDebugf(format string, a ...interface{}) {
 	// log is disabled, returning
 	if !c.shouldLog {
 		return
@@ -153,7 +153,7 @@ func (c *BaseContext) LogDebug(format string, a ...interface{}) {
 	common.Logger.Debug(msg, a...)
 }
 
-func (c *BaseContext) LogWarn(format string, a ...interface{}) {
+func (c *BaseContext) LogWarnf(format string, a ...interface{}) {
 	// log is disabled, returning
 	if !c.shouldLog {
 		return

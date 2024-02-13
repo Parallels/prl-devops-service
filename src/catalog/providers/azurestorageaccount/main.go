@@ -67,7 +67,7 @@ func (s *AzureStorageAccountProvider) Check(ctx basecontext.ApiContext, connecti
 		}
 	}
 	if provider == "" || !strings.EqualFold(provider, providerName) {
-		ctx.LogDebug("Provider %s is not %s, skipping", providerName, provider)
+		ctx.LogDebugf("Provider %s is not %s, skipping", providerName, provider)
 		return false, nil
 	}
 
@@ -85,7 +85,7 @@ func (s *AzureStorageAccountProvider) Check(ctx basecontext.ApiContext, connecti
 }
 
 func (s *AzureStorageAccountProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath string, path string, filename string) error {
-	ctx.LogInfo("Pushing file %s", filename)
+	ctx.LogInfof("Pushing file %s", filename)
 	localFilePath := filepath.Join(rootLocalPath, filename)
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 
@@ -128,7 +128,7 @@ func (s *AzureStorageAccountProvider) PushFile(ctx basecontext.ApiContext, rootL
 }
 
 func (s *AzureStorageAccountProvider) PullFile(ctx basecontext.ApiContext, path string, filename string, destination string) error {
-	ctx.LogInfo("Pulling file %s", filename)
+	ctx.LogInfof("Pulling file %s", filename)
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 	destinationFilePath := filepath.Join(destination, filename)
 	credential, err := azblob.NewSharedKeyCredential(s.StorageAccount.Name, s.StorageAccount.Key)

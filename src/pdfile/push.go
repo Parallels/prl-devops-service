@@ -14,7 +14,7 @@ import (
 )
 
 func (p *PDFile) runPush(ctx basecontext.ApiContext) (interface{}, *PDFileDiagnostics) {
-	ctx.LogInfo("Starting push...")
+	ctx.LogInfof("Starting push...")
 	ctx.DisableLog()
 
 	diag := NewPDFileDiagnostics()

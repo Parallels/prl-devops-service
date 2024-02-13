@@ -9,7 +9,7 @@ import (
 
 func processUninstall(ctx basecontext.ApiContext) {
 	if err := install.UninstallService(ctx); err != nil {
-		ctx.LogError(err.Error())
+		ctx.LogErrorf(err.Error())
 		os.Exit(1)
 	}
 	os.Exit(0)

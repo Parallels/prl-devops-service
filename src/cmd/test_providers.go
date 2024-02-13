@@ -15,7 +15,7 @@ func processTestProviders(ctx basecontext.ApiContext) {
 	switch subcommand {
 	case constants.TEST_CATALOG_PROVIDERS_FLAG:
 		if err := tests.TestCatalogProviders(ctx); err != nil {
-			ctx.LogError(err.Error())
+			ctx.LogErrorf(err.Error())
 			os.Exit(1)
 		}
 	default:

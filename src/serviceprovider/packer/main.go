@@ -33,7 +33,7 @@ func New(ctx basecontext.ApiContext) *PackerService {
 		ctx: ctx,
 	}
 	if globalPackerService.FindPath() == "" {
-		ctx.LogWarn("Running without support for packer")
+		ctx.LogWarnf("Running without support for packer")
 	} else {
 		globalPackerService.installed = true
 	}
@@ -47,25 +47,25 @@ func (s *PackerService) Name() string {
 }
 
 func (s *PackerService) FindPath() string {
-	s.ctx.LogInfo("Getting packer executable")
+	s.ctx.LogInfof("Getting packer executable")
 	out, err := commands.ExecuteWithNoOutput("which", "packer")
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
-		s.ctx.LogWarn("Packer executable not found, trying to find it in the default locations")
+		s.ctx.LogWarnf("Packer executable not found, trying to find it in the default locations")
 	}
 
 	if path != "" {
 		s.executable = path
-		s.ctx.LogInfo("Packer found at: %s", s.executable)
+		s.ctx.LogInfof("Packer found at: %s", s.executable)
 	} else {
 		if _, err := os.Stat("/opt/homebrew/bin/packer"); err == nil {
 			s.executable = "/opt/homebrew/bin/packer"
 		} else {
-			s.ctx.LogWarn("Packer executable not found")
+			s.ctx.LogWarnf("Packer executable not found")
 			return s.executable
 		}
 
-		s.ctx.LogInfo("Packer found at: %s", s.executable)
+		s.ctx.LogInfof("Packer found at: %s", s.executable)
 	}
 
 	return s.executable
@@ -87,7 +87,7 @@ func (s *PackerService) Version() string {
 
 func (s *PackerService) Install(asUser, version string, flags map[string]string) error {
 	if s.installed {
-		s.ctx.LogInfo("%s already installed", s.Name())
+		s.ctx.LogInfof("%s already installed", s.Name())
 		return nil
 	}
 
@@ -97,7 +97,7 @@ func (s *PackerService) Install(asUser, version string, flags map[string]string)
 			if dependency == nil {
 				return errors.New("Dependency is nil")
 			}
-			s.ctx.LogInfo("Installing dependency %s for %s", dependency.Name(), s.Name())
+			s.ctx.LogInfof("Installing dependency %s for %s", dependency.Name(), s.Name())
 			if err := dependency.Install(asUser, "latest", flags); err != nil {
 				return err
 			}
@@ -122,7 +122,7 @@ func (s *PackerService) Install(asUser, version string, flags map[string]string)
 		cmd.Args = append(cmd.Args, "install", "packer@"+version)
 	}
 
-	s.ctx.LogInfo("Installing %s with command: %v", s.Name(), cmd.String())
+	s.ctx.LogInfof("Installing %s with command: %v", s.Name(), cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -133,7 +133,7 @@ func (s *PackerService) Install(asUser, version string, flags map[string]string)
 
 func (s *PackerService) Uninstall(asUser string, uninstallDependencies bool) error {
 	if s.installed {
-		s.ctx.LogInfo("Uninstalling %s", s.Name())
+		s.ctx.LogInfof("Uninstalling %s", s.Name())
 
 		var cmd helpers.Command
 		if asUser == "" {
@@ -161,7 +161,7 @@ func (s *PackerService) Uninstall(asUser string, uninstallDependencies bool) err
 				if dependency == nil {
 					continue
 				}
-				s.ctx.LogInfo("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
+				s.ctx.LogInfof("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
 				if err := dependency.Uninstall(asUser, uninstallDependencies); err != nil {
 					return err
 				}
@@ -211,7 +211,7 @@ func (s *PackerService) Init(ctx basecontext.ApiContext, owner string, path stri
 		return buildError
 	}
 
-	ctx.LogInfo("Packer folder %v initialized", path)
+	ctx.LogInfof("Packer folder %v initialized", path)
 	return nil
 }
 
@@ -238,6 +238,6 @@ func (s *PackerService) Build(ctx basecontext.ApiContext, owner string, path str
 		return buildError
 	}
 
-	ctx.LogInfo("Packer folder %v built", path)
+	ctx.LogInfof("Packer folder %v built", path)
 	return nil
 }

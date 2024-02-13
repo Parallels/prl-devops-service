@@ -23,7 +23,7 @@ import (
 )
 
 func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version string) {
-	ctx.LogInfo("Registering version %s Claims handlers", version)
+	ctx.LogInfof("Registering version %s Claims handlers", version)
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).WithPath("orchestrator/hosts").
@@ -197,7 +197,7 @@ func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.OrchestratorHostResponse, 0)
 			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfo("Hosts returned: %v", len(response))
+			ctx.LogInfof("Hosts returned: %v", len(response))
 			return
 		}
 
@@ -219,7 +219,7 @@ func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 			starTime := time.Now()
 			wg.Add(1)
 			go func(host data_models.OrchestratorHost) {
-				ctx.LogDebug("Processing Host: %v\n", host.Host)
+				ctx.LogDebugf("Processing Host: %v\n", host.Host)
 				defer wg.Done()
 
 				rHost := mappers.DtoOrchestratorHostToApiResponse(host)
@@ -228,7 +228,7 @@ func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 				mutex.Lock()
 				response = append(response, rHost)
 				mutex.Unlock()
-				ctx.LogDebug("Processing Host: %v - Time: %v\n", host.Host, time.Since(starTime))
+				ctx.LogDebugf("Processing Host: %v - Time: %v\n", host.Host, time.Since(starTime))
 			}(host)
 		}
 
@@ -236,7 +236,7 @@ func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Hosts returned successfully")
+		ctx.LogInfof("Hosts returned successfully")
 	}
 }
 
@@ -276,7 +276,7 @@ func GetOrchestratorHostHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Orchestrator host returned successfully")
+		ctx.LogInfof("Orchestrator host returned successfully")
 	}
 }
 
@@ -335,7 +335,7 @@ func CreateOrchestratorHostHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Orchestrator Host created successfully")
+		ctx.LogInfof("Orchestrator Host created successfully")
 	}
 }
 
@@ -369,7 +369,7 @@ func DeleteOrchestratorHostHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("Orchestrator host deleted successfully")
+		ctx.LogInfof("Orchestrator host deleted successfully")
 	}
 }
 
@@ -414,7 +414,7 @@ func GetOrchestratorOverviewHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Returned successfully the orchestrator overview")
+		ctx.LogInfof("Returned successfully the orchestrator overview")
 	}
 }
 
@@ -451,7 +451,7 @@ func GetOrchestratorHostResourcesHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Returned successfully the orchestrator host resources")
+		ctx.LogInfof("Returned successfully the orchestrator host resources")
 	}
 }
 
@@ -487,7 +487,7 @@ func GetOrchestratorVirtualMachinesHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Returned successfully the orchestrator virtual machines")
+		ctx.LogInfof("Returned successfully the orchestrator virtual machines")
 	}
 }
 
@@ -527,7 +527,7 @@ func GetOrchestratorHostVirtualMachinesHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Returned successfully %s orchestrator virtual machines", len(response))
+		ctx.LogInfof("Returned successfully %s orchestrator virtual machines", len(response))
 	}
 }
 
@@ -566,7 +566,7 @@ func GetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Returned successfully the orchestrator virtual machine")
+		ctx.LogInfof("Returned successfully the orchestrator virtual machine")
 	}
 }
 
@@ -620,7 +620,7 @@ func DeleteOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("Successfully deleted the orchestrator virtual machine %s", vmId)
+		ctx.LogInfof("Successfully deleted the orchestrator virtual machine %s", vmId)
 	}
 }
 
@@ -679,7 +679,7 @@ func GetOrchestratorHostVirtualMachineStatusHandler() restapi.ControllerHandler 
 
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Returned successfully the orchestrator virtual machine")
+		ctx.LogInfof("Returned successfully the orchestrator virtual machine")
 	}
 }
 
@@ -754,7 +754,7 @@ func RenameOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Successfully renamed the orchestrator virtual machine %s", vmId)
+		ctx.LogInfof("Successfully renamed the orchestrator virtual machine %s", vmId)
 	}
 }
 
@@ -828,7 +828,7 @@ func SetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Successfully configured the orchestrator virtual machine %s", vmId)
+		ctx.LogInfof("Successfully configured the orchestrator virtual machine %s", vmId)
 	}
 }
 
@@ -902,7 +902,7 @@ func ExecutesOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Successfully executed command in the orchestrator virtual machine %s", vmId)
+		ctx.LogInfof("Successfully executed command in the orchestrator virtual machine %s", vmId)
 	}
 }
 
@@ -974,7 +974,7 @@ func RegisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Successfully registered virtual machine %s in the orchestrator", response.ID)
+		ctx.LogInfof("Successfully registered virtual machine %s in the orchestrator", response.ID)
 	}
 }
 
@@ -1048,7 +1048,7 @@ func UnregisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler
 		}
 
 		ReturnApiCommonResponse(w)
-		ctx.LogInfo("Successfully unregistered virtual machine %s in the orchestrator", vmId)
+		ctx.LogInfof("Successfully unregistered virtual machine %s in the orchestrator", vmId)
 	}
 }
 
@@ -1150,7 +1150,7 @@ func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Successfully configured the orchestrator virtual machine %s", response.ID)
+		ctx.LogInfof("Successfully configured the orchestrator virtual machine %s", response.ID)
 	}
 }
 
@@ -1294,6 +1294,6 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Successfully configured the orchestrator virtual machine %s", response.ID)
+		ctx.LogInfof("Successfully configured the orchestrator virtual machine %s", response.ID)
 	}
 }

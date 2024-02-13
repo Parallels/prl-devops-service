@@ -53,7 +53,7 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 	}
 
 	if globalParallelsService.FindPath() == "" {
-		ctx.LogWarn("Running without support for Parallels Desktop")
+		ctx.LogWarnf("Running without support for Parallels Desktop")
 	} else {
 		globalParallelsService.installed = true
 	}
@@ -67,36 +67,36 @@ func (s *ParallelsService) Name() string {
 }
 
 func (s *ParallelsService) FindPath() string {
-	s.ctx.LogInfo("Getting prlctl executable")
+	s.ctx.LogInfof("Getting prlctl executable")
 	out, err := commands.ExecuteWithNoOutput("which", "prlctl")
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
-		s.ctx.LogWarn("Parallels Desktop CLI executable not found, trying to find it in the default locations")
+		s.ctx.LogWarnf("Parallels Desktop CLI executable not found, trying to find it in the default locations")
 	}
 
 	if path != "" {
 		s.executable = path
 		s.serverExecutable = strings.ReplaceAll(path, "prlctl", "prlsrvctl")
-		s.ctx.LogInfo("Parallels Desktop CLI found at: %s", s.executable)
+		s.ctx.LogInfof("Parallels Desktop CLI found at: %s", s.executable)
 	} else {
 		if _, err := os.Stat("/usr/bin/prlctl"); err == nil {
 			s.executable = "/usr/bin/prlctl"
 			s.serverExecutable = "/usr/bin/prlsrvctl"
 			if err := os.Setenv("PATH", os.Getenv("PATH")+":/usr/bin"); err != nil {
-				s.ctx.LogWarn("Error setting PATH environment variable: %v", err)
+				s.ctx.LogWarnf("Error setting PATH environment variable: %v", err)
 			}
 		} else if _, err := os.Stat("/usr/local/bin/prlctl"); err == nil {
 			s.executable = "/usr/local/bin/prlctl"
 			s.serverExecutable = "/usr/local/bin/prlsrvctl"
 			if err := os.Setenv("PATH", os.Getenv("PATH")+":/usr/local/bin"); err != nil {
-				s.ctx.LogWarn("Error setting PATH environment variable: %v", err)
+				s.ctx.LogWarnf("Error setting PATH environment variable: %v", err)
 			}
 		} else {
-			s.ctx.LogWarn("Parallels Desktop CLI executable not found, trying to install it")
+			s.ctx.LogWarnf("Parallels Desktop CLI executable not found, trying to install it")
 			return s.executable
 		}
 
-		s.ctx.LogInfo("Parallels Desktop CLI found at: %s", s.executable)
+		s.ctx.LogInfof("Parallels Desktop CLI found at: %s", s.executable)
 	}
 
 	return s.executable
@@ -124,7 +124,7 @@ func (s *ParallelsService) Version() string {
 
 func (s *ParallelsService) Install(asUser, version string, flags map[string]string) error {
 	if s.installed {
-		s.ctx.LogInfo("%s already installed", s.Name())
+		s.ctx.LogInfof("%s already installed", s.Name())
 	} else {
 
 		// Installing service dependency
@@ -133,7 +133,7 @@ func (s *ParallelsService) Install(asUser, version string, flags map[string]stri
 				if dependency == nil {
 					return errors.New("Dependency is nil")
 				}
-				s.ctx.LogInfo("Installing dependency %s for %s", dependency.Name(), s.Name())
+				s.ctx.LogInfof("Installing dependency %s for %s", dependency.Name(), s.Name())
 				if err := dependency.Install(asUser, "latest", flags); err != nil {
 					return err
 				}
@@ -158,7 +158,7 @@ func (s *ParallelsService) Install(asUser, version string, flags map[string]stri
 			cmd.Args = append(cmd.Args, "install", "parallels@"+version)
 		}
 
-		s.ctx.LogInfo("Installing %s with command: %v", s.Name(), cmd.String())
+		s.ctx.LogInfof("Installing %s with command: %v", s.Name(), cmd.String())
 		_, err := helpers.ExecuteWithNoOutput(cmd)
 		if err != nil {
 			return err
@@ -182,7 +182,7 @@ func (s *ParallelsService) Install(asUser, version string, flags map[string]stri
 	}
 
 	if license != "" {
-		s.ctx.LogInfo("Activating Parallels Desktop with license %s", license)
+		s.ctx.LogInfof("Activating Parallels Desktop with license %s", license)
 		if err := s.InstallLicense(license, username, password); err != nil {
 			return err
 		}
@@ -197,7 +197,7 @@ func (s *ParallelsService) Install(asUser, version string, flags map[string]stri
 
 func (s *ParallelsService) Uninstall(asUser string, uninstallDependencies bool) error {
 	if s.installed {
-		s.ctx.LogInfo("Uninstalling %s", s.Name())
+		s.ctx.LogInfof("Uninstalling %s", s.Name())
 
 		var cmd helpers.Command
 		if asUser == "" {
@@ -229,7 +229,7 @@ func (s *ParallelsService) Uninstall(asUser string, uninstallDependencies bool) 
 				if dependency == nil {
 					continue
 				}
-				s.ctx.LogInfo("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
+				s.ctx.LogInfof("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
 				if err := dependency.Uninstall(asUser, uninstallDependencies); err != nil {
 					return err
 				}
@@ -272,7 +272,7 @@ func (s *ParallelsService) GetVms(ctx basecontext.ApiContext, filter string) ([]
 	}
 
 	for _, user := range users {
-		ctx.LogInfo("Getting VMs for user: %s", user.Username)
+		ctx.LogInfof("Getting VMs for user: %s", user.Username)
 		var userMachines []models.ParallelsVM
 		stdout, err := commands.ExecuteWithNoOutput("sudo", "-u", user.Username, s.executable, "list", "-a", "-i", "--json")
 		if err != nil {
@@ -511,7 +511,7 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 		cmd.Args = append(cmd.Args, "--delay-applying-restrictions")
 	}
 
-	ctx.LogDebug("Executing command: %s", cmd.String())
+	ctx.LogDebugf("Executing command: %s", cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -544,7 +544,7 @@ func (s *ParallelsService) UnregisterVm(ctx basecontext.ApiContext, r models.Unr
 		cmd.Args = append(cmd.Args, "--clean-src-uuid")
 	}
 
-	ctx.LogInfo(cmd.String())
+	ctx.LogInfof(cmd.String())
 	_, err = helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return errors.NewFromErrorf(err, "Error unregistering VM %s", r.ID)
@@ -576,7 +576,7 @@ func (s *ParallelsService) RenameVm(ctx basecontext.ApiContext, r models.RenameV
 		cmd.Args = append(cmd.Args, "--description", r.Description)
 	}
 
-	ctx.LogInfo(cmd.String())
+	ctx.LogInfof(cmd.String())
 	_, err = helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -654,7 +654,7 @@ func (s *ParallelsService) GetInfo() (*models.ParallelsDesktopInfo, error) {
 
 	s.Info = &info
 	if info.License.State != "valid" {
-		s.ctx.LogError("Parallels license is not active")
+		s.ctx.LogErrorf("Parallels license is not active")
 	} else {
 		s.isLicensed = true
 	}
@@ -675,69 +675,69 @@ func (s *ParallelsService) ConfigureVm(ctx basecontext.ApiContext, id string, se
 		op.Owner = vm.User
 		switch op.Group {
 		case "state":
-			ctx.LogInfo("Setting machine state to %s", op.Operation)
+			ctx.LogInfof("Setting machine state to %s", op.Operation)
 			if err := s.SetVmState(ctx, vm.ID, ParallelsVirtualMachineDesiredStateFromString(op.Operation)); err != nil {
 				op.Error = err
 			}
 		case "machine":
-			ctx.LogInfo("Setting machine property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting machine property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmMachineOperation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
 		case "cpu":
-			ctx.LogInfo("Setting cpu property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting cpu property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmCpu(ctx, vm, op); err != nil {
 				op.Error = err
 			}
 		case "memory":
-			ctx.LogInfo("Setting memory property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting memory property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmMemory(ctx, vm, op); err != nil {
 				op.Error = err
 			}
 		case "boot-order":
-			ctx.LogInfo("Setting boot order property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting boot order property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmBootOperation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
 		case "efi-secure-boot":
-			ctx.LogInfo("Setting boot efi secure boot property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting boot efi secure boot property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmBootOperation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
 		case "select-boot-device":
-			ctx.LogInfo("Setting select boot device property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting select boot device property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmBootOperation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
 		case "external-boot-device":
-			ctx.LogInfo("Setting external boot device property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting external boot device property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmBootOperation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
 		case "time":
-			ctx.LogInfo("Setting time sync property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting time sync property %s to %s", op.Operation, op.Value)
 			if err := s.SetTimeSyncOperation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
 		case "network":
-			ctx.LogInfo("Setting network property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting network property %s to %s", op.Operation, op.Value)
 		case "device":
-			ctx.LogInfo("Setting device property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting device property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmDeviceOperation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
 		case "shared-folder":
-			ctx.LogInfo("Setting shared_folder property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting shared_folder property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmSharedFolderOperation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
 		case "rosetta":
-			ctx.LogInfo("Setting rosetta property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting rosetta property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmRosettaEmulation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
 		case "cmd":
-			ctx.LogInfo("Setting custom property %s to %s", op.Operation, op.Value)
+			ctx.LogInfof("Setting custom property %s to %s", op.Operation, op.Value)
 			if err := s.RunCustomCommand(ctx, vm, op); err != nil {
 				op.Error = err
 			}
@@ -754,7 +754,7 @@ func (s *ParallelsService) CreateVm(ctx basecontext.ApiContext, template data_mo
 }
 
 func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, template data_models.PackerTemplate, desiredState string) (*models.ParallelsVM, error) {
-	ctx.LogInfo("Creating Packer Virtual Machine %s", template.Name)
+	ctx.LogInfof("Creating Packer Virtual Machine %s", template.Name)
 	existVm, err := s.findVm(ctx, template.Name)
 	if existVm != nil || err != nil {
 		if errors.GetSystemErrorCode(err) != 404 {
@@ -765,11 +765,11 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 	git := git.Get(ctx)
 	repoPath, err := git.Clone(ctx, "https://github.com/Parallels/packer-examples", template.Owner, "packer-examples")
 	if err != nil {
-		ctx.LogError("Error cloning packer-examples repository: %s", err.Error())
+		ctx.LogErrorf("Error cloning packer-examples repository: %s", err.Error())
 		return nil, err
 	}
 
-	ctx.LogInfo("Cloned packer-examples repository to %s", repoPath)
+	ctx.LogInfof("Cloned packer-examples repository to %s", repoPath)
 
 	packer := packer.Get(ctx)
 	scriptPath := fmt.Sprintf("%s/%s", repoPath, template.PackerFolder)
@@ -816,39 +816,39 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 
 	overrideFileContent := helpers.ToHCL(overrideFile, 0)
 	if err := helper.WriteToFile(overrideFileContent, overrideFilePath); err != nil {
-		ctx.LogError("Error writing override file %s: %s", overrideFilePath, err.Error())
+		ctx.LogErrorf("Error writing override file %s: %s", overrideFilePath, err.Error())
 		return nil, err
 	}
 
-	ctx.LogInfo("Created override file")
+	ctx.LogInfof("Created override file")
 
-	ctx.LogInfo("Initializing packer repository")
+	ctx.LogInfof("Initializing packer repository")
 	if err = packer.Init(ctx, template.Owner, scriptPath); err != nil {
 		cleanError := helpers.RemoveFolder(repoPath)
 		if cleanError != nil {
-			ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
+			ctx.LogErrorf("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		return nil, err
 	}
-	ctx.LogInfo("Initialized packer repository")
+	ctx.LogInfof("Initialized packer repository")
 
-	ctx.LogInfo("Building packer machine")
+	ctx.LogInfof("Building packer machine")
 	if err = packer.Build(ctx, template.Owner, scriptPath, overrideFilePath); err != nil {
 		cleanError := helpers.RemoveFolder(repoPath)
 		if cleanError != nil {
-			ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
+			ctx.LogErrorf("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		return nil, err
 	}
 
-	ctx.LogInfo("Built packer machine")
+	ctx.LogInfof("Built packer machine")
 
 	users, err := system.Get().GetSystemUsers(ctx)
 	if err != nil {
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
-			ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
+			ctx.LogErrorf("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		return nil, err
@@ -867,9 +867,9 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 	}
 
 	if !userExists {
-		ctx.LogError("User %s does not exist", template.Owner)
+		ctx.LogErrorf("User %s does not exist", template.Owner)
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
-			ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
+			ctx.LogErrorf("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		return nil, errors.New("User does not exist")
@@ -882,28 +882,28 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 
 	err = helpers.CreateDirIfNotExist(userFolder)
 	if err != nil {
-		ctx.LogError("Error creating user folder %s: %s", userFolder, err.Error())
+		ctx.LogErrorf("Error creating user folder %s: %s", userFolder, err.Error())
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
-			ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
+			ctx.LogErrorf("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		return nil, err
 	}
 
-	ctx.LogInfo("Created user folder %s", userFolder)
+	ctx.LogInfof("Created user folder %s", userFolder)
 
 	destinationFolder := fmt.Sprintf("%s/%s.pvm", userFolder, template.Name)
 	sourceFolder := fmt.Sprintf("%s/out/%s.pvm", scriptPath, template.Name)
 	err = helpers.MoveFolder(sourceFolder, destinationFolder)
 	if err != nil {
-		ctx.LogError("Error moving folder %s to %s: %s", sourceFolder, destinationFolder, err.Error())
+		ctx.LogErrorf("Error moving folder %s to %s: %s", sourceFolder, destinationFolder, err.Error())
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
-			ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
+			ctx.LogErrorf("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		if helper.DirectoryExists(sourceFolder) {
 			if cleanError := helpers.RemoveFolder(sourceFolder); cleanError != nil {
-				ctx.LogError("Error removing destination folder %s: %s", repoPath, cleanError.Error())
+				ctx.LogErrorf("Error removing destination folder %s: %s", repoPath, cleanError.Error())
 				return nil, cleanError
 			}
 		}
@@ -913,54 +913,54 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 	if template.Owner != "root" {
 		_, err = commands.ExecuteWithNoOutput("sudo", "chown", "-R", template.Owner, destinationFolder)
 		if err != nil {
-			ctx.LogError("Error changing owner of folder %s to %s: %s", destinationFolder, template.Owner, err.Error())
+			ctx.LogErrorf("Error changing owner of folder %s to %s: %s", destinationFolder, template.Owner, err.Error())
 			if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
-				ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
+				ctx.LogErrorf("Error removing folder %s: %s", repoPath, cleanError.Error())
 				return nil, cleanError
 			}
 			return nil, err
 		}
 	}
 
-	ctx.LogInfo("Moved folder %s to %s", sourceFolder, destinationFolder)
+	ctx.LogInfof("Moved folder %s to %s", sourceFolder, destinationFolder)
 	_, err = commands.ExecuteWithNoOutput("sudo", "-u", template.Owner, s.executable, "register", destinationFolder)
 	if err != nil {
-		ctx.LogError("Error registering VM %s: %s", destinationFolder, err.Error())
+		ctx.LogErrorf("Error registering VM %s: %s", destinationFolder, err.Error())
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
-			ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
+			ctx.LogErrorf("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		return nil, err
 	}
 
-	ctx.LogInfo("Registered VM %s", destinationFolder)
+	ctx.LogInfof("Registered VM %s", destinationFolder)
 
 	existVm, err = s.findVm(ctx, template.Name)
 	if existVm == nil || err != nil {
-		ctx.LogError("Error finding VM %s: %s", template.Name, err.Error())
+		ctx.LogErrorf("Error finding VM %s: %s", template.Name, err.Error())
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
-			ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
+			ctx.LogErrorf("Error removing folder %s: %s", repoPath, cleanError.Error())
 			return nil, cleanError
 		}
 		return nil, errors.Newf("Something went wrong with creating machine %v, it does not exist, err: %v", template.Name, err.Error())
 	}
 
 	if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
-		ctx.LogError("Error removing folder %s: %s", repoPath, cleanError.Error())
+		ctx.LogErrorf("Error removing folder %s: %s", repoPath, cleanError.Error())
 		return nil, cleanError
 	}
 
 	switch desiredState {
 	case "running":
 		if err := s.StartVm(ctx, existVm.ID); err != nil {
-			ctx.LogError("Error starting VM %s: %s", existVm.ID, err.Error())
+			ctx.LogErrorf("Error starting VM %s: %s", existVm.ID, err.Error())
 			return nil, err
 		}
 	default:
-		ctx.LogInfo("Desired state is %s, not starting VM %s", desiredState, existVm.ID)
+		ctx.LogInfof("Desired state is %s, not starting VM %s", desiredState, existVm.ID)
 	}
 
-	ctx.LogInfo("Created VM %s", existVm.ID)
+	ctx.LogInfof("Created VM %s", existVm.ID)
 	return existVm, nil
 }
 
@@ -1000,7 +1000,7 @@ func (s *ParallelsService) SetVmMachineOperation(ctx basecontext.ApiContext, vm 
 		return errors.ErrConfigInvalidOperation(op.Operation)
 	}
 
-	ctx.LogInfo(cmd.String())
+	ctx.LogInfof(cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -1042,7 +1042,7 @@ func (s *ParallelsService) SetVmBootOperation(ctx basecontext.ApiContext, vm *mo
 		return errors.ErrConfigInvalidOperation(op.Operation)
 	}
 
-	ctx.LogInfo(cmd.String())
+	ctx.LogInfof(cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -1074,7 +1074,7 @@ func (s *ParallelsService) SetVmSharedFolderOperation(ctx basecontext.ApiContext
 		return errors.ErrConfigInvalidOperation(op.Operation)
 	}
 
-	ctx.LogInfo(cmd.String())
+	ctx.LogInfof(cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -1131,7 +1131,7 @@ func (s *ParallelsService) SetVmDeviceOperation(ctx basecontext.ApiContext, vm *
 		return errors.ErrConfigInvalidOperation(op.Operation)
 	}
 
-	ctx.LogInfo(cmd.String())
+	ctx.LogInfof(cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -1275,7 +1275,7 @@ func (s *ParallelsService) SetTimeSyncOperation(ctx basecontext.ApiContext, vm *
 		return errors.ErrConfigInvalidOperation(op.Operation)
 	}
 
-	ctx.LogInfo(cmd.String())
+	ctx.LogInfof(cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -1309,7 +1309,7 @@ func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id str
 	args = append(args, s.executable, "exec", vm.ID, r.Command)
 	cmd.Args = args
 
-	ctx.LogInfo("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
+	ctx.LogInfof("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
 	stdout, stderr, exitCode, cmdError := helpers.ExecuteWithOutput(cmd)
 	response.Stdout = stdout
 	response.Stderr = stderr
@@ -1318,7 +1318,7 @@ func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id str
 		response.Error = cmdError.Error()
 	}
 
-	ctx.LogInfo("Command %s %s executed with exit code %v", cmd.Command, strings.Join(cmd.Args, " "), exitCode)
+	ctx.LogInfof("Command %s %s executed with exit code %v", cmd.Command, strings.Join(cmd.Args, " "), exitCode)
 	return response, nil
 }
 

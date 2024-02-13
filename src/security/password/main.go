@@ -50,7 +50,7 @@ func New(ctx basecontext.ApiContext) *PasswordService {
 
 	err := globalPasswordService.processEnvironmentVariables()
 	if err != nil {
-		ctx.LogError("Error processing environment variables for password complexity options: %s", err.Error())
+		ctx.LogErrorf("Error processing environment variables for password complexity options: %s", err.Error())
 	}
 
 	return globalPasswordService
@@ -71,7 +71,7 @@ func (s *PasswordService) Hash(password string, salt string) (string, error) {
 	case PasswordHashingAlgorithmSHA256:
 		return s.hashSHA256(password, salt)
 	default:
-		s.ctx.LogError("Unknown password hashing algorithm: %s", s.HashingAlgorithm)
+		s.ctx.LogErrorf("Unknown password hashing algorithm: %s", s.HashingAlgorithm)
 		return "", errors.Newf("Unknown password hashing algorithm: %s", s.HashingAlgorithm)
 	}
 }
@@ -83,7 +83,7 @@ func (s *PasswordService) Compare(password string, salt string, hashedPwd string
 	case PasswordHashingAlgorithmSHA256:
 		return s.sha256Compare(password, salt, hashedPwd)
 	default:
-		s.ctx.LogError("Unknown password hashing algorithm: %s", s.HashingAlgorithm)
+		s.ctx.LogErrorf("Unknown password hashing algorithm: %s", s.HashingAlgorithm)
 		return errors.Newf("Unknown password hashing algorithm: %s", s.HashingAlgorithm)
 	}
 }

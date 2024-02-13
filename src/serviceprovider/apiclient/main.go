@@ -112,7 +112,7 @@ func (c *HttpClientService) Delete(url string, destination interface{}) (*HttpCl
 }
 
 func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, data interface{}, destination interface{}) (*HttpClientServiceResponse, error) {
-	c.ctx.LogInfo("[Api Client] %v data from %s", verb, url)
+	c.ctx.LogInfof("[Api Client] %v data from %s", verb, url)
 	var err error
 	apiResponse := HttpClientServiceResponse{
 		StatusCode: 0,
@@ -133,7 +133,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 	var client *http.Client
 	var req *http.Request
 	if c.timeout > 0 {
-		c.ctx.LogDebug("[Api Client] Setting timeout to %v for host %v\n", c.timeout, url)
+		c.ctx.LogDebugf("[Api Client] Setting timeout to %v for host %v\n", c.timeout, url)
 		client = &http.Client{
 			Transport: &http.Transport{
 				TLSHandshakeTimeout: c.timeout,
@@ -163,7 +163,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 
 	if data != nil {
 		reqBody, err := json.MarshalIndent(data, "", "  ")
-		c.ctx.LogDebug("[Api Client] Request body: \n%s", string(reqBody))
+		c.ctx.LogDebugf("[Api Client] Request body: \n%s", string(reqBody))
 		if err != nil {
 			return &apiResponse, fmt.Errorf("error marshalling data, err: %v", err)
 		}
@@ -204,7 +204,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 			}
 		}
 		if c.authorization.Username != "" && c.authorization.Password != "" {
-			c.ctx.LogDebug("[Api Client] Getting Client Authorization with username %s ", c.authorization.Username)
+			c.ctx.LogDebugf("[Api Client] Getting Client Authorization with username %s ", c.authorization.Username)
 			token, err := getJwtToken(c.ctx, url, c.authorization.Username, c.authorization.Password)
 			if err != nil {
 				apiResponse.StatusCode = 401
@@ -218,10 +218,10 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 
 	if c.authorizer != nil {
 		if c.authorizer.BearerToken != "" {
-			c.ctx.LogDebug("[Api Client] Setting Authorization header to Bearer %s", c.authorizer.BearerToken)
+			c.ctx.LogDebugf("[Api Client] Setting Authorization header to Bearer %s", c.authorizer.BearerToken)
 			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.authorizer.BearerToken))
 		} else if c.authorizer.ApiKey != "" {
-			c.ctx.LogDebug("[Api Client] Setting Authorization header to X-Api-Key %s", c.authorizer.ApiKey)
+			c.ctx.LogDebugf("[Api Client] Setting Authorization header to X-Api-Key %s", c.authorizer.ApiKey)
 			req.Header.Set("X-Api-Key", c.authorizer.ApiKey)
 		}
 	}
@@ -270,7 +270,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 				return &apiResponse, fmt.Errorf("error unmarshalling body from %s, err: %v ", url, err)
 			}
 
-			c.ctx.LogDebug("[Api Client] Response body: \n%s", string(body))
+			c.ctx.LogDebugf("[Api Client] Response body: \n%s", string(body))
 			apiResponse.Data = destination
 		} else {
 			var bodyData map[string]interface{}
@@ -338,7 +338,7 @@ func getJwtToken(ctx basecontext.ApiContext, baseUrl, username, password string)
 	hostAndPath := fmt.Sprintf("%s://%s/%s", h.Scheme, h.Host, DEFAULT_API_LOGIN_URL)
 
 	c := NewHttpClient(ctx)
-	c.ctx.LogDebug("[Api Client] Getting token from %s with username and password", hostAndPath, username, password)
+	c.ctx.LogDebugf("[Api Client] Getting token from %s with username and password", hostAndPath, username, password)
 
 	var tokenResponse models.LoginResponse
 	if _, err := c.Post(hostAndPath, tokenRequest, &tokenResponse); err != nil {

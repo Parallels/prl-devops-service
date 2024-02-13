@@ -55,11 +55,11 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	s.db = dbService
 
 	if waitForInit {
-		s.ctx.LogInfo("[Orchestrator] Waiting for API to be initialized")
+		s.ctx.LogInfof("[Orchestrator] Waiting for API to be initialized")
 		<-restapi.Initialized
 	}
 
-	s.ctx.LogInfo("[Orchestrator] Starting Orchestrator Background Service")
+	s.ctx.LogInfof("[Orchestrator] Starting Orchestrator Background Service")
 	for {
 		select {
 		case <-s.syncContext.Done():
@@ -78,8 +78,8 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 			wg.Wait()
 
 			if len(dtoOrchestratorHosts) > 0 {
-				s.ctx.LogInfo("[Orchestrator] processed %v hosts", len(dtoOrchestratorHosts))
-				s.ctx.LogInfo("[Orchestrator] Sleeping for %s seconds", s.refreshInterval)
+				s.ctx.LogInfof("[Orchestrator] processed %v hosts", len(dtoOrchestratorHosts))
+				s.ctx.LogInfof("[Orchestrator] Sleeping for %s seconds", s.refreshInterval)
 			}
 
 			time.Sleep(s.refreshInterval)
@@ -88,7 +88,7 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 }
 
 func (s *OrchestratorService) Stop() {
-	s.ctx.LogInfo("[Orchestrator] Stopping Orchestrator Background Service")
+	s.ctx.LogInfof("[Orchestrator] Stopping Orchestrator Background Service")
 	s.cancel()
 	s.syncContext.Done()
 }
@@ -116,11 +116,11 @@ func (s *OrchestratorService) processHostWaitingGroup(host models.OrchestratorHo
 }
 
 func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
-	s.ctx.LogInfo("[Orchestrator] Processing host %s", host.Host)
+	s.ctx.LogInfof("[Orchestrator] Processing host %s", host.Host)
 
 	host.HealthCheck = &apimodels.ApiHealthCheck{}
 	if healthCheck, err := s.GetHostSystemHealthCheck(&host); err != nil {
-		s.ctx.LogError("[Orchestrator] Error getting health check for host %s: %v", host.Host, err.Error())
+		s.ctx.LogErrorf("[Orchestrator] Error getting health check for host %s: %v", host.Host, err.Error())
 		host.SetUnhealthy(err.Error())
 		_ = s.persistHost(&host)
 		return
@@ -132,7 +132,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	// Updating the host resources
 	hardwareInfo, err := s.GetHostHardwareInfo(&host)
 	if err != nil {
-		s.ctx.LogError("[Orchestrator] Error getting hardware info for host %s: %v", host.Host, err.Error())
+		s.ctx.LogErrorf("[Orchestrator] Error getting hardware info for host %s: %v", host.Host, err.Error())
 		host.SetUnhealthy(err.Error())
 		_ = s.persistHost(&host)
 		return
@@ -150,7 +150,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	// Updating the Virtual Machines
 	vms, err := s.GetHostVirtualMachinesInfo(&host)
 	if err != nil {
-		s.ctx.LogError("[Orchestrator] Error getting virtual machines for host %s: %v", host.Host, err.Error())
+		s.ctx.LogErrorf("[Orchestrator] Error getting virtual machines for host %s: %v", host.Host, err.Error())
 		host.SetUnhealthy(err.Error())
 		_ = s.persistHost(&host)
 		return
@@ -171,7 +171,7 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 	// persist the host
 	_ = s.db.Connect(s.ctx)
 	if _, err := s.db.UpdateOrchestratorHost(s.ctx, host); err != nil {
-		s.ctx.LogError("[Orchestrator] Error saving host %s: %v", host.Host, err.Error())
+		s.ctx.LogErrorf("[Orchestrator] Error saving host %s: %v", host.Host, err.Error())
 		return err
 	}
 
@@ -179,7 +179,6 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 }
 
 func (s *OrchestratorService) GetResources() error {
-
 	return nil
 }
 

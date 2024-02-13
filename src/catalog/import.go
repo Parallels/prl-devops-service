@@ -30,7 +30,7 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 	}
 
 	if err := helpers.CreateDirIfNotExist("/tmp"); err != nil {
-		ctx.LogError("Error creating temp dir: %v", err)
+		ctx.LogErrorf("Error creating temp dir: %v", err)
 		response.AddError(err)
 		return response
 	}
@@ -50,7 +50,7 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 	for _, rs := range s.remoteServices {
 		check, checkErr := rs.Check(ctx, provider.String())
 		if checkErr != nil {
-			ctx.LogError("Error checking remote service %v: %v", rs.Name(), checkErr)
+			ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
 			response.AddError(checkErr)
 			break
 		}
@@ -63,7 +63,7 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 			packFileName := s.getPackFilename(r.Name())
 			metaExists, err := rs.FileExists(ctx, dir, metaFileName)
 			if err != nil {
-				ctx.LogError("Error checking if meta file %v exists: %v", r.CatalogId, err)
+				ctx.LogErrorf("Error checking if meta file %v exists: %v", r.CatalogId, err)
 				response.AddError(err)
 				break
 			}
@@ -74,7 +74,7 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 			}
 			packExists, err := rs.FileExists(ctx, dir, packFileName)
 			if err != nil {
-				ctx.LogError("Error checking if pack file %v exists: %v", r.CatalogId, err)
+				ctx.LogErrorf("Error checking if pack file %v exists: %v", r.CatalogId, err)
 				response.AddError(err)
 				break
 			}
@@ -84,19 +84,19 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 				break
 			}
 
-			ctx.LogInfo("Getting manifest from remote service %v", rs.Name())
+			ctx.LogInfof("Getting manifest from remote service %v", rs.Name())
 			if err := rs.PullFile(ctx, dir, metaFileName, "/tmp"); err != nil {
-				ctx.LogError("Error pulling file %v from remote service %v: %v", r.CatalogId, rs.Name(), err)
+				ctx.LogErrorf("Error pulling file %v from remote service %v: %v", r.CatalogId, rs.Name(), err)
 				response.AddError(err)
 				break
 			}
 
-			ctx.LogInfo("Loading manifest from file %v", r.CatalogId)
+			ctx.LogInfof("Loading manifest from file %v", r.CatalogId)
 			tmpCatalogManifestFilePath := filepath.Join("/tmp", metaFileName)
 			response.CleanupRequest.AddLocalFileCleanupOperation(tmpCatalogManifestFilePath, false)
 			catalogManifest, err := s.readManifestFromFile(tmpCatalogManifestFilePath)
 			if err != nil {
-				ctx.LogError("Error reading manifest from file %v: %v", tmpCatalogManifestFilePath, err)
+				ctx.LogErrorf("Error reading manifest from file %v: %v", tmpCatalogManifestFilePath, err)
 				response.AddError(err)
 				break
 			}
@@ -105,20 +105,20 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 			catalogManifest.CatalogId = r.CatalogId
 			catalogManifest.Architecture = r.Architecture
 			if err := catalogManifest.Validate(); err != nil {
-				ctx.LogError("Error validating manifest: %v", err)
+				ctx.LogErrorf("Error validating manifest: %v", err)
 				response.AddError(err)
 				break
 			}
 			exists, err := db.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogManifest.Name, catalogManifest.Version, catalogManifest.Architecture)
 			if err != nil {
 				if errors.GetSystemErrorCode(err) != 404 {
-					ctx.LogError("Error getting catalog manifest: %v", err)
+					ctx.LogErrorf("Error getting catalog manifest: %v", err)
 					response.AddError(err)
 					break
 				}
 			}
 			if exists != nil {
-				ctx.LogError("Catalog manifest already exists: %v", catalogManifest.Name)
+				ctx.LogErrorf("Catalog manifest already exists: %v", catalogManifest.Name)
 				response.AddError(errors.Newf("Catalog manifest already exists: %v", catalogManifest.Name))
 				break
 			}
@@ -130,19 +130,19 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 				exists, err := db.GetClaim(ctx, claim)
 				if err != nil {
 					if errors.GetSystemErrorCode(err) != 404 {
-						ctx.LogError("Error getting claim %v: %v", claim, err)
+						ctx.LogErrorf("Error getting claim %v: %v", claim, err)
 						response.AddError(err)
 						break
 					}
 				}
 				if exists == nil {
-					ctx.LogInfo("Creating claim %v", claim)
+					ctx.LogInfof("Creating claim %v", claim)
 					newClaim := data_models.Claim{
 						ID:   claim,
 						Name: claim,
 					}
 					if _, err := db.CreateClaim(ctx, newClaim); err != nil {
-						ctx.LogError("Error creating claim %v: %v", claim, err)
+						ctx.LogErrorf("Error creating claim %v: %v", claim, err)
 						response.AddError(err)
 						break
 					}
@@ -152,19 +152,19 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 				exists, err := db.GetRole(ctx, role)
 				if err != nil {
 					if errors.GetSystemErrorCode(err) != 404 {
-						ctx.LogError("Error getting role %v: %v", role, err)
+						ctx.LogErrorf("Error getting role %v: %v", role, err)
 						response.AddError(err)
 						break
 					}
 				}
 				if exists == nil {
-					ctx.LogInfo("Creating role %v", role)
+					ctx.LogInfof("Creating role %v", role)
 					newRole := data_models.Role{
 						ID:   role,
 						Name: role,
 					}
 					if _, err := db.CreateRole(ctx, newRole); err != nil {
-						ctx.LogError("Error creating role %v: %v", role, err)
+						ctx.LogErrorf("Error creating role %v: %v", role, err)
 						response.AddError(err)
 						break
 					}
@@ -173,14 +173,14 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 
 			result, err := db.CreateCatalogManifest(ctx, dto)
 			if err != nil {
-				ctx.LogError("Error creating catalog manifest: %v", err)
+				ctx.LogErrorf("Error creating catalog manifest: %v", err)
 				response.AddError(err)
 				break
 			}
 
 			cat, err := db.GetCatalogManifestByName(ctx, result.ID)
 			if err != nil {
-				ctx.LogError("Error getting catalog manifest: %v", err)
+				ctx.LogErrorf("Error getting catalog manifest: %v", err)
 				response.AddError(err)
 				break
 			}
@@ -194,7 +194,7 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 		response.AddError(err)
 	}
 
-	//Cleaning up
+	// Cleaning up
 	s.CleanImportRequest(ctx, r, response)
 
 	return response
@@ -202,7 +202,7 @@ func (s *CatalogManifestService) Import(ctx basecontext.ApiContext, r *models.Im
 
 func (s *CatalogManifestService) CleanImportRequest(ctx basecontext.ApiContext, r *models.ImportCatalogManifestRequest, response *models.ImportCatalogManifestResponse) {
 	if cleanErrors := response.CleanupRequest.Clean(ctx); len(cleanErrors) > 0 {
-		ctx.LogError("Error cleaning up: %v", cleanErrors)
+		ctx.LogErrorf("Error cleaning up: %v", cleanErrors)
 		for _, err := range cleanErrors {
 			response.AddError(err)
 		}

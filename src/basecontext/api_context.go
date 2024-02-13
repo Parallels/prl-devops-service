@@ -15,8 +15,8 @@ type ApiContext interface {
 	EnableLog()
 	DisableLog()
 	ToggleLogTimestamps(value bool)
-	LogInfo(format string, a ...interface{})
-	LogError(format string, a ...interface{})
-	LogDebug(format string, a ...interface{})
-	LogWarn(format string, a ...interface{})
+	LogInfof(format string, a ...interface{})
+	LogErrorf(format string, a ...interface{})
+	LogDebugf(format string, a ...interface{})
+	LogWarnf(format string, a ...interface{})
 }

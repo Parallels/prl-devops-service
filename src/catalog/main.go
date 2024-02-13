@@ -58,7 +58,7 @@ func (s *CatalogManifestService) AddRemoteService(service interfaces.RemoteStora
 }
 
 func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiContext, r *models.PushCatalogManifestRequest, manifest *models.VirtualMachineCatalogManifest) error {
-	ctx.LogInfo("Generating manifest content for %v", r.CatalogId)
+	ctx.LogInfof("Generating manifest content for %v", r.CatalogId)
 	if manifest == nil {
 		manifest = models.NewVirtualMachineCatalogManifest()
 	}
@@ -99,13 +99,13 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 		return fmt.Errorf("the path %v is not a directory", r.LocalPath)
 	}
 
-	ctx.LogInfo("Getting manifest files for %v", r.CatalogId)
+	ctx.LogInfof("Getting manifest files for %v", r.CatalogId)
 	files, err := s.getManifestFiles(r.LocalPath, "")
 	if err != nil {
 		return err
 	}
 
-	ctx.LogInfo("Compressing manifest files for %v", r.CatalogId)
+	ctx.LogInfof("Compressing manifest files for %v", r.CatalogId)
 	packFilePath, err := s.compressMachine(ctx, r.LocalPath, manifestPackFileName, "/tmp")
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 
 	manifest.Size = fileInfo.Size()
 
-	ctx.LogInfo("Getting manifest package checksum for %v", r.CatalogId)
+	ctx.LogInfof("Getting manifest package checksum for %v", r.CatalogId)
 	checksum, err := helpers.GetFileMD5Checksum(packFilePath)
 	if err != nil {
 		return err
@@ -131,7 +131,7 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 	manifest.CompressedChecksum = checksum
 
 	manifest.VirtualMachineContents = files
-	ctx.LogInfo("Finished generating manifest content for %v", r.CatalogId)
+	ctx.LogInfof("Finished generating manifest content for %v", r.CatalogId)
 	return nil
 }
 
@@ -256,7 +256,7 @@ func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, pat
 
 	compressed := 1
 	err = filepath.Walk(path, func(machineFilePath string, info os.FileInfo, err error) error {
-		ctx.LogInfo("[%v/%v] Compressing file %v", compressed, countFiles, machineFilePath)
+		ctx.LogInfof("[%v/%v] Compressing file %v", compressed, countFiles, machineFilePath)
 		compressed += 1
 		if err != nil {
 			return err
@@ -292,7 +292,7 @@ func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, pat
 	}
 
 	endingTime := time.Now()
-	ctx.LogInfo("Finished compressing machine from %s to %s in %v", path, tarFilePath, endingTime.Sub(startingTime))
+	ctx.LogInfof("Finished compressing machine from %s to %s in %v", path, tarFilePath, endingTime.Sub(startingTime))
 	return tarFilePath, nil
 }
 
@@ -349,6 +349,6 @@ func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, m
 	}
 
 	endingTime := time.Now()
-	ctx.LogInfo("Finished decompressing machine from %s to %s, in %v", machineFilePath, destination, endingTime.Sub(staringTime))
+	ctx.LogInfof("Finished decompressing machine from %s to %s, in %v", machineFilePath, destination, endingTime.Sub(staringTime))
 	return nil
 }

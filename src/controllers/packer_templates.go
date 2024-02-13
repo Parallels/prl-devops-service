@@ -17,7 +17,7 @@ import (
 )
 
 func registerPackerTemplatesHandlers(ctx basecontext.ApiContext, version string) {
-	ctx.LogInfo("Registering version %s packer template handlers", version)
+	ctx.LogInfof("Registering version %s packer template handlers", version)
 
 	restapi.NewController().
 		WithMethod(restapi.GET).
@@ -95,7 +95,7 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 		response := mappers.DtoPackerTemplatesToApResponse(result)
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Packer templates returned: %v", len(response))
+		ctx.LogInfof("Packer templates returned: %v", len(response))
 	}
 }
 
@@ -139,7 +139,7 @@ func GetPackerTemplateHandler() restapi.ControllerHandler {
 		response := mappers.DtoPackerTemplateToApResponse(*result)
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Packer template returned: %v", response.ID)
+		ctx.LogInfof("Packer template returned: %v", response.ID)
 	}
 }
 
@@ -186,7 +186,7 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 			response := mappers.DtoPackerTemplateToApResponse(*result)
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfo("Packer template created: %v", response.ID)
+			ctx.LogInfof("Packer template created: %v", response.ID)
 		}
 	}
 }
@@ -239,7 +239,7 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 			response := mappers.DtoPackerTemplateToApResponse(*result)
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfo("Packer template updated: %v", response.ID)
+			ctx.LogInfof("Packer template updated: %v", response.ID)
 		}
 	}
 }
@@ -273,6 +273,6 @@ func DeletePackerTemplateHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("Packer template deleted: %v", id)
+		ctx.LogInfof("Packer template deleted: %v", id)
 	}
 }

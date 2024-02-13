@@ -72,7 +72,7 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}
 		_ = globalProvider.JsonDatabase.Connect(ctx)
-		ctx.LogInfo("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
+		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 		_ = globalProvider.JsonDatabase.Save(ctx)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
@@ -91,14 +91,14 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
 		}
 		_ = globalProvider.JsonDatabase.Connect(ctx)
-		ctx.LogInfo("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
+		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 
 	key := "00000000-0000-0000-0000-000000000000"
 	hid := "XXX00000000000000000000000000000000"
 
 	if shid, err := globalProvider.System.GetUniqueId(ctx); err == nil {
-		ctx.LogInfo("Hardware ID: %s", shid)
+		ctx.LogInfof("Hardware ID: %s", shid)
 		hid = shid
 	}
 
@@ -154,7 +154,7 @@ func InitServices(ctx basecontext.ApiContext) {
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
-		ctx.LogInfo("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
+		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 		_ = globalProvider.JsonDatabase.Save(ctx)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
@@ -174,7 +174,7 @@ func InitServices(ctx basecontext.ApiContext) {
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
-		ctx.LogInfo("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
+		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 
 	key := "00000000-0000-0000-0000-000000000000"

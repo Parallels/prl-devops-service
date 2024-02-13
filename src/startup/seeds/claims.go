@@ -30,7 +30,7 @@ func SeedDefaultClaims() error {
 				return err
 			}
 		} else {
-			ctx.LogDebug("Claim already exists: %s", claim)
+			ctx.LogDebugf("Claim already exists: %s", claim)
 		}
 	}
 

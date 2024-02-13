@@ -39,21 +39,21 @@ func New(ctx basecontext.ApiContext) *ReverseProxyService {
 func (rps *ReverseProxyService) Start() error {
 	if rps.cfg.Port != "" {
 		rps.cfg.Port = "8080"
-		rps.ctx.LogWarn("Port not set for reverse proxy, using default port 8080")
+		rps.ctx.LogWarnf("Port not set for reverse proxy, using default port 8080")
 	}
 	if rps.cfg.Host == "" {
 		rps.cfg.Host = "localhost"
-		rps.ctx.LogWarn("Host not set for reverse proxy, using default host localhost")
+		rps.ctx.LogWarnf("Host not set for reverse proxy, using default host localhost")
 	}
 
-	rps.ctx.LogInfo("Starting reverse proxy on %s:%s", rps.cfg.Host, rps.cfg.Port)
+	rps.ctx.LogInfof("Starting reverse proxy on %s:%s", rps.cfg.Host, rps.cfg.Port)
 	for _, host := range rps.cfg.Hosts {
 		go rps.startServer(host)
 	}
 
 	err := <-rps.error
 	if err != nil {
-		rps.ctx.LogError("Error starting reverse proxy: %s", err)
+		rps.ctx.LogErrorf("Error starting reverse proxy: %s", err)
 	}
 
 	select {}
@@ -106,17 +106,17 @@ func (rps *ReverseProxyService) listenTcpRoute(host *config.ReverseProxyConfigHo
 	}
 
 	defer listener.Close()
-	rps.ctx.LogInfo("[TCP Route] Listening on %s:%s", host.Host, host.Port)
+	rps.ctx.LogInfof("[TCP Route] Listening on %s:%s", host.Host, host.Port)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			rps.ctx.LogError("[TCP Route] Error accepting connection: %s", err)
+			rps.ctx.LogErrorf("[TCP Route] Error accepting connection: %s", err)
 			return err
 		}
 		if err := conn.SetDeadline(time.Now().Add(30 * time.Second)); err != nil {
-			rps.ctx.LogError("[TCP Route] Error setting deadline for connection: %s", err)
+			rps.ctx.LogErrorf("[TCP Route] Error setting deadline for connection: %s", err)
 			if err := conn.Close(); err != nil {
-				rps.ctx.LogError("[TCP Route] Error closing connection: %s", err)
+				rps.ctx.LogErrorf("[TCP Route] Error closing connection: %s", err)
 				return err
 			}
 		}
@@ -138,7 +138,7 @@ func (rps *ReverseProxyService) listenHttpRoute(host *config.ReverseProxyConfigH
 		if route.Pattern == nil {
 			pattern, err := regexp.Compile(route.Path)
 			if err != nil {
-				rps.ctx.LogError("[HTTP Route] Error compiling route pattern: %s", err)
+				rps.ctx.LogErrorf("[HTTP Route] Error compiling route pattern: %s", err)
 				return err
 			}
 
@@ -150,35 +150,35 @@ func (rps *ReverseProxyService) listenHttpRoute(host *config.ReverseProxyConfigH
 	proxy := newReverseProxy(target)
 	proxy.ModifyResponse = func(resp *http.Response) error {
 		if rps.cfg.Cors != nil && rps.cfg.Cors.Enabled {
-			rps.ctx.LogDebug("[HTTP Route] Modifying response headers for CORS")
+			rps.ctx.LogDebugf("[HTTP Route] Modifying response headers for CORS")
 			if len(rps.cfg.Cors.AllowedOrigins) > 0 {
-				rps.ctx.LogDebug("[HTTP Route] Setting Access-Control-Allow-Origin to %s", strings.Join(rps.cfg.Cors.AllowedOrigins, ","))
+				rps.ctx.LogDebugf("[HTTP Route] Setting Access-Control-Allow-Origin to %s", strings.Join(rps.cfg.Cors.AllowedOrigins, ","))
 				resp.Header.Set("Access-Control-Allow-Origin", strings.Join(rps.cfg.Cors.AllowedOrigins, ","))
 			} else {
-				rps.ctx.LogDebug("[HTTP Route] Setting Access-Control-Allow-Origin to *")
+				rps.ctx.LogDebugf("[HTTP Route] Setting Access-Control-Allow-Origin to *")
 				resp.Header.Set("Access-Control-Allow-Origin", "*")
 			}
 			if len(rps.cfg.Cors.AllowedMethods) > 0 {
-				rps.ctx.LogDebug("[HTTP Route] Setting Access-Control-Allow-Methods to %s", strings.Join(rps.cfg.Cors.AllowedMethods, ","))
+				rps.ctx.LogDebugf("[HTTP Route] Setting Access-Control-Allow-Methods to %s", strings.Join(rps.cfg.Cors.AllowedMethods, ","))
 				resp.Header.Set("Access-Control-Allow-Methods", strings.Join(rps.cfg.Cors.AllowedMethods, ","))
 			} else {
-				rps.ctx.LogDebug("[HTTP Route] Setting Access-Control-Allow-Methods to GET, POST, PUT, DELETE, OPTIONS")
+				rps.ctx.LogDebugf("[HTTP Route] Setting Access-Control-Allow-Methods to GET, POST, PUT, DELETE, OPTIONS")
 				resp.Header.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 			}
 			if len(rps.cfg.Cors.AllowedHeaders) > 0 {
-				rps.ctx.LogDebug("[HTTP Route] Setting Access-Control-Allow-Headers to %s", strings.Join(rps.cfg.Cors.AllowedHeaders, ","))
+				rps.ctx.LogDebugf("[HTTP Route] Setting Access-Control-Allow-Headers to %s", strings.Join(rps.cfg.Cors.AllowedHeaders, ","))
 				resp.Header.Set("Access-Control-Allow-Headers", strings.Join(rps.cfg.Cors.AllowedHeaders, ","))
 			} else {
-				rps.ctx.LogDebug("[HTTP Route] Setting Access-Control-Allow-Headers to Content-Type, Authorization")
+				rps.ctx.LogDebugf("[HTTP Route] Setting Access-Control-Allow-Headers to Content-Type, Authorization")
 				resp.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			}
 		}
 
 		for _, route := range host.HttpRoutes {
 			if route.Pattern.MatchString(resp.Request.URL.Path) {
-				rps.ctx.LogDebug("[HTTP Route] Modifying response headers for route %s", route.Path)
+				rps.ctx.LogDebugf("[HTTP Route] Modifying response headers for route %s", route.Path)
 				for key, value := range route.ResponseHeaders {
-					rps.ctx.LogDebug("[HTTP Route] Setting response header %s to %s", key, value)
+					rps.ctx.LogDebugf("[HTTP Route] Setting response header %s to %s", key, value)
 					resp.Header.Set(key, value)
 				}
 			}
@@ -189,7 +189,7 @@ func (rps *ReverseProxyService) listenHttpRoute(host *config.ReverseProxyConfigH
 
 	proxy.Director = func(req *http.Request) {
 		target := host.Host
-		rps.ctx.LogDebug("[HTTP Route] Request received for %s", req.URL.Path)
+		rps.ctx.LogDebugf("[HTTP Route] Request received for %s", req.URL.Path)
 		if host.Port != "" {
 			target = fmt.Sprintf("%s:%s", host.Host, host.Port)
 		}
@@ -197,7 +197,7 @@ func (rps *ReverseProxyService) listenHttpRoute(host *config.ReverseProxyConfigH
 		if strings.EqualFold(target, req.Host) {
 			for _, route := range host.HttpRoutes {
 				if route.Pattern.MatchString(req.URL.Path) {
-					rps.ctx.LogDebug("[HTTP Route] Matched with proxy route %s", route.Path)
+					rps.ctx.LogDebugf("[HTTP Route] Matched with proxy route %s", route.Path)
 					forwardTo := route.TargetHost
 					if route.TargetPort != "" {
 						forwardTo = fmt.Sprintf("%s:%s", route.TargetHost, route.TargetPort)
@@ -212,7 +212,7 @@ func (rps *ReverseProxyService) listenHttpRoute(host *config.ReverseProxyConfigH
 						scheme = route.Scheme
 					}
 
-					rps.ctx.LogInfo("[HTTP Route] Forwarding http traffic from host %s%s to proxy on %s", target, req.URL.Path, forwardTo)
+					rps.ctx.LogInfof("[HTTP Route] Forwarding http traffic from host %s%s to proxy on %s", target, req.URL.Path, forwardTo)
 					req.Host = forwardTo
 					req.URL.Scheme = scheme
 					req.URL.Host = forwardTo
@@ -245,7 +245,7 @@ func (rps *ReverseProxyService) listenHttpRoute(host *config.ReverseProxyConfigH
 		})
 	}(proxy))
 
-	rps.ctx.LogInfo("[HTTP Route] Listening to %s on port %s...", host.Host, host.Port)
+	rps.ctx.LogInfof("[HTTP Route] Listening to %s on port %s...", host.Host, host.Port)
 	hostTarget := fmt.Sprintf("%s:%s", host.Host, host.Port)
 	server := &http.Server{
 		Addr:              hostTarget,
@@ -255,7 +255,7 @@ func (rps *ReverseProxyService) listenHttpRoute(host *config.ReverseProxyConfigH
 
 	if err := server.ListenAndServe(); err != nil {
 		if !strings.Contains(err.Error(), "http: Server closed") {
-			rps.ctx.LogError("There was an error shutting down the https server: %v", err.Error())
+			rps.ctx.LogErrorf("There was an error shutting down the https server: %v", err.Error())
 		}
 	}
 
@@ -263,13 +263,13 @@ func (rps *ReverseProxyService) listenHttpRoute(host *config.ReverseProxyConfigH
 }
 
 func (rps *ReverseProxyService) handleTcpTraffic(src net.Conn, host string, target string) {
-	rps.ctx.LogInfo("[TCP Route] Forwarding tcp traffic from host %s to proxy on %s", host, target)
+	rps.ctx.LogInfof("[TCP Route] Forwarding tcp traffic from host %s to proxy on %s", host, target)
 
 	dst, err := net.Dial("tcp", target)
 	if err != nil {
-		rps.ctx.LogError("[TCP Route] Unable to connect to target: %s", err)
+		rps.ctx.LogErrorf("[TCP Route] Unable to connect to target: %s", err)
 		if err := src.Close(); err != nil {
-			rps.ctx.LogError("[TCP Route] Unable to close source connection: %s", err)
+			rps.ctx.LogErrorf("[TCP Route] Unable to close source connection: %s", err)
 			rps.error <- err
 		}
 
@@ -280,13 +280,13 @@ func (rps *ReverseProxyService) handleTcpTraffic(src net.Conn, host string, targ
 	go func() {
 		// forward traffic from source to destination
 		if _, err := io.Copy(dst, src); err != nil {
-			rps.ctx.LogError("[TCP Route] error forwarding package to host %s, err: %v", target, err.Error())
+			rps.ctx.LogErrorf("[TCP Route] error forwarding package to host %s, err: %v", target, err.Error())
 		}
 	}()
 
 	// forward traffic from destination to source
 	if _, err := io.Copy(src, dst); err != nil {
-		rps.ctx.LogError("[TCP Route] error forwarding package to host %s, err: %v", target, err.Error())
+		rps.ctx.LogErrorf("[TCP Route] error forwarding package to host %s, err: %v", target, err.Error())
 	}
 }
 

@@ -74,7 +74,7 @@ func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection strin
 		}
 	}
 	if provider == "" || !strings.EqualFold(provider, providerName) {
-		ctx.LogDebug("Provider %s is not %s, skipping", providerName, provider)
+		ctx.LogDebugf("Provider %s is not %s, skipping", providerName, provider)
 		return false, nil
 	}
 
@@ -96,7 +96,7 @@ func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection strin
 
 // uploadFile uploads a file to an S3 bucket
 func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath string, path string, filename string) error {
-	ctx.LogInfo("Pushing file %s", filename)
+	ctx.LogInfof("Pushing file %s", filename)
 	localFilePath := filepath.Join(rootLocalPath, filename)
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 
@@ -133,7 +133,7 @@ func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 }
 
 func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, filename string, destination string) error {
-	ctx.LogInfo("Pulling file %s", filename)
+	ctx.LogInfof("Pulling file %s", filename)
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 	destinationFilePath := filepath.Join(destination, filename)
 

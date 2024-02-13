@@ -19,12 +19,12 @@ func EndAuthorizationMiddlewareAdapter() Adapter {
 				if !auth.IsAuthorized {
 					w.WriteHeader(http.StatusUnauthorized)
 					_ = json.NewEncoder(w).Encode(auth.AuthorizationError)
-					baseCtx.LogInfo("Authorization layer finished with error")
+					baseCtx.LogInfof("Authorization layer finished with error")
 					return
 				}
 
 				next.ServeHTTP(w, r)
-				baseCtx.LogInfo("Authorization layer finished with success")
+				baseCtx.LogInfof("Authorization layer finished with success")
 			} else {
 				response := models.OAuthErrorResponse{
 					Error:            models.OAuthUnauthorizedClient,
@@ -33,7 +33,7 @@ func EndAuthorizationMiddlewareAdapter() Adapter {
 
 				w.WriteHeader(http.StatusUnauthorized)
 				_ = json.NewEncoder(w).Encode(response)
-				baseCtx.LogInfo("Authorization layer finished with error")
+				baseCtx.LogInfof("Authorization layer finished with error")
 				return
 			}
 		})

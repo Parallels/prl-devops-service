@@ -55,7 +55,7 @@ func (j *JsonDatabase) GetOrchestratorHost(ctx basecontext.ApiContext, idOrHost 
 	for _, host := range hosts {
 		hostname := fmt.Sprintf("%s%s", idOrHost, host.PathPrefix)
 		dbHost := host.GetHost()
-		ctx.LogDebug("host: %s", dbHost)
+		ctx.LogDebugf("host: %s", dbHost)
 		if strings.EqualFold(host.ID, idOrHost) || strings.EqualFold(host.Host, idOrHost) || strings.EqualFold(host.GetHost(), hostname) {
 			return &host, nil
 		}
@@ -154,7 +154,7 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 
 				return &j.data.OrchestratorHosts[index], nil
 			} else {
-				ctx.LogDebug("[Database] No changes detected for host %s", host.Host)
+				ctx.LogDebugf("[Database] No changes detected for host %s", host.Host)
 				return host, nil
 			}
 		}

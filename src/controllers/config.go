@@ -16,7 +16,7 @@ import (
 func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 	provider := serviceprovider.Get()
 
-	ctx.LogInfo("Registering version %s config handlers", version)
+	ctx.LogInfof("Registering version %s config handlers", version)
 	if provider.System.GetOperatingSystem() == "macos" {
 		restapi.NewController().
 			WithMethod(restapi.POST).
@@ -88,7 +88,6 @@ func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 		}
 
 		license, err := provider.ParallelsDesktopService.GetLicense()
-
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -96,7 +95,7 @@ func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(license)
-		ctx.LogInfo("Parallels Desktop License returned successfully")
+		ctx.LogInfof("Parallels Desktop License returned successfully")
 	}
 }
 
@@ -226,7 +225,7 @@ func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 		// Write the JSON data to the response
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Tools install request successfully")
+		ctx.LogInfof("Tools install request successfully")
 	}
 }
 
@@ -344,7 +343,7 @@ func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Tools uninstall request successfully")
+		ctx.LogInfof("Tools uninstall request successfully")
 	}
 }
 
@@ -363,7 +362,7 @@ func RestartApiHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		go restapi.Get().Restart()
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("Restart request accepted")
+		ctx.LogInfof("Restart request accepted")
 	}
 }
 

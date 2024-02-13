@@ -37,6 +37,6 @@ func NotFoundController() http.Handler {
 		SetContentType("application/json", w)
 		w.WriteHeader(http.StatusNotFound)
 		_ = json.NewEncoder(w).Encode(response)
-		baseCtx.LogInfo("Resource %s not found", r.URL.Path)
+		baseCtx.LogInfof("Resource %s not found", r.URL.Path)
 	})
 }

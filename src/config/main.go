@@ -79,33 +79,33 @@ func (c *Config) Load() bool {
 	}
 
 	if fileName == "" {
-		c.ctx.LogInfo("No configuration file found")
+		c.ctx.LogInfof("No configuration file found")
 		return false
 	}
 
-	c.ctx.LogInfo("Loading configuration from %s", fileName)
+	c.ctx.LogInfof("Loading configuration from %s", fileName)
 	content, err := helper.ReadFromFile(fileName)
 	if err != nil {
-		c.ctx.LogError("Error reading configuration file: %s", err.Error())
+		c.ctx.LogErrorf("Error reading configuration file: %s", err.Error())
 		return false
 	}
 
 	if content == nil {
-		c.ctx.LogError("Error reading configuration file: %s", err.Error())
+		c.ctx.LogErrorf("Error reading configuration file: %s", err.Error())
 		return false
 	}
 
 	if strings.HasSuffix(fileName, ".json") {
 		err = json.Unmarshal(content, &c.config)
 		if err != nil {
-			c.ctx.LogError("Error reading configuration file: %s", err.Error())
+			c.ctx.LogErrorf("Error reading configuration file: %s", err.Error())
 			return false
 		}
 		c.fileFormat = "json"
 	} else {
 		err = yaml.Unmarshal(content, &c.config)
 		if err != nil {
-			c.ctx.LogError("Error reading configuration file: %s", err.Error())
+			c.ctx.LogErrorf("Error reading configuration file: %s", err.Error())
 			return false
 		}
 		c.fileFormat = "yaml"
@@ -124,20 +124,20 @@ func (c *Config) Save() bool {
 	case "json":
 		content, err = json.Marshal(c.config)
 		if err != nil {
-			c.ctx.LogError("Error saving configuration file: %s", err.Error())
+			c.ctx.LogErrorf("Error saving configuration file: %s", err.Error())
 			return false
 		}
 	case "yaml":
 		content, err = yaml.Marshal(c.config)
 		if err != nil {
-			c.ctx.LogError("Error saving configuration file: %s", err.Error())
+			c.ctx.LogErrorf("Error saving configuration file: %s", err.Error())
 			return false
 		}
 	}
 
 	err = helper.WriteToFile(string(content), c.filename)
 	if err != nil {
-		c.ctx.LogError("Error saving configuration file: %s", err.Error())
+		c.ctx.LogErrorf("Error saving configuration file: %s", err.Error())
 		return false
 	}
 

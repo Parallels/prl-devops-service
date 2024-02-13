@@ -28,7 +28,7 @@ func NewPasswordComplexityOptions(ctx basecontext.ApiContext) *PasswordComplexit
 
 func (p *PasswordComplexityOptions) WithMinLength(minLength int) *PasswordComplexityOptions {
 	if minLength < 8 {
-		p.ctx.LogWarn("Password complexity options MinLength cannot be less than 8. Setting to 8.")
+		p.ctx.LogWarnf("Password complexity options MinLength cannot be less than 8. Setting to 8.")
 		minLength = 8
 	}
 	p.minLength = minLength
@@ -37,7 +37,7 @@ func (p *PasswordComplexityOptions) WithMinLength(minLength int) *PasswordComple
 
 func (p *PasswordComplexityOptions) WithMaxLength(maxLength int) *PasswordComplexityOptions {
 	if maxLength > 40 {
-		p.ctx.LogWarn("Password complexity options MaxLength cannot be greater than 40. Setting to 40.")
+		p.ctx.LogWarnf("Password complexity options MaxLength cannot be greater than 40. Setting to 40.")
 		maxLength = 40
 	}
 

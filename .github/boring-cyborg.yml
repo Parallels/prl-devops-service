@@ -1,0 +1,27 @@
+labelPRBasedOnFilePath:
+  documentation:
+    - docs/**/*
+    - README.md
+    - CONTRIBUTING.md
+    - CHANGELOG.md
+    - CODE_OF_CONDUCT.md
+
+  test:
+    - src/**/*_test.go
+  triage:
+    - "src/**/*"
+    - "test/**/"
+    - "docs/**/*"
+  community contribution:
+    - "src/**/*"
+    - "test/**/*"
+    - "docs/**/*"
+
+firstPRWelcomeComment: >
+  Thanks for opening this pull request! Please check out our contributing guidelines.
+
+firstPRMergeComment: >
+  Awesome work, congrats on your first merged pull request!
+
+firstIssueWelcomeComment: >
+  Thanks for opening your first issue here! Be sure to follow the issue template!

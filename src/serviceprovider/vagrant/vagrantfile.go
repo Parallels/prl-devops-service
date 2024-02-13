@@ -90,7 +90,6 @@ func (s *VagrantFile) GetConfigBlockByTypeName(typeName string) []*VagrantConfig
 	result := make([]*VagrantConfigBlock, 0)
 	if strings.EqualFold(s.Root.Type, typeName) {
 		result = append(result, s.Root)
-
 	}
 
 	for _, child := range s.Root.Children {
@@ -118,10 +117,6 @@ func (s *VagrantFile) extractConfigBlock(content string, nestingLevel int) (stri
 		}
 
 		trimmed := strings.TrimSpace(lines[index])
-		// if strings.HasPrefix(trimmed, "#") {
-		// 	lines = append(lines[:index], lines[index+1:]...)
-		// 	continue
-		// }
 
 		if strings.Contains(trimmed, " do ") {
 			if inBlock {

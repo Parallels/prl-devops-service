@@ -9,40 +9,40 @@ import (
 func TestCatalogProviders(ctx basecontext.ApiContext) error {
 	cfg := config.Get()
 	if cfg.GetKey("ARTIFACTORY_TEST_CONNECTION") != "" {
-		ctx.LogInfo("Testing connection to Artifactory")
+		ctx.LogInfof("Testing connection to Artifactory")
 		test := tester.NewTestProvider(ctx, cfg.GetKey("ARTIFACTORY_TEST_CONNECTION"))
 		err := test.Test()
 		if err != nil {
-			ctx.LogError(err.Error())
+			ctx.LogErrorf(err.Error())
 			return err
 		} else {
-			ctx.LogInfo("Connection to Artifactory successful")
+			ctx.LogInfof("Connection to Artifactory successful")
 		}
 	}
 
 	if cfg.GetKey("AZURE_SA_TEST_CONNECTION") != "" {
-		ctx.LogInfo("Testing %v", cfg.GetKey("AZURE_SA_TEST_CONNECTION"))
-		ctx.LogInfo("Testing connection to Azure Storage Account")
+		ctx.LogInfof("Testing %v", cfg.GetKey("AZURE_SA_TEST_CONNECTION"))
+		ctx.LogInfof("Testing connection to Azure Storage Account")
 		test := tester.NewTestProvider(ctx, cfg.GetKey("AZURE_SA_TEST_CONNECTION"))
 		err := test.Test()
 		if err != nil {
-			ctx.LogError(err.Error())
+			ctx.LogErrorf(err.Error())
 			return err
 		} else {
-			ctx.LogInfo("Connection to Azure Storage Account successful")
+			ctx.LogInfof("Connection to Azure Storage Account successful")
 		}
 	}
 
 	if cfg.GetKey("AWS_S3_TEST_CONNECTION") != "" {
-		ctx.LogInfo("Testing %v", cfg.GetKey("AWS_S3_TEST_CONNECTION"))
-		ctx.LogInfo("Testing connection to AWS S3")
+		ctx.LogInfof("Testing %v", cfg.GetKey("AWS_S3_TEST_CONNECTION"))
+		ctx.LogInfof("Testing connection to AWS S3")
 		test := tester.NewTestProvider(ctx, cfg.GetKey("AWS_S3_TEST_CONNECTION"))
 		err := test.Test()
 		if err != nil {
-			ctx.LogError(err.Error())
+			ctx.LogErrorf(err.Error())
 			return err
 		} else {
-			ctx.LogInfo("Connection to AWS S3 successful")
+			ctx.LogInfof("Connection to AWS S3 successful")
 		}
 	}
 

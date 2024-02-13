@@ -21,7 +21,7 @@ const (
 )
 
 func InstallService(ctx basecontext.ApiContext, configFilePath string) error {
-	ctx.LogInfo("Installing service...")
+	ctx.LogInfof("Installing service...")
 	var config ApiServiceConfig
 	var err error
 	if configFilePath != "" {
@@ -42,7 +42,7 @@ func InstallService(ctx basecontext.ApiContext, configFilePath string) error {
 		return installServiceOnLinux(ctx, config)
 	default:
 		errMsg := fmt.Sprintf("unsupported operating system: %s", os)
-		ctx.LogError(errMsg)
+		ctx.LogErrorf(errMsg)
 		return errors.New(errMsg)
 	}
 }
@@ -57,7 +57,7 @@ func UninstallService(ctx basecontext.ApiContext) error {
 		return uninstallServiceOnLinux(ctx)
 	default:
 		errMsg := fmt.Sprintf("unsupported operating system: %s", os)
-		ctx.LogError(errMsg)
+		ctx.LogErrorf(errMsg)
 		return errors.New(errMsg)
 	}
 }
@@ -118,7 +118,7 @@ func installServiceOnMac(ctx basecontext.ApiContext, config ApiServiceConfig) er
 		return err
 	}
 
-	ctx.LogInfo("Service installed successfully")
+	ctx.LogInfof("Service installed successfully")
 
 	return nil
 }
@@ -139,7 +139,7 @@ func uninstallServiceOnMac(ctx basecontext.ApiContext) error {
 		return err
 	}
 
-	ctx.LogInfo("Service uninstalled successfully")
+	ctx.LogInfof("Service uninstalled successfully")
 	return nil
 }
 

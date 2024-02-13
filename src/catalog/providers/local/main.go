@@ -62,20 +62,20 @@ func (s *LocalProvider) Check(ctx basecontext.ApiContext, connection string) (bo
 		}
 	}
 	if provider == "" || !strings.EqualFold(provider, providerName) {
-		ctx.LogDebug("Provider %s is not %s, skipping", providerName, provider)
+		ctx.LogDebugf("Provider %s is not %s, skipping", providerName, provider)
 		return false, nil
 	}
 
 	if s.Config.Path == "" {
 		dir, err := os.Getwd()
 		if err != nil {
-			ctx.LogError("Error getting current directory: %v", err)
+			ctx.LogErrorf("Error getting current directory: %v", err)
 			return false, err
 		}
 
 		fullPath := filepath.Join(dir, "catalog")
 		if err := os.MkdirAll(fullPath, os.ModePerm); err != nil {
-			ctx.LogError("Error creating catalog directory: %v", err)
+			ctx.LogErrorf("Error creating catalog directory: %v", err)
 			return false, err
 		}
 

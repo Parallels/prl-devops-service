@@ -18,7 +18,7 @@ import (
 )
 
 func registerClaimsHandlers(ctx basecontext.ApiContext, version string) {
-	ctx.LogInfo("Registering version %s Claims handlers", version)
+	ctx.LogInfof("Registering version %s Claims handlers", version)
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).WithPath("/auth/claims").
@@ -80,7 +80,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.ClaimResponse, 0)
 			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfo("Claims returned: %v", len(response))
+			ctx.LogInfof("Claims returned: %v", len(response))
 			return
 		}
 
@@ -88,7 +88,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Claims returned successfully")
+		ctx.LogInfof("Claims returned successfully")
 	}
 }
 
@@ -125,7 +125,7 @@ func GetClaimHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Claim returned successfully")
+		ctx.LogInfof("Claim returned successfully")
 	}
 }
 
@@ -176,7 +176,7 @@ func CreateClaimHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Claim created successfully")
+		ctx.LogInfof("Claim created successfully")
 	}
 }
 
@@ -210,6 +210,6 @@ func DeleteClaimHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("Claim deleted successfully")
+		ctx.LogInfof("Claim deleted successfully")
 	}
 }

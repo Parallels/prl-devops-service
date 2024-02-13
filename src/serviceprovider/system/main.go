@@ -40,7 +40,7 @@ func New(ctx basecontext.ApiContext) *SystemService {
 	}
 
 	if globalSystemService.GetOperatingSystem() == "macos" && globalSystemService.FindPath() == "" {
-		ctx.LogWarn("Running without support for brew")
+		ctx.LogWarnf("Running without support for brew")
 		return globalSystemService
 	} else {
 		globalSystemService.installed = true
@@ -55,27 +55,27 @@ func (s *SystemService) Name() string {
 }
 
 func (s *SystemService) FindPath() string {
-	s.ctx.LogInfo("Getting brew executable")
-	out, err := commands.ExecuteWithNoOutput("which", "packer")
+	s.ctx.LogInfof("Getting brew executable")
+	out, err := commands.ExecuteWithNoOutput("which", "brew")
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
-		s.ctx.LogWarn("Brew executable not found, trying to find it in the default locations")
+		s.ctx.LogWarnf("Brew executable not found, trying to find it in the default locations")
 	}
 
 	if path != "" {
 		s.brewExecutable = path
-		s.ctx.LogInfo("Brew found at: %s", s.brewExecutable)
+		s.ctx.LogInfof("Brew found at: %s", s.brewExecutable)
 	} else {
 		if _, err := os.Stat("/opt/homebrew/bin/brew"); err == nil {
 			s.brewExecutable = "/opt/homebrew/bin/brew"
 		} else if _, err := os.Stat("/usr/local/bin/brew"); err == nil {
 			s.brewExecutable = "/usr/local/bin/brew"
 		} else {
-			s.ctx.LogWarn("Brew executable not found")
+			s.ctx.LogWarnf("Brew executable not found")
 			return s.brewExecutable
 		}
 
-		s.ctx.LogInfo("Brew found at: %s", s.brewExecutable)
+		s.ctx.LogInfof("Brew found at: %s", s.brewExecutable)
 	}
 
 	return s.brewExecutable
@@ -102,7 +102,7 @@ func (s *SystemService) Version() string {
 
 func (s *SystemService) Install(asUser, version string, flags map[string]string) error {
 	if s.installed {
-		s.ctx.LogInfo("%s already installed", s.Name())
+		s.ctx.LogInfof("%s already installed", s.Name())
 		return nil
 	}
 
@@ -112,7 +112,7 @@ func (s *SystemService) Install(asUser, version string, flags map[string]string)
 			if dependency == nil {
 				return errors.New("Dependency is nil")
 			}
-			s.ctx.LogInfo("Installing dependency %s", dependency.Name())
+			s.ctx.LogInfof("Installing dependency %s", dependency.Name())
 			if err := dependency.Install(asUser, "latest", flags); err != nil {
 				return err
 			}
@@ -124,7 +124,7 @@ func (s *SystemService) Install(asUser, version string, flags map[string]string)
 		Args:    []string{"-c", "\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""},
 	}
 
-	s.ctx.LogInfo("Installing %s with command: %v", s.Name(), cmd.String())
+	s.ctx.LogInfof("Installing %s with command: %v", s.Name(), cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func (s *SystemService) Install(asUser, version string, flags map[string]string)
 
 func (s *SystemService) Uninstall(asUser string, uninstallDependencies bool) error {
 	if s.installed {
-		s.ctx.LogInfo("Uninstalling %s", s.Name())
+		s.ctx.LogInfof("Uninstalling %s", s.Name())
 
 		cmd := helpers.Command{
 			Command: "/bin/bash",
@@ -156,7 +156,7 @@ func (s *SystemService) Uninstall(asUser string, uninstallDependencies bool) err
 				if dependency == nil {
 					continue
 				}
-				s.ctx.LogInfo("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
+				s.ctx.LogInfof("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
 				if err := dependency.Uninstall(asUser, uninstallDependencies); err != nil {
 					return err
 				}
@@ -454,7 +454,7 @@ func (s *SystemService) getUniqueIdLinux(ctx basecontext.ApiContext) (string, er
 }
 
 func (s *SystemService) ChangeFileUserOwner(ctx basecontext.ApiContext, userName string, filePath string) error {
-	ctx.LogDebug("Changing file %s owner to %s", filePath, userName)
+	ctx.LogDebugf("Changing file %s owner to %s", filePath, userName)
 	switch s.GetOperatingSystem() {
 	case "macos":
 		return s.changeMacFileUserOwner(userName, filePath)
@@ -463,7 +463,6 @@ func (s *SystemService) ChangeFileUserOwner(ctx basecontext.ApiContext, userName
 	default:
 		return errors.New("Not implemented")
 	}
-
 }
 
 func (s *SystemService) changeMacFileUserOwner(userName string, filePath string) error {
