@@ -172,7 +172,7 @@ func processCatalogRunCmd(ctx basecontext.ApiContext) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("%s\n", out)
+	ctx.LogInfo("%v", out)
 }
 
 func processCatalogListCmd(ctx basecontext.ApiContext) {
@@ -184,7 +184,7 @@ func processCatalogListCmd(ctx basecontext.ApiContext) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("%s\n", out)
+	ctx.LogInfo("%v", out)
 }
 
 func processCatalogPushCmd(ctx basecontext.ApiContext) {
@@ -204,7 +204,7 @@ func processCatalogPushCmd(ctx basecontext.ApiContext) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("%s\n", out)
+	ctx.LogInfo("%v", out)
 }
 
 func processCatalogPullCmd(ctx basecontext.ApiContext) {
@@ -224,5 +224,5 @@ func processCatalogPullCmd(ctx basecontext.ApiContext) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("%s\n", out)
+	ctx.LogInfo("%v", out)
 }
