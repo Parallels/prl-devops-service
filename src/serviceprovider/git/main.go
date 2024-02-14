@@ -36,7 +36,7 @@ func New(ctx basecontext.ApiContext) *GitService {
 		ctx: ctx,
 	}
 	if globalGitService.FindPath() == "" {
-		ctx.LogWarn("Running without support for git")
+		ctx.LogWarnf("Running without support for git")
 		return nil
 	} else {
 		globalGitService.installed = true
@@ -51,23 +51,23 @@ func (s *GitService) Name() string {
 }
 
 func (s *GitService) FindPath() string {
-	s.ctx.LogInfo("Getting Git executable")
+	s.ctx.LogInfof("Getting Git executable")
 	out, err := commands.ExecuteWithNoOutput("which", "git")
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
-		s.ctx.LogWarn("Git executable not found, trying to find it in the default locations")
+		s.ctx.LogWarnf("Git executable not found, trying to find it in the default locations")
 	}
 
 	if path != "" {
 		s.executable = path
-		s.ctx.LogInfo("Git found at: %s", s.executable)
+		s.ctx.LogInfof("Git found at: %s", s.executable)
 	} else {
 		if _, err := os.Stat("/opt/homebrew/bin/git"); err == nil {
 			s.executable = "/opt/homebrew/bin/git"
 		} else {
-			s.ctx.LogWarn("Git executable not found")
+			s.ctx.LogWarnf("Git executable not found")
 		}
-		s.ctx.LogInfo("Git found at: %s", s.executable)
+		s.ctx.LogInfof("Git found at: %s", s.executable)
 	}
 
 	return s.executable
@@ -94,7 +94,7 @@ func (s *GitService) Version() string {
 
 func (s *GitService) Install(asUser, version string, flags map[string]string) error {
 	if s.installed {
-		s.ctx.LogInfo("%s already installed", s.Name())
+		s.ctx.LogInfof("%s already installed", s.Name())
 		return nil
 	}
 	// Installing service dependency
@@ -103,7 +103,7 @@ func (s *GitService) Install(asUser, version string, flags map[string]string) er
 			if dependency == nil {
 				return errors.New("Dependency is nil")
 			}
-			s.ctx.LogInfo("Installing dependency %s for %s", dependency.Name(), s.Name())
+			s.ctx.LogInfof("Installing dependency %s for %s", dependency.Name(), s.Name())
 			if err := dependency.Install(asUser, "latest", flags); err != nil {
 				return err
 			}
@@ -127,7 +127,7 @@ func (s *GitService) Install(asUser, version string, flags map[string]string) er
 		cmd.Args = append(cmd.Args, "install", "packer@"+version)
 	}
 
-	s.ctx.LogInfo("Installing %s with command: %v", s.Name(), cmd.String())
+	s.ctx.LogInfof("Installing %s with command: %v", s.Name(), cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func (s *GitService) Install(asUser, version string, flags map[string]string) er
 
 func (s *GitService) Uninstall(asUser string, uninstallDependencies bool) error {
 	if s.installed {
-		s.ctx.LogInfo("Uninstalling %s", s.Name())
+		s.ctx.LogInfof("Uninstalling %s", s.Name())
 
 		var cmd helpers.Command
 		if asUser == "" {
@@ -166,7 +166,7 @@ func (s *GitService) Uninstall(asUser string, uninstallDependencies bool) error 
 				if dependency == nil {
 					continue
 				}
-				s.ctx.LogInfo("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
+				s.ctx.LogInfof("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
 				if err := dependency.Uninstall(asUser, uninstallDependencies); err != nil {
 					return err
 				}
@@ -235,7 +235,7 @@ func (s *GitService) Clone(ctx basecontext.ApiContext, repoURL string, owner str
 
 		cmd.Args = append(cmd.Args, "clone", repoURL, path)
 
-		ctx.LogInfo(cmd.String())
+		ctx.LogInfof(cmd.String())
 		_, err = helpers.ExecuteWithNoOutput(cmd)
 		if err != nil {
 			buildError := errors.NewWithCodef(400, "failed to pull repository %v, error: %v", path, err.Error())
@@ -244,7 +244,7 @@ func (s *GitService) Clone(ctx basecontext.ApiContext, repoURL string, owner str
 	} else {
 		cmd.Args = append(cmd.Args, "pull")
 
-		ctx.LogInfo(cmd.String())
+		ctx.LogInfof(cmd.String())
 		if err != nil {
 			buildError := errors.NewWithCodef(400, "failed to pull repository %v, error: %v", path, err.Error())
 
@@ -252,6 +252,6 @@ func (s *GitService) Clone(ctx basecontext.ApiContext, repoURL string, owner str
 		}
 	}
 
-	ctx.LogInfo("Repository %s cloned to %s", repoURL, path)
+	ctx.LogInfof("Repository %s cloned to %s", repoURL, path)
 	return path, nil
 }

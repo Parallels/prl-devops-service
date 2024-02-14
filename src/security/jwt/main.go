@@ -27,7 +27,7 @@ func New(ctx basecontext.ApiContext) *JwtService {
 
 	err := globalJwtService.processEnvironmentVariables()
 	if err != nil {
-		ctx.LogError("Error processing environment variables for jwt options: %s", err.Error())
+		ctx.LogErrorf("Error processing environment variables for jwt options: %s", err.Error())
 	}
 
 	return globalJwtService
@@ -266,7 +266,7 @@ func (s *JwtService) processEnvironmentVariables() error {
 		if s.Options.Secret == "" {
 			randStr, err := security.GenerateCryptoRandomString(80)
 			if err != nil {
-				s.ctx.LogError("Error generating random string: %s", err.Error())
+				s.ctx.LogErrorf("Error generating random string: %s", err.Error())
 				return err
 			}
 			s.Options.WithSecret(randStr)

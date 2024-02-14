@@ -18,7 +18,7 @@ import (
 )
 
 func registerRolesHandlers(ctx basecontext.ApiContext, version string) {
-	ctx.LogInfo("Registering version %s Roles handlers", version)
+	ctx.LogInfof("Registering version %s Roles handlers", version)
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
@@ -81,7 +81,7 @@ func GetRolesHandler() restapi.ControllerHandler {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.RoleResponse, 0)
 			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfo("Roles returned: %v", len(response))
+			ctx.LogInfof("Roles returned: %v", len(response))
 			return
 		}
 
@@ -89,7 +89,7 @@ func GetRolesHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Roles returned successfully")
+		ctx.LogInfof("Roles returned successfully")
 	}
 }
 
@@ -126,7 +126,7 @@ func GetRoleHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Role returned successfully")
+		ctx.LogInfof("Role returned successfully")
 	}
 }
 
@@ -177,7 +177,7 @@ func CreateRoleHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Role created successfully")
+		ctx.LogInfof("Role created successfully")
 	}
 }
 
@@ -211,6 +211,6 @@ func DeleteRoleHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("Role deleted successfully")
+		ctx.LogInfof("Role deleted successfully")
 	}
 }

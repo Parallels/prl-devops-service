@@ -17,7 +17,7 @@ import (
 )
 
 func registerApiKeysHandlers(ctx basecontext.ApiContext, version string) {
-	ctx.LogInfo("Registering version %s ApiKeys handlers", version)
+	ctx.LogInfof("Registering version %s ApiKeys handlers", version)
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).WithPath("/auth/api_keys").
@@ -87,7 +87,7 @@ func GetApiKeysHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Api Keys returned successfully")
+		ctx.LogInfof("Api Keys returned successfully")
 	}
 }
 
@@ -121,7 +121,7 @@ func DeleteApiKeyHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("Api Key deleted successfully")
+		ctx.LogInfof("Api Key deleted successfully")
 	}
 }
 
@@ -158,7 +158,7 @@ func GetApiKeyHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Api Key returned successfully")
+		ctx.LogInfof("Api Key returned successfully")
 	}
 }
 
@@ -214,7 +214,7 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("Api Key created successfully")
+		ctx.LogInfof("Api Key created successfully")
 	}
 }
 
@@ -248,6 +248,6 @@ func RevokeApiKeyHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("Api Key revoked successfully")
+		ctx.LogInfof("Api Key revoked successfully")
 	}
 }

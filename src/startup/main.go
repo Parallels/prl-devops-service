@@ -46,7 +46,7 @@ func Start(ctx basecontext.ApiContext) {
 
 	if cfg.IsOrchestrator() {
 		ctx := basecontext.NewRootBaseContext()
-		ctx.LogInfo("Starting Orchestrator Background Service")
+		ctx.LogInfof("Starting Orchestrator Background Service")
 		// Checking if we need to add the current host to the orchestrator hosts
 		if cfg.UseOrchestratorResources() {
 			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
@@ -57,7 +57,7 @@ func Start(ctx basecontext.ApiContext) {
 				secret := serviceprovider.Get().HardwareSecret
 				if err != nil {
 					if errors.GetSystemErrorCode(err) != 404 {
-						ctx.LogError("Error getting orchestrator key: %v", err)
+						ctx.LogErrorf("Error getting orchestrator key: %v", err)
 						panic(err)
 					}
 				}
@@ -70,7 +70,7 @@ func Start(ctx basecontext.ApiContext) {
 					})
 					if err != nil {
 						if errors.GetSystemErrorCode(err) != 404 {
-							ctx.LogError("Error creating orchestrator key: %v", err)
+							ctx.LogErrorf("Error creating orchestrator key: %v", err)
 							panic(err)
 						}
 					}
@@ -78,7 +78,7 @@ func Start(ctx basecontext.ApiContext) {
 				}
 
 				if localhost == nil {
-					ctx.LogInfo("Creating local orchestrator host")
+					ctx.LogInfof("Creating local orchestrator host")
 					_, _ = dbService.CreateOrchestratorHost(ctx, models.OrchestratorHost{
 						ID:          helpers.GenerateId(),
 						Host:        "localhost",
@@ -110,12 +110,12 @@ func Start(ctx basecontext.ApiContext) {
 				hostName := cfg.Localhost()
 				localhost, _ := dbService.GetOrchestratorHost(ctx, hostName)
 				if localhost != nil {
-					ctx.LogInfo("Removing local orchestrator host")
+					ctx.LogInfof("Removing local orchestrator host")
 					_ = dbService.DeleteOrchestratorHost(ctx, localhost.ID)
 				}
 				apiKey, _ := dbService.GetApiKey(ctx, ORCHESTRATOR_KEY_NAME)
 				if apiKey != nil {
-					ctx.LogInfo("Removing local orchestrator key")
+					ctx.LogInfof("Removing local orchestrator key")
 					_ = dbService.DeleteApiKey(ctx, apiKey.ID)
 				}
 			}

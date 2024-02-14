@@ -26,21 +26,21 @@ func processGenerateSecurityKey(ctx basecontext.ApiContext) {
 	if cfg.GetKey(constants.FILE_FLAG) != "" {
 		filename = helper.GetFlagValue(constants.FILE_FLAG, "")
 	} else {
-		ctx.LogInfo("No output file specified, using default: %s", filename)
+		ctx.LogInfof("No output file specified, using default: %s", filename)
 	}
 	keySize := 2048
 	if cfg.GetKey(constants.RSA_KEY_SIZE) != "" {
 		size, err := strconv.Atoi(cfg.GetKey(constants.RSA_KEY_SIZE))
 		if err != nil {
-			ctx.LogError("Error parsing size flag: %s", err.Error())
+			ctx.LogErrorf("Error parsing size flag: %s", err.Error())
 		} else {
 			keySize = size
 		}
 	} else {
-		ctx.LogInfo("No key size specified, using default: %v", keySize)
+		ctx.LogInfof("No key size specified, using default: %v", keySize)
 	}
 
-	ctx.LogInfo("Generating security key, with size %v", keySize)
+	ctx.LogInfof("Generating security key, with size %v", keySize)
 
 	err := security.GenPrivateRsaKey(filename, keySize)
 	if err != nil {

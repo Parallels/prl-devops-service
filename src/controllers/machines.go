@@ -24,7 +24,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 	provider := serviceprovider.Get()
 
 	if provider.IsParallelsDesktopAvailable() {
-		ctx.LogInfo("Registering version %s virtual machine handlers", version)
+		ctx.LogInfof("Registering version %s virtual machine handlers", version)
 		restapi.NewController().
 			WithMethod(restapi.GET).
 			WithVersion(version).
@@ -190,13 +190,13 @@ func GetVirtualMachinesHandler() restapi.ControllerHandler {
 			w.WriteHeader(http.StatusOK)
 			vms = make([]models.ParallelsVM, 0)
 			_ = json.NewEncoder(w).Encode(vms)
-			ctx.LogInfo("No machines found")
+			ctx.LogInfof("No machines found")
 			return
 		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(vms)
-		ctx.LogInfo("Machines returned: %v", len(vms))
+		ctx.LogInfof("Machines returned: %v", len(vms))
 	}
 }
 
@@ -236,7 +236,7 @@ func GetVirtualMachineHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(vm)
-		ctx.LogInfo("Machine returned: %v", vm.ID)
+		ctx.LogInfof("Machine returned: %v", vm.ID)
 	}
 }
 
@@ -274,7 +274,7 @@ func StartVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Machine started: %v", id)
+		ctx.LogInfof("Machine started: %v", id)
 	}
 }
 
@@ -312,7 +312,7 @@ func StopVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Machine stopped: %v", id)
+		ctx.LogInfof("Machine stopped: %v", id)
 	}
 }
 
@@ -349,7 +349,7 @@ func RestartVirtualMachineHandler() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Machine restarted: %v", id)
+		ctx.LogInfof("Machine restarted: %v", id)
 	}
 }
 
@@ -386,7 +386,7 @@ func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Machine suspended: %v", id)
+		ctx.LogInfof("Machine suspended: %v", id)
 	}
 }
 
@@ -423,7 +423,7 @@ func ResumeMachineController() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Machine resumed: %v", id)
+		ctx.LogInfof("Machine resumed: %v", id)
 	}
 }
 
@@ -460,7 +460,7 @@ func ResetMachineController() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Machine reset: %v", id)
+		ctx.LogInfof("Machine reset: %v", id)
 	}
 }
 
@@ -498,7 +498,7 @@ func PauseVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Machine paused: %v", id)
+		ctx.LogInfof("Machine paused: %v", id)
 	}
 }
 
@@ -529,7 +529,7 @@ func DeleteVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("Machine deleted: %v", id)
+		ctx.LogInfof("Machine deleted: %v", id)
 	}
 }
 
@@ -566,7 +566,7 @@ func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Machine status returned: %v", id)
+		ctx.LogInfof("Machine status returned: %v", id)
 	}
 }
 
@@ -632,7 +632,7 @@ func SetVirtualMachineHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Machine configured: %v", id)
+		ctx.LogInfof("Machine configured: %v", id)
 	}
 }
 
@@ -677,7 +677,7 @@ func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 		} else {
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfo("Command executed on machine: %v", id)
+			ctx.LogInfof("Command executed on machine: %v", id)
 		}
 	}
 }
@@ -740,7 +740,7 @@ func RenameVirtualMachineHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(vm)
-		ctx.LogInfo("Machine renamed: %v", id)
+		ctx.LogInfof("Machine renamed: %v", id)
 	}
 }
 
@@ -819,7 +819,7 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(vms[0])
-		ctx.LogInfo("Machine registered: %v", vms[0].ID)
+		ctx.LogInfof("Machine registered: %v", vms[0].ID)
 	}
 }
 
@@ -865,7 +865,7 @@ func UnregisterVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		ReturnApiCommonResponse(w)
-		ctx.LogInfo("Machine unregistered: %v", id)
+		ctx.LogInfof("Machine unregistered: %v", id)
 	}
 }
 
@@ -924,7 +924,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfo("Machine created using packer template: %v", response.ID)
+			ctx.LogInfof("Machine created using packer template: %v", response.ID)
 
 		} else if request.VagrantBox != nil {
 			response, err := createVagrantBox(ctx, request)
@@ -935,7 +935,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfo("Machine created using vagrant box: %v", response.ID)
+			ctx.LogInfof("Machine created using vagrant box: %v", response.ID)
 			return
 		} else if request.CatalogManifest != nil {
 			response, err := createCatalogMachine(ctx, request)
@@ -946,7 +946,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfo("Machine created using catalog: %v", response.ID)
+			ctx.LogInfof("Machine created using catalog: %v", response.ID)
 			return
 		} else {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -1017,8 +1017,8 @@ func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMa
 	if request.VagrantBox.Box != "" {
 		// Generating the vagrant file
 		if content, err := vagrantService.GenerateVagrantFile(ctx, *request.VagrantBox); err != nil {
-			ctx.LogError("Error generating vagrant file: %v", err)
-			ctx.LogError("Vagrant file content: %v", content)
+			ctx.LogErrorf("Error generating vagrant file: %v", err)
+			ctx.LogErrorf("Vagrant file content: %v", content)
 			return nil, err
 		}
 	} else {

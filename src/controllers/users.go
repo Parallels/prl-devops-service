@@ -17,7 +17,7 @@ import (
 )
 
 func registerUsersHandlers(ctx basecontext.ApiContext, version string) {
-	ctx.LogInfo("Registering version %s Users handlers", version)
+	ctx.LogInfof("Registering version %s Users handlers", version)
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
@@ -136,7 +136,7 @@ func GetUsersHandler() restapi.ControllerHandler {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.ApiUser, 0)
 			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfo("Users returned: %v", len(response))
+			ctx.LogInfof("Users returned: %v", len(response))
 			return
 		}
 
@@ -144,7 +144,7 @@ func GetUsersHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Users returned: %v", len(result))
+		ctx.LogInfof("Users returned: %v", len(result))
 	}
 }
 
@@ -181,7 +181,7 @@ func GetUserHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("User returned: %v", response.ID)
+		ctx.LogInfof("User returned: %v", response.ID)
 	}
 }
 
@@ -248,7 +248,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("User created: %v", response.ID)
+		ctx.LogInfof("User created: %v", response.ID)
 	}
 }
 
@@ -282,7 +282,7 @@ func DeleteUserHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("User deleted: %v", id)
+		ctx.LogInfof("User deleted: %v", id)
 	}
 }
 
@@ -333,7 +333,7 @@ func UpdateUserHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("User updated: %v", id)
+		ctx.LogInfof("User updated: %v", id)
 	}
 }
 
@@ -371,7 +371,7 @@ func GetUserRolesHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Roles returned: %v", len(result))
+		ctx.LogInfof("Roles returned: %v", len(result))
 	}
 }
 
@@ -421,7 +421,7 @@ func AddRoleToUserHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(request)
-		ctx.LogInfo("Role added to user: %v", id)
+		ctx.LogInfof("Role added to user: %v", id)
 	}
 }
 
@@ -456,7 +456,7 @@ func RemoveRoleFromUserHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("Role removed from user: %v", id)
+		ctx.LogInfof("Role removed from user: %v", id)
 	}
 }
 
@@ -494,7 +494,7 @@ func GetUserClaimsHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfo("Claims returned: %v", len(result))
+		ctx.LogInfof("Claims returned: %v", len(result))
 	}
 }
 
@@ -544,7 +544,7 @@ func AddClaimToUserHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(request)
-		ctx.LogInfo("Claim added to user: %v", id)
+		ctx.LogInfof("Claim added to user: %v", id)
 	}
 }
 
@@ -579,6 +579,6 @@ func RemoveClaimFromUserHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfo("Claim removed from user: %v", id)
+		ctx.LogInfof("Claim removed from user: %v", id)
 	}
 }

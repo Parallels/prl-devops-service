@@ -22,7 +22,7 @@ func AddAuthorizationContextMiddlewareAdapter() Adapter {
 			// Adding a new Authorization Request to the Request
 			ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
 			baseCtx := basecontext.NewBaseContextFromContext(ctx)
-			baseCtx.LogInfo("Authorization layer started")
+			baseCtx.LogInfof("Authorization layer started")
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

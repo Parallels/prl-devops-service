@@ -13,12 +13,12 @@ func processInstall(ctx basecontext.ApiContext) {
 	filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
 	if filePath != "" {
 		if err := install.InstallService(ctx, filePath); err != nil {
-			ctx.LogError(err.Error())
+			ctx.LogErrorf(err.Error())
 			os.Exit(1)
 		}
 	} else {
 		if err := install.InstallService(ctx, ""); err != nil {
-			ctx.LogError(err.Error())
+			ctx.LogErrorf(err.Error())
 			os.Exit(1)
 		}
 	}
