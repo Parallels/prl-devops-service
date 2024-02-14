@@ -20,9 +20,9 @@ package azurestorageaccount
 // 	n, err := pr.r.Read(p)
 // 	pr.progress += int64(n)
 // 	if pr.total > 0 {
-// 		pr.ctx.LogInfo("%s %v of %v from %s", pr.op, pr.getFormattedProgress(pr.progress), pr.getFormattedProgress(pr.total), pr.filename)
+// 		pr.ctx.LogInfof("%s %v of %v from %s", pr.op, pr.getFormattedProgress(pr.progress), pr.getFormattedProgress(pr.total), pr.filename)
 // 	} else {
-// 		pr.ctx.LogInfo("%s %v MBs from %s", pr.op, pr.getFormattedProgress(pr.progress), pr.filename)
+// 		pr.ctx.LogInfof("%s %v MBs from %s", pr.op, pr.getFormattedProgress(pr.progress), pr.filename)
 
 // 	}
 // 	return n, err

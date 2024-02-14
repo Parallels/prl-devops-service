@@ -16,7 +16,7 @@ import (
 )
 
 func registerAuthorizationHandlers(ctx basecontext.ApiContext, version string) {
-	ctx.LogInfo("Registering version %s Authorization handlers", version)
+	ctx.LogInfof("Registering version %s Authorization handlers", version)
 	restapi.NewController().
 		WithMethod(restapi.POST).
 		WithVersion(version).
@@ -93,7 +93,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 			})
 
 			if diag := bruteForceSvc.Process(user.ID, false, "Invalid Password"); diag.HasErrors() {
-				ctx.LogError("Error processing brute force guard: %v", diag)
+				ctx.LogErrorf("Error processing brute force guard: %v", diag)
 			}
 			return
 		}
@@ -118,7 +118,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 401))
 			if diag := bruteForceSvc.Process(user.ID, false, err.Error()); diag.HasErrors() {
-				ctx.LogError("Error processing brute force guard: %v", diag)
+				ctx.LogErrorf("Error processing brute force guard: %v", diag)
 			}
 			return
 		}
@@ -126,7 +126,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 401))
 			if diag := bruteForceSvc.Process(user.ID, false, err.Error()); diag.HasErrors() {
-				ctx.LogError("Error processing brute force guard: %v", diag)
+				ctx.LogErrorf("Error processing brute force guard: %v", diag)
 			}
 			return
 		}
@@ -138,12 +138,12 @@ func GetTokenHandler() restapi.ControllerHandler {
 		}
 
 		if diag := bruteForceSvc.Process(user.ID, true, "Success"); diag.HasErrors() {
-			ctx.LogError("Error processing brute force guard: %v", diag)
+			ctx.LogErrorf("Error processing brute force guard: %v", diag)
 		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfo("User %s logged in", request.Email)
+		ctx.LogInfof("User %s logged in", request.Email)
 	}
 }
 
@@ -198,6 +198,6 @@ func ValidateTokenHandler() restapi.ControllerHandler {
 			Valid: true,
 		})
 		email, _ := token.GetEmail()
-		ctx.LogInfo("Token for user %s is valid", email)
+		ctx.LogInfof("Token for user %s is valid", email)
 	}
 }

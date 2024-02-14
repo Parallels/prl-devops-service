@@ -24,11 +24,11 @@ func processReverseProxy(ctx basecontext.ApiContext) {
 
 	service := reverse_proxy.New(ctx)
 	if service == nil {
-		ctx.LogError("Error creating reverse proxy service")
+		ctx.LogErrorf("Error creating reverse proxy service")
 		os.Exit(1)
 	}
 	if err := service.Start(); err != nil {
-		ctx.LogError(err.Error())
+		ctx.LogErrorf(err.Error())
 		os.Exit(1)
 	}
 	os.Exit(0)

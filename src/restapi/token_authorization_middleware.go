@@ -36,7 +36,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 			}
 
 			if authorizationContext.IsAuthorized || HasApiKeyAuthorizationHeader(r) {
-				baseCtx.LogDebug("No bearer token was found in the request, skipping")
+				baseCtx.LogDebugf("No bearer token was found in the request, skipping")
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -64,14 +64,14 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 
 			// Starting authorization layer of the token
 			authorized := true
-			baseCtx.LogInfo("Token Authorization layer started")
+			baseCtx.LogInfof("Token Authorization layer started")
 
 			// Getting the token for validation
 			jwt_token, valid := http_helper.GetAuthorizationToken(r.Header)
 			if !valid {
 				authorized = false
 				validateError := errors.New("bearer token not found in request")
-				baseCtx.LogError("Error validating token, %v", validateError.Error())
+				baseCtx.LogErrorf("Error validating token, %v", validateError.Error())
 			}
 
 			// Validating userToken against the keys
@@ -89,7 +89,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 					}
 					authorizationContext.IsAuthorized = false
 					authorizationContext.AuthorizationError = &response
-					baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
+					baseCtx.LogErrorf("Request failed to authorize, %v", response.ErrorDescription)
 				}
 			}
 
@@ -108,7 +108,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 
 					authorizationContext.IsAuthorized = false
 					authorizationContext.AuthorizationError = &response
-					baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
+					baseCtx.LogErrorf("Request failed to authorize, %v", response.ErrorDescription)
 				}
 			}
 
@@ -125,7 +125,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 					}
 					authorizationContext.IsAuthorized = false
 					authorizationContext.AuthorizationError = &response
-					baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
+					baseCtx.LogErrorf("Request failed to authorize, %v", response.ErrorDescription)
 				}
 			}
 
@@ -144,7 +144,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 					}
 					authorizationContext.IsAuthorized = false
 					authorizationContext.AuthorizationError = &response
-					baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
+					baseCtx.LogErrorf("Request failed to authorize, %v", response.ErrorDescription)
 				}
 
 				// validating if the user exists
@@ -158,7 +158,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 						}
 						authorizationContext.IsAuthorized = false
 						authorizationContext.AuthorizationError = &response
-						baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
+						baseCtx.LogErrorf("Request failed to authorize, %v", response.ErrorDescription)
 					}
 				}
 
@@ -198,7 +198,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 
 								authorizationContext.IsAuthorized = false
 								authorizationContext.AuthorizationError = &response
-								baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
+								baseCtx.LogErrorf("Request failed to authorize, %v", response.ErrorDescription)
 							}
 						}
 
@@ -227,7 +227,7 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 
 									authorizationContext.IsAuthorized = false
 									authorizationContext.AuthorizationError = &response
-									baseCtx.LogError("Request failed to authorize, %v", response.ErrorDescription)
+									baseCtx.LogErrorf("Request failed to authorize, %v", response.ErrorDescription)
 								}
 							}
 						}
@@ -244,9 +244,9 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 
 			ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
 			if authorizationContext.User != nil {
-				baseCtx.LogInfo("Token Authorization layer finished, user %v authorized", authorizationContext.User.Email)
+				baseCtx.LogInfof("Token Authorization layer finished, user %v authorized", authorizationContext.User.Email)
 			} else {
-				baseCtx.LogInfo("Token Authorization layer finished, no user authorized")
+				baseCtx.LogInfof("Token Authorization layer finished, no user authorized")
 			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

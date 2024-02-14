@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.50.15
 	github.com/cjlapao/common-go v0.0.39
 	github.com/cjlapao/common-go-cryptorand v0.0.6
-	github.com/cjlapao/common-go-logger v0.0.5
+	github.com/cjlapao/common-go-logger v0.0.7
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.6.0

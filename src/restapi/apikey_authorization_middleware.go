@@ -33,12 +33,12 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 
 			// If the authorization context is already authorized we will skip this middleware
 			if authorizationContext.IsAuthorized || HasAuthorizationHeader(r) {
-				baseCtx.LogDebug("No Api Key was found in the request, skipping")
+				baseCtx.LogDebugf("No Api Key was found in the request, skipping")
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			baseCtx.LogInfo("ApiKey Authorization layer started")
+			baseCtx.LogInfof("ApiKey Authorization layer started")
 			authError := models.OAuthErrorResponse{
 				Error:            models.OAuthUnauthorizedClient,
 				ErrorDescription: "The Api Key is not valid",
@@ -48,7 +48,7 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 			if err != nil {
 				authError.ErrorDescription = err.Error()
 				authorizationContext.AuthorizationError = &authError
-				baseCtx.LogInfo("No Api Key was found in the request, skipping")
+				baseCtx.LogInfof("No Api Key was found in the request, skipping")
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -76,7 +76,7 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 			}
 
 			if !isValid {
-				baseCtx.LogInfo("The Api Key is not valid")
+				baseCtx.LogInfof("The Api Key is not valid")
 				authorizationContext.IsAuthorized = false
 				authorizationContext.AuthorizationError = &authError
 
@@ -90,7 +90,7 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 			authorizationContext.AuthorizedBy = "ApiKeyAuthorization"
 			authorizationContext.AuthorizationError = nil
 			ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
-			baseCtx.LogInfo("ApiKey Authorization layer finished")
+			baseCtx.LogInfof("ApiKey Authorization layer finished")
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

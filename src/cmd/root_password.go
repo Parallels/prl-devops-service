@@ -11,11 +11,11 @@ import (
 )
 
 func processRootPassword(ctx basecontext.ApiContext) {
-	ctx.LogInfo("Updating root password")
+	ctx.LogInfof("Updating root password")
 	rootPassword := helper.GetFlagValue(constants.PASSWORD_FLAG, "")
 	if rootPassword != "" {
 		db := serviceprovider.Get().JsonDatabase
-		ctx.LogInfo("Database connection found, updating password")
+		ctx.LogInfof("Database connection found, updating password")
 		_ = db.Connect(ctx)
 		if db != nil {
 			err := db.UpdateRootPassword(ctx, rootPassword)
@@ -29,7 +29,7 @@ func processRootPassword(ctx basecontext.ApiContext) {
 	} else {
 		panic("No password provided")
 	}
-	ctx.LogInfo("Root password updated")
+	ctx.LogInfof("Root password updated")
 
 	os.Exit(0)
 }

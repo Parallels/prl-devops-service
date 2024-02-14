@@ -30,7 +30,7 @@ func SeedDefaultRoles() error {
 				return err
 			}
 		} else {
-			ctx.LogDebug("Role already exists: %s", role)
+			ctx.LogDebugf("Role already exists: %s", role)
 		}
 	}
 

@@ -61,7 +61,7 @@ func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId st
 		for _, rs := range s.remoteServices {
 			check, checkErr := rs.Check(ctx, cleanItem.Provider.String())
 			if checkErr != nil {
-				ctx.LogError("Error checking remote service %v: %v", rs.Name(), checkErr)
+				ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
 				return checkErr
 			}
 

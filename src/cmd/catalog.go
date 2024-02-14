@@ -62,9 +62,9 @@ func catalogInitPdFile(ctx basecontext.ApiContext, cmd string) *pdfile.PDFile {
 		if diag.HasErrors() {
 			ctx.EnableLog()
 			ctx.ToggleLogTimestamps(false)
-			ctx.LogError("There was errors loading the pd file:")
+			ctx.LogErrorf("There was errors loading the pd file:")
 			for _, err := range diag.Errors() {
-				ctx.LogError("  - %v", err)
+				ctx.LogErrorf("  - %v", err)
 			}
 			os.Exit(1)
 		}
@@ -89,9 +89,9 @@ func catalogInitPdFile(ctx basecontext.ApiContext, cmd string) *pdfile.PDFile {
 	if validationDiag.HasErrors() {
 		ctx.EnableLog()
 		ctx.ToggleLogTimestamps(false)
-		ctx.LogError("There was errors validating the pd file:")
+		ctx.LogErrorf("There was errors validating the pd file:")
 		for _, err := range validationDiag.Errors() {
-			ctx.LogError("  - %v", err)
+			ctx.LogErrorf("  - %v", err)
 		}
 
 		os.Exit(1)
@@ -172,7 +172,7 @@ func processCatalogRunCmd(ctx basecontext.ApiContext) {
 		os.Exit(1)
 	}
 
-	ctx.LogInfo("%v", out)
+	ctx.LogInfof("%v", out)
 }
 
 func processCatalogListCmd(ctx basecontext.ApiContext) {
@@ -184,7 +184,7 @@ func processCatalogListCmd(ctx basecontext.ApiContext) {
 		os.Exit(1)
 	}
 
-	ctx.LogInfo("%v", out)
+	ctx.LogInfof("%v", out)
 }
 
 func processCatalogPushCmd(ctx basecontext.ApiContext) {
@@ -204,7 +204,7 @@ func processCatalogPushCmd(ctx basecontext.ApiContext) {
 		os.Exit(1)
 	}
 
-	ctx.LogInfo("%v", out)
+	ctx.LogInfof("%v", out)
 }
 
 func processCatalogPullCmd(ctx basecontext.ApiContext) {
@@ -224,5 +224,5 @@ func processCatalogPullCmd(ctx basecontext.ApiContext) {
 		os.Exit(1)
 	}
 
-	ctx.LogInfo("%v", out)
+	ctx.LogInfof("%v", out)
 }
