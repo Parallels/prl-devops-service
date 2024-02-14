@@ -33,6 +33,10 @@ jobs:
         with:
           go-version: '1.21.x'
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
+      - name: Add Inbuilt Variables
+        run: |
+          sed -i "s/var AmplitudeApiKey = \"\"/var AmplitudeApiKey = \"${{ secrets.AMPLITUDE_API_KEY }}\"/g" ./src/constants/amplitude.go
+
       - name: Bump version and push
         run: |
           git config --global user.email "cjlapao@gmail.com"
@@ -54,7 +58,7 @@ jobs:
           swag init -g main.go
           cd ..
 
-          git add VERSION./src/* ./helm/Chart.yaml ./badges/*
+          git add VERSION./src/* ./helm/Chart.yaml ./badges/* ./src/constants/amplitude.go
           git commit -m "Release extension version $NEW_VERSION"
 
           git push --set-upstream origin release/$NEW_VERSION

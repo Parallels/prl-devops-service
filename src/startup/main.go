@@ -14,6 +14,7 @@ import (
 	"github.com/Parallels/prl-devops-service/security/password"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
+	"github.com/Parallels/prl-devops-service/telemetry"
 )
 
 const (
@@ -38,6 +39,9 @@ func Start(ctx basecontext.ApiContext) {
 	} else {
 		serviceprovider.InitServices(ctx)
 	}
+
+	// initializing telemetry with default context
+	_ = telemetry.New(ctx)
 
 	// Seeding defaults
 	if err := SeedDefaults(); err != nil {
