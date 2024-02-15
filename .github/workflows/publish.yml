@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - version.json
+      - VERSION
 
   workflow_dispatch:
     inputs:
