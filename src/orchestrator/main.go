@@ -13,6 +13,7 @@ import (
 	apimodels "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/telemetry"
 )
 
 var globalOrchestratorService *OrchestratorService
@@ -36,7 +37,6 @@ func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
 		}
 		cfg := config.Get()
 		globalOrchestratorService.refreshInterval = time.Duration(cfg.OrchestratorPullFrequency()) * time.Second
-
 	} else {
 		globalOrchestratorService.ctx = ctx
 	}
@@ -45,6 +45,8 @@ func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
 }
 
 func (s *OrchestratorService) Start(waitForInit bool) {
+	ts := telemetry.Get()
+	ts.TrackEvent(telemetry.NewTelemetryItem(s.ctx, telemetry.EventStartOrchestrator, nil, nil))
 	s.syncContext, s.cancel = context.WithCancel(context.Background())
 
 	dbService, err := serviceprovider.GetDatabaseService(s.ctx)

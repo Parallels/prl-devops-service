@@ -43,6 +43,8 @@ func Start(ctx basecontext.ApiContext) {
 	// initializing telemetry with default context
 	_ = telemetry.New(ctx)
 
+	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.EventStartApi, nil, nil))
+
 	// Seeding defaults
 	if err := SeedDefaults(); err != nil {
 		panic(err)

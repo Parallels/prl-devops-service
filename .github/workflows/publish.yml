@@ -119,6 +119,7 @@ jobs:
     - name: Add Inbuilt Variables
       run: |
         sed -i "s/var AmplitudeApiKey = \"\"/var AmplitudeApiKey = \"${{ env.AmplitudeApiKey }}\"/g" ./src/constants/amplitude.go
+
     - uses: wangyoucao577/go-release-action@v1
       timeout-minutes: 10
       with:

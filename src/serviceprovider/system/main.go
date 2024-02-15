@@ -39,13 +39,6 @@ func New(ctx basecontext.ApiContext) *SystemService {
 		ctx: ctx,
 	}
 
-	if globalSystemService.GetOperatingSystem() == "macos" && globalSystemService.FindPath() == "" {
-		ctx.LogWarnf("Running without support for brew")
-		return globalSystemService
-	} else {
-		globalSystemService.installed = true
-	}
-
 	globalSystemService.SetDependencies([]interfaces.Service{})
 	return globalSystemService
 }
@@ -55,116 +48,18 @@ func (s *SystemService) Name() string {
 }
 
 func (s *SystemService) FindPath() string {
-	s.ctx.LogInfof("Getting brew executable")
-	out, err := commands.ExecuteWithNoOutput("which", "brew")
-	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
-	if err != nil || path == "" {
-		s.ctx.LogWarnf("Brew executable not found, trying to find it in the default locations")
-	}
-
-	if path != "" {
-		s.brewExecutable = path
-		s.ctx.LogInfof("Brew found at: %s", s.brewExecutable)
-	} else {
-		if _, err := os.Stat("/opt/homebrew/bin/brew"); err == nil {
-			s.brewExecutable = "/opt/homebrew/bin/brew"
-		} else if _, err := os.Stat("/usr/local/bin/brew"); err == nil {
-			s.brewExecutable = "/usr/local/bin/brew"
-		} else {
-			s.ctx.LogWarnf("Brew executable not found")
-			return s.brewExecutable
-		}
-
-		s.ctx.LogInfof("Brew found at: %s", s.brewExecutable)
-	}
-
-	return s.brewExecutable
+	return "system"
 }
 
 func (s *SystemService) Version() string {
-	cmd := helpers.Command{
-		Command: s.brewExecutable,
-		Args:    []string{"--version"},
-	}
-
-	stdout, _, _, err := helpers.ExecuteWithOutput(cmd)
-	if err != nil {
-		return "unknown"
-	}
-
-	vParts := strings.Split(stdout, " ")
-	if len(vParts) > 0 {
-		return strings.TrimSpace(vParts[1])
-	} else {
-		return stdout
-	}
+	return "latest"
 }
 
 func (s *SystemService) Install(asUser, version string, flags map[string]string) error {
-	if s.installed {
-		s.ctx.LogInfof("%s already installed", s.Name())
-		return nil
-	}
-
-	// Installing service dependency
-	if s.dependencies != nil {
-		for _, dependency := range s.dependencies {
-			if dependency == nil {
-				return errors.New("Dependency is nil")
-			}
-			s.ctx.LogInfof("Installing dependency %s", dependency.Name())
-			if err := dependency.Install(asUser, "latest", flags); err != nil {
-				return err
-			}
-		}
-	}
-
-	cmd := helpers.Command{
-		Command: "/bin/bash",
-		Args:    []string{"-c", "\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""},
-	}
-
-	s.ctx.LogInfof("Installing %s with command: %v", s.Name(), cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(cmd)
-	if err != nil {
-		return err
-	}
-
-	s.installed = true
 	return nil
 }
 
 func (s *SystemService) Uninstall(asUser string, uninstallDependencies bool) error {
-	if s.installed {
-		s.ctx.LogInfof("Uninstalling %s", s.Name())
-
-		cmd := helpers.Command{
-			Command: "/bin/bash",
-			Args:    []string{"-c", "\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)\""},
-		}
-
-		_, err := helpers.ExecuteWithNoOutput(cmd)
-		if err != nil {
-			return err
-		}
-	}
-
-	if !uninstallDependencies {
-		// Uninstall service dependency
-		if s.dependencies != nil {
-			for _, dependency := range s.dependencies {
-				if dependency == nil {
-					continue
-				}
-				s.ctx.LogInfof("Uninstalling dependency %s for %s", dependency.Name(), s.Name())
-				if err := dependency.Uninstall(asUser, uninstallDependencies); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	s.installed = false
 	return nil
 }
 
@@ -180,7 +75,7 @@ func (s *SystemService) SetDependencies(dependencies []interfaces.Service) {
 }
 
 func (s *SystemService) Installed() bool {
-	return s.installed && s.brewExecutable != ""
+	return true
 }
 
 func (s *SystemService) GetSystemUsers(ctx basecontext.ApiContext) ([]models.SystemUser, error) {
