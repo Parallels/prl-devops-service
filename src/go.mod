@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/Azure/azure-storage-blob-go v0.15.0
+	github.com/amplitude/analytics-go v1.0.1
 	github.com/aws/aws-sdk-go v1.50.15
 	github.com/cjlapao/common-go v0.0.39
 	github.com/cjlapao/common-go-cryptorand v0.0.6
@@ -20,7 +21,6 @@ require (
 	golang.org/x/crypto v0.19.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v3 v3.0.1
-  github.com/amplitude/analytics-go v1.0.1
 )
 
 require (
