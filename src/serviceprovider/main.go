@@ -13,6 +13,7 @@ import (
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/serviceprovider/brew"
 	"github.com/Parallels/prl-devops-service/serviceprovider/git"
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider/packer"
@@ -28,6 +29,7 @@ type ServiceProvider struct {
 	RunningUser             string
 	Logger                  *log.LoggerService
 	System                  *system.SystemService
+	Brew                    *brew.BrewService
 	ParallelsDesktopService *parallelsdesktop.ParallelsService
 	GitService              *git.GitService
 	PackerService           *packer.PackerService
@@ -119,18 +121,20 @@ func InitServices(ctx basecontext.ApiContext) {
 
 	globalProvider.System = system.New(ctx)
 	globalProvider.System.SetDependencies([]interfaces.Service{})
+	globalProvider.Brew = brew.New(ctx)
+	globalProvider.Brew.SetDependencies([]interfaces.Service{})
 	globalProvider.Services = append(globalProvider.Services, globalProvider.System)
 	globalProvider.GitService = git.New(ctx)
-	globalProvider.GitService.SetDependencies([]interfaces.Service{globalProvider.System})
+	globalProvider.GitService.SetDependencies([]interfaces.Service{globalProvider.System, globalProvider.Brew})
 	globalProvider.Services = append(globalProvider.Services, globalProvider.GitService)
 	globalProvider.PackerService = packer.New(ctx)
-	globalProvider.PackerService.SetDependencies([]interfaces.Service{globalProvider.System, globalProvider.GitService})
+	globalProvider.PackerService.SetDependencies([]interfaces.Service{globalProvider.System, globalProvider.GitService, globalProvider.Brew})
 	globalProvider.Services = append(globalProvider.Services, globalProvider.PackerService)
 	globalProvider.VagrantService = vagrant.New(ctx)
-	globalProvider.VagrantService.SetDependencies([]interfaces.Service{globalProvider.System})
+	globalProvider.VagrantService.SetDependencies([]interfaces.Service{globalProvider.System, globalProvider.Brew})
 	globalProvider.Services = append(globalProvider.Services, globalProvider.VagrantService)
 	globalProvider.ParallelsDesktopService = parallelsdesktop.New(ctx)
-	globalProvider.ParallelsDesktopService.SetDependencies([]interfaces.Service{})
+	globalProvider.ParallelsDesktopService.SetDependencies([]interfaces.Service{globalProvider.System, globalProvider.Brew})
 	globalProvider.Services = append(globalProvider.Services, globalProvider.ParallelsDesktopService)
 
 	currentUser, err := globalProvider.System.GetCurrentUser(ctx)

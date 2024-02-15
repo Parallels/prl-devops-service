@@ -102,6 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       EXT_VERSION: ${{ needs.release.outputs.version }}
+      AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
     strategy:
       fail-fast: false
       matrix:
@@ -115,6 +116,10 @@ jobs:
             goos: windows
     steps:
     - uses: actions/checkout@v3
+    - name: Add Inbuilt Variables
+      run: |
+        sed -i "s/var AmplitudeApiKey = \"\"/var AmplitudeApiKey = \"${{ env.AmplitudeApiKey }}\"/g" ./src/constants/amplitude.go
+
     - uses: wangyoucao577/go-release-action@v1
       timeout-minutes: 10
       with:
@@ -125,6 +130,7 @@ jobs:
         project_path: "./src"
         binary_name: "prldevops"
         release_name: "v${{ env.EXT_VERSION }}"
+
   build-containers:
     needs: release
     env:

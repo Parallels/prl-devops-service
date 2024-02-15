@@ -31,7 +31,6 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /tmp/
 
-
 COPY --from=builder /go/bin/prl-devops-service /go/bin/prl-devops-service
 
 EXPOSE 80
