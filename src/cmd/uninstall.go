@@ -5,10 +5,15 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/install"
+	"github.com/cjlapao/common-go/helper"
 )
 
 func processUninstall(ctx basecontext.ApiContext) {
-	if err := install.UninstallService(ctx); err != nil {
+	removeDatabase := false
+	if helper.GetFlagSwitch("full", false) {
+		removeDatabase = true
+	}
+	if err := install.UninstallService(ctx, removeDatabase); err != nil {
 		ctx.LogErrorf(err.Error())
 		os.Exit(1)
 	}

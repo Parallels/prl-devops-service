@@ -4,7 +4,8 @@ type AuthorizationContextKey string
 
 var (
 	Name                                              = "Parallels Desktop DevOps Service"
-	ExecutableName                                    = "prldevops"
+	ExecutableName                                    = "parallels-devops-service"
+	ServiceDefaultDirectory                           = "/etc/prl-devops-service"
 	AUTHORIZATION_CONTEXT_KEY AuthorizationContextKey = "AUTHORIZATION_CONTEXT"
 )
 

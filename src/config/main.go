@@ -253,7 +253,7 @@ func (c *Config) RootFolder() (string, error) {
 	}
 
 	if currentUser == "root" {
-		folder := "/etc/parallels-api-service"
+		folder := constants.ServiceDefaultDirectory
 		err := helpers.CreateDirIfNotExist(folder)
 		if err != nil {
 			return "", err
