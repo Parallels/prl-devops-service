@@ -47,14 +47,14 @@ func InstallService(ctx basecontext.ApiContext, configFilePath string) error {
 	}
 }
 
-func UninstallService(ctx basecontext.ApiContext) error {
+func UninstallService(ctx basecontext.ApiContext, removeDatabase bool) error {
 	switch os := runtime.GOOS; os {
 	case "darwin":
-		return uninstallServiceOnMac(ctx)
+		return uninstallServiceOnMac(ctx, removeDatabase)
 	case "windows":
-		return uninstallServiceOnWindows(ctx)
+		return uninstallServiceOnWindows(ctx, removeDatabase)
 	case "linux":
-		return uninstallServiceOnLinux(ctx)
+		return uninstallServiceOnLinux(ctx, removeDatabase)
 	default:
 		errMsg := fmt.Sprintf("unsupported operating system: %s", os)
 		ctx.LogErrorf(errMsg)
@@ -85,7 +85,7 @@ func installServiceOnMac(ctx basecontext.ApiContext, config ApiServiceConfig) er
 
 	// Unload the daemon if it is already loaded
 	if helper.FileExists(daemonPath) {
-		if err := uninstallServiceOnMac(ctx); err != nil {
+		if err := uninstallServiceOnMac(ctx, false); err != nil {
 			return err
 		}
 	}
@@ -123,7 +123,7 @@ func installServiceOnMac(ctx basecontext.ApiContext, config ApiServiceConfig) er
 	return nil
 }
 
-func uninstallServiceOnMac(ctx basecontext.ApiContext) error {
+func uninstallServiceOnMac(ctx basecontext.ApiContext, removeDatabase bool) error {
 	daemonPath := filepath.Join(MAC_PLIST_DAEMON_PATH, MAC_PLIST_DAEMON_NAME)
 
 	cmd := helpers.Command{
@@ -139,6 +139,12 @@ func uninstallServiceOnMac(ctx basecontext.ApiContext) error {
 		return err
 	}
 
+	if removeDatabase && helper.FileExists(constants.ServiceDefaultDirectory) {
+		if err := os.RemoveAll(constants.ServiceDefaultDirectory); err != nil {
+			return err
+		}
+	}
+
 	ctx.LogInfof("Service uninstalled successfully")
 	return nil
 }
@@ -147,7 +153,7 @@ func installServiceOnWindows(ctx basecontext.ApiContext, config ApiServiceConfig
 	return errors.New("not implemented")
 }
 
-func uninstallServiceOnWindows(ctx basecontext.ApiContext) error {
+func uninstallServiceOnWindows(ctx basecontext.ApiContext, removeDatabase bool) error {
 	return errors.New("not implemented")
 }
 
@@ -155,7 +161,7 @@ func installServiceOnLinux(ctx basecontext.ApiContext, config ApiServiceConfig) 
 	return nil
 }
 
-func uninstallServiceOnLinux(ctx basecontext.ApiContext) error {
+func uninstallServiceOnLinux(ctx basecontext.ApiContext, removeDatabase bool) error {
 	return nil
 }
 

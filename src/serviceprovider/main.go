@@ -9,6 +9,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -146,7 +147,7 @@ func InitServices(ctx basecontext.ApiContext) {
 	globalProvider.RunningUser = currentUser
 
 	if globalProvider.RunningUser == "root" {
-		dbLocation := "/etc/parallels-api-service"
+		dbLocation := constants.ServiceDefaultDirectory
 		err := helpers.CreateDirIfNotExist(dbLocation)
 		if err != nil {
 			panic(err)
