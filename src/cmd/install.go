@@ -11,6 +11,7 @@ import (
 
 func processInstall(ctx basecontext.ApiContext) {
 	filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
+	ctx.ToggleLogTimestamps(false)
 	if filePath != "" {
 		if err := install.InstallService(ctx, filePath); err != nil {
 			ctx.LogErrorf(err.Error())

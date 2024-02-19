@@ -9,10 +9,9 @@ import (
 )
 
 func processUninstall(ctx basecontext.ApiContext) {
-	removeDatabase := false
-	if helper.GetFlagSwitch("full", false) {
-		removeDatabase = true
-	}
+	ctx.ToggleLogTimestamps(false)
+	removeDatabase := helper.GetFlagSwitch("full", false)
+
 	if err := install.UninstallService(ctx, removeDatabase); err != nil {
 		ctx.LogErrorf(err.Error())
 		os.Exit(1)

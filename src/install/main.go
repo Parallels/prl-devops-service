@@ -135,8 +135,10 @@ func uninstallServiceOnMac(ctx basecontext.ApiContext, removeDatabase bool) erro
 		return err
 	}
 
-	if err := os.Remove(daemonPath); err != nil {
-		return err
+	if helper.FileExists(daemonPath) {
+		if err := os.Remove(daemonPath); err != nil {
+			ctx.LogWarnf("There was an error removing the daemon file at %v", daemonPath)
+		}
 	}
 
 	if removeDatabase && helper.FileExists(constants.ServiceDefaultDirectory) {
