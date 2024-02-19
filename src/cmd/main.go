@@ -11,6 +11,11 @@ import (
 func Process() {
 	command := helper.GetCommandAt(0)
 	ctx := basecontext.NewRootBaseContext()
+	// backwards compatibility with the --version flag
+	if helper.GetFlagSwitch("version", false) {
+		processVersion()
+		os.Exit(0)
+	}
 
 	switch command {
 	case constants.API_COMMAND:

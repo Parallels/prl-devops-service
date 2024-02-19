@@ -63,7 +63,7 @@ security-check:
 .PHONY: build
 build:
 	@echo "Building..."
-ifneq ("$(wildcard out)","")
+ifeq ($(wildcard ./out/.*),)
 	@echo "Creating out directory..."
 	@mkdir out
 	@mkdir out/binaries

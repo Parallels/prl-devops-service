@@ -9,6 +9,7 @@ import (
 
 type PlistTemplateData struct {
 	Path                     string
+	ExecutableName           string
 	Port                     string
 	Prefix                   string
 	RootPassword             string
@@ -35,7 +36,7 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
   <string>com.parallels.api-service</string>
   <key>ProgramArguments</key>
   <array>
-    <string>{{ .Path }}/prl-devops-service</string>
+    <string>{{ .Path }}/{{ .ExecutableName }}</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>
@@ -118,6 +119,7 @@ func generatePlist(path string, config ApiServiceConfig) (string, error) {
 	var tpl bytes.Buffer
 	templateData := PlistTemplateData{
 		Path:                 path,
+		ExecutableName:       constants.ExecutableName,
 		Port:                 config.Port,
 		Prefix:               config.Prefix,
 		RootPassword:         config.RootPassword,
