@@ -216,6 +216,14 @@ func Get() *ServiceProvider {
 	return globalProvider
 }
 
+func NewMockProvider() *ServiceProvider {
+	globalProvider = &ServiceProvider{
+		Logger: common.Logger,
+	}
+
+	return globalProvider
+}
+
 func (p *ServiceProvider) IsParallelsDesktopAvailable() bool {
 	if p.ParallelsDesktopService == nil {
 		return false
