@@ -1,9 +1,11 @@
 package telemetry
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 )
 
@@ -49,13 +51,15 @@ func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, prop
 		item.Properties["hardware_id"] = item.HardwareID
 	}
 
+	provider := serviceprovider.Get()
+	key := provider.License
+
 	if user, err := system.GetCurrentUser(ctx); err == nil {
 		item.UserID = user
-		item.Properties["user_id"] = item.UserID
 	} else {
 		item.UserID = unknown
-		item.Properties["user_id"] = unknown
 	}
 
+	item.Properties["user_id"] = fmt.Sprintf("%s@%s", item.UserID, key)
 	return item
 }

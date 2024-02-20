@@ -32,6 +32,7 @@ func New(ctx basecontext.ApiContext) *TelemetryService {
 	}
 
 	if key == "" {
+		ctx.LogDebugf("[Telemetry] Telemetry disabled as no API key found")
 		svc.EnableTelemetry = false
 		return svc
 	}

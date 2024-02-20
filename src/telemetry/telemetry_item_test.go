@@ -4,10 +4,13 @@ import (
 	"testing"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewTelemetryItem(t *testing.T) {
+	mockProvider := serviceprovider.NewMockProvider()
+	mockProvider.License = "xxx"
 	ctx := &basecontext.BaseContext{} // Replace with your test context
 	eventType := EventStartApi
 	properties := map[string]interface{}{
@@ -35,6 +38,8 @@ func TestNewTelemetryItem(t *testing.T) {
 }
 
 func TestNewTelemetryItemEmptyProperties(t *testing.T) {
+	mockProvider := serviceprovider.NewMockProvider()
+	mockProvider.License = "xxx"
 	ctx := &basecontext.BaseContext{} // Replace with your test context
 	eventType := EventStartApi
 

@@ -44,6 +44,7 @@ type ServiceProvider struct {
 	HardwareId              string
 	HardwareSecret          string
 	CurrentSystemUser       string
+	License                 string
 }
 
 var globalProvider *ServiceProvider
@@ -100,6 +101,8 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 
 	key := "00000000-0000-0000-0000-000000000000"
 	hid := "XXX00000000000000000000000000000000"
+
+	globalProvider.License = key
 
 	if shid, err := globalProvider.System.GetUniqueId(ctx); err == nil {
 		ctx.LogInfof("Hardware ID: %s", shid)
@@ -200,6 +203,8 @@ func InitServices(ctx basecontext.ApiContext) {
 		hid = strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(globalProvider.HardwareInfo.HardwareID, "-", ""), "{", ""), "}", ""))
 	}
 
+	globalProvider.License = key
+
 	globalProvider.HardwareId = hid
 	globalProvider.HardwareSecret = getHardwareSecret(key, hid)
 	if systemHardwareInfo, err := globalProvider.System.GetHardwareInfo(ctx); err == nil {
@@ -208,6 +213,14 @@ func InitServices(ctx basecontext.ApiContext) {
 }
 
 func Get() *ServiceProvider {
+	return globalProvider
+}
+
+func NewMockProvider() *ServiceProvider {
+	globalProvider = &ServiceProvider{
+		Logger: common.Logger,
+	}
+
 	return globalProvider
 }
 
