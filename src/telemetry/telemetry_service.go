@@ -18,7 +18,7 @@ func (t *TelemetryService) TrackEvent(item TelemetryItem) {
 		t.ctx.LogDebugf("[Telemetry] Telemetry is disabled, ignoring event track")
 	}
 
-	t.ctx.LogInfof("[Telemetry] Sending Amplitude Tracking")
+	t.ctx.LogInfof("[Telemetry] Sending Amplitude Tracking event %s", item.Type)
 
 	// Create a new event
 	ev := amplitude.Event{
@@ -39,6 +39,8 @@ func (t *TelemetryService) Callback(result types.ExecuteResult) {
 			t.ctx.LogErrorf("[Telemetry] Disabling telemetry as received invalid key")
 			t.EnableTelemetry = false
 		}
+	} else {
+		t.ctx.LogDebugf("[Telemetry] Event sent to Amplitude")
 	}
 
 	t.CallBackChan <- result
