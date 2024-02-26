@@ -18,10 +18,21 @@ func NewDiagnostics() *Diagnostics {
 }
 
 func (d *Diagnostics) AddError(err error) {
+	for _, e := range d.errors {
+		if e.Error() == err.Error() {
+			return
+		}
+	}
+
 	d.errors = append(d.errors, err)
 }
 
 func (d *Diagnostics) AddWarning(err error) {
+	for _, e := range d.warnings {
+		if e.Error() == err.Error() {
+			return
+		}
+	}
 	d.warnings = append(d.warnings, err)
 }
 
