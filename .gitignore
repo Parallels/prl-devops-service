@@ -19,3 +19,4 @@ __debug_*
 bin/
 coverage/
 super-linter.log
+demo/
