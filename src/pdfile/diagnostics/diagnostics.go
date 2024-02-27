@@ -1,4 +1,4 @@
-package pdfile
+package diagnostics
 
 type PDFileDiagnostics struct {
 	errors   []error
