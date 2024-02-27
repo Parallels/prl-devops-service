@@ -7,6 +7,8 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/pdfile"
+	"github.com/Parallels/prl-devops-service/pdfile/diagnostics"
+	"github.com/Parallels/prl-devops-service/pdfile/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/cjlapao/common-go/helper"
 )
@@ -54,11 +56,11 @@ func processCatalogHelp() {
 	fmt.Println("  import <catalog> <file>\t\tImport a catalog from a file")
 }
 
-func catalogInitPdFile(ctx basecontext.ApiContext, cmd string) *pdfile.PDFile {
-	var pdFile *pdfile.PDFile
-	var diag *pdfile.PDFileDiagnostics
+func catalogInitPdFile(ctx basecontext.ApiContext, cmd string) *pdfile.PDFileService {
+	var pdFile *models.PDFile
+	var diag *diagnostics.PDFileDiagnostics
 	if helper.GetFlagValue(constants.FILE_FLAG, "") != "" {
-		pdFile, diag = pdfile.Load(helper.GetFlagValue(constants.FILE_FLAG, ""))
+		pdFile, diag = pdfile.Load(ctx, helper.GetFlagValue(constants.FILE_FLAG, ""))
 		if diag.HasErrors() {
 			ctx.EnableLog()
 			ctx.ToggleLogTimestamps(false)
@@ -70,7 +72,7 @@ func catalogInitPdFile(ctx basecontext.ApiContext, cmd string) *pdfile.PDFile {
 		}
 		catalogGetFlags(pdFile)
 	} else {
-		pdFile = pdfile.NewPdFile()
+		pdFile = models.NewPdFile()
 		catalogGetFlags(pdFile)
 	}
 
@@ -85,7 +87,9 @@ func catalogInitPdFile(ctx basecontext.ApiContext, cmd string) *pdfile.PDFile {
 		}
 	}
 
-	validationDiag := pdFile.Validate()
+	svc := pdfile.NewPDFileService(ctx, pdFile)
+
+	validationDiag := svc.Validate()
 	if validationDiag.HasErrors() {
 		ctx.EnableLog()
 		ctx.ToggleLogTimestamps(false)
@@ -97,10 +101,10 @@ func catalogInitPdFile(ctx basecontext.ApiContext, cmd string) *pdfile.PDFile {
 		os.Exit(1)
 	}
 
-	return pdFile
+	return svc
 }
 
-func catalogGetFlags(pdFile *pdfile.PDFile) {
+func catalogGetFlags(pdFile *models.PDFile) {
 	if helper.GetFlagValue(constants.PD_FILE_FROM_FLAG, "") != "" {
 		pdFile.From = helper.GetFlagValue(constants.PD_FILE_FROM_FLAG, "")
 	}
@@ -152,7 +156,7 @@ func catalogGetFlags(pdFile *pdfile.PDFile) {
 
 	if helper.GetFlagValue(constants.PD_FILE_USERNAME_FLAG, "") != "" || helper.GetFlagValue(constants.PD_FILE_API_KEY_FLAG, "") != "" {
 		if pdFile.Authentication == nil {
-			pdFile.Authentication = &pdfile.PDFileAuthentication{}
+			pdFile.Authentication = &models.PDFileAuthentication{}
 		}
 
 		pdFile.Authentication.Username = helper.GetFlagValue(constants.PD_FILE_USERNAME_FLAG, "")
@@ -176,9 +180,9 @@ func processCatalogRunCmd(ctx basecontext.ApiContext) {
 }
 
 func processCatalogListCmd(ctx basecontext.ApiContext) {
-	pdFile := catalogInitPdFile(ctx, "list")
+	svc := catalogInitPdFile(ctx, "list")
 
-	out, diags := pdFile.Run(ctx)
+	out, diags := svc.Run(ctx)
 	if diags.HasErrors() {
 		fmt.Println(diags.Errors())
 		os.Exit(1)
@@ -194,9 +198,9 @@ func processCatalogPushCmd(ctx basecontext.ApiContext) {
 		return
 	}
 
-	pdFile := catalogInitPdFile(ctx, "push")
+	svc := catalogInitPdFile(ctx, "push")
 
-	out, diags := pdFile.Run(ctx)
+	out, diags := svc.Run(ctx)
 	if diags.HasErrors() {
 		for _, err := range diags.Errors() {
 			fmt.Println(err)
@@ -214,9 +218,29 @@ func processCatalogPullCmd(ctx basecontext.ApiContext) {
 		return
 	}
 
-	pdFile := catalogInitPdFile(ctx, "pull")
+	svc := catalogInitPdFile(ctx, "pull")
 
-	out, diags := pdFile.Run(ctx)
+	out, diags := svc.Run(ctx)
+	if diags.HasErrors() {
+		for _, err := range diags.Errors() {
+			fmt.Println(err)
+		}
+		os.Exit(1)
+	}
+
+	ctx.LogInfof("%v", out)
+}
+
+func processCatalogImportCmd(ctx basecontext.ApiContext) {
+	file := helper.GetFlagValue(constants.FILE_FLAG, "")
+	if file == "" {
+		fmt.Println("Missing file flag")
+		return
+	}
+
+	svc := catalogInitPdFile(ctx, "import")
+
+	out, diags := svc.Run(ctx)
 	if diags.HasErrors() {
 		for _, err := range diags.Errors() {
 			fmt.Println(err)

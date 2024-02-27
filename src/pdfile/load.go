@@ -5,11 +5,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/pdfile/diagnostics"
+	"github.com/Parallels/prl-devops-service/pdfile/models"
 )
 
-func Load(pdFilepath string) (*PDFile, *PDFileDiagnostics) {
+func Load(ctx basecontext.ApiContext, pdFilepath string) (*models.PDFile, *diagnostics.PDFileDiagnostics) {
 	lines := []string{}
-	diag := NewPDFileDiagnostics()
+	diag := diagnostics.NewPDFileDiagnostics()
 
 	file, err := os.Open(filepath.Clean(pdFilepath))
 	if err != nil {
@@ -27,6 +31,6 @@ func Load(pdFilepath string) (*PDFile, *PDFileDiagnostics) {
 		return nil, diag
 	}
 
-	result, diag := Process(strings.Join(lines, "\n"))
+	result, diag := Process(ctx, strings.Join(lines, "\n"))
 	return result, diag
 }
