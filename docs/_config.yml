@@ -49,14 +49,14 @@ defaults:
       path: ""
       type: "posts"
     values:
-      author: "C.S. Rhymes"
+      author: "Parallels Desktop DevOps Service"
       layout: post
-      image: https://via.placeholder.com/1200x800
-      show_sidebar: true
+      image: assets/img/new_release_v1.png
+      show_sidebar: false
 
 markdown: kramdown
 highlighter: rouge
-footer_menu: example_footer_menu
+footer_menu: footer
 
 collections:
   products: 

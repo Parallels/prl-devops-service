@@ -1,21 +1,27 @@
 style: is-light
 items:
   - title: RestAPI
-    subtitle: Control your VMs with REST API
-    icon: fa-copy
+    description: Control your VMs with REST API
+    icon: fa-cloud
+    call_to_action_name: Get Started
+    call_to_action_link: /docs/restapi/index/
   - title: Orchestrator
-    subtitle: Manage multiple hosts seamless in a single pane
+    description: Manage multiple hosts seamless in a single pane
+    call_to_action_name: Get Started
+    call_to_action_link: /docs/orchestrator/index/
     icon: fa-server
   - title: VMs Catalog
-    subtitle: Quickly share golden images in a secure way
+    description: Quickly share golden images in a secure way
     icon: fa-book-open
+    call_to_action_name: Get Started
+    call_to_action_link: /docs/catalog/index/
   - title: CI/CD
-    subtitle: Integrate with your CI/CD pipeline
+    description: Integrate with your CI/CD pipeline
     icon: fa-rocket
   - title: Reverse Proxy
-    subtitle: Access your VMs from anywhere
+    description: Access your VMs from anywhere
     icon: fa-circle-nodes
   - title: Community Driven
-    subtitle: Open source and community driven development
+    description: Open source and community driven development
     icon: fa-discord
     icon_brand: true

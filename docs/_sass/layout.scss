@@ -36,5 +36,11 @@ div.highlight {
   }
 }
 
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 // Alpine.js hide on initial load
 [x-cloak] { display: none !important; }

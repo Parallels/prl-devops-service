@@ -1,19 +1,11 @@
 - name: Getting Started
-  link: /docs/getting-started/
+  link: /docs/getting-started/installation
 - name: Documentation
   link: /docs/
 - name: Examples
   link: /#
   dropdown:
-    - name: Landing Page With Callouts
-      link: /landing/
-    - name: Sponsors Page
-      link: /sponsors/
-    - name: Image Gallery
-      link: /gallery/
-    - name: Products
-      link: /products/
-    - name: Recipe Page
-      link: /example-recipe/
-    - name: Showcase
-      link: /showcase/
+    - name: Run a Catalog service locally
+      link: /examples/run_catalog/
+    - name: Create a PDFile to push to a Catalog
+      link: /examples/create_push_pdfile/
