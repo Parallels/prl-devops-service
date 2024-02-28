@@ -1,3 +1,12 @@
+---
+layout: page
+title: Catalog
+subtitle: Test
+menubar: docs_menu
+show_sidebar: false
+toc: true
+---
+
 # Parallels Desktop Catalog Manifest Service
 
 ## Description
@@ -20,7 +29,7 @@ distributing virtual machines.
 This will make the management of a global catalog of virtual machines very easy
 and secure and in s centralized way.
 
-![Catalog Manifest Architecture](./images/devtools_service-catalog_manifest.drawio.png)
+![Catalog Manifest Architecture](../../../img/devtools_service-catalog_manifest.drawio.png)
 
 ## Concepts
 
@@ -139,7 +148,7 @@ requiring heavy lifting from the service itself.
 
 ### Pushing a Virtual Machine Diagram
 
-![Pushing a Virtual Machine](./images//devtools_service-catalog_manifest_pushing.drawio.png)
+![Pushing a Virtual Machine](../../../img/devtools_service-catalog_manifest_pushing.drawio.png)
 
 ## Pull
 
@@ -159,7 +168,7 @@ and the storage provider.
 
 ### Pulling a Virtual Machine Diagram
 
-![Pulling a Virtual Machine](./images//devtools_service-catalog_manifest_pulling.drawio.png)
+![Pulling a Virtual Machine](../../../img/devtools_service-catalog_manifest_pulling.drawio.png)
 
 ## Caching
 

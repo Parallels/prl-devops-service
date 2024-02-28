@@ -18,7 +18,7 @@ SWAG = swag
 
 START_SUPER_LINTER_CONTAINER = start_super_linter_container
 
-DEVELOPMENT_TOOLS = $(GOX) $(COBERTURA) $(GOLANGCI_LINT) $(SWAG)
+DEVELOPMENT_TOOLS = $(GOX) $(COBERTURA) $(GOLANGCI_LINT) $(SWAG) $(bundler)
 SECURITY_TOOLS = $(GOSEC)
 
 .PHONY: help
@@ -103,7 +103,16 @@ deps: $(DEVELOPMENT_TOOLS) $(SECURITY_TOOLS)
 
 .PHONY: release-check
 release-check: test lint generate-swagger coverage security-check
-	
+
+.PHONY: build-docs
+build-docs:
+	@echo "Building Documentation..."
+	@cd docs && bundle exec jekyll build ./docs
+
+.PHONY: serve-docs
+serve-docs:
+	@echo "Serving Documentation..."
+	@cd docs && bundle exec jekyll serve ./docs
 
 $(COBERTURA):
 	@echo "Installing cobertura..."
@@ -114,7 +123,6 @@ $(COBERTURA):
 $(GOX):
 	@echo "Installing gox..."
 	@go install github.com/mitchellh/gox@latest
-
 
 $(GOLANGCI_LINT):
 	@echo "Installing golangci-lint..."
@@ -127,6 +135,10 @@ $(GOSEC):
 $(SWAG):
 	@echo "Installing swag..."
 	@go install github.com/swaggo/swag/cmd/swag@latest
+
+$(bundler):
+	@echo "Installing bundler..."
+	@bundler install
 
 $(START_SUPER_LINTER_CONTAINER):
 ifeq ($(OS), Windows_NT)
