@@ -1,3 +1,12 @@
+---
+layout: page
+title: Catalog
+subtitle: Test
+menubar: docs_menu
+show_sidebar: false
+toc: true
+---
+
 # Parallels Desktop Orchestrator Service
 
 The Parallels Desktop Orchestrator Service is a service that can run in a
@@ -25,7 +34,7 @@ deleting virtual machines or you can let the orchestrator do it for you by
 creating a virtual machine and letting the orchestrator choose the host with
 enough resources to run it.
 
-![Orchestrator Architecture](./images/devtools_service-orchestrator.drawio.png)
+![Orchestrator Architecture](../../../devtools_service-orchestrator.drawio.png)
 
 ## Concepts
 

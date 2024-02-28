@@ -1,3 +1,12 @@
+---
+layout: page
+title: Catalog
+subtitle: Reverse Proxy
+menubar: docs_menu
+show_sidebar: false
+toc: true
+---
+
 # Parallels Desktop DevOps Service Reverse Proxy
 
 The Parallels Desktop DevOps Service Reverse Proxy is a service in our DevOps Suite

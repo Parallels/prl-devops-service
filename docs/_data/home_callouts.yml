@@ -1,0 +1,17 @@
+style: is-light
+items:
+  - title: RestAPI
+    subtitle: Control your VMs with REST API
+    icon: fa-copy
+  - title: Orchestrator
+    subtitle: Manage multiple hosts seamless in a single pane
+    icon: fa-server
+  - title: VMs Catalog
+    subtitle: Quickly share golden images in a secure way
+    icon: fa-book-open
+  - title: CI/CD
+    subtitle: Integrate with your CI/CD pipeline
+    icon: fa-rocket
+  - title: Reverse Proxy
+    subtitle: Access your VMs from anywhere
+    icon: fa-circle-nodes

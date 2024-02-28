@@ -20,3 +20,4 @@ bin/
 coverage/
 super-linter.log
 demo/
+_site/

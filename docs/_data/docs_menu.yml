@@ -1,0 +1,12 @@
+- label: Getting Started
+  items:
+    - name: Installation
+      link: /docs/getting-started/installation/
+    - name: Configuration
+      link: /docs/getting-started/configuration/
+    - name: Theming
+      link: /docs/getting-started/theming/
+    - name: Sidebar
+      link: /docs/getting-started/sidebar/
+    - name: Scripts
+      link: /docs/getting-started/scripts/
