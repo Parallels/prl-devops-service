@@ -9,7 +9,7 @@ baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://parallels.github.io/prl-devops-service/" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  Parallels
 permalink: pretty
-
+theme: bulma-clean-theme
 remote-theme: chrisrhymes/bulma-clean-theme
 plugins:
   - jekyll-sitemap
