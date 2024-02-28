@@ -10,7 +10,6 @@ url: "https://parallels.github.io/prl-devops-service/" # the base hostname & pro
 github_username:  Parallels
 permalink: pretty
 
-theme: bulma-clean-theme
 remote-theme: chrisrhymes/bulma-clean-theme
 plugins:
   - jekyll-sitemap
@@ -37,7 +36,6 @@ livereload: true
 
 sass:
   style: compressed
-  source_dir: _sass
 
 defaults:
   -
@@ -63,6 +61,3 @@ footer_menu: example_footer_menu
 collections:
   products: 
     output: true
-    layout: product
-    image: https://via.placeholder.com/800x600
-    show_sidebar: false

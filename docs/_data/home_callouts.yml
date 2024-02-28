@@ -15,3 +15,7 @@ items:
   - title: Reverse Proxy
     subtitle: Access your VMs from anywhere
     icon: fa-circle-nodes
+  - title: Community Driven
+    subtitle: Open source and community driven development
+    icon: fa-discord
+    icon_brand: true
