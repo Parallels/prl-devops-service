@@ -33,6 +33,7 @@ jobs:
           ruby-version: 3.0
       - name: Download dasel
         run: curl -s https://api.github.com/repos/tomwright/dasel/releases/latest | grep browser_download_url | grep linux_amd64 | cut -d '"' -f 4 | wget -qi - && mv dasel_linux_amd64 dasel && chmod +x dasel && ./dasel --version
+        working-directory: ./docs
       - name: Setup Jekyll
         run: bundle install
         working-directory: ./docs
@@ -41,6 +42,9 @@ jobs:
           VERSION=$(cat ../VERSION)
           STARS=$(curl https://api.github.com/repos/Parallels/prl-devops-service | jq -r '.stargazers_count')
           FORKS=$(curl https://api.github.com/repos/Parallels/prl-devops-service | jq -r '.forks_count')
+          echo "Version: $VERSION"
+          echo "Stars: $STARS"
+          echo "Forks: $FORKS"
           ./dasel put string -f _config.yml .version $VERSION
           ./dasel put string -f _config.yml .stars $STARS
           ./dasel put string -f _config.yml .forks $FORKS
