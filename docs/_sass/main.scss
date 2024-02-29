@@ -2,12 +2,13 @@
 @import url('https://fonts.googleapis.com/css?family=Montserrat');
 
 $family-sans-serif: 'Montserrat', sans-serif;
-$primary: #85929E !default;
+$primary: #A7AEB5 !default;
 
 $tabs-link-active-color: $primary;
 $tabs-link-active-border-bottom-color: $primary;
 
 $modal-content-width: 800px;
+$dark: #363636;
 
 @import "../node_modules/bulma/bulma.sass";
 $hero-darken: $dark !default;
@@ -20,4 +21,20 @@ $hero-darken: $dark !default;
 
 .gh-sponsor {
   color: #ea4aaa;
+}
+
+.tab-container {
+  padding: 0 2.5rem;
+}
+
+.m-1 {
+  margin: 1rem;
+}
+
+.m-2 {
+  margin: 2rem;
+}
+
+.m-3 {
+  margin: 3rem;
 }

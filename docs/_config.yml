@@ -1,4 +1,7 @@
 title: Parallels Desktop DevOps Service
+brand: Parallels Desktop
+brand_url: https://www.parallels.com/products/desktop
+brand_img: pl-logo-dk.png
 email: support@parallels.com
 tagline: "Parallels Desktop DevOps Service"
 description: >- # this means to ignore newlines until "baseurl:"
@@ -51,12 +54,13 @@ defaults:
     values:
       author: "Parallels Desktop DevOps Service"
       layout: post
-      image: assets/img/new_release_v1.png
+      image: /assets/img/new_release_v1.png
       show_sidebar: false
 
 markdown: kramdown
 highlighter: rouge
 footer_menu: footer
+fixed_navbar: true
 
 collections:
   products: 

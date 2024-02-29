@@ -25,3 +25,12 @@ Parallels Desktop Business license. However, if you want to continue using the
 service beyond 10 users, you will need to purchase a Parallels Desktop Business
 license. The good news is that no extra license is required for this service
 once you have purchased the Parallels Desktop Business license.
+
+## Architecture
+
+The Parallels Desktop DevOps is a service that is written in Go and it is a very
+light height designed to provide some of the missing remote management
+tools for virtual machines running remotely in Parallels Desktop. It uses rest
+api to execute the necessary steps. It also has RBAC (Role Based Access Control)
+to allow for a secure way of managing virtual machines. You can manage most of
+the operations for a Virtual Machine Lifecycle.

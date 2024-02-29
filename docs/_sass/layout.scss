@@ -1,14 +1,30 @@
+$forks-icon: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"/></svg>');
+$repositories-icon: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"/></svg>');
+$stars-icon: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Zm0 2.445L6.615 5.5a.75.75 0 0 1-.564.41l-3.097.45 2.24 2.184a.75.75 0 0 1 .216.664l-.528 3.084 2.769-1.456a.75.75 0 0 1 .698 0l2.77 1.456-.53-3.084a.75.75 0 0 1 .216-.664l2.24-2.183-3.096-.45a.75.75 0 0 1-.564-.41L8 2.694Z"/></svg>');
+$version-icon: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/></svg>');
+
 div.highlight {
   margin-bottom: 1rem;
 }
 
+.navbar.is-primary {
+  background-color: #ffffff;
+}
+
+.navbar.is-primary .navbar-start>.navbar-item,
+.navbar.is-primary .navbar-start .navbar-link,
+.navbar.is-primary .navbar-end>.navbar-item,
+.navbar.is-primary .navbar-end .navbar-link {
+  color: #000
+}
+
 @include desktop {
   .navbar-item {
-      &.is-hoverable:hover {
-          .navbar-dropdown {
-              display: block;
-          }
+    &.is-hoverable:hover {
+      .navbar-dropdown {
+        display: block;
       }
+    }
   }
 }
 
@@ -24,15 +40,15 @@ div.highlight {
 
 .content {
   figure {
-      margin: 0;
+    margin: 0;
   }
 }
 
 .callout {
   &-icon {
-      width: 4rem;
-      height: 4rem;
-      margin-bottom: 0.75rem;
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 0.75rem;
   }
 }
 
@@ -42,5 +58,154 @@ div.highlight {
   align-items: center;
 }
 
+.sticky {
+  position: fixed;
+  top: 0;
+  width: 100%
+}
+
+.sticky+.container {
+  padding-top: 102px;
+}
+
+section:first-of-type {
+  padding-top: 52px;
+}
+
 // Alpine.js hide on initial load
-[x-cloak] { display: none !important; }
+[x-cloak] {
+  display: none !important;
+}
+
+.github_source_header {
+  display: block;
+  max-width: 11.7rem;
+  width: 11.7rem;
+  color: #000;
+  display: flex;
+
+  &:hover{
+    opacity: .7
+  }
+
+  a {
+    color: #000;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    font-size: .95rem;
+    line-height: 1.2;
+    transition: opacity .25s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+  }
+
+  .github_icon {
+    font-size: 2rem;
+  }
+
+  .source_facts {
+    display: flex;
+    font-size: .75rem;
+    gap: .4rem;
+    list-style-type: none;
+    margin: .1rem 0 0;
+    opacity: .85;
+    overflow: hidden;
+    padding: 0;
+    width: 100%
+  }
+
+  .source_facts_container {
+    animation: facts .25s ease-in
+  }
+
+  .source_fact {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    font-size: .75rem;
+  }
+
+  .source_facts_container .source_fact {
+    animation: fact .4s ease-out
+  }
+
+  .source_fact:before {
+    background-color: currentcolor;
+    content: "";
+    display: inline-block;
+    height: .9rem;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    vertical-align: text-top;
+    width: .9rem;
+    margin-right: .2rem;
+  }
+
+  .source_fact:nth-child(1n+2) {
+    flex-shrink: 0
+  }
+
+  .source_fact--version:before {
+    -webkit-mask-image: $version-icon;
+    mask-image: $version-icon;
+  }
+
+  .source_fact--stars:before {
+    -webkit-mask-image: $stars-icon;
+    font-size: 6rem;
+    mask-image: $stars-icon;
+  }
+
+  .source_fact--forks:before {
+    -webkit-mask-image: $forks-icon;
+    mask-image: $forks-icon;
+  }
+
+  .source_fact--repositories:before {
+    -webkit-mask-image: $repositories-icon;
+    mask-image: $repositories-icon;
+  }
+}
+
+.github_source {
+  color: #000;
+  display: inline-block;
+  max-width: calc(100% - 1.2rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+@keyframes facts {
+  0% {
+      height: 0
+  }
+
+  to {
+      height: .65rem
+  }
+}
+
+@keyframes fact {
+  0% {
+    opacity: 0;
+    transform: translateY(100%)
+  }
+
+  50% {
+    opacity: 0
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0)
+  }
+}

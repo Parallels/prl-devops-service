@@ -1,11 +1,11 @@
-- name: Getting Started
-  link: /docs/getting-started/installation
+- name: Quick Start
+  link: /quick-start/
 - name: Documentation
   link: /docs/
 - name: Examples
   link: /#
   dropdown:
-    - name: Run a Catalog service locally
-      link: /examples/run_catalog/
+    - name: Run a Catalog service locally with Docker
+      link: /examples/run-catalog-docker/
     - name: Create a PDFile to push to a Catalog
       link: /examples/create_push_pdfile/
