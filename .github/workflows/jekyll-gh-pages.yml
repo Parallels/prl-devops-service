@@ -45,9 +45,9 @@ jobs:
           echo "Version: $VERSION"
           echo "Stars: $STARS"
           echo "Forks: $FORKS"
-          ./dasel put string -f _config.yml .version $VERSION
-          ./dasel put string -f _config.yml .stars $STARS
-          ./dasel put string -f _config.yml .forks $FORKS
+          sed -i "/^version:/c\version: \"$VERSION\"" config.yml
+          sed -i "/^stars:/c\stars: $STARS" config.yml
+          sed -i "/^forks:/c\forks: $FORKS" config.yml
           cat _config.yml
           bundle exec jekyll build
         working-directory: ./docs
