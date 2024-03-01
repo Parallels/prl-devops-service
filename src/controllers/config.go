@@ -138,84 +138,15 @@ func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 			provider.InstallAllTools(request.RunAs, map[string]string{})
 		} else {
 			for tool, option := range request.Tools {
-				switch tool {
-				case "packer":
-					if err := provider.PackerService.Install(request.RunAs, option.Version, option.Flags); err != nil {
-						response.Success = false
-						response.InstalledTools[tool] = models.InstallToolsResponseItem{
-							Success:      false,
-							Version:      option.Version,
-							ErrorMessage: err.Error(),
-						}
-					} else {
-						response.InstalledTools[tool] = models.InstallToolsResponseItem{
-							Success: true,
-							Version: option.Version,
-						}
-					}
-				case "vagrant":
-					if err := provider.VagrantService.Install(request.RunAs, option.Version, option.Flags); err != nil {
-						response.Success = false
-						response.InstalledTools[tool] = models.InstallToolsResponseItem{
-							Success:      false,
-							Version:      option.Version,
-							ErrorMessage: err.Error(),
-						}
-					} else {
-						response.InstalledTools[tool] = models.InstallToolsResponseItem{
-							Success: true,
-							Version: option.Version,
-						}
-					}
-				case "parallels":
-					if err := provider.ParallelsDesktopService.Install(request.RunAs, option.Version, option.Flags); err != nil {
-						response.Success = false
-						response.InstalledTools[tool] = models.InstallToolsResponseItem{
-							Success:      false,
-							Version:      option.Version,
-							ErrorMessage: err.Error(),
-						}
-					} else {
-						response.InstalledTools[tool] = models.InstallToolsResponseItem{
-							Success: true,
-							Version: option.Version,
-						}
-					}
-				case "git":
-					if err := provider.GitService.Install(request.RunAs, option.Version, option.Flags); err != nil {
-						response.Success = false
-						response.InstalledTools[tool] = models.InstallToolsResponseItem{
-							Success:      false,
-							Version:      option.Version,
-							ErrorMessage: err.Error(),
-						}
-					} else {
-						response.InstalledTools[tool] = models.InstallToolsResponseItem{
-							Success: true,
-							Version: option.Version,
-						}
-					}
-				case "brew":
-					if err := provider.System.Install(request.RunAs, option.Version, option.Flags); err != nil {
-						response.Success = false
-						response.InstalledTools[tool] = models.InstallToolsResponseItem{
-							Success:      false,
-							Version:      option.Version,
-							ErrorMessage: err.Error(),
-						}
-					} else {
-						response.InstalledTools[tool] = models.InstallToolsResponseItem{
-							Success: true,
-							Version: option.Version,
-						}
-					}
-				default:
-					response.InstalledTools[tool] = models.InstallToolsResponseItem{
-						Success:      false,
-						Version:      option.Version,
-						ErrorMessage: "Not Recognized Tool",
-					}
+				result := provider.InstallTool(request.RunAs, tool, option.Version, option.Flags)
+				modelResponse := models.InstallToolsResponseItem{
+					Success: result.Result,
+					Version: result.Version,
 				}
+				if !result.Result {
+					modelResponse.ErrorMessage = result.Message
+				}
+				response.InstalledTools[tool] = modelResponse
 			}
 		}
 
@@ -268,74 +199,14 @@ func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 			provider.UninstallAllTools(request.RunAs, request.UninstallDependencies, map[string]string{})
 		} else {
 			for tool, option := range request.Tools {
-				switch tool {
-				case "packer":
-					if err := provider.PackerService.Uninstall(request.RunAs, option.UninstallDependencies); err != nil {
-						response.Success = false
-						response.UninstalledTools[tool] = models.UninstallToolsResponseItem{
-							Success:      false,
-							ErrorMessage: err.Error(),
-						}
-					} else {
-						response.UninstalledTools[tool] = models.UninstallToolsResponseItem{
-							Success: true,
-						}
-					}
-				case "vagrant":
-					if err := provider.VagrantService.Uninstall(request.RunAs, option.UninstallDependencies); err != nil {
-						response.Success = false
-						response.UninstalledTools[tool] = models.UninstallToolsResponseItem{
-							Success:      false,
-							ErrorMessage: err.Error(),
-						}
-					} else {
-						response.UninstalledTools[tool] = models.UninstallToolsResponseItem{
-							Success: true,
-						}
-					}
-				case "parallels":
-					if err := provider.ParallelsDesktopService.Uninstall(request.RunAs, option.UninstallDependencies); err != nil {
-						response.Success = false
-						response.UninstalledTools[tool] = models.UninstallToolsResponseItem{
-							Success:      false,
-							ErrorMessage: err.Error(),
-						}
-					} else {
-						response.UninstalledTools[tool] = models.UninstallToolsResponseItem{
-							Success: true,
-						}
-					}
-				case "git":
-					if err := provider.GitService.Uninstall(request.RunAs, option.UninstallDependencies); err != nil {
-						response.Success = false
-						response.UninstalledTools[tool] = models.UninstallToolsResponseItem{
-							Success: false,
-
-							ErrorMessage: err.Error(),
-						}
-					} else {
-						response.UninstalledTools[tool] = models.UninstallToolsResponseItem{
-							Success: true,
-						}
-					}
-				case "brew":
-					if err := provider.System.Uninstall(request.RunAs, option.UninstallDependencies); err != nil {
-						response.Success = false
-						response.UninstalledTools[tool] = models.UninstallToolsResponseItem{
-							Success:      false,
-							ErrorMessage: err.Error(),
-						}
-					} else {
-						response.UninstalledTools[tool] = models.UninstallToolsResponseItem{
-							Success: true,
-						}
-					}
-				default:
-					response.UninstalledTools[tool] = models.UninstallToolsResponseItem{
-						Success:      false,
-						ErrorMessage: "Not Recognized Tool",
-					}
+				result := provider.UninstallTool(request.RunAs, tool, request.UninstallDependencies, option.Flags)
+				modelResponse := models.UninstallToolsResponseItem{
+					Success: result.Result,
 				}
+				if !result.Result {
+					modelResponse.ErrorMessage = result.Message
+				}
+				response.UninstalledTools[tool] = modelResponse
 			}
 		}
 

@@ -18,10 +18,16 @@ items:
   - title: CI/CD
     description: Integrate with your CI/CD pipeline
     icon: fa-rocket
+    call_to_action_name: Get Started
+    call_to_action_link: /docs/ci-cd/index/
   - title: Reverse Proxy
     description: Access your VMs from anywhere
     icon: fa-circle-nodes
+    call_to_action_name: Get Started
+    call_to_action_link: /docs/reverse-proxy/index/
   - title: Community Driven
     description: Open source and community driven development
     icon: fa-discord
     icon_brand: true
+    call_to_action_name: Join
+    call_to_action_link: https://discord.gg/pEwZ254C3d

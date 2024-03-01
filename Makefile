@@ -114,6 +114,13 @@ serve-docs:
 	@echo "Serving Documentation..."
 	@cd docs && bundle exec jekyll serve ./docs
 
+.PHONY: build-helm-chart
+build-helm-chart:
+	@echo "Building Helm Chart..."
+	@helm package ./helm -d ./docs/charts
+	@helm repo index ./docs/charts --url https://parallels.github.io/prl-devops-service/charts --merge ./docs/charts/index.yaml
+
+
 $(COBERTURA):
 	@echo "Installing cobertura..."
 	@go install github.com/axw/gocov/gocov@latest

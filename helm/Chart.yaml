@@ -1,6 +1,6 @@
 apiVersion: v2
-name: parallels-api
-description: Parallels Desktop API Service
+name: parallels-devops-service
+description: Parallels Desktop DevOps Service
 
 # A chart can be either an 'application' or a 'library' chart.
 #

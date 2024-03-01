@@ -73,3 +73,8 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: results.sarif
+
+      - name: Build Helm Chart
+        run: |
+          helm lint ./charts/*
+          make build-helm-chart

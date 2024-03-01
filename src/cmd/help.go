@@ -22,6 +22,8 @@ func processHelp(command string) {
 		processGenerateSecurityKeyHelp()
 	case constants.REVERSE_PROXY_COMMAND:
 		processReverseProxyHelp()
+	case constants.INSTALL_SERVICE_COMMAND:
+		processInstallHelp()
 	default:
 		processDefaultHelp()
 	}

@@ -4,6 +4,8 @@
       link: /docs/getting-started/installation/
     - name: Configuration
       link: /docs/getting-started/configuration/
+    - name: Docker Container
+      link: /docs/getting-started/docker/
 - label: RestAPI
   items:
     - name: Overview

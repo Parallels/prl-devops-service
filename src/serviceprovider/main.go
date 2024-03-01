@@ -235,6 +235,13 @@ func (p *ServiceProvider) IsParallelsDesktopAvailable() bool {
 	return true
 }
 
+func (p *ServiceProvider) IsBrewAvailable() bool {
+	if p.Brew == nil {
+		return false
+	}
+	return p.Brew.Installed()
+}
+
 func (p *ServiceProvider) IsGitAvailable() bool {
 	if p.GitService == nil {
 		return false
@@ -265,18 +272,104 @@ func (p *ServiceProvider) IsSystemAvailable() bool {
 }
 
 func (p *ServiceProvider) InstallAllTools(asUser string, flags map[string]string) {
-	if p.IsParallelsDesktopAvailable() {
+	if !p.IsBrewAvailable() {
+		_ = p.Brew.Install(asUser, "latest", flags)
+	}
+	if !p.IsParallelsDesktopAvailable() {
 		_ = p.ParallelsDesktopService.Install(asUser, "latest", flags)
 	}
-	if p.IsGitAvailable() {
+	if !p.IsGitAvailable() {
 		_ = p.GitService.Install(asUser, "latest", flags)
 	}
-	if p.IsPackerAvailable() {
+	if !p.IsPackerAvailable() {
 		_ = p.PackerService.Install(asUser, "latest", flags)
 	}
-	if p.IsVagrantAvailable() {
+	if !p.IsVagrantAvailable() {
 		_ = p.VagrantService.Install(asUser, "latest", flags)
 	}
+}
+
+func (p *ServiceProvider) InstallTool(asUser, tool, version string, flags map[string]string) ToolOperationResult {
+	result := ToolOperationResult{
+		Type: "install",
+	}
+	switch tool {
+	case "brew":
+		result.Name = "brew"
+		if !p.IsBrewAvailable() {
+			if err := p.Brew.Install(asUser, version, flags); err != nil {
+				result.Result = false
+				result.Message = err.Error()
+			} else {
+				result.Result = true
+				result.Version = version
+			}
+		} else {
+			result.Result = true
+			result.Message = "Brew is already installed"
+		}
+	case "parallels-desktop", "parallels":
+		result.Name = "parallels-desktop"
+		if !p.IsParallelsDesktopAvailable() {
+			if err := p.ParallelsDesktopService.Install(asUser, version, flags); err != nil {
+				result.Result = false
+				result.Message = err.Error()
+			} else {
+				result.Result = true
+				result.Version = version
+			}
+		} else {
+			result.Result = true
+			result.Message = "Parallels Desktop is already installed"
+		}
+	case "git":
+		result.Name = "git"
+		if !p.IsGitAvailable() {
+			if err := p.GitService.Install(asUser, version, flags); err != nil {
+				result.Result = false
+				result.Message = err.Error()
+			} else {
+				result.Result = true
+				result.Version = version
+			}
+		} else {
+			result.Result = true
+			result.Message = "Git is already installed"
+		}
+	case "packer":
+		result.Name = "packer"
+		if !p.IsPackerAvailable() {
+			if err := p.PackerService.Install(asUser, version, flags); err != nil {
+				result.Result = false
+				result.Message = err.Error()
+			} else {
+				result.Result = true
+				result.Version = version
+			}
+		} else {
+			result.Result = true
+			result.Message = "Packer is already installed"
+		}
+	case "vagrant":
+		result.Name = "brew"
+		if !p.IsVagrantAvailable() {
+			if err := p.VagrantService.Install(asUser, version, flags); err != nil {
+				result.Result = false
+				result.Message = err.Error()
+			} else {
+				result.Result = true
+				result.Version = version
+			}
+		} else {
+			result.Result = true
+			result.Message = "Vagrant is already installed"
+		}
+	default:
+		result.Result = false
+		result.Message = fmt.Sprintf("Tool %v not supported", tool)
+	}
+
+	return result
 }
 
 func (p *ServiceProvider) UninstallAllTools(asUser string, uninstallDependencies bool, flags map[string]string) {
@@ -289,6 +382,60 @@ func (p *ServiceProvider) UninstallAllTools(asUser string, uninstallDependencies
 	if p.IsVagrantAvailable() {
 		_ = p.VagrantService.Uninstall(asUser, uninstallDependencies)
 	}
+}
+
+func (p *ServiceProvider) UninstallTool(asUser, tool string, uninstallDependencies bool, flags map[string]string) ToolOperationResult {
+	result := ToolOperationResult{
+		Type: "uninstall",
+	}
+
+	switch tool {
+	case "brew":
+		result.Name = "brew"
+		if err := p.Brew.Uninstall(asUser, uninstallDependencies); err != nil {
+			result.Result = false
+			result.Message = err.Error()
+		} else {
+			result.Result = true
+		}
+	case "parallels-desktop", "parallels":
+		result.Name = "parallels-desktop"
+		if err := p.ParallelsDesktopService.Uninstall(asUser, uninstallDependencies); err != nil {
+			result.Result = false
+			result.Message = err.Error()
+		} else {
+			result.Result = true
+		}
+	case "git":
+		result.Name = "git"
+		if err := p.GitService.Uninstall(asUser, uninstallDependencies); err != nil {
+			result.Result = false
+			result.Message = err.Error()
+		} else {
+			result.Result = true
+		}
+	case "packer":
+		result.Name = "packer"
+		if err := p.PackerService.Uninstall(asUser, uninstallDependencies); err != nil {
+			result.Result = false
+			result.Message = err.Error()
+		} else {
+			result.Result = true
+		}
+	case "vagrant":
+		result.Name = "vagrant"
+		if err := p.VagrantService.Uninstall(asUser, uninstallDependencies); err != nil {
+			result.Result = false
+			result.Message = err.Error()
+		} else {
+			result.Result = true
+		}
+	default:
+		result.Result = false
+		result.Message = fmt.Sprintf("Tool %v not supported", tool)
+	}
+
+	return result
 }
 
 func GetService[T *any](name string) (T, error) {

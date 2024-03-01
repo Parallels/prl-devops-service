@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  parallels-devops-service:
+  - apiVersion: v2
+    appVersion: 0.5.4
+    created: "2024-03-01T13:57:09.574098Z"
+    description: Parallels Desktop DevOps Service
+    digest: c2bc464c67821348b07472a34d54c7dea01cbd503942628e4342df3b699a3f62
+    name: parallels-devops-service
+    type: application
+    urls:
+    - https://parallels.github.io/prl-devops-service/charts/parallels-devops-service-0.5.4.tgz
+    version: 0.5.4
+generated: "2024-03-01T13:57:09.572854Z"

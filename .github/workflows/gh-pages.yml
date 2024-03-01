@@ -47,7 +47,7 @@ jobs:
           sed -i "/^forks:/c\forks: $FORKS" _config.yml
           cat _config.yml
           bundle exec jekyll build
-        working-directory: ./docs
+        working-directory: ./docs            
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

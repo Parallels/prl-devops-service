@@ -17,7 +17,7 @@ func processCatalog(ctx basecontext.ApiContext) {
 	subcommand := helper.GetCommandAt(1)
 	// processing the command help
 	if helper.GetFlagSwitch(constants.HELP_FLAG, false) || helper.GetCommandAt(1) == "help" {
-		processHelp(constants.API_COMMAND)
+		processHelp(constants.CATALOG_COMMAND)
 		os.Exit(0)
 	}
 

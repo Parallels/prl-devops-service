@@ -1,10 +1,11 @@
 ---
 layout: page
-title: Catalog
-subtitle: Reverse Proxy
-menubar: docs_menu
+title: Reverse Proxy
+subtitle: Access your virtual machines from the outside world
 show_sidebar: false
-toc: true
+toc: false
+hero_link: /docs/reverse-proxy/overview/
+hero_link_text: Documentation
 ---
 
 # Parallels Desktop DevOps Service Reverse Proxy
