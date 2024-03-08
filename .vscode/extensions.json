@@ -1,0 +1,13 @@
+{
+    "recommendations": [
+        "golang.go",
+        "github.vscode-github-actions",
+        "yzhang.markdown-all-in-one",
+        "alexdima.vscode-lcov",
+        "vscode.github",
+        "GitHub.vscode-pull-request-github",
+        "DavidAnson.vscode-markdownlint",
+        "hbenl.vscode-test-explorer",
+        "darkriszty.markdown-table-prettify",
+    ]
+}

@@ -86,7 +86,7 @@ To download the latest version of the Parallels Desktop DevOps Service, simply s
 
 You will need to clone the repository from github and then build the project using the following commands.
 
-```shell
+```powershell
 git clone https://github.com/Parallels/prl-devops-service
 cd prl-devops-service
 make build

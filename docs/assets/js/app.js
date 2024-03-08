@@ -73,3 +73,90 @@ window.onload = function () {
     }
   }
 };
+
+jQuery(function() {
+    var $el;
+
+	$("section > div.highlighter-rouge:first-of-type").each(function(i) {
+		var $this = $(this).before("<ul></ul>"),
+		$languages = $this.prev(),
+		$notFirst = $this.nextUntil(":not(div.highlighter-rouge)"),
+		$all = $this.add($notFirst);
+        $languages.wrapAll("<div class=\"tabs is-boxed\"></div>");
+
+        listLanguages($all, $languages);
+
+		$this.css('display', 'block');
+		$notFirst.css('display', 'none');
+
+		$languages.find('li').first().addClass('is-active');
+		$languages.find('a').first().addClass('active');
+
+		$languages.find('li').click(function() {
+			$all.css('display', 'none');
+			$all.eq($(this).index()).css('display', 'block');
+
+			$languages.find('li').removeClass('is-active');
+			$languages.find('a').removeClass('active');
+			$(this).addClass('is-active');
+            $(this).find('a').addClass('active');
+			return false;
+		});
+
+		if ($languages.children().length === 0) {
+			$languages.remove();
+		}
+	});
+
+	function listLanguages($el, $insert) {
+		$el.each(function(i) {
+			var title = $(this).attr('title');
+			if (title) {
+				$insert.append("<li class=\"tab\"><a href=\"#\">" + title + "</a></li>");
+			}
+		});
+	}
+});
+
+
+// jQuery(function() {
+//     var $el;
+
+// 	$("section > div.highlighter-rouge:first-of-type").each(function(i) {
+// 		var $this = $(this).before("<ul class=\"languages\"></ul>"),
+// 		$languages = $this.prev(),
+// 		$notFirst = $this.nextUntil(":not(div.highlighter-rouge)"),
+// 		$all = $this.add($notFirst);
+
+// 		$all.add($languages).wrapAll("<div class=\"code-viewer\"></div>");
+        
+// 		listLanguages($all, $languages);
+
+// 		$this.css('display', 'block');
+// 		$notFirst.css('display', 'none');
+
+// 		$languages.find('a').first().addClass('active');
+
+// 		$languages.find('a').click(function() {
+// 			$all.css('display', 'none');
+// 			$all.eq($(this).parent().index()).css('display', 'block');
+
+// 			$languages.find('a').removeClass('active');
+// 			$(this).addClass('active');
+// 			return false;
+// 		});
+
+// 		if ($languages.children().length === 0) {
+// 			$languages.remove();
+// 		}
+// 	});
+
+// 	function listLanguages($el, $insert) {
+// 		$el.each(function(i) {
+// 			var title = $(this).attr('title');
+// 			if (title) {
+// 				$insert.append("<li><a href=\"#\">" + title + "</a></li>");
+// 			}
+// 		});
+// 	}
+// });

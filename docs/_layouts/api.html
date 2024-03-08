@@ -1,0 +1,96 @@
+---
+layout: default
+---
+<div class="api-doc">
+    <div class="main">
+        {% if page.content %}
+        <section class="doc-content header">
+            <section class="left-docs header">
+                {{ page.content | markdownify }}
+            </section>
+            <section class="right-code header">
+            </section>
+        </section>
+        {% endif %}
+        {% assign endpoints = page.endpoints %}
+        {% for endpoint in endpoints %}
+        {% assign path = site.api.prefix | append: endpoint.path %}
+        {% assign id = site.api.prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
+        <section class="doc-content">
+            <section class="left-docs">
+                {% if endpoint.title %}
+                    <h6 class="endpoint-title">
+                        {{ endpoint.title }}:
+                    </h6>
+                {% endif %}
+                    <h4 class="api-endpoint-header">
+                        <div class="endpoint-header">
+                            <a class="endpoint-link" id="{{ id }}">
+                                {{ path }}
+                                {% if endpoint.method %}
+                                    <span class="endpoint {{ endpoint.method | upcase }}"></span>
+                                {% endif %}
+                                {% if endpoint.requires_authorization %}
+                                    {% include tag.html tag="Authorized" style="is-warning" %}
+                                {% endif %}
+                            </a>
+                        </div>
+                        <div>
+                            {% if endpoint.default_required_roles or endpoint.default_required_claims %}
+                                {% if endpoint.default_required_roles %}
+                                    {% for role in endpoint.default_required_roles %}
+                                        <span class="tag is-info is-light "><span class="title">Role:</span> {{ role }}</span>
+                                    {% endfor %}
+                                {% endif %}
+                                {% if endpoint.default_required_claims %}
+                                    {% for claim in endpoint.default_required_claims %}
+                                        <span class="tag is-success is-light "><span class="title">Claim:</span> {{ claim }}</span>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </h4>
+                {% if endpoint.description %}
+                    <p class="description">{{ endpoint.description }}</p>
+                {% endif %}
+                {% if endpoint.parameters and endpoint.parameters[0].name %}
+                        <h6>Parameters</h6>
+                        <dl>
+                                {% for parameter in endpoint.parameters %}
+                                        <dt>
+                                            {{ parameter.name }}
+                                            {% if parameter.required %}
+                                                <span class="tag is-danger is-light">required</span>
+                                            {% else %}
+                                                <span class="tag is-info is-light">optional</span>
+                                            {% endif %}
+                                        </dt>
+                                        <dd>
+                                            {% if parameter.type %}
+                                                <span class="tag is-success is-light">{{ parameter.type }}</span>
+                                            {% endif %}
+                                            {{ parameter.content }}
+                                        </dd>
+                                {% endfor %}
+                        </dl>
+                {% endif %}
+
+                {{ endpoint.content_markdown | markdownify | replace: "<dl>", "<h6>Parameters</h6><dl>" }}
+
+                {% if endpoint.left_code_blocks %}
+                    {% for block in endpoint.left_code_blocks %}
+                        {% include api-code.html block=block endpoint=endpoint %}
+                        {% endfor %}
+                    {% endif %}
+            </section>
+            {% if endpoint.right_code_blocks and endpoint.right_code_blocks[0].code_block %}
+                    <section class="right-code">
+                        {% for block in endpoint.right_code_blocks %}
+                                {% include api-code.html block=block %}
+                        {% endfor %}
+                </section>
+            {% endif %}
+        </section>
+        {% endfor %}
+    </div>
+</div>

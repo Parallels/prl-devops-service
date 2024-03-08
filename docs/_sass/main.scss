@@ -17,6 +17,7 @@ $hero-darken: $dark !default;
 @import "hero";
 @import "syntax";
 @import "showcase";
+@import "api";
 @import "../node_modules/bulma-block-list/src/block-list.scss";
 
 .gh-sponsor {
@@ -27,14 +28,3 @@ $hero-darken: $dark !default;
   padding: 0 2.5rem;
 }
 
-.m-1 {
-  margin: 1rem;
-}
-
-.m-2 {
-  margin: 2rem;
-}
-
-.m-3 {
-  margin: 3rem;
-}

@@ -61,6 +61,11 @@ defaults:
       image: /assets/img/new_release_v1.png
       show_sidebar: false
 
+api:
+  schema: http
+  host: localhost
+  prefix: /api/v1
+
 markdown: kramdown
 highlighter: rouge
 footer_menu: footer
