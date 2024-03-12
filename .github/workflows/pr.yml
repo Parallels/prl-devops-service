@@ -76,5 +76,5 @@ jobs:
 
       - name: Build Helm Chart
         run: |
-          helm lint ./charts/*
+          helm lint ./helm/*
           make build-helm-chart

@@ -7,6 +7,6 @@ layout: default
     {% assign sideContent = page.side_toc | default: false %}
     {% include toc.html html=content class='menu-list' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent %}
 {% endif %}
-<div class="content pr-3 pt-3 pb-3">
+<div class="content {% if sideContent %}column is-8{% endif %} pt-3 pb-3">
     {{ content }}
 </div>
