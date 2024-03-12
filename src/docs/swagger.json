@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.5.4"
+        "version": "0.5.5"
     },
     "basePath": "/api",
     "paths": {
@@ -5388,6 +5388,12 @@
                 "host": {
                     "type": "string"
                 },
+                "port": {
+                    "type": "string"
+                },
+                "prefix": {
+                    "type": "string"
+                },
                 "required_claims": {
                     "type": "array",
                     "items": {
@@ -5399,6 +5405,9 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "schema": {
+                    "type": "string"
                 },
                 "tags": {
                     "type": "array",

@@ -5395,6 +5395,12 @@ const docTemplate = `{
                 "host": {
                     "type": "string"
                 },
+                "port": {
+                    "type": "string"
+                },
+                "prefix": {
+                    "type": "string"
+                },
                 "required_claims": {
                     "type": "array",
                     "items": {
@@ -5406,6 +5412,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "schema": {
+                    "type": "string"
                 },
                 "tags": {
                     "type": "array",
@@ -6392,7 +6401,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.5.4",
+	Version:          "0.5.5",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
