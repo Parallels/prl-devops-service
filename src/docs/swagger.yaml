@@ -673,6 +673,10 @@ definitions:
         type: string
       host:
         type: string
+      port:
+        type: string
+      prefix:
+        type: string
       required_claims:
         items:
           type: string
@@ -681,6 +685,8 @@ definitions:
         items:
           type: string
         type: array
+      schema:
+        type: string
       tags:
         items:
           type: string
@@ -1323,7 +1329,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop API
-  version: 0.5.4
+  version: 0.5.5
 paths:
   /health/probe:
     get:
