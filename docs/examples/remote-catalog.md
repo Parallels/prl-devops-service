@@ -348,10 +348,27 @@ you can then just run the following command to push the image to the catalog:
 prldevops push --file=<filename>
 ```
 
+{% include notification.html message="This operation can take a while depending on the size of the vm and your internet connection" status="is-warning" %}
+
 ### Pulling the Golden Master Image
 
 Now the last part, we need a way of sharing this Golden Image, we can do this in a similar way like pushing using a `pdfile` designed for this purpose, this file can be shared or even stored in a repository for easy access as it does not contain any sensitive information.
 
 ```pdfile
+FROM localhost
+INSECURE true
 
+CATALOG_ID ubuntu-22-04-builder
+VERSION v1
+ARCHITECTURE arm64
+
+MACHINE_NAME build-machine
+
+OWNER cjlapao
+DESTINATION /Users/foo/Parallels
+START_AFTER_PULL false
 ```
+
+{% include notification.html message="This operation can take a while depending on the size of the vm and your internet connection" status="is-warning" %}
+
+After this you should have a new vm and ready top be used with all of the stack installed.
