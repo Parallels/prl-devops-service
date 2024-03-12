@@ -4,7 +4,7 @@ items:
     description: Control your VMs with REST API
     icon: fa-cloud
     call_to_action_name: Get Started
-    call_to_action_link: /docs/restapi/index
+    call_to_action_link: /features/restapi/index
   - title: Orchestrator
     description: Manage multiple hosts seamless in a single pane
     call_to_action_name: Get Started

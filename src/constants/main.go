@@ -70,6 +70,8 @@ const (
 	VERSION_COMMAND               = "version"
 	HELP_COMMAND                  = "help"
 	CATALOG_COMMAND               = "catalog"
+	CATALOG_PUSH_COMMAND          = "push"
+	CATALOG_PULL_COMMAND          = "pull"
 	UPDATE_ROOT_PASSWORD_COMMAND  = "update-root-pass"
 
 	TEST_FLAG                       = "test"

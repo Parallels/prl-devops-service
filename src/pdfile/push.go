@@ -2,6 +2,7 @@ package pdfile
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -15,7 +16,6 @@ import (
 )
 
 func (p *PDFileService) runPush(ctx basecontext.ApiContext) (interface{}, *diagnostics.PDFileDiagnostics) {
-	ctx.LogInfof("Starting push...")
 	ctx.DisableLog()
 
 	diag := diagnostics.NewPDFileDiagnostics()
@@ -38,6 +38,7 @@ func (p *PDFileService) runPush(ctx basecontext.ApiContext) (interface{}, *diagn
 		for _, err := range resultManifest.Errors {
 			errorMessage += "\n" + err.Error() + " "
 		}
+		diag.AddError(errors.New(errorMessage))
 		return nil, diag
 	}
 

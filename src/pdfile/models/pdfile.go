@@ -73,13 +73,39 @@ func (p *PDFile) ParseProvider(value string) (PDFileProvider, error) {
 			}
 		}
 
-		providerSegmentParts := strings.Split(providerPart, "=")
-		if len(providerSegmentParts) == 2 {
-			result.Attributes[strings.ToLower(providerSegmentParts[0])] = strings.TrimSpace(providerSegmentParts[1])
-		} else {
-			if len(providerParts) == 2 {
-				result.Attributes[strings.ToLower(providerParts[0])] = strings.TrimSpace(providerParts[1])
+		if strings.Contains(providerPart, "=") {
+			providerSegmentParts := strings.Split(providerPart, "=")
+			if len(providerSegmentParts) == 2 {
+				if strings.ToLower(providerSegmentParts[0]) == "name" {
+					result.Name = strings.TrimSpace(providerSegmentParts[1])
+					continue
+				}
+
+				result.Attributes[strings.ToLower(providerSegmentParts[0])] = strings.TrimSpace(providerSegmentParts[1])
+			} else {
+				if len(providerParts) == 2 {
+					if strings.ToLower(providerParts[0]) == "name" {
+						result.Name = strings.TrimSpace(providerParts[1])
+						continue
+					}
+
+					result.Attributes[strings.ToLower(providerParts[0])] = strings.TrimSpace(providerParts[1])
+				}
+				if len(providerParts) == 3 {
+					if strings.ToLower(providerParts[1]) == "name" {
+						result.Name = strings.TrimSpace(providerParts[2])
+						continue
+					}
+					result.Attributes[strings.ToLower(providerParts[1])] = strings.TrimSpace(providerParts[2])
+				}
 			}
+			return result, nil
+		} else if len(providerParts) == 3 {
+			if strings.ToLower(providerParts[1]) == "name" {
+				result.Name = strings.TrimSpace(providerParts[2])
+				continue
+			}
+			result.Attributes[strings.ToLower(providerParts[1])] = strings.TrimSpace(providerParts[2])
 		}
 	}
 

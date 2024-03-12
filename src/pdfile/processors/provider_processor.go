@@ -40,7 +40,9 @@ func (p ProviderCommandProcessor) Process(ctx basecontext.ApiContext, line strin
 			dest.Provider.Attributes = make(map[string]string)
 		}
 
-		dest.Provider.Name = provider.Name
+		if provider.Name != "" {
+			dest.Provider.Name = provider.Name
+		}
 		for key, value := range provider.Attributes {
 			dest.Provider.Attributes[key] = value
 		}

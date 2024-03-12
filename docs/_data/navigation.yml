@@ -2,6 +2,8 @@
   link: /quick-start/
 - name: Documentation
   link: /docs/
+- name: Features
+  link: /features/
 - name: Examples
   link: /#
   dropdown:

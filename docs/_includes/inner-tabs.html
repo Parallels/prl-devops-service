@@ -1,0 +1,86 @@
+{% if include.content or include.data %}
+{% if include.content %}
+{% assign tabs=page.[include.content]%}
+{% endif %}
+{% if include.data %}
+{% assign tabs=site.data.[include.data] %}
+{% endif %}
+    {% if tabs.items %}
+    {% if tabs.style %}
+        {% assign style = "is-" %}
+        {% assign style= style | append: tabs.style %}
+    {% endif %}
+    {% if tabs.alignment %}
+        {% assign alignment = "is-" %}
+        {% assign alignment= alignment | append: tabs.alignment %}
+    {% endif %}
+    {% if tabs.size %}
+        {% assign size = "is-" %}
+        {% assign size= size | append: tabs.size %}
+    {% else %}
+        {% assign size = "is-medium" %}
+    {% endif %} 
+    {% if tabs.rounded and tabs.style == 'toggle' %}
+        {% assign rounded = "is-toggle-rounded" %}
+    {% endif %}
+    {% if tabs.full_width %}
+    {% assign full_width = "is-fullwidth" %}
+{% endif %}
+<div class="tabs-container mb-3">
+    <div class="tabs {{ style }} {{ rounded }} {{ alignment }} {{ size }} {{ full_width }}">
+        <ul>
+            {% for tab in tabs.items %}
+                {% if tab.id %}
+                    {% assign id = tab.id %}
+                {% else %}
+                    {% assign id = tab.title | slugify %}
+                {% endif %}
+                {% assign icon_size = tabs.icon_size %}
+                {% if icon_size == '' %}
+                    {% assign icon_size = 'lg' %}
+                {% endif %}
+                {% if tab.icon_style %}
+                    {% assign icon_style =  tab.icon_style %}
+                {% else %}
+                    {% assign icon_style = 'fa-solid' %}
+                {% endif %}
+                {% assign icon_brand = tab.icon_brand %}
+                {% if icon_brand == true %}
+                    {% assign icon_style = 'fa-brands' %}
+                {% endif %}
+                <li id="{{id}}_tab" class="tab {% if tab.default %}is-active{% endif %}" onclick="openTab(event, '{{ id }}_container')">
+                    <a>
+                        {% if tab.icon %}
+                            <span class="icon is-medium">
+                                <i class="{{ icon_style }} fa-{{ tab.icon }} fa-{{ icon_size }}"></i>
+                            </span>
+                        {% endif %}
+                        <span>{{ tab.title }}</span>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="tab-container">
+        {% for tab in tabs.items %}
+            {% capture test %}
+                {{ tab.content }}
+            {% endcapture %}
+            {% if tab.id %}
+                {% assign id = tab.id %}
+            {% else %}
+                {% assign id = tab.title | slugify %}
+            {% endif %}
+            <div id="{{id}}_container" class="content-tab" {% if tab.default != true %}style="display:none"{% endif %} >
+                {% if tab.description %}
+                    <div class="tab-title">{{ tab.description | markdownify }}</div>
+                {% endif %}
+                <div class="tab-content">
+                    {{ test }}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+    {% endif %}
+{% endif %}

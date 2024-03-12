@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
@@ -33,7 +34,27 @@ func Process() {
 	case constants.HELP_COMMAND:
 		processHelp("")
 	case constants.CATALOG_COMMAND:
-		processCatalog(ctx)
+		subcommand := helper.GetCommandAt(1)
+		filepath := helper.GetCommandAt(2)
+		if !strings.HasSuffix(filepath, ".pdfile") {
+			filepath = ""
+		}
+		processCatalog(ctx, subcommand, filepath)
+	case constants.CATALOG_PUSH_COMMAND:
+		filepath := helper.GetCommandAt(1)
+		if !strings.HasSuffix(filepath, ".pdfile") {
+			filepath = ""
+		}
+		processCatalog(ctx, "push", filepath)
+	case constants.CATALOG_PULL_COMMAND:
+		filepath := helper.GetCommandAt(2)
+		if !strings.HasSuffix(filepath, ".pdfile") {
+			filepath = ""
+		}
+		if !helper.FileExists(filepath) {
+			filepath = ""
+		}
+		processCatalog(ctx, "pull", filepath)
 	case constants.UPDATE_ROOT_PASSWORD_COMMAND:
 		processRootPassword(ctx)
 	case constants.REVERSE_PROXY_COMMAND:

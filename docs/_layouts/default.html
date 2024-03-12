@@ -13,6 +13,8 @@
 {% assign content_width = 'is-12' %}
 {% assign content_padding = 'pl-3 pr-3' %}
 {% endif %}
+{% assign sideContent = page.side_toc | default: false %}
+
 
 <html
  dir="{{ site.direction | default: 'ltr' }}"
@@ -29,16 +31,16 @@
         <div class="container is-max-desktop">
             <div class="columns is-multiline">
                 {% if page.menubar_toc %}
-                <div class="column is-4-desktop is-4-tablet">
+                <div class="column is-4-desktop is-4-tablet {% if sideContent %}has-side-toc{% endif %}">
                     {% assign contentsTitle = page.toc_title | default: 'Contents' %}
-                    {% include toc.html html=content class='menu-list' h_min=2 h_max=3 contents_title=contentsTitle %}
+                    {% include toc.html html=content class='menu-list' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent %}
                 </div>
                 {% elsif page.menubar %}
                 <div class="menu-bar pt-2 pl-3 column is-3-desktop is-3-tablet">
                     {% include menubar.html %}
                 </div>
                 {% endif %}
-                <div class="{%if page.layout != 'api' %}{{ content_padding}} pt-3{% endif %} column {{ content_width }}">
+                <div class="{%if page.layout != 'api' %}{{ content_padding}} pt-3{% endif %} column {{ content_width }} {% if sideContent %}has-side-toc{% endif %}">
                     {% include tabs.html %}
                     {% include showcase.html %}
                     {% include sponsors.html %}

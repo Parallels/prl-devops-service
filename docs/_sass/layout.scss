@@ -9,6 +9,7 @@ div.highlight {
 
 .navbar.is-primary {
   background-color: #ffffff;
+  border-bottom: 1px solid #a7aeb5
 }
 
 .navbar.is-primary .navbar-start > .navbar-item,
@@ -409,4 +410,101 @@ ul.subitem {
   user-select: none; /* Standard syntax */
 }
 
+@media screen and (min-width: 1024px) {
+  .has-side-toc {
+    display: flex;
+  }
 
+  .side-toc {
+    min-width: 300px;
+    margin-right: 30px;
+  }
+}
+
+@media screen and (min-width: 1600px) {
+  
+    .side-toc {
+      min-width: 400px;
+    }
+  }
+
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.flex-2 {
+  flex: 2;
+}
+
+.flex-auto {
+  flex: 1 auto;
+}
+
+.flex-none {
+  flex: none;
+}
+
+.flex-center {
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-start {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.flex-end {
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.tabs {
+  margin-bottom: 0px !important;
+  
+  &.is-right {
+    ul:last-child {
+        padding-right: 15px;
+      }    
+  }
+
+  &:not(.is-right .is-centered) {
+    ul:first-child {
+      padding-left: 15px;
+    }
+  }
+}
+
+.tab-content {
+  a.button {
+    margin: 0.3rem;
+  }
+}
+
+.tab-title {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.footer {
+    background-color: #fff;
+}

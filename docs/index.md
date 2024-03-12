@@ -2,7 +2,7 @@
 title: Parallels Desktop DevOps Service
 subtitle: Put your virtual machines to work on your CI/CD pipeline
 layout: page
-callouts: home_callouts
+callouts: examples_callouts
 show_sidebar: true
 ---
 

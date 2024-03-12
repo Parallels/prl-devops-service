@@ -13,29 +13,43 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processCatalog(ctx basecontext.ApiContext) {
-	subcommand := helper.GetCommandAt(1)
+func processCatalog(ctx basecontext.ApiContext, operation string, filePath string) {
 	// processing the command help
 	if helper.GetFlagSwitch(constants.HELP_FLAG, false) || helper.GetCommandAt(1) == "help" {
 		processHelp(constants.CATALOG_COMMAND)
 		os.Exit(0)
 	}
+	ctx.ToggleLogTimestamps(false)
 
-	switch subcommand {
+	if filePath == "" {
+		ctx.LogInfof("filePath is empty")
+		filePath = helper.GetFlagValue(constants.FILE_FLAG, "")
+		if filePath == "" {
+			fmt.Println("Could not find a file to process, did you miss adding the flag --file=<file>?")
+			return
+		}
+	} else {
+		if !helper.FileExists(filePath) {
+			ctx.LogErrorf("File with path %v does not exists, exiting", filePath)
+			os.Exit(1)
+		}
+	}
+
+	switch operation {
 	case "run":
-		processCatalogRunCmd(ctx)
+		processCatalogRunCmd(ctx, filePath)
 	case "list":
-		processCatalogListCmd(ctx)
+		processCatalogListCmd(ctx, filePath)
 	case "push":
 		fmt.Println("Starting push...")
-		processCatalogPushCmd(ctx)
+		processCatalogPushCmd(ctx, filePath)
 	case "pull":
 		fmt.Println("Starting pull...")
-		processCatalogPullCmd(ctx)
+		processCatalogPullCmd(ctx, filePath)
 	case "delete":
-		fmt.Println("delete")
+		fmt.Println("Not implemented yet")
 	case "import":
-		fmt.Println("import")
+		fmt.Println("Not implemented yet")
 	default:
 		processHelp(constants.CATALOG_COMMAND)
 	}
@@ -56,11 +70,11 @@ func processCatalogHelp() {
 	fmt.Println("  import <catalog> <file>\t\tImport a catalog from a file")
 }
 
-func catalogInitPdFile(ctx basecontext.ApiContext, cmd string) *pdfile.PDFileService {
+func catalogInitPdFile(ctx basecontext.ApiContext, cmd string, filepath string) *pdfile.PDFileService {
 	var pdFile *models.PDFile
 	var diag *diagnostics.PDFileDiagnostics
-	if helper.GetFlagValue(constants.FILE_FLAG, "") != "" {
-		pdFile, diag = pdfile.Load(ctx, helper.GetFlagValue(constants.FILE_FLAG, ""))
+	if filepath != "" {
+		pdFile, diag = pdfile.Load(ctx, filepath)
 		if diag.HasErrors() {
 			ctx.EnableLog()
 			ctx.ToggleLogTimestamps(false)
@@ -165,8 +179,8 @@ func catalogGetFlags(pdFile *models.PDFile) {
 	}
 }
 
-func processCatalogRunCmd(ctx basecontext.ApiContext) {
-	pdFile := catalogInitPdFile(ctx, "")
+func processCatalogRunCmd(ctx basecontext.ApiContext, filepath string) {
+	pdFile := catalogInitPdFile(ctx, "", filepath)
 
 	out, diags := pdFile.Run(ctx)
 	if diags.HasErrors() {
@@ -179,8 +193,8 @@ func processCatalogRunCmd(ctx basecontext.ApiContext) {
 	ctx.LogInfof("%v", out)
 }
 
-func processCatalogListCmd(ctx basecontext.ApiContext) {
-	svc := catalogInitPdFile(ctx, "list")
+func processCatalogListCmd(ctx basecontext.ApiContext, filepath string) {
+	svc := catalogInitPdFile(ctx, "list", filepath)
 
 	out, diags := svc.Run(ctx)
 	if diags.HasErrors() {
@@ -191,14 +205,8 @@ func processCatalogListCmd(ctx basecontext.ApiContext) {
 	ctx.LogInfof("%v", out)
 }
 
-func processCatalogPushCmd(ctx basecontext.ApiContext) {
-	file := helper.GetFlagValue(constants.FILE_FLAG, "")
-	if file == "" {
-		fmt.Println("Missing file flag")
-		return
-	}
-
-	svc := catalogInitPdFile(ctx, "push")
+func processCatalogPushCmd(ctx basecontext.ApiContext, filePath string) {
+	svc := catalogInitPdFile(ctx, "push", filePath)
 
 	out, diags := svc.Run(ctx)
 	if diags.HasErrors() {
@@ -211,14 +219,8 @@ func processCatalogPushCmd(ctx basecontext.ApiContext) {
 	ctx.LogInfof("%v", out)
 }
 
-func processCatalogPullCmd(ctx basecontext.ApiContext) {
-	file := helper.GetFlagValue(constants.FILE_FLAG, "")
-	if file == "" {
-		fmt.Println("Missing file flag")
-		return
-	}
-
-	svc := catalogInitPdFile(ctx, "pull")
+func processCatalogPullCmd(ctx basecontext.ApiContext, filePath string) {
+	svc := catalogInitPdFile(ctx, "pull", filePath)
 
 	out, diags := svc.Run(ctx)
 	if diags.HasErrors() {
@@ -231,14 +233,14 @@ func processCatalogPullCmd(ctx basecontext.ApiContext) {
 	ctx.LogInfof("%v", out)
 }
 
-func processCatalogImportCmd(ctx basecontext.ApiContext) {
+func processCatalogImportCmd(ctx basecontext.ApiContext, filePath string) {
 	file := helper.GetFlagValue(constants.FILE_FLAG, "")
 	if file == "" {
 		fmt.Println("Missing file flag")
 		return
 	}
 
-	svc := catalogInitPdFile(ctx, "import")
+	svc := catalogInitPdFile(ctx, "import", filePath)
 
 	out, diags := svc.Run(ctx)
 	if diags.HasErrors() {

@@ -33,7 +33,7 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
   <key>UserName</key>
   <string>root</string>
   <key>Label</key>
-  <string>com.parallels.api-service</string>
+  <string>com.parallels.devops-service</string>
   <key>ProgramArguments</key>
   <array>
     <string>{{ .Path }}/{{ .ExecutableName }}</string>
@@ -110,7 +110,7 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 
 func generatePlist(path string, config ApiServiceConfig) (string, error) {
 	// Define the text template
-	tmpl, err := template.New("parallels-api").Parse(plistTemplate)
+	tmpl, err := template.New("parallels-devops").Parse(plistTemplate)
 	if err != nil {
 		return "", err
 	}

@@ -1,0 +1,60 @@
+style: boxed
+icon_size: xl
+items:
+- default: false
+  title: Mac
+  icon: apple
+  icon_brand: true
+  content: |-
+      <div class="mt-2 flex flex-column">
+        <span>
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v{{ page.version }}/prldevops--darwin-arm64.tar.gz" class="button is-primary">
+            Parallels Desktop DevOps Service for Mac with Apple Silicon
+          </a>
+        </span>
+        <span>
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v{{ page.version }}/prldevops--darwin-amd64.tar.gz" class="button is-primary">
+            Parallels Desktop DevOps Service for Mac with Intel chip
+          </a>
+        </span>
+      </div>
+- title: Linux
+  icon: linux
+  icon_brand: true
+  content: |-
+      <div class="mt-2 notification is-warning">
+        <article class="media">
+            <div class="media-left">
+                <span class="icon"><i class="fa-solid fa-exclamation-circle fa-lg"></i></span>
+              </div>
+            <div class="media-content">
+              <div class="content">Please be aware that running this service in windows you will only have access to the orchestrator and catalog features</div>
+            </div>
+        </article>
+      </div>
+      <div class="flex flex-column">
+        <span>
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v{{ page.version }}/prldevops--linux-amd64.tar.gz" class="button is-primary">
+            Parallels Desktop DevOps Service for intel chips
+          </a>
+        </span>
+        <span>
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v{{ page.version }}/prldevops--darwin-amd64.tar.gz" class="button is-primary">
+            Parallels Desktop DevOps Service for Mac with Intel chip
+          </a>
+        </span>
+      </div>
+- title: Windows
+  icon: windows
+  icon_brand: true
+  content: |-
+    <div class="mt-2 notification is-warning">
+      <article class="media">
+          <div class="media-left">
+              <span class="icon"><i class="fa-solid fa-exclamation-circle fa-lg"></i></span>
+            </div>
+          <div class="media-content">
+            <div class="content">At the moment we do not provide any binaries for windows</div>
+          </div>
+      </article>
+    </div>
