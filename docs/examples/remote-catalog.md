@@ -1,7 +1,7 @@
 ---
 layout: page
-title: Quick Start
-subtitle: Quickly spin up a Parallels Desktop DevOps Service
+title: Share Golden Images
+subtitle: Quickly share golden images in a secure way with your organization or team
 show_sidebar: false
 version: 0.5.4
 toc: true
@@ -26,6 +26,15 @@ download_ubuntu_tab:
                 Download Ubuntu Server 22.04 LTS for arm64
             </a>
         </div>
+create_vm_tab:
+  style: boxed
+  icon_size: xl
+  items:
+    - title: With Control Center
+      default: true
+      file: tabs/create_vm_control_center
+    - title: With Command Line Interface
+      file: tabs/create_vm_cli
 ---
 
 # Securely create and share Golden Master images with your team in minutes
@@ -88,22 +97,9 @@ You can download the ISO from the [Ubuntu website](https://ubuntu.com/download/s
 
 #### Install Ubuntu
 
-Once you have downloaded the ISO, you can create a new virtual machine using the following command line
+Once you have downloaded the ISO, you can create a new virtual machine either using **Parallels Desktop Control Center** or the **Command Line Interface**.
 
-```sh
-prlctl create "test-vm" -d ubuntu
-prlctl set "test-vm" --cpus 2
-prlctl set "test-vm" --memsize 2048
-prlctl set "test-vm" --device-set hdd0 --size 64G
-```
-
-Now we need to set the ISO file as the boot device and start the virtual machine and start it.
-
-```sh
-prlctl set "test-vm" --device-set cdrom0 --image /path/to/ubuntu-22.04.4-live-server-amd64.iso --connect
-prlctl set "test-vm" --device-bootorder "cdrom0 hdd0"
-prlctl start "test-vm"
-```
+{% include inner-tabs.html content="create_vm_tab" %}
 
 #### Installing Parallels Tools
 
@@ -145,7 +141,7 @@ Install the operating system by following the on screen instructions. once the i
 First lets jump into the machine using our terminal and the command line client.
 
 ```sh
-prlctl enter "test-vm" \
+prlctl enter "test-vm"
 ```
 
 now we can install the required software stack
@@ -155,7 +151,9 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y docker.io nodejs npm python3 git dotnet-sdk-8.0
 ```
 
-Once the installation is complete, you should now have a virtual machine with the required software stack installed ready for use.
+Once the installation is complete, you should now have a virtual machine with the required software stack installed ready for use. 
+
+{% include notification.html message="You can now shutdown the virtual machine as we do no need it running anymore." status="is-success" icon="lightbulb" %}
 
 ## Configuring and Running our DevOps Remote Catalog
 
@@ -182,7 +180,7 @@ environment:
 ```
 
 This will configure the service to run in catalog mode and listen on port 80, with all the default settings and while this is ok for a quick start, we will need to harden the service for production use.
-We will be setting up some extra security settings to allow a more secure deployment, you can find more information on how to do this in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration/)
+We will be setting up some extra security settings to allow a more secure deployment. You can also learn more about security options in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration/)
 
 #### Setting up database encryption
 
@@ -250,9 +248,9 @@ cp config.yml /usr/local/bin/config.yml
 
 ### Changing the Root password
 
-By default the service runs with a random root password and you will need to change this in order to access the service rest api, we provider a simple command line to make this change:
+By default the service runs with a random root password and you will need to change this in order to access the service rest api, we provider a simple command line to make this change, in this case we are going to set the password to `VeryStr0ngP@ssw0rd` but you can use any password you want.
 
-```sh
+```prldevops
 prldevops update-root-password --password=VeryStr0ngP@ssw0rd
 ```
 
@@ -260,7 +258,7 @@ prldevops update-root-password --password=VeryStr0ngP@ssw0rd
 
 we can easily start the service by running the following command:
 
-```sh
+```prldevops
 prldevops
 ```
 
@@ -294,7 +292,6 @@ INSECURE true
 
 AUTHENTICATE USERNAME root
 AUTHENTICATE PASSWORD VeryStr0ngP@ssw0rd
-AUTHENTICATE USERNAME1 root
 
 PROVIDER NAME aws-s3
 PROVIDER BUCKET <bucket_name>
@@ -321,7 +318,6 @@ INSECURE true
 
 AUTHENTICATE USERNAME root
 AUTHENTICATE PASSWORD VeryStr0ngP@ssw0rd
-AUTHENTICATE USERNAME1 root
 
 PROVIDER NAME aws-s3
 PROVIDER BUCKET <bucket_name>
@@ -344,13 +340,14 @@ ARCHITECTURE arm64
 
 you can then just run the following command to push the image to the catalog:
 
-```sh
-prldevops push --file=<filename>
+```prldevops
+prldevops push /path/to/pdfile
 ```
 
 {% include notification.html message="This operation can take a while depending on the size of the vm and your internet connection" status="is-warning" %}
 
 ### Pulling the Golden Master Image
+
 
 Now the last part, we need a way of sharing this Golden Image, we can do this in a similar way like pushing using a `pdfile` designed for this purpose, this file can be shared or even stored in a repository for easy access as it does not contain any sensitive information.
 

@@ -9,7 +9,7 @@ div.highlight {
 
 .navbar.is-primary {
   background-color: #ffffff;
-  border-bottom: 1px solid #a7aeb5
+  border-bottom: 1px solid #a7aeb5;
 }
 
 .navbar.is-primary .navbar-start > .navbar-item,
@@ -421,11 +421,10 @@ ul.subitem {
 }
 
 @media screen and (min-width: 1600px) {
-  
-    .side-toc {
-      min-width: 400px;
-    }
+  .side-toc {
+    min-width: 400px;
   }
+}
 
 .flex {
   display: flex;
@@ -476,11 +475,14 @@ ul.subitem {
 
 .tabs {
   margin-bottom: 0px !important;
-  
+
+  ul {
+    margin-left: unset;
+  }
   &.is-right {
     ul:last-child {
-        padding-right: 15px;
-      }    
+      padding-right: 15px;
+    }
   }
 
   &:not(.is-right .is-centered) {
@@ -490,7 +492,12 @@ ul.subitem {
   }
 }
 
+.no-padding {
+  padding: unset !important;
+}
+
 .tab-content {
+  padding-top: 1rem;
   a.button {
     margin: 0.3rem;
   }
@@ -505,5 +512,35 @@ ul.subitem {
 }
 
 .footer {
-    background-color: #fff;
+  background-color: #fff;
+}
+
+div {
+  .hide {
+    display: none;
+  }
+}
+
+.hand {
+  cursor: pointer;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.zoom-container {
+  transition: transform 0.2s, width 0.7s, height 0.2s;
+  width: 100%;
+  &.zoom {
+    width: 300%;
+  }
+}
+
+.notification {
+  .media {
+    align-items: center;
+    display: flex;
+    text-align: inherit;
+  }
 }
