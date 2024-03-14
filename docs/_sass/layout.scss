@@ -411,14 +411,17 @@ ul.subitem {
 }
 
 @media screen and (min-width: 769px) {
-  .has-side-toc {
-    display: flex;
-  }
+    .has-side-toc {
+      display: flex;
+    }
 
-  .side-toc {
-    margin-right: 30px;
-  }
-}
+    .side-toc {
+        margin-right: 30px;
+        max-width: 450px;
+      }
+}  
+
+
 
 @media screen and (min-width: 1600px) {
   .side-toc {

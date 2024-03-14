@@ -22,7 +22,7 @@ func processCatalog(ctx basecontext.ApiContext, operation string, filePath strin
 	ctx.ToggleLogTimestamps(false)
 
 	if filePath == "" {
-		ctx.LogInfof("filePath is empty")
+		ctx.LogInfof("The filePath is empty")
 		filePath = helper.GetFlagValue(constants.FILE_FLAG, "")
 		if filePath == "" {
 			fmt.Println("Could not find a file to process, did you miss adding the flag --file=<file>?")
@@ -220,6 +220,7 @@ func processCatalogPushCmd(ctx basecontext.ApiContext, filePath string) {
 }
 
 func processCatalogPullCmd(ctx basecontext.ApiContext, filePath string) {
+	fmt.Println("path: " + filePath)
 	svc := catalogInitPdFile(ctx, "pull", filePath)
 
 	out, diags := svc.Run(ctx)

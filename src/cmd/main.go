@@ -47,11 +47,8 @@ func Process() {
 		}
 		processCatalog(ctx, "push", filepath)
 	case constants.CATALOG_PULL_COMMAND:
-		filepath := helper.GetCommandAt(2)
+		filepath := helper.GetCommandAt(1)
 		if !strings.HasSuffix(filepath, ".pdfile") {
-			filepath = ""
-		}
-		if !helper.FileExists(filepath) {
 			filepath = ""
 		}
 		processCatalog(ctx, "pull", filepath)
