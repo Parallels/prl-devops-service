@@ -159,9 +159,6 @@ func (p *PDFileService) Validate() *diagnostics.PDFileDiagnostics {
 		if p.pdfile.Destination == "" {
 			diag.AddError(fmt.Errorf("destination not found in pd file"))
 		}
-		if p.pdfile.Provider == nil {
-			diag.AddError(fmt.Errorf("provider not found in pd file"))
-		}
 		if p.pdfile.Owner == "" {
 			diag.AddError(fmt.Errorf("owner not found in pd file"))
 		}

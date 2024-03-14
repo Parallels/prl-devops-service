@@ -24,6 +24,11 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 
 	diag := diagnostics.NewPDFileDiagnostics()
 
+	if !p.pdfile.HasAuthentication() {
+		diag.AddError(errors.New("Username and password or apikey are required for authentication"))
+		return nil, diag
+	}
+
 	body := catalog_models.PullCatalogManifestRequest{
 		CatalogId:      p.pdfile.CatalogId,
 		Version:        p.pdfile.Version,

@@ -41,6 +41,17 @@ func NewPdFile() *PDFile {
 	}
 }
 
+func (p *PDFile) HasAuthentication() bool {
+	if p.Authentication == nil {
+		return false
+	}
+	if p.Authentication.ApiKey != "" || (p.Authentication.Username != "" && p.Authentication.Password != "") {
+		return true
+	}
+
+	return false
+}
+
 func (p *PDFile) ParseProvider(value string) (PDFileProvider, error) {
 	result := PDFileProvider{}
 	if result.Attributes == nil {

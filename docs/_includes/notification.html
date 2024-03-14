@@ -12,9 +12,10 @@
                         {% assign icon_default = include.icon | default: 'exclamation-triangle' %}
                     {% elsif include.status == 'is-danger' %}
                         {% assign icon_default = include.icon | default: 'circle-exclamation' %}
+                    {% else if include.icon %}
+                        {% assign icon_default = include.icon %}
                     {% endif %}
                     {% assign icon = "fa-" | append: icon_default %}
-
                     <span class="icon"><i class="fa-solid {{icon}} fa-lg"></i></span>
                 </div>
             {% endif %}
