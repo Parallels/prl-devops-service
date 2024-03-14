@@ -1,11 +1,13 @@
 {% if include.content or include.data %}
+
 {% if include.content %}
-{% assign tabs=page.[include.content]%}
+    {% assign tabs=page.[include.content]%}
 {% endif %}
 {% if include.data %}
-{% assign tabs=site.data.[include.data] %}
+    {% assign tabs=site.data.[include.data] %}
 {% endif %}
-    {% if tabs.items %}
+
+{% if tabs.items %}
     {% if tabs.style %}
         {% assign style = "is-" %}
         {% assign style= style | append: tabs.style %}
@@ -61,11 +63,13 @@
             {% endfor %}
         </ul>
     </div>
-    <div class="tab-container">
+    <div class="tab-container no-padding">
         {% for tab in tabs.items %}
-            {% capture test %}
-                {{ tab.content }}
-            {% endcapture %}
+            {% if tab.content %}
+                {% capture content %}
+                    {{ tab.content }}
+                {% endcapture %}
+            {% endif %}
             {% if tab.id %}
                 {% assign id = tab.id %}
             {% else %}
@@ -76,7 +80,18 @@
                     <div class="tab-title">{{ tab.description | markdownify }}</div>
                 {% endif %}
                 <div class="tab-content">
-                    {{ test }}
+                    {% if tab.file %}
+                        {% assign tabFile = tab.file %}
+                        {% assign extension = tab.file | split: '.' | last %}
+                        {% if extension != 'md' %}
+                            {% assign tabFile = tab.file | append: '.md' %}
+                            {% assign extension = 'md' %}
+                        {% endif %}
+                        {% assign page = site.pages | where: "path", tabFile | first %}
+                        {{ page.content }}
+                    {% else %}
+                        {{ content }}
+                    {% endif %}
                 </div>
             </div>
         {% endfor %}
