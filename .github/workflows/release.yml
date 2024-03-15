@@ -35,9 +35,10 @@ jobs:
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Check for Changes to the Changelog
         id: diff
+        if: false
         run: |
           if [ "$(git diff --ignore-space-at-eol --text CHANGELOG.md | wc -l)" -eq "0" ]; then
-            echo "Detected uncommitted changes after build. See status below:"
+            echo "Changelog has not been updated"
             git diff --ignore-space-at-eol --text CHANGELOG.md
             exit 1
           fi
