@@ -35,7 +35,7 @@ jobs:
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Check for Changes to the Changelog
         id: diff
-        if: false
+        if: true
         run: |
             NEW_VERSION=$(./.github/workflow_scripts/increment-version.sh -t ${{ inputs.version }} -f VERSION)
             LAST_CHANGELOG_VERSION=$(./.github/workflow_scripts/get-latest-changlog-version.sh)
