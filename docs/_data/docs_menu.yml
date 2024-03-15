@@ -15,6 +15,7 @@
     - name: Authentication
       link: /docs/restapi/authentication/
     - name: Endpoints
+      hidden: true
       path: /docs/restapi/endpoints/
       items:
         - name: Api Key
@@ -36,6 +37,7 @@
               link: /docs/restapi/endpoints/api-key#_api_v1_auth_api_keys__id_revoke_put
               method: put
         - name: Authorization
+          hidden: true
           link: /docs/restapi/endpoints/authorization/
         - name: Catalog
           link: /docs/restapi/endpoints/catalog/
@@ -57,21 +59,16 @@
   items:
     - name: Overview
       link: /docs/catalog/overview/
-    - name: Getting Started
-      link: /docs/catalog/architecture/
     - name: Concepts
       link: /docs/catalog/concepts/
+    - name: PDFile
+      link: /docs/catalog/pdfile/
 - label: Orchestrator
   items:
     - name: Overview
       link: /docs/orchestrator/overview/
-    - name: Architecture
-      link: /docs/orchestrator/architecture/
-    - name: Concepts
-      link: /docs/orchestrator/concepts/
-    - name: Getting Started
-      link: /docs/orchestrator/getting-started/
 - label: Reverse Proxy
+  hidden: true
   items:
     - name: Overview
       link: /docs/reverse-proxy/overview/

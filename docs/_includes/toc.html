@@ -72,7 +72,7 @@
     {% endif %}
 {% endcapture %}{% assign tocWorkspace = '' %}
 
-<div class="contents {% if include.side_toc %}column is-4 side-toc{% endif %}">
+<div class="contents {% if include.side_toc %}column is-4 side-toc {% else %}mt-3{% endif %}">
     <div class="menu">
         <p class="menu-label">{{ include.contents_title }}</p>
         {{ my_toc | markdownify | strip }}

@@ -37,7 +37,7 @@
         "envFile": "${workspaceFolder}/.env",
         "args": [
           "push",
-          "${workspaceFolder}/test1.pdfile"
+          "${workspaceFolder}/test1.local.pdfile"
         ]
       },
   

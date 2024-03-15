@@ -33,7 +33,14 @@ jobs:
         with:
           go-version: '1.21.x'
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
-
+      - name: Check for Changes to the Changelog
+        id: diff
+        run: |
+          if [ "$(git diff --ignore-space-at-eol --text CHANGELOG.md | wc -l)" -gt "1" ]; then
+            echo "Detected uncommitted changes after build. See status below:"
+            git diff --ignore-space-at-eol --text CHANGELOG.md
+            exit 1
+          fi
       - name: Bump version and push
         run: |
           git config --global user.email "cjlapao@gmail.com"
@@ -61,6 +68,8 @@ jobs:
           git push --set-upstream origin release/$NEW_VERSION
 
           echo "new_version=$NEW_VERSION" >> "$GITHUB_ENV"
+
+          ./.github/workflow_scripts/generate-blog-records.sh
 
       - name: Create PR
         run: |

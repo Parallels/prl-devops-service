@@ -7,7 +7,10 @@
 {% assign content_width = 'is-4' %}
 {% assign content_padding = 'pl-2 pr-2' %}
 {% elsif page.show_sidebar or has_left_sidebar %}
-{% assign content_width = 'is-9' %}
+    {% assign content_width = 'is-9' %}
+    {% unless has_left_sidebar %}
+        {% assign content_width = 'is-9' %}
+    {% endunless %}
 {% assign content_padding = 'pl-2 pr-2' %}
 {% else %}
 {% assign content_width = 'is-12' %}
@@ -40,7 +43,7 @@
                     {% include menubar.html %}
                 </div>
                 {% endif %}
-                <div class="{%if page.layout != 'api' %}{{ content_padding}} pt-3{% endif %} column {{ content_width }} {% if sideContent %}has-side-toc{% endif %}">
+                <div class="{%if page.layout != 'api' %}{{ content_padding}} pt-1{% endif %} column {{ content_width }} {% if sideContent %}has-side-toc{% endif %}">
                     {% include tabs.html %}
                     {% include showcase.html %}
                     {% include sponsors.html %}
@@ -49,7 +52,7 @@
                 </div>
                 {% if site.posts and page.show_sidebar %}
                 <div class="pt-3 pr-2 column is-3-desktop is-3-tablet">
-                    {% include latest-posts.html %}
+                    {% include latest-post.html %}
                 </div>
                 {% endif %}
             </div>
