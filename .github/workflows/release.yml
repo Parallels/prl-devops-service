@@ -36,7 +36,7 @@ jobs:
       - name: Check for Changes to the Changelog
         id: diff
         run: |
-          if [ "$(git diff --ignore-space-at-eol --text CHANGELOG.md | wc -l)" -gt "1" ]; then
+          if [ "$(git diff --ignore-space-at-eol --text CHANGELOG.md | wc -l)" -eq "0" ]; then
             echo "Detected uncommitted changes after build. See status below:"
             git diff --ignore-space-at-eol --text CHANGELOG.md
             exit 1
@@ -62,14 +62,15 @@ jobs:
           swag init -g main.go
           cd ..
 
-          git add VERSION ./src/* ./helm/Chart.yaml ./badges/*
+          ./.github/workflow_scripts/generate-blog-records.sh
+
+          git add VERSION ./docs/_posts/* ./src/* ./helm/Chart.yaml ./badges/*
           git commit -m "Release extension version $NEW_VERSION"
 
           git push --set-upstream origin release/$NEW_VERSION
 
           echo "new_version=$NEW_VERSION" >> "$GITHUB_ENV"
 
-          ./.github/workflow_scripts/generate-blog-records.sh
 
       - name: Create PR
         run: |
