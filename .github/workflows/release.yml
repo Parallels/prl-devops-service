@@ -40,7 +40,7 @@ jobs:
             NEW_VERSION=$(./.github/workflow_scripts/increment-version.sh -t ${{ inputs.version }} -f VERSION)
             LAST_CHANGELOG_VERSION=$(./.github/workflow_scripts/get-latest-changlog-version.sh)
             if [ "$NEW_VERSION" != "$LAST_CHANGELOG_VERSION" ]; then
-              echo "Changelog not updated for version $NEW_VERSION"
+              echo "Changelog not updated for version $NEW_VERSION lastest version is $LAST_CHANGELOG_VERSION"
               exit 1
             fi
       - name: Bump version and push
