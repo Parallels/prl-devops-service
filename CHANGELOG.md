@@ -17,6 +17,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.5.6] - 2024-03-14
+
+### Added
+
+- Improved logging
+- Addressed the gosec security findings
+- Simple Reverse proxy
+- Adding templates for the issues and bugs
+- Add new license agreement to readme
+- project rename for prldevops
+- Implement amplitude telemetry
+- fixing installation filename
+- Improved user_id to fix issue with sending telemetry
+- Improving the orchestrator host management
+- Adding the ability to execute and import in pdfile
+- initial github pages revamp
+- Fix pull cmd by
+- further fixes to the documentations
+
+### Changed
+
+- improved user_id to fix issue with sending telemetry
 
 ## [0.4.6] - 2024-01-20
 
