@@ -37,11 +37,12 @@ jobs:
         id: diff
         if: false
         run: |
-          if [ "$(git diff --ignore-space-at-eol --text CHANGELOG.md | wc -l)" -eq "0" ]; then
-            echo "Changelog has not been updated"
-            git diff --ignore-space-at-eol --text CHANGELOG.md
-            exit 1
-          fi
+            NEW_VERSION=$(./.github/workflow_scripts/increment-version.sh -t ${{ inputs.version }} -f VERSION)
+            LAST_CHANGELOG_VERSION=$(./.github/workflow_scripts/get-latest-changlog-version.sh)
+            if [ "$NEW_VERSION" != "$LAST_CHANGELOG_VERSION" ]; then
+              echo "Changelog not updated for version $NEW_VERSION"
+              exit 1
+            fi
       - name: Bump version and push
         run: |
           git config --global user.email "cjlapao@gmail.com"
