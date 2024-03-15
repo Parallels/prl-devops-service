@@ -6,9 +6,9 @@ show_sidebar: false
 version: 0.5.4
 ---
 
-{% assign myOtherPost = site.pages | where:"url", "/docs/getting-started/installation/" | first %}
+{% assign installationContent = site.pages | where:"url", "/docs/getting-started/installation/" | first %}
 
-{{ myOtherPost.content }}
+{{ installationContent.content }}
 
 ### Quick Configuration
 
@@ -58,7 +58,7 @@ For example:
 prldevops api --help
 ```
 
-<div class="flex-center"><img alt="prldevops help" src="{{ site.url }}{{ site.baseurl }}/assets/anims/prdevops_help.gif" /></div>
+![DevOps Help]({{ site.url }}{{ site.baseurl }}/img/prldevops_help.gif)
 
 ### Installing Tools
 

@@ -1,0 +1,7 @@
+
+### Fixed
+
+- Fixed an issue where the api base context was not setting the log correctly
+  resulting in missing log lines
+
+

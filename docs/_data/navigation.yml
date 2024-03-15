@@ -4,6 +4,7 @@
   link: /docs/
 - name: Features
   link: /features/
+  hidden: true
 - name: Examples
   link: /#
   dropdown:
