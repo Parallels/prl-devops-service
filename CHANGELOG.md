@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Fixed
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+## [0.6.0] - 2024-03-26
+
+### Added
+
 - Added the machine id to the output of a pull request in the catalog
 - Added the ability do do a catalog pull request without the need to specify the
   local machine path, this will be taken from the user configuration in PD
@@ -29,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed a bug where the system would crash with a waiting group being negative
 - Fixed a bug where queries could get stuck while saving to the database
 - Fixed an issue where some credentials would be left behind in temporary files
-- further security fixes to the codebase
+- Further security fixes to the codebase
 
 ### Changed
 
