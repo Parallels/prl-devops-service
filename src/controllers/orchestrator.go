@@ -225,16 +225,16 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		Register()
 }
 
-// @Summary		Gets all hosts from the orchestrator
-// @Description	This endpoint returns all hosts from the orchestrator
-// @Tags			Orchestrator
-// @Produce		json
-// @Success		200	{object}	[]models.OrchestratorHostResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts [get]
+//	@Summary		Gets all hosts from the orchestrator
+//	@Description	This endpoint returns all hosts from the orchestrator
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Success		200	{object}	[]models.OrchestratorHostResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts [get]
 func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -269,17 +269,17 @@ func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Gets a host from the orchestrator
-// @Description	This endpoint returns a host from the orchestrator
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id	path		string	true	"Host ID"
-// @Success		200	{object}	models.OrchestratorHostResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id} [get]
+//	@Summary		Gets a host from the orchestrator
+//	@Description	This endpoint returns a host from the orchestrator
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id	path		string	true	"Host ID"
+//	@Success		200	{object}	models.OrchestratorHostResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id} [get]
 func GetOrchestratorHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -303,17 +303,17 @@ func GetOrchestratorHostHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Register a Host in the orchestrator
-// @Description	This endpoint register a host in the orchestrator
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			hostRequest	body		models.OrchestratorHostRequest	true	"Host Request"
-// @Success		200			{object}	models.OrchestratorHostResponse
-// @Failure		400			{object}	models.ApiErrorResponse
-// @Failure		401			{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts [post]
+//	@Summary		Register a Host in the orchestrator
+//	@Description	This endpoint register a host in the orchestrator
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			hostRequest	body		models.OrchestratorHostRequest	true	"Host Request"
+//	@Success		200			{object}	models.OrchestratorHostResponse
+//	@Failure		400			{object}	models.ApiErrorResponse
+//	@Failure		401			{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts [post]
 func RegisterOrchestratorHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -350,17 +350,17 @@ func RegisterOrchestratorHostHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Unregister a host from the orchestrator
-// @Description	This endpoint unregister a host from the orchestrator
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id	path	string	true	"Host ID"
-// @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id} [delete]
+//	@Summary		Unregister a host from the orchestrator
+//	@Description	This endpoint unregister a host from the orchestrator
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id	path	string	true	"Host ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id} [delete]
 func UnregisterOrchestratorHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -377,16 +377,16 @@ func UnregisterOrchestratorHostHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Enable a host in the orchestrator
-// @Description	This endpoint will enable an existing host in the orchestrator
-// @Tags			Orchestrator
-// @Produce		json
-// @Success		200	{object}	models.OrchestratorHostResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/enable [get]
+//	@Summary		Enable a host in the orchestrator
+//	@Description	This endpoint will enable an existing host in the orchestrator
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Success		200	{object}	models.OrchestratorHostResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id}/enable [get]
 func EnableOrchestratorHostsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -410,16 +410,16 @@ func EnableOrchestratorHostsHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Disable a host in the orchestrator
-// @Description	This endpoint will disable an existing host in the orchestrator
-// @Tags			Orchestrator
-// @Produce		json
-// @Success		200	{object}	models.OrchestratorHostResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/disable [get]
+//	@Summary		Disable a host in the orchestrator
+//	@Description	This endpoint will disable an existing host in the orchestrator
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Success		200	{object}	models.OrchestratorHostResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id}/disable [get]
 func DisableOrchestratorHostsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -443,16 +443,16 @@ func DisableOrchestratorHostsHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Get orchestrator resource overview
-// @Description	This endpoint returns orchestrator resource overview
-// @Tags			Orchestrator
-// @Produce		json
-// @Success		200	{object}	models.HostResourceOverviewResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/overview/resources [get]
+//	@Summary		Get orchestrator resource overview
+//	@Description	This endpoint returns orchestrator resource overview
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Success		200	{object}	models.HostResourceOverviewResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/overview/resources [get]
 func GetOrchestratorOverviewHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -482,17 +482,17 @@ func GetOrchestratorOverviewHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Get orchestrator host resources
-// @Description	This endpoint returns orchestrator host resources
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id	path		string	true	"Host ID"
-// @Success		200	{object}	models.HostResourceOverviewResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/overview/{id}/resources [get]
+//	@Summary		Get orchestrator host resources
+//	@Description	This endpoint returns orchestrator host resources
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id	path		string	true	"Host ID"
+//	@Success		200	{object}	models.HostResourceOverviewResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/overview/{id}/resources [get]
 func GetOrchestratorHostResourcesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -516,16 +516,16 @@ func GetOrchestratorHostResourcesHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Get orchestrator Virtual Machines
-// @Description	This endpoint returns orchestrator Virtual Machines
-// @Tags			Orchestrator
-// @Produce		json
-// @Success		200	{object}	[]models.ParallelsVM
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/machines [get]
+//	@Summary		Get orchestrator Virtual Machines
+//	@Description	This endpoint returns orchestrator Virtual Machines
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Success		200	{object}	[]models.ParallelsVM
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines [get]
 func GetOrchestratorVirtualMachinesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -550,16 +550,16 @@ func GetOrchestratorVirtualMachinesHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Get orchestrator Virtual Machine
-// @Description	This endpoint returns orchestrator Virtual Machine by its ID
-// @Tags			Orchestrator
-// @Produce		json
-// @Success		200	{object}	models.ParallelsVM
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/machines/{id} [get]
+//	@Summary		Get orchestrator Virtual Machine
+//	@Description	This endpoint returns orchestrator Virtual Machine by its ID
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Success		200	{object}	models.ParallelsVM
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines/{id} [get]
 func GetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -583,17 +583,17 @@ func GetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Deletes orchestrator virtual machine
-// @Description	This endpoint deletes orchestrator virtual machine
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id	path	string	true	"Virtual Machine ID"
-// @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/machines/{id} [delete]
+//	@Summary		Deletes orchestrator virtual machine
+//	@Description	This endpoint deletes orchestrator virtual machine
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id	path	string	true	"Virtual Machine ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines/{id} [delete]
 func DeleteOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -614,17 +614,17 @@ func DeleteOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Get orchestrator virtual machine status
-// @Description	This endpoint returns orchestrator virtual machine status
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id	path		string	true	"Virtual Machine ID"
-// @Success		200		{object}	models.ParallelsVM
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/machines/{vmId}/status [get]
+//	@Summary		Get orchestrator virtual machine status
+//	@Description	This endpoint returns orchestrator virtual machine status
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id	path		string	true	"Virtual Machine ID"
+//	@Success		200	{object}	models.ParallelsVM
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines/{vmId}/status [get]
 func GetOrchestratorVirtualMachineStatusHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -646,17 +646,17 @@ func GetOrchestratorVirtualMachineStatusHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Renames orchestrator virtual machine
-// @Description	This endpoint renames orchestrator virtual machine
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id	path		string	true	"Virtual Machine ID"
-// @Success		200		{object}	models.ParallelsVM
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/machines/{id}/rename [put]
+//	@Summary		Renames orchestrator virtual machine
+//	@Description	This endpoint renames orchestrator virtual machine
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id	path		string	true	"Virtual Machine ID"
+//	@Success		200	{object}	models.ParallelsVM
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines/{id}/rename [put]
 func RenameOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -694,17 +694,17 @@ func RenameOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Configures orchestrator virtual machine
-// @Description	This endpoint configures orchestrator virtual machine
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id	path		string	true	"Virtual Machine ID"
-// @Success		200		{object}	models.VirtualMachineConfigResponse
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/machines/{vmId}/set [put]
+//	@Summary		Configures orchestrator virtual machine
+//	@Description	This endpoint configures orchestrator virtual machine
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id	path		string	true	"Virtual Machine ID"
+//	@Success		200	{object}	models.VirtualMachineConfigResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines/{vmId}/set [put]
 func SetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -741,17 +741,17 @@ func SetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Executes a command in a orchestrator virtual machine
-// @Description	This endpoint executes a command in a orchestrator virtual machine
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id	path		string	true	"Virtual Machine ID"
-// @Success		200		{object}	models.VirtualMachineConfigResponse
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/machines/{vmId}/execute [put]
+//	@Summary		Executes a command in a orchestrator virtual machine
+//	@Description	This endpoint executes a command in a orchestrator virtual machine
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id	path		string	true	"Virtual Machine ID"
+//	@Success		200	{object}	models.VirtualMachineConfigResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines/{vmId}/execute [put]
 func ExecutesOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -788,17 +788,17 @@ func ExecutesOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Get orchestrator host virtual machines
-// @Description	This endpoint returns orchestrator host virtual machines
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id	path		string	true	"Host ID"
-// @Success		200	{object}	[]models.ParallelsVM
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/machines [get]
+//	@Summary		Get orchestrator host virtual machines
+//	@Description	This endpoint returns orchestrator host virtual machines
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id	path		string	true	"Host ID"
+//	@Success		200	{object}	[]models.ParallelsVM
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id}/machines [get]
 func GetOrchestratorHostVirtualMachinesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -825,18 +825,18 @@ func GetOrchestratorHostVirtualMachinesHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Get orchestrator host virtual machine
-// @Description	This endpoint returns orchestrator host virtual machine
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id		path		string	true	"Host ID"
-// @Param			vmId	path		string	true	"Virtual Machine ID"
-// @Success		200		{object}	models.ParallelsVM
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/machines/{vmId} [get]
+//	@Summary		Get orchestrator host virtual machine
+//	@Description	This endpoint returns orchestrator host virtual machine
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id		path		string	true	"Host ID"
+//	@Param			vmId	path		string	true	"Virtual Machine ID"
+//	@Success		200		{object}	models.ParallelsVM
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id}/machines/{vmId} [get]
 func GetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -861,18 +861,18 @@ func GetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Deletes orchestrator host virtual machine
-// @Description	This endpoint deletes orchestrator host virtual machine
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id		path	string	true	"Host ID"
-// @Param			vmId	path	string	true	"Virtual Machine ID"
-// @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/machines/{vmId} [delete]
+//	@Summary		Deletes orchestrator host virtual machine
+//	@Description	This endpoint deletes orchestrator host virtual machine
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id		path	string	true	"Host ID"
+//	@Param			vmId	path	string	true	"Virtual Machine ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id}/machines/{vmId} [delete]
 func DeleteOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -894,18 +894,18 @@ func DeleteOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Get orchestrator host virtual machine status
-// @Description	This endpoint returns orchestrator host virtual machine status
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id		path		string	true	"Host ID"
-// @Param			vmId	path		string	true	"Virtual Machine ID"
-// @Success		200		{object}	models.ParallelsVM
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/status [get]
+//	@Summary		Get orchestrator host virtual machine status
+//	@Description	This endpoint returns orchestrator host virtual machine status
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id		path		string	true	"Host ID"
+//	@Param			vmId	path		string	true	"Virtual Machine ID"
+//	@Success		200		{object}	models.ParallelsVM
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/status [get]
 func GetOrchestratorHostVirtualMachineStatusHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -928,18 +928,18 @@ func GetOrchestratorHostVirtualMachineStatusHandler() restapi.ControllerHandler 
 	}
 }
 
-// @Summary		Renames orchestrator host virtual machine
-// @Description	This endpoint renames orchestrator host virtual machine
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id		path		string	true	"Host ID"
-// @Param			vmId	path		string	true	"Virtual Machine ID"
-// @Success		200		{object}	models.ParallelsVM
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/rename [put]
+//	@Summary		Renames orchestrator host virtual machine
+//	@Description	This endpoint renames orchestrator host virtual machine
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id		path		string	true	"Host ID"
+//	@Param			vmId	path		string	true	"Virtual Machine ID"
+//	@Success		200		{object}	models.ParallelsVM
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/rename [put]
 func RenameOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -978,18 +978,18 @@ func RenameOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Configures orchestrator host virtual machine
-// @Description	This endpoint configures orchestrator host virtual machine
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id		path		string	true	"Host ID"
-// @Param			vmId	path		string	true	"Virtual Machine ID"
-// @Success		200		{object}	models.VirtualMachineConfigResponse
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/set [put]
+//	@Summary		Configures orchestrator host virtual machine
+//	@Description	This endpoint configures orchestrator host virtual machine
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id		path		string	true	"Host ID"
+//	@Param			vmId	path		string	true	"Virtual Machine ID"
+//	@Success		200		{object}	models.VirtualMachineConfigResponse
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/set [put]
 func SetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -1027,18 +1027,18 @@ func SetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Executes a command in a orchestrator host virtual machine
-// @Description	This endpoint executes a command in a orchestrator host virtual machine
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id		path		string	true	"Host ID"
-// @Param			vmId	path		string	true	"Virtual Machine ID"
-// @Success		200		{object}	models.VirtualMachineConfigResponse
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/execute [put]
+//	@Summary		Executes a command in a orchestrator host virtual machine
+//	@Description	This endpoint executes a command in a orchestrator host virtual machine
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id		path		string	true	"Host ID"
+//	@Param			vmId	path		string	true	"Virtual Machine ID"
+//	@Success		200		{object}	models.VirtualMachineConfigResponse
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/execute [put]
 func ExecutesOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -1076,18 +1076,18 @@ func ExecutesOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Register a virtual machine in a orchestrator host
-// @Description	This endpoint registers a virtual machine in a orchestrator host
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id		path		string									true	"Host ID"
-// @Param			request	body		models.RegisterVirtualMachineRequest	true	"Register Virtual Machine Request"
-// @Success		200		{object}	models.ParallelsVM
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/machines/register [post]
+//	@Summary		Register a virtual machine in a orchestrator host
+//	@Description	This endpoint registers a virtual machine in a orchestrator host
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id		path		string									true	"Host ID"
+//	@Param			request	body		models.RegisterVirtualMachineRequest	true	"Register Virtual Machine Request"
+//	@Success		200		{object}	models.ParallelsVM
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id}/machines/register [post]
 func RegisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -1123,19 +1123,19 @@ func RegisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Unregister a virtual machine in a orchestrator host
-// @Description	This endpoint unregister a virtual machine in a orchestrator host
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id		path		string									true	"Host ID"
-// @Param			vmId	path		string									true	"Virtual Machine ID"
-// @Param			request	body		models.UnregisterVirtualMachineRequest	true	"Register Virtual Machine Request"
-// @Success		200		{object}	models.ParallelsVM
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/unregister [post]
+//	@Summary		Unregister a virtual machine in a orchestrator host
+//	@Description	This endpoint unregister a virtual machine in a orchestrator host
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id		path		string									true	"Host ID"
+//	@Param			vmId	path		string									true	"Virtual Machine ID"
+//	@Param			request	body		models.UnregisterVirtualMachineRequest	true	"Register Virtual Machine Request"
+//	@Success		200		{object}	models.ParallelsVM
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/unregister [post]
 func UnregisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -1172,18 +1172,18 @@ func UnregisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler
 	}
 }
 
-// @Summary		Creates a orchestrator host virtual machine
-// @Description	This endpoint creates a orchestrator host virtual machine
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			id		path		string								true	"Host ID"
-// @Param			request	body		models.CreateVirtualMachineRequest	true	"Create Virtual Machine Request"
-// @Success		200		{object}	models.CreateVirtualMachineResponse
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/machines [post]
+//	@Summary		Creates a orchestrator host virtual machine
+//	@Description	This endpoint creates a orchestrator host virtual machine
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id		path		string								true	"Host ID"
+//	@Param			request	body		models.CreateVirtualMachineRequest	true	"Create Virtual Machine Request"
+//	@Success		200		{object}	models.CreateVirtualMachineResponse
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/hosts/{id}/machines [post]
 func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -1220,17 +1220,17 @@ func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Creates a virtual machine in one of the hosts for the orchestrator
-// @Description	This endpoint creates a virtual machine in one of the hosts for the orchestrator
-// @Tags			Orchestrator
-// @Produce		json
-// @Param			request	body		models.CreateVirtualMachineRequest	true	"Create Virtual Machine Request"
-// @Success		200		{object}	models.CreateVirtualMachineResponse
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/machines [post]
+//	@Summary		Creates a virtual machine in one of the hosts for the orchestrator
+//	@Description	This endpoint creates a virtual machine in one of the hosts for the orchestrator
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			request	body		models.CreateVirtualMachineRequest	true	"Create Virtual Machine Request"
+//	@Success		200		{object}	models.CreateVirtualMachineResponse
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines [post]
 func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
