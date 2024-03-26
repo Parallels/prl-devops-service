@@ -294,6 +294,7 @@ func DtoCatalogManifestsToApi(m []data_models.CatalogManifest) []models.CatalogM
 func BasePullCatalogManifestResponseToApi(m catalog_models.PullCatalogManifestResponse) models.PullCatalogManifestResponse {
 	data := models.PullCatalogManifestResponse{
 		ID:          m.ID,
+		MachineID:   m.MachineID,
 		LocalPath:   m.LocalPath,
 		MachineName: m.MachineName,
 	}

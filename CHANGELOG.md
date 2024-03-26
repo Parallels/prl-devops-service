@@ -9,13 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added the machine id to the output of a pull request in the catalog
+- Added the ability do do a catalog pull request without the need to specify the
+  local machine path, this will be taken from the user configuration in PD
+- Added a spinner to the long running commands for pull and push to notify the
+  user that the command is still running
+- Added a new endpoint to easily clone a virtual machine `/api/v1/machines/{id}/clone`
+- Added the ability to **enable** and **disable** a host from the orchestrator
+- Added the ability to configure the API **CORS policies** by passing environment variables
+
 ### Fixed
+
+- Fixed an typo in the docker-compose file that would not allow the root password
+  to be updated
+- Fixed an issue in the pull from the catalog where if there was an error the
+  system would crash
+- Fixed an issue where the provider would not take into account the host with a
+  schema present
+- Fixed a bug where the system would crash with a waiting group being negative
+- Fixed a bug where queries could get stuck while saving to the database
+- Fixed an issue where some credentials would be left behind in temporary files
+- further security fixes to the codebase
 
 ### Changed
 
-### Deprecated
-
-### Removed
+- Packer Templates and Vagrant box endpoints are now disabled by default due to security
+  concerns on remote execution of code, you can enable them by setting the environment
+  variable `ENABLE_PACKER_PLUGIN` and `ENABLE_VAGRANT_PLUGIN` to `true`
 
 ## [0.5.6] - 2024-03-14
 

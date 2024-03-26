@@ -2,28 +2,21 @@ package controllers
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
-	"strings"
-	"sync"
-	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
-	data_models "github.com/Parallels/prl-devops-service/data/models"
-	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator"
 	"github.com/Parallels/prl-devops-service/restapi"
-	"github.com/Parallels/prl-devops-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
 )
 
 func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version string) {
-	ctx.LogInfof("Registering version %s Claims handlers", version)
+	ctx.LogInfof("Registering version %s Orchestrator handlers", version)
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).WithPath("orchestrator/hosts").
@@ -44,7 +37,7 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithVersion(version).
 		WithPath("/orchestrator/hosts").
 		WithRequiredClaim(constants.CREATE_CLAIM).
-		WithHandler(CreateOrchestratorHostHandler()).
+		WithHandler(RegisterOrchestratorHostHandler()).
 		Register()
 
 	restapi.NewController().
@@ -52,7 +45,23 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithVersion(version).
 		WithPath("/orchestrator/hosts/{id}").
 		WithRequiredClaim(constants.DELETE_CLAIM).
-		WithHandler(DeleteOrchestratorHostHandler()).
+		WithHandler(UnregisterOrchestratorHostHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/orchestrator/hosts/{id}/enable").
+		WithRequiredClaim(constants.UPDATE_CLAIM).
+		WithHandler(EnableOrchestratorHostsHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/orchestrator/hosts/{id}/disable").
+		WithRequiredClaim(constants.UPDATE_CLAIM).
+		WithHandler(DisableOrchestratorHostsHandler()).
 		Register()
 
 	restapi.NewController().
@@ -77,6 +86,54 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithPath("/orchestrator/machines").
 		WithRequiredClaim(constants.LIST_CLAIM).
 		WithHandler(GetOrchestratorVirtualMachinesHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/orchestrator/machines/{id}").
+		WithRequiredClaim(constants.LIST_CLAIM).
+		WithHandler(GetOrchestratorVirtualMachineHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/orchestrator/machines/{id}").
+		WithRequiredClaim(constants.DELETE_CLAIM).
+		WithHandler(DeleteOrchestratorVirtualMachineHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/orchestrator/machines/{id}/status").
+		WithRequiredClaim(constants.LIST_CLAIM).
+		WithHandler(GetOrchestratorVirtualMachineStatusHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/orchestrator/machines/{id}/rename").
+		WithRequiredClaim(constants.UPDATE_CLAIM).
+		WithHandler(RenameOrchestratorVirtualMachineHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/orchestrator/machines/{id}/set").
+		WithRequiredClaim(constants.UPDATE_CLAIM).
+		WithHandler(SetOrchestratorVirtualMachineHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/orchestrator/machines/{id}/execute").
+		WithRequiredClaim(constants.EXECUTE_COMMAND_VM_CLAIM).
+		WithHandler(ExecuteCommandOnVirtualMachineHandler()).
 		Register()
 
 	restapi.NewController().
@@ -170,7 +227,7 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 
 // @Summary		Gets all hosts from the orchestrator
 // @Description	This endpoint returns all hosts from the orchestrator
-// @Tags			Claims
+// @Tags			Orchestrator
 // @Produce		json
 // @Success		200	{object}	[]models.OrchestratorHostResponse
 // @Failure		400	{object}	models.ApiErrorResponse
@@ -181,13 +238,11 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
-
-		dtoOrchestratorHosts, err := dbService.GetOrchestratorHosts(ctx, GetFilterHeader(r))
+		defer Recover(ctx, r, w)
+		defer Recover(ctx, r, w)
+		filter := GetFilterHeader(r)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+		dtoOrchestratorHosts, err := orchestratorSvc.GetHosts(ctx, filter)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -202,37 +257,11 @@ func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 		}
 
 		response := make([]models.OrchestratorHostResponse, 0)
-		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-
-		// // Checking the orchestrator hosts health
-		// for _, host := range dtoOrchestratorHosts {
-		// 	rHost := mappers.DtoOrchestratorHostToApiResponse(host)
-		// 	rHost.State = orchestratorSvc.GetHostHealthCheckState(&host)
-
-		// 	response = append(response, rHost)
-		// }
-
-		var wg sync.WaitGroup
-		mutex := sync.Mutex{}
 
 		for _, host := range dtoOrchestratorHosts {
-			starTime := time.Now()
-			wg.Add(1)
-			go func(host data_models.OrchestratorHost) {
-				ctx.LogDebugf("Processing Host: %v\n", host.Host)
-				defer wg.Done()
-
-				rHost := mappers.DtoOrchestratorHostToApiResponse(host)
-				rHost.State = orchestratorSvc.GetHostHealthCheckState(&host)
-
-				mutex.Lock()
-				response = append(response, rHost)
-				mutex.Unlock()
-				ctx.LogDebugf("Processing Host: %v - Time: %v\n", host.Host, time.Since(starTime))
-			}(host)
+			rHost := mappers.DtoOrchestratorHostToApiResponse(*host)
+			response = append(response, rHost)
 		}
-
-		wg.Wait()
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
@@ -254,25 +283,19 @@ func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 func GetOrchestratorHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		dtoOrchestratorHost, err := dbService.GetOrchestratorHost(ctx, helpers.NormalizeString(id))
+		host, err := orchestratorSvc.GetHost(ctx, id)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		// Validating the Health check probe of the host
-		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		dtoOrchestratorHost.State = orchestratorSvc.GetHostHealthCheckState(dtoOrchestratorHost)
-		response := mappers.DtoOrchestratorHostToApiResponse(*dtoOrchestratorHost)
+		response := mappers.DtoOrchestratorHostToApiResponse(*host)
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
@@ -280,8 +303,8 @@ func GetOrchestratorHostHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Creates a Host in the orchestrator
-// @Description	This endpoint creates a host in the orchestrator
+// @Summary		Register a Host in the orchestrator
+// @Description	This endpoint register a host in the orchestrator
 // @Tags			Orchestrator
 // @Produce		json
 // @Param			hostRequest	body		models.OrchestratorHostRequest	true	"Host Request"
@@ -291,9 +314,10 @@ func GetOrchestratorHostHandler() restapi.ControllerHandler {
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/orchestrator/hosts [post]
-func CreateOrchestratorHostHandler() restapi.ControllerHandler {
+func RegisterOrchestratorHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.OrchestratorHostRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -308,24 +332,11 @@ func CreateOrchestratorHostHandler() restapi.ControllerHandler {
 			})
 			return
 		}
-
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
-
-		oSvc := orchestrator.NewOrchestratorService(ctx)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 		// checking if we can connect to host before adding it
 		dtoRecord := mappers.ApiOrchestratorRequestToDto(request)
 
-		_, err = oSvc.GetHostHardwareInfo(&dtoRecord)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
-		}
-
-		record, err := dbService.CreateOrchestratorHost(ctx, dtoRecord)
+		record, err := orchestratorSvc.RegisterHost(ctx, &dtoRecord)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -339,8 +350,8 @@ func CreateOrchestratorHostHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Delete a host from the orchestrator
-// @Description	This endpoint deletes a host from the orchestrator
+// @Summary		Unregister a host from the orchestrator
+// @Description	This endpoint unregister a host from the orchestrator
 // @Tags			Orchestrator
 // @Produce		json
 // @Param			id	path	string	true	"Host ID"
@@ -350,26 +361,85 @@ func CreateOrchestratorHostHandler() restapi.ControllerHandler {
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/orchestrator/hosts/{id} [delete]
-func DeleteOrchestratorHostHandler() restapi.ControllerHandler {
+func UnregisterOrchestratorHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		err = dbService.DeleteOrchestratorHost(ctx, id)
+		orchestratorSvc.UnregisterHost(ctx, id)
+
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfof("Orchestrator host deleted successfully")
+	}
+}
+
+// @Summary		Enable a host in the orchestrator
+// @Description	This endpoint will enable an existing host in the orchestrator
+// @Tags			Orchestrator
+// @Produce		json
+// @Success		200	{object}	models.OrchestratorHostResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/hosts/{id}/enable [get]
+func EnableOrchestratorHostsHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		host, err := orchestratorSvc.EnableHost(ctx, id)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		w.WriteHeader(http.StatusAccepted)
-		ctx.LogInfof("Orchestrator host deleted successfully")
+		response := mappers.DtoOrchestratorHostToApiResponse(*host)
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Host %v enabled successfully", id)
+	}
+}
+
+// @Summary		Disable a host in the orchestrator
+// @Description	This endpoint will disable an existing host in the orchestrator
+// @Tags			Orchestrator
+// @Produce		json
+// @Success		200	{object}	models.OrchestratorHostResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/hosts/{id}/disable [get]
+func DisableOrchestratorHostsHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		host, err := orchestratorSvc.DisableHost(ctx, id)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		response := mappers.DtoOrchestratorHostToApiResponse(*host)
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Host %v disabled successfully", id)
 	}
 }
 
@@ -386,31 +456,25 @@ func DeleteOrchestratorHostHandler() restapi.ControllerHandler {
 func GetOrchestratorOverviewHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+		result := make([]models.HostResourceOverviewResponse, 0)
+		resources, err := orchestratorSvc.GetResources(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
-		response := models.HostResourceOverviewResponse{}
-		result := make([]models.HostResourceOverviewResponse, 0)
 
-		totalResources := dbService.GetOrchestratorTotalResources(ctx)
-		inUseResources := dbService.GetOrchestratorInUseResources(ctx)
-		availableResources := dbService.GetOrchestratorAvailableResources(ctx)
-		reservedResources := dbService.GetOrchestratorReservedResources(ctx)
-
-		for key, value := range totalResources {
-			response.Total = mappers.MapApiHostResourceItemFromHostResourceItem(value)
-			response.TotalAvailable = mappers.MapApiHostResourceItemFromHostResourceItem(availableResources[key])
-			response.TotalInUse = mappers.MapApiHostResourceItemFromHostResourceItem(inUseResources[key])
-			response.TotalReserved = mappers.MapApiHostResourceItemFromHostResourceItem(reservedResources[key])
-			response.CpuType = key
-			result = append(result, response)
+		for _, value := range resources {
+			item := models.HostResourceOverviewResponse{}
+			item.Total = mappers.MapApiHostResourceItemFromHostResourceItem(value.Total)
+			item.TotalAvailable = mappers.MapApiHostResourceItemFromHostResourceItem(value.TotalAvailable)
+			item.TotalInUse = mappers.MapApiHostResourceItemFromHostResourceItem(value.TotalInUse)
+			item.TotalReserved = mappers.MapApiHostResourceItemFromHostResourceItem(value.TotalReserved)
+			item.CpuType = value.CpuType
+			item.CpuBrand = value.CpuBrand
+			result = append(result, item)
 		}
-		// response.Total = mappers.MapApiHostResourceItemFromHostResourceItem(totalResources)
-		// response.TotalAvailable = mappers.MapApiHostResourceItemFromHostResourceItem(availableResources)
-		// response.TotalInUse = mappers.MapApiHostResourceItemFromHostResourceItem(inUseResources)
-		// response.TotalReserved = mappers.MapApiHostResourceItemFromHostResourceItem(reservedResources)
 
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(result)
@@ -432,22 +496,19 @@ func GetOrchestratorOverviewHandler() restapi.ControllerHandler {
 func GetOrchestratorHostResourcesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		host, err := dbService.GetOrchestratorHost(ctx, id)
+		resources, err := orchestratorSvc.GetHostResources(ctx, id)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		response := mappers.MapSystemUsageResponseFromHostResources(*host.Resources)
+		response := mappers.MapSystemUsageResponseFromHostResources(*resources)
 
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(response)
@@ -468,15 +529,13 @@ func GetOrchestratorHostResourcesHandler() restapi.ControllerHandler {
 func GetOrchestratorVirtualMachinesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		filter := GetFilterHeader(r)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
-		vms, err := dbService.GetOrchestratorVirtualMachines(ctx, GetFilterHeader(r))
+		vms, err := orchestratorSvc.GetVirtualMachines(ctx, filter)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
@@ -487,7 +546,245 @@ func GetOrchestratorVirtualMachinesHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfof("Returned successfully the orchestrator virtual machines")
+		ctx.LogInfof("Returned %v virtual machines from all hosts", len(response))
+	}
+}
+
+// @Summary		Get orchestrator Virtual Machine
+// @Description	This endpoint returns orchestrator Virtual Machine by its ID
+// @Tags			Orchestrator
+// @Produce		json
+// @Success		200	{object}	models.ParallelsVM
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/machines/{id} [get]
+func GetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		vm, err := orchestratorSvc.GetVirtualMachine(ctx, id)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		response := mappers.MapDtoVirtualMachineToApi(*vm)
+
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Returned virtual machine %v from host", vm.ID, vm.HostId)
+	}
+}
+
+// @Summary		Deletes orchestrator virtual machine
+// @Description	This endpoint deletes orchestrator virtual machine
+// @Tags			Orchestrator
+// @Produce		json
+// @Param			id	path	string	true	"Virtual Machine ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/machines/{id} [delete]
+func DeleteOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		err := orchestratorSvc.DeleteVirtualMachine(ctx, id)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfof("Successfully deleted the orchestrator virtual machine %s", id)
+	}
+}
+
+// @Summary		Get orchestrator virtual machine status
+// @Description	This endpoint returns orchestrator virtual machine status
+// @Tags			Orchestrator
+// @Produce		json
+// @Param			id	path		string	true	"Virtual Machine ID"
+// @Success		200		{object}	models.ParallelsVM
+// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		401		{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/machines/{vmId}/status [get]
+func GetOrchestratorVirtualMachineStatusHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		response, err := orchestratorSvc.GetVirtualMachineStatus(ctx, id)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Returned successfully the orchestrator virtual machine status")
+	}
+}
+
+// @Summary		Renames orchestrator virtual machine
+// @Description	This endpoint renames orchestrator virtual machine
+// @Tags			Orchestrator
+// @Produce		json
+// @Param			id	path		string	true	"Virtual Machine ID"
+// @Success		200		{object}	models.ParallelsVM
+// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		401		{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/machines/{id}/rename [put]
+func RenameOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.RenameVirtualMachineRequest
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+		request.ID = id
+
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		response, err := orchestratorSvc.RenameVirtualMachine(ctx, id, request)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Successfully renamed the orchestrator virtual machine %s", id)
+	}
+}
+
+// @Summary		Configures orchestrator virtual machine
+// @Description	This endpoint configures orchestrator virtual machine
+// @Tags			Orchestrator
+// @Produce		json
+// @Param			id	path		string	true	"Virtual Machine ID"
+// @Success		200		{object}	models.VirtualMachineConfigResponse
+// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		401		{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/machines/{vmId}/set [put]
+func SetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.VirtualMachineConfigRequest
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		response, err := orchestratorSvc.ConfigureVirtualMachine(ctx, id, request)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Successfully configured the orchestrator virtual machine %s", id)
+	}
+}
+
+// @Summary		Executes a command in a orchestrator virtual machine
+// @Description	This endpoint executes a command in a orchestrator virtual machine
+// @Tags			Orchestrator
+// @Produce		json
+// @Param			id	path		string	true	"Virtual Machine ID"
+// @Success		200		{object}	models.VirtualMachineConfigResponse
+// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		401		{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/machines/{vmId}/execute [put]
+func ExecutesOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.VirtualMachineExecuteCommandRequest
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		response, err := orchestratorSvc.ExecuteOnVirtualMachine(ctx, id, request)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Successfully executed command in the orchestrator virtual machine %s", id)
 	}
 }
 
@@ -505,16 +802,13 @@ func GetOrchestratorVirtualMachinesHandler() restapi.ControllerHandler {
 func GetOrchestratorHostVirtualMachinesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		vms, err := dbService.GetOrchestratorHostVirtualMachines(ctx, id, GetFilterHeader(r))
+		vms, err := orchestratorSvc.GetHostVirtualMachines(ctx, id, GetFilterHeader(r))
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
 			return
@@ -522,7 +816,7 @@ func GetOrchestratorHostVirtualMachinesHandler() restapi.ControllerHandler {
 
 		response := make([]models.ParallelsVM, 0)
 		for _, vm := range vms {
-			response = append(response, mappers.MapDtoVirtualMachineToApi(vm))
+			response = append(response, mappers.MapDtoVirtualMachineToApi(*vm))
 		}
 
 		w.WriteHeader(http.StatusAccepted)
@@ -546,17 +840,14 @@ func GetOrchestratorHostVirtualMachinesHandler() restapi.ControllerHandler {
 func GetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
 		vmId := vars["vmId"]
 
-		vm, err := dbService.GetOrchestratorHostVirtualMachine(ctx, id, vmId)
+		vm, err := orchestratorSvc.GetHostVirtualMachine(ctx, id, vmId)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
 			return
@@ -585,38 +876,17 @@ func GetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 func DeleteOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
 		vmId := vars["vmId"]
 
-		host, err := dbService.GetOrchestratorHost(ctx, id)
+		err := orchestratorSvc.DeleteHostVirtualMachine(ctx, id, vmId)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
-			return
-		}
-		if host == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host not found",
-				Code:    404,
-			})
-			return
-		}
-		if host.State != "healthy" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host is not healthy",
-				Code:    400,
-			})
-		}
-
-		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		if err := orchestratorSvc.DeleteHostVirtualMachine(host, vmId); err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
 		}
 
 		w.WriteHeader(http.StatusAccepted)
@@ -639,39 +909,14 @@ func DeleteOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 func GetOrchestratorHostVirtualMachineStatusHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
 		vmId := vars["vmId"]
 
-		host, err := dbService.GetOrchestratorHost(ctx, id)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
-			return
-		}
-
-		if host == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host not found",
-				Code:    404,
-			})
-			return
-		}
-		if host.State != "healthy" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host is not healthy",
-				Code:    400,
-			})
-			return
-		}
-
-		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.GetHostVirtualMachineStatus(host, vmId)
+		response, err := orchestratorSvc.GetHostVirtualMachineStatus(ctx, id, vmId)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -679,7 +924,7 @@ func GetOrchestratorHostVirtualMachineStatusHandler() restapi.ControllerHandler 
 
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfof("Returned successfully the orchestrator virtual machine")
+		ctx.LogInfof("Returned successfully the orchestrator virtual machine status")
 	}
 }
 
@@ -698,12 +943,9 @@ func GetOrchestratorHostVirtualMachineStatusHandler() restapi.ControllerHandler 
 func RenameOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.RenameVirtualMachineRequest
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -724,29 +966,7 @@ func RenameOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		host, err := dbService.GetOrchestratorHost(ctx, id)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
-			return
-		}
-
-		if host == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host not found",
-				Code:    404,
-			})
-			return
-		}
-		if host.State != "healthy" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host is not healthy",
-				Code:    400,
-			})
-			return
-		}
-
-		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.RenameHostVirtualMachine(host, vmId, request)
+		response, err := orchestratorSvc.RenameHostVirtualMachine(ctx, id, vmId, request)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -773,12 +993,9 @@ func RenameOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 func SetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.VirtualMachineConfigRequest
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -798,29 +1015,7 @@ func SetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		host, err := dbService.GetOrchestratorHost(ctx, id)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
-			return
-		}
-
-		if host == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host not found",
-				Code:    404,
-			})
-			return
-		}
-		if host.State != "healthy" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host is not healthy",
-				Code:    400,
-			})
-			return
-		}
-
-		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.ConfigureHostVirtualMachine(host, vmId, request)
+		response, err := orchestratorSvc.ConfigureHostVirtualMachine(ctx, id, vmId, request)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -847,12 +1042,9 @@ func SetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 func ExecutesOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.VirtualMachineExecuteCommandRequest
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -872,29 +1064,7 @@ func ExecutesOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		host, err := dbService.GetOrchestratorHost(ctx, id)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
-			return
-		}
-
-		if host == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host not found",
-				Code:    404,
-			})
-			return
-		}
-		if host.State != "healthy" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host is not healthy",
-				Code:    400,
-			})
-			return
-		}
-
-		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.ExecuteOnHostVirtualMachine(host, vmId, request)
+		response, err := orchestratorSvc.ExecuteOnHostVirtualMachine(ctx, id, vmId, request)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -921,12 +1091,9 @@ func ExecutesOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 func RegisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.RegisterVirtualMachineRequest
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -944,29 +1111,7 @@ func RegisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		host, err := dbService.GetOrchestratorHost(ctx, id)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
-			return
-		}
-
-		if host == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host not found",
-				Code:    404,
-			})
-			return
-		}
-		if host.State != "healthy" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host is not healthy",
-				Code:    400,
-			})
-			return
-		}
-
-		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.RegisterHostVirtualMachine(host, request)
+		response, err := orchestratorSvc.RegisterHostVirtualMachine(ctx, id, request)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -994,12 +1139,9 @@ func RegisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 func UnregisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.UnregisterVirtualMachineRequest
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -1019,29 +1161,7 @@ func UnregisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler
 			return
 		}
 
-		host, err := dbService.GetOrchestratorHost(ctx, id)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
-			return
-		}
-
-		if host == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host not found",
-				Code:    404,
-			})
-			return
-		}
-		if host.State != "healthy" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host is not healthy",
-				Code:    400,
-			})
-			return
-		}
-
-		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		_, err = orchestratorSvc.UnregisterHostVirtualMachine(host, vmId, request)
+		_, err := orchestratorSvc.UnregisterHostVirtualMachine(ctx, id, vmId, request)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1067,12 +1187,8 @@ func UnregisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler
 func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.CreateVirtualMachineRequest
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
 
 		vars := mux.Vars(r)
 		id := vars["id"]
@@ -1091,60 +1207,10 @@ func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		host, err := dbService.GetOrchestratorHost(ctx, id)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
-			return
-		}
-
-		if host == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host not found",
-				Code:    404,
-			})
-			return
-		}
-		if host.State != "healthy" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host is not healthy",
-				Code:    400,
-			})
-			return
-		}
-
-		var specs *models.CreateVirtualMachineSpecs
-		if request.CatalogManifest != nil && request.CatalogManifest.Specs != nil {
-			specs = request.CatalogManifest.Specs
-		} else if request.VagrantBox != nil && request.VagrantBox.Specs != nil {
-			specs = request.VagrantBox.Specs
-		} else if request.PackerTemplate != nil && request.PackerTemplate.Specs != nil {
-			specs = request.PackerTemplate.Specs
-		} else {
-			specs = &models.CreateVirtualMachineSpecs{
-				Cpu:    "1",
-				Memory: "2048",
-			}
-		}
-
-		if host.Resources.TotalAvailable.LogicalCpuCount <= specs.GetCpuCount() {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host does not have enough CPU resources",
-				Code:    400,
-			})
-			return
-		}
-		if host.Resources.TotalAvailable.MemorySize <= specs.GetMemorySize() {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Host does not have enough Memory resources",
-				Code:    400,
-			})
-			return
-		}
-
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.CreateHostVirtualMachine(*host, request)
+		response, err := orchestratorSvc.CreateHosVirtualMachine(ctx, id, request)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			ReturnApiError(ctx, w, *err)
 			return
 		}
 
@@ -1168,12 +1234,8 @@ func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.CreateVirtualMachineRequest
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
 
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -1190,105 +1252,10 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		var specs *models.CreateVirtualMachineSpecs
-		if request.CatalogManifest != nil && request.CatalogManifest.Specs != nil {
-			specs = request.CatalogManifest.Specs
-		} else if request.VagrantBox != nil && request.VagrantBox.Specs != nil {
-			specs = request.VagrantBox.Specs
-		} else if request.PackerTemplate != nil && request.PackerTemplate.Specs != nil {
-			specs = request.PackerTemplate.Specs
-		} else {
-			specs = &models.CreateVirtualMachineSpecs{
-				Cpu:    "1",
-				Memory: "2048",
-			}
-		}
-
-		hosts, err := dbService.GetOrchestratorHosts(ctx, "")
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+		response, err := orchestratorSvc.CreateVirtualMachine(ctx, request)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
-			return
-		}
-
-		var hostErr error
-		var response models.CreateVirtualMachineResponse
-		var apiError *models.ApiErrorResponse
-
-		for _, orchestratorHost := range hosts {
-			if orchestratorHost.State != "healthy" {
-				apiError = &models.ApiErrorResponse{
-					Message: "Host is not healthy",
-					Code:    400,
-				}
-				continue
-			}
-			if orchestratorHost.Resources == nil {
-				apiError = &models.ApiErrorResponse{
-					Message: "Host does not have resources information",
-					Code:    400,
-				}
-				continue
-			}
-			if !strings.EqualFold(orchestratorHost.Architecture, request.Architecture) {
-				apiError = &models.ApiErrorResponse{
-					Message: "Host does not have the same architecture",
-					Code:    400,
-				}
-				continue
-			}
-			if orchestratorHost.Resources.TotalAvailable.LogicalCpuCount > specs.GetCpuCount() &&
-				orchestratorHost.Resources.TotalAvailable.MemorySize > specs.GetMemorySize() {
-
-				if orchestratorHost.State != "healthy" {
-					apiError = &models.ApiErrorResponse{
-						Message: "Host is not healthy",
-						Code:    400,
-					}
-					hostErr = errors.New("host is not healthy")
-					continue
-				}
-
-				if orchestratorHost.Resources.TotalAvailable.LogicalCpuCount <= 1 {
-					apiError = &models.ApiErrorResponse{
-						Message: "Host does not have enough CPU resources",
-						Code:    400,
-					}
-					hostErr = errors.New("host does not have enough CPU resources")
-					continue
-				}
-				if orchestratorHost.Resources.TotalAvailable.MemorySize < 2048 {
-					apiError = &models.ApiErrorResponse{
-						Message: "Host does not have enough Memory resources",
-						Code:    400,
-					}
-					hostErr = errors.New("host does not have enough Memory resources")
-					continue
-				}
-
-				orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-				resp, err := orchestratorSvc.CreateHostVirtualMachine(orchestratorHost, request)
-				if err != nil {
-					e := models.NewFromError(err)
-					apiError = &e
-					hostErr = err
-					break
-				} else {
-					response = *resp
-					break
-				}
-			}
-		}
-
-		if hostErr == nil {
-			if apiError != nil {
-				ReturnApiError(ctx, w, *apiError)
-			} else {
-				ReturnApiError(ctx, w, models.ApiErrorResponse{
-					Message: "No host available to create the virtual machine",
-					Code:    400,
-				})
-			}
-
+			ReturnApiError(ctx, w, *err)
 			return
 		}
 

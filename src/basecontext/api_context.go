@@ -19,4 +19,5 @@ type ApiContext interface {
 	LogErrorf(format string, a ...interface{})
 	LogDebugf(format string, a ...interface{})
 	LogWarnf(format string, a ...interface{})
+	LogTracef(format string, a ...interface{})
 }

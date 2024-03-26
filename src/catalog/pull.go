@@ -239,11 +239,13 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 
 				cacheFileName := fmt.Sprintf("%s.pdpack", fileChecksum)
 				needsPulling := false
+				// checking for the caching system to see if we need to pull the file
 				if cfg.IsCatalogCachingEnable() {
 					destinationFolder, err = cfg.CatalogCacheFolder()
 					if err != nil {
 						destinationFolder = r.Path
 					}
+
 					if helper.FileExists(filepath.Join(destinationFolder, cacheFileName)) {
 						ctx.LogInfof("File %v already exists in cache", fileName)
 					} else {
@@ -353,7 +355,7 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(ctx baseconte
 
 	if !response.HasErrors() {
 		ctx.LogInfof("Renaming machine %v to %v", r.MachineName, r.MachineName)
-		filter := fmt.Sprintf("home=%s", r.LocalMachineFolder)
+		filter := fmt.Sprintf("name=%s", r.MachineName)
 		vms, err := parallelsDesktopSvc.GetVms(ctx, filter)
 		if err != nil {
 			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, err)
@@ -363,25 +365,31 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(ctx baseconte
 		}
 
 		if len(vms) != 1 {
-			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, err)
-			response.AddError(err)
+			notFoundError := errors.Newf("Machine %v not found", r.MachineName)
+			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, notFoundError)
+			response.AddError(notFoundError)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
 			return
 		}
 
-		response.ID = vms[0].ID
-		renameRequest := api_models.RenameVirtualMachineRequest{
-			ID:          vms[0].ID,
-			CurrentName: vms[0].Name,
-			NewName:     r.MachineName,
+		// Renaming only if the name is different
+		if vms[0].Name != r.MachineName {
+			response.ID = vms[0].ID
+			renameRequest := api_models.RenameVirtualMachineRequest{
+				ID:          vms[0].ID,
+				CurrentName: vms[0].Name,
+				NewName:     r.MachineName,
+			}
+
+			if err := parallelsDesktopSvc.RenameVm(ctx, renameRequest); err != nil {
+				ctx.LogErrorf("Error renaming machine %v: %v", r.MachineName, err)
+				response.AddError(err)
+				response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
+				return
+			}
 		}
 
-		if err := parallelsDesktopSvc.RenameVm(ctx, renameRequest); err != nil {
-			ctx.LogErrorf("Error renaming machine %v: %v", r.MachineName, err)
-			response.AddError(err)
-			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
-			return
-		}
+		response.MachineID = vms[0].ID
 	} else {
 		ctx.LogErrorf("Error renaming machine %v: %v", r.MachineName, response.Errors)
 	}
@@ -394,7 +402,7 @@ func (s *CatalogManifestService) startMachineWithParallelsDesktop(ctx basecontex
 
 	if !response.HasErrors() {
 		ctx.LogInfof("Starting machine %v to %v", r.MachineName, r.MachineName)
-		filter := fmt.Sprintf("home=%s", r.LocalMachineFolder)
+		filter := fmt.Sprintf("name=%s", r.MachineName)
 		vms, err := parallelsDesktopSvc.GetVms(ctx, filter)
 		if err != nil {
 			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, err)
@@ -404,8 +412,9 @@ func (s *CatalogManifestService) startMachineWithParallelsDesktop(ctx basecontex
 		}
 
 		if len(vms) != 1 {
-			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, err)
-			response.AddError(err)
+			notFoundError := errors.Newf("Machine %v not found", r.MachineName)
+			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, notFoundError)
+			response.AddError(notFoundError)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
 			return
 		}

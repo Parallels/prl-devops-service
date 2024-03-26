@@ -78,6 +78,7 @@ func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		if provider.ParallelsDesktopService == nil || !provider.ParallelsDesktopService.Installed() {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -113,6 +114,7 @@ func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.InstallToolsRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -174,6 +176,7 @@ func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.UninstallToolsRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -231,6 +234,7 @@ func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 func RestartApiHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		go restapi.Get().Restart()
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("Restart request accepted")
@@ -250,6 +254,7 @@ func RestartApiHandler() restapi.ControllerHandler {
 func GetHardwareInfo() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		hardwareInfo, err := provider.ParallelsDesktopService.GetHardwareUsage(ctx)
 		if err != nil {

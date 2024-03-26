@@ -258,7 +258,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 		}
 	}
 
-	if response.Body != nil {
+	if response.Body != http.NoBody {
 		body, err := io.ReadAll(response.Body)
 		if err != nil {
 			return &apiResponse, fmt.Errorf("error reading response body from %s, err: %v", url, err)
@@ -270,7 +270,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 				return &apiResponse, fmt.Errorf("error unmarshalling body from %s, err: %v ", url, err)
 			}
 
-			c.ctx.LogDebugf("[Api Client] Response body: \n%s", string(body))
+			c.ctx.LogTracef("[Api Client] Response body: \n%s", string(body))
 			apiResponse.Data = destination
 		} else {
 			var bodyData map[string]interface{}

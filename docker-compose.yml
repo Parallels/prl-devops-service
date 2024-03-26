@@ -1,10 +1,8 @@
 version: '3.9'
-name: api
+name: devops-service
 services:
-  api:
+  devops:
     build: .
-    ports:
-      - "80:80"
     environment:
       HMAC_SECRET: ''
       LOG_LEVEL: 'info'
@@ -15,7 +13,7 @@ services:
       TLS_PRIVATE_KEY: ''
       API_PORT: '80'
       API_PREFIX: '/api'
-      ROOR_PASSWORD: ''
+      ROOT_PASSWORD: ''
       DISABLE_CATALOG_CACHING: 'false'
       TOKEN_DURATION_MINUTES: 60
       MODE: api

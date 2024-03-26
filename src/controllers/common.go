@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -13,7 +14,18 @@ func GetFilterHeader(r *http.Request) string {
 }
 
 func GetBaseContext(r *http.Request) *basecontext.BaseContext {
-	return basecontext.NewBaseContextFromRequest(r)
+	ctx := basecontext.NewBaseContextFromRequest(r)
+
+	return ctx
+}
+
+func Recover(ctx basecontext.ApiContext, r *http.Request, w http.ResponseWriter) {
+	if err := recover(); err != nil {
+		ctx.LogErrorf("Recovered from panic: %v", err)
+		ReturnApiError(ctx, w, models.NewFromErrorWithCode(fmt.Errorf("Internal Server Error"), http.StatusInternalServerError))
+
+		fmt.Printf("Recovered from panic: %v", err)
+	}
 }
 
 func ReturnApiError(ctx basecontext.ApiContext, w http.ResponseWriter, err models.ApiErrorResponse) {

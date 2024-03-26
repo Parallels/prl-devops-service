@@ -49,6 +49,7 @@ type CatalogManifestPackItem struct {
 
 type PullCatalogManifestResponse struct {
 	ID          string           `json:"id,omitempty" yaml:"id,omitempty"`
+	MachineID   string           `json:"machine_id,omitempty" yaml:"machine_id,omitempty"`
 	LocalPath   string           `json:"local_path,omitempty" yaml:"local_path,omitempty"`
 	MachineName string           `json:"machine_name,omitempty" yaml:"machine_name,omitempty"`
 	Manifest    *CatalogManifest `json:"manifest,omitempty" yaml:"manifest,omitempty"`

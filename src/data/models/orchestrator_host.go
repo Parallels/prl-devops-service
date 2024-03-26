@@ -9,6 +9,7 @@ import (
 
 type OrchestratorHost struct {
 	ID                        string                          `json:"id"`
+	Enabled                   bool                            `json:"enabled"`
 	Host                      string                          `json:"host"`
 	Architecture              string                          `json:"architecture"`
 	CpuModel                  string                          `json:"cpu_model"`
@@ -37,7 +38,7 @@ func (o OrchestratorHost) GetHost() string {
 	}
 	schema := o.Schema
 	if schema != "" && !strings.HasSuffix(schema, "://") {
-		schema = schema + "://"
+		schema += "://"
 	}
 	url, err := helpers.JoinUrl([]string{schema, o.Host, port, o.PathPrefix})
 	if err != nil {
@@ -61,6 +62,9 @@ func (o *OrchestratorHost) SetHealthy() {
 
 func (o *OrchestratorHost) Diff(source OrchestratorHost) bool {
 	if o.Host != source.Host {
+		return true
+	}
+	if o.Enabled != source.Enabled {
 		return true
 	}
 	if o.Architecture != source.Architecture {

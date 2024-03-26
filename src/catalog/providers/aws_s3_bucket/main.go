@@ -6,9 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/common"
+	"github.com/briandowns/spinner"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -137,6 +139,10 @@ func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 	destinationFilePath := filepath.Join(destination, filename)
 
+	loader := spinner.New(spinner.CharSets[9], 10*time.Second)
+	loader.Prefix = "Downloading file "
+	loader.Start()
+
 	// Create a new session using the default region and credentials.
 	var err error
 	session, err := s.createSession()
@@ -163,6 +169,8 @@ func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 	if err != nil {
 		return err
 	}
+
+	loader.Stop()
 
 	return nil
 }

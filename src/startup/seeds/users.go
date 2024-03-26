@@ -6,6 +6,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	cryptorand "github.com/cjlapao/common-go-cryptorand"
 )
 
 func SeedDefaultUsers() error {
@@ -31,12 +32,17 @@ func SeedDefaultUsers() error {
 		return err
 	}
 
+	defaultPassword, err := cryptorand.GetAlphaNumericRandomString(32)
+	if err != nil {
+		return err
+	}
+
 	if _, err := db.CreateUser(ctx, models.User{
 		ID:       serviceprovider.Get().HardwareId,
 		Name:     "Root",
 		Username: "root",
 		Email:    "root@localhost",
-		Password: serviceprovider.Get().HardwareSecret,
+		Password: defaultPassword,
 		Roles: []models.Role{
 			*suRole,
 		},

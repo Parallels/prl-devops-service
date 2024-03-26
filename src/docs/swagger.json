@@ -2533,6 +2533,64 @@
                 }
             }
         },
+        "/v1/machines/{id}/clone": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint clones a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Clones a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Machine Clone Request",
+                        "name": "configRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineCloneCommandRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineCloneCommandResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/machines/{id}/execute": {
             "put": {
                 "security": [
@@ -6238,6 +6296,28 @@
                     "type": "string"
                 },
                 "vertical-sync": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineCloneCommandRequest": {
+            "type": "object",
+            "properties": {
+                "clone_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineCloneCommandResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }

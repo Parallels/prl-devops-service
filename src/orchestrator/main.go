@@ -180,10 +180,6 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 	return nil
 }
 
-func (s *OrchestratorService) GetResources() error {
-	return nil
-}
-
 func (s *OrchestratorService) SetHealthCheckTimeout(timeout time.Duration) {
 	s.healthCheckTimeout = timeout
 }

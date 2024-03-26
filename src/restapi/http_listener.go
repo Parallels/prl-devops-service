@@ -14,6 +14,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 
 	_ "github.com/Parallels/prl-devops-service/docs"
@@ -249,6 +250,19 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "authorization", "Authorization", "content-type"})
 	originsOk := handlers.AllowedOrigins([]string{"*"})
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"})
+	config := config.Get()
+	configCorsAllowedHeaders := config.GetKey("CORS_ALLOWED_HEADERS")
+	if configCorsAllowedHeaders != "" {
+		headersOk = handlers.AllowedHeaders(strings.Split(configCorsAllowedHeaders, ","))
+	}
+	configCorsAllowedOrigins := config.GetKey("CORS_ALLOWED_ORIGINS")
+	if configCorsAllowedOrigins != "" {
+		originsOk = handlers.AllowedOrigins(strings.Split(configCorsAllowedOrigins, ","))
+	}
+	configCorsAllowedMethods := config.GetKey("CORS_ALLOWED_METHODS")
+	if configCorsAllowedMethods != "" {
+		methodsOk = handlers.AllowedMethods(strings.Split(configCorsAllowedMethods, ","))
+	}
 
 	l.Logger.Notice("Starting %v Go Rest API %v", serviceName, serviceVersion)
 

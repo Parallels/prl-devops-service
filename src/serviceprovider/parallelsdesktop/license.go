@@ -7,6 +7,7 @@ import (
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
+	"github.com/cjlapao/common-go/helper"
 )
 
 func (s *ParallelsService) GetLicense() (*models.ParallelsDesktopLicense, error) {
@@ -63,11 +64,25 @@ func (s *ParallelsService) InstallLicense(licenseKey, username, password string)
 			return err
 		}
 
+		if helper.FileExists("~/parallels_password.txt") {
+			err := helper.DeleteFile("~/parallels_password.txt")
+			if err != nil {
+				return err
+			}
+		}
+
 		return nil
 	} else {
 		_, err := helpers.ExecuteWithNoOutput(installLicenseCmd)
 		if err != nil {
 			return err
+		}
+
+		if helper.FileExists("~/parallels_password.txt") {
+			err := helper.DeleteFile("~/parallels_password.txt")
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil

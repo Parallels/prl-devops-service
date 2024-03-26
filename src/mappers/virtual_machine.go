@@ -58,6 +58,7 @@ func MapDtoVirtualMachineToApi(m data_models.VirtualMachine) models.ParallelsVM 
 	mapped := models.ParallelsVM{
 		HostId:                m.HostId,
 		Host:                  m.Host,
+		HostState:             m.HostState,
 		User:                  m.User,
 		ID:                    m.ID,
 		Name:                  m.Name,

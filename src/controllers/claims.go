@@ -64,6 +64,7 @@ func registerClaimsHandlers(ctx basecontext.ApiContext, version string) {
 func GetClaimsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -106,6 +107,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 func GetClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -143,6 +145,7 @@ func GetClaimHandler() restapi.ControllerHandler {
 func CreateClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.ClaimRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -194,6 +197,7 @@ func CreateClaimHandler() restapi.ControllerHandler {
 func DeleteClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))

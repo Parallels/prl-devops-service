@@ -92,9 +92,9 @@ func (r *VirtualMachineConfigRequestOperation) Validate() error {
 			return errors.ErrConfigOperationNotSupported(r.Group, r.Operation)
 		}
 	case "machine":
-		if r.Value == "" {
-			return errors.ErrValueEmpty()
-		}
+		// if r.Value == "" {
+		// 	return errors.ErrValueEmpty()
+		// }
 		if r.Operation != "rename" &&
 			r.Operation != "clone" &&
 			r.Operation != "archive" &&

@@ -123,3 +123,10 @@ func (m *MockBaseContext) LogWarnf(format string, a ...interface{}) {
 		m.callbackFunctions["LogWarnf"](value)
 	}
 }
+
+func (m *MockBaseContext) LogTracef(format string, a ...interface{}) {
+	if m.callbackFunctions["LogTracef"] != nil {
+		value := fmt.Sprintf(format, a...)
+		m.callbackFunctions["LogTracef"](value)
+	}
+}

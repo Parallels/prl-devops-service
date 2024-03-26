@@ -7,6 +7,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
@@ -160,6 +161,14 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 			WithRequiredClaim(constants.UPDATE_VM_CLAIM).
 			WithHandler(RenameVirtualMachineHandler()).
 			Register()
+
+		restapi.NewController().
+			WithMethod(restapi.PUT).
+			WithVersion(version).
+			WithPath("/machines/{id}/clone").
+			WithRequiredClaim(constants.CREATE_VM_CLAIM).
+			WithHandler(CloneVirtualMachineHandler()).
+			Register()
 	}
 }
 
@@ -177,6 +186,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 func GetVirtualMachinesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
@@ -214,6 +224,7 @@ func GetVirtualMachinesHandler() restapi.ControllerHandler {
 func GetVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
@@ -254,6 +265,7 @@ func GetVirtualMachineHandler() restapi.ControllerHandler {
 func StartVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
@@ -292,6 +304,7 @@ func StartVirtualMachineHandler() restapi.ControllerHandler {
 func StopVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
@@ -330,6 +343,7 @@ func StopVirtualMachineHandler() restapi.ControllerHandler {
 func RestartVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
@@ -367,6 +381,7 @@ func RestartVirtualMachineHandler() restapi.ControllerHandler {
 func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
@@ -404,6 +419,7 @@ func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 func ResumeMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
@@ -441,6 +457,7 @@ func ResumeMachineController() restapi.ControllerHandler {
 func ResetMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
@@ -478,6 +495,7 @@ func ResetMachineController() restapi.ControllerHandler {
 func PauseVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
@@ -516,6 +534,7 @@ func PauseVirtualMachineHandler() restapi.ControllerHandler {
 func DeleteVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
@@ -547,6 +566,7 @@ func DeleteVirtualMachineHandler() restapi.ControllerHandler {
 func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
@@ -585,6 +605,7 @@ func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 func SetVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.VirtualMachineConfigRequest
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
@@ -636,6 +657,79 @@ func SetVirtualMachineHandler() restapi.ControllerHandler {
 	}
 }
 
+// @Summary		Clones a virtual machine
+// @Description	This endpoint clones a virtual machine
+// @Tags			Machines
+// @Produce		json
+// @Param			id				path		string										true	"Machine ID"
+// @Param			configRequest	body		models.VirtualMachineCloneCommandRequest	true	"Machine Clone Request"
+// @Success		200				{object}	models.VirtualMachineCloneCommandResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/clone [put]
+func CloneVirtualMachineHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.VirtualMachineCloneCommandRequest
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		params := mux.Vars(r)
+		id := params["id"]
+		configure := models.VirtualMachineConfigRequest{
+			Operations: []*models.VirtualMachineConfigRequestOperation{
+				{
+					Group:     "machine",
+					Operation: "clone",
+					Options: []*models.VirtualMachineConfigRequestOperationOption{
+						{
+							Flag:  "name",
+							Value: request.CloneName,
+						},
+					},
+				},
+			},
+		}
+
+		if err := svc.ConfigureVm(ctx, id, &configure); err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		result := models.VirtualMachineCloneCommandResponse{}
+
+		vmId, err := svc.GetVm(ctx, request.CloneName)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		result.Id = vmId.ID
+		result.Status = "Success"
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(result)
+		ctx.LogInfof("Machine %v cloned successfully to %v with id %v", id, request.CloneName, result.Id)
+	}
+}
+
 // @Summary		Executes a command on a virtual machine
 // @Description	This endpoint executes a command on a virtual machine
 // @Tags			Machines
@@ -651,6 +745,7 @@ func SetVirtualMachineHandler() restapi.ControllerHandler {
 func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.VirtualMachineExecuteCommandRequest
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
@@ -697,6 +792,7 @@ func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 func RenameVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.RenameVirtualMachineRequest
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
@@ -759,6 +855,7 @@ func RenameVirtualMachineHandler() restapi.ControllerHandler {
 func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.RegisterVirtualMachineRequest
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
@@ -838,6 +935,7 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 func UnregisterVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.UnregisterVirtualMachineRequest
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
@@ -883,6 +981,7 @@ func UnregisterVirtualMachineHandler() restapi.ControllerHandler {
 func CreateVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 
 		var request models.CreateVirtualMachineRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
@@ -960,6 +1059,11 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 
 func createPackerTemplate(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
 	provider := serviceprovider.Get()
+	config := config.Get()
+	if !config.GetBoolKey(constants.ENABLE_VAGRANT_PLUGIN_ENV_VAR) {
+		return nil, errors.NewWithCode("Vagrant plugin is not enabled, please enable it before trying", 400)
+	}
+
 	parallelsDesktopService := provider.ParallelsDesktopService
 
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -1004,6 +1108,10 @@ func createPackerTemplate(ctx basecontext.ApiContext, request models.CreateVirtu
 
 func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
 	provider := serviceprovider.Get()
+	config := config.Get()
+	if !config.GetBoolKey(constants.ENABLE_VAGRANT_PLUGIN_ENV_VAR) {
+		return nil, errors.NewWithCode("Vagrant plugin is not enabled, please enable it before trying", 400)
+	}
 
 	vagrantService := provider.VagrantService
 	parallelsDesktopService := provider.ParallelsDesktopService
@@ -1148,11 +1256,11 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 
 	response = models.CreateVirtualMachineResponse{
 		Name:  resultData.MachineName,
-		ID:    resultData.ID,
+		ID:    resultData.MachineID,
 		Owner: request.Owner,
 	}
 
-	vm, err := parallelsDesktopService.GetVm(ctx, resultData.ID)
+	vm, err := parallelsDesktopService.GetVm(ctx, response.ID)
 	if err != nil {
 		return nil, err
 	}

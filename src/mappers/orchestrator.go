@@ -10,6 +10,7 @@ import (
 func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.OrchestratorHostResponse {
 	result := models.OrchestratorHostResponse{
 		ID:             dto.ID,
+		Enabled:        dto.Enabled,
 		Host:           dto.GetHost(),
 		Architecture:   dto.Architecture,
 		CpuModel:       dto.CpuModel,

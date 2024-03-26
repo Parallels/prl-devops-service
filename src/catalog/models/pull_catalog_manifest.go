@@ -1,11 +1,14 @@
 package models
 
 import (
+	"fmt"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 )
 
@@ -31,9 +34,6 @@ type PullCatalogManifestRequest struct {
 }
 
 func (r *PullCatalogManifestRequest) Validate() error {
-	if r.Path == "" {
-		return ErrPullMissingPath
-	}
 	if r.CatalogId == "" {
 		return ErrPullMissingCatalogId
 	}
@@ -60,17 +60,30 @@ func (r *PullCatalogManifestRequest) Validate() error {
 		r.Owner = cfg.GetKey(constants.CURRENT_USER_ENV_VAR)
 	}
 
+	if r.Path == "" {
+		prl := serviceprovider.Get().ParallelsDesktopService
+		if prl == nil {
+			return errors.New("Local Path is required and we are unable to determine it without Parallels Desktop Service")
+		}
+		userPath, err := prl.GetUserHome(ctx, r.Owner)
+		if err != nil {
+			return fmt.Errorf("unable to determine user %v home for path", r.Owner)
+		}
+		r.Path = userPath
+	}
+
 	return nil
 }
 
 type PullCatalogManifestResponse struct {
 	ID             string                         `json:"id"`
-	CatalogId      string                         `json:"catalog_id"`
-	Version        string                         `json:"version"`
-	Architecture   string                         `json:"architecture"`
-	LocalPath      string                         `json:"local_path"`
-	MachineName    string                         `json:"machine_name"`
-	Manifest       *VirtualMachineCatalogManifest `json:"manifest"`
+	MachineID      string                         `json:"machine_id,omitempty"`
+	CatalogId      string                         `json:"catalog_id,omitempty"`
+	Version        string                         `json:"version,omitempty"`
+	Architecture   string                         `json:"architecture,omitempty"`
+	LocalPath      string                         `json:"local_path,omitempty"`
+	MachineName    string                         `json:"machine_name,omitempty"`
+	Manifest       *VirtualMachineCatalogManifest `json:"manifest,omitempty"`
 	CleanupRequest *cleanupservice.CleanupRequest `json:"-"`
 	Errors         []error                        `json:"-"`
 }

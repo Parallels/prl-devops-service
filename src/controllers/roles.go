@@ -65,6 +65,7 @@ func registerRolesHandlers(ctx basecontext.ApiContext, version string) {
 func GetRolesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -107,6 +108,7 @@ func GetRolesHandler() restapi.ControllerHandler {
 func GetRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -144,6 +146,7 @@ func GetRoleHandler() restapi.ControllerHandler {
 func CreateRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.RoleRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -195,6 +198,7 @@ func CreateRoleHandler() restapi.ControllerHandler {
 func DeleteRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))

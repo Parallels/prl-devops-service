@@ -56,6 +56,11 @@ The root object of the configuration file is the environment object, which conta
 | DISABLE_CATALOG_CACHING | Specifies whether the service should disable the catalog caching | false |
 | USE_ORCHESTRATOR_RESOURCES | Specifies whether the service is running in orchestrator mode, which allows the service to use the resources of the orchestrator | false |
 | ORCHESTRATOR_PULL_FREQUENCY_SECONDS | The frequency in seconds that the orchestrator will sync with the other hosts in seconds | 30 |
+| CORS_ALLOWED_HEADERS | The headers that are allowed in the cors policy | "X-Requested-With, authorization, content-type" |
+| CORS_ALLOWED_ORIGINS | The origins that are allowed in the cors policy | "*" |
+| CORS_ALLOWED_METHODS | The methods that are allowed in the cors policy | "GET, HEAD, POST, PUT, DELETE, OPTIONS" |
+| ENABLE_PACKER_PLUGIN | Specifies whether the service should enable the packer plugin | false |
+| ENABLE_VAGRANT_PLUGIN | Specifies whether the service should enable the vagrant plugin | false |
 
 ### Json Web Tokens
 

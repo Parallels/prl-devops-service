@@ -42,6 +42,38 @@ func (j *JsonDatabase) GetOrchestratorHosts(ctx basecontext.ApiContext, filter s
 	return orderedResult, nil
 }
 
+func (j *JsonDatabase) GetActiveOrchestratorHosts(ctx basecontext.ApiContext, filter string) ([]models.OrchestratorHost, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	var activeHosts []models.OrchestratorHost
+	for _, host := range j.data.OrchestratorHosts {
+		if host.Enabled {
+			activeHosts = append(activeHosts, host)
+		}
+	}
+
+	dbFilter, err := ParseFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	filteredData, err := FilterByProperty(activeHosts, dbFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	result := GetAuthorizedRecords(ctx, filteredData...)
+
+	orderedResult, err := OrderByProperty(result, &Order{Property: "UpdatedAt", Direction: OrderDirectionDesc})
+	if err != nil {
+		return nil, err
+	}
+
+	return orderedResult, nil
+}
+
 func (j *JsonDatabase) GetOrchestratorHost(ctx basecontext.ApiContext, idOrHost string) (*models.OrchestratorHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -76,6 +108,7 @@ func (j *JsonDatabase) CreateOrchestratorHost(ctx basecontext.ApiContext, host m
 	host.ID = helpers.GenerateId()
 	host.CreatedAt = helpers.GetUtcCurrentDateTime()
 	host.UpdatedAt = helpers.GetUtcCurrentDateTime()
+	host.Enabled = true
 
 	if u, _ := j.GetOrchestratorHost(ctx, host.Host); u != nil {
 		return nil, errors.NewWithCodef(400, "host %s already exists with ID %s", host.Host, host.ID)
@@ -112,6 +145,34 @@ func (j *JsonDatabase) DeleteOrchestratorHost(ctx basecontext.ApiContext, idOrHo
 	return ErrOrchestratorHostNotFound
 }
 
+func (j *JsonDatabase) DeleteOrchestratorVirtualMachine(ctx basecontext.ApiContext, idOrHost string, vmIdOrName string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	if idOrHost == "" {
+		return ErrOrchestratorHostEmptyIdOrHost
+	}
+
+	for _, host := range j.data.OrchestratorHosts {
+		if strings.EqualFold(host.ID, idOrHost) || strings.EqualFold(host.Host, idOrHost) {
+			for j, vm := range host.VirtualMachines {
+				if strings.EqualFold(vm.ID, vmIdOrName) || strings.EqualFold(vm.Name, vmIdOrName) {
+					host.VirtualMachines = append(host.VirtualMachines[:j], host.VirtualMachines[j+1:]...)
+				}
+			}
+
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
+
+			return nil
+		}
+	}
+
+	return ErrOrchestratorHostNotFound
+}
+
 func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *models.OrchestratorHost) (*models.OrchestratorHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -128,7 +189,7 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 				return nil, err
 			}
 			if host.Diff(j.data.OrchestratorHosts[index]) {
-
+				j.data.OrchestratorHosts[index].Enabled = host.Enabled
 				j.data.OrchestratorHosts[index].UpdatedAt = helpers.GetUtcCurrentDateTime()
 				j.data.OrchestratorHosts[index].Host = host.Host
 				j.data.OrchestratorHosts[index].Architecture = host.Architecture
@@ -167,7 +228,7 @@ func (j *JsonDatabase) GetOrchestratorAvailableResources(ctx basecontext.ApiCont
 	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
-		if host.State == "healthy" {
+		if host.State == "healthy" && host.Enabled {
 			if host.Resources != nil {
 				if _, ok := result[host.Resources.CpuType]; !ok {
 					result[host.Resources.CpuType] = models.HostResourceItem{}
@@ -189,7 +250,7 @@ func (j *JsonDatabase) GetOrchestratorTotalResources(ctx basecontext.ApiContext)
 	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
-		if host.State == "healthy" {
+		if host.State == "healthy" && host.Enabled {
 			if host.Resources != nil {
 				if _, ok := result[host.Resources.CpuType]; !ok {
 					result[host.Resources.CpuType] = models.HostResourceItem{}
@@ -211,7 +272,7 @@ func (j *JsonDatabase) GetOrchestratorInUseResources(ctx basecontext.ApiContext)
 	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
-		if host.State == "healthy" {
+		if host.State == "healthy" && host.Enabled {
 			if host.Resources != nil {
 				if _, ok := result[host.Resources.CpuType]; !ok {
 					result[host.Resources.CpuType] = models.HostResourceItem{}
@@ -233,7 +294,7 @@ func (j *JsonDatabase) GetOrchestratorReservedResources(ctx basecontext.ApiConte
 	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
-		if host.State == "healthy" {
+		if host.State == "healthy" && host.Enabled {
 			if host.Resources != nil {
 				if _, ok := result[host.Resources.CpuType]; !ok {
 					result[host.Resources.CpuType] = models.HostResourceItem{}

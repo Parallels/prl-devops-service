@@ -5,6 +5,7 @@ import "encoding/json"
 type VirtualMachine struct {
 	ID                    string                             `json:"ID,omitempty"`
 	HostId                string                             `json:"host_id,omitempty"`
+	HostState             string                             `json:"host_state,omitempty"`
 	User                  string                             `json:"user,omitempty"`
 	Host                  string                             `json:"host,omitempty"`
 	Name                  string                             `json:"name,omitempty"`

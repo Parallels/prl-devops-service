@@ -44,6 +44,7 @@ func registerAuthorizationHandlers(ctx basecontext.ApiContext, version string) {
 func GetTokenHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 
 		var request models.LoginRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
@@ -159,6 +160,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 func ValidateTokenHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 
 		var request models.ValidateTokenRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {

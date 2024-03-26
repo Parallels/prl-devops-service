@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -17,6 +18,12 @@ import (
 )
 
 func registerPackerTemplatesHandlers(ctx basecontext.ApiContext, version string) {
+	config := config.Get()
+
+	if !config.GetBoolKey(constants.ENABLE_PACKER_PLUGIN_ENV_VAR) {
+		ctx.LogInfof("Packer plugin is disabled, skipping packer template handlers registration")
+	}
+
 	ctx.LogInfof("Registering version %s packer template handlers", version)
 
 	restapi.NewController().
@@ -73,6 +80,7 @@ func registerPackerTemplatesHandlers(ctx basecontext.ApiContext, version string)
 func GetPackerTemplatesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -113,6 +121,7 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 func GetPackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -157,6 +166,7 @@ func GetPackerTemplateHandler() restapi.ControllerHandler {
 func CreatePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.CreatePackerTemplateRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -206,6 +216,7 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		var request models.CreatePackerTemplateRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -258,6 +269,7 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 func DeletePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))

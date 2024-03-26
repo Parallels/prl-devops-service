@@ -146,6 +146,15 @@ func (m *CatalogManifestProvider) Parse(connection string) error {
 			}
 		}
 
+		var schema string
+		if strings.HasPrefix(m.Host, "http://") || strings.HasPrefix(m.Host, "https://") {
+			schemaParts := strings.Split(m.Host, "://")
+			if len(schemaParts) == 2 {
+				schema = schemaParts[0]
+				m.Host = schemaParts[1]
+			}
+		}
+
 		if strings.ContainsAny(m.Host, "@") {
 			parts := strings.Split(m.Host, "@")
 			if len(parts) == 2 {
@@ -174,6 +183,9 @@ func (m *CatalogManifestProvider) Parse(connection string) error {
 			} else {
 				m.Host = parts[1]
 			}
+		}
+		if schema != "" {
+			m.Host = schema + "://" + m.Host
 		}
 	}
 

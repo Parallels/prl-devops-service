@@ -35,6 +35,7 @@ type ParallelsService struct {
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
+	Users            []*models.ParallelsDesktopUser
 	isLicensed       bool
 	installed        bool
 	dependencies     []interfaces.Service
@@ -660,6 +661,61 @@ func (s *ParallelsService) GetInfo() (*models.ParallelsDesktopInfo, error) {
 	}
 
 	return s.Info, nil
+}
+
+func (s *ParallelsService) GetUsers(ctx basecontext.ApiContext) ([]*models.ParallelsDesktopUser, error) {
+	if s.Users != nil {
+		return s.Users, nil
+	}
+
+	stdout, err := helpers.ExecuteWithNoOutput(helpers.Command{
+		Command: s.serverExecutable,
+		Args:    []string{"user", "list", "--json"},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var users []*models.ParallelsDesktopUser
+	err = json.Unmarshal([]byte(stdout), &users)
+	if err != nil {
+		return nil, err
+	}
+
+	s.Users = users
+
+	return s.Users, nil
+}
+
+func (s *ParallelsService) GetUser(ctx basecontext.ApiContext, user string) (*models.ParallelsDesktopUser, error) {
+	if s.Users != nil || len(s.Users) == 0 {
+		s.GetUsers(ctx)
+	}
+
+	for _, u := range s.Users {
+		currentName := strings.Split(u.Name, "@")
+		if strings.EqualFold(currentName[0], user) {
+			return u, nil
+		}
+	}
+
+	return nil, errors.Newf("User %s not found", user)
+}
+
+func (s *ParallelsService) GetUserHome(ctx basecontext.ApiContext, user string) (string, error) {
+	if s.Users != nil || len(s.Users) == 0 {
+		_, err := s.GetUsers(ctx)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	parallelsUser, err := s.GetUser(ctx, user)
+	if err != nil {
+		return "", err
+	}
+
+	return parallelsUser.DefVMHome, nil
 }
 
 func (s *ParallelsService) ConfigureVm(ctx basecontext.ApiContext, id string, setOperations *models.VirtualMachineConfigRequest) error {

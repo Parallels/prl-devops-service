@@ -20,8 +20,12 @@ var (
 )
 
 var memoryDatabase *JsonDatabase
+var wg = &sync.WaitGroup{}
+var totalSaveRequests = 0
+var mutexLock sync.Mutex
 
 type Data struct {
+	Schema            models.DatabaseSchema     `json:"schema"`
 	Users             []models.User             `json:"users"`
 	Claims            []models.Claim            `json:"claims"`
 	Roles             []models.Role             `json:"roles"`
@@ -54,8 +58,8 @@ func NewJsonDatabase(filename string) *JsonDatabase {
 		data:        Data{},
 	}
 
+	wg = &sync.WaitGroup{}
 	rootContext := basecontext.NewRootBaseContext()
-	go memoryDatabase.ProcessSaveQueue(rootContext)
 	_ = memoryDatabase.Load(rootContext)
 
 	return memoryDatabase
@@ -186,35 +190,78 @@ type saveRequest struct {
 }
 
 func (j *JsonDatabase) Save(ctx basecontext.ApiContext) error {
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
+	totalSaveRequests++
 
 	ctx.LogDebugf("[Database] Enqueuing save request")
-	saveRequest := saveRequest{
-		ctx: ctx,
-		wg:  wg,
-	}
 
-	j.saveQueue = append(j.saveQueue, saveRequest)
+	defer func() {
+		if r := recover(); r != nil {
+			ctx.LogErrorf("[Database] Panic occurred during save: %v", r)
+		}
+	}()
 
-	j.saveProcess <- true
+	wg.Add(1)
+	go j.ProcessSaveQueue1(ctx)
 	wg.Wait()
+	ctx.LogDebugf("[Database] Save request completed")
 	return nil
 }
 
-func (j *JsonDatabase) ProcessSaveQueue(ctx basecontext.ApiContext) {
-	for {
-		<-j.saveProcess
-		for len(j.saveQueue) > 0 {
-			request := j.saveQueue[0]
-			j.saveQueue = j.saveQueue[1:]
-			if err := j.processSave(ctx); err != nil {
-				ctx.LogErrorf("[Database] Error saving database: %v", err)
-			}
-			request.wg.Done()
-		}
+func (j *JsonDatabase) ProcessSaveQueue1(ctx basecontext.ApiContext) {
+	defer wg.Done()
+	ctx.LogDebugf("[Database] Received for save request")
+	mutexLock.Lock()
+	if err := j.processSave(ctx); err != nil {
+		ctx.LogErrorf("[Database] Error saving database: %v", err)
 	}
+	mutexLock.Unlock()
 }
+
+// func (j *JsonDatabase) ProcessSaveQueue(ctx basecontext.ApiContext) {
+// 	defer func() {
+// 		if r := recover(); r != nil {
+// 			ctx.LogErrorf("[Database] Panic occurred during save: %v", r)
+// 			ctx.LogDebugf("[Database] Saved %v requests", totalSaveRequests)
+// 			ctx.LogDebugf("[Database] SyncGroup count %v requests", syncGroupCount)
+// 		}
+// 	}()
+
+// 	for {
+// 		ctx.LogDebugf("[Database] Waiting for save request")
+// 		<-j.saveProcess
+// 		ctx.LogDebugf("[Database] Received for save request")
+// 	innerLoop:
+// 		for {
+// 			if len(j.saveQueue) == 0 {
+// 				ctx.LogDebugf("[Database] No save requests in queue")
+// 				break innerLoop
+// 			}
+// 			j.saveQueue = j.saveQueue[1:]
+// 			mutexLock.Lock()
+// 			if err := j.processSave(ctx); err != nil {
+// 				ctx.LogErrorf("[Database] Error saving database: %v", err)
+// 				syncGroupCount--
+// 				if syncGroupCount < 0 {
+// 					fmt.Printf("here it is")
+// 				}
+// 				wg.Done()
+// 				break innerLoop
+// 			}
+// 			mutexLock.Unlock()
+
+// 			syncGroupCount--
+// 			ctx.LogDebugf("[Database] SyncGroup count %v requests", syncGroupCount)
+// 			if syncGroupCount < 0 {
+// 				fmt.Printf("here it is")
+// 				break innerLoop
+// 			}
+
+// 			mutexLock.Lock()
+// 			wg.Done()
+// 			mutexLock.Unlock()
+// 		}
+// 	}
+// }
 
 func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 	j.saveMutex.Lock()
@@ -224,6 +271,7 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 	backupFilename := j.filename + ".save.bak"
 	err := helper.CopyFile(j.filename, backupFilename)
 	if err != nil {
+		j.saveMutex.Unlock()
 		ctx.LogErrorf("[Database] Error creating backup file: %v", err)
 		return err
 	}
@@ -237,7 +285,10 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 
 	// Trying to open the file and waiting for it to be ready
 	var file *os.File
+	openCount := 0
 	for {
+		openCount++
+		ctx.LogDebugf("[Database] Trying to open file %s, attempt %v", j.filename, openCount)
 		var fileOpenError error
 		file, fileOpenError = os.OpenFile(j.filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 		if fileOpenError == nil {
@@ -247,18 +298,23 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 
 	defer file.Close()
 
+	ctx.LogDebugf("[Database] File %s opened successfully", j.filename)
 	jsonString, err := json.MarshalIndent(j.data, "", "  ")
 	if err != nil {
+		ctx.LogDebugf("[Database] Error marshalling data: %v", err)
 		j.isSaving = false
 		j.saveMutex.Unlock()
 		return errors.NewFromError(err)
 	}
 
+	ctx.LogDebugf("[Database] Data marshalled successfully")
 	if cfg.EncryptionPrivateKey() != "" {
 		encJsonString, err := security.EncryptString(cfg.EncryptionPrivateKey(), string(jsonString))
 		if err != nil {
+			ctx.LogDebugf("[Database] Error encrypting data: %v", err)
 			_, saveErr := file.Write(jsonString)
 			if saveErr != nil {
+				ctx.LogDebugf("[Database] Error writing data: %v", saveErr)
 				j.isSaving = false
 				j.saveMutex.Unlock()
 				return errors.NewFromError(saveErr)
@@ -272,19 +328,23 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 		jsonString = encJsonString
 	}
 
+	ctx.LogDebugf("[Database] Writing data to file")
 	_, err = file.Write(jsonString)
 	if err != nil {
+		ctx.LogDebugf("[Database] Error writing data: %v", err)
 		j.isSaving = false
 		j.saveMutex.Unlock()
 		return err
 	}
 
 	if err := file.Close(); err != nil {
+		ctx.LogDebugf("[Database] Error closing file: %v", err)
 		j.isSaving = false
 		j.saveMutex.Unlock()
 		return err
 	}
 
+	ctx.LogDebugf("[Database] File %s saved successfully", j.filename)
 	j.isSaving = false
 	j.saveMutex.Unlock()
 	return nil

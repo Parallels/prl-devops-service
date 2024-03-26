@@ -5,6 +5,7 @@ type ParallelsVMs []ParallelsVM
 type ParallelsVM struct {
 	Host                  string                 `json:"host,omitempty"`
 	HostId                string                 `json:"host_id,omitempty"`
+	HostState             string                 `json:"host_state,omitempty"`
 	User                  string                 `json:"user"`
 	ID                    string                 `json:"ID"`
 	Name                  string                 `json:"Name"`

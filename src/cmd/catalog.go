@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
@@ -10,6 +11,7 @@ import (
 	"github.com/Parallels/prl-devops-service/pdfile/diagnostics"
 	"github.com/Parallels/prl-devops-service/pdfile/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
+	"github.com/briandowns/spinner"
 	"github.com/cjlapao/common-go/helper"
 )
 
@@ -41,10 +43,10 @@ func processCatalog(ctx basecontext.ApiContext, operation string, filePath strin
 	case "list":
 		processCatalogListCmd(ctx, filePath)
 	case "push":
-		fmt.Println("Starting push...")
+		fmt.Println("Starting push, this can take a while...")
 		processCatalogPushCmd(ctx, filePath)
 	case "pull":
-		fmt.Println("Starting pull...")
+		fmt.Println("Starting pull, this can take a while...")
 		processCatalogPullCmd(ctx, filePath)
 	case "delete":
 		fmt.Println("Not implemented yet")
@@ -208,13 +210,22 @@ func processCatalogListCmd(ctx basecontext.ApiContext, filepath string) {
 func processCatalogPushCmd(ctx basecontext.ApiContext, filePath string) {
 	svc := catalogInitPdFile(ctx, "push", filePath)
 
+	s := spinner.New(spinner.CharSets[9], 500*time.Millisecond)
+	s.Start()
+	time.Sleep(4 * time.Second)
+
 	out, diags := svc.Run(ctx)
+
+	s.Stop()
 	if diags.HasErrors() {
 		for _, err := range diags.Errors() {
 			fmt.Println(err)
 		}
 		os.Exit(1)
 	}
+
+	// Stop the progress bar by printing a new line
+	fmt.Println()
 
 	ctx.LogInfof("%v", out)
 }

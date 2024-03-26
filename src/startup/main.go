@@ -14,7 +14,9 @@ import (
 	"github.com/Parallels/prl-devops-service/security/password"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
+	"github.com/Parallels/prl-devops-service/startup/migrations"
 	"github.com/Parallels/prl-devops-service/telemetry"
+	cryptorand "github.com/cjlapao/common-go-cryptorand"
 )
 
 const (
@@ -32,6 +34,8 @@ func Init(ctx basecontext.ApiContext) {
 
 func Start(ctx basecontext.ApiContext) {
 	cfg := config.Get()
+	schemaMigrations := make([]migrations.Migration, 0)
+	schemaMigrations = append(schemaMigrations, migrations.Version0_6_0{})
 
 	system := system.SystemService{}
 	if system.GetOperatingSystem() != "macos" {
@@ -50,6 +54,12 @@ func Start(ctx basecontext.ApiContext) {
 		panic(err)
 	}
 
+	for _, migration := range schemaMigrations {
+		if err := migration.Apply(); err != nil {
+			ctx.LogErrorf("Error applying migration: %v", err)
+		}
+	}
+
 	if cfg.IsOrchestrator() {
 		ctx := basecontext.NewRootBaseContext()
 		ctx.LogInfof("Starting Orchestrator Background Service")
@@ -60,12 +70,16 @@ func Start(ctx basecontext.ApiContext) {
 				createdKey := false
 				localhost, _ := dbService.GetOrchestratorHost(ctx, hostName)
 				apiKey, err := dbService.GetApiKey(ctx, ORCHESTRATOR_KEY_NAME)
-				secret := serviceprovider.Get().HardwareSecret
 				if err != nil {
 					if errors.GetSystemErrorCode(err) != 404 {
 						ctx.LogErrorf("Error getting orchestrator key: %v", err)
 						panic(err)
 					}
+				}
+				secret, err := cryptorand.GetAlphaNumericRandomString(64)
+				if err != nil {
+					ctx.LogErrorf("Error generating secret: %v", err)
+					panic(err)
 				}
 
 				if apiKey == nil {
@@ -99,7 +113,12 @@ func Start(ctx basecontext.ApiContext) {
 					})
 				} else {
 					if createdKey {
-						secret := serviceprovider.Get().HardwareSecret
+						secret, err := cryptorand.GetAlphaNumericRandomString(64)
+						if err != nil {
+							ctx.LogErrorf("Error generating secret: %v", err)
+							panic(err)
+						}
+
 						localhost.Authentication = &models.OrchestratorHostAuthentication{
 							ApiKey: base64.StdEncoding.EncodeToString([]byte(ORCHESTRATOR_KEY_NAME + ":" + secret)),
 						}

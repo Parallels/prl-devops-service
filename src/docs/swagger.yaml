@@ -1232,6 +1232,20 @@ definitions:
       vertical-sync:
         type: string
     type: object
+  models.VirtualMachineCloneCommandRequest:
+    properties:
+      clone_name:
+        type: string
+    type: object
+  models.VirtualMachineCloneCommandResponse:
+    properties:
+      error:
+        type: string
+      id:
+        type: string
+      status:
+        type: string
+    type: object
   models.VirtualMachineConfigRequest:
     properties:
       operations:
@@ -2848,6 +2862,42 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Gets a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/clone:
+    put:
+      description: This endpoint clones a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Machine Clone Request
+        in: body
+        name: configRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.VirtualMachineCloneCommandRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineCloneCommandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Clones a virtual machine
       tags:
       - Machines
   /v1/machines/{id}/execute:

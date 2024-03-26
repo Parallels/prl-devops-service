@@ -103,15 +103,17 @@ func (j *JsonDatabase) UpdateKey(ctx basecontext.ApiContext, key models.ApiKey) 
 	}
 
 	for i, apiKey := range j.data.ApiKeys {
-		if apiKey.ID == key.ID {
-			j.data.ApiKeys[i].Revoked = key.Revoked
-			j.data.ApiKeys[i].RevokedAt = key.RevokedAt
-			j.data.ApiKeys[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
-			if err := j.Save(ctx); err != nil {
-				return err
-			}
-			return nil
+		if apiKey.ID != key.ID {
+			continue
 		}
+
+		j.data.ApiKeys[i].Revoked = key.Revoked
+		j.data.ApiKeys[i].RevokedAt = key.RevokedAt
+		j.data.ApiKeys[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
+		if err := j.Save(ctx); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return ErrApiKeyNotFound

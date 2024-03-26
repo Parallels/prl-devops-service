@@ -173,3 +173,17 @@ func (c *BaseContext) LogWarnf(format string, a ...interface{}) {
 	msg += format
 	common.Logger.Warn(msg, a...)
 }
+
+func (c *BaseContext) LogTracef(format string, a ...interface{}) {
+	// log is disabled, returning
+	if !c.shouldLog {
+		return
+	}
+
+	msg := ""
+	if c.GetRequestId() != "" {
+		msg = "[" + c.GetRequestId() + "] "
+	}
+	msg += format
+	common.Logger.Trace(msg, a...)
+}

@@ -5,6 +5,10 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider/apiclient"
 )
 
+const (
+	HealthyState = "healthy"
+)
+
 func (s *OrchestratorService) getApiClient(request models.OrchestratorHost) *apiclient.HttpClientService {
 	apiClient := apiclient.NewHttpClient(s.ctx)
 	if request.Authentication != nil {
