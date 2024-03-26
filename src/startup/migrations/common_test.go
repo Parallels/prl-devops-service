@@ -113,37 +113,37 @@ func TestCompareVersion(t *testing.T) {
 		{
 			version:       "a.b.c",
 			targetVersion: "c.d.e",
-			expected:      VersionEqualToTarget,
+			expected:      VersionLowerThanTarget,
 			expectedErr:   errors.New("invalid version format"),
 		},
 		{
 			version:       "0.b.c",
 			targetVersion: "a.d.e",
-			expected:      VersionEqualToTarget,
+			expected:      VersionLowerThanTarget,
 			expectedErr:   errors.New("invalid version format"),
 		},
 		{
 			version:       "0.b.c",
 			targetVersion: "0.d.e",
-			expected:      VersionEqualToTarget,
+			expected:      VersionLowerThanTarget,
 			expectedErr:   errors.New("invalid version format"),
 		},
 		{
 			version:       "0.0.c",
 			targetVersion: "0.d.e",
-			expected:      VersionEqualToTarget,
+			expected:      VersionLowerThanTarget,
 			expectedErr:   errors.New("invalid version format"),
 		},
 		{
 			version:       "0.0.c",
 			targetVersion: "0.0.e",
-			expected:      VersionEqualToTarget,
+			expected:      VersionLowerThanTarget,
 			expectedErr:   errors.New("invalid version format"),
 		},
 		{
 			version:       "0.0.0",
 			targetVersion: "0.0.e",
-			expected:      VersionEqualToTarget,
+			expected:      VersionLowerThanTarget,
 			expectedErr:   errors.New("invalid version format"),
 		},
 	}
