@@ -8,12 +8,12 @@ items:
   content: |-
       <div class="mt-2 flex flex-column">
         <span>
-          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v{{ page.version }}/prldevops--darwin-arm64.tar.gz" class="button is-primary">
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-arm64.tar.gz" class="button is-primary">
             Parallels Desktop DevOps Service for Mac with Apple Silicon
           </a>
         </span>
         <span>
-          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v{{ page.version }}/prldevops--darwin-amd64.tar.gz" class="button is-primary">
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-amd64.tar.gz" class="button is-primary">
             Parallels Desktop DevOps Service for Mac with Intel chip
           </a>
         </span>
@@ -34,12 +34,12 @@ items:
       </div>
       <div class="flex flex-column">
         <span>
-          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v{{ page.version }}/prldevops--linux-amd64.tar.gz" class="button is-primary">
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--linux-amd64.tar.gz" class="button is-primary">
             Parallels Desktop DevOps Service for intel chips
           </a>
         </span>
         <span>
-          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v{{ page.version }}/prldevops--darwin-amd64.tar.gz" class="button is-primary">
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-amd64.tar.gz" class="button is-primary">
             Parallels Desktop DevOps Service for Mac with Intel chip
           </a>
         </span>

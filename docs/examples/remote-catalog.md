@@ -66,8 +66,8 @@ To install the required tools, such as **Parallels Desktop for Mac**, we'll be u
 After downloading the binary, copy it to a directory in your path, such as /usr/local/bin, and make it executable.
 
 ```bash
-sudo mv prl-devops-service /usr/local/bin
-sudo chmod +x /usr/local/bin/prl-devops-service
+sudo mv prldevops /usr/local/bin
+sudo chmod +x /usr/local/bin/prldevops
 ```
 
 You now have the necessary access to execute the `prldevops` command directly from your terminal.
@@ -265,7 +265,7 @@ This command will start the service, and the REST API can then be accessed at `h
 ## Pushing the Golden Master Image to the Remote Catalog
 
 We now have our` DevOps Remote Catalog` service up and running, which means we can proceed to push the Golden Master image to the service. But before we start, we need to take care of a few requirements. 
-The `DevOps Remote Catalog` works by storing only the metadata of the Golden Master image. This implies that the actual image will be stored in a remote location. In this example, we will be using an **S3 bucket** to store the image. However, you can use any other compatible storage service like **Azure Blob Storage** or **jfrog artifactory**. Most of these providers offer a free tier that you can use to test this feature. For more information about the architecture, you can refer to this link [here]({{ site.url }}{{ site.baseurl }}/docs/catalog/architecture/).
+The `DevOps Remote Catalog` works by storing only the metadata of the Golden Master image. This implies that the actual image will be stored in a remote location. In this example, we will be using an **S3 bucket** to store the image. However, you can use any other compatible storage service like **Azure Blob Storage** or **jfrog artifactory**. Most of these providers offer a free tier that you can use to test this feature. For more information about the architecture, you can refer to this link [here]({{ site.url }}{{ site.baseurl }}/docs/catalog/overview/#architecture).
 
 ### Creating the PDFile
 
