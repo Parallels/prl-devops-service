@@ -90,7 +90,7 @@
                         {% assign page = site.pages | where: "path", tabFile | first %}
                         {{ page.content }}
                     {% else %}
-                        {{ content }}
+                        {{ content | replace: '##page.version', site.version }}
                     {% endif %}
                 </div>
             </div>

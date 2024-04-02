@@ -15,7 +15,7 @@ You can get the latest version by downloading the pre compiled binaries from bel
 
 To download the latest version of the Parallels Desktop DevOps Service, simply select the platform you are running and click the button to download the binary.
 
-{% include inner-tabs.html content="download_tabs" %}
+{% include inner-tabs.html data="download_tabs" %}
 
 ### Build from source
 
