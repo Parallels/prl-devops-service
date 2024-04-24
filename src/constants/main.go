@@ -78,6 +78,11 @@ const (
 	CATALOG_PUSH_COMMAND          = "push"
 	CATALOG_PULL_COMMAND          = "pull"
 	UPDATE_ROOT_PASSWORD_COMMAND  = "update-root-pass"
+	DELETE_COMMAND                = "delete"
+	START_COMMAND                 = "start"
+	STOP_COMMAND                  = "stop"
+	EXEC_COMMAND                  = "exec"
+	CLONE_COMMAND                 = "clone"
 
 	TEST_FLAG                       = "test"
 	TEST_CATALOG_PROVIDERS_FLAG     = "catalog-providers"

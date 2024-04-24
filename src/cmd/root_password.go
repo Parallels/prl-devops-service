@@ -14,6 +14,7 @@ func processRootPassword(ctx basecontext.ApiContext) {
 	ctx.LogInfof("Updating root password")
 	rootPassword := helper.GetFlagValue(constants.PASSWORD_FLAG, "")
 	if rootPassword != "" {
+		serviceprovider.InitServices(ctx)
 		db := serviceprovider.Get().JsonDatabase
 		ctx.LogInfof("Database connection found, updating password")
 		_ = db.Connect(ctx)

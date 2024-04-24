@@ -392,6 +392,29 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 	return nil
 }
 
+func (s *ParallelsService) CloneVm(ctx basecontext.ApiContext, id string, cloneName string) error {
+	configure := models.VirtualMachineConfigRequest{
+		Operations: []*models.VirtualMachineConfigRequestOperation{
+			{
+				Group:     "machine",
+				Operation: "clone",
+				Options: []*models.VirtualMachineConfigRequestOperationOption{
+					{
+						Flag:  "name",
+						Value: cloneName,
+					},
+				},
+			},
+		},
+	}
+
+	if err := s.ConfigureVm(ctx, id, &configure); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *ParallelsService) StartVm(ctx basecontext.ApiContext, id string) error {
 	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateStart)
 }
@@ -736,7 +759,6 @@ func (s *ParallelsService) ConfigureVm(ctx basecontext.ApiContext, id string, se
 				op.Error = err
 			}
 		case "machine":
-			ctx.LogInfof("Setting machine property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmMachineOperation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
@@ -1056,7 +1078,7 @@ func (s *ParallelsService) SetVmMachineOperation(ctx basecontext.ApiContext, vm 
 		return errors.ErrConfigInvalidOperation(op.Operation)
 	}
 
-	ctx.LogInfof(cmd.String())
+	ctx.LogDebugf(cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err

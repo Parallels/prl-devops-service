@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/prl-devops-service/pdfile"
 	"github.com/Parallels/prl-devops-service/pdfile/diagnostics"
 	"github.com/Parallels/prl-devops-service/pdfile/models"
+	"github.com/Parallels/prl-devops-service/serviceprovider/parallelsdesktop"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/briandowns/spinner"
 	"github.com/cjlapao/common-go/helper"
@@ -90,6 +91,18 @@ func catalogInitPdFile(ctx basecontext.ApiContext, cmd string, filepath string) 
 	} else {
 		pdFile = models.NewPdFile()
 		catalogGetFlags(pdFile)
+	}
+	if pdFile.Destination == "" {
+		pdService := parallelsdesktop.New(ctx)
+		if pdService != nil {
+			info, err := pdService.GetInfo()
+			if err != nil {
+				ctx.LogErrorf("Error getting info from parallels desktop: %v", err)
+			}
+			if err == nil && info != nil {
+				pdFile.Destination = info.VMHome
+			}
+		}
 	}
 
 	if cmd != "" {
@@ -231,7 +244,6 @@ func processCatalogPushCmd(ctx basecontext.ApiContext, filePath string) {
 }
 
 func processCatalogPullCmd(ctx basecontext.ApiContext, filePath string) {
-	fmt.Println("path: " + filePath)
 	svc := catalogInitPdFile(ctx, "pull", filePath)
 
 	out, diags := svc.Run(ctx)

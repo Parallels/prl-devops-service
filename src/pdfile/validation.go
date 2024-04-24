@@ -73,6 +73,10 @@ func (p *PDFileService) Validate() *diagnostics.PDFileDiagnostics {
 			continue
 		case "DESCRIPTION":
 			continue
+		case "EXECUTE":
+			continue
+		case "CLONE":
+			continue
 		case "PROVIDER":
 			namePart := ""
 			hasProvider = true
