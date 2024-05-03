@@ -68,12 +68,7 @@ func (s *OrchestratorService) GetVirtualMachine(ctx basecontext.ApiContext, idOr
 			return nil, err
 		}
 
-		for _, vm := range vms {
-			if strings.EqualFold(vm.ID, idOrName) || strings.EqualFold(vm.Name, idOrName) {
-				resultVm = &vm
-				break
-			}
-		}
+		resultVm = findVmById(vms, idOrName)
 
 		if resultVm != nil || retryCount >= 10 {
 			break
@@ -98,4 +93,13 @@ func (s *OrchestratorService) GetVirtualMachine(ctx basecontext.ApiContext, idOr
 	}
 
 	return resultVm, nil
+}
+
+func findVmById(vms []models.VirtualMachine, idOrName string) *models.VirtualMachine {
+	for _, vm := range vms {
+		if strings.EqualFold(vm.ID, idOrName) || strings.EqualFold(vm.Name, idOrName) {
+			return &vm
+		}
+	}
+	return nil
 }
