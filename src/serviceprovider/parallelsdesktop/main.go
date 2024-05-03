@@ -20,6 +20,7 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider/packer"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
+	"github.com/google/uuid"
 
 	"github.com/cjlapao/common-go/commands"
 	"github.com/cjlapao/common-go/helper"
@@ -392,6 +393,29 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 	return nil
 }
 
+func (s *ParallelsService) CloneVm(ctx basecontext.ApiContext, id string, cloneName string) error {
+	configure := models.VirtualMachineConfigRequest{
+		Operations: []*models.VirtualMachineConfigRequestOperation{
+			{
+				Group:     "machine",
+				Operation: "clone",
+				Options: []*models.VirtualMachineConfigRequestOperationOption{
+					{
+						Flag:  "name",
+						Value: cloneName,
+					},
+				},
+			},
+		},
+	}
+
+	if err := s.ConfigureVm(ctx, id, &configure); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *ParallelsService) StartVm(ctx basecontext.ApiContext, id string) error {
 	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateStart)
 }
@@ -442,26 +466,31 @@ func (s *ParallelsService) DeleteVm(ctx basecontext.ApiContext, id string) error
 	return nil
 }
 
-func (s *ParallelsService) VmStatus(ctx basecontext.ApiContext, id string) (string, error) {
+func (s *ParallelsService) VmStatus(ctx basecontext.ApiContext, id string) (*models.VirtualMachineStatus, error) {
 	vm, err := s.findVm(ctx, id)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if vm == nil {
-		return "", errors.New("VM not found")
+		return nil, errors.New("VM not found")
 	}
 
-	output, err := commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "status", id)
+	output, err := commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "list", id, "-a", "-f", "--json")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	statusParts := strings.Split(output, " ")
-	if len(statusParts) != 4 {
-		return "", errors.New("Invalid status output")
+	var status []models.VirtualMachineStatus
+	err = json.Unmarshal([]byte(output), &status)
+	if err != nil {
+		return nil, err
 	}
 
-	return strings.ReplaceAll(statusParts[3], "\n", ""), nil
+	if len(status) == 1 {
+		return &status[0], nil
+	}
+
+	return nil, errors.New("VM not found")
 }
 
 func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.RegisterVirtualMachineRequest) error {
@@ -473,6 +502,8 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 		if vm != nil {
 			return errors.Newf("VM with UUID %s already exists", r.Uuid)
 		}
+	} else {
+		r.Uuid = uuid.New().String()
 	}
 
 	if r.MachineName != "" {
@@ -502,6 +533,7 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 	if r.Uuid != "" {
 		cmd.Args = append(cmd.Args, "--uuid", r.Uuid)
 	}
+
 	if r.RegenerateSourceUuid {
 		cmd.Args = append(cmd.Args, "--regenerate-src-uuid")
 	}
@@ -736,7 +768,6 @@ func (s *ParallelsService) ConfigureVm(ctx basecontext.ApiContext, id string, se
 				op.Error = err
 			}
 		case "machine":
-			ctx.LogInfof("Setting machine property %s to %s", op.Operation, op.Value)
 			if err := s.SetVmMachineOperation(ctx, vm, op); err != nil {
 				op.Error = err
 			}
@@ -1030,7 +1061,10 @@ func (s *ParallelsService) SetVmMachineOperation(ctx basecontext.ApiContext, vm 
 
 	switch op.Operation {
 	case "clone":
-		cmd.Args = append(cmd.Args, s.executable, "clone", vm.ID, "--name", op.Value)
+		cmd.Args = append(cmd.Args, s.executable, "clone", vm.ID)
+		if op.Value != "" {
+			cmd.Args = append(cmd.Args, "--name", op.Value)
+		}
 		cmd.Args = append(cmd.Args, op.GetCmdArgs()...)
 	case "archive":
 		cmd.Args = append(cmd.Args, s.executable, "archive", vm.ID)
@@ -1056,7 +1090,7 @@ func (s *ParallelsService) SetVmMachineOperation(ctx basecontext.ApiContext, vm 
 		return errors.ErrConfigInvalidOperation(op.Operation)
 	}
 
-	ctx.LogInfof(cmd.String())
+	ctx.LogDebugf(cmd.String())
 	_, err := helpers.ExecuteWithNoOutput(cmd)
 	if err != nil {
 		return err
@@ -1362,7 +1396,10 @@ func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id str
 	if vm.User != "root" {
 		args = append(args, "-u", vm.User)
 	}
-	args = append(args, s.executable, "exec", vm.ID, r.Command)
+	args = append(args, s.executable, "exec", vm.ID)
+	commandParts := strings.Split(r.Command, " ")
+	args = append(args, commandParts...)
+
 	cmd.Args = args
 
 	ctx.LogInfof("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))

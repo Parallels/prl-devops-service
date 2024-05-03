@@ -1335,20 +1335,22 @@ definitions:
     properties:
       id:
         type: string
+      ip_configured:
+        type: string
       status:
         type: string
     type: object
 info:
   contact:
     email: carlos.lapao@parallels.com
-    name: Parallels Desktop API Support
+    name: Parallels Desktop DevOps Support
     url: https://forum.parallels.com/
-  description: Parallels Desktop API Service
+  description: Parallels Desktop DevOps Service
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
-  title: Parallels Desktop API
+  title: Parallels Desktop DevOps Service
   version: 0.6.0
 paths:
   /health/probe:

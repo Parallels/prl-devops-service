@@ -11,7 +11,7 @@ const docTemplate = `{
         "title": "{{.Title}}",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "name": "Parallels Desktop API Support",
+            "name": "Parallels Desktop DevOps Support",
             "url": "https://forum.parallels.com/",
             "email": "carlos.lapao@parallels.com"
         },
@@ -6826,6 +6826,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "ip_configured": {
+                    "type": "string"
+                },
                 "status": {
                     "type": "string"
                 }
@@ -6854,8 +6857,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
-	Title:            "Parallels Desktop API",
-	Description:      "Parallels Desktop API Service",
+	Title:            "Parallels Desktop DevOps Service",
+	Description:      "Parallels Desktop DevOps Service",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

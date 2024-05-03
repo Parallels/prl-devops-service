@@ -1,11 +1,11 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Parallels Desktop API Service",
-        "title": "Parallels Desktop API",
+        "description": "Parallels Desktop DevOps Service",
+        "title": "Parallels Desktop DevOps Service",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "name": "Parallels Desktop API Support",
+            "name": "Parallels Desktop DevOps Support",
             "url": "https://forum.parallels.com/",
             "email": "carlos.lapao@parallels.com"
         },
@@ -6817,6 +6817,9 @@
             "type": "object",
             "properties": {
                 "id": {
+                    "type": "string"
+                },
+                "ip_configured": {
                     "type": "string"
                 },
                 "status": {

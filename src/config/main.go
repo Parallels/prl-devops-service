@@ -186,6 +186,12 @@ func (c *Config) LogLevel(silent bool) string {
 	return logLevel
 }
 
+func (c *Config) IsCorsEnabled() bool {
+	corsEnabled := c.GetBoolKey(constants.ENABLE_CORS_ENV_VAR)
+
+	return corsEnabled
+}
+
 func (c *Config) EncryptionPrivateKey() string {
 	securityKey := c.GetKey(constants.ENCRYPTION_SECURITY_KEY_ENV_VAR)
 	if securityKey == "" {

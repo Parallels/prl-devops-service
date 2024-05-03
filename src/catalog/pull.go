@@ -24,6 +24,14 @@ import (
 	"github.com/cjlapao/common-go/helper/http_helper"
 )
 
+type CatalogCacheType int
+
+const (
+	CatalogCacheTypeNone CatalogCacheType = iota
+	CatalogCacheTypeFile
+	CatalogCacheTypeFolder
+)
+
 func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.PullCatalogManifestRequest) *models.PullCatalogManifestResponse {
 	foundProvider := false
 	response := models.NewPullCatalogManifestResponse()
@@ -201,6 +209,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 				response.AddError(err)
 				break
 			}
+
 			ctx.LogInfof("Created local machine folder %v", r.LocalMachineFolder)
 
 			ctx.LogInfof("Pulling manifest %v", manifest.Name)
@@ -238,6 +247,8 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 				}
 
 				cacheFileName := fmt.Sprintf("%s.pdpack", fileChecksum)
+				cacheMachineName := fmt.Sprintf("%s.%s", fileChecksum, manifest.Type)
+				cacheType := CatalogCacheTypeNone
 				needsPulling := false
 				// checking for the caching system to see if we need to pull the file
 				if cfg.IsCatalogCachingEnable() {
@@ -246,12 +257,19 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 						destinationFolder = r.Path
 					}
 
+					// checking if the compressed file is already in the cache
 					if helper.FileExists(filepath.Join(destinationFolder, cacheFileName)) {
-						ctx.LogInfof("File %v already exists in cache", fileName)
+						ctx.LogInfof("Compressed File %v already exists in cache", fileName)
+						cacheType = CatalogCacheTypeFile
+					} else if helper.FileExists(filepath.Join(destinationFolder, cacheMachineName)) {
+						ctx.LogInfof("Machine Folder %v already exists in cache", cacheMachineName)
+						cacheType = CatalogCacheTypeFolder
 					} else {
+						cacheType = CatalogCacheTypeFile
 						needsPulling = true
 					}
 				} else {
+					cacheType = CatalogCacheTypeFile
 					needsPulling = true
 				}
 
@@ -274,11 +292,30 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					response.CleanupRequest.AddLocalFileCleanupOperation(filepath.Join(destinationFolder, file.Name), false)
 				}
 
-				ctx.LogInfof("Decompressing file %v", cacheFileName)
-				if err := s.decompressMachine(ctx, filepath.Join(destinationFolder, cacheFileName), r.LocalMachineFolder); err != nil {
-					ctx.LogErrorf("Error decompressing file %v: %v", fileName, err)
-					response.AddError(err)
-					break
+				if cacheType == CatalogCacheTypeFile {
+					ctx.LogInfof("Decompressing file %v", cacheFileName)
+					if err := s.decompressMachine(ctx, filepath.Join(destinationFolder, cacheFileName), filepath.Join(destinationFolder, cacheMachineName)); err != nil {
+						ctx.LogErrorf("Error decompressing file %v: %v", fileName, err)
+						response.AddError(err)
+						break
+					}
+
+					if err := helper.DeleteFile(filepath.Join(destinationFolder, cacheFileName)); err != nil {
+						ctx.LogErrorf("Error deleting file %v: %v", cacheFileName, err)
+						response.AddError(err)
+						break
+					}
+
+					cacheType = CatalogCacheTypeFolder
+				}
+
+				if cacheType == CatalogCacheTypeFolder {
+					ctx.LogInfof("Copying machine folder %v to %v", cacheMachineName, r.LocalMachineFolder)
+					if err := helper.CopyDir(filepath.Join(destinationFolder, cacheMachineName), r.LocalMachineFolder); err != nil {
+						ctx.LogErrorf("Error copying machine folder %v to %v: %v", cacheMachineName, r.LocalMachineFolder, err)
+						response.AddError(err)
+						break
+					}
 				}
 
 				systemSrv := serviceProvider.System

@@ -12,12 +12,12 @@ var (
 	versionSvc = version.Get()
 )
 
-//	@title			Parallels Desktop API
+//	@title			Parallels Desktop DevOps Service
 //	@version		0.6.0
-//	@description	Parallels Desktop API Service
+//	@description	Parallels Desktop DevOps Service
 //	@termsOfService	http://swagger.io/terms/
 
-//	@contact.name	Parallels Desktop API Support
+//	@contact.name	Parallels Desktop DevOps Support
 //	@contact.url	https://forum.parallels.com/
 //	@contact.email	carlos.lapao@parallels.com
 
@@ -29,10 +29,10 @@ var (
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = constants.Name

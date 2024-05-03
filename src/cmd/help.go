@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/cjlapao/common-go/helper"
 )
 
 func processHelp(command string) {
@@ -24,6 +25,13 @@ func processHelp(command string) {
 		processReverseProxyHelp()
 	case constants.INSTALL_SERVICE_COMMAND:
 		processInstallHelp()
+	case constants.START_COMMAND,
+		constants.STOP_COMMAND,
+		constants.CLONE_COMMAND,
+		constants.DELETE_COMMAND,
+		constants.EXEC_COMMAND:
+		command := helper.GetCommandAt(0)
+		processParallelsDesktopHelp(command)
 	default:
 		processDefaultHelp()
 	}

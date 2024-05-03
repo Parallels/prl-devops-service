@@ -56,6 +56,12 @@ func Process() {
 		processRootPassword(ctx)
 	case constants.REVERSE_PROXY_COMMAND:
 		processReverseProxy(ctx)
+	case constants.START_COMMAND,
+		constants.STOP_COMMAND,
+		constants.CLONE_COMMAND,
+		constants.DELETE_COMMAND,
+		constants.EXEC_COMMAND:
+		processParallelsDesktop(ctx)
 	default:
 		if helper.GetFlagSwitch("help", false) {
 			processHelp("")

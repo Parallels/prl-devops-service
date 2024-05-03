@@ -38,6 +38,7 @@ func NewPDFileService(ctx basecontext.ApiContext, pdFile *models.PDFile) *PDFile
 			&processors.StartAfterPullCommandProcessor{},
 			&processors.TagCommandProcessor{},
 			&processors.VersionCommandProcessor{},
+			&processors.CloneCommandProcessor{},
 		},
 
 		pdfile: pdFile,

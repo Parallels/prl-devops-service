@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog"
@@ -13,7 +14,9 @@ import (
 	api_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/pdfile/diagnostics"
 	"github.com/Parallels/prl-devops-service/pdfile/models"
+	"github.com/Parallels/prl-devops-service/security"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/briandowns/spinner"
 	"github.com/cjlapao/common-go/helper"
 	"gopkg.in/yaml.v3"
 )
@@ -40,11 +43,18 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		StartAfterPull: p.pdfile.StartAfterPull,
 	}
 
+	if p.pdfile.Clone {
+		body.StartAfterPull = false
+	}
+
 	if err := body.Validate(); err != nil {
 		diag.AddError(err)
 		return nil, diag
 	}
 
+	ctx.LogInfof("Pulling catalog machine %v", p.pdfile.MachineName)
+	s := spinner.New(spinner.CharSets[9], 500*time.Millisecond)
+	s.Start()
 	manifest := catalog.NewManifestService(ctx)
 	resultManifest := manifest.Pull(ctx, &body)
 	if resultManifest.HasErrors() {
@@ -56,10 +66,87 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		diag.AddError(errors.New(errorMessage))
 		return nil, diag
 	}
+	s.Stop()
+
+	ctx.LogInfof("Machine %v pulled successfully", p.pdfile.MachineName)
+	if p.pdfile.Clone {
+		ctx.LogInfof("Cloning machine %v", p.pdfile.MachineName)
+		s.Start()
+		if p.pdfile.CloneTo == "" {
+			cloneName, err := security.GenerateCryptoRandomString(20)
+			if err != nil {
+				diag.AddError(err)
+				return nil, diag
+			}
+
+			p.pdfile.CloneTo = cloneName
+		}
+
+		provider := serviceprovider.Get()
+		if provider.ParallelsDesktopService == nil {
+			diag.AddError(errors.New("parallels Desktop service is not available"))
+			return nil, diag
+		}
+
+		err := provider.ParallelsDesktopService.CloneVm(ctx, resultManifest.MachineID, p.pdfile.CloneTo)
+		if err != nil {
+			diag.AddError(err)
+			return nil, diag
+		}
+		vm, err := provider.ParallelsDesktopService.GetVm(ctx, p.pdfile.CloneTo)
+		if err != nil {
+			diag.AddError(err)
+			return nil, diag
+		}
+
+		p.pdfile.CloneId = vm.ID
+		s.Stop()
+		ctx.LogInfof("Machine %v cloned successfully to %v", p.pdfile.MachineName, p.pdfile.CloneTo)
+	}
 
 	if len(p.pdfile.Execute) > 0 {
+		ctx.LogInfof("Executing commands on machine %v", resultManifest.MachineName)
+		provider := serviceprovider.Get()
+		executeMachine := resultManifest.ID
+		if p.pdfile.Clone {
+			executeMachine = p.pdfile.CloneTo
+		}
+
+		vm, err := provider.ParallelsDesktopService.GetVm(ctx, executeMachine)
+		if err != nil {
+			diag.AddError(err)
+			return nil, diag
+		}
+
+		if vm.State == "stopped" {
+			ctx.LogInfof("Starting machine %v", executeMachine)
+			err := provider.ParallelsDesktopService.StartVm(ctx, executeMachine)
+			if err != nil {
+				diag.AddError(err)
+				return nil, diag
+			}
+
+			counter := 0
+			for {
+				resp, err := provider.ParallelsDesktopService.ExecuteCommandOnVm(ctx, executeMachine, &api_models.VirtualMachineExecuteCommandRequest{
+					Command: "echo 'Waiting for machine to start'",
+				})
+				if err == nil && resp.ExitCode == 0 {
+					break
+				}
+
+				time.Sleep(1 * time.Second)
+				counter++
+				if counter > 60 {
+					diag.AddError(errors.New("Timeout waiting for machine to start"))
+					return nil, diag
+				}
+			}
+
+		}
+
 		for _, command := range p.pdfile.Execute {
-			provider := serviceprovider.Get()
+
 			if provider.ParallelsDesktopService == nil {
 				diag.AddError(errors.New("parallels Desktop service is not available"))
 				return nil, diag
@@ -67,7 +154,7 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 			commandRequest := api_models.VirtualMachineExecuteCommandRequest{
 				Command: command,
 			}
-			r, err := provider.ParallelsDesktopService.ExecuteCommandOnVm(ctx, resultManifest.ID, &commandRequest)
+			r, err := provider.ParallelsDesktopService.ExecuteCommandOnVm(ctx, executeMachine, &commandRequest)
 			if err != nil {
 				diag.AddError(err)
 				return nil, diag
@@ -86,6 +173,19 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		Version:      resultManifest.Manifest.Version,
 		Architecture: resultManifest.Manifest.Architecture,
 		Type:         resultManifest.Manifest.Type,
+	}
+
+	if p.pdfile.Clone {
+		response.MachineId = p.pdfile.CloneId
+		response.MachineName = p.pdfile.CloneTo
+		if p.pdfile.StartAfterPull {
+			provider := serviceprovider.Get()
+			err := provider.ParallelsDesktopService.StartVm(ctx, p.pdfile.CloneTo)
+			if err != nil {
+				diag.AddError(err)
+				return nil, diag
+			}
+		}
 	}
 
 	var out []byte

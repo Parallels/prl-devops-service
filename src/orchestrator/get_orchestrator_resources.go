@@ -7,6 +7,8 @@ import (
 )
 
 func (s *OrchestratorService) GetResources(ctx basecontext.ApiContext) ([]models.HostResourceOverviewResponseItem, error) {
+	s.Refresh()
+
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, err

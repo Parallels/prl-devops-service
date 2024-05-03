@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/Parallels/prl-devops-service/errors"
 )
@@ -39,13 +40,17 @@ func (o *OrchestratorHostRequest) Validate() error {
 	if o.Host == "" {
 		return errors.NewWithCode("Host cannot be empty", 400)
 	}
+	if !strings.Contains(o.Host, "http://") && !strings.Contains(o.Host, "https://") {
+		o.Host = "http://" + o.Host
+	}
 	hostUrl, err := url.Parse(o.Host)
 	if err != nil {
-		return errors.NewWithCode("Host is not a valid URL", 400)
+		return errors.NewWithCode("Invalid host", 400)
 	}
 	o.HostUrl = hostUrl
 	o.HostName = hostUrl.Hostname()
 	o.Port = hostUrl.Port()
+	o.Schema = hostUrl.Scheme
 
 	if o.HostUrl.Path == "" {
 		o.Prefix = "/api"

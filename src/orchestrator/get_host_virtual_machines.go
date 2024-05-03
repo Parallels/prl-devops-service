@@ -88,7 +88,7 @@ func (s *OrchestratorService) GetHostVirtualMachinesInfo(host *models.Orchestrat
 	}
 
 	if apiResponse.StatusCode != 200 {
-		return nil, errors.NewWithCodef(400, "Error getting hardware info for host %s: %v", host.Host, apiResponse.StatusCode)
+		return nil, errors.NewWithCodef(400, "Error getting virtual machines for host %s: %v", host.Host, apiResponse.StatusCode)
 	}
 
 	return response, nil

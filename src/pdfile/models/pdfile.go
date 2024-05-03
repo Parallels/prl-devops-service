@@ -28,6 +28,9 @@ type PDFile struct {
 	Provider       *PDFileProvider       `json:"PROVIDER,omitempty" yaml:"PROVIDER,omitempty"`
 	Command        string                `json:"COMMAND,omitempty" yaml:"COMMAND,omitempty"`
 	Execute        []string              `json:"EXECUTE,omitempty" yaml:"EXECUTE,omitempty"`
+	Clone          bool                  `json:"CLONE,omitempty" yaml:"CLONE,omitempty"`
+	CloneTo        string                `json:"CLONE_TO,omitempty" yaml:"CLONE_TO,omitempty"`
+	CloneId        string                `json:"CLONE_ID,omitempty" yaml:"CLONE_ID,omitempty"`
 	Operation      string                `json:"RUN,omitempty" yaml:"RUN,omitempty"`
 }
 
