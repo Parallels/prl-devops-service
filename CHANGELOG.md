@@ -17,6 +17,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.6.1] - 2024-05-02
+
+### Added
+
+- Added some extra commands to the command line interface
+- Improved documentation on GitHub Actions and Orchestrator use cases
+- Added Start/Stop endpoints to the orchestrator
+- Added Amplitude Key to the docker images
+  
+### Fixed
+
+- Fixed several issues with the orchestrator
+- Fixed and issue with the pull catalog where it could hang
+
+### Changed
+
+- Improved caching methodology to reduce waiting time
+
 ## [0.6.0] - 2024-03-26
 
 ### Added
