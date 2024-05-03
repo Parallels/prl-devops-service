@@ -1,0 +1,26 @@
+---
+layout: post
+title:  "Release 0.6.1"
+date:   2024-05-02 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+### Added
+
+- Added some extra commands to the command line interface
+- Improved documentation on GitHub Actions and Orchestrator use cases
+- Added Start/Stop endpoints to the orchestrator
+- Added Amplitude Key to the docker images
+  
+### Fixed
+
+- Fixed several issues with the orchestrator
+- Fixed and issue with the pull catalog where it could hang
+
+### Changed
+
+- Improved caching methodology to reduce waiting time
+
+
