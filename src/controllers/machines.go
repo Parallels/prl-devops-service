@@ -573,15 +573,16 @@ func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 		params := mux.Vars(r)
 		id := params["id"]
 
-		status, err := svc.VmStatus(ctx, id)
+		response, err := svc.VmStatus(ctx, id)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
 		result := models.VirtualMachineStatusResponse{
-			ID:     id,
-			Status: status,
+			ID:           response.UUID,
+			Status:       response.Status,
+			IpConfigured: response.IPConfigured,
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -1270,14 +1271,15 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 
 	response.CurrentState = vm.State
 
-	if response.CurrentState == "running" || response.CurrentState == "unknown" {
-		if err := parallelsDesktopService.StopVm(ctx, response.ID); err != nil {
-			return nil, err
-		}
-		response.CurrentState = "stopped"
-	}
-
 	if request.CatalogManifest.Specs != nil {
+
+		if response.CurrentState == "running" || response.CurrentState == "unknown" {
+			if err := parallelsDesktopService.StopVm(ctx, response.ID); err != nil {
+				return nil, err
+			}
+			response.CurrentState = "stopped"
+		}
+
 		configureRequest := models.VirtualMachineConfigRequest{
 			Operations: make([]*models.VirtualMachineConfigRequestOperation, 0),
 		}

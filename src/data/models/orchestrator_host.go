@@ -1,6 +1,7 @@
 package models
 
 import (
+	"net/url"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -32,6 +33,17 @@ type OrchestratorHost struct {
 }
 
 func (o OrchestratorHost) GetHost() string {
+	if strings.HasPrefix(o.Host, "http") || strings.HasPrefix(o.Host, "https") {
+		hostUrl, err := url.Parse(o.Host)
+		if err == nil {
+			return o.Host
+		}
+
+		o.Host = hostUrl.Hostname()
+		o.Port = hostUrl.Port()
+		o.Schema = hostUrl.Scheme
+	}
+
 	port := ""
 	if o.Port != "" {
 		port = ":" + o.Port

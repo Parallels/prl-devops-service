@@ -2,13 +2,17 @@ package orchestrator
 
 import (
 	"strings"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
 func (s *OrchestratorService) GetVirtualMachines(ctx basecontext.ApiContext, filter string) ([]models.VirtualMachine, error) {
+	s.Refresh()
+
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, err
@@ -43,6 +47,11 @@ func (s *OrchestratorService) GetVirtualMachines(ctx basecontext.ApiContext, fil
 }
 
 func (s *OrchestratorService) GetVirtualMachine(ctx basecontext.ApiContext, idOrName string) (*models.VirtualMachine, error) {
+	s.Refresh()
+
+	retryCount := 0
+	var resultVm *models.VirtualMachine
+
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, err
@@ -53,17 +62,31 @@ func (s *OrchestratorService) GetVirtualMachine(ctx basecontext.ApiContext, idOr
 		return nil, err
 	}
 
-	vms, err := dbService.GetOrchestratorVirtualMachines(ctx, "")
-	if err != nil {
-		return nil, err
-	}
+	for {
+		vms, err := dbService.GetOrchestratorVirtualMachines(ctx, "")
+		if err != nil {
+			return nil, err
+		}
 
-	var resultVm *models.VirtualMachine
-	for _, vm := range vms {
-		if strings.EqualFold(vm.ID, idOrName) || strings.EqualFold(vm.Name, idOrName) {
-			resultVm = &vm
+		for _, vm := range vms {
+			if strings.EqualFold(vm.ID, idOrName) || strings.EqualFold(vm.Name, idOrName) {
+				resultVm = &vm
+				break
+			}
+		}
+
+		if resultVm != nil || retryCount >= 10 {
 			break
 		}
+
+		s.Refresh()
+
+		retryCount++
+		time.Sleep(1 * time.Second)
+	}
+
+	if resultVm == nil {
+		return nil, errors.NewWithCodef(404, "Virtual machine %s not found", idOrName)
 	}
 
 	// Updating Host State for each VM

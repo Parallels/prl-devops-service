@@ -3,7 +3,6 @@ layout: page
 title: Share Golden Images
 subtitle: Securely create and share Golden Master images with your team in minutes
 show_sidebar: false
-version: 0.5.4
 toc: true
 side_toc: true
 download_ubuntu_tab:

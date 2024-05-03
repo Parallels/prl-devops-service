@@ -16,6 +16,7 @@ type TelemetryService struct {
 func (t *TelemetryService) TrackEvent(item TelemetryItem) {
 	if !t.EnableTelemetry {
 		t.ctx.LogDebugf("[Telemetry] Telemetry is disabled, ignoring event track")
+		return
 	}
 
 	t.ctx.LogInfof("[Telemetry] Sending Amplitude Tracking event %s", item.Type)
