@@ -1351,7 +1351,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.6.0
+  version: 0.6.1
 paths:
   /health/probe:
     get:
@@ -3729,6 +3729,41 @@ paths:
       summary: Configures orchestrator host virtual machine
       tags:
       - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/start:
+    put:
+      description: This endpoint starts orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Starts orchestrator host virtual machine
+      tags:
+      - Orchestrator
   /v1/orchestrator/hosts/{id}/machines/{vmId}/status:
     get:
       description: This endpoint returns orchestrator host virtual machine status
@@ -3762,6 +3797,41 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Get orchestrator host virtual machine status
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/stop:
+    put:
+      description: This endpoint starts orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Starts orchestrator host virtual machine
       tags:
       - Orchestrator
   /v1/orchestrator/hosts/{id}/machines/{vmId}/unregister:
@@ -4039,6 +4109,36 @@ paths:
       summary: Configures orchestrator virtual machine
       tags:
       - Orchestrator
+  /v1/orchestrator/machines/{vmId}/start:
+    put:
+      description: This endpoint starts orchestrator virtual machine
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Starts orchestrator virtual machine
+      tags:
+      - Orchestrator
   /v1/orchestrator/machines/{vmId}/status:
     get:
       description: This endpoint returns orchestrator virtual machine status
@@ -4067,6 +4167,36 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Get orchestrator virtual machine status
+      tags:
+      - Orchestrator
+  /v1/orchestrator/machines/{vmId}/stop:
+    put:
+      description: This endpoint sops orchestrator virtual machine
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Stops orchestrator virtual machine
       tags:
       - Orchestrator
   /v1/orchestrator/overview/{id}/resources:
