@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/cjlapao/common-go/version"
@@ -9,6 +10,6 @@ import (
 var versionSvc = version.Get()
 
 func processVersion() {
-	println(versionSvc.String())
+	fmt.Printf("%s\n", versionSvc.String())
 	os.Exit(0)
 }

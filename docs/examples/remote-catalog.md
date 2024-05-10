@@ -41,7 +41,7 @@ create_vm_tab:
 ## Introduction
 
 One of the key challenges of managing many virtual machines is ensuring that all are running the same software stack. This is especially true when you have a large team of developers, each of whom may have their unique development environment.
-There is also the concern of ensuring the software stack is secure and up-to-date. This is where Golden Master images come in. A Golden Master image is a virtual machine that has been configured with the software stack that you want to use. This image can then be shared with your team, ensuring everyone uses the same software stack.
+There is also the concern of ensuring the software stack is secure and up-to-date. This is where Golden images come in. A Golden Master image is a virtual machine that has been configured with the software stack that you want to use. This image can then be shared with your team, ensuring everyone uses the same software stack.
 
 Let's look at how you can use the Parallels Desktop DevOps Service to create a Golden Master image and share it with your team. We will create an Ubuntu Virtual Machine and install the required software stack. We will then use the Parallels Desktop DevOps Service to make a Golden Master image of the virtual machine and share it with our team using the Parallels Desktop DevOps Service and its [Remote Catalog]({{ site.url }}{{ site.baseurl }}/docs/catalog) capability.
 

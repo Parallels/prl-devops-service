@@ -337,7 +337,7 @@ func (j *JsonDatabase) GetOrchestratorVirtualMachines(ctx basecontext.ApiContext
 	}
 
 	for _, host := range hosts {
-		if host.State == "healthy" {
+		if host.State == "healthy" && host.Enabled {
 			result = append(result, host.VirtualMachines...)
 		}
 	}

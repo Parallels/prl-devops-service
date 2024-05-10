@@ -76,7 +76,7 @@ func Start(ctx basecontext.ApiContext) {
 						panic(err)
 					}
 				}
-				secret, err := cryptorand.GetAlphaNumericRandomString(64)
+				secret, err := cryptorand.GetAlphaNumericRandomString(32)
 				if err != nil {
 					ctx.LogErrorf("Error generating secret: %v", err)
 					panic(err)
@@ -113,7 +113,7 @@ func Start(ctx basecontext.ApiContext) {
 					})
 				} else {
 					if createdKey {
-						secret, err := cryptorand.GetAlphaNumericRandomString(64)
+						secret, err := cryptorand.GetAlphaNumericRandomString(32)
 						if err != nil {
 							ctx.LogErrorf("Error generating secret: %v", err)
 							panic(err)

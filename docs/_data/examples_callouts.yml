@@ -1,6 +1,6 @@
 style: is-light
 items:
-  - title: Share Golden Images
+  - title: Run a Catalog service
     description: |- 
       Quickly share golden images in a secure way with your organization or team
     icon: fa-book-open
