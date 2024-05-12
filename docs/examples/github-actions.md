@@ -69,7 +69,7 @@ You do not need to configure the virtual machine in any special way. You can use
 For this example, we have created three virtual machines - one for each OS.
 
 - Windows 11 ARM using the Parallels Desktop Wizard
-- MacOS Sonoma
+- macOS Sonoma
 - Ubuntu Server 22.04 LTS
 
 ## Step 3: Create a GitHub Personal Access Token
@@ -139,13 +139,13 @@ chmod +x /home/install-runner.sh
 chmod +x /home/configure-runner.sh
 chmod +x /home/remove-runner.sh
 /home/install-runner.sh -u $yourUsername -p /home
-/home/configure-runner.sh -u $yourUsername -p /home/action-runner -o $yourOrganization -t $yourGithubPat -n ubuntu_builder -l ubuntu_builder
+/home/configure-runner.sh -u $yourUsername -p /home/action-runner -o $yourOrganization -t $yourGithubPAT -n ubuntu_builder -l ubuntu_builder
 ```
 
 Where:
 - `<your-username>` is your username used to login to the virtual machine
 - `<yourOrganization>` is your Github organization
-- `<yourGithubPat>` is your Github Personal Access Token
+- `<yourGithubPAT>` is your Github Personal Access Token
 
 ### Check the Runner is registered and running
 

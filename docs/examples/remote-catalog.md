@@ -330,6 +330,8 @@ To push the VM image to the catalog, you can run the following command:
 prldevops push /path/to/pdfile
 ```
 
+[Add the list command to check what you have there]
+
 {% include notification.html message="This process duration may vary depending on your VM size and internet speed." status="is-warning" %}
 
 ### Pulling the Golden Master Image

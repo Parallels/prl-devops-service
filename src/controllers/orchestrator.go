@@ -418,7 +418,7 @@ func UnregisterOrchestratorHostHandler() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/enable [get]
+// @Router			/v1/orchestrator/hosts/{id}/enable [put]
 func EnableOrchestratorHostsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
@@ -451,7 +451,7 @@ func EnableOrchestratorHostsHandler() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/orchestrator/hosts/{id}/disable [get]
+// @Router			/v1/orchestrator/hosts/{id}/disable [put]
 func DisableOrchestratorHostsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)

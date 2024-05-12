@@ -172,7 +172,21 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 	// persist the host
 	_ = s.db.Connect(s.ctx)
-	if _, err := s.db.UpdateOrchestratorHost(s.ctx, host); err != nil {
+	// trying to fix the concurrency issues
+	hostToSave := *host
+	oldHost, err := s.db.GetOrchestratorHost(s.ctx, host.ID)
+	if err != nil {
+		s.ctx.LogErrorf("[Orchestrator] Error getting host %s: %v", host.Host, err.Error())
+		return err
+	}
+	if oldHost.UpdatedAt != host.UpdatedAt {
+		hostToSave = *oldHost
+		hostToSave.HealthCheck = host.HealthCheck
+		hostToSave.Resources = host.Resources
+		hostToSave.VirtualMachines = host.VirtualMachines
+	}
+
+	if _, err := s.db.UpdateOrchestratorHost(s.ctx, &hostToSave); err != nil {
 		s.ctx.LogErrorf("[Orchestrator] Error saving host %s: %v", host.Host, err.Error())
 		return err
 	}

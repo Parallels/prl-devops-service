@@ -15,6 +15,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 
 	_ "github.com/Parallels/prl-devops-service/docs"
@@ -310,8 +311,9 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 		cert, err := tls.X509KeyPair([]byte(l.Options.TLSCertificate), []byte(l.Options.TLSPrivateKey))
 		if err == nil {
 			tlsConfig := &tls.Config{
-				Certificates: []tls.Certificate{cert},
-				MinVersion:   tls.VersionTLS12,
+				Certificates:       []tls.Certificate{cert},
+				MinVersion:         tls.VersionTLS12,
+				InsecureSkipVerify: true,
 			}
 
 			var sslSrv *http.Server
@@ -427,11 +429,11 @@ func (l *HttpListener) Restart() {
 // region Private Methods
 func (l *HttpListener) getDefaultConfiguration() *HttpListenerOptions {
 	options := HttpListenerOptions{
-		HttpPort:        l.Configuration.GetString("HTTP_PORT"),
-		EnableTLS:       l.Configuration.GetBool("ENABLE_TLS"),
-		TLSPort:         l.Configuration.GetString("TLS_PORT"),
-		TLSCertificate:  l.Configuration.GetBase64("TLS_CERTIFICATE"),
-		TLSPrivateKey:   l.Configuration.GetBase64("TLS_PRIVATE_KEY"),
+		HttpPort:        l.Configuration.GetString(constants.API_PORT_ENV_VAR),
+		EnableTLS:       l.Configuration.GetBool(constants.TLS_ENABLED_ENV_VAR),
+		TLSPort:         l.Configuration.GetString(constants.TLS_PORT_ENV_VAR),
+		TLSCertificate:  l.Configuration.GetBase64(constants.TLS_CERTIFICATE_ENV_VAR),
+		TLSPrivateKey:   l.Configuration.GetBase64(constants.TLS_PRIVATE_KEY_ENV_VAR),
 		LogHealthChecks: false,
 	}
 

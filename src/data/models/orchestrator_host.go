@@ -61,12 +61,20 @@ func (o OrchestratorHost) GetHost() string {
 }
 
 func (o *OrchestratorHost) SetUnhealthy(reason string) {
+	if o.State == "unhealthy" {
+		return
+	}
+
 	o.State = "unhealthy"
 	o.LastUnhealthy = helpers.GetUtcCurrentDateTime()
 	o.LastUnhealthyErrorMessage = reason
 }
 
 func (o *OrchestratorHost) SetHealthy() {
+	if o.State == "healthy" {
+		return
+	}
+
 	o.State = "healthy"
 	o.LastUnhealthy = ""
 	o.LastUnhealthyErrorMessage = ""
