@@ -3408,7 +3408,7 @@ const docTemplate = `{
             }
         },
         "/v1/orchestrator/hosts/{id}/disable": {
-            "get": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -3448,7 +3448,7 @@ const docTemplate = `{
             }
         },
         "/v1/orchestrator/hosts/{id}/enable": {
-            "get": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -7063,7 +7063,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.6.1",
+	Version:          "0.6.2",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},

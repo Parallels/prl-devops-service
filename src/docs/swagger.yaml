@@ -1351,7 +1351,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.6.1
+  version: 0.6.2
 paths:
   /health/probe:
     get:
@@ -3442,7 +3442,7 @@ paths:
       tags:
       - Orchestrator
   /v1/orchestrator/hosts/{id}/disable:
-    get:
+    put:
       description: This endpoint will disable an existing host in the orchestrator
       produces:
       - application/json
@@ -3466,7 +3466,7 @@ paths:
       tags:
       - Orchestrator
   /v1/orchestrator/hosts/{id}/enable:
-    get:
+    put:
       description: This endpoint will enable an existing host in the orchestrator
       produces:
       - application/json
