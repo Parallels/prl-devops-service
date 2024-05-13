@@ -131,8 +131,15 @@ func (p *PDFile) GetHostUrl() string {
 	if p == nil {
 		return host
 	}
+	if p.Host == "" && (p.From != "" || p.To != "") {
+		if p.From != "" {
+			p.Host = p.From
+		} else {
+			p.Host = p.To
+		}
+	}
 
-	if p.Insecure {
+	if p.Insecure || (p.From == "localhost" || p.To == "localhost") {
 		host = fmt.Sprintf("http://%s", p.Host)
 	} else {
 		host = fmt.Sprintf("https://%s", p.Host)

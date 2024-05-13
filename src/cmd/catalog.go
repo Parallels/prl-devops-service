@@ -24,17 +24,19 @@ func processCatalog(ctx basecontext.ApiContext, operation string, filePath strin
 	}
 	ctx.ToggleLogTimestamps(false)
 
-	if filePath == "" {
-		ctx.LogInfof("The filePath is empty")
-		filePath = helper.GetFlagValue(constants.FILE_FLAG, "")
+	if operation != "list" {
 		if filePath == "" {
-			fmt.Println("Could not find a file to process, did you miss adding the flag --file=<file>?")
-			return
-		}
-	} else {
-		if !helper.FileExists(filePath) {
-			ctx.LogErrorf("File with path %v does not exists, exiting", filePath)
-			os.Exit(1)
+			ctx.LogInfof("The filePath is empty")
+			filePath = helper.GetFlagValue(constants.FILE_FLAG, "")
+			if filePath == "" {
+				fmt.Println("Could not find a file to process, did you miss adding the flag --file=<file>?")
+				return
+			}
+		} else {
+			if !helper.FileExists(filePath) {
+				ctx.LogErrorf("File with path %v does not exists, exiting", filePath)
+				os.Exit(1)
+			}
 		}
 	}
 
@@ -224,8 +226,6 @@ func processCatalogPushCmd(ctx basecontext.ApiContext, filePath string) {
 	svc := catalogInitPdFile(ctx, "push", filePath)
 
 	s := spinner.New(spinner.CharSets[9], 500*time.Millisecond)
-	s.Start()
-	time.Sleep(4 * time.Second)
 
 	out, diags := svc.Run(ctx)
 

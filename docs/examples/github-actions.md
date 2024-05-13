@@ -11,7 +11,7 @@ side_toc: true
 
 ## Introduction
 
-One of the most commonly used CI/CD tools is Github Actions. It is a powerful automation tool that allows you to build, test, and deploy your code from your Github repository. By default, you get access to 2000 free minutes per month for your Github Actions on Ubuntu machines. However, this number is reduced to 1000 minutes for Windows and 200 minutes for MacOS machines. While the 2000 minutes are sufficient for most projects, larger teams might require more.
+One of the most commonly used CI/CD tools is Github Actions. It is a powerful automation tool that allows you to build, test, and deploy your code from your Github repository. By default, you get access to 2000 free minutes per month for your Github Actions on Ubuntu machines. However, this number is reduced to 1000 minutes for Windows and 200 minutes for macOS machines. While the 2000 minutes are sufficient for most projects, larger teams might require more.
 
 Fortunately, GitHub allows you to run your own self-hosted runners, which enables you to run your CI/CD pipeline on your own infrastructure. This is particularly useful if you have specific requirements that are not supported by the default Github Actions runners or if you have security concerns. Furthermore, you might have a large number of jobs that you need to run, and the free minutes are not enough.
 
@@ -62,7 +62,7 @@ This will download and install the latest version of **Parallels Desktop for Mac
 
 To run our Actions, we need to create a builder virtual machine. This virtual machine will be used to execute the jobs that are defined in our Github Actions workflow. We have two options for creating the virtual machine - we can either use a pre-built virtual machine that we have created earlier, or create one from scratch.
 
-Additionally, you will need to select the operating system (OS) that you want to use for your runner. The available options are Windows, MacOS, and Linux.
+Additionally, you will need to select the operating system (OS) that you want to use for your runner. The available options are Windows, macOS, and Linux.
 
 You do not need to configure the virtual machine in any special way. You can use the default settings provided by Parallels Desktop. We will be adding the runners during the pipeline setup using a script.
 

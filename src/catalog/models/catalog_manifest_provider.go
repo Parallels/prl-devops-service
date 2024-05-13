@@ -145,48 +145,54 @@ func (m *CatalogManifestProvider) Parse(connection string) error {
 				m.Meta[key] = value
 			}
 		}
+	}
 
-		var schema string
-		if strings.HasPrefix(m.Host, "http://") || strings.HasPrefix(m.Host, "https://") {
-			schemaParts := strings.Split(m.Host, "://")
-			if len(schemaParts) == 2 {
-				schema = schemaParts[0]
-				m.Host = schemaParts[1]
-			}
+	var schema string
+	if strings.HasPrefix(m.Host, "http://") || strings.HasPrefix(m.Host, "https://") {
+		schemaParts := strings.Split(m.Host, "://")
+		if len(schemaParts) == 2 {
+			schema = schemaParts[0]
+			m.Host = schemaParts[1]
+		}
+	}
+
+	if strings.ContainsAny(m.Host, "@") {
+		var parts []string
+		if strings.Count(m.Host, "@") > 1 {
+			lastIndexOfAt := strings.LastIndex(m.Host, "@")
+			parts = []string{m.Host[:lastIndexOfAt], m.Host[lastIndexOfAt+1:]}
+		} else {
+			parts = strings.Split(m.Host, "@")
+		}
+		if len(parts) == 2 {
+		} else if len(parts) > 2 {
+			lastIndex := len(userParts) - 1
+			otherParts := strings.Join(userParts[:lastIndex], ";")
+			parts = []string{otherParts, userParts[lastIndex]}
 		}
 
-		if strings.ContainsAny(m.Host, "@") {
-			parts := strings.Split(m.Host, "@")
-			if len(parts) == 2 {
-			} else if len(parts) > 2 {
-				lastIndex := len(userParts) - 1
-				otherParts := strings.Join(userParts[:lastIndex], ";")
-				parts = []string{otherParts, userParts[lastIndex]}
-			}
-
-			m.Username = parts[0]
-			if strings.ContainsAny(m.Username, ":") {
-				userParts = strings.Split(m.Username, ":")
-				m.Username = userParts[0]
-				m.Password = userParts[1]
-			} else {
-				m.ApiKey = parts[0]
-				m.Username = ""
-				m.Password = ""
-			}
-			if strings.ContainsAny(parts[1], ":") {
-				hostParts := strings.Split(parts[1], ":")
-				if len(hostParts) == 2 {
-					m.Host = hostParts[0]
-					m.Port = hostParts[1]
-				}
-			} else {
-				m.Host = parts[1]
-			}
+		m.Username = parts[0]
+		if strings.ContainsAny(m.Username, ":") {
+			userParts = strings.Split(m.Username, ":")
+			m.Username = userParts[0]
+			m.Password = userParts[1]
+		} else {
+			m.ApiKey = parts[0]
+			m.Username = ""
+			m.Password = ""
 		}
-		if schema != "" {
-			m.Host = schema + "://" + m.Host
+		if strings.ContainsAny(parts[1], ":") {
+			hostParts := strings.Split(parts[1], ":")
+			if len(hostParts) == 2 {
+				m.Host = hostParts[0]
+				m.Port = hostParts[1]
+			}
+		} else {
+			m.Host = parts[1]
 		}
+	}
+	if schema != "" {
+		m.Host = schema + "://" + m.Host
 	}
 
 	return nil

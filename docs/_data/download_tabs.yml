@@ -1,7 +1,7 @@
 style: boxed
 icon_size: xl
 items:
-- default: false
+- default: true
   title: Mac
   icon: apple
   icon_brand: true
@@ -58,3 +58,26 @@ items:
           </div>
       </article>
     </div>
+- title: From Source
+  icon: github
+  icon_brand: true
+  content: |-
+      <div class="mt-2 flex flex-column">
+        <p>
+          You will need to clone the repository from github and then build the project using the following commands.
+        </p>
+        <div class="language-bash highlighter-rouge">
+          <div class="highlight">
+            <pre class="highlight">
+              <code>
+                <span class="nb">git clone</span> https://github.com/Parallels/prl-devops-service
+                <span class="nb">make</span> build
+              </code>
+            </pre>
+          </div>
+        </div>
+        <p>
+          this will create the binary in the <code class="language-plaintext highlighter-rouge">out/binaries</code> folder. you can then execute the binary from there,
+          or move it to a location in your path.
+        </p>
+      </div>

@@ -16,7 +16,6 @@ import (
 	"github.com/Parallels/prl-devops-service/pdfile/models"
 	"github.com/Parallels/prl-devops-service/security"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
-	"github.com/briandowns/spinner"
 	"github.com/cjlapao/common-go/helper"
 	"gopkg.in/yaml.v3"
 )
@@ -53,8 +52,7 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 	}
 
 	ctx.LogInfof("Pulling catalog machine %v", p.pdfile.MachineName)
-	s := spinner.New(spinner.CharSets[9], 500*time.Millisecond)
-	s.Start()
+
 	manifest := catalog.NewManifestService(ctx)
 	resultManifest := manifest.Pull(ctx, &body)
 	if resultManifest.HasErrors() {
@@ -66,12 +64,10 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		diag.AddError(errors.New(errorMessage))
 		return nil, diag
 	}
-	s.Stop()
 
 	ctx.LogInfof("Machine %v pulled successfully", p.pdfile.MachineName)
 	if p.pdfile.Clone {
 		ctx.LogInfof("Cloning machine %v", p.pdfile.MachineName)
-		s.Start()
 		if p.pdfile.CloneTo == "" {
 			cloneName, err := security.GenerateCryptoRandomString(20)
 			if err != nil {
@@ -100,7 +96,6 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		}
 
 		p.pdfile.CloneId = vm.ID
-		s.Stop()
 		ctx.LogInfof("Machine %v cloned successfully to %v", p.pdfile.MachineName, p.pdfile.CloneTo)
 	}
 
