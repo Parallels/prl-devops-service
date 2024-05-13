@@ -246,6 +246,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					break
 				}
 
+				helpers.GlobalSpinner.Start()
 				cacheFileName := fmt.Sprintf("%s.pdpack", fileChecksum)
 				cacheMachineName := fmt.Sprintf("%s.%s", fileChecksum, manifest.Type)
 				cacheType := CatalogCacheTypeNone
@@ -277,11 +278,13 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					if err := rs.PullFile(ctx, file.Path, file.Name, destinationFolder); err != nil {
 						ctx.LogErrorf("Error pulling file %v: %v", fileName, err)
 						response.AddError(err)
+						helpers.GlobalSpinner.Stop()
 						break
 					}
 					if cfg.IsCatalogCachingEnable() {
 						err := os.Rename(filepath.Join(destinationFolder, file.Name), filepath.Join(destinationFolder, cacheFileName))
 						if err != nil {
+							helpers.GlobalSpinner.Stop()
 							log.Fatal(err)
 						}
 					}
@@ -297,6 +300,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					if err := s.decompressMachine(ctx, filepath.Join(destinationFolder, cacheFileName), filepath.Join(destinationFolder, cacheMachineName)); err != nil {
 						ctx.LogErrorf("Error decompressing file %v: %v", fileName, err)
 						response.AddError(err)
+						helpers.GlobalSpinner.Stop()
 						break
 					}
 
@@ -314,6 +318,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					if err := helper.CopyDir(filepath.Join(destinationFolder, cacheMachineName), r.LocalMachineFolder); err != nil {
 						ctx.LogErrorf("Error copying machine folder %v to %v: %v", cacheMachineName, r.LocalMachineFolder, err)
 						response.AddError(err)
+						helpers.GlobalSpinner.Stop()
 						break
 					}
 				}
@@ -323,6 +328,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					if err := systemSrv.ChangeFileUserOwner(ctx, r.Owner, r.LocalMachineFolder); err != nil {
 						ctx.LogErrorf("Error changing file %v owner to %v: %v", r.LocalMachineFolder, r.Owner, err)
 						response.AddError(err)
+						helpers.GlobalSpinner.Stop()
 						break
 					}
 				}
@@ -359,6 +365,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 	// Cleaning up
 	s.CleanPullRequest(ctx, r, response)
 
+	helpers.GlobalSpinner.Stop()
 	return response
 }
 

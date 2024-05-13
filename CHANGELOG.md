@@ -17,6 +17,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.6.2] - 2024-05-13
+
+### Added
+
+- Added a script to install the service in macOS
+
+### Fixed
+
+- Fixed several issues with the orchestrator
+- Fixed an issue where the push command would not read the PROVIDER connection
+  string correctly
+- Fixed an issue with concurrency configuration saving that could lead to old
+  results being saved
+
 ## [0.6.1] - 2024-05-02
 
 ### Added

@@ -1,6 +1,6 @@
 ---
 layout: page
-title: Share Golden Images
+title: Run a Catalog service
 subtitle: Securely create and share Golden Master images with your team in minutes
 show_sidebar: false
 toc: true
@@ -18,6 +18,7 @@ download_ubuntu_tab:
             </a>
         </div>
     - title: arm64
+      default: true 
       icon: microchip 
       content: |-
         <div class="mt-3">
@@ -56,20 +57,12 @@ Let's look at how you can use the Parallels Desktop DevOps Service to create a G
 
 {% include notification.html message="You can try it for free before purchasing by clicking this [link](https://www.parallels.com/products/desktop/trial/) and downloading our trial version" status="is-success" icon="comments-dollar" %}
 
-### Install Parallels Desktop DevOps Service
+### Install Parallels Desktop DevOps
 
-To install the required tools, such as **Parallels Desktop for Mac**, we'll be using one of the features of the DevOps service. You can download the latest version of the Parallels Desktop DevOps Service by selecting the platform you are using and clicking the download button for the binary.
+{% assign installationContent = site.pages | where:"url", "/docs/getting-started/installation/" | first %}
 
-{% include inner-tabs.html data="download_tabs" %}
+{{ installationContent.content }}
 
-After downloading the binary, copy it to a directory in your path, such as /usr/local/bin, and make it executable.
-
-```bash
-sudo mv prldevops /usr/local/bin
-sudo chmod +x /usr/local/bin/prldevops
-```
-
-You now have the necessary access to execute the `prldevops` command directly from your terminal.
 
 ### Install Parallels Desktop for Mac
 
@@ -97,7 +90,7 @@ After downloading the ISO, you can create a new virtual machine using either **P
 
 {% include inner-tabs.html content="create_vm_tab" %}
 
-#### Installing Parallels Tools
+#### Installing Parallels Tools in the Virtual Machine
 
 To enable certain features in this example, the Parallels Tools must be installed. You can do this by following the instructions that appear on the screen. Unfortunately, until the tools are installed, you won't be able to use the copy and paste function. In order to proceed, please go to the machine, login with the user you created, and enter the following commands:
 
@@ -121,11 +114,14 @@ sudo /media/cdrom0/install
 reboot
 ```
 
-You should have **Parallels Desktop Tools** installed and running. For more information, follow the [official documentation](https://kb.parallels.com/129740)
+You should have **Parallels Desktop Tools** installed and running. For more information, follow the [official documentation](https://kb.parallels.com/129740){:target="_blank"}
 
-#### Customize the Golden Image
+#### Customize the Golden Image (Optional)
 
-Follow the on-screen instructions to install the operating system. Once the installation is complete, log in to the virtual machine and install the required software stack. In our case, we will install the following:
+For our example we will be installing some development tools stack, **this is not mandatory and it serves only as an example**.  
+You can entirely skip this step if you want to just quickly test the service.
+
+Our software stack will include:
 
 - Docker
 - Node.js
@@ -151,92 +147,56 @@ After the installation is complete, you will have a virtual machine with the req
 
 ## Configuring and Running our DevOps Remote Catalog
 
-The DevOps Remote Catalog is a service designed to facilitate the sharing of VMs or Golden Master Images in your organization, if you want to know more on how it works you can check the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/catalog/overview/)
+The DevOps Remote Catalog is a service designed to facilitate the sharing of VMs or Golden Master Images in your organization, if you want to know more on how it works you can check the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/catalog/overview/){:target="_blank"}
 
 {% include notification.html message="For this example, we will set up **Parallels Desktop DevOps Remote Catalog** service as a locally running daemon. You can deploy it as a docker container in the cloud or as a daemon service in any remote macOS." status="is-info" %}
 
 ### Configuring the DevOps Remote Catalog
 
-To set up the service, we will need to create a [configuration file]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration/) . You can use the following example as a reference:
+To set up the service, we will need to create or edit a [configuration file]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration/){:target="_blank"}. 
 
-1. Run the command below to create the config file:
+1. Run the command below to create the config file:  
+   *If you have previously created a configuration file, you can skip this step*
 
-    ```sh
+    ```powershell
     touch config.yml
     ```
 
-2. Open the file with your preferred terminal text editor and add the following content:
+3. Open the file
+4. 
+    ```powershell
+    open -a TextEdit /usr/local/bin/config.yaml
+    ```
+
+5.  Add the following content:
 
     ```yaml
     environment:
-    api_port: 80
-    mode: catalog
+      api_port: 80
+      mode: catalog
     ```
 
-This will configure the service to run in catalog mode and listen on port 80 with all the default settings. However, this setup is only suitable for quick testing. For production use, we need to implement additional security measures to ensure a more secure deployment. You can find more information about security options in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration/)
+This will configure the service to run in catalog mode and listen on port 80 with all the default settings. However, this setup is only suitable for quick testing. For production use, we need to implement additional security measures to ensure a more secure deployment. You can find more information about security options in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/getting-started/harden-security/){:target="_blank"}
 
-#### Setting up database encryption
+### Security
 
-By default, the service operates with an unencrypted database. However, this is not ideal for a production deployment, as it poses a security risk. To enable encryption, you will need to generate a private `RSA key` and set it in the configuration file.
-The key must be **base64 encoded**. If you don't have an `RSA key`, you can generate one using the `prldevops` command line tool.
+The service will run with default values, these are just fine for demos and to quickly get the service running but for production use, you will need to secure the service. You can find more information about how to secure the service in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/getting-started/harden-security/){:target="_blank"}
 
-```sh
-prldevops gen-rsa --file=private.pem
-cat private.pem | base64
+### Starting the service
+
+To initiate the service, all you need to do is execute the command given below:
+
+```powershell
+prldevops
 ```
 
-<div class="flex flex-center">
-  <img src="{{ site.url }}{{ site.baseurl }}/img/examples/base64_db_key.png" alt="Database base64 RSA key"/>
-</div>
+If you have started the service as a daemon, you can check the status of the service by running the command below:
 
-You should copy and add a very long string to the configuration file.
-
-```yaml
-environment:
-  api_port: 80
-  mode: catalog
-  encryption_private_key: <base64_encoded_private_key>
+```powershell
+sudo launchctl kickstart -k system/com.parallels.devops-service
 ```
 
-#### Setting up TLS
-
-After encrypting our database, we can further enhance security by enabling TLS to safeguard the communication between the service and clients. To do this, you will require an SSL certificate and private key. Once obtained, encode them to base64 and add to the configuration file.
-
-```yaml
-environment:
-  api_port: 80
-  mode: catalog
-  encryption_private_key: <base64_encoded_private_key>
-  tls_enabled: true
-  tls_port: 443
-  tls_certificate: <base64_encoded_certificate>
-  tls_private_key: <base64_encoded_private_key>
-```
-
-#### Setting up the JWT signing method
-
-The final step in our setup process involves configuring the *JWT* signing method, which is responsible for signing the *JWT* tokens used by the service for authentication. We offer a variety of signing methods, but for this example, we will be using the **HMACS** method. This involves using a large, secret key (similar to a password, but much longer) to sign the tokens. You won't need to remember the key, as it will be used automatically in the background.
-
-```yaml
-environment:
-  api_port: 80
-  mode: catalog
-  encryption_private_key: <base64_encoded_private_key>
-  tls_enabled: true
-  tls_port: 443
-  tls_certificate: <base64_encoded_certificate>
-  tls_private_key: <base64_encoded_private_key>
-  jwt_hmac_secret: VeryStr0ngS3cr3t
-  jwt_sign_method: HS256
-```
-
-We just need to transfer the configuration file to the service folder.
-
-```sh
-cp config.yml /usr/local/bin/config.yml
-```
-
-### Changing the Root password
+## Changing the Root password
 
 Typically, the service is initiated with a randomly generated root password. However, in order to access the service's REST API, you will need to update this password. To do so, we provide a simple command line. For instance, we will set the password as `VeryStr0ngP@ssw0rd`, but you may choose any password you prefer.
 
@@ -244,48 +204,46 @@ Typically, the service is initiated with a randomly generated root password. How
 prldevops update-root-password --password=VeryStr0ngP@ssw0rd
 ```
 
-### Starting the service
-
-To initiate the service, all you need to do is execute the command given below:
-
-```prldevops
-prldevops
-```
-
-We can also install it as a daemon to run in the background.
-
-```sh
-sudo prldevops install service /usr/bin/prldevops
-launchctl start com.parallels.devops-service
-```
-
-This command will start the service, and the REST API can then be accessed at `http://localhost:80`.
-
 ## Pushing the Golden Master Image to the Remote Catalog
 
 We now have our` DevOps Remote Catalog` service up and running, which means we can proceed to push the Golden Master image to the service. But before we start, we need to take care of a few requirements. 
-The `DevOps Remote Catalog` works by storing only the metadata of the Golden Master image. This implies that the actual image will be stored in a remote location. In this example, we will be using an **S3 bucket** to store the image. However, you can use any other compatible storage service like **Azure Blob Storage** or **jfrog artifactory**. Most of these providers offer a free tier that you can use to test this feature. For more information about the architecture, you can refer to this link [here]({{ site.url }}{{ site.baseurl }}/docs/catalog/overview/#architecture).
+The `DevOps Remote Catalog` works by storing only the metadata of the Golden Master image. This implies that the actual image will be stored in a remote location. In this example, we will be using an **S3 bucket** to store the image. However, you can use any other compatible storage service like **Azure Blob Storage** or **jfrog artifactory**. Most of these providers offer a free tier that you can use to test this feature. For more information about the architecture, you can refer to this link [here]({{ site.url }}{{ site.baseurl }}/docs/catalog/overview/#architecture){:target="_blank"}.
 
 ### Creating the PDFile
 
-We have designed an easy way to automate the `push` and `pull` process of virtual machines (VMs) using a reusable file called pdfile. This file contains essential information required to `push` and `pull` VMs from our catalog. It is similar to a dockerfile but specific for VMs.
+We have designed an easy way to automate the `push` and `pull` process of virtual machines (VMs) using a reusable file called pdfile. This file contains essential information required to `push` and `pull` VMs from our catalog. It is similar to a dockerfile but specific for VMs. You can find more information about the pdfile in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/catalog/pdfile/){:target="_blank"}  
 
-To create a pdfile, you need to include the following content:
+In this example we will be using the `Local Storage` provider, this provider is used to store the VMs in the local machine, this is useful for testing purposes.
+
+Before we can push the Golden Master image to the local storage, we need to create a folder that will contain our VM image. This folder will be used as the `CATALOG_PATH` in the pdfile. For now we will be creating a folder in our user space called `prldevops-catalog-manifests`
+
+```powershell
+mkdir ~/prldevops-catalog-manifests
+```
+
+To create a pdfile, you need to create a pdfile anywhere in your system, for example:
+
+```powershell
+touch ~/ubuntu-builder.pdfile
+open -a TextEdit ~/ubuntu-builder.pdfile
+```
+
+ include the following content:
 
 ```pdfile
 TO localhost
+# We are using the localhost and this is insecure so we can add the insecure flag
 INSECURE true
 
+# We authenticate this using the root user and the password we set before
 AUTHENTICATE USERNAME root
 AUTHENTICATE PASSWORD VeryStr0ngP@ssw0rd
 
-PROVIDER NAME aws-s3
-PROVIDER BUCKET <bucket_name>
-PROVIDER REGION <bucket_region>
-PROVIDER ACCESS_KEY <bucket_access_key>
-PROVIDER SECRET_KEY <bucket_secret_key>
+# We will be using the local storage provider to store the VM
+PROVIDER NAME local-storage
+PROVIDER catalog_path /Users/<user>/prldevops-catalog-manifests
 
-LOCAL_PATH /path/to/the/test-vm.pvm
+LOCAL_PATH </path/to/the/test-vm.pvm>
 
 DESCRIPTION Build Machine
 
@@ -296,77 +254,89 @@ VERSION v1
 ARCHITECTURE arm64
 ```
 
-This will push the VM from the *LOCAL_PATH* to the localhost *remote catalog* with everyone having access to it. However, we can restrict access to specific claims and roles for each catalog entry. To achieve this, you can add the `ROLE` and/or `CLAIM` into the pdfile. For example, if you want to restrict access to users with the **developer** claim, you can add the following to the pdfile
+Where:
 
-```pdfile
-TO localhost
-INSECURE true
+- `<user>`: will be the user name for your system
+- `</path/to/the/test-vm.pvm>`: is the path to the VM image you want to push to the catalog
 
-AUTHENTICATE USERNAME root
-AUTHENTICATE PASSWORD VeryStr0ngP@ssw0rd
 
-PROVIDER NAME aws-s3
-PROVIDER BUCKET <bucket_name>
-PROVIDER REGION <bucket_region>
-PROVIDER ACCESS_KEY <bucket_access_key>
-PROVIDER SECRET_KEY <bucket_secret_key>
+This will push the VM from the *LOCAL_PATH* to the localhost *remote catalog* with everyone having access to it. However, we can restrict access to specific claims and roles for each catalog entry. To achieve this, you can add the `ROLE` and/or `CLAIM` into the pdfile and using our RBAC system, you can restrict access to the catalog entry.  
 
-LOCAL_PATH /path/to/the/test-vm.pvm
+You can read more about the RBAC and how to set it up in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/security/rbac/){:target="_blank"}
 
-DESCRIPTION Build Machine
-
-CLAIM developer
-
-TAG ubuntu, build-machine, arm64, docker, python, nodejs
-
-CATALOG_ID ubuntu-22-04-builder
-VERSION v1
-ARCHITECTURE arm64
-```
+#### Pushing the Golden Master Image
 
 To push the VM image to the catalog, you can run the following command:
 
 ```prldevops
-prldevops push /path/to/pdfile
+prldevops push ~/ubuntu-builder.pdfile
 ```
 
-[Add the list command to check what you have there]
-
 {% include notification.html message="This process duration may vary depending on your VM size and internet speed." status="is-warning" %}
+
+### Listing the Catalog
+
+Now that we pushed the Golden Master image to the catalog, we can list the catalog entries by running the following command:
+
+```prldevops
+prldevops catalog list
+```
+
+this should return a list of all the catalog entries that are available in the catalog.for example:
+
+<div class="flex flex-center">
+  <img src="{{ site.url }}{{ site.baseurl }}/img/examples/catalog_list.png" alt="Catalog List"/>
+</div>
 
 ### Pulling the Golden Master Image
 
 Now that we have the Golden Master image in the catalog, we can allow our team to pull it and use it to create new virtual machines.
 
-### Requirements
+This of course is going to use the local storage provider as an example but you can use any other provider that you have configured in the service.
 
-Your team now has access to the Golden Master image in the catalog, which they can use to create virtual machines. To be able to do this, they will need to have the Parallels Desktop DevOps Service and Parallels Desktop installed on their machines, using the same installation process as before. You can check it out **[here](#install-parallels-desktop-devops-service)**
+To pull the image that we just pushed, we need to create a new pdfile that will contain the information required to pull the image.
 
-### Pulling the Golden Master Image
+To create a pull pdfile, you need to create a pdfile anywhere in your system, for example:
 
-To make it easy for the team members, we have created a pdfile that contains all the information required to pull the Golden Master image from the catalog. This file can be shared with anyone and stored in a repository for easy access. The user will need to authenticate with the service to be able to pull the image, and the service will check if the user has the required claims to access it.
+```powershell
+touch ~/pull-ubuntu-builder.pdfile
+open -a TextEdit ~/pull-ubuntu-builder.pdfile
+```
 
-Here is an example of a Pull pdfile:
+Include the following content:
 
 ```pdfile
+# This is the catalog host we want to pull the image from
 FROM localhost
+# We are using the localhost and this is insecure so we can add the insecure flag
 INSECURE true
 
+# This is the catalog id of the image we want to pull
 CATALOG_ID ubuntu-22-04-builder
+# The version of the image we want to pull
 VERSION v1
+# The architecture of the image we want to pull
 ARCHITECTURE arm64
 
+# The name of the machine that will be created
 MACHINE_NAME build-machine
 
+# We can set the ownership of the machine to a specific user, this is not mandatory and
+# if omitted the machine will be owned by the user that is pulling the image
 OWNER cjlapao
+# The destination where the machine will be stored, this is not mandatory and if omitted
+# if omitted the machine will be stored in the default location of the parallels desktop
 DESTINATION /Users/foo/Parallels
+
+# We can set the machine to start after the pull is complete, this is not mandatory and if omitted
+# the machine will not start after the pull is complete
 START_AFTER_PULL false
 ```
 
 To pull the image from the catalog, the user will need to authenticate with the service by passing either the `--username` and `--password` flags or by using the `--api-key` flag with a valid key. If the user has the required claims to access the image, the service will then pull the image from the remote storage and create a new virtual machine with the same software stack as the Golden Master image. Otherwise, it will return a **not found** error.
 
 ```prldevops
-prldevops pull /path/to/pdfile --username=foo --password=bar
+prldevops pull ~/pull-ubuntu-builder.pdfile --username=root --password=VeryStr0ngP@ssw0rd
 ```
 
 After the image is pulled, the user will have a new virtual machine with the same software stack as the Golden Master image, ready to be used. 

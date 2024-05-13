@@ -1,5 +1,5 @@
 ---
-title: MacOs Download
+title: macOs Download
 layout: page
 show_sidebar: false
 ---

@@ -134,20 +134,24 @@ func (p *PDFileService) Validate() *diagnostics.PDFileDiagnostics {
 		diag.AddError(fmt.Errorf("RUN command not found"))
 	}
 
-	if !hasFromOrTo {
+	if !hasFromOrTo && (p.pdfile.From == "" && p.pdfile.To == "") {
 		diag.AddError(fmt.Errorf("from command not found"))
 	}
 
-	if hasAuthentication {
-		if isUsernamePresent && !isPasswordPresent {
+	if hasAuthentication || p.pdfile.Authentication != nil {
+		if (isUsernamePresent && !isPasswordPresent) && (p.pdfile.Authentication.Username != "" && p.pdfile.Authentication.Password == "") {
 			diag.AddError(fmt.Errorf("username was found but password was not found"))
 		}
-		if !isUsernamePresent && isPasswordPresent {
+		if (!isUsernamePresent && isPasswordPresent) && (p.pdfile.Authentication.Username == "" && p.pdfile.Authentication.Password != "") {
 			diag.AddError(fmt.Errorf("password was found but username was not found"))
 		}
-		if !isUsernamePresent && !isPasswordPresent && !isApiKeyPresent {
+		if (!isUsernamePresent && !isPasswordPresent && !isApiKeyPresent) && (p.pdfile.Authentication.Username == "" && p.pdfile.Authentication.Password == "" && p.pdfile.Authentication.ApiKey == "") {
 			diag.AddError(fmt.Errorf("authentication was found but username, password or api key was not found"))
 		}
+	}
+
+	if runCMD == "" {
+		runCMD = p.pdfile.Command
 	}
 
 	cmd := runCMD

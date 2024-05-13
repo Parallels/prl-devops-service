@@ -8,6 +8,10 @@
       link: /docs/getting-started/docker/
     - name: Kubernetes
       link: /docs/getting-started/kubernetes/
+- label: Security#
+  items:
+    - name: Hardening Security
+      link: /docs/security/hardening-security/
 - label: RestAPI
   items:
     - name: Overview

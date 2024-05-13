@@ -13,7 +13,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/briandowns/spinner"
 )
+
+var GlobalSpinner = spinner.New(spinner.CharSets[9], 500*time.Millisecond)
 
 type Command struct {
 	Command          string

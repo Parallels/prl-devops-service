@@ -1,7 +1,7 @@
 <nav class="navbar sticky is-primary {% if site.fixed_navbar %} is-fixed-{{ site.fixed_navbar }} {% endif %}" x-data="{ openNav: false }">
   <div class="container">
     <div class="navbar-brand">
-      <a href="{% if site.brand_url %} {{ site.brand_url }} {% else %} {{ site.baseurl }} {% endif %}/" class="navbar-item">
+      <a href="{% if site.brand_url %} {{ site.brand_url }}{% else %} {{ site.baseurl }} {% endif %}/" class="navbar-item" target="_blank">
         {% if site.brand_img %}
         <img alt="logo" src="{{ site.baseurl }}/assets/img/{{ site.brand_img}}" />
         {% else %}
