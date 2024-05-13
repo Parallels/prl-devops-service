@@ -113,12 +113,12 @@ func (p *PDFile) ParseProvider(value string) (PDFileProvider, error) {
 					result.Attributes[strings.ToLower(providerParts[1])] = strings.TrimSpace(providerParts[2])
 				}
 			}
-			return result, nil
 		} else if len(providerParts) == 3 {
 			if strings.ToLower(providerParts[1]) == "name" {
 				result.Name = strings.TrimSpace(providerParts[2])
 				continue
 			}
+
 			result.Attributes[strings.ToLower(providerParts[1])] = strings.TrimSpace(providerParts[2])
 		}
 	}
