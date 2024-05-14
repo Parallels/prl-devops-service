@@ -10,37 +10,8 @@ version: 0.5.4
 
 {{ installationContent.content }}
 
-### Quick Configuration
 
-By default the **devops service** will run with default values but these can be configured by creating a `config.yaml` file in the same directory as the binary. Below is an example of a configuration file.
 
-```yaml
-environment:
-  api_port: 5570
-  log_level: DEBUG
-```
-
-This is the most basic configuration file, you can find more information about the configuration file in [here]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration).
-
-### Running the Service
-
-Once you have the binary you can run it by executing the following command.
-
-```powershell
-prldevops api
-```
-
-This will start the service and you will be able to access the swagger ui at [http://localhost:5570/swagger/index.html](http://localhost:5570/swagger/index.html)
-
-**Note:** The service will run on port 5570 as defined in the above configuration example, you can change this by modifying the `config.yaml` file.
-
-### Checking if the service is running
-
-Once you started it you can then quickly check the health status of the service by running the following command.
-
-```powershell
-curl http://localhost:5570/api/health/probe
-```
 
 ### Getting Help
 
@@ -58,6 +29,10 @@ For example:
 prldevops api --help
 ```
 
+<div class="flex flex-center">
+  <img src="{{ site.url }}{{ site.baseurl }}/img/examples/prldevops_help.gif" alt="Catalog List"/>
+</div>
+
 ![DevOps Help]({{ site.url }}{{ site.baseurl }}/img/prldevops_help.gif)
 
 ### Installing Tools
@@ -74,11 +49,10 @@ prldevops install
 
 ### Next Steps
 
-You now have the service running in your machine, you can start playing with all the available features and start creating virtual machines and managing your hosts.
+You now have the service installed and running, you can dive a bit more into our [official documentation]({{ site.url }}{{ site.baseurl }}/docs/) to see what else you can do with the service. 
 
-To do so follow the links below to get more information about the available features.
+You can also check our examples and tutorials to see how you can use the service to automate your virtual machine management.
 
-- [API]({{ site.url }}{{ site.baseurl }}/docs/restapi/overview/)
-- [Orchestrator]({{ site.url }}{{ site.baseurl }}/docs/orchestrator/overview/)
-- [Catalog]({{ site.url }}{{ site.baseurl }}/docs/catalog/overview/)
-- [Reverse Proxy]({{ site.url }}{{ site.baseurl }}/docs/reverse-proxy/overview/)
+[Run a Catalog service]({{ site.url }}{{ site.baseurl }}/examples/remote-catalog/)  
+[Control Multiple Hosts]({{ site.url }}{{ site.baseurl }}/examples/orchestrator/)  
+[Github Actions]({{ site.url }}{{ site.baseurl }}/examples/github-actions/)  

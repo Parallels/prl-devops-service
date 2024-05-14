@@ -8,7 +8,9 @@
 - name: Examples
   link: /#
   dropdown:
-    - name: Run a Catalog service locally with Docker
-      link: /examples/run-catalog-docker/
-    - name: Create a PDFile to push to a Catalog
-      link: /examples/create_push_pdfile/
+    - name: Run a Catalog service
+      link: /examples/remote-catalog/
+    - name: Control Multiple Hosts
+      link: /examples/orchestrator/
+    - name: Github Actions
+      link: /examples/github-actions/

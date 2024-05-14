@@ -63,8 +63,17 @@ func Start(ctx basecontext.ApiContext) {
 	if cfg.IsOrchestrator() {
 		ctx := basecontext.NewRootBaseContext()
 		ctx.LogInfof("Starting Orchestrator Background Service")
+		canUseOwnResources := false
+		if system.GetOperatingSystem() == "linux" {
+			canUseOwnResources = false
+		} else if system.GetOperatingSystem() == "windows" {
+			canUseOwnResources = false
+		} else if system.GetOperatingSystem() == "macos" || system.GetOperatingSystem() == "darwin" {
+			canUseOwnResources = true
+		}
+
 		// Checking if we need to add the current host to the orchestrator hosts
-		if cfg.UseOrchestratorResources() {
+		if cfg.UseOrchestratorResources() && canUseOwnResources {
 			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
 				hostName := cfg.Localhost()
 				createdKey := false
