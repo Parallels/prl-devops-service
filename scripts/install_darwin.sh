@@ -27,7 +27,9 @@ if [[ ! $VERSION == release-* ]]; then
   VERSION="release-$VERSION"
 fi
 
-DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--darwin-amd64.tar.gz"
+ARCHITECTURE=$(uname -m)
+
+DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--darwin-$ARCHITECTURE.tar.gz"
 
 echo "Downloading prldevops $VERSION from $DOWNLOAD_URL"
 curl -L $DOWNLOAD_URL -o prldevops.tar.gz
