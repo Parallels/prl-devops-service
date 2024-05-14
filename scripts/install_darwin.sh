@@ -28,13 +28,17 @@ if [[ ! $VERSION == release-* ]]; then
 fi
 
 ARCHITECTURE=$(uname -m)
+if [ "$ARCHITECTURE" = "aarch64" ]; then
+  ARCHITECTURE="arm64"
+fi
+
 OS=$(uname -s)
 OS=$(echo "$OS" | tr '[:upper:]' '[:lower:]')
 
 DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
 
 echo "Downloading prldevops $VERSION from $DOWNLOAD_URL"
-curl -L $DOWNLOAD_URL -o prldevops.tar.gz
+curl -sL $DOWNLOAD_URL -o prldevops.tar.gz
 
 echo "Extracting prldevops"
 tar -xzf prldevops.tar.gz
