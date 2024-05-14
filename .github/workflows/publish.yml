@@ -112,8 +112,6 @@ jobs:
         exclude:
           - goarch: "386"
             goos: darwin
-          - goarch: arm64
-            goos: windows
     steps:
     - uses: actions/checkout@v3
     - name: Add Inbuilt Variables

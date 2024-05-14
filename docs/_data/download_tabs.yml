@@ -28,19 +28,24 @@ items:
                 <span class="icon"><i class="fa-solid fa-exclamation-circle fa-lg"></i></span>
               </div>
             <div class="media-content">
-              <div class="content">Please be aware that running this service in windows you will only have access to the orchestrator and catalog features</div>
+              <div class="content">Please be aware that running this service in linux you will only have access to the orchestrator and catalog features</div>
             </div>
         </article>
       </div>
       <div class="flex flex-column">
         <span>
-          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--linux-amd64.tar.gz" class="button is-primary">
-            Parallels Desktop DevOps Service for intel chips
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--linux-x86.tar.gz" class="button is-primary">
+            Parallels Desktop DevOps Service x64
           </a>
         </span>
         <span>
-          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-amd64.tar.gz" class="button is-primary">
-            Parallels Desktop DevOps Service for Mac with Intel chip
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--linux-amd64.tar.gz" class="button is-primary">
+            Parallels Desktop DevOps Service x64
+          </a>
+        </span>
+        <span>
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-arm64.tar.gz" class="button is-primary">
+            Parallels Desktop DevOps Service amr64
           </a>
         </span>
       </div>
@@ -48,16 +53,33 @@ items:
   icon: windows
   icon_brand: true
   content: |-
-    <div class="mt-2 notification is-warning">
-      <article class="media">
-          <div class="media-left">
-              <span class="icon"><i class="fa-solid fa-exclamation-circle fa-lg"></i></span>
+      <div class="mt-2 notification is-warning">
+        <article class="media">
+            <div class="media-left">
+                <span class="icon"><i class="fa-solid fa-exclamation-circle fa-lg"></i></span>
+              </div>
+            <div class="media-content">
+              <div class="content">Please be aware that running this service in windows you will only have access to the orchestrator and catalog features</div>
             </div>
-          <div class="media-content">
-            <div class="content">At the moment we do not provide any binaries for windows</div>
-          </div>
-      </article>
-    </div>
+        </article>
+      </div>
+      <div class="flex flex-column">
+        <span>
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--windows-amd64.tar.gz" class="button is-primary">
+            Parallels Desktop DevOps Service x64
+          </a>
+        </span>
+        <span>
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--windows-x86.tar.gz" class="button is-primary">
+            Parallels Desktop DevOps Service x86
+          </a>
+        </span>
+        <span>
+          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--windows-arm64.tar.gz" class="button is-primary">
+            Parallels Desktop DevOps Service arm64
+          </a>
+        </span>
+      </div>
 - title: From Source
   icon: github
   icon_brand: true
