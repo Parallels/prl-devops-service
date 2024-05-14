@@ -28,8 +28,10 @@ if [[ ! $VERSION == release-* ]]; then
 fi
 
 ARCHITECTURE=$(uname -m)
+OS=$(uname -s)
+OS=$(echo "$OS" | tr '[:upper:]' '[:lower:]')
 
-DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--darwin-$ARCHITECTURE.tar.gz"
+DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
 
 echo "Downloading prldevops $VERSION from $DOWNLOAD_URL"
 curl -L $DOWNLOAD_URL -o prldevops.tar.gz
@@ -49,7 +51,11 @@ fi
 echo "Moving prldevops to $DESTINATION"
 sudo mv prldevops $DESTINATION/prldevops
 sudo chmod +x $DESTINATION/prldevops
-sudo xattr -d com.apple.quarantine $DESTINATION/prldevops
+
+if [ "$OS" = "darwin" ]; then
+  sudo xattr -d com.apple.quarantine $DESTINATION/prldevops
+fi
+
 
 echo "Cleaning up"
 rm prldevops.tar.gz
