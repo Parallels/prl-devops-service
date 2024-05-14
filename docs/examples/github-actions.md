@@ -131,7 +131,7 @@ The installation process of the GitHub Actions Runner on the virtual machine can
 
 To install the runner, you can run the following commands on the terminal:
 
-```bash
+```powershell
 curl -o /home/install-runner.sh https://raw.githubusercontent.com/Parallels/prlctl-scripts/main/github/actions-runner/linux/install-runner.sh
 curl -o /home/configure-runner.sh https://raw.githubusercontent.com/Parallels/prlctl-scripts/main/github/actions-runner/linux/configure-runner.sh
 curl -o /home/remove-runner.sh https://raw.githubusercontent.com/Parallels/prlctl-scripts/main/github/actions-runner/linux/remove-runner.sh
@@ -143,9 +143,9 @@ chmod +x /home/remove-runner.sh
 ```
 
 Where:
-- `<your-username>` is your username used to login to the virtual machine
-- `<yourOrganization>` is your Github organization
-- `<yourGithubPAT>` is your Github Personal Access Token
+- `$yourUsername` is your username used to login to the virtual machine
+- `$yourOrganization>` is your Github organization or your Github username
+- `$yourGithubPAT>` is your Github Personal Access Token
 
 ### Check the Runner is registered and running
 
@@ -163,10 +163,10 @@ For example:
 We should also ensure that our 'Default' runner group is configured to utilize all repositories, including public ones.
 
 1. Go to your repository on Github
-2. Click on Settings
-3. Click on Actions
-4. Click on Runner groups
-5. Click on Default
+2. Click on `Settings`
+3. Click on `Actions`
+4. Click on `Runner groups`
+5. Click on `Default`
 6. Select `All repositories` on the `Repository access` dropdown
 7. Tick the `Allow public repositories` checkbox
 8. Select `All workflows` on the `Workflow access` dropdown
@@ -187,6 +187,25 @@ To create a new Github Actions workflow, you need to make a new file in your rep
 
 For instance, let's create an iOS workflow. We'll name our file `build_ios.yml`. In this example, we will add segments to the file and explain what each part does.
 
+#### Secrets
+
+To ensure security most of the services running here will use some sort of authentication and because the workflow is public we need to store the secrets in the Github repository and then retrieve them during run. To do this we will be using Github Secrets, these are encrypted variables that can be used in the workflow.
+
+To add a secret to your repository, you need to:
+
+1. Go to your Organization or Repository on Github
+2. Click on `Settings`
+3. Click on `Secrets and variables`
+4. Click on `Actions`
+5. Click on `New organization secret`
+6. Fill in the name and the value of the secret, need to be on the format `YOUR_SECRET_NAME`
+7. Fill in the value
+8. Click on `Add secret`
+
+After this the secret will be available to be used on the workflow as `{% raw %}${{ secrets.YOUR_SECRET_NAME }}{% endraw %}`
+
+![Github Runner]({{ site.url }}{{ site.baseurl }}/img/examples/locally-build-secrets.png)
+
 #### Header of the workflow
 
 This section defines what if the name of the workflow, when it should run and on which branches. we also define some environment variables that we will be using on the workflow. in this example this workflow can be triggered by a workflow call or manually by a workflow dispatch.
@@ -199,9 +218,7 @@ on:
   workflow_dispatch:
 
 env:
-    DOTNETVERSION: 8.0.204
-    
-jobs:
+    DOTNETVERSION: 8.0.204    
 ```
 
 #### Job create-runner
@@ -209,13 +226,15 @@ jobs:
 The first job we will be creating is the one that will tell devops to clone the created VM and install the runner on it. This job will be running on the `ubuntu_builder` runner that we created before.
 
 ```yaml
+# this will be the jobs array that will contain all of our jobs
+jobs:
   create_runner:
     # This will be the name of the job
     name: Deploy Self Hosted Runner
     # This job will be running on the ubuntu_builder runner self hosted runner
     runs-on: 
     - self-hosted
-    - ubuntu-latest
+    - ubuntu_builder
     # This will be the steps that will be executed on this job
     steps:
         # First we will be cloning the generic VM that we created before, in this case we will be cloning
@@ -227,9 +246,9 @@ The first job we will be creating is the one that will tell devops to clone the 
           with:
             operation: 'clone'
             # The username to access the devops service
-            username: ${{ secrets.PARALLELS_USERNAME }}
+            username: {% raw %}${{ secrets.PARALLELS_USERNAME }}{% endraw %}
             # The password to access the devops service
-            password: ${{ secrets.PARALLELS_PASSWORD }}
+            password: {% raw %}${{ secrets.PARALLELS_PASSWORD }}{% endraw %}
             # Set this to true if you are using a self signed certificate
             insecure: true
             # the host for the devops service
@@ -248,11 +267,11 @@ The first job we will be creating is the one that will tell devops to clone the 
             # What will be the timeout after each failed attempt and before the next one
             timeout_seconds: 2
             operation: 'run'
-            username: ${{ secrets.PARALLELS_USERNAME }}
-            password: ${{ secrets.PARALLELS_PASSWORD }}
+            username: {% raw %} ${{ secrets.PARALLELS_USERNAME }}{% endraw %}
+            password: {% raw %} ${{ secrets.PARALLELS_PASSWORD }}{% endraw %}
             host_url: example.com:8080
             insecure: true
-            machine_name: ${{ steps.pull.outputs.vm_id }}
+            machine_name: {% raw %} ${{ steps.pull.outputs.vm_id }}{% endraw %}
             # These will be running some scripts we have created to install the runner in an automated way
             # you can copy this step and change only the secrets to use the scripts that we have created
             run: |
@@ -263,13 +282,13 @@ The first job we will be creating is the one that will tell devops to clone the 
                 chmod +x /Users/configure-runner.sh
                 chmod +x /Users/remove-runner.sh
 
-                /Users/install-runner.sh -u parallels -p /Users
-                /Users/configure-runner.sh -u parallels -p /Users/action-runner -o Locally-build -t ${{ secrets.GH_PAT }} -n ${{ github.run_id }}_builder -l ${{ github.run_id }}_builder
+                /Users/install-runner.sh -u {% raw %}${{ secrets.VM_USERNAME }}{% endraw %} -p /Users
+                {% raw %}/Users/configure-runner.sh -u ${{ secrets.VM_USERNAME }} -p /Users/action-runner -o Locally-build -t ${{ secrets.GH_PAT }} -n ${{ github.run_id }}_builder -l ${{ github.run_id }}_builder{% endraw %}
    # The GitHub action will output the ID and the name of the VM that we cloned, this will be used later on
    # for the cleanup job
    outputs:
-        vm_id: ${{ steps.pull.outputs.vm_id }}
-        vm_name: ${{ steps.pull.outputs.vm_name }}
+        vm_id: {% raw %}${{ steps.pull.outputs.vm_id }}{% endraw %}
+        vm_name: {% raw %} ${{ steps.pull.outputs.vm_name }}{% endraw %}
 ```
 
 ### Job build-ios
@@ -283,15 +302,15 @@ This will be the job that will be building the iOS project, we will be using the
     runs-on: 
         - self-hosted
         - macOS
-        - ${{ github.run_id }}_builder
+        - {% raw %} ${{ github.run_id }}_builder{% endraw %}
     steps:
       - uses: actions/checkout@v2     
       - name: Install the Apple certificate and provisioning profile
         env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_BUILD_CERTIFICATE_BASE64 }}
-          P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
-          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.APPLE_BUILD_PROVISION_PROFILE_BASE64 }}
-          KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+          BUILD_CERTIFICATE_BASE64: {% raw %} ${{ secrets.APPLE_BUILD_CERTIFICATE_BASE64 }}{% endraw %}
+          P12_PASSWORD: {% raw %} ${{ secrets.APPLE_P12_PASSWORD }}{% endraw %}
+          BUILD_PROVISION_PROFILE_BASE64: {% raw %} ${{ secrets.APPLE_BUILD_PROVISION_PROFILE_BASE64 }}{% endraw %}
+          KEYCHAIN_PASSWORD: {% raw %} ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}{% endraw %}
         run: |
           # create variables
           CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
@@ -314,10 +333,10 @@ This will be the job that will be building the iOS project, we will be using the
           # apply provisioning profile
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
-      - name: Setup .NET SDK ${{env.DOTNETVERSION}}
+      - name: Setup .NET SDK {% raw %} ${{env.DOTNETVERSION}}{% endraw %}
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version:  '${{env.DOTNETVERSION}}'
+          dotnet-version:  '{% raw %}${{env.DOTNETVERSION}}{% endraw %}'
 
       - name: Install .NET MAUI
         shell: bash
@@ -347,35 +366,47 @@ This will be the job that will be building the iOS project, we will be using the
 This will be a job where we will be cleaning the VM that we created before, this will be running on the `ubuntu_builder` runner that we created before. we also add the `if: always()` as we want this to be run even if the pipelines fail allowing it to at least always try to clean up the resources.
 
 ```yaml
+  # This will be the id of the job
   clean_runner:
+    # This will be an important step as it will allow the pipeline to always run this job
+    # even if anything else fails, this allows for a better cleanup process
     if: always()
+    # this will tell the job to run on last after both of the other jobs have finished
     needs: [buildiOS, create_runner]
+    # This will be the name of the job
     name: Clean Runner
-    runs-on: ubuntu-latest
+    # This job will be running on the ubuntu_builder runner self hosted runner
+    runs-on: 
+    - self-hosted
+    - ubuntu_builder
     steps:
+          # This job will be removing the runner that we created before from the GitHub
         - name: Remove Github Runner
           id: configure  
           uses: parallels/parallels-desktop-github-action@v1
           with:
             operation: 'run'
-            username: ${{ secrets.PARALLELS_USERNAME }}
-            password: ${{ secrets.PARALLELS_PASSWORD }}
-            host_url: home.carloslapao.com:5470
+            username: {% raw %}${{ secrets.PARALLELS_USERNAME }}{% endraw %}
+            password: {% raw %}${{ secrets.PARALLELS_PASSWORD }}{% endraw %}
+            host_url: example.com:8080
             insecure: true
-            machine_name: ${{ needs.create_runner.outputs.vm_id }}
+            machine_name: {% raw %}${{ needs.create_runner.outputs.vm_id }}{% endraw %}
             run: |
-                /Users/remove-runner.sh -u parallels -p /Users/action-runner -o Locally-build -t ${{ secrets.GH_PAT }}
+                {% raw %}/Users/remove-runner.sh -u parallels -p /Users/action-runner -o Locally-build -t ${{ secrets.GH_PAT }}{% endraw %}
+        # This will be removing the VM that we created before
         - name: Remove VM
+          # We will also set the if: always() to ensure that this job will always run and the machine is removed
+          # even if it fails to remove the runner
           if: always()
           id: remove
           uses: parallels/parallels-desktop-github-action@v1
           with:
             operation: 'delete'
-            username: ${{ secrets.PARALLELS_USERNAME }}
-            password: ${{ secrets.PARALLELS_PASSWORD }}
+            username: {% raw %} ${{ secrets.PARALLELS_USERNAME }}{% endraw %}
+            password: {% raw %} ${{ secrets.PARALLELS_PASSWORD }}{% endraw %}
             insecure: true
-            host_url: home.carloslapao.com:5470
-            machine_name: ${{ needs.create_runner.outputs.vm_id }}
+            host_url: example.com:8080
+            machine_name: {% raw %} ${{ needs.create_runner.outputs.vm_id }}{% endraw %}
 ```
 
 ### Conclusion

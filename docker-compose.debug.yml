@@ -1,0 +1,28 @@
+version: '3.9'
+name: devops-service
+services:
+  devops:
+    build: .
+    ports:
+      - 5570:80/tcp
+      - 40000:40000/tcp
+    security_opt:
+      - 'apparmor:unconfined'
+      - 'seccomp:unconfined'
+    cap_add:
+      - SYS_PTRACE
+    environment:
+      HMAC_SECRET: ''
+      LOG_LEVEL: 'info'
+      SECURITY_PRIVATE_KEY: ''
+      TLS_ENABLED: 'false'
+      TLS_PORT: '447'
+      TLS_CERTIFICATE: ''
+      TLS_PRIVATE_KEY: ''
+      API_PORT: '80'
+      API_PREFIX: '/api'
+      ROOT_PASSWORD: ''
+      DISABLE_CATALOG_CACHING: 'false'
+      TOKEN_DURATION_MINUTES: 60
+      MODE: orchestrator
+      USE_ORCHESTRATOR_RESOURCES: 'false'

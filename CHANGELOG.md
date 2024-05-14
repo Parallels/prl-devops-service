@@ -17,6 +17,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.6.3] - 2024-05-14
+
+### Changed
+
+- Changed the examples documentation to add more details
+- Changed the documentation to have vscode on it
+
+### Fixed
+
+- Fixed an issue were the orchestrator did not allow execute commands from container
+- Fixed an issue with the Docker file where it was building for the wrong platform
+- Fixed some typos in the documentation
+
 ## [0.6.2] - 2024-05-13
 
 ### Added

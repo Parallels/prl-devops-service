@@ -52,10 +52,10 @@ Let's look at how you can use the Parallels Desktop DevOps Service to create a G
 
 ### Requirements
 
-- [Parallels Desktop for Mac](https://www.parallels.com/products/desktop/)
-- [Parallels Desktop DevOps Service](https://github.com/Parallels/prl-devops-service)
+- [Parallels Desktop for Mac](https://www.parallels.com/products/desktop/){:target="_blank"}
+- [Parallels Desktop DevOps Service](https://github.com/Parallels/prl-devops-service){:target="_blank"}
 
-{% include notification.html message="You can try it for free before purchasing by clicking this [link](https://www.parallels.com/products/desktop/trial/) and downloading our trial version" status="is-success" icon="comments-dollar" %}
+{% include notification.html message="You can try it for free before purchasing by clicking this [link](https://www.parallels.com/products/desktop/trial/){:target=\"_blank\"} and downloading our trial version" status="is-success" icon="comments-dollar" %}
 
 ### Install Parallels Desktop DevOps
 
@@ -231,6 +231,7 @@ open -a TextEdit ~/ubuntu-builder.pdfile
  include the following content:
 
 ```pdfile
+# This is the catalog host we want to push the image to
 TO localhost
 # We are using the localhost and this is insecure so we can add the insecure flag
 INSECURE true
@@ -243,14 +244,24 @@ AUTHENTICATE PASSWORD VeryStr0ngP@ssw0rd
 PROVIDER NAME local-storage
 PROVIDER catalog_path /Users/<user>/prldevops-catalog-manifests
 
+# The path to the VM image we want to push
 LOCAL_PATH </path/to/the/test-vm.pvm>
 
+# Description of the VM, this is optional and just adds a description to the catalog entry
 DESCRIPTION Build Machine
 
+# The tags of the VM, this is optional and just adds tags to the catalog entry that will
+# help to filter the catalog entries
 TAG ubuntu, build-machine, arm64, docker, python, nodejs
 
+# The catalog id of the image we want to push
 CATALOG_ID ubuntu-22-04-builder
+
+# The version of the image we want to push
 VERSION v1
+
+# The architecture of the image we want to push, this is optional and if omitted the
+# architecture will be set to the architecture of the VM
 ARCHITECTURE arm64
 ```
 
@@ -326,12 +337,16 @@ MACHINE_NAME build-machine
 OWNER cjlapao
 # The destination where the machine will be stored, this is not mandatory and if omitted
 # if omitted the machine will be stored in the default location of the parallels desktop
-DESTINATION /Users/foo/Parallels
+DESTINATION /Users/<user>/Parallels
 
 # We can set the machine to start after the pull is complete, this is not mandatory and if omitted
 # the machine will not start after the pull is complete
 START_AFTER_PULL false
 ```
+
+Where:
+
+- `<user>`: will be the user name for your system
 
 To pull the image from the catalog, the user will need to authenticate with the service by passing either the `--username` and `--password` flags or by using the `--api-key` flag with a valid key. If the user has the required claims to access the image, the service will then pull the image from the remote storage and create a new virtual machine with the same software stack as the Golden Master image. Otherwise, it will return a **not found** error.
 

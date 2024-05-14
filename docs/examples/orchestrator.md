@@ -23,79 +23,78 @@ This will show you a small diagram of what we will be setting up and how it will
 
 ![Github Runner]({{ site.url }}{{ site.baseurl }}/img/examples/orchestrator_ci_cd_github_scenario-simple_github_flow.drawio.png)
 
+On the example we will show we will only use one host as this is the simplest way to show how the orchestrator service works, but you can add multiple hosts to the orchestrator service and it will automatically select the host with the most resources available to run the virtual machine.
+
 **Let's get started!**
 
 ## Requirements
 
-- [Parallels Desktop for Mac](https://www.parallels.com/products/desktop/)
-- [Parallels Desktop DevOps Service](https://github.com/Parallels/prl-devops-service)
-- [GitHub account and repository](https://github.com)
-- Multiple hosts with **Parallels Desktop** and **Parallels Desktop DevOps Service** installed
-- Rest Client, like [Postman](https://www.postman.com/)
-- Docker (Optional)
+- [Parallels Desktop for Mac](https://www.parallels.com/products/desktop/){:target="_blank"}
+- [Parallels Desktop DevOps Service](https://github.com/Parallels/prl-devops-service){:target="_blank"}
+- [GitHub account and repository](https://github.com){:target="_blank"}
+- At least one hosts with **Parallels Desktop** and **Parallels Desktop DevOps Service** installed
+- [Visual Studio Code with the Parallels Desktop Extension](https://marketplace.visualstudio.com/items?itemName=ParallelsDesktop.parallels-desktop){:target="_blank"} or
+  - Rest Client, like [Postman](https://www.postman.com/){:target="_blank"} or
 
-{% include notification.html message="You can try **Parallels Desktop** for free before purchasing by clicking this [link](https://www.parallels.com/products/desktop/trial/) and downloading our trial version" status="is-success" icon="comments-dollar" %}
+{% include notification.html message="You can try **Parallels Desktop** for free before purchasing by clicking this [link](https://www.parallels.com/products/desktop/trial/){:target=\"_blank\"} and downloading our trial version" status="is-success" icon="comments-dollar" %}
 
 <div style="margin-top:10px">
 {% include notification.html message="While you can follow this guide with only one host, it is best to have multiple hosts to see the full potential" status="is-warning" icon="info" %}
 </div>
 
-## Step 1: Setting up the Orchestrator Service
+{% assign installationContent = site.pages | where:"url", "/docs/getting-started/installation/" | first %}
 
-The orchestrator service can be run from any device and is not restricted to a macOS host, as it is not used to create virtual machines. There are multiple ways to run the orchestrator service, and in this guide, we will be utilizing a docker container. Additionally, we offer a `Helms Chart` that can be used to deploy the orchestrator service on a Kubernetes cluster if you have one.
+## Step 1: Install Parallels Desktop DevOps
 
-### Running the Orchestrator Service
+{{ installationContent.content }}
 
-To run the orchestrator service you can use the following command:
+### Security
 
-```bash
-docker run --name pd-devops-orchestrator -p 8080:8080 -e ROOT_PASSWORD=VeryStr0ngPassw0rd -e API_PORT=8080 -e MODE=orchestrator -d cjlapao/prl-devops-service
-```
-
-This command will start the orchestrator service on port 8080 with the root password set to `VeryStr0ngPassw0rd`. You can change the password by changing the `ROOT_PASSWORD` environment variable.
+The service will run with default values, these are just fine for demos and to quickly get the service running but for production use, you will need to secure the service. You can find more information about how to secure the service in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/getting-started/harden-security/){:target="_blank"}
 
 ### Accessing the Orchestrator Service
 
-Once the docker container is working you can access the orchestrator using any rest client, like Postman. The orchestrator service has a REST API that can be used to interact with it. The API documentation can be found at `http://localhost:8080/swagger`.
-
-We also make available a Postman collection that you can import and use to interact with the orchestrator service. You can download it [here]({{ site.url }}{{ site.baseurl }}/Parallels_Desktop_API.postman_collection.json).
+Once the docker container is working you can access the orchestrator using any rest client, like **Postman** to access the API. Or you can install our **[Visual Studio Code extension](https://marketplace.visualstudio.com/items?itemName=ParallelsDesktop.parallels-desktop)** to access the API directly from the editor.
 
 ## Step 2: Installing the DevOps Service on the Hosts
 
-For each host we want to add to the orchestrator service, we need to install the DevOps service. The DevOps service is responsible for creating and managing virtual machines on the host.
-
-### Install Parallels Desktop DevOps Service
-
-To install the required tools, such as **Parallels Desktop for Mac**, we'll be using one of the features of the DevOps service. You can download the latest version of the Parallels Desktop DevOps Service by selecting the platform you are using and clicking the download button for the binary.
-
-{% include inner-tabs.html data="download_tabs" %}
-
-After downloading the binary, copy it to a directory in your path, such as /usr/local/bin, and make it executable.
-
-```bash
-sudo mv prldevops /usr/local/bin
-sudo chmod +x /usr/local/bin/prldevops
-```
-
-You now have the necessary access to execute the `prldevops` command directly from your terminal.
-
-Please check the configuration documentation for the DevOps service [here]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration) to configure the service correctly. For the rest of the steps is important to set the **root password** to a known value as we will need it to add the host to the orchestrator service. We also will need to know the **API port** that the DevOps service is running on.
-
-### Install Parallels Desktop for Mac
-
-After installing the DevOps service, we can use it to install **Parallels Desktop for Mac** by running this command:
-
-```sh
-prldevops install parallels-desktop
-```
-
-This will download and install the latest version of **Parallels Desktop for Mac** and install it on your system.
+For each host we want to add to the orchestrator service, we need to install the DevOps service. The DevOps service is responsible for creating and managing virtual machines on the host. You can find the installation instructions on the [Installation Guide]({{ site.url }}{{ site.baseurl }}/docs/getting-started/installation/){:target="_blank"}.
 
 ## Step 3: Adding Hosts to the Orchestrator Service
 
 Now that we have the orchestrator service running and the DevOps service installed on the hosts, we can add the hosts to the orchestrator service.
 
-### Adding Hosts
+### Using Visual Studio Code Extension
+
+We have a Visual Studio Code extension that allows you to interact with the orchestrator service directly from the editor. You can find the extension in the [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=ParallelsDesktop.parallels-desktop){:target="_blank"}, making it to manage the orchestrator service.
+
+#### Adding Orchestrators
+
+To add a remote or local orchestrator to the extension, you can click on the `Add Remote Orchestrator` button and fill in the information for the orchestrator. This will allow you to interact with the orchestrator service directly from the editor.
+
+![Add Orchestrator]({{ site.url }}{{ site.baseurl }}/img/vscode_extension/add_remote_orchestrator.gif)
+
+#### Adding and Listing Hosts
+
+To Add or List hosts in the orchestrator service, you can expand the orchestrator and click in the plus button to add a host.
+
+![Add Host to Orchestrator]({{ site.url }}{{ site.baseurl }}/img/vscode_extension/add_remote_host_provider_orchestrator.gif)
+
+#### List Orchestrator Resources
+
+To view the resources available in the orchestrator service, you can click on the `Resources` tree item and expand it, this will show you how many resources are available.
+
+![List Orchestrator Resources]({{ site.url }}{{ site.baseurl }}/img/vscode_extension/list_orchestrator_resources.gif)
+
+#### List Virtual Machine 
+
+To view the list of virtual machines running on the orchestrator service, you can click on the `Virtual Machines` tree item and expand it, this will show you the list of virtual machines running on the orchestrator service.
+
+![List Orchestrator Virtual Machines]({{ site.url }}{{ site.baseurl }}/img/vscode_extension/list_orchestrator_vms.gif)
+
+### Using RestApi Postman
+
+#### Add Hosts
 
 To add a host to the orchestrator service, we need to make a POST request to the `/api/v1/orchestrator/hosts` endpoint. The request body should contain following information:
 
@@ -108,24 +107,41 @@ To add a host to the orchestrator service, we need to make a POST request to the
     ],
     "authentication": {
         "username": "root@localhost",
-        "password": "VeryStr0ng"
+        "password": "VeryStr0ngPassw0rdg"
     }
 }
 ```
 
+Where:
+- `host` is the hostname of the host
+- `description` is a description of the host
+- `tags` are the tags associated with the host, this can be omitted if not needed it
+- `authentication` is the authentication information for the host
+  - `username` is the username to access the host
+  - `password` is the password to access the host
+
 You can repeat this process for each host you want to add to the orchestrator service. The orchestrator service will automatically detect the resources available on each host.
 
-### Listing Hosts
+#### Listing Hosts
 
 To list the hosts added to the orchestrator service, you can make a GET request to the `/api/v1/orchestrator/hosts` endpoint. and this should return a list of hosts with their resources.
 
-### Resources List
+#### Resources List
 
 You can also request how much resources are available in the orchestrator service by making a GET request to the `/api/v1/orchestrator/overview/resources` endpoint. This will return a list of resources available in the orchestrator service.
 
+#### List Virtual Machine 
+
+To list the virtual machines running on the orchestrator service, you can make a GET request to the `/api/v1/orchestrator/vms` endpoint. This will return a list of virtual machines running on the orchestrator service.
+
 ## Step 4: Creating a CI/CD Pipeline
 
-Now that we have our hosts added to the orchestrator service, we can create a CI/CD pipeline that will run a simple test on a virtual machine. We will use GitHub Actions to create the pipeline. This will just be a simple example to show how the orchestrator service can be used.
+Now that we have our hosts added to the orchestrator service, we can create a CI/CD pipeline that will run a simple test on a virtual machine. We will use GitHub Actions to create the pipeline and run it. 
+This will just be a simple example to show how the orchestrator service can be used, it will leave the created VM without cleaning it so you can have a look at it.
+
+If you want to know more about how our GitHub Action works in a CI/CD pipeline environment or to better understand how does the pipeline file works you can check [this example]({{ site.url }}{{ site.baseurl }}/examples/github-actions/){:target="_blank"}.
+
+We will also need to use the Catalog Service to create a VM that we will use in the pipeline for downloading the vms, you can check how to do this in [this example]({{ site.url }}{{ site.baseurl }}/examples/remote-catalog/){:target="_blank"}.
 
 ```yaml
 name: Test Pipeline
@@ -137,30 +153,27 @@ jobs:
   create_runner:
     # This will be the name of the job
     name: Deploy Self Hosted Runner
-    # This job will be running on the ubuntu_builder runner self hosted runner
-    runs-on: 
-    - self-hosted
-    - ubuntu-latest
+    # This job will be running on the ubuntu-latest runner, we could use a self-hosted runner
+    # as on the GitHub Actions example but for simplicity we will use the GitHub hosted runner
+    runs-on: ubuntu-latest
     # This will be the steps that will be executed on this job
     steps:
-        # First we will be cloning the generic VM that we created before, in this case we will be cloning
-        # a macOs Sonoma VM using our devops service, you can check the documentation on how to do this
-        # in the official repository of the GitHub action 
-        - name: Clone VM
+        # We need to pull the VM that we will be using for the pipeline from the catalog
+        - name: Pull Vm
           id: clone
           uses: parallels/parallels-desktop-github-action@v1
           with:
-            operation: 'clone'
+            operation: 'pull'
             # The username to access the devops service
-            username: ${{ secrets.PARALLELS_USERNAME }}
+            username: {% raw %}${{ secrets.PARALLELS_USERNAME }}{% endraw %}
             # The password to access the devops service
-            password: ${{ secrets.PARALLELS_PASSWORD }}
+            password: {% raw %}${{ secrets.PARALLELS_PASSWORD }}{% endraw %}
             # Set this to true if you are using a self signed certificate
             insecure: true
             # the orchestrator for the devops service
             orchestrator_url: example.com:8080
-            # The name for the VM that we will be cloning
-            base_vm: macOS_action_runner_builder
+            # The image we will be pulling from the catalog
+            base_image: http://root:${{ secrets.ORCHESTRATOR_PASSWORD }}@catalog.example.com/BASE_BUILDER/v1
             # If we should start the VM after cloning
             start_after_op: true
         # This step we will be setting up the runner on the VM that we cloned
@@ -173,11 +186,11 @@ jobs:
             # What will be the timeout after each failed attempt and before the next one
             timeout_seconds: 2
             operation: 'run'
-            username: ${{ secrets.PARALLELS_USERNAME }}
-            password: ${{ secrets.PARALLELS_PASSWORD }}
+            username: {% raw %}${{ secrets.PARALLELS_USERNAME }}{% endraw %}
+            password: {% raw %}${{ secrets.PARALLELS_PASSWORD }}{% endraw %}
             orchestrator_url: example.com:8080
             insecure: true
-            machine_name: ${{ steps.pull.outputs.vm_id }}
+            machine_name: {% raw %}${{ steps.pull.outputs.vm_id }}{% endraw %}
             # These will be running some scripts we have created to install the runner in an automated way
             # you can copy this step and change only the secrets to use the scripts that we have created
             run: |
@@ -189,10 +202,14 @@ jobs:
                 chmod +x /Users/remove-runner.sh
 
                 /Users/install-runner.sh -u parallels -p /Users
-                /Users/configure-runner.sh -u parallels -p /Users/action-runner -o Locally-build -t ${{ secrets.GH_PAT }} -n ${{ github.run_id }}_builder -l ${{ github.run_id }}_builder
+                {% raw %}/Users/configure-runner.sh -u parallels -p /Users/action-runner -o Locally-build -t ${{ secrets.GH_PAT }} -n ${{ github.run_id }}_builder -l ${{ github.run_id }}_builder{% endraw %}
    # The GitHub action will output the ID and the name of the VM that we cloned, this will be used later on
    # for the cleanup job
    outputs:
-        vm_id: ${{ steps.pull.outputs.vm_id }}
-        vm_name: ${{ steps.pull.outputs.vm_name }}
+        vm_id: {% raw %}${{ steps.pull.outputs.vm_id }}{% endraw %}
+        vm_name: {% raw %}${{ steps.pull.outputs.vm_name }}{% endraw %}
 ```
+
+## Conclusion
+
+In this guide, we showed you how to use the Orchestrator service to control multiple hosts from a single interface. We installed the DevOps service on the hosts, added them to the Orchestrator service, and created a CI/CD pipeline that runs a simple test on a virtual machine. We used GitHub Actions to create the pipeline and run it on a host chosen by the Orchestrator service.
