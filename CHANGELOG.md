@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.6.4] - 2024-05-15
+
+### Fixed
+
+- Fixed an issue were the executable would not read the configuration file correctly if it was on path
+
 ## [0.6.3] - 2024-05-14
 
 ### Changed
