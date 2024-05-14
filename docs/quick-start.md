@@ -30,10 +30,8 @@ prldevops api --help
 ```
 
 <div class="flex flex-center">
-  <img src="{{ site.url }}{{ site.baseurl }}/img/examples/prldevops_help.gif" alt="Catalog List"/>
+  <img style="width: calc(100% - 30%)" src="{{ site.url }}{{ site.baseurl }}/img/prldevops_help.gif" alt="DevOps Help"/>
 </div>
-
-![DevOps Help]({{ site.url }}{{ site.baseurl }}/img/prldevops_help.gif)
 
 ### Installing Tools
 

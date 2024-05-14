@@ -31,7 +31,7 @@ if [ -z "$VERSION" ]; then
   VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases/latest | jq -r .tag_name)
 fi
 
-DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--darwin-amd64.tar.gz"
+DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--linux-amd64.tar.gz"
 
 echo "Downloading prldevops $VERSION from $DOWNLOAD_URL"
 curl -L $DOWNLOAD_URL -o prldevops.tar.gz
@@ -42,7 +42,6 @@ tar -xzf prldevops.tar.gz
 echo "Moving prldevops to $DESTINATION"
 mv prldevops $DESTINATION
 chmod +x $DESTINATION/prldevops
-xattr -d com.apple.quarantine $DESTINATION/prldevops
 
 echo "Cleaning up"
 rm prldevops.tar.gz
