@@ -40,7 +40,7 @@ if [ -f "$DESTINATION/prldevops" ]; then
   sudo rm "$DESTINATION/prldevops"
 fi
 echo "Moving prldevops to $DESTINATION"
-sudo mv prldevops $DESTINATION
+sudo mv prldevops $DESTINATION/prldevops
 sudo chmod +x $DESTINATION/prldevops
 sudo xattr -d com.apple.quarantine $DESTINATION/prldevops
 
