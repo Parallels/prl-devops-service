@@ -7,18 +7,15 @@ show_sidebar: false
 toc: true
 ---
 
+# Install Parallels Desktop DevOps
+
 Devops Service is a command line tool that allows you to manage and orchestrate multiple Parallels Desktop hosts and virtual machines. It will allow you to create, start, stop and delete virtual machines and will also allow you to manage the hosts that are running the virtual machines.
 
-To install the required tools, such as **Parallels Desktop for Mac**, we'll be using one of the features of the DevOps service. You can download the latest version of the Parallels Desktop DevOps Service by selecting the platform you are using and clicking the download button for the binary.
+You can download the latest version of the **Parallels Desktop DevOps Service** by selecting the platform you are using and clicking the download button for the binary.
 
 {% include inner-tabs.html data="download_tabs" %}
 
-After downloading the binary, copy it to a directory in your path, such as /usr/local/bin, and make it executable.
 
-```bash
-sudo mv prldevops /usr/local/bin
-sudo chmod +x /usr/local/bin/prldevops
-```
 ### Quick Configuration
 
 By default the **devops service** will run with default values but these can be configured by creating a `config.yaml` file in the same directory as the binary. Below is an example of a configuration file.

@@ -31,22 +31,10 @@ If you're interested in learning more about self-hosted runners, then you can re
 
 On this guide, we will show you how to set up one of our demo repositories. They are free and open to use, so you can copy the code or take inspiration for your own projects.
 
-## Step 1: Install Services
+{% assign installationContent = site.pages | where:"url", "/docs/getting-started/installation/" | first %}
 
-### Install Parallels Desktop DevOps Service
+{{ installationContent.content }}
 
-To install the required tools, such as **Parallels Desktop for Mac**, we'll be using one of the features of the DevOps service. You can download the latest version of the Parallels Desktop DevOps Service by selecting the platform you are using and clicking the download button for the binary.
-
-{% include inner-tabs.html data="download_tabs" %}
-
-After downloading the binary, copy it to a directory in your path, such as /usr/local/bin, and make it executable.
-
-```bash
-sudo mv prldevops /usr/local/bin
-sudo chmod +x /usr/local/bin/prldevops
-```
-
-You now have the necessary access to execute the `prldevops` command directly from your terminal.
 
 ### Install Parallels Desktop for Mac
 

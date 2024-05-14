@@ -38,8 +38,6 @@
         "args": [
           "pull",
           "/Users/cjlapao/pull-ubuntu-builder.pdfile",
-          "--username=root",
-          "--password=Nmo5c2U1YTZycWc0Ojc4YmZkOWNlZjJmMjU0Z000"
         ]
       },
       {

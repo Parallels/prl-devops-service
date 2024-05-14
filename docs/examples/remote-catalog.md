@@ -57,7 +57,6 @@ Let's look at how you can use the Parallels Desktop DevOps Service to create a G
 
 {% include notification.html message="You can try it for free before purchasing by clicking this [link](https://www.parallels.com/products/desktop/trial/){:target=\"_blank\"} and downloading our trial version" status="is-success" icon="comments-dollar" %}
 
-### Install Parallels Desktop DevOps
 
 {% assign installationContent = site.pages | where:"url", "/docs/getting-started/installation/" | first %}
 
