@@ -149,7 +149,7 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithVersion(version).
 		WithPath("/orchestrator/machines/{id}/execute").
 		WithRequiredClaim(constants.EXECUTE_COMMAND_VM_CLAIM).
-		WithHandler(ExecuteCommandOnVirtualMachineHandler()).
+		WithHandler(ExecutesOrchestratorVirtualMachineHandler()).
 		Register()
 
 	restapi.NewController().
