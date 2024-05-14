@@ -35,6 +35,10 @@ curl -L $DOWNLOAD_URL -o prldevops.tar.gz
 echo "Extracting prldevops"
 tar -xzf prldevops.tar.gz
 
+if [ -f "$DESTINATION/prldevops" ]; then
+  echo "Removing existing prldevops"
+  sudo rm "$DESTINATION/prldevops"
+fi
 echo "Moving prldevops to $DESTINATION"
 sudo mv prldevops $DESTINATION
 sudo chmod +x $DESTINATION/prldevops
