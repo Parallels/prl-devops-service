@@ -18,7 +18,8 @@ type TelemetryItem struct {
 }
 
 const (
-	unknown = "unknown"
+	unknown_user    = "unknown_user"
+	unknown_license = "unknown_license"
 )
 
 func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, properties, options map[string]interface{}) TelemetryItem {
@@ -40,26 +41,33 @@ func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, prop
 	if architecture, err := system.GetArchitecture(ctx); err == nil {
 		item.Properties["architecture"] = architecture
 	} else {
-		item.Properties["architecture"] = unknown
+		item.Properties["architecture"] = unknown_user
 	}
 
 	if hid, err := system.GetUniqueId(ctx); err == nil {
 		item.HardwareID = strings.ReplaceAll(hid, "\"", "")
 		item.Properties["hardware_id"] = item.HardwareID
 	} else {
-		item.HardwareID = unknown
+		item.HardwareID = unknown_user
 		item.Properties["hardware_id"] = item.HardwareID
 	}
 
 	provider := serviceprovider.Get()
 	key := provider.License
+	if key == "" {
+		key = "unknown_license"
+	}
 
 	if user, err := system.GetCurrentUser(ctx); err == nil {
 		item.UserID = user
 	} else {
-		item.UserID = unknown
+		item.UserID = unknown_user
 	}
 
-	item.Properties["user_id"] = fmt.Sprintf("%s@%s", item.UserID, key)
+	userId := fmt.Sprintf("%s@%s", item.UserID, key)
+	if len(userId) > 10 {
+		item.Properties["user_id"] = fmt.Sprintf("%s@%s", item.UserID, key)
+	}
+
 	return item
 }

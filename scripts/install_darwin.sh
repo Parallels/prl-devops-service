@@ -40,9 +40,9 @@ echo "Extracting prldevops"
 tar -xzf prldevops.tar.gz
 
 echo "Moving prldevops to $DESTINATION"
-mv prldevops $DESTINATION
-chmod +x $DESTINATION/prldevops
-xattr -d com.apple.quarantine $DESTINATION/prldevops
+sudo mv prldevops $DESTINATION
+sudo chmod +x $DESTINATION/prldevops
+sudo xattr -d com.apple.quarantine $DESTINATION/prldevops
 
 echo "Cleaning up"
 rm prldevops.tar.gz

@@ -65,14 +65,20 @@ func Get() *Config {
 func (c *Config) Load() bool {
 	fileName := ""
 	configFileName := helper.GetFlagValue(constants.CONFIG_FILE_FLAG, "")
+	execPath, err := os.Executable()
+	if err != nil {
+		c.ctx.LogErrorf("Error getting executable path: %s", err.Error())
+		return false
+	}
 	if configFileName != "" {
 		if _, err := os.Stat(configFileName); !os.IsNotExist(err) {
 			fileName = configFileName
 		}
 	} else {
 		for _, extension := range extensions {
-			if _, err := os.Stat(fmt.Sprintf("config%s", extension)); !os.IsNotExist(err) {
-				fileName = fmt.Sprintf("config%s", extension)
+			configFolder := filepath.Join(filepath.Dir(execPath), "config")
+			if _, err := os.Stat(fmt.Sprintf("%s%s", configFolder, extension)); !os.IsNotExist(err) {
+				fileName = fmt.Sprintf("%s%s", configFolder, extension)
 				break
 			}
 		}

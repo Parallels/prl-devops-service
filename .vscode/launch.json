@@ -36,10 +36,25 @@
         // Comment out if you do not need to setup environment variables for the module
         "envFile": "${workspaceFolder}/.env",
         "args": [
-          "push",
-          "${workspaceFolder}/test1.local.pdfile"
+          "pull",
+          "/Users/cjlapao/pull-ubuntu-builder.pdfile",
+          "--username=root",
+          "--password=Nmo5c2U1YTZycWc0Ojc4YmZkOWNlZjJmMjU0Z000"
         ]
       },
+      {
+        "name": "Debug in Container",
+        "type": "go",
+        "request": "attach",
+        "mode": "remote",
+        "remotePath": "",
+        "port": 40000,
+        "host": "127.0.0.1",
+        "showLog": true,
+        "apiVersion": 2,
+        "trace": "log",
+        "logOutput": "rpc",
+      }
   
 ],
   "inputs": [

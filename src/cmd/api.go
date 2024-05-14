@@ -57,7 +57,7 @@ func processApi(ctx basecontext.ApiContext) {
 			passwdSvc := password.Get()
 			if err := passwdSvc.Compare(rootPassword, rootUser.ID, rootUser.Password); err != nil {
 				ctx.LogInfof("Updating root password")
-				if err := db.UpdateRootPassword(ctx, cfg.GetKey(constants.ROOT_PASSWORD_ENV_VAR)); err != nil {
+				if err := db.UpdateRootPassword(ctx, rootPassword); err != nil {
 					panic(err)
 				}
 			}
