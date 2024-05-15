@@ -116,6 +116,14 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.PATCH).
+		WithVersion(version).
+		WithPath("/catalog/{catalogId}/claims").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(UpdateCatalogManifestClaimsHandler()).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.POST).
 		WithVersion(version).
 		WithPath("/catalog/push").
@@ -577,10 +585,24 @@ func RevokeCatalogManifestVersionHandler() restapi.ControllerHandler {
 	}
 }
 
-func CreateCatalogManifestHandler() restapi.ControllerHandler {
+// @Summary		UnTaints a catalog manifest version
+// @Description	This endpoint UnTaints a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string	true	"Catalog ID"
+// @Param			version			path		string	true	"Version"
+// @Param			architecture	path		string	true	"Architecture"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/claims [patch]
+func UpdateCatalogManifestClaimsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+
 		var request catalog_models.VirtualMachineCatalogManifest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -602,9 +624,26 @@ func CreateCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		ctx.LogInfof("Creating manifest %v", request.Name)
-		dto := mappers.CatalogManifestToDto(request)
-		result, err := dbService.CreateCatalogManifest(ctx, dto)
+		vars := mux.Vars(r)
+		catalogId := vars["catalogId"]
+		version := vars["version"]
+		architecture := vars["architecture"]
+
+		manifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		if manifest.Revoked {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Manifest is already revoked",
+				Code:    http.StatusForbidden,
+			})
+			return
+		}
+
+		result, err := dbService.RevokeCatalogManifestVersion(ctx, manifest.CatalogId, manifest.Version)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -614,7 +653,48 @@ func CreateCatalogManifestHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
-		ctx.LogInfof("Manifest returned: %v", resultData.ID)
+		ctx.LogInfof("Manifest untainted: %v", resultData.ID)
+	}
+}
+
+func CreateCatalogManifestHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// ctx := GetBaseContext(r)
+		// defer Recover(ctx, r, w)
+		// var request catalog_models.VirtualMachineCatalogPatch
+		// if err := http_helper.MapRequestBody(r, &request); err != nil {
+		// 	ReturnApiError(ctx, w, models.ApiErrorResponse{
+		// 		Message: "Invalid request body: " + err.Error(),
+		// 		Code:    http.StatusBadRequest,
+		// 	})
+		// }
+		// if err := request.Validate(); err != nil {
+		// 	ReturnApiError(ctx, w, models.ApiErrorResponse{
+		// 		Message: "Invalid request body: " + err.Error(),
+		// 		Code:    http.StatusBadRequest,
+		// 	})
+		// 	return
+		// }
+
+		// dbService, err := serviceprovider.GetDatabaseService(ctx)
+		// if err != nil {
+		// 	ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+		// 	return
+		// }
+
+		// ctx.LogInfof("Creating manifest %v", request.Name)
+		// dto := mappers.CatalogManifestToDto(request)
+		// result, err := dbService.CreateCatalogManifest(ctx, dto)
+		// if err != nil {
+		// 	ReturnApiError(ctx, w, models.NewFromError(err))
+		// 	return
+		// }
+
+		// resultData := mappers.DtoCatalogManifestToApi(*result)
+
+		// w.WriteHeader(http.StatusOK)
+		// _ = json.NewEncoder(w).Encode(resultData)
+		// ctx.LogInfof("Manifest returned: %v", resultData.ID)
 	}
 }
 

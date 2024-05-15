@@ -284,6 +284,8 @@ func (s *SystemService) GetCurrentUser(ctx basecontext.ApiContext) (string, erro
 		return s.getMacCurrentUser(ctx)
 	case "linux":
 		return s.getLinuxCurrentUser(ctx)
+	case "windows":
+		return s.getWindowsCurrentUser(ctx)
 	default:
 		return "", errors.New("Not implemented")
 	}
@@ -300,6 +302,15 @@ func (s *SystemService) getMacCurrentUser(ctx basecontext.ApiContext) (string, e
 
 func (s *SystemService) getLinuxCurrentUser(ctx basecontext.ApiContext) (string, error) {
 	user, exists := os.LookupEnv("USER")
+	if user != "" && !exists {
+		user = "root"
+	}
+
+	return user, nil
+}
+
+func (s *SystemService) getWindowsCurrentUser(ctx basecontext.ApiContext) (string, error) {
+	user, exists := os.LookupEnv("USERNAME")
 	if user != "" && !exists {
 		user = "root"
 	}
@@ -341,6 +352,15 @@ func (s *SystemService) getUniqueIdMac(ctx basecontext.ApiContext) (string, erro
 
 func (s *SystemService) getUniqueIdLinux(ctx basecontext.ApiContext) (string, error) {
 	out, err := commands.ExecuteWithNoOutput("cat", "/etc/machine-id")
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Trim(strings.TrimSpace(out), "\n"), nil
+}
+
+func (s *SystemService) getUniqueIdWindows(ctx basecontext.ApiContext) (string, error) {
+	out, err := commands.ExecuteWithNoOutput("wmic", "path", "win32_computersystemproduct", "get", "UUID")
 	if err != nil {
 		return "", err
 	}

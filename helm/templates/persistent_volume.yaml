@@ -3,6 +3,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: {{ include "helm.fullname" . }}
+  namespace: {{ include "helm.namespace" . }}
 spec:
   capacity:
     storage: 1Gi
@@ -11,7 +12,7 @@ spec:
   persistentVolumeReclaimPolicy: Delete
   storageClassName: manual
   local:
-    path: /mnt/pd-api
+    path: /mnt/pd-devops-{{ include "helm.fullname" . }}
   nodeAffinity:
     required:
       nodeSelectorTerms:
@@ -25,6 +26,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "helm.fullname" . }}
+  namespace: {{ include "helm.namespace" . }}
 spec:
   accessModes:
   - ReadWriteOnce

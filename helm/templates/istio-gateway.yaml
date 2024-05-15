@@ -1,0 +1,32 @@
+{{- if and .Values.ingress.enabled  .Values.ingress.istio}}
+{{- if .Values.ingress.create_gateway }}
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: {{ include "helm.fullname" . }}
+  namespace: {{ include "helm.namespace" . }}
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  selector:
+    istio: ingress
+  servers:
+    - hosts:
+        - {{ .Values.ingress.host }}
+      port:
+        name: http
+        number: 80
+        protocol: http
+{{- if and .Values.ingress.tls.enabled .Values.ingress.tls.tls_secret_name }}
+    - hosts:
+        - {{ .Values.ingress.host }}
+      port:
+        name: https
+        number: 443
+        protocol: HTTPS
+      tls:
+        credentialName: {{ .Values.ingress.tls.tls_secret_name }}
+        mode: SIMPLE
+{{- end }}
+{{- end }}
+{{- end }}

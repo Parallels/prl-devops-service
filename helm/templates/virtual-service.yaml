@@ -3,13 +3,18 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: {{ include "helm.fullname" . }}
+  namespace: {{ include "helm.namespace" . }}
   labels:
     {{- include "helm.labels" . | nindent 4 }}
 spec:
   hosts:
     - {{ .Values.ingress.host }}
   gateways:
+{{- if .Values.ingress.create_gateway }}
+    - {{ include "helm.fullname" . }}
+{{- else }}
     - {{ .Values.ingress.gateway }}
+{{- end }}
   http:
     - match:
         - ignoreUriCase: true

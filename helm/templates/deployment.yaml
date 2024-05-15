@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "helm.fullname" . }}
+  namespace: {{ include "helm.namespace" . }}
   labels:
     {{- include "helm.labels" . | nindent 4 }}
 spec:
@@ -169,7 +170,7 @@ spec:
                   name: {{ include "helm.fullname" . }}
                   key: SECURITY_ROOT_PASSWORD
             {{- end }}
-            {{- if .Values.ingress.tls.enabled }}
+            {{- if .Values.security.enable_tls }}
             - name: TLS_ENABLED 
               value: "true"
             - name: TLS_CERTIFICATE 

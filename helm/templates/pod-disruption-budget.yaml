@@ -3,6 +3,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: {{ include "helm.fullname" . }}
+  namespace: {{ include "helm.namespace" . }}
   labels:
     {{- include "helm.labels" . | nindent 4 }}
 spec:
