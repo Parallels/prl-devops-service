@@ -46,6 +46,9 @@ function install() {
   if [ "$ARCHITECTURE" = "aarch64" ]; then
     ARCHITECTURE="arm64"
   fi
+    if [ "$ARCHITECTURE" = "x86_64" ]; then
+    ARCHITECTURE="amd64"
+  fi
 
   OS=$(uname -s)
   OS=$(echo "$OS" | tr '[:upper:]' '[:lower:]')
