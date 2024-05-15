@@ -38,7 +38,7 @@
         "args": [
           "install",
           "parallels-desktop",
-          "--license=6J9W67-SG4ANH-4V2BEE-6P4EJE-3D7H2X"
+          "--license="
         ]
       },
       {
