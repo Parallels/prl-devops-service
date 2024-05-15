@@ -46,7 +46,7 @@ function install() {
   if [ "$ARCHITECTURE" = "aarch64" ]; then
     ARCHITECTURE="arm64"
   fi
-    if [ "$ARCHITECTURE" = "x86_64" ]; then
+  if [ "$ARCHITECTURE" = "x86_64" ]; then
     ARCHITECTURE="amd64"
   fi
 
@@ -76,6 +76,12 @@ function install() {
   sudo chmod +x $DESTINATION/prldevops
 
   if [ "$OS" = "darwin" ]; then
+    if [ -f "/Library/LaunchDaemons/com.parallels.prl-devops-service.plist" ]; then
+      echo "Restarting prl-devops-service"
+      sudo launchctl unload /Library/LaunchDaemons/com.parallels.prl-devops-service.plist
+      sudo launchctl load /Library/LaunchDaemons/com.parallels.prl-devops-service.plist
+    fi
+
     sudo xattr -d com.apple.quarantine $DESTINATION/prldevops
   fi
 
