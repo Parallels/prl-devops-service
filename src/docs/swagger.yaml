@@ -171,6 +171,8 @@ definitions:
         type: string
       id:
         type: string
+      isSuperUser:
+        type: boolean
       name:
         type: string
       roles:
@@ -1198,6 +1200,8 @@ definitions:
         type: array
       email:
         type: string
+      is_super_user:
+        type: boolean
       name:
         type: string
       password:
@@ -1237,6 +1241,21 @@ definitions:
         type: string
       vertical-sync:
         type: string
+    type: object
+  models.VirtualMachineCatalogManifestPatch:
+    properties:
+      required_claims:
+        items:
+          type: string
+        type: array
+      required_roles:
+        items:
+          type: string
+        type: array
+      tags:
+        items:
+          type: string
+        type: array
     type: object
   models.VirtualMachineCloneCommandRequest:
     properties:
@@ -1351,7 +1370,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.6.3
+  version: 0.6.4
 paths:
   /health/probe:
     get:
@@ -2392,6 +2411,97 @@ paths:
       summary: Gets a catalog manifest version architecture
       tags:
       - Catalogs
+  /v1/catalog/{catalogId}/{version}/{architecture}/claims:
+    delete:
+      description: This endpoint removes claims from a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.VirtualMachineCatalogManifestPatch'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Removes claims from a catalog manifest version
+      tags:
+      - Catalogs
+    patch:
+      description: This endpoint adds claims to a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.VirtualMachineCatalogManifestPatch'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Adds claims to a catalog manifest version
+      tags:
+      - Catalogs
   /v1/catalog/{catalogId}/{version}/{architecture}/download:
     get:
       description: This endpoint downloads a catalog manifest version
@@ -2470,6 +2580,188 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: UnTaints a catalog manifest version
+      tags:
+      - Catalogs
+  /v1/catalog/{catalogId}/{version}/{architecture}/roles:
+    delete:
+      description: This endpoint removes roles from a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.VirtualMachineCatalogManifestPatch'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Removes roles from a catalog manifest version
+      tags:
+      - Catalogs
+    patch:
+      description: This endpoint adds roles to a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.VirtualMachineCatalogManifestPatch'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Adds roles to a catalog manifest version
+      tags:
+      - Catalogs
+  /v1/catalog/{catalogId}/{version}/{architecture}/tags:
+    delete:
+      description: This endpoint removes tags from a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.VirtualMachineCatalogManifestPatch'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Removes tags from a catalog manifest version
+      tags:
+      - Catalogs
+    patch:
+      description: This endpoint adds tags to a catalog manifest version
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.VirtualMachineCatalogManifestPatch'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Adds tags to a catalog manifest version
       tags:
       - Catalogs
   /v1/catalog/{catalogId}/{version}/{architecture}/taint:
