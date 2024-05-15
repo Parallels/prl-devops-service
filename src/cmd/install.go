@@ -9,6 +9,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/install"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/cjlapao/common-go/helper"
 )
 
@@ -18,6 +19,12 @@ type InstallServiceResult struct {
 }
 
 func processInstall(ctx basecontext.ApiContext) {
+	system := system.SystemService{}
+	if system.GetOperatingSystem() != "macos" {
+		ctx.LogErrorf("The install command is only available for macOS")
+		os.Exit(1)
+	}
+
 	subcommand := helper.GetCommandAt(1)
 	// processing the command help
 	if helper.GetFlagSwitch(constants.HELP_FLAG, false) || helper.GetCommandAt(1) == "help" {
@@ -41,6 +48,7 @@ func processInstall(ctx basecontext.ApiContext) {
 
 	versionFlag := helper.GetFlagValue("version", "")
 	userFlag := helper.GetFlagValue("user", currentUser)
+	licenseFlag := helper.GetFlagValue("license", "")
 	flags := make(map[string]string)
 
 	switch subcommand {
@@ -74,6 +82,10 @@ func processInstall(ctx basecontext.ApiContext) {
 			_ = json.NewEncoder(os.Stdout).Encode(cmdResult)
 		}
 	case "parallels-desktop":
+		if licenseFlag != "" {
+			flags["license"] = licenseFlag
+		}
+
 		result := providerSvc.InstallTool(userFlag, "parallels-desktop", versionFlag, flags)
 		if !result.Result {
 			ctx.LogErrorf("There was an error installing parallels-desktop: %v", result.Message)

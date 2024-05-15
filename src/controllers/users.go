@@ -247,6 +247,58 @@ func CreateUserHandler() restapi.ControllerHandler {
 			return
 		}
 
+		isSuperUser := false
+		if ctx.GetUser() != nil {
+			isSuperUser = ctx.User.IsSuperUser
+		}
+
+		if request.IsSuperUser && isSuperUser {
+			for _, claim := range constants.AllSuperUserClaims {
+				foundClaim := false
+				for _, userClaim := range dtoUser.Claims {
+					if userClaim.ID == claim {
+						foundClaim = true
+					}
+				}
+
+				if foundClaim {
+					continue
+				}
+
+				err = dbService.AddClaimToUser(ctx, dtoUser.ID, claim)
+				if err != nil {
+					_ = dbService.DeleteUser(ctx, dtoUser.ID)
+					ReturnApiError(ctx, w, models.NewFromError(err))
+					return
+				}
+			}
+
+			for _, role := range constants.AllSystemRoles {
+				foundRole := false
+				for _, userRole := range dtoUser.Roles {
+					if userRole.ID == role {
+						foundRole = true
+					}
+				}
+
+				if foundRole {
+					continue
+				}
+				err = dbService.AddRoleToUser(ctx, dtoUser.ID, role)
+				if err != nil {
+					_ = dbService.DeleteUser(ctx, dtoUser.ID)
+					ReturnApiError(ctx, w, models.NewFromError(err))
+					return
+				}
+			}
+
+			dtoUser, err = dbService.GetUser(ctx, dtoUser.ID)
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		}
+
 		response := mappers.DtoUserToApiResponse(*dtoUser)
 
 		w.WriteHeader(http.StatusCreated)

@@ -65,6 +65,7 @@ func Get() *Config {
 func (c *Config) Load() bool {
 	fileName := ""
 	configFileName := helper.GetFlagValue(constants.CONFIG_FILE_FLAG, "")
+
 	execPath, err := os.Executable()
 	if err != nil {
 		c.ctx.LogErrorf("Error getting executable path: %s", err.Error())

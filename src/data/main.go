@@ -3,6 +3,7 @@ package data
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -19,10 +20,12 @@ var (
 	ErrNotAuthorized        = errors.NewWithCode("not authorized to view record", 403)
 )
 
-var memoryDatabase *JsonDatabase
-var wg = &sync.WaitGroup{}
-var totalSaveRequests = 0
-var mutexLock sync.Mutex
+var (
+	memoryDatabase    *JsonDatabase
+	wg                = &sync.WaitGroup{}
+	totalSaveRequests = 0
+	mutexLock         sync.Mutex
+)
 
 type Data struct {
 	Schema            models.DatabaseSchema     `json:"schema"`
@@ -189,6 +192,29 @@ type saveRequest struct {
 	wg  *sync.WaitGroup
 }
 
+func (j *JsonDatabase) SaveAs(ctx basecontext.ApiContext, filename string) error {
+	oldFilename := j.filename
+	baseDbDir := filepath.Dir(oldFilename)
+	fileName := filepath.Base(filename)
+	newFilename := filepath.Join(baseDbDir, fileName)
+
+	ctx.LogDebugf("[Database] Saving database to %s", filename)
+	j.filename = newFilename
+	if !helper.FileExists(j.filename) {
+		if _, err := os.Create(j.filename); err != nil {
+			j.filename = oldFilename
+			return err
+		}
+	}
+	if err := j.processSave(ctx); err != nil {
+		j.filename = oldFilename
+		return err
+	}
+
+	j.filename = oldFilename
+	return nil
+}
+
 func (j *JsonDatabase) Save(ctx basecontext.ApiContext) error {
 	totalSaveRequests++
 
@@ -201,13 +227,13 @@ func (j *JsonDatabase) Save(ctx basecontext.ApiContext) error {
 	}()
 
 	wg.Add(1)
-	go j.ProcessSaveQueue1(ctx)
+	go j.ProcessSaveQueue(ctx)
 	wg.Wait()
 	ctx.LogDebugf("[Database] Save request completed")
 	return nil
 }
 
-func (j *JsonDatabase) ProcessSaveQueue1(ctx basecontext.ApiContext) {
+func (j *JsonDatabase) ProcessSaveQueue(ctx basecontext.ApiContext) {
 	defer wg.Done()
 	ctx.LogDebugf("[Database] Received for save request")
 	mutexLock.Lock()

@@ -238,6 +238,14 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 			if authorized {
 				user := mappers.DtoUserToApiResponse(*dbUser)
 				authorizationContext.User = &user
+				for _, role := range dbUser.Roles {
+					if strings.EqualFold(role.ID, constants.SUPER_USER_ROLE) {
+						authorizationContext.IsSuperUser = true
+						authorizationContext.User.IsSuperUser = true
+						break
+					}
+				}
+
 				authorizationContext.IsAuthorized = true
 				authorizationContext.AuthorizedBy = "TokenAuthorization"
 			}

@@ -36,8 +36,9 @@
         // Comment out if you do not need to setup environment variables for the module
         "envFile": "${workspaceFolder}/.env",
         "args": [
-          "pull",
-          "/Users/cjlapao/pull-ubuntu-builder.pdfile",
+          "install",
+          "parallels-desktop",
+          "--license=6J9W67-SG4ANH-4V2BEE-6P4EJE-3D7H2X"
         ]
       },
       {

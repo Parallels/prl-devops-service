@@ -399,6 +399,68 @@ func (j *JsonDatabase) UpdateCatalogManifestTags(ctx basecontext.ApiContext, rec
 	return ErrCatalogManifestNotFound
 }
 
+func (j *JsonDatabase) UpdateCatalogManifestRequiredRoles(ctx basecontext.ApiContext, recordId string, roles ...string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.ID, recordId) {
+			found := false
+			for _, role := range roles {
+				for _, r := range manifest.RequiredRoles {
+					if strings.EqualFold(r, role) {
+						found = true
+						break
+					}
+				}
+
+				if !found {
+					j.data.ManifestsCatalog[i].RequiredRoles = append(j.data.ManifestsCatalog[i].RequiredRoles, role)
+				}
+			}
+
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) UpdateCatalogManifestRequiredClaims(ctx basecontext.ApiContext, recordId string, claims ...string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.ID, recordId) {
+			found := false
+			for _, claim := range claims {
+				for _, r := range manifest.RequiredClaims {
+					if strings.EqualFold(r, claim) {
+						found = true
+						break
+					}
+				}
+
+				if !found {
+					j.data.ManifestsCatalog[i].RequiredClaims = append(j.data.ManifestsCatalog[i].RequiredClaims, claim)
+				}
+			}
+
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return ErrCatalogManifestNotFound
+}
+
 func (j *JsonDatabase) UpdateCatalogManifestDownloadCount(ctx basecontext.ApiContext, catalogId, version string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected

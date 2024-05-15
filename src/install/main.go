@@ -160,11 +160,11 @@ func uninstallServiceOnWindows(ctx basecontext.ApiContext, removeDatabase bool) 
 }
 
 func installServiceOnLinux(ctx basecontext.ApiContext, config ApiServiceConfig) error {
-	return nil
+	return errors.New("not implemented")
 }
 
 func uninstallServiceOnLinux(ctx basecontext.ApiContext, removeDatabase bool) error {
-	return nil
+	return errors.New("not implemented")
 }
 
 func getConfigFromEnv() ApiServiceConfig {

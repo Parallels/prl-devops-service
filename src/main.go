@@ -1,8 +1,15 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/cmd"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/version"
 )
@@ -29,11 +36,27 @@ var (
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
+	// catching all of the exceptions
+	defer func() {
+		if err := recover(); err != nil {
+			sp := serviceprovider.Get()
+			if sp != nil {
+				db := sp.JsonDatabase
+				if db != nil {
+					ctx := basecontext.NewRootBaseContext()
+					db.SaveAs(ctx, fmt.Sprintf("data.panic.%s.json", strings.ReplaceAll(time.Now().Format("2006-01-02-15-04-05"), "-", "_")))
+				}
+			}
+			fmt.Fprintf(os.Stderr, "Exception: %v\n", err)
+			os.Exit(1)
+		}
+	}()
+
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = constants.Name
 	versionSvc.License = "Fair Source (https://fair.io)"

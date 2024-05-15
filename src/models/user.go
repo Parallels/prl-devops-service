@@ -6,12 +6,13 @@ import (
 )
 
 type UserCreateRequest struct {
-	Username string   `json:"username"`
-	Name     string   `json:"name,omitempty"`
-	Email    string   `json:"email"`
-	Password string   `json:"password"`
-	Roles    []string `json:"roles,omitempty"`
-	Claims   []string `json:"claims,omitempty"`
+	Username    string   `json:"username"`
+	Name        string   `json:"name,omitempty"`
+	Email       string   `json:"email"`
+	Password    string   `json:"password"`
+	Roles       []string `json:"roles,omitempty"`
+	Claims      []string `json:"claims,omitempty"`
+	IsSuperUser bool     `json:"is_super_user"`
 }
 
 func (r *UserCreateRequest) Validate() error {
@@ -41,10 +42,11 @@ func (r *UserCreateRequest) Validate() error {
 }
 
 type ApiUser struct {
-	ID       string   `json:"id,omitempty"`
-	Username string   `json:"username"`
-	Name     string   `json:"name,omitempty"`
-	Email    string   `json:"email"`
-	Roles    []string `json:"roles,omitempty"`
-	Claims   []string `json:"claims,omitempty"`
+	ID          string   `json:"id,omitempty"`
+	Username    string   `json:"username"`
+	Name        string   `json:"name,omitempty"`
+	Email       string   `json:"email"`
+	Roles       []string `json:"roles,omitempty"`
+	Claims      []string `json:"claims,omitempty"`
+	IsSuperUser bool     `json:"isSuperUser"`
 }
