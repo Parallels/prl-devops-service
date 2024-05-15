@@ -1,6 +1,8 @@
 package telemetry
 
 import (
+	"fmt"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/amplitude/analytics-go/amplitude"
 	"github.com/amplitude/analytics-go/amplitude/types"
@@ -22,6 +24,17 @@ func (t *TelemetryService) TrackEvent(item TelemetryItem) {
 	t.ctx.LogInfof("[Telemetry] Sending Amplitude Tracking event %s", item.Type)
 
 	// Create a new event
+	if len(item.UserID) < 5 {
+		if item.HardwareID != "" {
+			item.UserID = fmt.Sprintf("%s@%s", item.UserID, item.HardwareID)
+		} else {
+			item.UserID = fmt.Sprintf("%s@service", item.UserID)
+		}
+	}
+	if len(item.HardwareID) < 5 {
+		item.HardwareID = "service"
+	}
+
 	ev := amplitude.Event{
 		UserID:          item.UserID,
 		DeviceID:        item.HardwareID,

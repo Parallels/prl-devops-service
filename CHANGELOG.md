@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.6.5] - 2024-05-15
+
+### Fixed
+
+- Fixed an issue with telemetry where the user_id was not being sent correctly
+
 ## [0.6.4] - 2024-05-15
 
 ### Added
