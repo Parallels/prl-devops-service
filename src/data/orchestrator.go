@@ -1,7 +1,6 @@
 package data
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -85,10 +84,9 @@ func (j *JsonDatabase) GetOrchestratorHost(ctx basecontext.ApiContext, idOrHost 
 	}
 
 	for _, host := range hosts {
-		hostname := fmt.Sprintf("%s%s", idOrHost, host.PathPrefix)
 		dbHost := host.GetHost()
 		ctx.LogDebugf("host: %s", dbHost)
-		if strings.EqualFold(host.ID, idOrHost) || strings.EqualFold(host.Host, idOrHost) || strings.EqualFold(host.GetHost(), hostname) {
+		if strings.EqualFold(host.ID, idOrHost) || strings.EqualFold(host.GetHost(), idOrHost) {
 			return &host, nil
 		}
 	}
@@ -110,8 +108,8 @@ func (j *JsonDatabase) CreateOrchestratorHost(ctx basecontext.ApiContext, host m
 	host.UpdatedAt = helpers.GetUtcCurrentDateTime()
 	host.Enabled = true
 
-	if u, _ := j.GetOrchestratorHost(ctx, host.Host); u != nil {
-		return nil, errors.NewWithCodef(400, "host %s already exists with ID %s", host.Host, host.ID)
+	if u, _ := j.GetOrchestratorHost(ctx, host.GetHost()); u != nil {
+		return nil, errors.NewWithCodef(400, "host %s already exists with ID %s", host.GetHost(), host.ID)
 	}
 
 	j.data.OrchestratorHosts = append(j.data.OrchestratorHosts, host)

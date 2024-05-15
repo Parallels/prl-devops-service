@@ -2,14 +2,9 @@ package models
 
 import (
 	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
-	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/errors"
 )
 
-type VirtualMachineCatalogPatch struct {
-	CatalogId      string                         `json:"catalog_id"`
-	Version        string                         `json:"version"`
-	Architecture   string                         `json:"architecture"`
+type VirtualMachineCatalogManifestPatch struct {
 	RequiredRoles  []string                       `json:"required_roles"`
 	RequiredClaims []string                       `json:"required_claims"`
 	Tags           []string                       `json:"tags"`
@@ -17,8 +12,8 @@ type VirtualMachineCatalogPatch struct {
 	Errors         []error                        `json:"-"`
 }
 
-func NewVirtualMachineCatalogPatch() *VirtualMachineCatalogPatch {
-	return &VirtualMachineCatalogPatch{
+func NewVirtualMachineCatalogPatch() *VirtualMachineCatalogManifestPatch {
+	return &VirtualMachineCatalogManifestPatch{
 		RequiredRoles:  []string{},
 		RequiredClaims: []string{},
 		Tags:           []string{},
@@ -27,23 +22,7 @@ func NewVirtualMachineCatalogPatch() *VirtualMachineCatalogPatch {
 	}
 }
 
-func (m *VirtualMachineCatalogPatch) Validate() error {
-	if m.CatalogId == "" {
-		return errors.NewWithCode("CatalogId is required", 400)
-	}
-
-	if m.Version == "" {
-		m.Version = constants.LATEST_TAG
-	}
-
-	if m.Architecture == "" {
-		return errors.NewWithCode("Architecture is required", 400)
-	}
-
-	if m.Architecture != "x86_64" && m.Architecture != "arm64" {
-		return errors.NewWithCode("Architecture must be either x86_64 or arm64", 400)
-	}
-
+func (m *VirtualMachineCatalogManifestPatch) Validate() error {
 	if m.RequiredClaims == nil {
 		m.RequiredClaims = []string{}
 	}
@@ -51,25 +30,25 @@ func (m *VirtualMachineCatalogPatch) Validate() error {
 		m.RequiredRoles = []string{}
 	}
 	if m.Tags == nil {
-		m.RequiredRoles = []string{}
+		m.Tags = []string{}
 	}
 
 	return nil
 }
 
-func (m *VirtualMachineCatalogPatch) HasErrors() bool {
+func (m *VirtualMachineCatalogManifestPatch) HasErrors() bool {
 	return len(m.Errors) > 0
 }
 
-func (m *VirtualMachineCatalogPatch) AddError(err error) {
+func (m *VirtualMachineCatalogManifestPatch) AddError(err error) {
 	m.Errors = append(m.Errors, err)
 }
 
-func (m *VirtualMachineCatalogPatch) ClearErrors() {
+func (m *VirtualMachineCatalogManifestPatch) ClearErrors() {
 	m.Errors = []error{}
 }
 
-func (m *VirtualMachineCatalogPatch) NeedsCleanup() bool {
+func (m *VirtualMachineCatalogManifestPatch) NeedsCleanup() bool {
 	if m.CleanupRequest == nil {
 		return false
 	}

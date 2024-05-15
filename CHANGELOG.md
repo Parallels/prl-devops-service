@@ -22,10 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added a new unified install script to be used  in mac/linux
+- Added ability to add/remove tags from catalog manifests
+- Added ability to add/remove roles from catalog manifests
+- Added ability to add/remove claims from catalog manifests
 
 ### Fixed
 
-- Fixed an issue were the executable would not read the configuration file correctly if it was on path
+- Fixed an issue were the executable would not read the configuration file
+  correctly if it was on path
+- Fixed an issue were we could not add two hosts with the same url and different
+  ports
+- Improved our helm chart
 
 ## [0.6.3] - 2024-05-14
 

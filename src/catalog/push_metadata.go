@@ -3,6 +3,7 @@ package catalog
 import (
 	"encoding/json"
 	"path/filepath"
+	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/models"
@@ -13,12 +14,13 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func (s *CatalogManifestService) PushMetadata(ctx basecontext.ApiContext, r *models.PushCatalogManifestRequest) *models.VirtualMachineCatalogManifest {
+func (s *CatalogManifestService) PushMetadata(ctx basecontext.ApiContext, r *models.VirtualMachineCatalogManifest) *models.VirtualMachineCatalogManifest {
 	executed := false
-	manifest := models.NewVirtualMachineCatalogManifest()
+	manifest := r
 	var err error
+	connection := r.Provider.String()
 	for _, rs := range s.remoteServices {
-		check, checkErr := rs.Check(ctx, r.Connection)
+		check, checkErr := rs.Check(ctx, connection)
 		if checkErr != nil {
 			ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
 			manifest.AddError(checkErr)
@@ -30,8 +32,8 @@ func (s *CatalogManifestService) PushMetadata(ctx basecontext.ApiContext, r *mod
 			manifest.CleanupRequest.RemoteStorageService = rs
 			apiClient := apiclient.NewHttpClient(ctx)
 
-			if err := manifest.Provider.Parse(r.Connection); err != nil {
-				ctx.LogErrorf("Error parsing provider %v: %v", r.Connection, err)
+			if err := manifest.Provider.Parse(connection); err != nil {
+				ctx.LogErrorf("Error parsing provider %v: %v", connection, err)
 				manifest.AddError(err)
 				break
 			}
@@ -41,90 +43,101 @@ func (s *CatalogManifestService) PushMetadata(ctx basecontext.ApiContext, r *mod
 				apiClient.SetAuthorization(GetAuthenticator(manifest.Provider))
 			}
 
-			// Generating the manifest content
-			ctx.LogInfof("Pushing manifest metadata %v to provider %s", r.CatalogId, rs.Name())
-			err = s.GenerateManifestContent(ctx, r, manifest)
-			if err != nil {
-				ctx.LogErrorf("Error generating manifest content for %v: %v", r.CatalogId, err)
-				manifest.AddError(err)
-				break
-			}
-
 			if err := helpers.CreateDirIfNotExist("/tmp"); err != nil {
 				ctx.LogErrorf("Error creating temp dir: %v", err)
 			}
 
 			// Checking if the manifest metadata exists in the remote server
 			var catalogManifest *models.VirtualMachineCatalogManifest
-			manifestPath := filepath.Join(rs.GetProviderRootPath(ctx), manifest.CatalogId)
+			manifestPath := strings.ToLower(filepath.Join(rs.GetProviderRootPath(ctx), manifest.CatalogId))
+
 			exists, _ := rs.FileExists(ctx, manifestPath, s.getMetaFilename(manifest.Name))
-			if exists {
-				if err := rs.DeleteFile(ctx, manifestPath, s.getMetaFilename(manifest.Name)); err == nil {
-					ctx.LogInfof("Error removing remote metadata file %v", s.getMetaFilename(manifest.Name))
-				}
+			if !exists {
+				ctx.LogInfof("Remote metadata does not exist, creating it")
+				ctx.LogErrorf("Error Remote metadata does not exist %v", manifest.CatalogId)
+				manifest.AddError(err)
+				break
+			}
 
-				// Pushing the metadata file to the remote server
-				if catalogManifest != nil {
-					manifest.Path = catalogManifest.Path
-					manifest.MetadataFile = s.getMetaFilename(catalogManifest.Name)
+			if err := rs.PullFile(ctx, manifestPath, s.getMetaFilename(manifest.Name), "/tmp"); err != nil {
+				ctx.LogInfof("Error pulling remote metadata file %v", s.getMetaFilename(manifest.Name))
+			}
 
-					tempManifestContentFilePath := filepath.Join("/tmp", manifest.MetadataFile)
-					manifestContent, err := json.MarshalIndent(manifest, "", "  ")
-					if err != nil {
-						ctx.LogErrorf("Error marshalling manifest %v: %v", manifest, err)
-						manifest.AddError(err)
-						break
-					}
+			currentContent, err := helper.ReadFromFile(filepath.Join("/tmp", s.getMetaFilename(manifest.Name)))
+			if err != nil {
+				ctx.LogErrorf("Error reading metadata file %v: %v", s.getMetaFilename(manifest.Name), err)
+				manifest.AddError(err)
+				break
+			}
 
-					manifest.CleanupRequest.AddLocalFileCleanupOperation(tempManifestContentFilePath, false)
-					if err := helper.WriteToFile(string(manifestContent), tempManifestContentFilePath); err != nil {
-						ctx.LogErrorf("Error writing manifest to temporary file %v: %v", tempManifestContentFilePath, err)
-						manifest.AddError(err)
-						break
-					}
+			if err := json.Unmarshal(currentContent, &catalogManifest); err != nil {
+				ctx.LogErrorf("Error unmarshalling metadata file %v: %v", s.getMetaFilename(manifest.Name), err)
+				manifest.AddError(err)
+				break
+			}
 
-					metadataChecksum, err := helpers.GetFileMD5Checksum(tempManifestContentFilePath)
-					if err != nil {
-						ctx.LogErrorf("Error getting metadata checksum %v: %v", tempManifestContentFilePath, err)
-						manifest.AddError(err)
-						break
-					}
+			if catalogManifest == nil {
+				ctx.LogErrorf("Error unmarshalling metadata file %v: %v", s.getMetaFilename(manifest.Name), err)
+				manifest.AddError(err)
+				break
+			}
 
-					remoteMetadataChecksum, err := rs.FileChecksum(ctx, catalogManifest.Path, catalogManifest.MetadataFile)
-					if err != nil {
-						ctx.LogErrorf("Error getting remote metadata checksum %v: %v", catalogManifest.MetadataFile, err)
-						manifest.AddError(err)
-						break
-					}
+			helper.DeleteFile(filepath.Join("/tmp", s.getMetaFilename(manifest.Name)))
 
-					if remoteMetadataChecksum != metadataChecksum {
-						ctx.LogInfof("Remote metadata is not up to date, pushing it")
-						if err := rs.PushFile(ctx, "/tmp", catalogManifest.Path, manifest.MetadataFile); err != nil {
-							ctx.LogErrorf("Error pushing metadata file %v: %v", catalogManifest.MetadataFile, err)
-							manifest.AddError(err)
-							break
-						}
-					} else {
-						ctx.LogInfof("Remote metadata is up to date")
-					}
+			catalogManifest.RequiredClaims = r.RequiredClaims
+			catalogManifest.RequiredRoles = r.RequiredRoles
+			catalogManifest.Tags = r.Tags
 
-					if manifest.HasErrors() {
-						manifest.CleanupRequest.AddRemoteFileCleanupOperation(filepath.Join(manifest.Path, manifest.PackFile), false)
-						manifest.CleanupRequest.AddRemoteFileCleanupOperation(filepath.Join(manifest.Path, manifest.MetadataFile), false)
-						manifest.CleanupRequest.AddRemoteFileCleanupOperation(manifest.Path, true)
-					}
-				} else {
-					// The catalog manifest metadata does not exist creating it
-					errNotFound := errors.New("Remote Manifest metadata not found")
-					manifest.AddError(errNotFound)
+			tempManifestContentFilePath := filepath.Join("/tmp", catalogManifest.MetadataFile)
+			manifestContent, err := json.MarshalIndent(catalogManifest, "", "  ")
+			if err != nil {
+				ctx.LogErrorf("Error marshalling manifest %v: %v", manifest, err)
+				manifest.AddError(err)
+				break
+			}
+
+			manifest.CleanupRequest.AddLocalFileCleanupOperation(tempManifestContentFilePath, false)
+			if err := helper.WriteToFile(string(manifestContent), tempManifestContentFilePath); err != nil {
+				ctx.LogErrorf("Error writing manifest to temporary file %v: %v", tempManifestContentFilePath, err)
+				manifest.AddError(err)
+				break
+			}
+
+			metadataChecksum, err := helpers.GetFileMD5Checksum(tempManifestContentFilePath)
+			if err != nil {
+				ctx.LogErrorf("Error getting metadata checksum %v: %v", tempManifestContentFilePath, err)
+				manifest.AddError(err)
+				break
+			}
+
+			remoteMetadataChecksum, err := rs.FileChecksum(ctx, catalogManifest.Path, catalogManifest.MetadataFile)
+			if err != nil {
+				ctx.LogErrorf("Error getting remote metadata checksum %v: %v", catalogManifest.MetadataFile, err)
+				manifest.AddError(err)
+				break
+			}
+
+			if remoteMetadataChecksum != metadataChecksum {
+				ctx.LogInfof("Remote metadata is not up to date, pushing it")
+				if err := rs.PushFile(ctx, "/tmp", catalogManifest.Path, manifest.MetadataFile); err != nil {
+					ctx.LogErrorf("Error pushing metadata file %v: %v", catalogManifest.MetadataFile, err)
+					manifest.AddError(err)
 					break
 				}
+			} else {
+				ctx.LogInfof("Remote metadata is up to date")
+			}
+
+			if manifest.HasErrors() {
+				manifest.CleanupRequest.AddRemoteFileCleanupOperation(filepath.Join(manifest.Path, manifest.PackFile), false)
+				manifest.CleanupRequest.AddRemoteFileCleanupOperation(filepath.Join(manifest.Path, manifest.MetadataFile), false)
+				manifest.CleanupRequest.AddRemoteFileCleanupOperation(manifest.Path, true)
 			}
 		}
 	}
 
 	if !executed {
-		manifest.AddError(errors.Newf("no remote service found for connection %v", r.Connection))
+		manifest.AddError(errors.Newf("no remote service found for connection %v", connection))
 	}
 
 	if cleanErrors := manifest.CleanupRequest.Clean(ctx); len(cleanErrors) > 0 {
