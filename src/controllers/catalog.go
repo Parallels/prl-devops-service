@@ -682,6 +682,11 @@ func AddClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
+		} else {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No claims provided",
+				Code:    http.StatusBadRequest,
+			})
 		}
 
 		newManifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
@@ -769,6 +774,11 @@ func RemoveClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
+		} else {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No claims provided",
+				Code:    http.StatusBadRequest,
+			})
 		}
 
 		newManifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
@@ -856,6 +866,11 @@ func AddRolesToCatalogManifestHandler() restapi.ControllerHandler {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
+		} else {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No roles provided",
+				Code:    http.StatusBadRequest,
+			})
 		}
 
 		newManifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
@@ -943,6 +958,11 @@ func RemoveRolesToCatalogManifestHandler() restapi.ControllerHandler {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
+		} else {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No roles provided",
+				Code:    http.StatusBadRequest,
+			})
 		}
 
 		newManifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
@@ -1030,6 +1050,11 @@ func AddTagsToCatalogManifestHandler() restapi.ControllerHandler {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
+		} else {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No tags provided",
+				Code:    http.StatusBadRequest,
+			})
 		}
 
 		newManifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
@@ -1117,6 +1142,11 @@ func RemoveTagsToCatalogManifestHandler() restapi.ControllerHandler {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
+		} else {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No tags provided",
+				Code:    http.StatusBadRequest,
+			})
 		}
 
 		newManifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)

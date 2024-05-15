@@ -82,7 +82,11 @@ func (s *CatalogManifestService) PushMetadata(ctx basecontext.ApiContext, r *mod
 				break
 			}
 
-			helper.DeleteFile(filepath.Join("/tmp", s.getMetaFilename(manifest.Name)))
+			if err := helper.DeleteFile(filepath.Join("/tmp", s.getMetaFilename(manifest.Name))); err != nil {
+				ctx.LogErrorf("Error deleting metadata file %v: %v", s.getMetaFilename(manifest.Name), err)
+				manifest.AddError(err)
+				break
+			}
 
 			catalogManifest.RequiredClaims = r.RequiredClaims
 			catalogManifest.RequiredRoles = r.RequiredRoles
