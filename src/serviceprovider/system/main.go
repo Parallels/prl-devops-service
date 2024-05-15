@@ -84,6 +84,8 @@ func (s *SystemService) GetSystemUsers(ctx basecontext.ApiContext) ([]models.Sys
 		return s.getMacSystemUsers(ctx)
 	case "linux":
 		return s.getLinuxSystemUsers(ctx)
+	case "windows":
+		return s.getWindowsSystemUsers(ctx)
 	default:
 		return nil, errors.New("Not implemented")
 	}
@@ -171,6 +173,10 @@ func (s *SystemService) getLinuxSystemUsers(ctx basecontext.ApiContext) ([]model
 	return result, nil
 }
 
+func (s *SystemService) getWindowsSystemUsers(ctx basecontext.ApiContext) ([]models.SystemUser, error) {
+	return []models.SystemUser{}, nil
+}
+
 func (s *SystemService) GetOperatingSystem() string {
 	runningOs := ""
 	switch os := runtime.GOOS; os {
@@ -193,6 +199,8 @@ func (s *SystemService) GetUserHome(ctx basecontext.ApiContext, user string) (st
 		return s.getUserHomeMac(ctx, user)
 	case "linux":
 		return s.getUserHomeLinux(ctx, user)
+	case "windows":
+		return s.getUserHomeWindows(ctx, user)
 	default:
 		return "", errors.New("Not implemented")
 	}
@@ -229,12 +237,24 @@ func (s *SystemService) getUserHomeLinux(ctx basecontext.ApiContext, user string
 	return parts[5], nil
 }
 
+func (s *SystemService) getUserHomeWindows(ctx basecontext.ApiContext, user string) (string, error) {
+	appData, exists := os.LookupEnv("USERNAME")
+	if appData != "" && !exists {
+		user = "/"
+	}
+	appData = strings.ReplaceAll(strings.ReplaceAll(appData, "\r\n", ""), "\n", "")
+
+	return appData, nil
+}
+
 func (s *SystemService) GetUserId(ctx basecontext.ApiContext, user string) (int, error) {
 	switch s.GetOperatingSystem() {
 	case "macos":
 		return s.getUserIdMac(ctx, user)
 	case "linux":
 		return s.getUserIdLinux(ctx, user)
+	case "windows":
+		return s.getUserIdWindows(ctx, user)
 	default:
 		return -1, errors.New("Not implemented")
 	}
@@ -276,6 +296,10 @@ func (s *SystemService) getUserIdLinux(ctx basecontext.ApiContext, user string) 
 	}
 
 	return id, nil
+}
+
+func (s *SystemService) getUserIdWindows(ctx basecontext.ApiContext, user string) (int, error) {
+	return 100, nil
 }
 
 func (s *SystemService) GetCurrentUser(ctx basecontext.ApiContext) (string, error) {
