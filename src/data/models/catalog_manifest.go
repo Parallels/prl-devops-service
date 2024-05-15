@@ -107,3 +107,28 @@ type CatalogManifestProvider struct {
 	ApiKey   string            `json:"api_key"`
 	Meta     map[string]string `json:"meta"`
 }
+
+func (m *CatalogManifestProvider) String() string {
+	r := "provider=" + m.Type
+	if m.Host == "" {
+		r += ";host=" + m.Host
+	}
+	if m.Port == "" {
+		r += ";port=" + m.Port
+	}
+	if m.Username == "" {
+		r += ";user=" + m.Username
+	}
+	if m.Password == "" {
+		r += ";password=" + m.Password
+	}
+	if m.ApiKey == "" {
+		r += ";api_key=" + m.ApiKey
+	}
+
+	for k, v := range m.Meta {
+		r += ";" + k + "=" + v
+	}
+
+	return strings.TrimRight(r, ";")
+}

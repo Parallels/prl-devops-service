@@ -6,6 +6,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog"
+	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/mappers"
@@ -113,6 +114,54 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/revoke").
 		WithRequiredRole(constants.SUPER_USER_ROLE).
 		WithHandler(RevokeCatalogManifestVersionHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PATCH).
+		WithVersion(version).
+		WithPath("/catalog/{catalogId}/{version}/{architecture}/claims").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(AddClaimsToCatalogManifestHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/catalog/{catalogId}/{version}/{architecture}/claims").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(RemoveClaimsToCatalogManifestHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PATCH).
+		WithVersion(version).
+		WithPath("/catalog/{catalogId}/{version}/{architecture}/roles").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(AddRolesToCatalogManifestHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/catalog/{catalogId}/{version}/{architecture}/roles").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(RemoveRolesToCatalogManifestHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PATCH).
+		WithVersion(version).
+		WithPath("/catalog/{catalogId}/{version}/{architecture}/tags").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(AddTagsToCatalogManifestHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/catalog/{catalogId}/{version}/{architecture}/tags").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(RemoveTagsToCatalogManifestHandler()).
 		Register()
 
 	restapi.NewController().
@@ -574,6 +623,558 @@ func RevokeCatalogManifestVersionHandler() restapi.ControllerHandler {
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest untainted: %v", resultData.ID)
+	}
+}
+
+// @Summary		Adds claims to a catalog manifest version
+// @Description	This endpoint adds claims to a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string	true	"Catalog ID"
+// @Param			version			path		string	true	"Version"
+// @Param			architecture	path		string	true	"Architecture"
+// @Param			request	body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/claims [patch]
+func AddClaimsToCatalogManifestHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var request catalog_models.VirtualMachineCatalogManifestPatch
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		vars := mux.Vars(r)
+		catalogId := vars["catalogId"]
+		version := vars["version"]
+		architecture := vars["architecture"]
+
+		manifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		if request.RequiredClaims != nil && len(request.RequiredClaims) > 0 {
+			if err := dbService.AddCatalogManifestRequiredClaims(ctx, manifest.ID, request.RequiredClaims...); err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		} else {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No claims provided",
+				Code:    http.StatusBadRequest,
+			})
+		}
+
+		newManifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		catalogRequest := mappers.DtoCatalogManifestToBase(*newManifest)
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.Errors = []error{}
+
+		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		if resultOp.HasErrors() {
+			errorMessage := "Error pushing manifest: \n"
+			for _, err := range resultOp.Errors {
+				errorMessage += "\n" + err.Error() + " "
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(newManifest)
+		ctx.LogInfof("Manifest Claims Updated: %v", newManifest.ID)
+	}
+}
+
+// @Summary		Removes claims from a catalog manifest version
+// @Description	This endpoint removes claims from a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string	true	"Catalog ID"
+// @Param			version			path		string	true	"Version"
+// @Param			architecture	path		string	true	"Architecture"
+// @Param			request	body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/claims [delete]
+func RemoveClaimsToCatalogManifestHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var request catalog_models.VirtualMachineCatalogManifestPatch
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		vars := mux.Vars(r)
+		catalogId := vars["catalogId"]
+		version := vars["version"]
+		architecture := vars["architecture"]
+
+		manifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		if request.RequiredClaims != nil && len(request.RequiredClaims) > 0 {
+			if err := dbService.RemoveCatalogManifestRequiredClaims(ctx, manifest.ID, request.RequiredClaims...); err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		} else {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No claims provided",
+				Code:    http.StatusBadRequest,
+			})
+		}
+
+		newManifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		catalogRequest := mappers.DtoCatalogManifestToBase(*newManifest)
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.Errors = []error{}
+
+		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		if resultOp.HasErrors() {
+			errorMessage := "Error pushing manifest: \n"
+			for _, err := range resultOp.Errors {
+				errorMessage += "\n" + err.Error() + " "
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(newManifest)
+		ctx.LogInfof("Manifest Claims Updated: %v", newManifest.ID)
+	}
+}
+
+// @Summary		Adds roles to a catalog manifest version
+// @Description	This endpoint adds roles to a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string	true	"Catalog ID"
+// @Param			version			path		string	true	"Version"
+// @Param			architecture	path		string	true	"Architecture"
+// @Param			request	body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/roles [patch]
+func AddRolesToCatalogManifestHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var request catalog_models.VirtualMachineCatalogManifestPatch
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		vars := mux.Vars(r)
+		catalogId := vars["catalogId"]
+		version := vars["version"]
+		architecture := vars["architecture"]
+
+		manifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		if request.RequiredRoles != nil && len(request.RequiredRoles) > 0 {
+			if err := dbService.AddCatalogManifestRequiredRoles(ctx, manifest.ID, request.RequiredRoles...); err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		} else {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No roles provided",
+				Code:    http.StatusBadRequest,
+			})
+		}
+
+		newManifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		catalogRequest := mappers.DtoCatalogManifestToBase(*newManifest)
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.Errors = []error{}
+
+		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		if resultOp.HasErrors() {
+			errorMessage := "Error pushing manifest: \n"
+			for _, err := range resultOp.Errors {
+				errorMessage += "\n" + err.Error() + " "
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(newManifest)
+		ctx.LogInfof("Manifest Roles Updated: %v", newManifest.ID)
+	}
+}
+
+// @Summary		Removes roles from a catalog manifest version
+// @Description	This endpoint removes roles from a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string	true	"Catalog ID"
+// @Param			version			path		string	true	"Version"
+// @Param			architecture	path		string	true	"Architecture"
+// @Param			request	body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/roles [delete]
+func RemoveRolesToCatalogManifestHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var request catalog_models.VirtualMachineCatalogManifestPatch
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		vars := mux.Vars(r)
+		catalogId := vars["catalogId"]
+		version := vars["version"]
+		architecture := vars["architecture"]
+
+		manifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		if request.RequiredRoles != nil && len(request.RequiredRoles) > 0 {
+			if err := dbService.RemoveCatalogManifestRequiredRoles(ctx, manifest.ID, request.RequiredRoles...); err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		} else {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No roles provided",
+				Code:    http.StatusBadRequest,
+			})
+		}
+
+		newManifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		catalogRequest := mappers.DtoCatalogManifestToBase(*newManifest)
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.Errors = []error{}
+
+		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		if resultOp.HasErrors() {
+			errorMessage := "Error pushing manifest: \n"
+			for _, err := range resultOp.Errors {
+				errorMessage += "\n" + err.Error() + " "
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(newManifest)
+		ctx.LogInfof("Manifest Claims Updated: %v", newManifest.ID)
+	}
+}
+
+// @Summary		Adds tags to a catalog manifest version
+// @Description	This endpoint adds tags to a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string	true	"Catalog ID"
+// @Param			version			path		string	true	"Version"
+// @Param			architecture	path		string	true	"Architecture"
+// @Param			request	body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/tags [patch]
+func AddTagsToCatalogManifestHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var request catalog_models.VirtualMachineCatalogManifestPatch
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		vars := mux.Vars(r)
+		catalogId := vars["catalogId"]
+		version := vars["version"]
+		architecture := vars["architecture"]
+
+		manifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		if request.Tags != nil && len(request.Tags) > 0 {
+			if err := dbService.AddCatalogManifestTags(ctx, manifest.ID, request.Tags...); err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		} else {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No tags provided",
+				Code:    http.StatusBadRequest,
+			})
+		}
+
+		newManifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		catalogRequest := mappers.DtoCatalogManifestToBase(*newManifest)
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.Errors = []error{}
+
+		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		if resultOp.HasErrors() {
+			errorMessage := "Error pushing manifest: \n"
+			for _, err := range resultOp.Errors {
+				errorMessage += "\n" + err.Error() + " "
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(newManifest)
+		ctx.LogInfof("Manifest Tags Updated: %v", newManifest.ID)
+	}
+}
+
+// @Summary		Removes tags from a catalog manifest version
+// @Description	This endpoint removes tags from a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string	true	"Catalog ID"
+// @Param			version			path		string	true	"Version"
+// @Param			architecture	path		string	true	"Architecture"
+// @Param			request	body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/tags [delete]
+func RemoveTagsToCatalogManifestHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var request catalog_models.VirtualMachineCatalogManifestPatch
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		vars := mux.Vars(r)
+		catalogId := vars["catalogId"]
+		version := vars["version"]
+		architecture := vars["architecture"]
+
+		manifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		if request.Tags != nil && len(request.Tags) > 0 {
+			if err := dbService.RemoveCatalogManifestTags(ctx, manifest.ID, request.Tags...); err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		} else {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No tags provided",
+				Code:    http.StatusBadRequest,
+			})
+		}
+
+		newManifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		catalogRequest := mappers.DtoCatalogManifestToBase(*newManifest)
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.Errors = []error{}
+
+		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		if resultOp.HasErrors() {
+			errorMessage := "Error pushing manifest: \n"
+			for _, err := range resultOp.Errors {
+				errorMessage += "\n" + err.Error() + " "
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(newManifest)
+		ctx.LogInfof("Manifest Claims Updated: %v", newManifest.ID)
 	}
 }
 

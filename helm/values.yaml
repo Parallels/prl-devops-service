@@ -2,12 +2,13 @@ replicaCount: 1
 
 image:
   repository: cjlapao/prl-devops-service
-  pullPolicy: IfNotPresent
+  pullPolicy: always
   tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
+namespace: default
 
 serviceAccount:
   create: true
@@ -52,6 +53,7 @@ security:
     increment_lockout_duration: true
   encryption_private_key: ""
   root_password: ""
+  enable_tls: false
 
 service:
   type: ClusterIP
@@ -65,17 +67,19 @@ config:
   disableCatalogCaching: false
 
 ingress:
+  enabled: true
   istio: false
   prefix: parallels
-  enabled: true
   annotations: {}
   gateway: ""
+  create_gateway: false
   host: ""
   apiPort: 80
   apiPrefix: /api
   tls:
     enabled: false
     port: 443
+    tls_secret_name: ""
     certificate:
     privateKey:
     

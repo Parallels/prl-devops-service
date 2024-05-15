@@ -430,7 +430,7 @@ func (j *JsonDatabase) UpdateCatalogManifestRequiredRoles(ctx basecontext.ApiCon
 	return ErrCatalogManifestNotFound
 }
 
-func (j *JsonDatabase) UpdateCatalogManifestRequiredClaims(ctx basecontext.ApiContext, recordId string, claims ...string) error {
+func (j *JsonDatabase) AddCatalogManifestRequiredClaims(ctx basecontext.ApiContext, recordId string, claims ...string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
 	}
@@ -439,6 +439,17 @@ func (j *JsonDatabase) UpdateCatalogManifestRequiredClaims(ctx basecontext.ApiCo
 		if strings.EqualFold(manifest.ID, recordId) {
 			found := false
 			for _, claim := range claims {
+				claimExists := false
+				for _, existClaim := range j.data.Claims {
+					if strings.EqualFold(existClaim.ID, claim) {
+						claimExists = true
+						break
+					}
+				}
+				if !claimExists {
+					return errors.Newf("claim %s does not exist in the system", claim)
+				}
+
 				for _, r := range manifest.RequiredClaims {
 					if strings.EqualFold(r, claim) {
 						found = true
@@ -448,6 +459,172 @@ func (j *JsonDatabase) UpdateCatalogManifestRequiredClaims(ctx basecontext.ApiCo
 
 				if !found {
 					j.data.ManifestsCatalog[i].RequiredClaims = append(j.data.ManifestsCatalog[i].RequiredClaims, claim)
+				}
+			}
+
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) RemoveCatalogManifestRequiredClaims(ctx basecontext.ApiContext, recordId string, claims ...string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.ID, recordId) {
+			for _, claim := range claims {
+				foundAt := -1
+				for index, r := range manifest.RequiredClaims {
+					if strings.EqualFold(r, claim) {
+						foundAt = index
+						break
+					}
+				}
+
+				if foundAt != -1 {
+					j.data.ManifestsCatalog[i].RequiredClaims = append(j.data.ManifestsCatalog[i].RequiredClaims[:foundAt], j.data.ManifestsCatalog[i].RequiredClaims[foundAt+1:]...)
+				}
+			}
+
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) AddCatalogManifestRequiredRoles(ctx basecontext.ApiContext, recordId string, roles ...string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.ID, recordId) {
+			found := false
+			for _, role := range roles {
+				roleExists := false
+				for _, existRole := range j.data.Roles {
+					if strings.EqualFold(existRole.ID, role) {
+						roleExists = true
+						break
+					}
+				}
+				if !roleExists {
+					return errors.Newf("role %s does not exist in the system", role)
+				}
+
+				for _, r := range manifest.RequiredRoles {
+					if strings.EqualFold(r, role) {
+						found = true
+						break
+					}
+				}
+
+				if !found {
+					j.data.ManifestsCatalog[i].RequiredRoles = append(j.data.ManifestsCatalog[i].RequiredRoles, role)
+				}
+			}
+
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) RemoveCatalogManifestRequiredRoles(ctx basecontext.ApiContext, recordId string, roles ...string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.ID, recordId) {
+			for _, role := range roles {
+				foundAt := -1
+				for index, r := range manifest.RequiredRoles {
+					if strings.EqualFold(r, role) {
+						foundAt = index
+						break
+					}
+				}
+
+				if foundAt != -1 {
+					j.data.ManifestsCatalog[i].RequiredRoles = append(j.data.ManifestsCatalog[i].RequiredRoles[:foundAt], j.data.ManifestsCatalog[i].RequiredRoles[foundAt+1:]...)
+				}
+			}
+
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) AddCatalogManifestTags(ctx basecontext.ApiContext, recordId string, tags ...string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.ID, recordId) {
+			found := false
+			for _, tag := range tags {
+				for _, r := range manifest.Tags {
+					if strings.EqualFold(r, tag) {
+						found = true
+						break
+					}
+				}
+
+				if !found {
+					j.data.ManifestsCatalog[i].Tags = append(j.data.ManifestsCatalog[i].Tags, tag)
+				}
+			}
+
+			if err := j.Save(ctx); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) RemoveCatalogManifestTags(ctx basecontext.ApiContext, recordId string, tags ...string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.ID, recordId) {
+			for _, tag := range tags {
+				foundAt := -1
+				for index, r := range manifest.Tags {
+					if strings.EqualFold(r, tag) {
+						foundAt = index
+						break
+					}
+				}
+
+				if foundAt != -1 {
+					j.data.ManifestsCatalog[i].Tags = append(j.data.ManifestsCatalog[i].Tags[:foundAt], j.data.ManifestsCatalog[i].Tags[foundAt+1:]...)
 				}
 			}
 
