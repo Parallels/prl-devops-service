@@ -120,13 +120,20 @@ func (s *SystemService) getMacSystemUsers(ctx basecontext.ApiContext) ([]models.
 			continue
 		}
 
-		if _, err := os.Stat(userHomeDir); os.IsNotExist(err) {
-			continue
-		} else {
+		if user == "root" {
 			result = append(result, models.SystemUser{
 				Username: user,
 				Home:     userHomeDir,
 			})
+		} else {
+			if _, err := os.Stat(userHomeDir); os.IsNotExist(err) {
+				continue
+			} else {
+				result = append(result, models.SystemUser{
+					Username: user,
+					Home:     userHomeDir,
+				})
+			}
 		}
 	}
 
