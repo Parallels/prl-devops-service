@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.6.6"
+        "version": "0.6.7"
     },
     "basePath": "/api",
     "paths": {
