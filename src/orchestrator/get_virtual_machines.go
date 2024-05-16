@@ -11,12 +11,12 @@ import (
 )
 
 func (s *OrchestratorService) GetVirtualMachines(ctx basecontext.ApiContext, filter string) ([]models.VirtualMachine, error) {
-	s.Refresh()
-
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	s.Refresh()
 
 	hosts, err := dbService.GetOrchestratorHosts(ctx, "")
 	if err != nil {

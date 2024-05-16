@@ -273,6 +273,10 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 			c.ctx.LogTracef("[Api Client] Response body: \n%s", string(body))
 			apiResponse.Data = destination
 		} else {
+			if body == nil || len(body) == 0 {
+				return &apiResponse, nil
+			}
+
 			var bodyData map[string]interface{}
 
 			err = json.Unmarshal(body, &bodyData)
