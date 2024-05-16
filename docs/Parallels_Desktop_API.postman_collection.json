@@ -97,7 +97,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"all\": false,\n    \"run_as\": \"ec2-user\",\n    \"tools\": {\n        \"packer\": {\n            \"version\": \"latest\"\n        },\n        \"parallels\": {\n            \"version\": \"latest\",\n            \"flags\": {\n                \"license\": \"{{PARALLELS-DESKTOP-LICENSE}}\"\n            }\n        },\n        \"vagrant\": {\n            \"version\": \"latest\"\n        }\n    }\n}",
+							"raw": "{\n    \"all\": false,\n    \"run_as\": \"cjlapao\",\n    \"tools\": {\n        \"packer\": {\n            \"version\": \"latest\"\n        },\n        \"parallels\": {\n            \"version\": \"latest\",\n            \"flags\": {\n                \"license\": \"{{PARALLELS-DESKTOP-LICENSE}}\"\n            }\n        },\n        \"vagrant\": {\n            \"version\": \"latest\"\n        }\n    }\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -470,6 +470,7 @@
 												"key": "X-Filter",
 												"value": "name=test",
 												"type": "text",
+												"uuid": "53596a80-c790-4223-9519-77ad4df664cf",
 												"disabled": true
 											}
 										],
@@ -500,6 +501,7 @@
 												"key": "X-Filter",
 												"value": "name=test",
 												"type": "text",
+												"uuid": "1c45de41-ad04-4032-b03e-3a73a87465da",
 												"disabled": true
 											}
 										],
@@ -556,6 +558,7 @@
 												"key": "X-Filter",
 												"value": "name=test",
 												"type": "text",
+												"uuid": "86ca4fc0-a343-4fe5-a891-48b44b992b7a",
 												"disabled": true
 											}
 										],
@@ -573,6 +576,31 @@
 												"{{HOST-ID}}",
 												"machines",
 												"{{MACHINE-ID}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Host Virtual Machine Status",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/machines/{{MACHINE-ID}}/status",
+											"protocol": "{{protocol}}",
+											"host": [
+												"{{host}}"
+											],
+											"path": [
+												"api",
+												"v1",
+												"orchestrator",
+												"hosts",
+												"{{HOST-ID}}",
+												"machines",
+												"{{MACHINE-ID}}",
+												"status"
 											]
 										}
 									},
@@ -681,7 +709,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"new_name\": \"\",\n    \"description\": \"\"\n}",
+											"raw": "{\n    \"new_name\": \"test1\",\n    \"description\": \"\"\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -715,7 +743,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"operations\": [\n        {\n            \"group\": \"state\",\n            \"operation\": \"start\",\n            \"value\": \"\"\n        }\n    ]\n}",
+											"raw": "{\n    \"operations\": [\n        {\n            \"group\": \"state\",\n            \"operation\": \"stop\",\n            \"value\": \"\"\n        }\n    ]\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -902,6 +930,7 @@
 										"key": "X-Filter",
 										"value": "name=test",
 										"type": "text",
+										"uuid": "faf8872b-7b0b-45c7-93de-6d0a14b6e823",
 										"disabled": true
 									}
 								],
@@ -916,6 +945,184 @@
 										"v1",
 										"orchestrator",
 										"machines"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Virtual Machine",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Filter",
+										"value": "name=test",
+										"uuid": "218f0093-510f-4e0f-b168-36c5dabc02ba",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/machines/{{MACHINE-ID}}",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"machines",
+										"{{MACHINE-ID}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Virtual Machine",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "X-Filter",
+										"value": "name=test",
+										"type": "text",
+										"uuid": "b6b39bda-5bb2-41b0-9e0d-54c39e11b7b3",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/machines/{{MACHINE-ID}}",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"machines",
+										"{{MACHINE-ID}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "GetVirtual Machine Status",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/machines/{{MACHINE-ID}}/status",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"machines",
+										"{{MACHINE-ID}}",
+										"status"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "RenameVirtual Machine",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"new_name\": \"\",\n    \"description\": \"\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/machines/{{MACHINE-ID}}/rename",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"machines",
+										"{{MACHINE-ID}}",
+										"rename"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Configure Virtual Machine",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"operations\": [\n        {\n            \"group\": \"state\",\n            \"operation\": \"start\",\n            \"value\": \"\"\n        }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/machines/{{MACHINE-ID}}/set",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"machines",
+										"{{MACHINE-ID}}",
+										"set"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Execute On Virtual Machine",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"command\": \"ls -la\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/machines/{{MACHINE-ID}}/execute",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"machines",
+										"{{MACHINE-ID}}",
+										"execute"
 									]
 								}
 							},
@@ -1010,6 +1217,52 @@
 								}
 							},
 							"response": []
+						},
+						{
+							"name": "Stop Virtual Machine",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/machines/{{MACHINE-ID}}/stop",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"machines",
+										"{{MACHINE-ID}}",
+										"stop"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Start Virtual Machine",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/machines/{{MACHINE-ID}}/start",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orchestrator",
+										"machines",
+										"{{MACHINE-ID}}",
+										"start"
+									]
+								}
+							},
+							"response": []
 						}
 					]
 				},
@@ -1022,6 +1275,7 @@
 								"key": "X-Filter",
 								"value": "tags=local",
 								"type": "text",
+								"uuid": "bc5cca25-d8a6-4246-8bba-c732d75cb4fe",
 								"disabled": true
 							}
 						],
@@ -1036,6 +1290,96 @@
 								"v1",
 								"orchestrator",
 								"hosts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Host",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Filter",
+								"value": "tags=local",
+								"type": "text",
+								"uuid": "845bbf0c-8298-4787-b36c-60b71fe5b79f",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orchestrator",
+								"hosts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Enable Host",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "X-Filter",
+								"value": "tags=local",
+								"uuid": "5ea7589b-18c8-4a35-ba99-aa3482ef1298",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/enable",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orchestrator",
+								"hosts",
+								"{{HOST-ID}}",
+								"enable"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Disable Host",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "X-Filter",
+								"value": "tags=local",
+								"type": "text",
+								"uuid": "8655e851-94a3-4daf-8457-521d70604148",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}/disable",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orchestrator",
+								"hosts",
+								"{{HOST-ID}}",
+								"disable"
 							]
 						}
 					},
@@ -1106,7 +1450,8 @@
 							{
 								"key": "X-Filter",
 								"value": "id=",
-								"type": "text"
+								"type": "text",
+								"uuid": "95cf6586-55ec-4df3-b928-045ec5d244cd"
 							}
 						],
 						"url": {
@@ -1132,7 +1477,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"\",\n    \"key\": \"\",\n    \"secret\": \"\"\n}",
+							"raw": "{\n    \"name\": \"\",\n    \"key\": \"some key\",\n    \"secret\": \"somelongsecret\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1286,6 +1631,7 @@
 								"key": "X-Filter",
 								"value": "name=READ_ONLY",
 								"type": "text",
+								"uuid": "bdd9440a-ad7c-4e71-acee-aaf2a02f023e",
 								"disabled": true
 							}
 						],
@@ -1434,6 +1780,7 @@
 								"key": "X-Filter",
 								"value": "id=",
 								"type": "text",
+								"uuid": "65ea8e63-4dd5-42e5-86c0-922c02b7a57d",
 								"disabled": true
 							}
 						],
@@ -1750,6 +2097,7 @@
 								"key": "X-Filter",
 								"value": "name=root",
 								"type": "text",
+								"uuid": "0750045f-ca8b-40d7-9d76-b1adb28b5e17",
 								"disabled": true
 							}
 						],
@@ -1776,7 +2124,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"username\": \"\",\n    \"name\": \"\",\n    \"email\": \"\",\n    \"password\": \"\"\n}",
+							"raw": "{\n    \"username\": \"\",\n    \"name\": \"\",\n    \"email\": \"\",\n    \"password\": \"\",\n    \"is_super_user\": false\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -2081,6 +2429,7 @@
 								"key": "X-Filter",
 								"value": "id=ub,i",
 								"type": "text",
+								"uuid": "06d3ddc6-b632-4f90-8b72-b1418d913047",
 								"disabled": true
 							}
 						],
@@ -2312,6 +2661,28 @@
 					"response": []
 				},
 				{
+					"name": "Clone Machine",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/machines/{{MACHINE-ID}}/execute",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"machines",
+								"{{MACHINE-ID}}",
+								"execute"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Rename Machine",
 					"request": {
 						"method": "PUT",
@@ -2407,6 +2778,7 @@
 								"key": "X-Filter",
 								"value": "name=[Uu]sbuntu",
 								"type": "text",
+								"uuid": "c415a4c6-d68b-49de-ba93-f9f299c7bc47",
 								"disabled": true
 							}
 						],
@@ -2557,6 +2929,219 @@
 			"name": "Catalog",
 			"item": [
 				{
+					"name": "Roles",
+					"item": [
+						{
+							"name": "Update Catalog Manifest Roles",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"required_roles\": [\n        \"\"\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/{{CATALOG-ARCHITECTURE}}/roles",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"catalog",
+										"{{CATALOG-ID}}",
+										"{{CATALOG-VERSION}}",
+										"{{CATALOG-ARCHITECTURE}}",
+										"roles"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Remove Catalog Manifest Roles",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"required_roles\": [\n        \"\"\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/{{CATALOG-ARCHITECTURE}}/roles",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"catalog",
+										"{{CATALOG-ID}}",
+										"{{CATALOG-VERSION}}",
+										"{{CATALOG-ARCHITECTURE}}",
+										"roles"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Claims",
+					"item": [
+						{
+							"name": "Update Catalog Manifest Claims",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"required_claims\": [\n        \"\"\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/{{CATALOG-ARCHITECTURE}}/claims",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"catalog",
+										"{{CATALOG-ID}}",
+										"{{CATALOG-VERSION}}",
+										"{{CATALOG-ARCHITECTURE}}",
+										"claims"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Remove Catalog Manifest Claims",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"required_claims\": [\n        \"\"\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/{{CATALOG-ARCHITECTURE}}/claims",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"catalog",
+										"{{CATALOG-ID}}",
+										"{{CATALOG-VERSION}}",
+										"{{CATALOG-ARCHITECTURE}}",
+										"claims"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Tags",
+					"item": [
+						{
+							"name": "Update Catalog Manifest Tags",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"tags\": [\n        \"some new tag\"\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/{{CATALOG-ARCHITECTURE}}/tags",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"catalog",
+										"{{CATALOG-ID}}",
+										"{{CATALOG-VERSION}}",
+										"{{CATALOG-ARCHITECTURE}}",
+										"tags"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Remove Catalog Manifest Tags",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"required_roles\": [\n        \"\"\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{host}}/api/v1/catalog/{{CATALOG-ID}}/{{CATALOG-VERSION}}/{{CATALOG-ARCHITECTURE}}/roles",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"catalog",
+										"{{CATALOG-ID}}",
+										"{{CATALOG-VERSION}}",
+										"{{CATALOG-ARCHITECTURE}}",
+										"roles"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
 					"name": "Get All Catalog Manifests",
 					"request": {
 						"method": "GET",
@@ -2565,6 +3150,7 @@
 								"key": "X-Filter",
 								"value": "name=test",
 								"type": "text",
+								"uuid": "5a4ac7f3-e705-4635-a2c2-9a67680b325d",
 								"disabled": true
 							}
 						],
@@ -2927,6 +3513,41 @@
 							""
 						]
 					}
+				}
+			]
+		},
+		{
+			"name": "Debug",
+			"item": [
+				{
+					"name": "{{protocol}}://{{host}}/api/v1/performance/db",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"test_count\": 1000,\n    \"consecutive_calls\": 3,\n    \"time_between_calls\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/performance/db",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"performance",
+								"db"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		}
