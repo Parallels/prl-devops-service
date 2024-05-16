@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Orchestrator
-subtitle: Manage multiple hosts seamless in a single pane
+subtitle: Manage multiple hosts seamlessly in a single pane
 show_sidebar: false
 ---
 
