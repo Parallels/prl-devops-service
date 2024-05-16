@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.6.7] - 2024-05-16
+
+### Fixed
+
+- Fixed a issue with the orchestrator where it didn't start the auto refresj
+  
 ## [0.6.6] - 2024-05-16
 
 ### Fixed

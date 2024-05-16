@@ -11,7 +11,9 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/mappers"
 	apimodels "github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/telemetry"
 )
 
 var globalOrchestratorService *OrchestratorService
@@ -49,48 +51,48 @@ func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
 }
 
 func (s *OrchestratorService) Start(waitForInit bool) {
-	// ts := telemetry.Get()
-	// ts.TrackEvent(telemetry.NewTelemetryItem(s.ctx, telemetry.EventStartOrchestrator, nil, nil))
-	// s.syncContext, s.cancel = context.WithCancel(context.Background())
+	ts := telemetry.Get()
+	ts.TrackEvent(telemetry.NewTelemetryItem(s.ctx, telemetry.EventStartOrchestrator, nil, nil))
+	s.syncContext, s.cancel = context.WithCancel(context.Background())
 
-	// dbService, err := serviceprovider.GetDatabaseService(s.ctx)
-	// if err != nil {
-	// 	return
-	// }
+	dbService, err := serviceprovider.GetDatabaseService(s.ctx)
+	if err != nil {
+		return
+	}
 
-	// s.db = dbService
+	s.db = dbService
 
-	// if waitForInit {
-	// 	s.ctx.LogInfof("[Orchestrator] Waiting for API to be initialized")
-	// 	<-restapi.Initialized
-	// }
+	if waitForInit {
+		s.ctx.LogInfof("[Orchestrator] Waiting for API to be initialized")
+		<-restapi.Initialized
+	}
 
-	// s.ctx.LogInfof("[Orchestrator] Starting Orchestrator Background Service")
-	// for {
-	// 	select {
-	// 	case <-s.syncContext.Done():
-	// 		return
-	// 	default:
-	// 		var wg sync.WaitGroup
-	// 		dtoOrchestratorHosts, err := s.db.GetOrchestratorHosts(s.ctx, "")
-	// 		if err != nil {
-	// 			return
-	// 		}
+	s.ctx.LogInfof("[Orchestrator] Starting Orchestrator Background Service")
+	for {
+		select {
+		case <-s.syncContext.Done():
+			return
+		default:
+			var wg sync.WaitGroup
+			dtoOrchestratorHosts, err := s.db.GetOrchestratorHosts(s.ctx, "")
+			if err != nil {
+				return
+			}
 
-	// 		for _, host := range dtoOrchestratorHosts {
-	// 			wg.Add(1)
-	// 			go s.processHostWaitingGroup(host, &wg)
-	// 		}
-	// 		wg.Wait()
+			for _, host := range dtoOrchestratorHosts {
+				wg.Add(1)
+				go s.processHostWaitingGroup(host, &wg)
+			}
+			wg.Wait()
 
-	// 		if len(dtoOrchestratorHosts) > 0 {
-	// 			s.ctx.LogInfof("[Orchestrator] processed %v hosts", len(dtoOrchestratorHosts))
-	// 			s.ctx.LogInfof("[Orchestrator] Sleeping for %s seconds", s.refreshInterval)
-	// 		}
+			if len(dtoOrchestratorHosts) > 0 {
+				s.ctx.LogInfof("[Orchestrator] processed %v hosts", len(dtoOrchestratorHosts))
+				s.ctx.LogInfof("[Orchestrator] Sleeping for %s seconds", s.refreshInterval)
+			}
 
-	// 		time.Sleep(s.refreshInterval)
-	// 	}
-	// }
+			time.Sleep(s.refreshInterval)
+		}
+	}
 }
 
 func (s *OrchestratorService) Stop() {
