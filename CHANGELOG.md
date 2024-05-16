@@ -17,11 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.6.8] - 2024-05-16
+
+### Fixed
+
+- Fixed a issue with the copy system where it would not copy the files correctly
+
 ## [0.6.7] - 2024-05-16
 
 ### Fixed
 
-- Fixed a issue with the orchestrator where it didn't start the auto refresj
+- Fixed a issue with the orchestrator where it didn't start the auto refresh
   
 ## [0.6.6] - 2024-05-16
 
