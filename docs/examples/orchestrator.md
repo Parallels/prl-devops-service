@@ -1,7 +1,7 @@
 ---
 layout: page
-title: Control Multiple Hosts
-subtitle: Manage multiple hosts seamless in a single pane
+title: Control Multiple Hosts (Orchestrator)
+subtitle: Manage multiple hosts seamlessly in a single pane
 show_sidebar: false
 toc: true
 side_toc: true
