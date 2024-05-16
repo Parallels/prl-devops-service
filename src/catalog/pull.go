@@ -315,7 +315,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 
 				if cacheType == CatalogCacheTypeFolder {
 					ctx.LogInfof("Copying machine folder %v to %v", cacheMachineName, r.LocalMachineFolder)
-					if err := helper.CopyDir(filepath.Join(destinationFolder, cacheMachineName), r.LocalMachineFolder); err != nil {
+					if err := helpers.CopyDir(filepath.Join(destinationFolder, cacheMachineName), r.LocalMachineFolder); err != nil {
 						ctx.LogErrorf("Error copying machine folder %v to %v: %v", cacheMachineName, r.LocalMachineFolder, err)
 						response.AddError(err)
 						helpers.GlobalSpinner.Stop()
