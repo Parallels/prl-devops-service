@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -327,6 +328,21 @@ func CopyDir(src string, dst string) (err error) {
 	// 	return
 	// }
 
+	if runtime.GOOS == "darwin" {
+		if FileExists(dst) {
+			os.RemoveAll(dst)
+		}
+
+		fmt.Printf("Copying folder with macos clone %s, %s\n", src, dst)
+		cmd := Command{
+			Command: "cp",
+			Args:    []string{"-c", "-r", src, dst},
+		}
+
+		ExecuteWithNoOutput(cmd)
+		return
+	}
+
 	if FileExists(src) {
 		err = os.MkdirAll(dst, si.Mode())
 		if err != nil {
@@ -390,9 +406,20 @@ func CopyFile(src, dst string) (err error) {
 			return
 		}
 	}
-	if err = os.Link(src, dst); err == nil {
+	if runtime.GOOS == "darwin" {
+		fmt.Printf("Copying with macos clone %s, %s\n", src, dst)
+		cmd := Command{
+			Command: "cp",
+			Args:    []string{"-c", src, dst},
+		}
+
+		ExecuteWithNoOutput(cmd)
 		return
 	}
+
+	// if err = os.Link(src, dst); err == nil {
+	// 	return
+	// }
 	err = copyFileContents(src, dst)
 	return
 }
