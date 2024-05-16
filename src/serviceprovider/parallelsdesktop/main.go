@@ -11,6 +11,8 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
@@ -735,6 +737,14 @@ func (s *ParallelsService) GetUser(ctx basecontext.ApiContext, user string) (*mo
 }
 
 func (s *ParallelsService) GetUserHome(ctx basecontext.ApiContext, user string) (string, error) {
+	cfg := config.Get()
+	locationPath := cfg.GetKey(constants.VIRTUAL_MACHINES_FOLDER_ENV_VAR)
+	if locationPath != "" {
+		return locationPath, nil
+	}
+
+	fmt.Printf("%s\n", locationPath)
+
 	if s.Users != nil || len(s.Users) == 0 {
 		_, err := s.GetUsers(ctx)
 		if err != nil {
