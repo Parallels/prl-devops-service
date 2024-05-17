@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.6.9] - 2024-05-17
+
+### Fixed
+
+- Fixed wrong images being displayed in the documentations
+
 ## [0.6.8] - 2024-05-16
 
 ### Fixed
