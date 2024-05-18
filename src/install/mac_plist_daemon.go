@@ -107,6 +107,8 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
   <key>StandardErrorPath</key>
   <string>/tmp/api-service.job.err</string>
   <key>StandardOutPath</key>
+  <key>RunAtLoad</key>
+  <true/>
   <string>/tmp/api-service.job.out</string> 
 </dict>
 </plist>"`
