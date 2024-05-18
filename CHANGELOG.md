@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.7.0] - 2024-05-18
+
+### Fixed
+
+- Fixed an issue where the user was not being set as super admin even if the
+  flag was set to true
+- Fixed an issue where the user was not being able to be updated
+- Fixed an issue with the service plist
+
 ## [0.6.9] - 2024-05-17
 
 ### Fixed
