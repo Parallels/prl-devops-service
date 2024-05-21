@@ -6,6 +6,6 @@ layout: default
     {% assign sideContent = page.side_toc | default: false %}
     {% include toc.html html=content class='menu-list' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent %}
 {% endif %}
-<div class="content {% if sideContent %}column is-8  pt-2{% else %}pt-1{% endif %} pb-2">
+<div class="content {% if sideContent %}column is-8  pt-2{% else %}pt-1{% endif %} pb-2 {% if page.is_home %}big_padding {% endif %}">
     {{ content }}
 </div>
