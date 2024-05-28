@@ -167,6 +167,9 @@ func (j *JsonDatabase) UpdateUser(ctx basecontext.ApiContext, key models.User) e
 				}
 				j.data.Users[i].Password = hashedPassword
 			}
+			if key.Email != "" {
+				j.data.Users[i].Email = key.Email
+			}
 
 			j.data.Users[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
 			if err := j.Save(ctx); err != nil {

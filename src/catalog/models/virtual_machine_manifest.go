@@ -96,7 +96,7 @@ func (m *VirtualMachineCatalogManifest) Validate() error {
 		m.RequiredRoles = []string{}
 	}
 	if m.Tags == nil {
-		m.RequiredRoles = []string{}
+		m.Tags = []string{}
 	}
 
 	return nil

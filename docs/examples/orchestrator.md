@@ -60,6 +60,17 @@ Once the docker container is working you can access the orchestrator using any r
 
 For each host we want to add to the orchestrator service, we need to install the DevOps service. The DevOps service is responsible for creating and managing virtual machines on the host. You can find the installation instructions on the [Installation Guide]({{ site.url }}{{ site.baseurl }}/docs/getting-started/installation/){:target="_blank"}.
 
+### Configuration
+
+While the service will run with default values and you will have access to the orchestrator, this will not be fully setup, you will need to change the service mode to `orchestrator` in your configuration file.
+
+```yaml
+environment:
+  mode: orchestrator
+```
+
+you can leave everything else as default, but you can also change the `api_port` to a different port if you want to run the orchestrator service on a different port.
+
 ## Step 3: Adding Hosts to the Orchestrator Service
 
 Now that we have the orchestrator service running and the DevOps service installed on the hosts, we can add the hosts to the orchestrator service.

@@ -27,6 +27,17 @@ func ApiUserCreateRequestToDto(model models.UserCreateRequest) data_models.User 
 	return user
 }
 
+func ApiUserUpdateRequestToDto(model models.UserUpdateRequest) data_models.User {
+	user := data_models.User{
+		ID:       helpers.GenerateId(),
+		Password: model.Password,
+		Name:     model.Name,
+		Email:    model.Email,
+	}
+
+	return user
+}
+
 func DtoUserToApiResponse(model data_models.User) models.ApiUser {
 	user := models.ApiUser{
 		ID:       model.ID,

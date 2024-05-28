@@ -252,7 +252,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 			isSuperUser = ctx.User.IsSuperUser
 		}
 
-		if request.IsSuperUser && isSuperUser {
+		if request.IsSuperUser && !isSuperUser {
 			for _, claim := range constants.AllSuperUserClaims {
 				foundClaim := false
 				for _, userClaim := range dtoUser.Claims {
@@ -357,7 +357,7 @@ func UpdateUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		var request models.UserCreateRequest
+		var request models.UserUpdateRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -381,7 +381,7 @@ func UpdateUserHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		dtoUser := mappers.ApiUserCreateRequestToDto(request)
+		dtoUser := mappers.ApiUserUpdateRequestToDto(request)
 		dtoUser.ID = id
 		err = dbService.UpdateUser(ctx, dtoUser)
 		if err != nil {

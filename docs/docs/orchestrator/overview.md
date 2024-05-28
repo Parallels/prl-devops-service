@@ -17,7 +17,7 @@ Our Orchestrator service is an orchestrator system for Parallels Desktop, which 
 
 ### Example Architecture for CI/CD Automation
 
-![Catalog Pulling Diagram]({{ site.url }}{{ site.baseurl }}/img/orchestrator/orchestrator_ci_cd_github_scenario.drawio.png)
+![Catalog Pulling Diagram]({{ site.url }}{{ site.baseurl }}/img/orchestrator/orchestrator_ci_cd_github_scenario_square.drawio.png)
 
 ## Architecture
 

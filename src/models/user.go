@@ -50,3 +50,17 @@ type ApiUser struct {
 	Claims      []string `json:"claims,omitempty"`
 	IsSuperUser bool     `json:"isSuperUser"`
 }
+
+type UserUpdateRequest struct {
+	Name     string `json:"name,omitempty"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (r *UserUpdateRequest) Validate() error {
+	if r.Name == "" && r.Password == "" && r.Email == "" {
+		return errors.NewWithCode("At least one of the fields \"name\", \"password\" or \"email\" is requireed ", 400)
+	}
+
+	return nil
+}
