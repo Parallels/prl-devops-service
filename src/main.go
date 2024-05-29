@@ -15,12 +15,12 @@ import (
 )
 
 var (
-	ver        = "0.7.0"
+	ver        = "0.7.1"
 	versionSvc = version.Get()
 )
 
 //	@title			Parallels Desktop DevOps Service
-//	@version		0.7.0
+//	@version		0.7.1
 //	@description	Parallels Desktop DevOps Service
 //	@termsOfService	http://swagger.io/terms/
 
