@@ -1,6 +1,8 @@
 package telemetry
 
 import (
+	"crypto"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -52,6 +54,14 @@ func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, prop
 		item.Properties["hardware_id"] = item.HardwareID
 	}
 
+	if item.HardwareID != "" {
+		hash := crypto.SHA256.New()
+		hash.Write([]byte(item.HardwareID))
+		hashedHardwareId := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+		item.HardwareID = hashedHardwareId
+		item.Properties["hardware_id"] = hashedHardwareId
+	}
+
 	provider := serviceprovider.Get()
 	key := provider.License
 	if key == "" {
@@ -59,14 +69,21 @@ func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, prop
 	}
 
 	if user, err := system.GetCurrentUser(ctx); err == nil {
-		item.UserID = user
+		hash := crypto.SHA256.New()
+		hash.Write([]byte(user))
+		hashedUser := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+		item.UserID = hashedUser
 	} else {
 		item.UserID = unknown_user
 	}
 
 	userId := fmt.Sprintf("%s@%s", item.UserID, key)
-	if len(userId) > 10 {
-		item.Properties["user_id"] = fmt.Sprintf("%s@%s", item.UserID, key)
+	hash := crypto.SHA256.New()
+	hash.Write([]byte(userId))
+	hashedUserId := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+
+	if len(hashedUserId) > 10 {
+		item.Properties["user_id"] = hashedUserId
 	}
 
 	return item
