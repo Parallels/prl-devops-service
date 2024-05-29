@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/telemetry"
 
 	"github.com/google/uuid"
 )
@@ -43,6 +45,15 @@ func LoggerMiddlewareAdapter(logHealthCheck bool) Adapter {
 			if shouldLog {
 				id := GetRequestId(r)
 				common.Logger.Info("[%s] [%v] %v from %v", id, r.Method, r.URL.Path, r.Host)
+				rMatch := regexp.MustCompile("orchestrator/")
+				rMatchLogin := regexp.MustCompile("auth/token")
+				if !rMatch.MatchString(r.URL.Path) && !rMatchLogin.MatchString(r.URL.Path) {
+					ctx := basecontext.NewRootBaseContext()
+					properties := make(map[string]interface{})
+					properties["method"] = r.Method
+					properties["path"] = r.URL.Path
+					telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.EventApiLog, properties, nil))
+				}
 			}
 
 			next.ServeHTTP(w, r)
