@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.7.1] - 2024-05-29
+
+### Added
+
+- Adding telemetry fix and encryption of PII
+
 ## [0.7.0] - 2024-05-18
 
 ### Fixed
