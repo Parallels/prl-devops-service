@@ -82,7 +82,9 @@ func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase 
 	_ = memoryDatabase.Load(rootContext)
 
 	memoryDatabase.cancel = make(chan bool)
-	memoryDatabase.Save1(ctx)
+	if err := memoryDatabase.SaveAsync(ctx); err != nil {
+		ctx.LogErrorf("[Database] Error saving database: %v", err)
+	}
 	return memoryDatabase
 }
 
@@ -233,7 +235,7 @@ func (j *JsonDatabase) SaveAs(ctx basecontext.ApiContext, filename string) error
 	return nil
 }
 
-func (j *JsonDatabase) Save1(ctx basecontext.ApiContext) error {
+func (j *JsonDatabase) SaveAsync(ctx basecontext.ApiContext) error {
 	defer func() {
 		if r := recover(); r != nil {
 			ctx.LogErrorf("[Database] Panic occurred during save: %v", r)

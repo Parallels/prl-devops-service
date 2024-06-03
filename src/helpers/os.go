@@ -342,7 +342,9 @@ func CopyDir(src string, dst string) (err error) {
 			Args:    []string{"-c", "-r", src, dst},
 		}
 
-		ExecuteWithNoOutput(context.TODO(), cmd)
+		if _, err = ExecuteWithNoOutput(context.TODO(), cmd); err != nil {
+			return err
+		}
 		return
 	}
 
@@ -416,7 +418,10 @@ func CopyFile(src, dst string) (err error) {
 			Args:    []string{"-c", src, dst},
 		}
 
-		ExecuteWithNoOutput(context.Background(), cmd)
+		if _, err := ExecuteWithNoOutput(context.Background(), cmd); err != nil {
+			return err
+		}
+
 		return
 	}
 
