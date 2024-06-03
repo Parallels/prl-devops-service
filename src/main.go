@@ -53,8 +53,8 @@ func main() {
 				db := sp.JsonDatabase
 				if db != nil {
 					ctx := basecontext.NewRootBaseContext()
-					db.SaveNow(ctx)
-					db.SaveAs(ctx, fmt.Sprintf("data.panic.%s.json", strings.ReplaceAll(time.Now().Format("2006-01-02-15-04-05"), "-", "_")))
+					_ = db.SaveNow(ctx)
+					_ = db.SaveAs(ctx, fmt.Sprintf("data.panic.%s.json", strings.ReplaceAll(time.Now().Format("2006-01-02-15-04-05"), "-", "_")))
 				}
 			}
 			fmt.Fprintf(os.Stderr, "Exception: %v\n", err)
@@ -91,7 +91,9 @@ func cleanup() {
 		if db != nil {
 			ctx := basecontext.NewRootBaseContext()
 			ctx.LogInfof("[Core] Saving database")
-			db.SaveNow(ctx)
+			if err := db.SaveNow(ctx); err != nil {
+				ctx.LogErrorf("[Core] Error saving database: %v", err)
+			}
 		}
 	}
 }
