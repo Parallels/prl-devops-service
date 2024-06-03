@@ -18,7 +18,6 @@ func (j *JsonDatabase) UpdateSchemaVersion(ctx basecontext.ApiContext, version s
 	}
 
 	j.data.Schema.Version = version
-	j.Save(ctx)
 
 	return nil
 }

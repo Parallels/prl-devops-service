@@ -45,9 +45,9 @@ func LoggerMiddlewareAdapter(logHealthCheck bool) Adapter {
 			if shouldLog {
 				id := GetRequestId(r)
 				common.Logger.Info("[%s] [%v] %v from %v", id, r.Method, r.URL.Path, r.Host)
-				rMatch := regexp.MustCompile("orchestrator/")
 				rMatchLogin := regexp.MustCompile("auth/token")
-				if !rMatch.MatchString(r.URL.Path) && !rMatchLogin.MatchString(r.URL.Path) {
+
+				if !isRequestFromOrchestratorRefresh(r) && !rMatchLogin.MatchString(r.URL.Path) {
 					ctx := basecontext.NewRootBaseContext()
 					properties := make(map[string]interface{})
 					properties["method"] = r.Method
@@ -59,4 +59,9 @@ func LoggerMiddlewareAdapter(logHealthCheck bool) Adapter {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func isRequestFromOrchestratorRefresh(r *http.Request) bool {
+	xSourceHeader := r.Header.Get("X-SOURCE")
+	return xSourceHeader == "ORCHESTRATOR_REQUEST"
 }

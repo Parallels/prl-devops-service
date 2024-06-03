@@ -71,14 +71,13 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 		}
 
 		if cfg.DatabaseFolder() != "" {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.DatabaseFolder(), "/data.json"))
+			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json"))
 		} else {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
+			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
-		_ = globalProvider.JsonDatabase.Save(ctx)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
 		if err != nil {
@@ -91,9 +90,9 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 		}
 
 		if cfg.DatabaseFolder() != "" {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.DatabaseFolder(), "/data.json"))
+			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json"))
 		} else {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
+			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
 		}
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
@@ -157,14 +156,13 @@ func InitServices(ctx basecontext.ApiContext) {
 		}
 
 		if cfg.DatabaseFolder() != "" {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.DatabaseFolder(), "/data.json"))
+			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json"))
 		} else {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
+			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
-		_ = globalProvider.JsonDatabase.Save(ctx)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
 		if err != nil {
@@ -177,9 +175,9 @@ func InitServices(ctx basecontext.ApiContext) {
 		}
 
 		if cfg.DatabaseFolder() != "" {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(cfg.DatabaseFolder(), "/data.json"))
+			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json"))
 		} else {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(filepath.Join(dbLocation, "/data.json"))
+			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)

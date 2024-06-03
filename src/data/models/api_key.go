@@ -9,4 +9,5 @@ type ApiKey struct {
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 	RevokedAt string `json:"revoked_at"`
+	*DbRecord `json:"db_record"`
 }

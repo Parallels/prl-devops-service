@@ -43,8 +43,8 @@ func CreateDirIfNotExist(path string) error {
 	return nil
 }
 
-func ExecuteWithNoOutput(command Command) (string, error) {
-	cmd := exec.Command(command.Command, command.Args...) // #nosec G204 This is not a user input, it is a helper function
+func ExecuteWithNoOutput(ctx context.Context, command Command) (string, error) {
+	cmd := exec.CommandContext(ctx, command.Command, command.Args...) // #nosec G204 This is not a user input, it is a helper function
 	if command.WorkingDirectory != "" {
 		cmd.Dir = command.WorkingDirectory
 	}
@@ -66,8 +66,8 @@ func ExecuteWithNoOutput(command Command) (string, error) {
 	return stdOut.String(), nil
 }
 
-func ExecuteWithOutput(command Command) (stdout string, stderr string, exitCode int, err error) {
-	cmd := exec.Command(command.Command, command.Args...) // #nosec G204 This is not a user input, it is a helper function
+func ExecuteWithOutput(ctx context.Context, command Command) (stdout string, stderr string, exitCode int, err error) {
+	cmd := exec.CommandContext(ctx, command.Command, command.Args...) // #nosec G204 This is not a user input, it is a helper function
 	if command.WorkingDirectory != "" {
 		cmd.Dir = command.WorkingDirectory
 	}
@@ -339,7 +339,7 @@ func CopyDir(src string, dst string) (err error) {
 			Args:    []string{"-c", "-r", src, dst},
 		}
 
-		ExecuteWithNoOutput(cmd)
+		ExecuteWithNoOutput(context.TODO(), cmd)
 		return
 	}
 
@@ -413,7 +413,7 @@ func CopyFile(src, dst string) (err error) {
 			Args:    []string{"-c", src, dst},
 		}
 
-		ExecuteWithNoOutput(cmd)
+		ExecuteWithNoOutput(context.Background(), cmd)
 		return
 	}
 

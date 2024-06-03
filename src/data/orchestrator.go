@@ -113,9 +113,6 @@ func (j *JsonDatabase) CreateOrchestratorHost(ctx basecontext.ApiContext, host m
 	}
 
 	j.data.OrchestratorHosts = append(j.data.OrchestratorHosts, host)
-	if err := j.Save(ctx); err != nil {
-		return nil, err
-	}
 
 	return &host, nil
 }
@@ -133,9 +130,6 @@ func (j *JsonDatabase) DeleteOrchestratorHost(ctx basecontext.ApiContext, idOrHo
 		if strings.EqualFold(host.ID, idOrHost) || strings.EqualFold(host.Host, idOrHost) {
 			j.data.OrchestratorHosts = append(j.data.OrchestratorHosts[:i], j.data.OrchestratorHosts[i+1:]...)
 
-			if err := j.Save(ctx); err != nil {
-				return err
-			}
 			return nil
 		}
 	}
@@ -158,10 +152,6 @@ func (j *JsonDatabase) DeleteOrchestratorVirtualMachine(ctx basecontext.ApiConte
 				if strings.EqualFold(vm.ID, vmIdOrName) || strings.EqualFold(vm.Name, vmIdOrName) {
 					host.VirtualMachines = append(host.VirtualMachines[:j], host.VirtualMachines[j+1:]...)
 				}
-			}
-
-			if err := j.Save(ctx); err != nil {
-				return err
 			}
 
 			return nil
@@ -206,10 +196,6 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 				j.data.OrchestratorHosts[index].LastUnhealthyErrorMessage = host.LastUnhealthyErrorMessage
 				j.data.OrchestratorHosts[index].HealthCheck = host.HealthCheck
 				j.data.OrchestratorHosts[index].VirtualMachines = host.VirtualMachines
-
-				if err := j.Save(ctx); err != nil {
-					return nil, err
-				}
 
 				return &j.data.OrchestratorHosts[index], nil
 			} else {

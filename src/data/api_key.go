@@ -68,9 +68,6 @@ func (j *JsonDatabase) CreateApiKey(ctx basecontext.ApiContext, apiKey models.Ap
 	apiKey.UpdatedAt = helpers.GetUtcCurrentDateTime()
 	apiKey.CreatedAt = helpers.GetUtcCurrentDateTime()
 	j.data.ApiKeys = append(j.data.ApiKeys, apiKey)
-	if err := j.Save(ctx); err != nil {
-		return nil, err
-	}
 
 	return &apiKey, nil
 }
@@ -86,10 +83,16 @@ func (j *JsonDatabase) DeleteApiKey(ctx basecontext.ApiContext, id string) error
 
 	for i, apiKey := range j.data.ApiKeys {
 		if strings.EqualFold(apiKey.ID, id) || strings.EqualFold(apiKey.Name, id) || strings.EqualFold(apiKey.Key, id) {
-			j.data.ApiKeys = append(j.data.ApiKeys[:i], j.data.ApiKeys[i+1:]...)
-			if err := j.Save(ctx); err != nil {
-				return err
+			for {
+				if j.data.ApiKeys[i].DbRecord.IsLocked {
+					continue
+				}
+				LockRecord(ctx, j.data.ApiKeys[i].DbRecord)
+				j.data.ApiKeys = append(j.data.ApiKeys[:i], j.data.ApiKeys[i+1:]...)
+				UnlockRecord(ctx, j.data.ApiKeys[i].DbRecord)
+				break
 			}
+
 			return nil
 		}
 	}
@@ -107,12 +110,18 @@ func (j *JsonDatabase) UpdateKey(ctx basecontext.ApiContext, key models.ApiKey) 
 			continue
 		}
 
-		j.data.ApiKeys[i].Revoked = key.Revoked
-		j.data.ApiKeys[i].RevokedAt = key.RevokedAt
-		j.data.ApiKeys[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
-		if err := j.Save(ctx); err != nil {
-			return err
+		for {
+			if j.data.ApiKeys[i].DbRecord.IsLocked {
+				continue
+			}
+			LockRecord(ctx, j.data.ApiKeys[i].DbRecord)
+			j.data.ApiKeys[i].Revoked = key.Revoked
+			j.data.ApiKeys[i].RevokedAt = key.RevokedAt
+			j.data.ApiKeys[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
+			UnlockRecord(ctx, j.data.ApiKeys[i].DbRecord)
+			break
 		}
+
 		return nil
 	}
 
