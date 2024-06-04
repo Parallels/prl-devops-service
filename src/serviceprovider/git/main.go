@@ -10,8 +10,6 @@ import (
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
-
-	"github.com/cjlapao/common-go/commands"
 )
 
 var globalGitService *GitService
@@ -52,7 +50,11 @@ func (s *GitService) Name() string {
 
 func (s *GitService) FindPath() string {
 	s.ctx.LogInfof("Getting Git executable")
-	out, err := commands.ExecuteWithNoOutput("which", "git")
+	cmd := helpers.Command{
+		Command: "which",
+		Args:    []string{"git"},
+	}
+	out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
 		s.ctx.LogWarnf("Git executable not found, trying to find it in the default locations")
@@ -79,7 +81,7 @@ func (s *GitService) Version() string {
 		Args:    []string{"--version"},
 	}
 
-	stdout, _, _, err := helpers.ExecuteWithOutput(cmd)
+	stdout, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return "unknown"
 	}
@@ -128,7 +130,7 @@ func (s *GitService) Install(asUser, version string, flags map[string]string) er
 	}
 
 	s.ctx.LogInfof("Installing %s with command: %v", s.Name(), cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -153,7 +155,7 @@ func (s *GitService) Uninstall(asUser string, uninstallDependencies bool) error 
 			}
 		}
 
-		_, err := helpers.ExecuteWithNoOutput(cmd)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 		if err != nil {
 			return err
 		}
@@ -225,7 +227,7 @@ func (s *GitService) Clone(ctx basecontext.ApiContext, repoURL string, owner str
 		if err != nil {
 			return "", err
 		}
-		_, err = helpers.ExecuteWithNoOutput(helpers.Command{
+		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), helpers.Command{
 			Command: "chown",
 			Args:    []string{"-R", owner, path},
 		})
@@ -236,7 +238,7 @@ func (s *GitService) Clone(ctx basecontext.ApiContext, repoURL string, owner str
 		cmd.Args = append(cmd.Args, "clone", repoURL, path)
 
 		ctx.LogInfof(cmd.String())
-		_, err = helpers.ExecuteWithNoOutput(cmd)
+		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 		if err != nil {
 			buildError := errors.NewWithCodef(400, "failed to pull repository %v, error: %v", path, err.Error())
 			return "", buildError

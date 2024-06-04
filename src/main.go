@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -36,20 +38,23 @@ var (
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	// catching all of the exceptions
 	defer func() {
+		// Saving the database before exiting
+
 		if err := recover(); err != nil {
 			sp := serviceprovider.Get()
 			if sp != nil {
 				db := sp.JsonDatabase
 				if db != nil {
 					ctx := basecontext.NewRootBaseContext()
-					db.SaveAs(ctx, fmt.Sprintf("data.panic.%s.json", strings.ReplaceAll(time.Now().Format("2006-01-02-15-04-05"), "-", "_")))
+					_ = db.SaveNow(ctx)
+					_ = db.SaveAs(ctx, fmt.Sprintf("data.panic.%s.json", strings.ReplaceAll(time.Now().Format("2006-01-02-15-04-05"), "-", "_")))
 				}
 			}
 			fmt.Fprintf(os.Stderr, "Exception: %v\n", err)
@@ -69,5 +74,26 @@ func main() {
 		versionSvc.Rev = strVer.Rev
 	}
 
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		cleanup()
+	}()
+
 	cmd.Process()
+}
+
+func cleanup() {
+	sp := serviceprovider.Get()
+	if sp != nil {
+		db := sp.JsonDatabase
+		if db != nil {
+			ctx := basecontext.NewRootBaseContext()
+			ctx.LogInfof("[Core] Saving database")
+			if err := db.SaveNow(ctx); err != nil {
+				ctx.LogErrorf("[Core] Error saving database: %v", err)
+			}
+		}
+	}
 }

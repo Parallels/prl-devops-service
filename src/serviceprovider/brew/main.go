@@ -9,8 +9,6 @@ import (
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
-
-	"github.com/cjlapao/common-go/commands"
 )
 
 var globalBrewService *BrewService
@@ -55,7 +53,11 @@ func (s *BrewService) Name() string {
 
 func (s *BrewService) FindPath() string {
 	s.ctx.LogInfof("Getting brew executable")
-	out, err := commands.ExecuteWithNoOutput("which", "brew")
+	cmd := helpers.Command{
+		Command: "which",
+		Args:    []string{"brew"},
+	}
+	out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
 		s.ctx.LogWarnf("Brew executable not found, trying to find it in the default locations")
@@ -86,7 +88,7 @@ func (s *BrewService) Version() string {
 		Args:    []string{"--version"},
 	}
 
-	stdout, _, _, err := helpers.ExecuteWithOutput(cmd)
+	stdout, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return "unknown"
 	}
@@ -124,7 +126,7 @@ func (s *BrewService) Install(asUser, version string, flags map[string]string) e
 	}
 
 	s.ctx.LogInfof("Installing %s with command: %v", s.Name(), cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -142,7 +144,7 @@ func (s *BrewService) Uninstall(asUser string, uninstallDependencies bool) error
 			Args:    []string{"-c", "\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)\""},
 		}
 
-		_, err := helpers.ExecuteWithNoOutput(cmd)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 		if err != nil {
 			return err
 		}

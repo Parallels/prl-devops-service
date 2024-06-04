@@ -16,8 +16,6 @@ func (s *OrchestratorService) GetVirtualMachines(ctx basecontext.ApiContext, fil
 		return nil, err
 	}
 
-	s.Refresh()
-
 	hosts, err := dbService.GetOrchestratorHosts(ctx, "")
 	if err != nil {
 		return nil, err
@@ -47,8 +45,6 @@ func (s *OrchestratorService) GetVirtualMachines(ctx basecontext.ApiContext, fil
 }
 
 func (s *OrchestratorService) GetVirtualMachine(ctx basecontext.ApiContext, idOrName string) (*models.VirtualMachine, error) {
-	s.Refresh()
-
 	retryCount := 0
 	var resultVm *models.VirtualMachine
 
@@ -73,8 +69,6 @@ func (s *OrchestratorService) GetVirtualMachine(ctx basecontext.ApiContext, idOr
 		if resultVm != nil || retryCount >= 10 {
 			break
 		}
-
-		s.Refresh()
 
 		retryCount++
 		time.Sleep(1 * time.Second)

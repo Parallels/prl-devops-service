@@ -17,6 +17,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.8.0] - 2024-06-03
+
+### Fixed
+
+- Fixed an issue where we were trying to get the virtual machines for other users
+  when not being a super admin
+  
+### Changed
+
+- Moved database saving process to a 5 minutes setting to avoid overloading the
+  database with too many requests
+- Changed the way the orchestrator was checking for VMs status changes to avoid
+  overloading the database
+- Moved all the old commands to the new exec with context to enable timeouts
+- Added a 30 seconds timeout when checking the status of the local vms
+  
 ## [0.7.1] - 2024-05-29
 
 ### Added
