@@ -141,8 +141,8 @@ jobs:
     - name: Add Inbuilt Variables
       run: |
         sed -i "s/var AmplitudeApiKey = \"\"/var AmplitudeApiKey = \"${{ env.AmplitudeApiKey }}\"/g" ./src/constants/amplitude.go
-        sed -i "/^\tver        =/c\\\tver        = \"$NEW_VERSION\"" ./src/main.go
-        sed -i "/^\/\/	@version/c\\//	@version $NEW_VERSION" ./src/main.go
+        sed -i "/^\tver        =/c\\\tver        = \"${{ env.EXT_VERSION }}-beta\"" ./src/main.go
+        sed -i "/^\/\/	@version/c\\//	@version ${{ env.EXT_VERSION }}-beta" ./src/main.go
 
     - uses: docker/setup-buildx-action@v1
     - uses: docker/login-action@v1

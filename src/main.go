@@ -79,6 +79,7 @@ func main() {
 	go func() {
 		<-c
 		cleanup()
+		os.Exit(0)
 	}()
 
 	cmd.Process()
@@ -93,6 +94,8 @@ func cleanup() {
 			ctx.LogInfof("[Core] Saving database")
 			if err := db.SaveNow(ctx); err != nil {
 				ctx.LogErrorf("[Core] Error saving database: %v", err)
+			} else {
+				ctx.LogInfof("[Core] Database saved")
 			}
 		}
 	}

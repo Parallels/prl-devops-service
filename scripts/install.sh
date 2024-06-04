@@ -62,7 +62,6 @@ function install() {
   echo "Installing prldevops $SHORT_VERSION for $OS-$ARCHITECTURE"
 
   DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
-  echo "Download URL: $DOWNLOAD_URL"
 
   echo "Downloading prldevops release from GitHub Releases"
   curl -sL $DOWNLOAD_URL -o prldevops.tar.gz
