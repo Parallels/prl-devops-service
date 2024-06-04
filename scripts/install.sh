@@ -37,10 +37,17 @@ function install() {
     VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases/latest | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"')
   fi
 
-  if [[ ! $VERSION == release-v* ]]; then
-    VERSION="release-v$VERSION"
+  if [[ ! $VERSION == *-beta ]]; then
+    if [[ ! $VERSION == release-v* ]]; then
+      VERSION="release-v$VERSION"
+    fi
+    SHORT_VERSION="$(echo $VERSION | cut -d '-' -f 2)"
+  else
+      if [[ ! $VERSION == v* ]]; then
+      VERSION="v$VERSION"
+    fi
+    SHORT_VERSION=$VERSION
   fi
-  SHORT_VERSION="$(echo $VERSION | cut -d '-' -f 2)"
 
   ARCHITECTURE=$(uname -m)
   if [ "$ARCHITECTURE" = "aarch64" ]; then
@@ -55,6 +62,7 @@ function install() {
   echo "Installing prldevops $SHORT_VERSION for $OS-$ARCHITECTURE"
 
   DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
+  echo "Download URL: $DOWNLOAD_URL"
 
   echo "Downloading prldevops release from GitHub Releases"
   curl -sL $DOWNLOAD_URL -o prldevops.tar.gz
