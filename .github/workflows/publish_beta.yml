@@ -44,6 +44,8 @@ jobs:
                 version = v;
               }
             }
+            let majorMinorVersion = version.split('.').slice(0, 2).join('.');
+            version = `${majorMinorVersion}.${{github.run_number}}`;
 
             // Find a release for that version
             const release = await github.rest.repos.getReleaseByTag({
