@@ -173,6 +173,11 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	}
 
 	_ = s.persistHost(&host)
+
+	// Free up memory
+	host.HealthCheck = nil
+	host.Resources = nil
+	host.VirtualMachines = nil
 }
 
 func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
@@ -196,6 +201,11 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 		s.ctx.LogErrorf("[Orchestrator] Error saving host %s: %v", host.Host, err.Error())
 		return err
 	}
+
+	// Free up memory
+	hostToSave.HealthCheck = nil
+	hostToSave.Resources = nil
+	hostToSave.VirtualMachines = nil
 
 	return nil
 }

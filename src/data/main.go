@@ -56,6 +56,7 @@ type JsonDatabaseConfig struct {
 	DatabaseFilename    string        `json:"database_filename"`
 	NumberOfBackupFiles int           `json:"number_of_backup_files"`
 	SaveInterval        time.Duration `json:"save_interval"`
+	BackupInterval      time.Duration `json:"backup_interval"`
 }
 
 func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase {
@@ -68,6 +69,7 @@ func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase 
 			DatabaseFilename:    filename,
 			NumberOfBackupFiles: 10,
 			SaveInterval:        5 * time.Minute,
+			BackupInterval:      2 * time.Hour,
 		},
 		ctx:         ctx,
 		connected:   false,
@@ -85,6 +87,9 @@ func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase 
 	if err := memoryDatabase.SaveAsync(ctx); err != nil {
 		ctx.LogErrorf("[Database] Error saving database: %v", err)
 	}
+
+	// Starting the automatic backup
+	memoryDatabase.RunBackup(ctx)
 	return memoryDatabase
 }
 
@@ -294,12 +299,6 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 	j.saveMutex.Lock()
 
 	cfg := config.Get()
-	// Lets first backup the file
-	if err := j.Backup(ctx); err != nil {
-		ctx.LogErrorf("[Database] Error managing backup files: %v", err)
-		j.saveMutex.Unlock()
-		return err
-	}
 
 	ctx.LogDebugf("[Database] Saving database to %s", j.filename)
 	j.isSaving = true
