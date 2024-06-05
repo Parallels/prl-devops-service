@@ -32,6 +32,7 @@ func EndAuthorizationMiddlewareAdapter() Adapter {
 				}
 
 				w.WriteHeader(http.StatusUnauthorized)
+				defer r.Body.Close() // Close the response body after encoding the JSON response
 				_ = json.NewEncoder(w).Encode(response)
 				baseCtx.LogInfof("Authorization layer finished with error")
 				return
