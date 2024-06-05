@@ -524,7 +524,7 @@ func UpdateOrchestratorHostHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		svc := orchestrator.NewOrchestratorService(ctx)
-		host, err := svc.GetHost(ctx, id)
+		host, err := svc.GetDatabaseHost(ctx, id)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return

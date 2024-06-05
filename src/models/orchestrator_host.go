@@ -133,7 +133,7 @@ func (o *OrchestratorHostUpdateRequest) Validate() error {
 		}
 	}
 
-	if o.Authentication.Username != "" && o.Authentication.Password == "" {
+	if o.Authentication != nil && o.Authentication.Username != "" && o.Authentication.Password == "" {
 		return errors.NewWithCode("Authentication password cannot be empty", 400)
 	}
 
