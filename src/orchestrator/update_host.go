@@ -30,7 +30,7 @@ func (s *OrchestratorService) UpdateHost(ctx basecontext.ApiContext, host *model
 		host.CpuModel = hw.CpuBrand
 	}
 
-	dbHost, err := dbService.UpdateOrchestratorHost(ctx, host)
+	dbHost, err := dbService.UpdateOrchestratorHostDetails(ctx, host)
 	if err != nil {
 		return nil, err
 	}
