@@ -63,6 +63,7 @@ jobs:
             console.log(`Version ${version} does not have a release`);
             return true;
   release:
+    name: Release Beta version
     needs: check-version-change
     if: ${{ needs.check-version-change.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
@@ -99,7 +100,7 @@ jobs:
             await core.summary.write();
   releases-matrix:
     needs: release
-    name: Release Go Binary
+    name: Release Go Binary v${{ needs.release.outputs.version }}
     runs-on: ubuntu-latest
     env:
       EXT_VERSION: ${{ needs.release.outputs.version }}
@@ -137,7 +138,7 @@ jobs:
     env:
       EXT_VERSION: ${{ needs.release.outputs.version }}
       AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
-    name: Build Docker Images
+    name: Build Docker Images v${{ needs.release.outputs.version }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
