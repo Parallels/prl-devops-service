@@ -84,7 +84,7 @@ jobs:
           VERSION=${{ github.event.inputs.version }}
           NEW_VERSION=${VERSION%.*}.${{ github.run_id }}
           echo "New version: $NEW_VERSION"
-          echo "EXT_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "EXT_VERSION=${NEW_VERSION}" >> "$GITHUB_ENV"
       - name: Create release and upload release asset
         uses: actions/github-script@v6
         with:
