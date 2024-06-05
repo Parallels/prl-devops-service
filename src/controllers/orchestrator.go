@@ -539,6 +539,13 @@ func UpdateOrchestratorHostHandler() restapi.ControllerHandler {
 			host.Description = request.Description
 		}
 
+		if request.Host != "" {
+			host.Host = request.Host
+			host.Schema = request.Schema
+			host.Port = request.Port
+			host.PathPrefix = request.Prefix
+		}
+
 		record, err := svc.UpdateHost(ctx, host)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))

@@ -97,11 +97,42 @@ type OrchestratorHostResponse struct {
 }
 
 type OrchestratorHostUpdateRequest struct {
+	HostUrl        *url.URL                    `json:"-"`
+	Host           string                      `json:"host"`
+	HostName       string                      `json:"-"`
+	Port           string                      `json:"port"`
+	Schema         string                      `json:"schema"`
+	Prefix         string                      `json:"prefix"`
 	Description    string                      `json:"description,omitempty"`
 	Authentication *OrchestratorAuthentication `json:"authentication,omitempty"`
 }
 
 func (o *OrchestratorHostUpdateRequest) Validate() error {
+	if o.Host != "" {
+		if !strings.Contains(o.Host, "http://") && !strings.Contains(o.Host, "https://") {
+			o.Host = "http://" + o.Host
+		}
+		hostUrl, err := url.Parse(o.Host)
+		if err != nil {
+			return errors.NewWithCode("Invalid host", 400)
+		}
+		o.HostUrl = hostUrl
+		o.HostName = hostUrl.Hostname()
+		o.Port = hostUrl.Port()
+		o.Schema = hostUrl.Scheme
+
+		if o.HostUrl.Path == "" {
+			o.Prefix = "/api"
+		} else {
+			o.Prefix = o.HostUrl.Path
+		}
+
+		o.Host = fmt.Sprintf("%s://%s:%s", o.Schema, o.HostName, o.Port)
+		if o.Prefix != "" {
+			o.Host = fmt.Sprintf("%s%s", o.Host, o.Prefix)
+		}
+	}
+
 	if o.Authentication.Username != "" && o.Authentication.Password == "" {
 		return errors.NewWithCode("Authentication password cannot be empty", 400)
 	}
