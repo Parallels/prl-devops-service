@@ -67,6 +67,6 @@ func isRequestFromOrchestratorRefresh(r *http.Request) bool {
 }
 
 func isIgnoreLogHeaderPresent(r *http.Request) bool {
-	xSourceHeader := r.Header.Get("X-LOG-REQUEST")
+	xSourceHeader := r.Header.Get("X-LOGGING")
 	return xSourceHeader == "IGNORE"
 }
