@@ -47,7 +47,7 @@ func LoggerMiddlewareAdapter(logHealthCheck bool) Adapter {
 				common.Logger.Info("[%s] [%v] %v from %v", id, r.Method, r.URL.Path, r.Host)
 				rMatchLogin := regexp.MustCompile("auth/token")
 
-				if !isRequestFromOrchestratorRefresh(r) && !rMatchLogin.MatchString(r.URL.Path) {
+				if !isRequestFromOrchestratorRefresh(r) && !isIgnoreLogHeaderPresent(r) && !rMatchLogin.MatchString(r.URL.Path) {
 					ctx := basecontext.NewRootBaseContext()
 					properties := make(map[string]interface{})
 					properties["method"] = r.Method
@@ -64,4 +64,9 @@ func LoggerMiddlewareAdapter(logHealthCheck bool) Adapter {
 func isRequestFromOrchestratorRefresh(r *http.Request) bool {
 	xSourceHeader := r.Header.Get("X-SOURCE")
 	return xSourceHeader == "ORCHESTRATOR_REQUEST"
+}
+
+func isIgnoreLogHeaderPresent(r *http.Request) bool {
+	xSourceHeader := r.Header.Get("X-LOG-REQUEST")
+	return xSourceHeader == "IGNORE"
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/Parallels/prl-devops-service/cmd"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/telemetry"
 
 	"github.com/cjlapao/common-go/version"
 )
@@ -82,6 +83,12 @@ func main() {
 		os.Exit(0)
 	}()
 
+	go func() {
+		// Call home every 24 hours
+		callHome()
+		time.Sleep(24 * time.Hour)
+	}()
+
 	cmd.Process()
 }
 
@@ -99,4 +106,12 @@ func cleanup() {
 			}
 		}
 	}
+}
+
+func callHome() {
+	if telemetry.Get() == nil {
+		return
+	}
+	ctx := basecontext.NewRootBaseContext()
+	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.CallHomeEvent, nil, nil))
 }
