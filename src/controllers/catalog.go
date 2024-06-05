@@ -201,6 +201,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 // @Router			/v1/catalog [get]
 func GetCatalogManifestsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -248,7 +249,6 @@ func GetCatalogManifestsHandler() restapi.ControllerHandler {
 		// responseManifests := mappers.DtoCatalogManifestsToApi(manifestsDto)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Manifests returned: %v", len(result))
 	}
@@ -267,6 +267,7 @@ func GetCatalogManifestsHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId} [get]
 func GetCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -295,7 +296,6 @@ func GetCatalogManifestHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestsToApi(manifest)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifests returned: %v", len(resultData))
 	}
@@ -315,6 +315,7 @@ func GetCatalogManifestHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version} [get]
 func GetCatalogManifestVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -336,7 +337,6 @@ func GetCatalogManifestVersionHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestsToApi(manifests)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifests returned: %v", len(resultData))
 	}
@@ -357,6 +357,7 @@ func GetCatalogManifestVersionHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version}/{architecture} [get]
 func GetCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -379,7 +380,6 @@ func GetCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*manifest)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest returned with id %v", resultData.ID)
 	}
@@ -400,6 +400,7 @@ func GetCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version}/{architecture}/download [get]
 func DownloadCatalogManifestVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -443,7 +444,6 @@ func DownloadCatalogManifestVersionHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*manifest)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest: %v", resultData.ID)
 	}
@@ -464,6 +464,7 @@ func DownloadCatalogManifestVersionHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version}/{architecture}/taint [patch]
 func TaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -508,7 +509,6 @@ func TaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*result)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest tainted: %v", resultData.ID)
 	}
@@ -529,6 +529,7 @@ func TaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version}/{architecture}/untaint [patch]
 func UnTaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -573,7 +574,6 @@ func UnTaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*result)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest untainted: %v", resultData.ID)
 	}
@@ -594,6 +594,7 @@ func UnTaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version}/{architecture}/revoke [patch]
 func RevokeCatalogManifestVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -630,7 +631,6 @@ func RevokeCatalogManifestVersionHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*result)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest untainted: %v", resultData.ID)
 	}
@@ -652,6 +652,7 @@ func RevokeCatalogManifestVersionHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version}/{architecture}/claims [patch]
 func AddClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
@@ -723,7 +724,6 @@ func AddClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(newManifest)
 		ctx.LogInfof("Manifest Claims Updated: %v", newManifest.ID)
 	}
@@ -745,6 +745,7 @@ func AddClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version}/{architecture}/claims [delete]
 func RemoveClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
@@ -816,7 +817,6 @@ func RemoveClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(newManifest)
 		ctx.LogInfof("Manifest Claims Updated: %v", newManifest.ID)
 	}
@@ -838,6 +838,7 @@ func RemoveClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version}/{architecture}/roles [patch]
 func AddRolesToCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
@@ -909,7 +910,6 @@ func AddRolesToCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(newManifest)
 		ctx.LogInfof("Manifest Roles Updated: %v", newManifest.ID)
 	}
@@ -931,6 +931,7 @@ func AddRolesToCatalogManifestHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version}/{architecture}/roles [delete]
 func RemoveRolesToCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
@@ -1002,7 +1003,6 @@ func RemoveRolesToCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(newManifest)
 		ctx.LogInfof("Manifest Claims Updated: %v", newManifest.ID)
 	}
@@ -1024,6 +1024,7 @@ func RemoveRolesToCatalogManifestHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version}/{architecture}/tags [patch]
 func AddTagsToCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
@@ -1095,7 +1096,6 @@ func AddTagsToCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(newManifest)
 		ctx.LogInfof("Manifest Tags Updated: %v", newManifest.ID)
 	}
@@ -1117,6 +1117,7 @@ func AddTagsToCatalogManifestHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version}/{architecture}/tags [delete]
 func RemoveTagsToCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
@@ -1188,7 +1189,6 @@ func RemoveTagsToCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(newManifest)
 		ctx.LogInfof("Manifest Claims Updated: %v", newManifest.ID)
 	}
@@ -1196,6 +1196,7 @@ func RemoveTagsToCatalogManifestHandler() restapi.ControllerHandler {
 
 func CreateCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request catalog_models.VirtualMachineCatalogManifest
@@ -1230,7 +1231,6 @@ func CreateCatalogManifestHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*result)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest returned: %v", resultData.ID)
 	}
@@ -1249,6 +1249,7 @@ func CreateCatalogManifestHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId} [delete]
 func DeleteCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -1297,6 +1298,7 @@ func DeleteCatalogManifestHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version} [delete]
 func DeleteCatalogManifestVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -1347,6 +1349,7 @@ func DeleteCatalogManifestVersionHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/{catalogId}/{version}/{architecture} [delete]
 func DeleteCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -1396,6 +1399,7 @@ func DeleteCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler
 // @Router			/v1/catalog/push [post]
 func PushCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request catalog_models.PushCatalogManifestRequest
@@ -1431,7 +1435,6 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 		resultData.ID = resultManifest.ID
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest pushed: %v", resultData.ID)
 	}
@@ -1450,6 +1453,7 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/pull [put]
 func PullCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request catalog_models.PullCatalogManifestRequest
@@ -1485,7 +1489,6 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 		resultData.ID = resultManifest.ID
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest pulled: %v", resultData.ID)
 	}
@@ -1504,6 +1507,7 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 // @Router			/v1/catalog/import [put]
 func ImportCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request catalog_models.ImportCatalogManifestRequest
@@ -1538,7 +1542,6 @@ func ImportCatalogManifestHandler() restapi.ControllerHandler {
 		resultData := mappers.BaseImportCatalogManifestResponseToApi(*resultManifest)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest imported: %v", resultData.ID)
 	}

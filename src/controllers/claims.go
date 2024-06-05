@@ -63,6 +63,7 @@ func registerClaimsHandlers(ctx basecontext.ApiContext, version string) {
 // @Router			/v1/auth/claims [get]
 func GetClaimsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -89,7 +90,6 @@ func GetClaimsHandler() restapi.ControllerHandler {
 		result := mappers.DtoClaimsToApi(dtoClaims)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Claims returned successfully")
 	}
@@ -108,6 +108,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/claims/{id} [get]
 func GetClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -128,7 +129,6 @@ func GetClaimHandler() restapi.ControllerHandler {
 		response := mappers.DtoClaimToApi(*dtoClaim)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Claim returned successfully")
 	}
@@ -147,6 +147,7 @@ func GetClaimHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/claims [post]
 func CreateClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.ClaimRequest
@@ -181,7 +182,6 @@ func CreateClaimHandler() restapi.ControllerHandler {
 		response := mappers.DtoClaimToApi(*claim)
 
 		w.WriteHeader(http.StatusCreated)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Claim created successfully")
 	}
@@ -200,6 +200,7 @@ func CreateClaimHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/claims/{id} [delete]
 func DeleteClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)

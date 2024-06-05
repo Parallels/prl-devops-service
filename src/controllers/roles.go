@@ -64,6 +64,7 @@ func registerRolesHandlers(ctx basecontext.ApiContext, version string) {
 // @Router			/v1/auth/roles  [get]
 func GetRolesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -90,7 +91,6 @@ func GetRolesHandler() restapi.ControllerHandler {
 		result := mappers.DtoRolesToApi(dtoRoles)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Roles returned successfully")
 	}
@@ -109,6 +109,7 @@ func GetRolesHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/roles/{id}  [get]
 func GetRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -129,7 +130,6 @@ func GetRoleHandler() restapi.ControllerHandler {
 		response := mappers.DtoRoleToApi(*dtoRole)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Role returned successfully")
 	}
@@ -148,6 +148,7 @@ func GetRoleHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/roles  [post]
 func CreateRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RoleRequest
@@ -182,7 +183,6 @@ func CreateRoleHandler() restapi.ControllerHandler {
 		response := mappers.DtoRoleToApi(*role)
 
 		w.WriteHeader(http.StatusCreated)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Role created successfully")
 	}
@@ -201,6 +201,7 @@ func CreateRoleHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/roles/{id}  [delete]
 func DeleteRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)

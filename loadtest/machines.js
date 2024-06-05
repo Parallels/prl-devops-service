@@ -18,7 +18,7 @@ export const options = {
 };
 
 export default function () {
-  const data = { email: 'root@localhost', password: 'Nmo5c2U1YTZycWc0Ojc4YmZkOWNlZjJmMjU0Z000' }
+  const data = { email: 'root@localhost', password: '' }
   let res = http.post('http://localhost:5680/api/v1/auth/token', data)
 
   check(res, { 'success login': (r) => r.status === 200 })

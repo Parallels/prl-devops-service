@@ -70,6 +70,7 @@ func registerApiKeysHandlers(ctx basecontext.ApiContext, version string) {
 // @Router			/v1/auth/api_keys [get]
 func GetApiKeysHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -87,7 +88,6 @@ func GetApiKeysHandler() restapi.ControllerHandler {
 		result := mappers.ApiKeysDtoToApiKeyResponse(dtoApiKeys)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Api Keys returned successfully")
 	}
@@ -106,6 +106,7 @@ func GetApiKeysHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/api_keys/{id} [delete]
 func DeleteApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -141,6 +142,7 @@ func DeleteApiKeyHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/api_keys/{id} [get]
 func GetApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -161,7 +163,6 @@ func GetApiKeyHandler() restapi.ControllerHandler {
 		response := mappers.ApiKeyDtoToApiKeyResponse(*dtoApiKey)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Api Key returned successfully")
 	}
@@ -180,6 +181,7 @@ func GetApiKeyHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/api_keys [post]
 func CreateApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.ApiKeyRequest
@@ -219,7 +221,6 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Api Key created successfully")
 	}
@@ -238,6 +239,7 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/api_keys/{id}/revoke [put]
 func RevokeApiKeyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)

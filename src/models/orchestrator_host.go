@@ -95,3 +95,16 @@ type OrchestratorHostResponse struct {
 	RequiredClaims []string         `json:"required_claims,omitempty"`
 	RequiredRoles  []string         `json:"required_roles,omitempty"`
 }
+
+type OrchestratorHostUpdateRequest struct {
+	Description    string                      `json:"description,omitempty"`
+	Authentication *OrchestratorAuthentication `json:"authentication,omitempty"`
+}
+
+func (o *OrchestratorHostUpdateRequest) Validate() error {
+	if o.Authentication.Username != "" && o.Authentication.Password == "" {
+		return errors.NewWithCode("Authentication password cannot be empty", 400)
+	}
+
+	return nil
+}

@@ -119,6 +119,7 @@ func registerUsersHandlers(ctx basecontext.ApiContext, version string) {
 // @Router			/v1/auth/users  [get]
 func GetUsersHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -145,7 +146,6 @@ func GetUsersHandler() restapi.ControllerHandler {
 		result := mappers.DtoUsersToApiResponse(users)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Users returned: %v", len(result))
 	}
@@ -164,6 +164,7 @@ func GetUsersHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}  [get]
 func GetUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -184,7 +185,6 @@ func GetUserHandler() restapi.ControllerHandler {
 		response := mappers.DtoUserToApiResponse(*user)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("User returned: %v", response.ID)
 	}
@@ -203,6 +203,7 @@ func GetUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users  [post]
 func CreateUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.UserCreateRequest
@@ -305,7 +306,6 @@ func CreateUserHandler() restapi.ControllerHandler {
 		response := mappers.DtoUserToApiResponse(*dtoUser)
 
 		w.WriteHeader(http.StatusCreated)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("User created: %v", response.ID)
 	}
@@ -324,6 +324,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}  [delete]
 func DeleteUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -359,6 +360,7 @@ func DeleteUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}  [put]
 func UpdateUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.UserUpdateRequest
@@ -411,6 +413,7 @@ func UpdateUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}/roles  [get]
 func GetUserRolesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -432,7 +435,6 @@ func GetUserRolesHandler() restapi.ControllerHandler {
 		result := mappers.DtoRolesToApi(roles)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Roles returned: %v", len(result))
 	}
@@ -452,6 +454,7 @@ func GetUserRolesHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}/roles  [post]
 func AddRoleToUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RoleRequest
@@ -484,7 +487,6 @@ func AddRoleToUserHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(request)
 		ctx.LogInfof("Role added to user: %v", id)
 	}
@@ -504,6 +506,7 @@ func AddRoleToUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}/roles/{role_id}  [delete]
 func RemoveRoleFromUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -539,6 +542,7 @@ func RemoveRoleFromUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}/claims  [get]
 func GetUserClaimsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -560,7 +564,6 @@ func GetUserClaimsHandler() restapi.ControllerHandler {
 		result := mappers.DtoClaimsToApi(claims)
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Claims returned: %v", len(result))
 	}
@@ -580,6 +583,7 @@ func GetUserClaimsHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}/claims  [post]
 func AddClaimToUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.ClaimRequest
@@ -612,7 +616,6 @@ func AddClaimToUserHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(request)
 		ctx.LogInfof("Claim added to user: %v", id)
 	}
@@ -632,6 +635,7 @@ func AddClaimToUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}/claims/{claim_id}  [delete]
 func RemoveClaimFromUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)

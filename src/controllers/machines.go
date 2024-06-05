@@ -185,6 +185,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 // @Router			/v1/machines [get]
 func GetVirtualMachinesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -206,7 +207,6 @@ func GetVirtualMachinesHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(vms)
 		ctx.LogInfof("Machines returned: %v", len(vms))
 	}
@@ -225,6 +225,7 @@ func GetVirtualMachinesHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id} [get]
 func GetVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -248,7 +249,6 @@ func GetVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(vm)
 		ctx.LogInfof("Machine returned: %v", vm.ID)
 	}
@@ -267,6 +267,7 @@ func GetVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/start [get]
 func StartVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -288,7 +289,6 @@ func StartVirtualMachineHandler() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine started: %v", id)
 	}
@@ -307,6 +307,7 @@ func StartVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/stop [get]
 func StopVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -328,7 +329,6 @@ func StopVirtualMachineHandler() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine stopped: %v", id)
 	}
@@ -347,6 +347,7 @@ func StopVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/restart [get]
 func RestartVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -367,7 +368,6 @@ func RestartVirtualMachineHandler() restapi.ControllerHandler {
 			Operation: "Restart",
 			Status:    "Success",
 		}
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine restarted: %v", id)
 	}
@@ -386,6 +386,7 @@ func RestartVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/suspend [get]
 func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -406,7 +407,6 @@ func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 			Operation: "Suspend",
 			Status:    "Success",
 		}
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine suspended: %v", id)
 	}
@@ -425,6 +425,7 @@ func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/resume [get]
 func ResumeMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -445,7 +446,6 @@ func ResumeMachineController() restapi.ControllerHandler {
 			Operation: "Resume",
 			Status:    "Success",
 		}
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine resumed: %v", id)
 	}
@@ -464,6 +464,7 @@ func ResumeMachineController() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/reset [get]
 func ResetMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -484,7 +485,6 @@ func ResetMachineController() restapi.ControllerHandler {
 			Operation: "Reset",
 			Status:    "Success",
 		}
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine reset: %v", id)
 	}
@@ -503,6 +503,7 @@ func ResetMachineController() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/pause [get]
 func PauseVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -524,7 +525,6 @@ func PauseVirtualMachineHandler() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine paused: %v", id)
 	}
@@ -543,6 +543,7 @@ func PauseVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id} [delete]
 func DeleteVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -575,6 +576,7 @@ func DeleteVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/status [get]
 func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -596,7 +598,6 @@ func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine status returned: %v", id)
 	}
@@ -616,6 +617,7 @@ func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/set [put]
 func SetVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.VirtualMachineConfigRequest
@@ -664,7 +666,6 @@ func SetVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine configured: %v", id)
 	}
@@ -684,6 +685,7 @@ func SetVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/clone [put]
 func CloneVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.VirtualMachineCloneCommandRequest
@@ -738,7 +740,6 @@ func CloneVirtualMachineHandler() restapi.ControllerHandler {
 		result.Status = "Success"
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine %v cloned successfully to %v with id %v", id, request.CloneName, result.Id)
 	}
@@ -758,6 +759,7 @@ func CloneVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/execute [put]
 func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.VirtualMachineExecuteCommandRequest
@@ -806,6 +808,7 @@ func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/rename [put]
 func RenameVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RenameVirtualMachineRequest
@@ -850,7 +853,6 @@ func RenameVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(vm)
 		ctx.LogInfof("Machine renamed: %v", id)
 	}
@@ -870,6 +872,7 @@ func RenameVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/register [post]
 func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RegisterVirtualMachineRequest
@@ -931,7 +934,6 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(vms[0])
 		ctx.LogInfof("Machine registered: %v", vms[0].ID)
 	}
@@ -951,6 +953,7 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/unregister [post]
 func UnregisterVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.UnregisterVirtualMachineRequest
@@ -997,6 +1000,7 @@ func UnregisterVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines [post]
 func CreateVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
