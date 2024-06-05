@@ -46,6 +46,7 @@ jobs:
             }
             let majorMinorVersion = version.split('.').slice(0, 2).join('.');
             version = `${majorMinorVersion}.${{github.run_id}}`;
+            console.log(`Version: ${version}`)
 
             // Find a release for that version
             const release = await github.rest.repos.getReleaseByTag({
