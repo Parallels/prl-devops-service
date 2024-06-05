@@ -45,7 +45,7 @@ jobs:
               }
             }
             let majorMinorVersion = version.split('.').slice(0, 2).join('.');
-            version = `${majorMinorVersion}.${{github.run_number}}`;
+            version = `${majorMinorVersion}.${{github.run_id}}`;
 
             // Find a release for that version
             const release = await github.rest.repos.getReleaseByTag({
@@ -81,7 +81,7 @@ jobs:
       - name: Parse version from package.json
         run: |
           VERSION=${{ github.event.inputs.version }}
-          NEW_VERSION=${VERSION%.*}.${{ github.run_number }}
+          NEW_VERSION=${VERSION%.*}.${{ github.run_id }}
           echo "New version: $NEW_VERSION"
           echo "EXT_VERSION=${VERSION}" >> "$GITHUB_ENV"
       - name: Create release and upload release asset
