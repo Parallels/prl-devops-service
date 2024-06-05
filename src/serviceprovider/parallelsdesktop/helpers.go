@@ -8,7 +8,7 @@ import (
 )
 
 func (s *ParallelsService) findVm(ctx basecontext.ApiContext, idOrName string) (*models.ParallelsVM, error) {
-	vms, err := s.GetVms(ctx, "")
+	vms, err := s.GetCachedVms(ctx, "")
 	if err != nil {
 		return nil, err
 	}

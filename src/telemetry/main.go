@@ -64,9 +64,6 @@ func Get() *TelemetryService {
 }
 
 func TrackEvent(item TelemetryItem) {
-	// Temporarily disabled telemetry to check for memory leaks
-	return
-
 	svc := Get()
 	if !svc.EnableTelemetry {
 		return

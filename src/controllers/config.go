@@ -95,6 +95,7 @@ func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(license)
 		ctx.LogInfof("Parallels Desktop License returned successfully")
 	}
@@ -157,6 +158,7 @@ func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 
 		// Write the JSON data to the response
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Tools install request successfully")
 	}
@@ -216,6 +218,7 @@ func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 		restapi.Get().Restart()
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Tools uninstall request successfully")
 	}
@@ -263,6 +266,7 @@ func GetHardwareInfo() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(hardwareInfo)
 	}
 }
@@ -339,6 +343,7 @@ func GetSystemHealth() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 	}
 }

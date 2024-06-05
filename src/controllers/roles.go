@@ -81,6 +81,7 @@ func GetRolesHandler() restapi.ControllerHandler {
 		if len(dtoRoles) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.RoleResponse, 0)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Roles returned: %v", len(response))
 			return
@@ -89,6 +90,7 @@ func GetRolesHandler() restapi.ControllerHandler {
 		result := mappers.DtoRolesToApi(dtoRoles)
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Roles returned successfully")
 	}
@@ -127,6 +129,7 @@ func GetRoleHandler() restapi.ControllerHandler {
 		response := mappers.DtoRoleToApi(*dtoRole)
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Role returned successfully")
 	}
@@ -179,6 +182,7 @@ func CreateRoleHandler() restapi.ControllerHandler {
 		response := mappers.DtoRoleToApi(*role)
 
 		w.WriteHeader(http.StatusCreated)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Role created successfully")
 	}

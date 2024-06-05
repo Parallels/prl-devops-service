@@ -87,6 +87,7 @@ func GetApiKeysHandler() restapi.ControllerHandler {
 		result := mappers.ApiKeysDtoToApiKeyResponse(dtoApiKeys)
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Api Keys returned successfully")
 	}
@@ -160,6 +161,7 @@ func GetApiKeyHandler() restapi.ControllerHandler {
 		response := mappers.ApiKeyDtoToApiKeyResponse(*dtoApiKey)
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Api Key returned successfully")
 	}
@@ -217,6 +219,7 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusCreated)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Api Key created successfully")
 	}

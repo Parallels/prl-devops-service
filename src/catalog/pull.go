@@ -400,7 +400,7 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(ctx baseconte
 	if !response.HasErrors() {
 		ctx.LogInfof("Renaming machine %v to %v", r.MachineName, r.MachineName)
 		filter := fmt.Sprintf("name=%s", r.MachineName)
-		vms, err := parallelsDesktopSvc.GetVms(ctx, filter)
+		vms, err := parallelsDesktopSvc.GetCachedVms(ctx, filter)
 		if err != nil {
 			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, err)
 			response.AddError(err)
@@ -447,7 +447,7 @@ func (s *CatalogManifestService) startMachineWithParallelsDesktop(ctx basecontex
 	if !response.HasErrors() {
 		ctx.LogInfof("Starting machine %v to %v", r.MachineName, r.MachineName)
 		filter := fmt.Sprintf("name=%s", r.MachineName)
-		vms, err := parallelsDesktopSvc.GetVms(ctx, filter)
+		vms, err := parallelsDesktopSvc.GetCachedVms(ctx, filter)
 		if err != nil {
 			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, err)
 			response.AddError(err)

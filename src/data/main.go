@@ -63,13 +63,14 @@ func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase 
 	if memoryDatabase != nil {
 		return memoryDatabase
 	}
+	cfg := config.Get()
 
 	memoryDatabase = &JsonDatabase{
 		Config: JsonDatabaseConfig{
 			DatabaseFilename:    filename,
-			NumberOfBackupFiles: 10,
-			SaveInterval:        5 * time.Minute,
-			BackupInterval:      2 * time.Hour,
+			NumberOfBackupFiles: cfg.DbNumberBackupFiles(),
+			SaveInterval:        cfg.DbSaveInterval(),
+			BackupInterval:      cfg.DbBackupInterval(),
 		},
 		ctx:         ctx,
 		connected:   false,

@@ -80,6 +80,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 		if len(dtoClaims) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.ClaimResponse, 0)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Claims returned: %v", len(response))
 			return
@@ -88,6 +89,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 		result := mappers.DtoClaimsToApi(dtoClaims)
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Claims returned successfully")
 	}
@@ -126,6 +128,7 @@ func GetClaimHandler() restapi.ControllerHandler {
 		response := mappers.DtoClaimToApi(*dtoClaim)
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Claim returned successfully")
 	}
@@ -178,6 +181,7 @@ func CreateClaimHandler() restapi.ControllerHandler {
 		response := mappers.DtoClaimToApi(*claim)
 
 		w.WriteHeader(http.StatusCreated)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Claim created successfully")
 	}

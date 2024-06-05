@@ -68,6 +68,7 @@ func PerformDbTestHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode("ok")
 		ctx.LogInfof("Performance run successfully")
 	}

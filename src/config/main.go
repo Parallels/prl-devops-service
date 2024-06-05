@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
@@ -255,6 +256,42 @@ func (c *Config) TlsEnabled() bool {
 		return false
 	}
 	return true
+}
+
+func (c *Config) DbNumberBackupFiles() int {
+	numberFiles := c.GetIntKey(constants.DATABASE_NUMBER_BACKUP_FILES_ENV_VAR)
+	if numberFiles == 0 {
+		return 10
+	}
+
+	return numberFiles
+}
+
+func (c *Config) DbBackupInterval() time.Duration {
+	interval := c.GetIntKey(constants.DATABASE_BACKUP_INTERVAL_ENV_VAR)
+	if interval == 0 {
+		return 2 * time.Hour
+	}
+
+	return time.Duration(interval) * time.Minute
+}
+
+func (c *Config) DbSaveInterval() time.Duration {
+	interval := c.GetIntKey(constants.DATABASE_SAVE_INTERVAL_ENV_VAR)
+	if interval == 0 {
+		return 5 * time.Minute
+	}
+
+	return time.Duration(interval) * time.Minute
+}
+
+func (c *Config) ParallelsRefreshInterval() time.Duration {
+	interval := c.GetIntKey(constants.PARALLELS_DESKTOP_REFRESH_INTERVAL_ENV_VAR)
+	if interval == 0 {
+		return 30 * time.Second
+	}
+
+	return time.Duration(interval) * time.Minute
 }
 
 func (c *Config) RootFolder() (string, error) {

@@ -190,7 +190,7 @@ func GetVirtualMachinesHandler() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		vms, err := svc.GetVms(ctx, GetFilterHeader(r))
+		vms, err := svc.GetCachedVms(ctx, GetFilterHeader(r))
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -199,12 +199,14 @@ func GetVirtualMachinesHandler() restapi.ControllerHandler {
 		if len(vms) == 0 {
 			w.WriteHeader(http.StatusOK)
 			vms = make([]models.ParallelsVM, 0)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(vms)
 			ctx.LogInfof("No machines found")
 			return
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(vms)
 		ctx.LogInfof("Machines returned: %v", len(vms))
 	}
@@ -246,6 +248,7 @@ func GetVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(vm)
 		ctx.LogInfof("Machine returned: %v", vm.ID)
 	}
@@ -285,6 +288,7 @@ func StartVirtualMachineHandler() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine started: %v", id)
 	}
@@ -324,6 +328,7 @@ func StopVirtualMachineHandler() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine stopped: %v", id)
 	}
@@ -362,6 +367,7 @@ func RestartVirtualMachineHandler() restapi.ControllerHandler {
 			Operation: "Restart",
 			Status:    "Success",
 		}
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine restarted: %v", id)
 	}
@@ -400,6 +406,7 @@ func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 			Operation: "Suspend",
 			Status:    "Success",
 		}
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine suspended: %v", id)
 	}
@@ -438,6 +445,7 @@ func ResumeMachineController() restapi.ControllerHandler {
 			Operation: "Resume",
 			Status:    "Success",
 		}
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine resumed: %v", id)
 	}
@@ -476,6 +484,7 @@ func ResetMachineController() restapi.ControllerHandler {
 			Operation: "Reset",
 			Status:    "Success",
 		}
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine reset: %v", id)
 	}
@@ -515,6 +524,7 @@ func PauseVirtualMachineHandler() restapi.ControllerHandler {
 			Status:    "Success",
 		}
 
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine paused: %v", id)
 	}
@@ -586,6 +596,7 @@ func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine status returned: %v", id)
 	}
@@ -653,6 +664,7 @@ func SetVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine configured: %v", id)
 	}
@@ -726,6 +738,7 @@ func CloneVirtualMachineHandler() restapi.ControllerHandler {
 		result.Status = "Success"
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Machine %v cloned successfully to %v with id %v", id, request.CloneName, result.Id)
 	}
@@ -772,6 +785,7 @@ func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		} else {
 			w.WriteHeader(http.StatusOK)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Command executed on machine: %v", id)
 		}
@@ -836,6 +850,7 @@ func RenameVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(vm)
 		ctx.LogInfof("Machine renamed: %v", id)
 	}
@@ -881,7 +896,7 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		filter := fmt.Sprintf("Home=%s/,i", request.Path)
-		vms, err := svc.GetVms(ctx, filter)
+		vms, err := svc.GetCachedVms(ctx, filter)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -916,6 +931,7 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(vms[0])
 		ctx.LogInfof("Machine registered: %v", vms[0].ID)
 	}
@@ -1023,6 +1039,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			}
 
 			w.WriteHeader(http.StatusOK)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Machine created using packer template: %v", response.ID)
 
@@ -1034,6 +1051,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			}
 
 			w.WriteHeader(http.StatusOK)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Machine created using vagrant box: %v", response.ID)
 			return
@@ -1045,6 +1063,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			}
 
 			w.WriteHeader(http.StatusOK)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Machine created using catalog: %v", response.ID)
 			return

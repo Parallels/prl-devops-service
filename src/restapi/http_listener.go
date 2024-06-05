@@ -229,10 +229,11 @@ func (l *HttpListener) AddAuthorizedHandlerWithRolesAndClaims(c ControllerHandle
 	}
 	adapters := make([]Adapter, 0)
 	adapters = append(adapters, l.DefaultAdapters...)
-	adapters = append(adapters, AddAuthorizationContextMiddlewareAdapter())
-	adapters = append(adapters, TokenAuthorizationMiddlewareAdapter(roles, claims))
-	adapters = append(adapters, ApiKeyAuthorizationMiddlewareAdapter(roles, claims))
-	adapters = append(adapters, EndAuthorizationMiddlewareAdapter())
+	adapters = append(adapters,
+		AddAuthorizationContextMiddlewareAdapter(),
+		TokenAuthorizationMiddlewareAdapter(roles, claims),
+		ApiKeyAuthorizationMiddlewareAdapter(roles, claims),
+		EndAuthorizationMiddlewareAdapter())
 
 	if l.GetApiPrefix() != "" && !strings.HasPrefix(path, l.Options.ApiPrefix) {
 		path = http_helper.JoinUrl(l.Options.ApiPrefix, path)

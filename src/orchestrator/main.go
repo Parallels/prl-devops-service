@@ -137,23 +137,27 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 		host.HealthCheck = healthCheck
 	}
 
-	// Updating the host resources
-	hardwareInfo, err := s.GetHostHardwareInfo(&host)
-	if err != nil {
-		s.ctx.LogErrorf("[Orchestrator] Error getting hardware info for host %s: %v", host.Host, err.Error())
-		host.SetUnhealthy(err.Error())
-		_ = s.persistHost(&host)
-		return
-	}
+	if host.Resources == nil || host.Architecture == "" || host.CpuModel == "" {
+		s.ctx.LogInfof("[Orchestrator] Getting hardware info for host %s", host.Host)
+		// Updating the host resources
+		hardwareInfo, err := s.GetHostHardwareInfo(&host)
+		if err != nil {
+			s.ctx.LogErrorf("[Orchestrator] Error getting hardware info for host %s: %v", host.Host, err.Error())
+			host.SetUnhealthy(err.Error())
+			_ = s.persistHost(&host)
+			return
+		}
 
-	if host.Resources == nil {
-		host.Resources = &models.HostResources{}
-	}
+		if host.Resources == nil {
+			host.Resources = &models.HostResources{}
+		}
 
-	dtoResources := mappers.MapHostResourcesFromSystemUsageResponse(*hardwareInfo)
-	host.Resources = &dtoResources
-	host.Architecture = hardwareInfo.CpuType
-	host.CpuModel = hardwareInfo.CpuBrand
+		dtoResources := mappers.MapHostResourcesFromSystemUsageResponse(*hardwareInfo)
+		host.Resources = &dtoResources
+		host.Architecture = hardwareInfo.CpuType
+		host.CpuModel = hardwareInfo.CpuBrand
+		s.ctx.LogInfof("[Orchestrator] Host %s has %d CPU Cores and %d Mb of RAM", host.Host, host.Resources.Total.LogicalCpuCount, host.Resources.Total.MemorySize)
+	}
 
 	// Updating the Virtual Machines
 	vms, err := s.GetHostVirtualMachinesInfo(&host)

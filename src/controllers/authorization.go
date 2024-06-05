@@ -143,6 +143,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("User %s logged in", request.Email)
 	}
@@ -196,6 +197,7 @@ func ValidateTokenHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(models.ValidateTokenResponse{
 			Valid: true,
 		})

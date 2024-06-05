@@ -136,6 +136,7 @@ func GetUsersHandler() restapi.ControllerHandler {
 		if len(users) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.ApiUser, 0)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Users returned: %v", len(response))
 			return
@@ -144,6 +145,7 @@ func GetUsersHandler() restapi.ControllerHandler {
 		result := mappers.DtoUsersToApiResponse(users)
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Users returned: %v", len(result))
 	}
@@ -182,6 +184,7 @@ func GetUserHandler() restapi.ControllerHandler {
 		response := mappers.DtoUserToApiResponse(*user)
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("User returned: %v", response.ID)
 	}
@@ -302,6 +305,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 		response := mappers.DtoUserToApiResponse(*dtoUser)
 
 		w.WriteHeader(http.StatusCreated)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("User created: %v", response.ID)
 	}
@@ -428,6 +432,7 @@ func GetUserRolesHandler() restapi.ControllerHandler {
 		result := mappers.DtoRolesToApi(roles)
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Roles returned: %v", len(result))
 	}
@@ -479,6 +484,7 @@ func AddRoleToUserHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusCreated)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(request)
 		ctx.LogInfof("Role added to user: %v", id)
 	}
@@ -554,6 +560,7 @@ func GetUserClaimsHandler() restapi.ControllerHandler {
 		result := mappers.DtoClaimsToApi(claims)
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Claims returned: %v", len(result))
 	}
@@ -605,6 +612,7 @@ func AddClaimToUserHandler() restapi.ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusCreated)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(request)
 		ctx.LogInfof("Claim added to user: %v", id)
 	}
