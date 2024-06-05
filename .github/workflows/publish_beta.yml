@@ -103,7 +103,7 @@ jobs:
             await core.summary.write();
   releases-matrix:
     needs: release
-    name: Release Go Binary v${{ needs.release.outputs.version }}
+    name: Release Go Binary
     runs-on: ubuntu-latest
     env:
       EXT_VERSION: ${{ needs.release.outputs.version }}
@@ -141,7 +141,7 @@ jobs:
     env:
       EXT_VERSION: ${{ needs.release.outputs.version }}
       AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
-    name: Build Docker Images v${{ needs.release.outputs.version }}
+    name: Build Docker Images
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
