@@ -39,6 +39,16 @@ jobs:
                   repo: context.repo.repo,
                   release_id: release.id
                 });
+                await github.rest.repos.deleteReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  asset_id: release.assets[0].id
+                });
+                await github.rest.repos.deleteTags({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  tag: release.tag_name
+                });
               }
             }
             console.log(releases.data);
