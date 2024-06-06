@@ -69,7 +69,6 @@ jobs:
     name: Release Beta version
     needs: 
       - check-version-change
-      - beta-release1
     if: ${{ needs.check-version-change.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
     permissions:
