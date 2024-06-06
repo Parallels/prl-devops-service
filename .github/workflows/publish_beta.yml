@@ -32,9 +32,9 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo
             });
-            console.log(releases);
 
             for(const release in releases.data) {
+            console.log(release);
               if (release.tag_name.includes("-beta") && release.tag_name !== `v${current_version}-beta`) {
                 await github.rest.repos.deleteRelease({
                   owner: context.repo.owner,
