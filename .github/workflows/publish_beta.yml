@@ -24,7 +24,7 @@ jobs:
         with:
           script: |
             const fs = require("fs");
-            const releases = await github.rest.releases({
+            const releases = await github.rest.repos.releases({
               owner: context.repo.owner,
               repo: context.repo.repo
             });
@@ -84,7 +84,9 @@ jobs:
             return true;
   beta-release:
     name: Release Beta version
-    needs: check-version-change
+    needs: 
+      - check-version-change
+      - beta-release1
     if: ${{ needs.check-version-change.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
     permissions:
