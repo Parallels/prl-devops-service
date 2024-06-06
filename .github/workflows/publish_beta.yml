@@ -26,8 +26,7 @@ jobs:
           script: |
             const fs = require("fs");
             let version ='${{ github.event.inputs.version }}'.trim().split('.').slice(0, 2).join('.');
-            let currentVersion = `${version}.${{github.run_id}}`;
-            const current_version = '${{ github.event.inputs.version }}';
+            let currentVersion = `${version}.${{github.run_id}}-beta`;
             console.log(`Current Version: ${currentVersion}`);
             const releases = await github.rest.repos.listReleases({
               owner: context.repo.owner,
@@ -37,7 +36,8 @@ jobs:
             for(const idx in releases.data) {
               const release = releases.data[idx];
               console.log(`Release: ${release.tag_name}`);
-              if (release.tag_name.includes("-beta") && release.tag_name !== `v${current_version}-beta`) {
+              if (release.tag_name.includes("-beta") && release.tag_name !== `v${currentVersion}-beta`) {
+                console.log(`Deleting release: ${release.tag_name}`);
                 await github.rest.repos.deleteRelease({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
