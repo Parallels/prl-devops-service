@@ -234,7 +234,7 @@ func GetVirtualMachineHandler() restapi.ControllerHandler {
 		params := mux.Vars(r)
 		id := params["id"]
 
-		vm, err := svc.GetVm(ctx, id)
+		vm, err := svc.GetVmSync(ctx, id)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -730,7 +730,7 @@ func CloneVirtualMachineHandler() restapi.ControllerHandler {
 
 		result := models.VirtualMachineCloneCommandResponse{}
 
-		vmId, err := svc.GetVm(ctx, request.CloneName)
+		vmId, err := svc.GetVmSync(ctx, request.CloneName)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -838,7 +838,7 @@ func RenameVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		vm, err := svc.GetVm(ctx, id)
+		vm, err := svc.GetVmSync(ctx, id)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -899,7 +899,7 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		filter := fmt.Sprintf("Home=%s/,i", request.Path)
-		vms, err := svc.GetCachedVms(ctx, filter)
+		vms, err := svc.GetVmsSync(ctx, filter)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1173,7 +1173,7 @@ func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMa
 			Owner:        request.Owner,
 		}
 
-		vm, err := parallelsDesktopService.GetVm(ctx, request.Name)
+		vm, err := parallelsDesktopService.GetVmSync(ctx, request.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -1186,7 +1186,7 @@ func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMa
 		}
 
 	} else {
-		vm, err := parallelsDesktopService.GetVm(ctx, request.Name)
+		vm, err := parallelsDesktopService.GetVmSync(ctx, request.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -1284,7 +1284,7 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 		Owner: request.Owner,
 	}
 
-	vm, err := parallelsDesktopService.GetVm(ctx, response.ID)
+	vm, err := parallelsDesktopService.GetVmSync(ctx, response.ID)
 	if err != nil {
 		return nil, err
 	}

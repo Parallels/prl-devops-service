@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	ver        = "0.7.1"
+	ver        = "0.7.3"
 	versionSvc = version.Get()
 )
 
