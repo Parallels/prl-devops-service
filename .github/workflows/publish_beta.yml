@@ -43,11 +43,18 @@ jobs:
                   repo: context.repo.repo,
                   release_id: release.id
                 });
-                await github.rest.repos.deleteReleaseAsset({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  asset_id: release.assets[0].id
-                });
+
+                for(const assetIdx in release.assets) {
+                  const asset = release.assets[assetIdx];
+                  console.log(`Deleting asset: ${asset.name}`);
+                  await github.rest.repos.deleteReleaseAsset({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    asset_id: asset.id
+                  });
+                }
+
+                consol.log(`Deleting tag: tags/${release.tag_name}`);
                 await github.rest.repos.deleteRef({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
