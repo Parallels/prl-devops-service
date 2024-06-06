@@ -12,57 +12,6 @@ on:
         required: true
 
 jobs:
-  beta-release1:
-    name: Remove old beta release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: read
-    steps:
-      - name: Remove old beta release
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GH_PAT }}
-          script: |
-            const fs = require("fs");
-            let version ='${{ github.event.inputs.version }}'.trim().split('.').slice(0, 2).join('.');
-            let currentVersion = `${version}.${{github.run_id}}-beta`;
-            console.log(`Current Version: ${currentVersion}`);
-            const releases = await github.rest.repos.listReleases({
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            });
-
-            for(const idx in releases.data) {
-              const release = releases.data[idx];
-              console.log(`Release: ${release.tag_name}`);
-              if (release.tag_name.includes("-beta") && release.tag_name !== `v${currentVersion}-beta`) {
-                console.log(`Deleting release: ${release.tag_name}`);
-                for(const assetIdx in release.assets) {
-                  const asset = release.assets[assetIdx];
-                  console.log(`Deleting asset: ${asset.name}`);
-                  await github.rest.repos.deleteReleaseAsset({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    asset_id: asset.id
-                  });
-                }
-
-                console.log(`Deleting release: ${release.tag_name}`);
-                await github.rest.repos.deleteRelease({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  release_id: release.id
-                });
-
-                console.log(`Deleting tag: tags/${release.tag_name}`);
-                await github.rest.git.deleteRef({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  ref: `tags/${release.tag_name}`
-                });
-              }
-            }
   check-version-change:
     outputs:
       changed: ${{ steps.check-version.outputs.result }}
@@ -246,8 +195,39 @@ jobs:
         with:
           script: |
             const fs = require("fs");
-            const releases = await github.rest.repos.releases({
+            let version ='${{ github.event.inputs.version }}'.trim().split('.').slice(0, 2).join('.');
+            let currentVersion = `${version}.${{github.run_id}}-beta`;
+            console.log(`Current Version: ${currentVersion}`);
+            const releases = await github.rest.repos.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo
             });
-            console.log(releases.data);
+
+            for(const idx in releases.data) {
+              const release = releases.data[idx];
+              if (release.tag_name.includes("-beta") && release.tag_name !== `v${currentVersion}-beta`) {
+                for(const assetIdx in release.assets) {
+                  const asset = release.assets[assetIdx];
+                  console.log(`Deleting asset: ${asset.name}`);
+                  await github.rest.repos.deleteReleaseAsset({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    asset_id: asset.id
+                  });
+                }
+
+                console.log(`Deleting release: ${release.tag_name}`);
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.id
+                });
+
+                console.log(`Deleting tag: tags/${release.tag_name}`);
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${release.tag_name}`
+                });
+              }
+            }
