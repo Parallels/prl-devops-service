@@ -12,6 +12,7 @@ import (
 
 func processRootPassword(ctx basecontext.ApiContext) {
 	ctx.LogInfof("Updating root password")
+	os.Setenv(constants.SOURCE_ENV_VAR, "root_password")
 	rootPassword := helper.GetFlagValue(constants.PASSWORD_FLAG, "")
 	if rootPassword != "" {
 		serviceprovider.InitServices(ctx)

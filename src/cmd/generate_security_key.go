@@ -18,6 +18,7 @@ func processGenerateSecurityKey(ctx basecontext.ApiContext) {
 		processHelp(constants.GENERATE_SECURITY_KEY_COMMAND)
 		os.Exit(0)
 	}
+	os.Setenv(constants.SOURCE_ENV_VAR, constants.GENERATE_SECURITY_KEY_COMMAND)
 
 	filename := "private.key"
 	ctx.ToggleLogTimestamps(false)

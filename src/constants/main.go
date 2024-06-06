@@ -33,6 +33,8 @@ const (
 	DEFAULT_TOKEN_DURATION_MINUTES          = 60
 	DEFAULT_CATALOG_CACHE_FOLDER            = "./catalog_cache"
 	DEFAULT_ORCHESTRATOR_PULL_FREQUENCY_SEC = 30
+	SOURCE_ENV_VAR                          = "DEVOPS_SOURCE"
+	LOCAL_ORCHESTRATOR_DESCRIPTION          = "Local Orchestrator"
 
 	API_MODE          = "api"
 	CLI_MODE          = "cli"

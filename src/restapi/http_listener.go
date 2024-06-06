@@ -12,11 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/serviceprovider"
 
 	_ "github.com/Parallels/prl-devops-service/docs"
 	log "github.com/cjlapao/common-go-logger"
@@ -372,9 +370,6 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 	l.WaitAndShutdown()
 	<-done
 
-	rootContext := basecontext.NewRootBaseContext()
-	provider := serviceprovider.Get()
-	_ = provider.JsonDatabase.Disconnect(rootContext)
 	l.Logger.Info("Server shut down successfully...")
 	shutdown <- true
 	if !l.needsRestart {

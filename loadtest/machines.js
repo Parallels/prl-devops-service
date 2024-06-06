@@ -24,7 +24,7 @@ export default function () {
   check(res, { 'success login': (r) => r.status === 200 })
   let token = res.json('token')
 
-  let machines = http.get('http://localhost:5680/api/v1/auth/token', {
+  let machines = http.get('http://localhost:5680/api/v1/machines', {
     headers: {
       Authorization: `Bearer ${token}`,
     },

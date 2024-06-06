@@ -49,7 +49,11 @@ func LoggerMiddlewareAdapter(logHealthCheck bool) Adapter {
 
 				if !isRequestFromOrchestratorRefresh(r) && !isIgnoreLogHeaderPresent(r) && !rMatchLogin.MatchString(r.URL.Path) {
 					ctx := basecontext.NewRootBaseContext()
+					sourceId := r.Header.Get("X-SOURCE-ID")
 					properties := make(map[string]interface{})
+					if sourceId != "" {
+						properties["sourceId"] = sourceId
+					}
 					properties["method"] = r.Method
 					properties["path"] = r.URL.Path
 					telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.EventApiLog, properties, nil))

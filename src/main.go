@@ -11,6 +11,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/cmd"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/telemetry"
 
@@ -79,7 +80,24 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		cleanup()
+		ctx := basecontext.NewRootBaseContext()
+		sp := serviceprovider.Get()
+		if sp != nil {
+			db := sp.JsonDatabase
+			if db != nil {
+				cleanup(ctx, db)
+				retries := 0
+				maxRetries := 10
+				for {
+					retries++
+					if !db.IsConnected() || retries > maxRetries {
+						break
+					}
+					ctx.LogInfof("[Core] Waiting for database to disconnect")
+					time.Sleep(5 * time.Second)
+				}
+			}
+		}
 		os.Exit(0)
 	}()
 
@@ -92,19 +110,15 @@ func main() {
 	cmd.Process()
 }
 
-func cleanup() {
-	sp := serviceprovider.Get()
-	if sp != nil {
-		db := sp.JsonDatabase
-		if db != nil {
-			ctx := basecontext.NewRootBaseContext()
-			ctx.LogInfof("[Core] Saving database")
-			if err := db.SaveNow(ctx); err != nil {
-				ctx.LogErrorf("[Core] Error saving database: %v", err)
-			} else {
-				ctx.LogInfof("[Core] Database saved")
-			}
+func cleanup(ctx basecontext.ApiContext, db *data.JsonDatabase) {
+	if db != nil {
+		ctx.LogInfof("[Core] Saving database")
+		if err := db.SaveNow(ctx); err != nil {
+			ctx.LogErrorf("[Core] Error saving database: %v", err)
+		} else {
+			ctx.LogInfof("[Core] Database saved")
 		}
+		_ = db.Disconnect(ctx)
 	}
 }
 

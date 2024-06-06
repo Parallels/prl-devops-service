@@ -24,6 +24,7 @@ func processInstall(ctx basecontext.ApiContext) {
 		ctx.LogErrorf("The install command is only available for macOS")
 		os.Exit(1)
 	}
+	os.Setenv(constants.SOURCE_ENV_VAR, constants.INSTALL_SERVICE_COMMAND)
 
 	subcommand := helper.GetCommandAt(1)
 	// processing the command help

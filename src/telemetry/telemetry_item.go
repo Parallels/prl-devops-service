@@ -7,13 +7,14 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 )
 
 type TelemetryItem struct {
 	UserID     string
-	HardwareID string
+	DeviceId   string
 	Type       string
 	Properties map[string]interface{}
 	Options    map[string]interface{}
@@ -47,18 +48,23 @@ func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, prop
 	}
 
 	if hid, err := system.GetUniqueId(ctx); err == nil {
-		item.HardwareID = strings.ReplaceAll(hid, "\"", "")
-		item.Properties["hardware_id"] = item.HardwareID
+		item.DeviceId = strings.ReplaceAll(hid, "\"", "")
+		item.Properties["hardware_id"] = item.DeviceId
 	} else {
-		item.HardwareID = unknown_user
-		item.Properties["hardware_id"] = item.HardwareID
+		item.DeviceId = unknown_user
+		item.Properties["hardware_id"] = item.DeviceId
 	}
 
-	if item.HardwareID != "" {
+	config := config.Get()
+	if config != nil {
+		item.Properties["call_source"] = config.Source()
+	}
+
+	if item.DeviceId != "" {
 		hash := crypto.SHA256.New()
-		hash.Write([]byte(item.HardwareID))
+		hash.Write([]byte(item.DeviceId))
 		hashedHardwareId := base64.StdEncoding.EncodeToString(hash.Sum(nil))
-		item.HardwareID = hashedHardwareId
+		item.DeviceId = hashedHardwareId
 		item.Properties["hardware_id"] = hashedHardwareId
 	}
 

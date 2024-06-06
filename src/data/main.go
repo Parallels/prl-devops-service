@@ -31,6 +31,7 @@ var (
 
 type Data struct {
 	Schema            models.DatabaseSchema     `json:"schema"`
+	Configuration     *models.Configuration     `json:"configuration"`
 	Users             []models.User             `json:"users"`
 	Claims            []models.Claim            `json:"claims"`
 	Roles             []models.Role             `json:"roles"`
@@ -276,13 +277,10 @@ func (j *JsonDatabase) SaveAsync(ctx basecontext.ApiContext) error {
 
 func (j *JsonDatabase) SaveNow(ctx basecontext.ApiContext) error {
 	ctx.LogDebugf("[Database] Received for save request")
-	mutexLock.Lock()
 	if err := j.processSave(ctx); err != nil {
 		ctx.LogErrorf("[Database] Error saving database: %v", err)
 		return err
 	}
-
-	mutexLock.Unlock()
 	return nil
 }
 
@@ -298,9 +296,7 @@ func (j *JsonDatabase) ProcessSaveQueue(ctx basecontext.ApiContext) {
 
 func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 	j.saveMutex.Lock()
-
 	cfg := config.Get()
-
 	ctx.LogDebugf("[Database] Saving database to %s", j.filename)
 	j.isSaving = true
 	if j.filename == "" {
@@ -317,6 +313,7 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 		var fileOpenError error
 		file, fileOpenError = os.OpenFile(j.filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 		if fileOpenError == nil {
+			ctx.LogDebugf("[Database] File %s opened successfully", j.filename)
 			break
 		}
 	}

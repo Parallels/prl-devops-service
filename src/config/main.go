@@ -247,6 +247,15 @@ func (c *Config) TlsPort() string {
 	return tlsPort
 }
 
+func (c *Config) Source() string {
+	source := c.GetKey(constants.SOURCE_ENV_VAR)
+	if source == "" {
+		source = c.Mode()
+	}
+
+	return source
+}
+
 func (c *Config) TlsEnabled() bool {
 	TLSEnabled := c.GetKey(constants.TLS_ENABLED_ENV_VAR)
 	if TLSEnabled == "" || TLSEnabled == "false" {

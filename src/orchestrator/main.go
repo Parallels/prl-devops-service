@@ -97,8 +97,23 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 
 func (s *OrchestratorService) Stop() {
 	s.ctx.LogInfof("[Orchestrator] Stopping Orchestrator Background Service")
+	sp := serviceprovider.Get()
+	if sp != nil {
+		db := sp.JsonDatabase
+		if db != nil {
+			ctx := basecontext.NewRootBaseContext()
+			ctx.LogInfof("[Orchestrator] Saving database")
+			if err := db.SaveNow(ctx); err != nil {
+				ctx.LogErrorf("[Core] Error saving database: %v", err)
+			} else {
+				ctx.LogInfof("[Orchestrator] Database saved")
+			}
+		}
+	}
 	s.cancel()
 	s.syncContext.Done()
+
+	s.ctx.LogInfof("[Orchestrator] Orchestrator Background Service Stopped")
 }
 
 func (s *OrchestratorService) Refresh() {
