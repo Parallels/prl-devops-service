@@ -32,7 +32,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo
             });
-            console.log(releases.data);
+            console.log(releases);
 
             for(const release in releases.data) {
               if (release.tag_name.includes("-beta") && release.tag_name !== `v${current_version}-beta`) {
