@@ -12,6 +12,23 @@ on:
         required: true
 
 jobs:
+  remove-old-beta-release:
+    name: Remove old beta release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - name: Remove old beta release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const releases = await github.rest.releases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            console.log(releases.data);
   check-version-change:
     outputs:
       changed: ${{ steps.check-version.outputs.result }}
