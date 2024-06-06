@@ -24,10 +24,23 @@ jobs:
         with:
           script: |
             const fs = require("fs");
+            let version ='${{ github.event.inputs.version }}'.trim().split('.').slice(0, 2).join('.');
+            let currentVersion = `${version}.${{github.run_id}}`;
+            const current_version = '${{ github.event.inputs.version }}';
             const releases = await github.rest.repos.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo
             });
+            const json = JSON.parse(releases.data);
+            for(const release in json) {
+              if (release.tag_name.includes("-beta") && release.tag_name !== `v${current_version}-beta`) {
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.id
+                });
+              }
+            }
             console.log(releases.data);
   check-version-change:
     outputs:
