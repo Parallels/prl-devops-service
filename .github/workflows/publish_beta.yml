@@ -36,7 +36,9 @@ jobs:
             for(const idx in releases.data) {
               const release = releases.data[idx];
               console.log(`Release: ${release.tag_name}`);
-                              for(const assetIdx in release.assets) {
+              if (release.tag_name.includes("-beta") && release.tag_name !== `v${currentVersion}-beta`) {
+                console.log(`Deleting release: ${release.tag_name}`);
+                for(const assetIdx in release.assets) {
                   const asset = release.assets[assetIdx];
                   console.log(`Deleting asset: ${asset.name}`);
                   await github.rest.repos.deleteReleaseAsset({
@@ -46,7 +48,6 @@ jobs:
                   });
                 }
 
-              if (release.tag_name.includes("-beta") && release.tag_name !== `v${currentVersion}-beta`) {
                 console.log(`Deleting release: ${release.tag_name}`);
                 await github.rest.repos.deleteRelease({
                   owner: context.repo.owner,
