@@ -203,7 +203,7 @@ jobs:
 
             for(const idx in releases.data) {
               const release = releases.data[idx];
-              if (release.tag_name.includes("-beta") && release.tag_name !== `v${currentVersion}-beta`) {
+              if (release.tag_name.includes("-beta") && release.tag_name !== `v${currentVersion}`) {
                 for(const assetIdx in release.assets) {
                   const asset = release.assets[assetIdx];
                   console.log(`Deleting asset: ${asset.name}`);
