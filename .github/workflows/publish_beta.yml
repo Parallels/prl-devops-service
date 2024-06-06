@@ -27,6 +27,7 @@ jobs:
             let version ='${{ github.event.inputs.version }}'.trim().split('.').slice(0, 2).join('.');
             let currentVersion = `${version}.${{github.run_id}}`;
             const current_version = '${{ github.event.inputs.version }}';
+            console.log(`Current Version: ${currentVersion}`);
             const releases = await github.rest.repos.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo
@@ -44,14 +45,13 @@ jobs:
                   repo: context.repo.repo,
                   asset_id: release.assets[0].id
                 });
-                await github.rest.repos.deleteTags({
+                await github.rest.repos.deleteRef({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  tag: release.tag_name
+                  ref: `tags/${release.tag_name}`
                 });
               }
             }
-            console.log(releases.data);
   check-version-change:
     outputs:
       changed: ${{ steps.check-version.outputs.result }}
