@@ -12,7 +12,7 @@ on:
         required: true
 
 jobs:
-  beta-release:
+  beta-release1:
     name: Remove old beta release
     runs-on: ubuntu-latest
     permissions:
