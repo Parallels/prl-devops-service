@@ -22,6 +22,7 @@ jobs:
       - name: Remove old beta release
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GH_PAT }}
           script: |
             const fs = require("fs");
             let version ='${{ github.event.inputs.version }}'.trim().split('.').slice(0, 2).join('.');
@@ -35,7 +36,7 @@ jobs:
 
             for(const idx in releases.data) {
               const release = releases.data[idx];
-              console.log(`Release: ${release}`);
+              console.log(`Release: ${release.tag_name}`);
               if (release.tag_name.includes("-beta") && release.tag_name !== `v${current_version}-beta`) {
                 await github.rest.repos.deleteRelease({
                   owner: context.repo.owner,
