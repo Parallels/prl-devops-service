@@ -33,8 +33,9 @@ jobs:
               repo: context.repo.repo
             });
 
-            for(const release in releases.data) {
-            console.log(release);
+            for(const idx in releases.data) {
+              const release = releases.data[idx];
+              console.log(`Release: ${release}`);
               if (release.tag_name.includes("-beta") && release.tag_name !== `v${current_version}-beta`) {
                 await github.rest.repos.deleteRelease({
                   owner: context.repo.owner,
