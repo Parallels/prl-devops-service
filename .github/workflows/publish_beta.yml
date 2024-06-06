@@ -180,7 +180,6 @@ jobs:
       - beta-release
       - beta-releases-matrix
       - build-containers
-    if: false
     runs-on: ubuntu-latest
     permissions:
       contents: write
