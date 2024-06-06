@@ -24,7 +24,7 @@ jobs:
         with:
           script: |
             const fs = require("fs");
-            const releases = await github.rest.repos.releases({
+            const releases = await github.rest.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo
             });
