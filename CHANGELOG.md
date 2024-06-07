@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recovery in case of a crash, it will also save on exit or on crash, you can change
   the interval by setting the environment variable `DATABASE_SAVE_INTERVAL_MINUTES`
 - Added K6 scripts to perform load tests on the API
+- Added a favicon to the documentation
 
 ### Fixed
 
@@ -43,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   when not being a super admin
 - Fixed some memory leaks in the orchestrator
 - Fixed some other small issues
+- Fixed some issues that would report a missing vm immediately after
+  creating it
 
 ### Changed
 
