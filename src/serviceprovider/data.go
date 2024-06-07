@@ -7,6 +7,10 @@ import (
 
 func GetDatabaseService(ctx basecontext.ApiContext) (*data.JsonDatabase, error) {
 	provider := Get()
+	if provider == nil {
+		return nil, data.ErrDatabaseNotConnected
+	}
+
 	dbService := provider.JsonDatabase
 	if dbService == nil {
 		return nil, data.ErrDatabaseNotConnected
