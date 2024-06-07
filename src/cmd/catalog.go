@@ -23,7 +23,7 @@ func processCatalog(ctx basecontext.ApiContext, operation string, filePath strin
 		os.Exit(0)
 	}
 	ctx.ToggleLogTimestamps(false)
-	os.Setenv(constants.SOURCE_ENV_VAR, "catalog")
+	_ = os.Setenv(constants.SOURCE_ENV_VAR, "catalog")
 
 	if operation != "list" {
 		if filePath == "" {

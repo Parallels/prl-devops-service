@@ -12,7 +12,7 @@ import (
 
 func processTestProviders(ctx basecontext.ApiContext) {
 	subcommand := helper.GetCommandAt(1)
-	os.Setenv(constants.SOURCE_ENV_VAR, "test")
+	_ = os.Setenv(constants.SOURCE_ENV_VAR, "test")
 	switch subcommand {
 	case constants.TEST_CATALOG_PROVIDERS_FLAG:
 		if err := tests.TestCatalogProviders(ctx); err != nil {

@@ -12,7 +12,7 @@ import (
 func processUninstall(ctx basecontext.ApiContext) {
 	ctx.ToggleLogTimestamps(false)
 	removeDatabase := helper.GetFlagSwitch("full", false)
-	os.Setenv(constants.SOURCE_ENV_VAR, "uninstall")
+	_ = os.Setenv(constants.SOURCE_ENV_VAR, "uninstall")
 
 	if err := install.UninstallService(ctx, removeDatabase); err != nil {
 		ctx.LogErrorf(err.Error())

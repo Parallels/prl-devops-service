@@ -19,7 +19,7 @@ func processParallelsDesktop(ctx basecontext.ApiContext) {
 		processHelp(command)
 		os.Exit(0)
 	}
-	os.Setenv(constants.SOURCE_ENV_VAR, "parallels_desktop")
+	_ = os.Setenv(constants.SOURCE_ENV_VAR, "parallels_desktop")
 	ctx.ToggleLogTimestamps(false)
 	pdSvc := parallelsdesktop.New(ctx)
 

@@ -17,7 +17,7 @@ func processReverseProxy(ctx basecontext.ApiContext) {
 		processHelp(constants.REVERSE_PROXY_COMMAND)
 		os.Exit(0)
 	}
-	os.Setenv(constants.SOURCE_ENV_VAR, constants.REVERSE_PROXY_COMMAND)
+	_ = os.Setenv(constants.SOURCE_ENV_VAR, constants.REVERSE_PROXY_COMMAND)
 
 	// Loading configuration
 	cfg := config.New(ctx)
