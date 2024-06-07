@@ -28,6 +28,8 @@ type Command struct {
 	Args             []string
 }
 
+const executionTimeout = 1 * time.Minute
+
 func (c *Command) String() string {
 	return fmt.Sprintf("%s %s", c.Command, strings.Join(c.Args, " "))
 }
@@ -44,10 +46,18 @@ func CreateDirIfNotExist(path string) error {
 }
 
 func ExecuteWithNoOutput(ctx context.Context, command Command) (string, error) {
-	if ctx == nil {
+	var executionContext context.Context
+	var cancel context.CancelFunc
+	if ctx != nil {
+		executionContext, cancel = context.WithTimeout(ctx, executionTimeout)
+	} else {
 		ctx = context.TODO()
+		executionContext, cancel = context.WithTimeout(ctx, executionTimeout)
 	}
-	cmd := exec.CommandContext(ctx, command.Command, command.Args...) // #nosec G204 This is not a user input, it is a helper function
+
+	defer cancel()
+
+	cmd := exec.CommandContext(executionContext, command.Command, command.Args...) // #nosec G204 This is not a user input, it is a helper function
 	if command.WorkingDirectory != "" {
 		cmd.Dir = command.WorkingDirectory
 	}
@@ -70,7 +80,18 @@ func ExecuteWithNoOutput(ctx context.Context, command Command) (string, error) {
 }
 
 func ExecuteWithOutput(ctx context.Context, command Command) (stdout string, stderr string, exitCode int, err error) {
-	cmd := exec.CommandContext(ctx, command.Command, command.Args...) // #nosec G204 This is not a user input, it is a helper function
+	var executionContext context.Context
+	var cancel context.CancelFunc
+	if ctx != nil {
+		executionContext, cancel = context.WithTimeout(ctx, executionTimeout)
+	} else {
+		ctx = context.TODO()
+		executionContext, cancel = context.WithTimeout(ctx, executionTimeout)
+	}
+
+	defer cancel()
+
+	cmd := exec.CommandContext(executionContext, command.Command, command.Args...) // #nosec G204 This is not a user input, it is a helper function
 	if command.WorkingDirectory != "" {
 		cmd.Dir = command.WorkingDirectory
 	}

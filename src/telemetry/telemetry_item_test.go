@@ -32,7 +32,7 @@ func TestNewTelemetryItem(t *testing.T) {
 	// Add more assertions for other fields if needed
 
 	// Example assertion for HardwareID
-	if item.HardwareID == "" {
+	if item.DeviceId == "" {
 		t.Error("Expected HardwareID to be non-empty")
 	}
 }
@@ -50,7 +50,7 @@ func TestNewTelemetryItemEmptyProperties(t *testing.T) {
 	assert.NotNil(t, item.Options)
 
 	// Example assertion for HardwareID
-	if item.HardwareID == "" {
+	if item.DeviceId == "" {
 		t.Error("Expected HardwareID to be non-empty")
 	}
 }

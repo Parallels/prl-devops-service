@@ -24,6 +24,7 @@ func registerPerformanceHandlers(ctx basecontext.ApiContext, version string) {
 
 func PerformDbTestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 

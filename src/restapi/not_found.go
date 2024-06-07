@@ -36,6 +36,7 @@ func NotFoundController() http.Handler {
 
 		SetContentType("application/json", w)
 		w.WriteHeader(http.StatusNotFound)
+		defer r.Body.Close() // Close the response body after encoding the JSON response
 		_ = json.NewEncoder(w).Encode(response)
 		baseCtx.LogInfof("Resource %s not found", r.URL.Path)
 	})

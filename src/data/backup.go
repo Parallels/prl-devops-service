@@ -12,6 +12,20 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
+func (j *JsonDatabase) RunBackup(ctx basecontext.ApiContext) {
+	go func() {
+		for {
+			err := j.Backup(ctx)
+			if err != nil {
+				// Handle the error, e.g. log it or send a notification
+				ctx.LogErrorf("[Database] Error running backup: %v", err)
+			}
+
+			time.Sleep(j.Config.BackupInterval)
+		}
+	}()
+}
+
 func (j *JsonDatabase) Backup(ctx basecontext.ApiContext) error {
 	backupFiles, err := findBackupFiles(j.filename)
 	if err != nil {

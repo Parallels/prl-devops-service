@@ -185,12 +185,13 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 // @Router			/v1/machines [get]
 func GetVirtualMachinesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		vms, err := svc.GetVms(ctx, GetFilterHeader(r))
+		vms, err := svc.GetCachedVms(ctx, GetFilterHeader(r))
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -199,6 +200,7 @@ func GetVirtualMachinesHandler() restapi.ControllerHandler {
 		if len(vms) == 0 {
 			w.WriteHeader(http.StatusOK)
 			vms = make([]models.ParallelsVM, 0)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(vms)
 			ctx.LogInfof("No machines found")
 			return
@@ -223,6 +225,7 @@ func GetVirtualMachinesHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id} [get]
 func GetVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -231,7 +234,7 @@ func GetVirtualMachineHandler() restapi.ControllerHandler {
 		params := mux.Vars(r)
 		id := params["id"]
 
-		vm, err := svc.GetVm(ctx, id)
+		vm, err := svc.GetVmSync(ctx, id)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -264,6 +267,7 @@ func GetVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/start [get]
 func StartVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -303,6 +307,7 @@ func StartVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/stop [get]
 func StopVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -342,6 +347,7 @@ func StopVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/restart [get]
 func RestartVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -380,6 +386,7 @@ func RestartVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/suspend [get]
 func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -418,6 +425,7 @@ func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/resume [get]
 func ResumeMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -456,6 +464,7 @@ func ResumeMachineController() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/reset [get]
 func ResetMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -494,6 +503,7 @@ func ResetMachineController() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/pause [get]
 func PauseVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -533,6 +543,7 @@ func PauseVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id} [delete]
 func DeleteVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -565,6 +576,7 @@ func DeleteVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/status [get]
 func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -605,6 +617,7 @@ func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/set [put]
 func SetVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.VirtualMachineConfigRequest
@@ -672,6 +685,7 @@ func SetVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/clone [put]
 func CloneVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.VirtualMachineCloneCommandRequest
@@ -716,7 +730,7 @@ func CloneVirtualMachineHandler() restapi.ControllerHandler {
 
 		result := models.VirtualMachineCloneCommandResponse{}
 
-		vmId, err := svc.GetVm(ctx, request.CloneName)
+		vmId, err := svc.GetVmSync(ctx, request.CloneName)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -745,6 +759,7 @@ func CloneVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/execute [put]
 func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.VirtualMachineExecuteCommandRequest
@@ -772,6 +787,7 @@ func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		} else {
 			w.WriteHeader(http.StatusOK)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Command executed on machine: %v", id)
 		}
@@ -792,6 +808,7 @@ func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/rename [put]
 func RenameVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RenameVirtualMachineRequest
@@ -821,7 +838,7 @@ func RenameVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		vm, err := svc.GetVm(ctx, id)
+		vm, err := svc.GetVmSync(ctx, id)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -855,6 +872,7 @@ func RenameVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/register [post]
 func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RegisterVirtualMachineRequest
@@ -881,7 +899,7 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		filter := fmt.Sprintf("Home=%s/,i", request.Path)
-		vms, err := svc.GetVms(ctx, filter)
+		vms, err := svc.GetVmsSync(ctx, filter)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -935,6 +953,7 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines/{id}/unregister [post]
 func UnregisterVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.UnregisterVirtualMachineRequest
@@ -981,6 +1000,7 @@ func UnregisterVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/machines [post]
 func CreateVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
@@ -1023,6 +1043,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			}
 
 			w.WriteHeader(http.StatusOK)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Machine created using packer template: %v", response.ID)
 
@@ -1034,6 +1055,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			}
 
 			w.WriteHeader(http.StatusOK)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Machine created using vagrant box: %v", response.ID)
 			return
@@ -1045,6 +1067,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			}
 
 			w.WriteHeader(http.StatusOK)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Machine created using catalog: %v", response.ID)
 			return
@@ -1150,7 +1173,7 @@ func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMa
 			Owner:        request.Owner,
 		}
 
-		vm, err := parallelsDesktopService.GetVm(ctx, request.Name)
+		vm, err := parallelsDesktopService.GetVmSync(ctx, request.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -1163,7 +1186,7 @@ func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMa
 		}
 
 	} else {
-		vm, err := parallelsDesktopService.GetVm(ctx, request.Name)
+		vm, err := parallelsDesktopService.GetVmSync(ctx, request.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -1261,7 +1284,7 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 		Owner: request.Owner,
 	}
 
-	vm, err := parallelsDesktopService.GetVm(ctx, response.ID)
+	vm, err := parallelsDesktopService.GetVmSync(ctx, response.ID)
 	if err != nil {
 		return nil, err
 	}

@@ -77,6 +77,7 @@ func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 // @Router			/v1/parallels_desktop/key [get]
 func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -113,6 +114,7 @@ func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 // @Router			/v1/config/tools/install [post]
 func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.InstallToolsRequest
@@ -175,6 +177,7 @@ func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 // @Router			/v1/config/tools/uninstall [post]
 func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.UninstallToolsRequest
@@ -233,6 +236,7 @@ func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 // @Router			/v1/config/tools/restart [post]
 func RestartApiHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		go restapi.Get().Restart()
@@ -253,6 +257,7 @@ func RestartApiHandler() restapi.ControllerHandler {
 // @Router			/v1/config/hardware [get]
 func GetHardwareInfo() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
@@ -276,6 +281,7 @@ func GetHardwareInfo() restapi.ControllerHandler {
 // @Router			/health/system [get]
 func GetSystemHealth() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		provider := serviceprovider.Get()
 		result := models.ApiHealthCheck{}
 

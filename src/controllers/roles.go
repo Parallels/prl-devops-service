@@ -64,6 +64,7 @@ func registerRolesHandlers(ctx basecontext.ApiContext, version string) {
 // @Router			/v1/auth/roles  [get]
 func GetRolesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -81,6 +82,7 @@ func GetRolesHandler() restapi.ControllerHandler {
 		if len(dtoRoles) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.RoleResponse, 0)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Roles returned: %v", len(response))
 			return
@@ -107,6 +109,7 @@ func GetRolesHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/roles/{id}  [get]
 func GetRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -145,6 +148,7 @@ func GetRoleHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/roles  [post]
 func CreateRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RoleRequest
@@ -197,6 +201,7 @@ func CreateRoleHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/roles/{id}  [delete]
 func DeleteRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)

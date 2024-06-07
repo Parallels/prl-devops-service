@@ -6,6 +6,10 @@ import (
 )
 
 func SeedDefaults() error {
+	if err := seeds.SeedDefaultConfig(); err != nil {
+		common.Logger.Error("Error seeding default config: %s", err.Error())
+		return err
+	}
 	if err := seeds.SeedDefaultClaims(); err != nil {
 		common.Logger.Error("Error seeding default claims: %s", err.Error())
 		return err

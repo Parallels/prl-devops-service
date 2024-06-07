@@ -5,6 +5,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -111,7 +112,7 @@ func Start(ctx basecontext.ApiContext) {
 					_, _ = dbService.CreateOrchestratorHost(ctx, models.OrchestratorHost{
 						ID:          helpers.GenerateId(),
 						Host:        "localhost",
-						Description: "Local Orchestrator",
+						Description: constants.LOCAL_ORCHESTRATOR_DESCRIPTION,
 						Tags:        []string{"localhost", "local"},
 						PathPrefix:  cfg.ApiPrefix(),
 						Schema:      "http",

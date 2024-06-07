@@ -15,11 +15,23 @@ import (
 
 var globalSystemService *SystemService
 
+type SystemServiceCache struct {
+	IsCached        bool
+	SystemUsers     []models.SystemUser
+	CurrentUser     string
+	CurrentUserHome string
+	UniqueId        string
+	HardwareInfo    *models.SystemHardwareInfo
+	OperatingSystem string
+	Architecture    string
+}
+
 type SystemService struct {
 	ctx            basecontext.ApiContext
 	brewExecutable string
 	installed      bool
 	dependencies   []interfaces.Service
+	cache          SystemServiceCache
 }
 
 func Get() *SystemService {
@@ -35,6 +47,14 @@ func Get() *SystemService {
 func New(ctx basecontext.ApiContext) *SystemService {
 	globalSystemService = &SystemService{
 		ctx: ctx,
+		cache: SystemServiceCache{
+			IsCached:     false,
+			SystemUsers:  []models.SystemUser{},
+			CurrentUser:  "",
+			UniqueId:     "",
+			HardwareInfo: nil,
+			Architecture: "",
+		},
 	}
 
 	globalSystemService.SetDependencies([]interfaces.Service{})
@@ -77,16 +97,26 @@ func (s *SystemService) Installed() bool {
 }
 
 func (s *SystemService) GetSystemUsers(ctx basecontext.ApiContext) ([]models.SystemUser, error) {
+	if s.cache.SystemUsers != nil && len(s.cache.SystemUsers) > 0 {
+		ctx.LogDebugf("Returning cached system users")
+		return s.cache.SystemUsers, nil
+	}
+
+	response := []models.SystemUser{}
+	var err error
 	switch s.GetOperatingSystem() {
 	case "macos":
-		return s.getMacSystemUsers(ctx)
+		response, err = s.getMacSystemUsers(ctx)
 	case "linux":
-		return s.getLinuxSystemUsers(ctx)
+		response, err = s.getLinuxSystemUsers(ctx)
 	case "windows":
-		return s.getWindowsSystemUsers(ctx)
+		response, err = s.getWindowsSystemUsers(ctx)
 	default:
 		return nil, errors.New("Not implemented")
 	}
+
+	s.cache.SystemUsers = response
+	return response, err
 }
 
 func (s *SystemService) getMacSystemUsers(ctx basecontext.ApiContext) ([]models.SystemUser, error) {
@@ -197,6 +227,10 @@ func (s *SystemService) getWindowsSystemUsers(ctx basecontext.ApiContext) ([]mod
 }
 
 func (s *SystemService) GetOperatingSystem() string {
+	if s.cache.OperatingSystem != "" {
+		return s.cache.OperatingSystem
+	}
+
 	runningOs := ""
 	switch os := runtime.GOOS; os {
 	case "darwin":
@@ -209,6 +243,7 @@ func (s *SystemService) GetOperatingSystem() string {
 		runningOs = "unknown"
 	}
 
+	s.cache.OperatingSystem = runningOs
 	return runningOs
 }
 
@@ -342,16 +377,27 @@ func (s *SystemService) getUserIdWindows(ctx basecontext.ApiContext, user string
 }
 
 func (s *SystemService) GetCurrentUser(ctx basecontext.ApiContext) (string, error) {
+	if s.cache.CurrentUser != "" {
+		ctx.LogDebugf("Returning cached current user")
+		return s.cache.CurrentUser, nil
+	}
+
+	currentUser := ""
+	var err error
+
 	switch s.GetOperatingSystem() {
 	case "macos":
-		return s.getMacCurrentUser(ctx)
+		currentUser, err = s.getMacCurrentUser(ctx)
 	case "linux":
-		return s.getLinuxCurrentUser(ctx)
+		currentUser, err = s.getLinuxCurrentUser(ctx)
 	case "windows":
-		return s.getWindowsCurrentUser(ctx)
+		currentUser, err = s.getWindowsCurrentUser(ctx)
 	default:
 		return "", errors.New("Not implemented")
 	}
+
+	s.cache.CurrentUser = currentUser
+	return currentUser, err
 }
 
 func (s *SystemService) getMacCurrentUser(ctx basecontext.ApiContext) (string, error) {
@@ -385,14 +431,25 @@ func (s *SystemService) getWindowsCurrentUser(ctx basecontext.ApiContext) (strin
 }
 
 func (s *SystemService) GetUniqueId(ctx basecontext.ApiContext) (string, error) {
+	if s.cache.UniqueId != "" {
+		ctx.LogDebugf("Returning cached unique id")
+		return s.cache.UniqueId, nil
+	}
+
+	uniqueId := ""
+	var err error
+
 	switch s.GetOperatingSystem() {
 	case "macos":
-		return s.getUniqueIdMac(ctx)
+		uniqueId, err = s.getUniqueIdMac(ctx)
 	case "linux":
-		return s.getUniqueIdLinux(ctx)
+		uniqueId, err = s.getUniqueIdLinux(ctx)
 	default:
 		return "", errors.New("Not implemented")
 	}
+
+	s.cache.UniqueId = uniqueId
+	return uniqueId, err
 }
 
 func (s *SystemService) getUniqueIdMac(ctx basecontext.ApiContext) (string, error) {
@@ -487,14 +544,25 @@ func (s *SystemService) changeLinuxFileUserOwner(userName string, filePath strin
 }
 
 func (s *SystemService) GetHardwareInfo(ctx basecontext.ApiContext) (*models.SystemHardwareInfo, error) {
+	if s.cache.HardwareInfo != nil {
+		ctx.LogDebugf("Returning cached hardware info")
+		return s.cache.HardwareInfo, nil
+	}
+
+	var response *models.SystemHardwareInfo
+	var err error
+
 	switch s.GetOperatingSystem() {
 	case "macos":
-		return s.getMacSystemHardwareInfo(ctx)
+		response, err = s.getMacSystemHardwareInfo(ctx)
 	case "linux":
 		return nil, errors.New("Not implemented")
 	default:
 		return nil, errors.New("Not implemented")
 	}
+
+	s.cache.HardwareInfo = response
+	return response, err
 }
 
 func (s *SystemService) getMacSystemHardwareInfo(ctx basecontext.ApiContext) (*models.SystemHardwareInfo, error) {
@@ -594,14 +662,25 @@ func (s *SystemService) parseDfCommand(output string) (totalDisk float64, freeDi
 }
 
 func (s *SystemService) GetArchitecture(ctx basecontext.ApiContext) (string, error) {
+	if s.cache.Architecture != "" {
+		ctx.LogDebugf("Returning cached architecture")
+		return s.cache.Architecture, nil
+	}
+
+	response := ""
+	var err error
+
 	switch s.GetOperatingSystem() {
 	case "macos":
-		return s.getMacArchitecture(ctx)
+		response, err = s.getMacArchitecture(ctx)
 	case "linux":
-		return s.getLinuxArchitecture(ctx)
+		response, err = s.getLinuxArchitecture(ctx)
 	default:
 		return "", errors.New("Not implemented")
 	}
+
+	s.cache.Architecture = response
+	return response, err
 }
 
 func (s *SystemService) getMacArchitecture(ctx basecontext.ApiContext) (string, error) {

@@ -12,6 +12,8 @@ const (
 func (s *OrchestratorService) getApiClient(request models.OrchestratorHost) *apiclient.HttpClientService {
 	apiClient := apiclient.NewHttpClient(s.ctx)
 	apiClient.WithHeader("X-SOURCE", "ORCHESTRATOR_REQUEST")
+	apiClient.WithHeader("X-LOGGING", "IGNORE")
+	apiClient.WithHeader("X-SOURCE-ID", "ORCHESTRATOR_REQUEST")
 
 	if request.Authentication != nil {
 		if request.Authentication.ApiKey != "" {
