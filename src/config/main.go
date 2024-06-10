@@ -297,7 +297,7 @@ func (c *Config) DbSaveInterval() time.Duration {
 func (c *Config) ParallelsRefreshInterval() time.Duration {
 	interval := c.GetIntKey(constants.PARALLELS_DESKTOP_REFRESH_INTERVAL_ENV_VAR)
 	if interval == 0 {
-		return 10 * time.Second
+		return 20 * time.Second
 	}
 
 	return time.Duration(interval) * time.Second

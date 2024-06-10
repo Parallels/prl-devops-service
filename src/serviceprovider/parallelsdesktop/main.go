@@ -287,11 +287,11 @@ func (s *ParallelsService) refreshCacheVms(ctx basecontext.ApiContext) {
 		for {
 			ctx.LogInfof("Waiting %s to refresh VM cache", config.Get().ParallelsRefreshInterval())
 			time.Sleep(config.Get().ParallelsRefreshInterval())
-			vms, err := s.GetVms(ctx)
-			if err != nil {
+			var err error
+			if s.cachedLocalVms, err = s.GetVms(ctx); err != nil {
 				ctx.LogErrorf("Error refreshing VM cache: %v", err)
 			}
-			s.cachedLocalVms = vms
+
 			ctx.LogInfof("VM cache refreshed")
 		}
 	}()
