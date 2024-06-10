@@ -1,0 +1,14 @@
+---
+layout: post
+title:  "Release 0.8.1"
+date:   2024-06-03 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+### Fixed
+
+- Generation of the Helm Charts
+
+
