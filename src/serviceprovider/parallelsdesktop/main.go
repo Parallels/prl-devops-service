@@ -32,11 +32,12 @@ import (
 var (
 	globalParallelsService *ParallelsService
 	logger                 = common.Logger
-	cachedLocalVms         []models.ParallelsVM
 )
 
 type ParallelsService struct {
 	ctx              basecontext.ApiContext
+	refreshStarted   bool
+	cachedLocalVms   []models.ParallelsVM
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
@@ -47,10 +48,6 @@ type ParallelsService struct {
 }
 
 func Get(ctx basecontext.ApiContext) *ParallelsService {
-	if cachedLocalVms == nil {
-		cachedLocalVms = make([]models.ParallelsVM, 0)
-	}
-
 	if globalParallelsService != nil {
 		return globalParallelsService
 	}
@@ -59,7 +56,13 @@ func Get(ctx basecontext.ApiContext) *ParallelsService {
 
 func New(ctx basecontext.ApiContext) *ParallelsService {
 	globalParallelsService = &ParallelsService{
-		ctx: ctx,
+		refreshStarted: false,
+		ctx:            ctx,
+	}
+
+	if globalParallelsService.cachedLocalVms == nil {
+		globalParallelsService.cachedLocalVms = make([]models.ParallelsVM, 0)
+		globalParallelsService.refreshCacheVms(ctx)
 	}
 
 	if globalParallelsService.FindPath() == "" {
@@ -275,13 +278,20 @@ func (s *ParallelsService) IsLicensed() bool {
 }
 
 func (s *ParallelsService) refreshCacheVms(ctx basecontext.ApiContext) {
+	if s.refreshStarted {
+		return
+	}
+
 	go func() {
+		s.refreshStarted = true
 		for {
+			ctx.LogInfof("Waiting %s to refresh VM cache", config.Get().ParallelsRefreshInterval())
 			time.Sleep(config.Get().ParallelsRefreshInterval())
 			var err error
-			if cachedLocalVms, err = s.GetVms(ctx); err != nil {
+			if s.cachedLocalVms, err = s.GetVms(ctx); err != nil {
 				ctx.LogErrorf("Error refreshing VM cache: %v", err)
 			}
+
 			ctx.LogInfof("VM cache refreshed")
 		}
 	}()
@@ -317,13 +327,13 @@ func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter strin
 	ctx.LogInfof("Getting all VMs for all users with cache")
 	var systemMachines []models.ParallelsVM
 	var err error
-	if len(cachedLocalVms) > 0 {
-		systemMachines = cachedLocalVms
+	if len(s.cachedLocalVms) > 0 {
+		systemMachines = s.cachedLocalVms
 	} else {
 		if systemMachines, err = s.GetVms(ctx); err != nil {
 			return nil, err
 		}
-		cachedLocalVms = systemMachines
+		s.cachedLocalVms = systemMachines
 		s.refreshCacheVms(ctx)
 	}
 
@@ -348,7 +358,7 @@ func (s *ParallelsService) GetVmsSync(ctx basecontext.ApiContext, filter string)
 		return nil, err
 	}
 
-	cachedLocalVms = vms
+	s.cachedLocalVms = vms
 	systemMachines = vms
 
 	dbFilter, err := data.ParseFilter(filter)
