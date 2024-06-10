@@ -23,6 +23,7 @@ func processApi(ctx basecontext.ApiContext) {
 		os.Exit(0)
 	}
 
+	_ = os.Setenv(constants.SOURCE_ENV_VAR, "api")
 	versionSvc.PrintAnsiHeader()
 	startup.Init(ctx)
 

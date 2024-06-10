@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/amplitude/analytics-go/amplitude"
 	"github.com/amplitude/analytics-go/amplitude/types"
 )
@@ -25,19 +26,27 @@ func (t *TelemetryService) TrackEvent(item TelemetryItem) {
 
 	// Create a new event
 	if len(item.UserID) < 5 {
-		if item.HardwareID != "" {
-			item.UserID = fmt.Sprintf("%s@%s", item.UserID, item.HardwareID)
+		if item.DeviceId != "" {
+			item.UserID = fmt.Sprintf("%s@%s", item.UserID, item.DeviceId)
 		} else {
 			item.UserID = fmt.Sprintf("%s@service", item.UserID)
 		}
 	}
-	if len(item.HardwareID) < 5 {
-		item.HardwareID = "service"
+	if len(item.DeviceId) < 5 {
+		item.DeviceId = "service"
+	}
+
+	dbService, err := serviceprovider.GetDatabaseService(t.ctx)
+	if err == nil {
+		id, idErr := dbService.GetId(t.ctx)
+		if idErr == nil {
+			item.DeviceId = id
+		}
 	}
 
 	ev := amplitude.Event{
 		UserID:          item.UserID,
-		DeviceID:        item.HardwareID,
+		DeviceID:        item.DeviceId,
 		EventType:       item.Type,
 		EventProperties: item.Properties,
 	}

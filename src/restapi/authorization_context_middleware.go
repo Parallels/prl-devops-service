@@ -16,7 +16,11 @@ func AddAuthorizationContextMiddlewareAdapter() Adapter {
 
 			// Adding the request id if it exist
 			if id != nil {
-				authorizationContext.RequestId = id.(string)
+				if idStr, ok := id.(string); ok {
+					authorizationContext.RequestId = idStr
+				} else {
+					// Handle the error here, e.g. log it or return an appropriate response
+				}
 			}
 
 			// Adding a new Authorization Request to the Request

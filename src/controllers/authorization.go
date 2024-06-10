@@ -43,6 +43,7 @@ func registerAuthorizationHandlers(ctx basecontext.ApiContext, version string) {
 // @Router			/v1/auth/token [post]
 func GetTokenHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
@@ -159,6 +160,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/token/validate [post]
 func ValidateTokenHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 

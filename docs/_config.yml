@@ -1,11 +1,12 @@
-title: Parallels Desktop DevOps Service
+title: Parallels Desktop DevOps Service | Manage and Orchestrate VMs Efficientlye
 brand: Parallels Desktop
 brand_url: https://www.parallels.com/products/desktop
 brand_img: pl-logo-dk.png
 email: support@parallels.com
 tagline: "Parallels Desktop DevOps Service"
-description: >- # this means to ignore newlines until "baseurl:"
-  The SEO tag description
+description: >-
+  Explore Parallels Desktop DevOps Service for efficient management and orchestration of multiple Parallels Desktop hosts and VMs. 
+  Ideal for CI/CD pipelines. Free for up to 10 users.
 baseurl: "/prl-devops-service" # the subpath of your site, e.g. /blog
 url: "https://parallels.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  Parallels

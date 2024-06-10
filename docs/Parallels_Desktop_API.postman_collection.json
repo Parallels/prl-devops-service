@@ -13,7 +13,12 @@
 					"name": "System Healthcheck",
 					"request": {
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "X-Source-Id",
+								"value": "Postman"
+							}
+						],
 						"url": {
 							"raw": "{{protocol}}://{{host}}/api/health/system?full=true",
 							"protocol": "{{protocol}}",
@@ -470,7 +475,6 @@
 												"key": "X-Filter",
 												"value": "name=test",
 												"type": "text",
-												"uuid": "53596a80-c790-4223-9519-77ad4df664cf",
 												"disabled": true
 											}
 										],
@@ -501,7 +505,6 @@
 												"key": "X-Filter",
 												"value": "name=test",
 												"type": "text",
-												"uuid": "1c45de41-ad04-4032-b03e-3a73a87465da",
 												"disabled": true
 											}
 										],
@@ -558,7 +561,6 @@
 												"key": "X-Filter",
 												"value": "name=test",
 												"type": "text",
-												"uuid": "86ca4fc0-a343-4fe5-a891-48b44b992b7a",
 												"disabled": true
 											}
 										],
@@ -930,7 +932,6 @@
 										"key": "X-Filter",
 										"value": "name=test",
 										"type": "text",
-										"uuid": "faf8872b-7b0b-45c7-93de-6d0a14b6e823",
 										"disabled": true
 									}
 								],
@@ -958,7 +959,6 @@
 									{
 										"key": "X-Filter",
 										"value": "name=test",
-										"uuid": "218f0093-510f-4e0f-b168-36c5dabc02ba",
 										"disabled": true
 									}
 								],
@@ -988,7 +988,6 @@
 										"key": "X-Filter",
 										"value": "name=test",
 										"type": "text",
-										"uuid": "b6b39bda-5bb2-41b0-9e0d-54c39e11b7b3",
 										"disabled": true
 									}
 								],
@@ -1275,7 +1274,6 @@
 								"key": "X-Filter",
 								"value": "tags=local",
 								"type": "text",
-								"uuid": "bc5cca25-d8a6-4246-8bba-c732d75cb4fe",
 								"disabled": true
 							}
 						],
@@ -1304,7 +1302,6 @@
 								"key": "X-Filter",
 								"value": "tags=local",
 								"type": "text",
-								"uuid": "845bbf0c-8298-4787-b36c-60b71fe5b79f",
 								"disabled": true
 							}
 						],
@@ -1332,7 +1329,6 @@
 							{
 								"key": "X-Filter",
 								"value": "tags=local",
-								"uuid": "5ea7589b-18c8-4a35-ba99-aa3482ef1298",
 								"disabled": true
 							}
 						],
@@ -1363,7 +1359,6 @@
 								"key": "X-Filter",
 								"value": "tags=local",
 								"type": "text",
-								"uuid": "8655e851-94a3-4daf-8457-521d70604148",
 								"disabled": true
 							}
 						],
@@ -1416,6 +1411,37 @@
 					"response": []
 				},
 				{
+					"name": "Update Orchestrator Host",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"host\":\"\",\n    \"description\": \"\",\n    \"authentication\": {\n        \"username\": \"\",\n        \"password\": \"\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/orchestrator/hosts/{{HOST-ID}}",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orchestrator",
+								"hosts",
+								"{{HOST-ID}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Unregister Orchestrator Host",
 					"request": {
 						"method": "DELETE",
@@ -1450,8 +1476,7 @@
 							{
 								"key": "X-Filter",
 								"value": "id=",
-								"type": "text",
-								"uuid": "95cf6586-55ec-4df3-b928-045ec5d244cd"
+								"type": "text"
 							}
 						],
 						"url": {
@@ -1631,7 +1656,6 @@
 								"key": "X-Filter",
 								"value": "name=READ_ONLY",
 								"type": "text",
-								"uuid": "bdd9440a-ad7c-4e71-acee-aaf2a02f023e",
 								"disabled": true
 							}
 						],
@@ -1780,7 +1804,6 @@
 								"key": "X-Filter",
 								"value": "id=",
 								"type": "text",
-								"uuid": "65ea8e63-4dd5-42e5-86c0-922c02b7a57d",
 								"disabled": true
 							}
 						],
@@ -2097,7 +2120,6 @@
 								"key": "X-Filter",
 								"value": "name=root",
 								"type": "text",
-								"uuid": "0750045f-ca8b-40d7-9d76-b1adb28b5e17",
 								"disabled": true
 							}
 						],
@@ -2429,7 +2451,6 @@
 								"key": "X-Filter",
 								"value": "id=ub,i",
 								"type": "text",
-								"uuid": "06d3ddc6-b632-4f90-8b72-b1418d913047",
 								"disabled": true
 							}
 						],
@@ -2778,7 +2799,6 @@
 								"key": "X-Filter",
 								"value": "name=[Uu]sbuntu",
 								"type": "text",
-								"uuid": "c415a4c6-d68b-49de-ba93-f9f299c7bc47",
 								"disabled": true
 							}
 						],
@@ -3150,7 +3170,6 @@
 								"key": "X-Filter",
 								"value": "name=test",
 								"type": "text",
-								"uuid": "5a4ac7f3-e705-4635-a2c2-9a67680b325d",
 								"disabled": true
 							}
 						],
@@ -3568,7 +3587,10 @@
 			"script": {
 				"type": "text/javascript",
 				"exec": [
-					""
+					"var postmanSource = pm.globals.get('Postman');",
+					"console.log('Setting the X-Source-Id header')",
+					"pm.request.addHeader({key:'X-Source-Id', value: 'Postman'})",
+					"console.log(pm.request.headers)"
 				]
 			}
 		},

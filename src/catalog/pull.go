@@ -57,7 +57,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 	}
 
 	ctx.LogInfof("Checking if the machine %v already exists", r.MachineName)
-	exists, err := parallelsDesktopSvc.GetVm(ctx, r.MachineName)
+	exists, err := parallelsDesktopSvc.GetVmSync(ctx, r.MachineName)
 	if err != nil {
 		if errors.GetSystemErrorCode(err) != 404 {
 			response.AddError(err)
@@ -400,7 +400,7 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(ctx baseconte
 	if !response.HasErrors() {
 		ctx.LogInfof("Renaming machine %v to %v", r.MachineName, r.MachineName)
 		filter := fmt.Sprintf("name=%s", r.MachineName)
-		vms, err := parallelsDesktopSvc.GetVms(ctx, filter)
+		vms, err := parallelsDesktopSvc.GetVmsSync(ctx, filter)
 		if err != nil {
 			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, err)
 			response.AddError(err)
@@ -440,14 +440,13 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(ctx baseconte
 }
 
 func (s *CatalogManifestService) startMachineWithParallelsDesktop(ctx basecontext.ApiContext, r *models.PullCatalogManifestRequest, response *models.PullCatalogManifestResponse) {
-	ctx.LogInfof("Starting machine %v", r.MachineName)
+	ctx.LogInfof("Starting machine %v for %v", r.MachineName, r.CatalogId)
 	serviceProvider := serviceprovider.Get()
 	parallelsDesktopSvc := serviceProvider.ParallelsDesktopService
 
 	if !response.HasErrors() {
-		ctx.LogInfof("Starting machine %v to %v", r.MachineName, r.MachineName)
 		filter := fmt.Sprintf("name=%s", r.MachineName)
-		vms, err := parallelsDesktopSvc.GetVms(ctx, filter)
+		vms, err := parallelsDesktopSvc.GetVmsSync(ctx, filter)
 		if err != nil {
 			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, err)
 			response.AddError(err)

@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Check if version has changed
         id: check-version
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             // Get the version from the workflow input
@@ -44,6 +44,9 @@ jobs:
                 version = v;
               }
             }
+            let majorMinorVersion = version.split('.').slice(0, 2).join('.');
+            version = `${majorMinorVersion}.${{github.run_id}}`;
+            console.log(`Version: ${version}`)
 
             // Find a release for that version
             const release = await github.rest.repos.getReleaseByTag({
@@ -62,8 +65,10 @@ jobs:
             }
             console.log(`Version ${version} does not have a release`);
             return true;
-  release:
-    needs: check-version-change
+  beta-release:
+    name: Release Beta version
+    needs: 
+      - check-version-change
     if: ${{ needs.check-version-change.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
     permissions:
@@ -71,15 +76,22 @@ jobs:
       packages: read
     env:
       EXT_VERSION: "" # will be set in the workflow
+      MAJOR_VERSION: "" # will be set in the workflow
     outputs:
       version: ${{ env.EXT_VERSION }}
+      majorVersion: ${{ env.MAJOR_VERSION }}
     steps:
       - uses: actions/checkout@v3
-      - name: Parse version from package.json
+      - name: Set new version
         run: |
-          echo "EXT_VERSION=${{ github.event.inputs.version }}" >> "$GITHUB_ENV"
+          VERSION=${{ github.event.inputs.version }}
+          MAJOR_VERSION=${VERSION%.*}
+          NEW_VERSION=${VERSION%.*}.${{ github.run_id }}
+          echo "Beta Version: $NEW_VERSION"
+          echo "EXT_VERSION=${NEW_VERSION}" >> "$GITHUB_ENV"
+          echo "MAJOR_VERSION=${MAJOR_VERSION}" >> "$GITHUB_ENV"
       - name: Create release and upload release asset
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const fs = require("fs");
@@ -94,12 +106,14 @@ jobs:
 
             core.summary.addLink(`Release v${{ env.EXT_VERSION }}`, release.data.html_url);
             await core.summary.write();
-  releases-matrix:
-    needs: release
+  beta-releases-matrix:
+    needs: 
+      - check-version-change
+      - beta-release
     name: Release Go Binary
     runs-on: ubuntu-latest
     env:
-      EXT_VERSION: ${{ needs.release.outputs.version }}
+      EXT_VERSION: ${{ needs.beta-release.outputs.version }}
       AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
     strategy:
       fail-fast: false
@@ -128,11 +142,12 @@ jobs:
         project_path: "./src"
         binary_name: "prldevops"
         release_name: "v${{ env.EXT_VERSION }}-beta"
-
   build-containers:
-    needs: release
+    needs: 
+      - check-version-change
+      - beta-release
     env:
-      EXT_VERSION: ${{ needs.release.outputs.version }}
+      EXT_VERSION: ${{ needs.beta-release.outputs.version }}
       AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
     name: Build Docker Images
     runs-on: ubuntu-latest
@@ -156,5 +171,61 @@ jobs:
         platforms: linux/amd64,linux/arm64
         push: true
         tags: |
+          ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:latest-beta
           ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:${{ env.EXT_VERSION }}-beta
-        
+  remove-old-beta-release:
+    name: Remove old beta release
+    needs: 
+      - check-version-change
+      - beta-release
+      - beta-releases-matrix
+      - build-containers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    env:
+      EXT_VERSION:  ${{ needs.beta-release.outputs.version }}
+      MAJOR_VERSION:  ${{ needs.beta-release.outputs.version }}
+    steps:
+      - name: Remove old beta release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            let version ='${{ github.event.inputs.version }}'.trim().split('.').slice(0, 2).join('.');
+            let currentVersion = `${version}.${{github.run_id}}-beta`;
+            console.log(`Current Version: ${currentVersion}`);
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+
+            for(const idx in releases.data) {
+              const release = releases.data[idx];
+              if (release.tag_name.includes("-beta") && release.tag_name !== `v${currentVersion}`) {
+                for(const assetIdx in release.assets) {
+                  const asset = release.assets[assetIdx];
+                  console.log(`Deleting asset: ${asset.name}`);
+                  await github.rest.repos.deleteReleaseAsset({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    asset_id: asset.id
+                  });
+                }
+
+                console.log(`Deleting release: ${release.tag_name}`);
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.id
+                });
+
+                console.log(`Deleting tag: tags/${release.tag_name}`);
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${release.tag_name}`
+                });
+              }
+            }

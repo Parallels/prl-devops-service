@@ -38,7 +38,12 @@ The root object of the configuration file is the environment object, which conta
 | MODE | This can be either `api` or `orchestrator`, and specifies the mode that the service will run in | api |
 | ROOT_PASSWORD | The root password that will be used to update the root password of the virtual machine | |
 | DATABASE_FOLDER_ENV_VAR | The folder where the database will be stored | /User/Folder/.prl-devops-service |
+| DATABASE_NUMBER_BACKUP_FILES | The number of backup files that the database will keep | 10 |
+| DATABASE_BACKUP_INTERVAL_MINUTES | The interval in minutes that the database will be backed up | 120 |
+| DATABASE_SAVE_INTERVAL_MINUTES | The interval in minutes that the database will be saved | 5 |
 | CATALOG_CACHE_FOLDER | The folder where the catalog cache will be stored | /User/Folder/.prl-devops-service/catalog |
+| PARALLELS_DESKTOP_REFRESH_INTERVAL | The interval in seconds that the service will refresh the Parallels Desktop virtual machines | 1 |
+
 
 ### Rest API
 

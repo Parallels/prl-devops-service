@@ -9,4 +9,5 @@ const (
 	EventApiLog            TelemetryEvent = "DEVOPS_API_ENDPOINT"
 	EventCallHome          TelemetryEvent = "DEVOPS_CALL_HOME"
 	EventCatalog           TelemetryEvent = "DEVOPS_CATALOG"
+	CallHomeEvent          TelemetryEvent = "DEVOPS_CALL_HOME"
 )

@@ -97,8 +97,23 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 
 func (s *OrchestratorService) Stop() {
 	s.ctx.LogInfof("[Orchestrator] Stopping Orchestrator Background Service")
+	sp := serviceprovider.Get()
+	if sp != nil {
+		db := sp.JsonDatabase
+		if db != nil {
+			ctx := basecontext.NewRootBaseContext()
+			ctx.LogInfof("[Orchestrator] Saving database")
+			if err := db.SaveNow(ctx); err != nil {
+				ctx.LogErrorf("[Core] Error saving database: %v", err)
+			} else {
+				ctx.LogInfof("[Orchestrator] Database saved")
+			}
+		}
+	}
 	s.cancel()
 	s.syncContext.Done()
+
+	s.ctx.LogInfof("[Orchestrator] Orchestrator Background Service Stopped")
 }
 
 func (s *OrchestratorService) Refresh() {
@@ -137,6 +152,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 		host.HealthCheck = healthCheck
 	}
 
+	s.ctx.LogInfof("[Orchestrator] Getting hardware info for host %s", host.Host)
 	// Updating the host resources
 	hardwareInfo, err := s.GetHostHardwareInfo(&host)
 	if err != nil {
@@ -154,6 +170,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	host.Resources = &dtoResources
 	host.Architecture = hardwareInfo.CpuType
 	host.CpuModel = hardwareInfo.CpuBrand
+	s.ctx.LogInfof("[Orchestrator] Host %s has %d CPU Cores and %d Mb of RAM", host.Host, host.Resources.Total.LogicalCpuCount, host.Resources.Total.MemorySize)
 
 	// Updating the Virtual Machines
 	vms, err := s.GetHostVirtualMachinesInfo(&host)
@@ -173,6 +190,11 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	}
 
 	_ = s.persistHost(&host)
+
+	// Free up memory
+	host.HealthCheck = nil
+	host.Resources = nil
+	host.VirtualMachines = nil
 }
 
 func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
@@ -196,6 +218,11 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 		s.ctx.LogErrorf("[Orchestrator] Error saving host %s: %v", host.Host, err.Error())
 		return err
 	}
+
+	// Free up memory
+	hostToSave.HealthCheck = nil
+	hostToSave.Resources = nil
+	hostToSave.VirtualMachines = nil
 
 	return nil
 }

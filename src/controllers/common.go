@@ -31,6 +31,7 @@ func Recover(ctx basecontext.ApiContext, r *http.Request, w http.ResponseWriter)
 func ReturnApiError(ctx basecontext.ApiContext, w http.ResponseWriter, err models.ApiErrorResponse) {
 	ctx.LogErrorf("Error: %s", err.Message)
 	w.WriteHeader(err.Code)
+
 	_ = json.NewEncoder(w).Encode(err)
 }
 

@@ -208,6 +208,59 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 	return nil, ErrOrchestratorHostNotFound
 }
 
+func (j *JsonDatabase) UpdateOrchestratorHostDetails(ctx basecontext.ApiContext, host *models.OrchestratorHost) (*models.OrchestratorHost, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	if host.ID == "" {
+		return nil, ErrOrchestratorHostEmptyIdOrHost
+	}
+	for _, dbHost := range j.data.OrchestratorHosts {
+		if strings.EqualFold(dbHost.Host, host.Host) && dbHost.ID != host.ID {
+			return nil, errors.NewWithCodef(400, "host %s already exists with ID %s", host.Host, dbHost.ID)
+		}
+	}
+
+	for _, dbHost := range j.data.OrchestratorHosts {
+		if strings.EqualFold(dbHost.ID, host.ID) {
+			index, err := GetRecordIndex(j.data.OrchestratorHosts, "id", host.ID)
+			if err != nil {
+				return nil, err
+			}
+
+			if host.Diff(j.data.OrchestratorHosts[index]) {
+				j.data.OrchestratorHosts[index].Enabled = host.Enabled
+				j.data.OrchestratorHosts[index].UpdatedAt = helpers.GetUtcCurrentDateTime()
+				j.data.OrchestratorHosts[index].Host = host.Host
+				j.data.OrchestratorHosts[index].Architecture = host.Architecture
+				j.data.OrchestratorHosts[index].CpuModel = host.CpuModel
+				j.data.OrchestratorHosts[index].Port = host.Port
+				j.data.OrchestratorHosts[index].Authentication = host.Authentication
+				j.data.OrchestratorHosts[index].Resources = host.Resources
+				j.data.OrchestratorHosts[index].RequiredClaims = host.RequiredClaims
+				j.data.OrchestratorHosts[index].RequiredRoles = host.RequiredRoles
+				j.data.OrchestratorHosts[index].Description = host.Description
+				j.data.OrchestratorHosts[index].Tags = host.Tags
+				j.data.OrchestratorHosts[index].PathPrefix = host.PathPrefix
+				j.data.OrchestratorHosts[index].Schema = host.Schema
+				j.data.OrchestratorHosts[index].State = host.State
+				j.data.OrchestratorHosts[index].LastUnhealthy = host.LastUnhealthy
+				j.data.OrchestratorHosts[index].LastUnhealthyErrorMessage = host.LastUnhealthyErrorMessage
+				j.data.OrchestratorHosts[index].HealthCheck = host.HealthCheck
+				j.data.OrchestratorHosts[index].VirtualMachines = host.VirtualMachines
+
+				return &j.data.OrchestratorHosts[index], nil
+			} else {
+				ctx.LogDebugf("[Database] No changes detected for host %s", host.Host)
+				return host, nil
+			}
+		}
+	}
+
+	return nil, ErrOrchestratorHostNotFound
+}
+
 func (j *JsonDatabase) GetOrchestratorAvailableResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
 	result := make(map[string]models.HostResourceItem)
 

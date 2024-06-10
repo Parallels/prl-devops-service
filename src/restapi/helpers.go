@@ -2,7 +2,6 @@ package restapi
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/Parallels/prl-devops-service/constants"
 )
@@ -13,14 +12,8 @@ func SetContentType(contentType string, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", contentType)
 }
 
-func SetContentLength(contentLength int, w http.ResponseWriter) {
-	w.Header().Del("content-length")
-	w.Header().Del("Content-Length")
-	w.Header().Set("Content-Length", strconv.Itoa(contentLength))
-}
-
 func GetRequestId(r *http.Request) string {
-	id := r.Context().Value(constants.REQUEST_ID_KEY).(string)
+	id, _ := r.Context().Value(constants.REQUEST_ID_KEY).(string)
 
 	return id
 }

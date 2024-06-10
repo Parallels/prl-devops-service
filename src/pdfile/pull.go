@@ -89,7 +89,7 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 			diag.AddError(err)
 			return nil, diag
 		}
-		vm, err := provider.ParallelsDesktopService.GetVm(ctx, p.pdfile.CloneTo)
+		vm, err := provider.ParallelsDesktopService.GetVmSync(ctx, p.pdfile.CloneTo)
 		if err != nil {
 			diag.AddError(err)
 			return nil, diag
@@ -107,7 +107,7 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 			executeMachine = p.pdfile.CloneTo
 		}
 
-		vm, err := provider.ParallelsDesktopService.GetVm(ctx, executeMachine)
+		vm, err := provider.ParallelsDesktopService.GetVmSync(ctx, executeMachine)
 		if err != nil {
 			diag.AddError(err)
 			return nil, diag
