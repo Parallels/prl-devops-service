@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.7.1"
+        "version": "0.8.0"
     },
     "basePath": "/api",
     "paths": {
@@ -6938,6 +6938,18 @@
                     "$ref": "#/definitions/models.OrchestratorAuthentication"
                 },
                 "description": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "prefix": {
+                    "type": "string"
+                },
+                "schema": {
                     "type": "string"
                 }
             }
