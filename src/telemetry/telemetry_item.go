@@ -1,17 +1,20 @@
 package telemetry
 
 import (
+	"crypto"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 )
 
 type TelemetryItem struct {
 	UserID     string
-	HardwareID string
+	DeviceId   string
 	Type       string
 	Properties map[string]interface{}
 	Options    map[string]interface{}
@@ -45,11 +48,24 @@ func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, prop
 	}
 
 	if hid, err := system.GetUniqueId(ctx); err == nil {
-		item.HardwareID = strings.ReplaceAll(hid, "\"", "")
-		item.Properties["hardware_id"] = item.HardwareID
+		item.DeviceId = strings.ReplaceAll(hid, "\"", "")
+		item.Properties["hardware_id"] = item.DeviceId
 	} else {
-		item.HardwareID = unknown_user
-		item.Properties["hardware_id"] = item.HardwareID
+		item.DeviceId = unknown_user
+		item.Properties["hardware_id"] = item.DeviceId
+	}
+
+	config := config.Get()
+	if config != nil {
+		item.Properties["call_source"] = config.Source()
+	}
+
+	if item.DeviceId != "" {
+		hash := crypto.SHA256.New()
+		hash.Write([]byte(item.DeviceId))
+		hashedHardwareId := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+		item.DeviceId = hashedHardwareId
+		item.Properties["hardware_id"] = hashedHardwareId
 	}
 
 	provider := serviceprovider.Get()
@@ -59,14 +75,21 @@ func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, prop
 	}
 
 	if user, err := system.GetCurrentUser(ctx); err == nil {
-		item.UserID = user
+		hash := crypto.SHA256.New()
+		hash.Write([]byte(user))
+		hashedUser := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+		item.UserID = hashedUser
 	} else {
 		item.UserID = unknown_user
 	}
 
 	userId := fmt.Sprintf("%s@%s", item.UserID, key)
-	if len(userId) > 10 {
-		item.Properties["user_id"] = fmt.Sprintf("%s@%s", item.UserID, key)
+	hash := crypto.SHA256.New()
+	hash.Write([]byte(userId))
+	hashedUserId := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+
+	if len(hashedUserId) > 10 {
+		item.Properties["user_id"] = hashedUserId
 	}
 
 	return item

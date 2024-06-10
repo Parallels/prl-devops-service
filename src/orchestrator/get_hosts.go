@@ -67,6 +67,19 @@ func (s *OrchestratorService) GetHost(ctx basecontext.ApiContext, idOrName strin
 	return host, nil
 }
 
+func (s *OrchestratorService) GetDatabaseHost(ctx basecontext.ApiContext, idOrName string) (*models.OrchestratorHost, error) {
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	if err != nil {
+		return nil, err
+	}
+	host, err := dbService.GetOrchestratorHost(ctx, idOrName)
+	if err != nil {
+		return nil, err
+	}
+
+	return host, nil
+}
+
 func (s *OrchestratorService) GetHostResources(ctx basecontext.ApiContext, idOrName string) (*models.HostResources, error) {
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {

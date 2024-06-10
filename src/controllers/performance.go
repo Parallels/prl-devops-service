@@ -20,11 +20,11 @@ func registerPerformanceHandlers(ctx basecontext.ApiContext, version string) {
 		WithVersion(version).WithPath("/performance/db").
 		WithHandler(PerformDbTestHandler()).
 		Register()
-
 }
 
 func PerformDbTestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
@@ -57,7 +57,7 @@ func PerformDbTestHandler() restapi.ControllerHandler {
 		for i := 0; i < request.TestCount; i++ {
 			ctx.LogInfof("This is a test log")
 			for j := 0; j < request.ConsecutiveCalls; j++ {
-				go dbService.Save(ctx)
+				go dbService.SaveNow(ctx)
 				if request.TimeBetweenConsecutiveCalls > 0 {
 					time.Sleep(time.Duration(request.TimeBetweenConsecutiveCalls) * time.Millisecond)
 				}

@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.7.0"
+        "version": "0.7.1"
     },
     "basePath": "/api",
     "paths": {
@@ -2740,7 +2740,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.ParallelsVM"
+                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                             }
                         }
                     },
@@ -2848,7 +2848,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ParallelsVM"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -2897,7 +2897,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ParallelsVM"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -3164,7 +3164,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ParallelsVM"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -3683,6 +3683,55 @@
                     }
                 }
             },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint updates a host in the orchestrator",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Update a Host in the orchestrator",
+                "parameters": [
+                    {
+                        "description": "Host Update Request",
+                        "name": "hostRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.OrchestratorHostUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.OrchestratorHostResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -3939,7 +3988,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.ParallelsVM"
+                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                             }
                         }
                     },
@@ -4054,7 +4103,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ParallelsVM"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -4110,7 +4159,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ParallelsVM"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -4273,7 +4322,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ParallelsVM"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -4441,7 +4490,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ParallelsVM"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -4562,7 +4611,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ParallelsVM"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -4604,7 +4653,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.ParallelsVM"
+                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                             }
                         }
                     },
@@ -4694,7 +4743,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ParallelsVM"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -4787,7 +4836,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ParallelsVM"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -4983,7 +5032,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ParallelsVM"
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
                         }
                     },
                     "400": {
@@ -5422,6 +5471,55 @@
         }
     },
     "definitions": {
+        "github_com_Parallels_prl-devops-service_models.Advanced": {
+            "type": "object",
+            "properties": {
+                "Public SSH keys synchronization": {
+                    "type": "string"
+                },
+                "Rosetta Linux": {
+                    "type": "string"
+                },
+                "Share host location": {
+                    "type": "string"
+                },
+                "Show developer tools": {
+                    "type": "string"
+                },
+                "Swipe from edges": {
+                    "type": "string"
+                },
+                "VM hostname synchronization": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.CPU": {
+            "type": "object",
+            "properties": {
+                "VT-x": {
+                    "type": "boolean"
+                },
+                "accl": {
+                    "type": "string"
+                },
+                "auto": {
+                    "type": "string"
+                },
+                "cpus": {
+                    "type": "integer"
+                },
+                "hotplug": {
+                    "type": "boolean"
+                },
+                "mode": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_Parallels_prl-devops-service_models.CatalogManifest": {
             "type": "object",
             "properties": {
@@ -5523,6 +5621,145 @@
                 }
             }
         },
+        "github_com_Parallels_prl-devops-service_models.Cdrom0": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.Coherence": {
+            "type": "object",
+            "properties": {
+                "Auto-switch to full screen": {
+                    "type": "string"
+                },
+                "Disable aero": {
+                    "type": "string"
+                },
+                "Hide minimized windows": {
+                    "type": "string"
+                },
+                "Show Windows systray in Mac menu": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.Expiration": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.Fullscreen": {
+            "type": "object",
+            "properties": {
+                "Activate spaces on click": {
+                    "type": "string"
+                },
+                "Gamma control": {
+                    "type": "string"
+                },
+                "Optimize for games": {
+                    "type": "string"
+                },
+                "Scale view mode": {
+                    "type": "string"
+                },
+                "Use all displays": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.GuestSharedFolders": {
+            "type": "object",
+            "properties": {
+                "Automount": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.GuestTools": {
+            "type": "object",
+            "properties": {
+                "state": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.Hardware": {
+            "type": "object",
+            "properties": {
+                "cdrom0": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Cdrom0"
+                },
+                "cpu": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CPU"
+                },
+                "hdd0": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Hdd0"
+                },
+                "memory": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Memory"
+                },
+                "memory_quota": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.MemoryQuota"
+                },
+                "net0": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Net0"
+                },
+                "sound0": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Sound0"
+                },
+                "usb": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Expiration"
+                },
+                "video": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Video"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.Hdd0": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "online-compact": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_Parallels_prl-devops-service_models.HostResourceItem": {
             "type": "object",
             "properties": {
@@ -5551,6 +5788,277 @@
                 }
             }
         },
+        "github_com_Parallels_prl-devops-service_models.Memory": {
+            "type": "object",
+            "properties": {
+                "auto": {
+                    "type": "string"
+                },
+                "hotplug": {
+                    "type": "boolean"
+                },
+                "size": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.MemoryQuota": {
+            "type": "object",
+            "properties": {
+                "auto": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.MiscellaneousSharing": {
+            "type": "object",
+            "properties": {
+                "Shared clipboard": {
+                    "type": "string"
+                },
+                "Shared cloud": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.Modality": {
+            "type": "object",
+            "properties": {
+                "Capture mouse clicks": {
+                    "type": "string"
+                },
+                "Opacity (percentage)": {
+                    "type": "integer"
+                },
+                "Show on all spaces": {
+                    "type": "string"
+                },
+                "Stay on top": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.MouseAndKeyboard": {
+            "type": "object",
+            "properties": {
+                "Keyboard optimization mode": {
+                    "type": "string"
+                },
+                "Smart mouse optimized for games": {
+                    "type": "string"
+                },
+                "Smooth scrolling": {
+                    "type": "string"
+                },
+                "Sticky mouse": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.Net0": {
+            "type": "object",
+            "properties": {
+                "card": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "mac": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.Optimization": {
+            "type": "object",
+            "properties": {
+                "Adaptive hypervisor": {
+                    "type": "string"
+                },
+                "Auto compress virtual disks": {
+                    "type": "string"
+                },
+                "Disabled Windows logo": {
+                    "type": "string"
+                },
+                "Faster virtual machine": {
+                    "type": "string"
+                },
+                "Hypervisor type": {
+                    "type": "string"
+                },
+                "Longer battery life": {
+                    "type": "string"
+                },
+                "Nested virtualization": {
+                    "type": "string"
+                },
+                "PMU virtualization": {
+                    "type": "string"
+                },
+                "Resource quota": {
+                    "type": "string"
+                },
+                "Show battery status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.ParallelsVM": {
+            "type": "object",
+            "properties": {
+                "Advanced": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Advanced"
+                },
+                "Allow select boot device": {
+                    "type": "string"
+                },
+                "BIOS type": {
+                    "type": "string"
+                },
+                "Boot order": {
+                    "type": "string"
+                },
+                "Coherence": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Coherence"
+                },
+                "Description": {
+                    "type": "string"
+                },
+                "EFI Secure boot": {
+                    "type": "string"
+                },
+                "Expiration": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Expiration"
+                },
+                "External boot device": {
+                    "type": "string"
+                },
+                "Fullscreen": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Fullscreen"
+                },
+                "Guest Shared Folders": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.GuestSharedFolders"
+                },
+                "GuestTools": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.GuestTools"
+                },
+                "Hardware": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Hardware"
+                },
+                "Home": {
+                    "type": "string"
+                },
+                "Home path": {
+                    "type": "string"
+                },
+                "Host Shared Folders": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "Host defined sharing": {
+                    "type": "string"
+                },
+                "ID": {
+                    "type": "string"
+                },
+                "Miscellaneous Sharing": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.MiscellaneousSharing"
+                },
+                "Modality": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Modality"
+                },
+                "Mouse and Keyboard": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.MouseAndKeyboard"
+                },
+                "Name": {
+                    "type": "string"
+                },
+                "OS": {
+                    "type": "string"
+                },
+                "Optimization": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Optimization"
+                },
+                "Print Management": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.PrintManagement"
+                },
+                "Restore Image": {
+                    "type": "string"
+                },
+                "SMBIOS settings": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.SMBIOSSettings"
+                },
+                "Security": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Security"
+                },
+                "Shared Applications": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.SharedApplications"
+                },
+                "Shared Profile": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Expiration"
+                },
+                "Smart Guard": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Expiration"
+                },
+                "SmartMount": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.SmartMount"
+                },
+                "Startup and Shutdown": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.StartupAndShutdown"
+                },
+                "State": {
+                    "type": "string"
+                },
+                "Template": {
+                    "type": "string"
+                },
+                "Time Synchronization": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.TimeSynchronization"
+                },
+                "Travel mode": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.TravelMode"
+                },
+                "Type": {
+                    "type": "string"
+                },
+                "USB and Bluetooth": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.USBAndBluetooth"
+                },
+                "Uptime": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "host_id": {
+                    "type": "string"
+                },
+                "host_state": {
+                    "type": "string"
+                },
+                "user": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.PrintManagement": {
+            "type": "object",
+            "properties": {
+                "Show host printer UI": {
+                    "type": "string"
+                },
+                "Synchronize default printer": {
+                    "type": "string"
+                },
+                "Synchronize with host printers": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_Parallels_prl-devops-service_models.PullCatalogManifestResponse": {
             "type": "object",
             "properties": {
@@ -5571,25 +6079,208 @@
                 }
             }
         },
-        "models.Advanced": {
+        "github_com_Parallels_prl-devops-service_models.SMBIOSSettings": {
             "type": "object",
             "properties": {
-                "Public SSH keys synchronization": {
+                "BIOS Version": {
                     "type": "string"
                 },
-                "Rosetta Linux": {
+                "Board Manufacturer": {
                     "type": "string"
                 },
-                "Share host location": {
+                "System serial number": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.Security": {
+            "type": "object",
+            "properties": {
+                "Archived": {
                     "type": "string"
                 },
-                "Show developer tools": {
+                "Configuration is locked": {
                     "type": "string"
                 },
-                "Swipe from edges": {
+                "Custom password protection": {
                     "type": "string"
                 },
-                "VM hostname synchronization": {
+                "Encrypted": {
+                    "type": "string"
+                },
+                "Packed": {
+                    "type": "string"
+                },
+                "Protected": {
+                    "type": "string"
+                },
+                "TPM enabled": {
+                    "type": "string"
+                },
+                "TPM type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.SharedApplications": {
+            "type": "object",
+            "properties": {
+                "Bounce dock icon when app flashes": {
+                    "type": "string"
+                },
+                "Guest-to-host apps sharing": {
+                    "type": "string"
+                },
+                "Host-to-guest apps sharing": {
+                    "type": "string"
+                },
+                "Show guest apps folder in Dock": {
+                    "type": "string"
+                },
+                "Show guest notifications": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.SmartMount": {
+            "type": "object",
+            "properties": {
+                "CD/DVD drives": {
+                    "type": "string"
+                },
+                "Network shares": {
+                    "type": "string"
+                },
+                "Removable drives": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.Sound0": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "mixer": {
+                    "type": "string"
+                },
+                "output": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.StartupAndShutdown": {
+            "type": "object",
+            "properties": {
+                "Autostart": {
+                    "type": "string"
+                },
+                "Autostart delay": {
+                    "type": "integer"
+                },
+                "Autostop": {
+                    "type": "string"
+                },
+                "On shutdown": {
+                    "type": "string"
+                },
+                "On window close": {
+                    "type": "string"
+                },
+                "Pause idle": {
+                    "type": "string"
+                },
+                "Startup view": {
+                    "type": "string"
+                },
+                "Undo disks": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.TimeSynchronization": {
+            "type": "object",
+            "properties": {
+                "Interval (in seconds)": {
+                    "type": "integer"
+                },
+                "Smart mode": {
+                    "type": "string"
+                },
+                "Timezone synchronization disabled": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.TravelMode": {
+            "type": "object",
+            "properties": {
+                "Enter condition": {
+                    "type": "string"
+                },
+                "Enter threshold": {
+                    "type": "integer"
+                },
+                "Quit condition": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.USBAndBluetooth": {
+            "type": "object",
+            "properties": {
+                "Automatic sharing bluetooth": {
+                    "type": "string"
+                },
+                "Automatic sharing cameras": {
+                    "type": "string"
+                },
+                "Automatic sharing gamepads": {
+                    "type": "string"
+                },
+                "Automatic sharing smart cards": {
+                    "type": "string"
+                },
+                "Support USB 3.0": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.Video": {
+            "type": "object",
+            "properties": {
+                "3d-acceleration": {
+                    "type": "string"
+                },
+                "adapter-type": {
+                    "type": "string"
+                },
+                "automatic-video-memory": {
+                    "type": "string"
+                },
+                "high-resolution": {
+                    "type": "string"
+                },
+                "high-resolution-in-guest": {
+                    "type": "string"
+                },
+                "native-scaling-in-guest": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "vertical-sync": {
                     "type": "string"
                 }
             }
@@ -5699,32 +6390,6 @@
                 }
             }
         },
-        "models.CPU": {
-            "type": "object",
-            "properties": {
-                "VT-x": {
-                    "type": "boolean"
-                },
-                "accl": {
-                    "type": "string"
-                },
-                "auto": {
-                    "type": "string"
-                },
-                "cpus": {
-                    "type": "integer"
-                },
-                "hotplug": {
-                    "type": "boolean"
-                },
-                "mode": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
         "models.CatalogManifestPackItem": {
             "type": "object",
             "properties": {
@@ -5735,23 +6400,6 @@
                     "type": "string"
                 },
                 "path": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Cdrom0": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "image": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "string"
-                },
-                "state": {
                     "type": "string"
                 }
             }
@@ -5771,23 +6419,6 @@
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Coherence": {
-            "type": "object",
-            "properties": {
-                "Auto-switch to full screen": {
-                    "type": "string"
-                },
-                "Disable aero": {
-                    "type": "string"
-                },
-                "Hide minimized windows": {
-                    "type": "string"
-                },
-                "Show Windows systray in Mac menu": {
                     "type": "string"
                 }
             }
@@ -6007,111 +6638,6 @@
                 }
             }
         },
-        "models.Expiration": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "models.Fullscreen": {
-            "type": "object",
-            "properties": {
-                "Activate spaces on click": {
-                    "type": "string"
-                },
-                "Gamma control": {
-                    "type": "string"
-                },
-                "Optimize for games": {
-                    "type": "string"
-                },
-                "Scale view mode": {
-                    "type": "string"
-                },
-                "Use all displays": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.GuestSharedFolders": {
-            "type": "object",
-            "properties": {
-                "Automount": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "models.GuestTools": {
-            "type": "object",
-            "properties": {
-                "state": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Hardware": {
-            "type": "object",
-            "properties": {
-                "cdrom0": {
-                    "$ref": "#/definitions/models.Cdrom0"
-                },
-                "cpu": {
-                    "$ref": "#/definitions/models.CPU"
-                },
-                "hdd0": {
-                    "$ref": "#/definitions/models.Hdd0"
-                },
-                "memory": {
-                    "$ref": "#/definitions/models.Memory"
-                },
-                "memory_quota": {
-                    "$ref": "#/definitions/models.MemoryQuota"
-                },
-                "net0": {
-                    "$ref": "#/definitions/models.Net0"
-                },
-                "sound0": {
-                    "$ref": "#/definitions/models.Sound0"
-                },
-                "usb": {
-                    "$ref": "#/definitions/models.Expiration"
-                },
-                "video": {
-                    "$ref": "#/definitions/models.Video"
-                }
-            }
-        },
-        "models.Hdd0": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "image": {
-                    "type": "string"
-                },
-                "online-compact": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "string"
-                },
-                "size": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
         "models.HostResourceOverviewResponse": {
             "type": "object",
             "properties": {
@@ -6242,28 +6768,6 @@
                 }
             }
         },
-        "models.Memory": {
-            "type": "object",
-            "properties": {
-                "auto": {
-                    "type": "string"
-                },
-                "hotplug": {
-                    "type": "boolean"
-                },
-                "size": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.MemoryQuota": {
-            "type": "object",
-            "properties": {
-                "auto": {
-                    "type": "string"
-                }
-            }
-        },
         "models.MinimumSpecRequirement": {
             "type": "object",
             "properties": {
@@ -6275,68 +6779,6 @@
                 },
                 "memory": {
                     "type": "integer"
-                }
-            }
-        },
-        "models.MiscellaneousSharing": {
-            "type": "object",
-            "properties": {
-                "Shared clipboard": {
-                    "type": "string"
-                },
-                "Shared cloud": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Modality": {
-            "type": "object",
-            "properties": {
-                "Capture mouse clicks": {
-                    "type": "string"
-                },
-                "Opacity (percentage)": {
-                    "type": "integer"
-                },
-                "Show on all spaces": {
-                    "type": "string"
-                },
-                "Stay on top": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.MouseAndKeyboard": {
-            "type": "object",
-            "properties": {
-                "Keyboard optimization mode": {
-                    "type": "string"
-                },
-                "Smart mouse optimized for games": {
-                    "type": "string"
-                },
-                "Smooth scrolling": {
-                    "type": "string"
-                },
-                "Sticky mouse": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Net0": {
-            "type": "object",
-            "properties": {
-                "card": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "mac": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
                 }
             }
         },
@@ -6386,41 +6828,6 @@
                 "OAuthUserBlocked",
                 "UnknownError"
             ]
-        },
-        "models.Optimization": {
-            "type": "object",
-            "properties": {
-                "Adaptive hypervisor": {
-                    "type": "string"
-                },
-                "Auto compress virtual disks": {
-                    "type": "string"
-                },
-                "Disabled Windows logo": {
-                    "type": "string"
-                },
-                "Faster virtual machine": {
-                    "type": "string"
-                },
-                "Hypervisor type": {
-                    "type": "string"
-                },
-                "Longer battery life": {
-                    "type": "string"
-                },
-                "Nested virtualization": {
-                    "type": "string"
-                },
-                "PMU virtualization": {
-                    "type": "string"
-                },
-                "Resource quota": {
-                    "type": "string"
-                },
-                "Show battery status": {
-                    "type": "string"
-                }
-            }
         },
         "models.OrchestratorAuthentication": {
             "type": "object",
@@ -6524,6 +6931,17 @@
                 }
             }
         },
+        "models.OrchestratorHostUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "authentication": {
+                    "$ref": "#/definitions/models.OrchestratorAuthentication"
+                },
+                "description": {
+                    "type": "string"
+                }
+            }
+        },
         "models.PackerTemplateResponse": {
             "type": "object",
             "properties": {
@@ -6623,158 +7041,6 @@
                     "type": "string"
                 },
                 "uuid": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.ParallelsVM": {
-            "type": "object",
-            "properties": {
-                "Advanced": {
-                    "$ref": "#/definitions/models.Advanced"
-                },
-                "Allow select boot device": {
-                    "type": "string"
-                },
-                "BIOS type": {
-                    "type": "string"
-                },
-                "Boot order": {
-                    "type": "string"
-                },
-                "Coherence": {
-                    "$ref": "#/definitions/models.Coherence"
-                },
-                "Description": {
-                    "type": "string"
-                },
-                "EFI Secure boot": {
-                    "type": "string"
-                },
-                "Expiration": {
-                    "$ref": "#/definitions/models.Expiration"
-                },
-                "External boot device": {
-                    "type": "string"
-                },
-                "Fullscreen": {
-                    "$ref": "#/definitions/models.Fullscreen"
-                },
-                "Guest Shared Folders": {
-                    "$ref": "#/definitions/models.GuestSharedFolders"
-                },
-                "GuestTools": {
-                    "$ref": "#/definitions/models.GuestTools"
-                },
-                "Hardware": {
-                    "$ref": "#/definitions/models.Hardware"
-                },
-                "Home": {
-                    "type": "string"
-                },
-                "Home path": {
-                    "type": "string"
-                },
-                "Host Shared Folders": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "Host defined sharing": {
-                    "type": "string"
-                },
-                "ID": {
-                    "type": "string"
-                },
-                "Miscellaneous Sharing": {
-                    "$ref": "#/definitions/models.MiscellaneousSharing"
-                },
-                "Modality": {
-                    "$ref": "#/definitions/models.Modality"
-                },
-                "Mouse and Keyboard": {
-                    "$ref": "#/definitions/models.MouseAndKeyboard"
-                },
-                "Name": {
-                    "type": "string"
-                },
-                "OS": {
-                    "type": "string"
-                },
-                "Optimization": {
-                    "$ref": "#/definitions/models.Optimization"
-                },
-                "Print Management": {
-                    "$ref": "#/definitions/models.PrintManagement"
-                },
-                "Restore Image": {
-                    "type": "string"
-                },
-                "SMBIOS settings": {
-                    "$ref": "#/definitions/models.SMBIOSSettings"
-                },
-                "Security": {
-                    "$ref": "#/definitions/models.Security"
-                },
-                "Shared Applications": {
-                    "$ref": "#/definitions/models.SharedApplications"
-                },
-                "Shared Profile": {
-                    "$ref": "#/definitions/models.Expiration"
-                },
-                "Smart Guard": {
-                    "$ref": "#/definitions/models.Expiration"
-                },
-                "SmartMount": {
-                    "$ref": "#/definitions/models.SmartMount"
-                },
-                "Startup and Shutdown": {
-                    "$ref": "#/definitions/models.StartupAndShutdown"
-                },
-                "State": {
-                    "type": "string"
-                },
-                "Template": {
-                    "type": "string"
-                },
-                "Time Synchronization": {
-                    "$ref": "#/definitions/models.TimeSynchronization"
-                },
-                "Travel mode": {
-                    "$ref": "#/definitions/models.TravelMode"
-                },
-                "Type": {
-                    "type": "string"
-                },
-                "USB and Bluetooth": {
-                    "$ref": "#/definitions/models.USBAndBluetooth"
-                },
-                "Uptime": {
-                    "type": "string"
-                },
-                "host": {
-                    "type": "string"
-                },
-                "host_id": {
-                    "type": "string"
-                },
-                "host_state": {
-                    "type": "string"
-                },
-                "user": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.PrintManagement": {
-            "type": "object",
-            "properties": {
-                "Show host printer UI": {
-                    "type": "string"
-                },
-                "Synchronize default printer": {
-                    "type": "string"
-                },
-                "Synchronize with host printers": {
                     "type": "string"
                 }
             }
@@ -6952,49 +7218,6 @@
                 }
             }
         },
-        "models.SMBIOSSettings": {
-            "type": "object",
-            "properties": {
-                "BIOS Version": {
-                    "type": "string"
-                },
-                "Board Manufacturer": {
-                    "type": "string"
-                },
-                "System serial number": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Security": {
-            "type": "object",
-            "properties": {
-                "Archived": {
-                    "type": "string"
-                },
-                "Configuration is locked": {
-                    "type": "string"
-                },
-                "Custom password protection": {
-                    "type": "string"
-                },
-                "Encrypted": {
-                    "type": "string"
-                },
-                "Packed": {
-                    "type": "string"
-                },
-                "Protected": {
-                    "type": "string"
-                },
-                "TPM enabled": {
-                    "type": "string"
-                },
-                "TPM type": {
-                    "type": "string"
-                }
-            }
-        },
         "models.ServiceHealthCheck": {
             "type": "object",
             "properties": {
@@ -7008,89 +7231,6 @@
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.SharedApplications": {
-            "type": "object",
-            "properties": {
-                "Bounce dock icon when app flashes": {
-                    "type": "string"
-                },
-                "Guest-to-host apps sharing": {
-                    "type": "string"
-                },
-                "Host-to-guest apps sharing": {
-                    "type": "string"
-                },
-                "Show guest apps folder in Dock": {
-                    "type": "string"
-                },
-                "Show guest notifications": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "models.SmartMount": {
-            "type": "object",
-            "properties": {
-                "CD/DVD drives": {
-                    "type": "string"
-                },
-                "Network shares": {
-                    "type": "string"
-                },
-                "Removable drives": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "models.Sound0": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "mixer": {
-                    "type": "string"
-                },
-                "output": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.StartupAndShutdown": {
-            "type": "object",
-            "properties": {
-                "Autostart": {
-                    "type": "string"
-                },
-                "Autostart delay": {
-                    "type": "integer"
-                },
-                "Autostop": {
-                    "type": "string"
-                },
-                "On shutdown": {
-                    "type": "string"
-                },
-                "On window close": {
-                    "type": "string"
-                },
-                "Pause idle": {
-                    "type": "string"
-                },
-                "Startup view": {
-                    "type": "string"
-                },
-                "Undo disks": {
                     "type": "string"
                 }
             }
@@ -7132,57 +7272,6 @@
                 },
                 "total_reserved": {
                     "$ref": "#/definitions/models.SystemUsageItem"
-                }
-            }
-        },
-        "models.TimeSynchronization": {
-            "type": "object",
-            "properties": {
-                "Interval (in seconds)": {
-                    "type": "integer"
-                },
-                "Smart mode": {
-                    "type": "string"
-                },
-                "Timezone synchronization disabled": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "models.TravelMode": {
-            "type": "object",
-            "properties": {
-                "Enter condition": {
-                    "type": "string"
-                },
-                "Enter threshold": {
-                    "type": "integer"
-                },
-                "Quit condition": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.USBAndBluetooth": {
-            "type": "object",
-            "properties": {
-                "Automatic sharing bluetooth": {
-                    "type": "string"
-                },
-                "Automatic sharing cameras": {
-                    "type": "string"
-                },
-                "Automatic sharing gamepads": {
-                    "type": "string"
-                },
-                "Automatic sharing smart cards": {
-                    "type": "string"
-                },
-                "Support USB 3.0": {
-                    "type": "string"
                 }
             }
         },
@@ -7279,35 +7368,6 @@
             "properties": {
                 "valid": {
                     "type": "boolean"
-                }
-            }
-        },
-        "models.Video": {
-            "type": "object",
-            "properties": {
-                "3d-acceleration": {
-                    "type": "string"
-                },
-                "adapter-type": {
-                    "type": "string"
-                },
-                "automatic-video-memory": {
-                    "type": "string"
-                },
-                "high-resolution": {
-                    "type": "string"
-                },
-                "high-resolution-in-guest": {
-                    "type": "string"
-                },
-                "native-scaling-in-guest": {
-                    "type": "string"
-                },
-                "size": {
-                    "type": "string"
-                },
-                "vertical-sync": {
-                    "type": "string"
                 }
             }
         },

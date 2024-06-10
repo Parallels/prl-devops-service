@@ -8,8 +8,8 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/security"
+	"github.com/go-jose/go-jose/v4"
 	"github.com/golang-jwt/jwt/v4"
-	"gopkg.in/square/go-jose.v2"
 )
 
 var globalJwtService *JwtService

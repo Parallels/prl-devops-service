@@ -26,6 +26,7 @@ func (c *HttpListener) Probe() ControllerHandler {
 		}
 
 		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 	}
 }

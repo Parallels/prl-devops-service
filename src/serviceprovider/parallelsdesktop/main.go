@@ -1,6 +1,7 @@
 package parallelsdesktop
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
@@ -24,13 +26,13 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/google/uuid"
 
-	"github.com/cjlapao/common-go/commands"
 	"github.com/cjlapao/common-go/helper"
 )
 
 var (
 	globalParallelsService *ParallelsService
 	logger                 = common.Logger
+	cachedLocalVms         []models.ParallelsVM
 )
 
 type ParallelsService struct {
@@ -45,6 +47,10 @@ type ParallelsService struct {
 }
 
 func Get(ctx basecontext.ApiContext) *ParallelsService {
+	if cachedLocalVms == nil {
+		cachedLocalVms = make([]models.ParallelsVM, 0)
+	}
+
 	if globalParallelsService != nil {
 		return globalParallelsService
 	}
@@ -72,7 +78,11 @@ func (s *ParallelsService) Name() string {
 
 func (s *ParallelsService) FindPath() string {
 	s.ctx.LogInfof("Getting prlctl executable")
-	out, err := commands.ExecuteWithNoOutput("which", "prlctl")
+	cmd := helpers.Command{
+		Command: "which",
+		Args:    []string{"prlctl"},
+	}
+	out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
 		s.ctx.LogWarnf("Parallels Desktop CLI executable not found, trying to find it in the default locations")
@@ -112,7 +122,7 @@ func (s *ParallelsService) Version() string {
 		Args:    []string{"--version"},
 	}
 
-	stdout, _, _, err := helpers.ExecuteWithOutput(cmd)
+	stdout, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return "unknown"
 	}
@@ -163,7 +173,7 @@ func (s *ParallelsService) Install(asUser, version string, flags map[string]stri
 		}
 
 		s.ctx.LogInfof("Installing %s with command: %v", s.Name(), cmd.String())
-		_, err := helpers.ExecuteWithNoOutput(cmd)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 		if err != nil {
 			return err
 		}
@@ -216,7 +226,7 @@ func (s *ParallelsService) Uninstall(asUser string, uninstallDependencies bool) 
 			}
 		}
 
-		_, err := helpers.ExecuteWithNoOutput(cmd)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 		if err != nil {
 			return err
 		}
@@ -264,9 +274,117 @@ func (s *ParallelsService) IsLicensed() bool {
 	return s.isLicensed
 }
 
-func (s *ParallelsService) GetVms(ctx basecontext.ApiContext, filter string) ([]models.ParallelsVM, error) {
+func (s *ParallelsService) refreshCacheVms(ctx basecontext.ApiContext) {
+	go func() {
+		for {
+			time.Sleep(config.Get().ParallelsRefreshInterval())
+			var err error
+			if cachedLocalVms, err = s.GetVms(ctx); err != nil {
+				ctx.LogErrorf("Error refreshing VM cache: %v", err)
+			}
+			ctx.LogInfof("VM cache refreshed")
+		}
+	}()
+}
+
+func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string) ([]models.ParallelsVM, error) {
+	ctx.LogInfof("Getting VMs for user: %s", username)
+
+	var userMachines []models.ParallelsVM
+	cmd := helpers.Command{
+		Command: "sudo",
+		Args:    []string{"-u", username, s.executable, "list", "-a", "-i", "--json"},
+	}
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
+	defer cancel()
+
+	stdout, err := helpers.ExecuteWithNoOutput(timeoutCtx, cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal([]byte(stdout), &userMachines)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx.LogInfof("User %s has %s VMs", username, len(userMachines))
+	return userMachines, nil
+}
+
+func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter string) ([]models.ParallelsVM, error) {
+	ctx.LogInfof("Getting all VMs for all users with cache")
 	var systemMachines []models.ParallelsVM
+	var err error
+	if len(cachedLocalVms) > 0 {
+		systemMachines = cachedLocalVms
+	} else {
+		if systemMachines, err = s.GetVms(ctx); err != nil {
+			return nil, err
+		}
+		cachedLocalVms = systemMachines
+		s.refreshCacheVms(ctx)
+	}
+
+	dbFilter, err := data.ParseFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	filteredData, err := data.FilterByProperty(systemMachines, dbFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	return filteredData, nil
+}
+
+func (s *ParallelsService) GetVmsSync(ctx basecontext.ApiContext, filter string) ([]models.ParallelsVM, error) {
+	var systemMachines []models.ParallelsVM
+	var err error
+	vms, err := s.GetVms(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	cachedLocalVms = vms
+	systemMachines = vms
+
+	dbFilter, err := data.ParseFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	filteredData, err := data.FilterByProperty(systemMachines, dbFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	return filteredData, nil
+}
+
+func (s *ParallelsService) GetVms(ctx basecontext.ApiContext) ([]models.ParallelsVM, error) {
+	ctx.LogDebugf("Getting all VMs for all users without cache")
+	var systemMachines []models.ParallelsVM
+
 	users, err := system.Get().GetSystemUsers(ctx)
+	currentUser := "root"
+	if user, err := system.Get().GetCurrentUser(ctx); err == nil {
+		currentUser = user
+	}
+	if currentUser != "root" {
+		newAllUsers := make([]models.SystemUser, 0)
+		for _, user := range users {
+			if strings.EqualFold(user.Username, currentUser) {
+				newAllUsers = append(newAllUsers, user)
+				break
+			}
+		}
+
+		users = newAllUsers
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -276,16 +394,9 @@ func (s *ParallelsService) GetVms(ctx basecontext.ApiContext, filter string) ([]
 	}
 
 	for _, user := range users {
-		ctx.LogInfof("Getting VMs for user: %s", user.Username)
-		var userMachines []models.ParallelsVM
-		stdout, err := commands.ExecuteWithNoOutput("sudo", "-u", user.Username, s.executable, "list", "-a", "-i", "--json")
+		userMachines, err := s.GetUserVm(ctx, user.Username)
 		if err != nil {
-			continue
-		}
-
-		err = json.Unmarshal([]byte(stdout), &userMachines)
-		if err != nil {
-			continue
+			return nil, err
 		}
 
 		for _, machine := range userMachines {
@@ -303,17 +414,7 @@ func (s *ParallelsService) GetVms(ctx basecontext.ApiContext, filter string) ([]
 		}
 	}
 
-	dbFilter, err := data.ParseFilter(filter)
-	if err != nil {
-		return nil, err
-	}
-
-	filteredData, err := data.FilterByProperty(systemMachines, dbFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	return filteredData, nil
+	return systemMachines, nil
 }
 
 func (s *ParallelsService) GetVm(ctx basecontext.ApiContext, id string) (*models.ParallelsVM, error) {
@@ -325,8 +426,17 @@ func (s *ParallelsService) GetVm(ctx basecontext.ApiContext, id string) (*models
 	return vm, nil
 }
 
+func (s *ParallelsService) GetVmSync(ctx basecontext.ApiContext, id string) (*models.ParallelsVM, error) {
+	vm, err := s.findVmSync(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return vm, nil
+}
+
 func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, desiredState ParallelsVirtualMachineDesiredState) error {
-	vm, err := s.findVm(ctx, id)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -387,7 +497,12 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 		return errors.New("Invalid desired state")
 	}
 
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, desiredState.String(), id)
+	cmd := helpers.Command{
+		Command: "sudo",
+		Args:    make([]string, 0),
+	}
+	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, desiredState.String(), id)
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -447,7 +562,7 @@ func (s *ParallelsService) PauseVm(ctx basecontext.ApiContext, id string) error 
 }
 
 func (s *ParallelsService) DeleteVm(ctx basecontext.ApiContext, id string) error {
-	vm, err := s.findVm(ctx, id)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -460,7 +575,13 @@ func (s *ParallelsService) DeleteVm(ctx basecontext.ApiContext, id string) error
 		return errors.New("VM is not stopped")
 	}
 
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "delete", id)
+	cmd := helpers.Command{
+		Command: "sudo",
+		Args:    make([]string, 0),
+	}
+	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, "delete", id)
+
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -469,15 +590,20 @@ func (s *ParallelsService) DeleteVm(ctx basecontext.ApiContext, id string) error
 }
 
 func (s *ParallelsService) VmStatus(ctx basecontext.ApiContext, id string) (*models.VirtualMachineStatus, error) {
-	vm, err := s.findVm(ctx, id)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	if vm == nil {
 		return nil, errors.New("VM not found")
 	}
+	cmd := helpers.Command{
+		Command: "sudo",
+		Args:    make([]string, 0),
+	}
+	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, "list", id, "-a", "-f", "--json")
 
-	output, err := commands.ExecuteWithNoOutput("sudo", "-u", vm.User, s.executable, "list", id, "-a", "-f", "--json")
+	output, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -497,7 +623,7 @@ func (s *ParallelsService) VmStatus(ctx basecontext.ApiContext, id string) (*mod
 
 func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.RegisterVirtualMachineRequest) error {
 	if r.Uuid != "" {
-		vm, err := s.findVm(ctx, r.Uuid)
+		vm, err := s.findVmSync(ctx, r.Uuid)
 		if err != nil {
 			return err
 		}
@@ -509,7 +635,7 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 	}
 
 	if r.MachineName != "" {
-		vm, err := s.findVm(ctx, r.MachineName)
+		vm, err := s.findVmSync(ctx, r.MachineName)
 		if err != nil && errors.GetSystemErrorCode(err) != 404 {
 			return err
 		}
@@ -547,7 +673,7 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 	}
 
 	ctx.LogDebugf("Executing command: %s", cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -556,7 +682,7 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 }
 
 func (s *ParallelsService) UnregisterVm(ctx basecontext.ApiContext, r models.UnregisterVirtualMachineRequest) error {
-	vm, err := s.findVm(ctx, r.ID)
+	vm, err := s.findVmSync(ctx, r.ID)
 	if err != nil {
 		return err
 	}
@@ -580,7 +706,7 @@ func (s *ParallelsService) UnregisterVm(ctx basecontext.ApiContext, r models.Unr
 	}
 
 	ctx.LogInfof(cmd.String())
-	_, err = helpers.ExecuteWithNoOutput(cmd)
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return errors.NewFromErrorf(err, "Error unregistering VM %s", r.ID)
 	}
@@ -589,7 +715,7 @@ func (s *ParallelsService) UnregisterVm(ctx basecontext.ApiContext, r models.Unr
 }
 
 func (s *ParallelsService) RenameVm(ctx basecontext.ApiContext, r models.RenameVirtualMachineRequest) error {
-	vm, err := s.findVm(ctx, r.GetId())
+	vm, err := s.findVmSync(ctx, r.GetId())
 	if err != nil {
 		return err
 	}
@@ -612,7 +738,7 @@ func (s *ParallelsService) RenameVm(ctx basecontext.ApiContext, r models.RenameV
 	}
 
 	ctx.LogInfof(cmd.String())
-	_, err = helpers.ExecuteWithNoOutput(cmd)
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -621,7 +747,7 @@ func (s *ParallelsService) RenameVm(ctx basecontext.ApiContext, r models.RenameV
 }
 
 func (s *ParallelsService) PackVm(ctx basecontext.ApiContext, idOrName string) error {
-	vm, err := s.findVm(ctx, idOrName)
+	vm, err := s.findVmSync(ctx, idOrName)
 	if err != nil {
 		return err
 	}
@@ -639,13 +765,13 @@ func (s *ParallelsService) PackVm(ctx basecontext.ApiContext, idOrName string) e
 	}
 
 	cmd.Args = append(cmd.Args, s.executable, "pack", vm.ID)
-	_, err = helpers.ExecuteWithNoOutput(cmd)
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 
 	return err
 }
 
 func (s *ParallelsService) UnpackVm(ctx basecontext.ApiContext, idOrName string) error {
-	vm, err := s.findVm(ctx, idOrName)
+	vm, err := s.findVmSync(ctx, idOrName)
 	if err != nil {
 		return err
 	}
@@ -663,7 +789,7 @@ func (s *ParallelsService) UnpackVm(ctx basecontext.ApiContext, idOrName string)
 	}
 
 	cmd.Args = append(cmd.Args, s.executable, "unpack", vm.ID)
-	_, err = helpers.ExecuteWithNoOutput(cmd)
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 
 	return err
 }
@@ -673,7 +799,7 @@ func (s *ParallelsService) GetInfo() (*models.ParallelsDesktopInfo, error) {
 		return s.Info, nil
 	}
 
-	stdout, err := helpers.ExecuteWithNoOutput(helpers.Command{
+	stdout, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), helpers.Command{
 		Command: s.serverExecutable,
 		Args:    []string{"info", "--json"},
 	})
@@ -702,7 +828,7 @@ func (s *ParallelsService) GetUsers(ctx basecontext.ApiContext) ([]*models.Paral
 		return s.Users, nil
 	}
 
-	stdout, err := helpers.ExecuteWithNoOutput(helpers.Command{
+	stdout, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), helpers.Command{
 		Command: s.serverExecutable,
 		Args:    []string{"user", "list", "--json"},
 	})
@@ -761,7 +887,7 @@ func (s *ParallelsService) GetUserHome(ctx basecontext.ApiContext, user string) 
 }
 
 func (s *ParallelsService) ConfigureVm(ctx basecontext.ApiContext, id string, setOperations *models.VirtualMachineConfigRequest) error {
-	vm, err := s.findVm(ctx, id)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -852,7 +978,7 @@ func (s *ParallelsService) CreateVm(ctx basecontext.ApiContext, template data_mo
 
 func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, template data_models.PackerTemplate, desiredState string) (*models.ParallelsVM, error) {
 	ctx.LogInfof("Creating Packer Virtual Machine %s", template.Name)
-	existVm, err := s.findVm(ctx, template.Name)
+	existVm, err := s.findVmSync(ctx, template.Name)
 	if existVm != nil || err != nil {
 		if errors.GetSystemErrorCode(err) != 404 {
 			return nil, errors.Newf("Machine %v with ID %v already exists and is %s", template.Name, existVm.ID, existVm.State)
@@ -1008,7 +1134,13 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 	}
 
 	if template.Owner != "root" {
-		_, err = commands.ExecuteWithNoOutput("sudo", "chown", "-R", template.Owner, destinationFolder)
+		cmd := helpers.Command{
+			Command: "sudo",
+			Args:    make([]string, 0),
+		}
+		cmd.Args = append(cmd.Args, "chown", "-R", template.Owner, destinationFolder)
+
+		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 		if err != nil {
 			ctx.LogErrorf("Error changing owner of folder %s to %s: %s", destinationFolder, template.Owner, err.Error())
 			if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
@@ -1020,7 +1152,13 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 	}
 
 	ctx.LogInfof("Moved folder %s to %s", sourceFolder, destinationFolder)
-	_, err = commands.ExecuteWithNoOutput("sudo", "-u", template.Owner, s.executable, "register", destinationFolder)
+	cmd := helpers.Command{
+		Command: "sudo",
+		Args:    make([]string, 0),
+	}
+	cmd.Args = append(cmd.Args, "-u", template.Owner, s.executable, "register", destinationFolder)
+
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		ctx.LogErrorf("Error registering VM %s: %s", destinationFolder, err.Error())
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
@@ -1032,7 +1170,7 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 
 	ctx.LogInfof("Registered VM %s", destinationFolder)
 
-	existVm, err = s.findVm(ctx, template.Name)
+	existVm, err = s.findVmSync(ctx, template.Name)
 	if existVm == nil || err != nil {
 		ctx.LogErrorf("Error finding VM %s: %s", template.Name, err.Error())
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
@@ -1101,7 +1239,7 @@ func (s *ParallelsService) SetVmMachineOperation(ctx basecontext.ApiContext, vm 
 	}
 
 	ctx.LogDebugf(cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -1143,7 +1281,7 @@ func (s *ParallelsService) SetVmBootOperation(ctx basecontext.ApiContext, vm *mo
 	}
 
 	ctx.LogInfof(cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -1175,7 +1313,7 @@ func (s *ParallelsService) SetVmSharedFolderOperation(ctx basecontext.ApiContext
 	}
 
 	ctx.LogInfof(cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -1232,7 +1370,7 @@ func (s *ParallelsService) SetVmDeviceOperation(ctx basecontext.ApiContext, vm *
 	}
 
 	ctx.LogInfof(cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -1244,11 +1382,14 @@ func (s *ParallelsService) SetVmCpu(ctx basecontext.ApiContext, vm *models.Paral
 	if vm.State != "stopped" {
 		return errors.New("VM is not stopped")
 	}
-	cmd := "sudo"
-	args := make([]string, 0)
+	cmd := helpers.Command{
+		Command: "sudo",
+		Args:    make([]string, 0),
+	}
+
 	// Setting the owner in the command
 	if op.Owner != "root" {
-		args = append(args, "-u", op.Owner)
+		cmd.Args = append(cmd.Args, "-u", op.Owner)
 	}
 	switch op.Operation {
 	case "set":
@@ -1258,17 +1399,17 @@ func (s *ParallelsService) SetVmCpu(ctx basecontext.ApiContext, vm *models.Paral
 				return err
 			}
 		}
-		args = append(args, s.executable, "set", vm.ID, "--cpus", op.Value)
+		cmd.Args = append(cmd.Args, s.executable, "set", vm.ID, "--cpus", op.Value)
 	case "set_type":
 		if op.Value != "x86" && op.Value != "arm" {
 			return errors.Newf("Invalid CPU type %s", op.Value)
 		}
-		args = append(args, s.executable, "set", vm.ID, "--cpu-type", op.Value)
+		cmd.Args = append(cmd.Args, s.executable, "set", vm.ID, "--cpu-type", op.Value)
 	default:
 		return errors.Newf("Invalid operation %s", op.Operation)
 	}
 
-	_, err := commands.ExecuteWithNoOutput(cmd, args...)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -1280,11 +1421,14 @@ func (s *ParallelsService) SetVmMemory(ctx basecontext.ApiContext, vm *models.Pa
 	if vm.State != "stopped" {
 		return errors.New("VM is not stopped")
 	}
-	cmd := "sudo"
-	args := make([]string, 0)
+	cmd := helpers.Command{
+		Command: "sudo",
+		Args:    make([]string, 0),
+	}
+
 	// Setting the owner in the command
 	if op.Owner != "root" {
-		args = append(args, "-u", op.Owner)
+		cmd.Args = append(cmd.Args, "-u", op.Owner)
 	}
 
 	switch op.Operation {
@@ -1295,12 +1439,12 @@ func (s *ParallelsService) SetVmMemory(ctx basecontext.ApiContext, vm *models.Pa
 				return err
 			}
 		}
-		args = append(args, s.executable, "set", vm.ID, "--memsize", op.Value)
+		cmd.Args = append(cmd.Args, s.executable, "set", vm.ID, "--memsize", op.Value)
 	default:
 		return errors.Newf("Invalid operation %s", op.Operation)
 	}
 
-	_, err := commands.ExecuteWithNoOutput(cmd, args...)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -1312,11 +1456,14 @@ func (s *ParallelsService) SetVmRosettaEmulation(ctx basecontext.ApiContext, vm 
 	if vm.State != "stopped" {
 		return errors.New("VM is not stopped")
 	}
-	cmd := "sudo"
-	args := make([]string, 0)
+	cmd := helpers.Command{
+		Command: "sudo",
+		Args:    make([]string, 0),
+	}
+
 	// Setting the owner in the command
 	if op.Owner != "root" {
-		args = append(args, "-u", op.Owner)
+		cmd.Args = append(cmd.Args, "-u", op.Owner)
 	}
 
 	switch op.Operation {
@@ -1326,16 +1473,16 @@ func (s *ParallelsService) SetVmRosettaEmulation(ctx basecontext.ApiContext, vm 
 		}
 
 		if op.Value == "on" || op.Value == "true" {
-			args = append(args, s.executable, "set", vm.ID, "--rosetta-linux", "on")
+			cmd.Args = append(cmd.Args, s.executable, "set", vm.ID, "--rosetta-linux", "on")
 		}
 		if op.Value == "off" || op.Value == "false" {
-			args = append(args, s.executable, "set", vm.ID, "--rosetta-linux", "off")
+			cmd.Args = append(cmd.Args, s.executable, "set", vm.ID, "--rosetta-linux", "off")
 		}
 	default:
 		return errors.Newf("Invalid operation %s", op.Operation)
 	}
 
-	_, err := commands.ExecuteWithNoOutput(cmd, args...)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -1376,7 +1523,7 @@ func (s *ParallelsService) SetTimeSyncOperation(ctx basecontext.ApiContext, vm *
 	}
 
 	ctx.LogInfof(cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -1386,7 +1533,7 @@ func (s *ParallelsService) SetTimeSyncOperation(ctx basecontext.ApiContext, vm *
 
 func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id string, r *models.VirtualMachineExecuteCommandRequest) (*models.VirtualMachineExecuteCommandResponse, error) {
 	response := &models.VirtualMachineExecuteCommandResponse{}
-	vm, err := s.findVm(ctx, id)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -1413,7 +1560,7 @@ func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id str
 	cmd.Args = args
 
 	ctx.LogInfof("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
-	stdout, stderr, exitCode, cmdError := helpers.ExecuteWithOutput(cmd)
+	stdout, stderr, exitCode, cmdError := helpers.ExecuteWithOutput(s.ctx.Context(), cmd)
 	response.Stdout = stdout
 	response.Stderr = stderr
 	response.ExitCode = exitCode
@@ -1478,17 +1625,20 @@ func (s *ParallelsService) RunCustomCommand(ctx basecontext.ApiContext, vm *mode
 	if vm.State != "stopped" {
 		return errors.New("VM is not stopped")
 	}
-	cmd := "sudo"
-	args := make([]string, 0)
-	// Setting the owner in the command
-	if op.Owner != "root" {
-		args = append(args, "-u", op.Owner)
+	cmd := helpers.Command{
+		Command: "sudo",
+		Args:    make([]string, 0),
 	}
 
-	args = append(args, s.executable, op.Operation, vm.ID)
-	args = append(args, op.GetCmdArgs()...)
+	// Setting the owner in the command
+	if op.Owner != "root" {
+		cmd.Args = append(cmd.Args, "-u", op.Owner)
+	}
 
-	_, err := commands.ExecuteWithNoOutput(cmd, args...)
+	cmd.Args = append(cmd.Args, s.executable, op.Operation, vm.ID)
+	cmd.Args = append(cmd.Args, op.GetCmdArgs()...)
+
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -1499,7 +1649,7 @@ func (s *ParallelsService) RunCustomCommand(ctx basecontext.ApiContext, vm *mode
 func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models.SystemUsageResponse, error) {
 	result := &models.SystemUsageResponse{}
 
-	vms, err := s.GetVms(ctx, "")
+	vms, err := s.GetCachedVms(ctx, "")
 	if err != nil {
 		return nil, err
 	}

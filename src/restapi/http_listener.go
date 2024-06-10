@@ -12,11 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/serviceprovider"
 
 	_ "github.com/Parallels/prl-devops-service/docs"
 	log "github.com/cjlapao/common-go-logger"
@@ -229,10 +227,11 @@ func (l *HttpListener) AddAuthorizedHandlerWithRolesAndClaims(c ControllerHandle
 	}
 	adapters := make([]Adapter, 0)
 	adapters = append(adapters, l.DefaultAdapters...)
-	adapters = append(adapters, AddAuthorizationContextMiddlewareAdapter())
-	adapters = append(adapters, TokenAuthorizationMiddlewareAdapter(roles, claims))
-	adapters = append(adapters, ApiKeyAuthorizationMiddlewareAdapter(roles, claims))
-	adapters = append(adapters, EndAuthorizationMiddlewareAdapter())
+	adapters = append(adapters,
+		AddAuthorizationContextMiddlewareAdapter(),
+		TokenAuthorizationMiddlewareAdapter(roles, claims),
+		ApiKeyAuthorizationMiddlewareAdapter(roles, claims),
+		EndAuthorizationMiddlewareAdapter())
 
 	if l.GetApiPrefix() != "" && !strings.HasPrefix(path, l.Options.ApiPrefix) {
 		path = http_helper.JoinUrl(l.Options.ApiPrefix, path)
@@ -371,9 +370,6 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 	l.WaitAndShutdown()
 	<-done
 
-	rootContext := basecontext.NewRootBaseContext()
-	provider := serviceprovider.Get()
-	_ = provider.JsonDatabase.Disconnect(rootContext)
 	l.Logger.Info("Server shut down successfully...")
 	shutdown <- true
 	if !l.needsRestart {

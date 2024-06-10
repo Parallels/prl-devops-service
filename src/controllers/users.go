@@ -119,6 +119,7 @@ func registerUsersHandlers(ctx basecontext.ApiContext, version string) {
 // @Router			/v1/auth/users  [get]
 func GetUsersHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -136,6 +137,7 @@ func GetUsersHandler() restapi.ControllerHandler {
 		if len(users) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.ApiUser, 0)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Users returned: %v", len(response))
 			return
@@ -162,6 +164,7 @@ func GetUsersHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}  [get]
 func GetUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -200,6 +203,7 @@ func GetUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users  [post]
 func CreateUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.UserCreateRequest
@@ -320,6 +324,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}  [delete]
 func DeleteUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -355,6 +360,7 @@ func DeleteUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}  [put]
 func UpdateUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.UserUpdateRequest
@@ -407,6 +413,7 @@ func UpdateUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}/roles  [get]
 func GetUserRolesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -447,6 +454,7 @@ func GetUserRolesHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}/roles  [post]
 func AddRoleToUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RoleRequest
@@ -498,6 +506,7 @@ func AddRoleToUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}/roles/{role_id}  [delete]
 func RemoveRoleFromUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -533,6 +542,7 @@ func RemoveRoleFromUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}/claims  [get]
 func GetUserClaimsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -573,6 +583,7 @@ func GetUserClaimsHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}/claims  [post]
 func AddClaimToUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.ClaimRequest
@@ -624,6 +635,7 @@ func AddClaimToUserHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/users/{id}/claims/{claim_id}  [delete]
 func RemoveClaimFromUserHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)

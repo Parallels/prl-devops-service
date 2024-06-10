@@ -14,7 +14,6 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 
-	"github.com/cjlapao/common-go/commands"
 	"github.com/cjlapao/common-go/helper"
 )
 
@@ -54,7 +53,12 @@ func (s *VagrantService) Name() string {
 
 func (s *VagrantService) FindPath() string {
 	s.ctx.LogInfof("Getting vagrant executable")
-	out, err := commands.ExecuteWithNoOutput("which", "vagrant")
+	cmd := helpers.Command{
+		Command: "which",
+		Args:    []string{"vagrant"},
+	}
+
+	out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
 		s.ctx.LogWarnf("Vagrant executable not found, trying to find it in the default locations")
@@ -85,7 +89,7 @@ func (s *VagrantService) Version() string {
 		Args:    []string{"version"},
 	}
 
-	stdout, _, _, err := helpers.ExecuteWithOutput(cmd)
+	stdout, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return "unknown"
 	}
@@ -133,7 +137,7 @@ func (s *VagrantService) Install(asUser, version string, flags map[string]string
 	}
 
 	s.ctx.LogInfof("Installing %s with command: %v", s.Name(), cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -162,7 +166,7 @@ func (s *VagrantService) Uninstall(asUser string, uninstallDependencies bool) er
 			}
 		}
 
-		_, err := helpers.ExecuteWithNoOutput(cmd)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 		if err != nil {
 			return err
 		}
@@ -218,7 +222,7 @@ func (s *VagrantService) InstallParallelsDesktopPlugin(asUser string) error {
 			}
 		}
 
-		_, err := helpers.ExecuteWithNoOutput(cmd)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 		if err != nil {
 			return err
 		}
@@ -242,7 +246,7 @@ func (s *VagrantService) UpdatePlugins(asUser string) error {
 			}
 		}
 
-		_, err := helpers.ExecuteWithNoOutput(cmd)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 		if err != nil {
 			return err
 		}

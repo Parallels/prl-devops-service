@@ -37,10 +37,17 @@ function install() {
     VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases/latest | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"')
   fi
 
-  if [[ ! $VERSION == release-v* ]]; then
-    VERSION="release-v$VERSION"
+  if [[ ! $VERSION == *-beta ]]; then
+    if [[ ! $VERSION == release-v* ]]; then
+      VERSION="release-v$VERSION"
+    fi
+    SHORT_VERSION="$(echo $VERSION | cut -d '-' -f 2)"
+  else
+      if [[ ! $VERSION == v* ]]; then
+      VERSION="v$VERSION"
+    fi
+    SHORT_VERSION=$VERSION
   fi
-  SHORT_VERSION="$(echo $VERSION | cut -d '-' -f 2)"
 
   ARCHITECTURE=$(uname -m)
   if [ "$ARCHITECTURE" = "aarch64" ]; then

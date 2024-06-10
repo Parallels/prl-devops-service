@@ -71,9 +71,7 @@ func (j *JsonDatabase) CreateRole(ctx basecontext.ApiContext, role models.Role) 
 	}
 
 	j.data.Roles = append(j.data.Roles, role)
-	if err := j.Save(ctx); err != nil {
-		return nil, err
-	}
+
 	return &role, nil
 }
 
@@ -92,9 +90,6 @@ func (j *JsonDatabase) DeleteRole(ctx basecontext.ApiContext, idOrName string) e
 				return ErrRemoveInternalRole
 			}
 			j.data.Roles = append(j.data.Roles[:i], j.data.Roles[i+1:]...)
-			if err := j.Save(ctx); err != nil {
-				return err
-			}
 			return nil
 		}
 	}
@@ -118,9 +113,6 @@ func (j *JsonDatabase) UpdateRole(ctx basecontext.ApiContext, role *models.Role)
 			}
 
 			j.data.Roles[i] = *role
-			if err := j.Save(ctx); err != nil {
-				return nil, err
-			}
 
 			return role, nil
 		}

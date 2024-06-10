@@ -12,8 +12,6 @@ func (s *OrchestratorService) GetResources(ctx basecontext.ApiContext) ([]models
 		return nil, err
 	}
 
-	s.Refresh()
-
 	totalResources := dbService.GetOrchestratorTotalResources(ctx)
 	inUseResources := dbService.GetOrchestratorInUseResources(ctx)
 	availableResources := dbService.GetOrchestratorAvailableResources(ctx)

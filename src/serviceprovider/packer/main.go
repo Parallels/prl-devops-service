@@ -8,8 +8,6 @@ import (
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
-
-	"github.com/cjlapao/common-go/commands"
 )
 
 var globalPackerService *PackerService
@@ -48,7 +46,11 @@ func (s *PackerService) Name() string {
 
 func (s *PackerService) FindPath() string {
 	s.ctx.LogInfof("Getting packer executable")
-	out, err := commands.ExecuteWithNoOutput("which", "packer")
+	cmd := helpers.Command{
+		Command: "which",
+		Args:    []string{"packer"},
+	}
+	out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
 		s.ctx.LogWarnf("Packer executable not found, trying to find it in the default locations")
@@ -77,7 +79,7 @@ func (s *PackerService) Version() string {
 		Args:    []string{"--version"},
 	}
 
-	stdout, _, _, err := helpers.ExecuteWithOutput(cmd)
+	stdout, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return "unknown"
 	}
@@ -123,7 +125,7 @@ func (s *PackerService) Install(asUser, version string, flags map[string]string)
 	}
 
 	s.ctx.LogInfof("Installing %s with command: %v", s.Name(), cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 	if err != nil {
 		return err
 	}
@@ -148,7 +150,7 @@ func (s *PackerService) Uninstall(asUser string, uninstallDependencies bool) err
 			}
 		}
 
-		_, err := helpers.ExecuteWithNoOutput(cmd)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
 		if err != nil {
 			return err
 		}

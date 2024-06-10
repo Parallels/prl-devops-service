@@ -25,7 +25,7 @@ func TestNewTelemetryService(t *testing.T) {
 	mockAmplitudeClient := telemetry_test.NewMockAmplitudeClient()
 
 	t.Run("Enable telemetry with environment key", func(t *testing.T) {
-		os.Setenv(constants.AmplitudeApiKeyEnvVar, "123")
+		_ = os.Setenv(constants.AmplitudeApiKeyEnvVar, "123")
 		svc := New(mockContext)
 		svc.client = mockAmplitudeClient
 		svc.Flush()

@@ -79,6 +79,7 @@ func registerPackerTemplatesHandlers(ctx basecontext.ApiContext, version string)
 // @Router			/v1/templates/packer [get]
 func GetPackerTemplatesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -96,6 +97,7 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 		if len(result) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.PackerTemplateResponse, 0)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			return
 		}
@@ -120,6 +122,7 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 // @Router			/v1/templates/packer/{id} [get]
 func GetPackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -165,6 +168,7 @@ func GetPackerTemplateHandler() restapi.ControllerHandler {
 // @Router			/v1/templates/packer  [post]
 func CreatePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.CreatePackerTemplateRequest
@@ -195,6 +199,7 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 		} else {
 			response := mappers.DtoPackerTemplateToApResponse(*result)
 			w.WriteHeader(http.StatusOK)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Packer template created: %v", response.ID)
 		}
@@ -215,6 +220,7 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 // @Router			/v1/templates/packer/{id}  [PUT]
 func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.CreatePackerTemplateRequest
@@ -249,6 +255,7 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 		} else {
 			response := mappers.DtoPackerTemplateToApResponse(*result)
 			w.WriteHeader(http.StatusOK)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Packer template updated: %v", response.ID)
 		}
@@ -268,6 +275,7 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 // @Router			/v1/templates/packer/{id}  [DELETE]
 func DeletePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)

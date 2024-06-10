@@ -3,24 +3,28 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/cmd"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/telemetry"
 
 	"github.com/cjlapao/common-go/version"
 )
 
 var (
-	ver        = "0.7.0"
+	ver        = "0.7.3"
 	versionSvc = version.Get()
 )
 
 //	@title			Parallels Desktop DevOps Service
-//	@version		0.7.0
+//	@version		0.7.1
 //	@description	Parallels Desktop DevOps Service
 //	@termsOfService	http://swagger.io/terms/
 
@@ -36,20 +40,23 @@ var (
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	// catching all of the exceptions
 	defer func() {
+		// Saving the database before exiting
+
 		if err := recover(); err != nil {
 			sp := serviceprovider.Get()
 			if sp != nil {
 				db := sp.JsonDatabase
 				if db != nil {
 					ctx := basecontext.NewRootBaseContext()
-					db.SaveAs(ctx, fmt.Sprintf("data.panic.%s.json", strings.ReplaceAll(time.Now().Format("2006-01-02-15-04-05"), "-", "_")))
+					_ = db.SaveNow(ctx)
+					_ = db.SaveAs(ctx, fmt.Sprintf("data.panic.%s.json", strings.ReplaceAll(time.Now().Format("2006-01-02-15-04-05"), "-", "_")))
 				}
 			}
 			fmt.Fprintf(os.Stderr, "Exception: %v\n", err)
@@ -69,5 +76,56 @@ func main() {
 		versionSvc.Rev = strVer.Rev
 	}
 
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		ctx := basecontext.NewRootBaseContext()
+		sp := serviceprovider.Get()
+		if sp != nil {
+			db := sp.JsonDatabase
+			if db != nil {
+				cleanup(ctx, db)
+				retries := 0
+				maxRetries := 10
+				for {
+					retries++
+					if !db.IsConnected() || retries > maxRetries {
+						break
+					}
+					ctx.LogInfof("[Core] Waiting for database to disconnect")
+					time.Sleep(5 * time.Second)
+				}
+			}
+		}
+		os.Exit(0)
+	}()
+
+	go func() {
+		// Call home every 24 hours
+		callHome()
+		time.Sleep(24 * time.Hour)
+	}()
+
 	cmd.Process()
+}
+
+func cleanup(ctx basecontext.ApiContext, db *data.JsonDatabase) {
+	if db != nil {
+		ctx.LogInfof("[Core] Saving database")
+		if err := db.SaveNow(ctx); err != nil {
+			ctx.LogErrorf("[Core] Error saving database: %v", err)
+		} else {
+			ctx.LogInfof("[Core] Database saved")
+		}
+		_ = db.Disconnect(ctx)
+	}
+}
+
+func callHome() {
+	if telemetry.Get() == nil {
+		return
+	}
+	ctx := basecontext.NewRootBaseContext()
+	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.CallHomeEvent, nil, nil))
 }

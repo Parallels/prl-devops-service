@@ -63,6 +63,7 @@ func registerClaimsHandlers(ctx basecontext.ApiContext, version string) {
 // @Router			/v1/auth/claims [get]
 func GetClaimsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -80,6 +81,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 		if len(dtoClaims) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.ClaimResponse, 0)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Claims returned: %v", len(response))
 			return
@@ -106,6 +108,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/claims/{id} [get]
 func GetClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
@@ -144,6 +147,7 @@ func GetClaimHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/claims [post]
 func CreateClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.ClaimRequest
@@ -196,6 +200,7 @@ func CreateClaimHandler() restapi.ControllerHandler {
 // @Router			/v1/auth/claims/{id} [delete]
 func DeleteClaimHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)

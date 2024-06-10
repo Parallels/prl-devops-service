@@ -16,7 +16,7 @@ func (s *ParallelsService) GetLicense() (*models.ParallelsDesktopLicense, error)
 		Args:    []string{"info", "--license", "--json"},
 	}
 
-	output, _, _, err := helpers.ExecuteWithOutput(getLicenseCmd)
+	output, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), getLicenseCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -51,15 +51,15 @@ func (s *ParallelsService) InstallLicense(licenseKey, username, password string)
 			Command: s.serverExecutable,
 			Args:    []string{"web-portal", "signin", username, "--read-passwd", "~/parallels_password.txt"},
 		}
-		_, err := helpers.ExecuteWithNoOutput(passwordCmd)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), passwordCmd)
 		if err != nil {
 			return err
 		}
-		_, err = helpers.ExecuteWithNoOutput(signInCmd)
+		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), signInCmd)
 		if err != nil {
 			return err
 		}
-		_, err = helpers.ExecuteWithNoOutput(installLicenseCmd)
+		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), installLicenseCmd)
 		if err != nil {
 			return err
 		}
@@ -73,7 +73,7 @@ func (s *ParallelsService) InstallLicense(licenseKey, username, password string)
 
 		return nil
 	} else {
-		_, err := helpers.ExecuteWithNoOutput(installLicenseCmd)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), installLicenseCmd)
 		if err != nil {
 			return err
 		}
@@ -96,7 +96,7 @@ func (s *ParallelsService) DeactivateLicense() error {
 		Args:    []string{"deactivate-license", "--skip-network-errors"},
 	}
 
-	_, err := helpers.ExecuteWithNoOutput(deactivateLicenseCmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), deactivateLicenseCmd)
 	if err != nil {
 		return err
 	}

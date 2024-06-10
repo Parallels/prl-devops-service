@@ -51,6 +51,14 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 	restapi.NewController().
 		WithMethod(restapi.PUT).
 		WithVersion(version).
+		WithPath("/orchestrator/hosts/{id}").
+		WithRequiredClaim(constants.UPDATE_CLAIM).
+		WithHandler(UpdateOrchestratorHostHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
 		WithPath("/orchestrator/hosts/{id}/enable").
 		WithRequiredClaim(constants.UPDATE_CLAIM).
 		WithHandler(EnableOrchestratorHostsHandler()).
@@ -269,6 +277,7 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 // @Router			/v1/orchestrator/hosts [get]
 func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		defer Recover(ctx, r, w)
@@ -283,6 +292,7 @@ func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 		if len(dtoOrchestratorHosts) == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.OrchestratorHostResponse, 0)
+			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Hosts returned: %v", len(response))
 			return
@@ -314,6 +324,7 @@ func GetOrchestratorHostsHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id} [get]
 func GetOrchestratorHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -348,6 +359,7 @@ func GetOrchestratorHostHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts [post]
 func RegisterOrchestratorHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.OrchestratorHostRequest
@@ -395,6 +407,7 @@ func RegisterOrchestratorHostHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id} [delete]
 func UnregisterOrchestratorHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -421,6 +434,7 @@ func UnregisterOrchestratorHostHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id}/enable [put]
 func EnableOrchestratorHostsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -454,6 +468,7 @@ func EnableOrchestratorHostsHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id}/disable [put]
 func DisableOrchestratorHostsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -475,6 +490,76 @@ func DisableOrchestratorHostsHandler() restapi.ControllerHandler {
 	}
 }
 
+// @Summary		Update a Host in the orchestrator
+// @Description	This endpoint updates a host in the orchestrator
+// @Tags			Orchestrator
+// @Produce		json
+// @Param			hostRequest	body		models.OrchestratorHostUpdateRequest	true	"Host Update Request"
+// @Success		200			{object}	models.OrchestratorHostResponse
+// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		401			{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/hosts [put]
+func UpdateOrchestratorHostHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.OrchestratorHostUpdateRequest
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+		svc := orchestrator.NewOrchestratorService(ctx)
+		host, err := svc.GetDatabaseHost(ctx, id)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		if request.Authentication != nil && request.Authentication.Username != "" {
+			dtoRecord := mappers.ApiOrchestratorAuthenticationToDto(*request.Authentication)
+			host.Authentication = &dtoRecord
+		}
+
+		if request.Description != "" {
+			host.Description = request.Description
+		}
+
+		if request.Host != "" {
+			host.Host = request.Host
+			host.Schema = request.Schema
+			host.Port = request.Port
+			host.PathPrefix = request.Prefix
+		}
+
+		record, err := svc.UpdateHost(ctx, host)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		response := mappers.DtoOrchestratorHostToApiResponse(*record)
+
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Orchestrator Host created successfully")
+	}
+}
+
 // @Summary		Get orchestrator resource overview
 // @Description	This endpoint returns orchestrator resource overview
 // @Tags			Orchestrator
@@ -487,6 +572,7 @@ func DisableOrchestratorHostsHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/overview/resources [get]
 func GetOrchestratorOverviewHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -527,6 +613,7 @@ func GetOrchestratorOverviewHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/overview/{id}/resources [get]
 func GetOrchestratorHostResourcesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -560,6 +647,7 @@ func GetOrchestratorHostResourcesHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/machines [get]
 func GetOrchestratorVirtualMachinesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		filter := GetFilterHeader(r)
 		defer Recover(ctx, r, w)
@@ -594,6 +682,7 @@ func GetOrchestratorVirtualMachinesHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/machines/{id} [get]
 func GetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -628,6 +717,7 @@ func GetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/machines/{id} [delete]
 func DeleteOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -659,6 +749,7 @@ func DeleteOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/machines/{vmId}/status [get]
 func GetOrchestratorVirtualMachineStatusHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -691,6 +782,7 @@ func GetOrchestratorVirtualMachineStatusHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/machines/{id}/rename [put]
 func RenameOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RenameVirtualMachineRequest
@@ -739,6 +831,7 @@ func RenameOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/machines/{vmId}/set [put]
 func SetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.VirtualMachineConfigRequest
@@ -786,6 +879,7 @@ func SetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/machines/{vmId}/start [put]
 func StartOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -827,6 +921,7 @@ func StartOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/machines/{vmId}/stop [put]
 func StopOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -868,6 +963,7 @@ func StopOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/machines/{vmId}/execute [put]
 func ExecutesOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.VirtualMachineExecuteCommandRequest
@@ -915,6 +1011,7 @@ func ExecutesOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id}/machines [get]
 func GetOrchestratorHostVirtualMachinesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -953,6 +1050,7 @@ func GetOrchestratorHostVirtualMachinesHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id}/machines/{vmId} [get]
 func GetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -989,6 +1087,7 @@ func GetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id}/machines/{vmId} [delete]
 func DeleteOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -1022,6 +1121,7 @@ func DeleteOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/status [get]
 func GetOrchestratorHostVirtualMachineStatusHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -1056,6 +1156,7 @@ func GetOrchestratorHostVirtualMachineStatusHandler() restapi.ControllerHandler 
 // @Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/rename [put]
 func RenameOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RenameVirtualMachineRequest
@@ -1106,6 +1207,7 @@ func RenameOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/set [put]
 func SetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.VirtualMachineConfigRequest
@@ -1155,6 +1257,7 @@ func SetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/start [put]
 func StartOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -1198,6 +1301,7 @@ func StartOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/stop [put]
 func StopOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
@@ -1241,6 +1345,7 @@ func StopOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/execute [put]
 func ExecutesOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.VirtualMachineExecuteCommandRequest
@@ -1290,6 +1395,7 @@ func ExecutesOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id}/machines/register [post]
 func RegisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RegisterVirtualMachineRequest
@@ -1338,6 +1444,7 @@ func RegisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/hosts/{id}/machines/{vmId}/unregister [post]
 func UnregisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.UnregisterVirtualMachineRequest
@@ -1386,6 +1493,7 @@ func UnregisterOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler
 // @Router			/v1/orchestrator/hosts/{id}/machines [post]
 func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.CreateVirtualMachineRequest
@@ -1433,6 +1541,7 @@ func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 // @Router			/v1/orchestrator/machines [post]
 func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.CreateVirtualMachineRequest

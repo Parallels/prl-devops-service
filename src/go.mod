@@ -12,6 +12,7 @@ require (
 	github.com/cjlapao/common-go v0.0.39
 	github.com/cjlapao/common-go-cryptorand v0.0.6
 	github.com/cjlapao/common-go-logger v0.0.7
+	github.com/go-jose/go-jose/v4 v4.0.2
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.6.0
@@ -22,7 +23,6 @@ require (
 	github.com/swaggo/files/v2 v2.0.0
 	github.com/swaggo/swag v1.16.3
 	golang.org/x/crypto v0.21.0
-	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

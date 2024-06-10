@@ -1,5 +1,37 @@
 basePath: /api
 definitions:
+  github_com_Parallels_prl-devops-service_models.Advanced:
+    properties:
+      Public SSH keys synchronization:
+        type: string
+      Rosetta Linux:
+        type: string
+      Share host location:
+        type: string
+      Show developer tools:
+        type: string
+      Swipe from edges:
+        type: string
+      VM hostname synchronization:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.CPU:
+    properties:
+      VT-x:
+        type: boolean
+      accl:
+        type: string
+      auto:
+        type: string
+      cpus:
+        type: integer
+      hotplug:
+        type: boolean
+      mode:
+        type: string
+      type:
+        type: string
+    type: object
   github_com_Parallels_prl-devops-service_models.CatalogManifest:
     properties:
       architecture:
@@ -67,6 +99,96 @@ definitions:
       version:
         type: string
     type: object
+  github_com_Parallels_prl-devops-service_models.Cdrom0:
+    properties:
+      enabled:
+        type: boolean
+      image:
+        type: string
+      port:
+        type: string
+      state:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.Coherence:
+    properties:
+      Auto-switch to full screen:
+        type: string
+      Disable aero:
+        type: string
+      Hide minimized windows:
+        type: string
+      Show Windows systray in Mac menu:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.Expiration:
+    properties:
+      enabled:
+        type: boolean
+    type: object
+  github_com_Parallels_prl-devops-service_models.Fullscreen:
+    properties:
+      Activate spaces on click:
+        type: string
+      Gamma control:
+        type: string
+      Optimize for games:
+        type: string
+      Scale view mode:
+        type: string
+      Use all displays:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.GuestSharedFolders:
+    properties:
+      Automount:
+        type: string
+      enabled:
+        type: boolean
+    type: object
+  github_com_Parallels_prl-devops-service_models.GuestTools:
+    properties:
+      state:
+        type: string
+      version:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.Hardware:
+    properties:
+      cdrom0:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Cdrom0'
+      cpu:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CPU'
+      hdd0:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Hdd0'
+      memory:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Memory'
+      memory_quota:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.MemoryQuota'
+      net0:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Net0'
+      sound0:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Sound0'
+      usb:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Expiration'
+      video:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Video'
+    type: object
+  github_com_Parallels_prl-devops-service_models.Hdd0:
+    properties:
+      enabled:
+        type: boolean
+      image:
+        type: string
+      online-compact:
+        type: string
+      port:
+        type: string
+      size:
+        type: string
+      type:
+        type: string
+    type: object
   github_com_Parallels_prl-devops-service_models.HostResourceItem:
     properties:
       disk_size:
@@ -85,6 +207,184 @@ definitions:
       id:
         type: string
     type: object
+  github_com_Parallels_prl-devops-service_models.Memory:
+    properties:
+      auto:
+        type: string
+      hotplug:
+        type: boolean
+      size:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.MemoryQuota:
+    properties:
+      auto:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.MiscellaneousSharing:
+    properties:
+      Shared clipboard:
+        type: string
+      Shared cloud:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.Modality:
+    properties:
+      Capture mouse clicks:
+        type: string
+      Opacity (percentage):
+        type: integer
+      Show on all spaces:
+        type: string
+      Stay on top:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.MouseAndKeyboard:
+    properties:
+      Keyboard optimization mode:
+        type: string
+      Smart mouse optimized for games:
+        type: string
+      Smooth scrolling:
+        type: string
+      Sticky mouse:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.Net0:
+    properties:
+      card:
+        type: string
+      enabled:
+        type: boolean
+      mac:
+        type: string
+      type:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.Optimization:
+    properties:
+      Adaptive hypervisor:
+        type: string
+      Auto compress virtual disks:
+        type: string
+      Disabled Windows logo:
+        type: string
+      Faster virtual machine:
+        type: string
+      Hypervisor type:
+        type: string
+      Longer battery life:
+        type: string
+      Nested virtualization:
+        type: string
+      PMU virtualization:
+        type: string
+      Resource quota:
+        type: string
+      Show battery status:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.ParallelsVM:
+    properties:
+      Advanced:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Advanced'
+      Allow select boot device:
+        type: string
+      BIOS type:
+        type: string
+      Boot order:
+        type: string
+      Coherence:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Coherence'
+      Description:
+        type: string
+      EFI Secure boot:
+        type: string
+      Expiration:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Expiration'
+      External boot device:
+        type: string
+      Fullscreen:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Fullscreen'
+      Guest Shared Folders:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.GuestSharedFolders'
+      GuestTools:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.GuestTools'
+      Hardware:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Hardware'
+      Home:
+        type: string
+      Home path:
+        type: string
+      Host Shared Folders:
+        additionalProperties: true
+        type: object
+      Host defined sharing:
+        type: string
+      ID:
+        type: string
+      Miscellaneous Sharing:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.MiscellaneousSharing'
+      Modality:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Modality'
+      Mouse and Keyboard:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.MouseAndKeyboard'
+      Name:
+        type: string
+      OS:
+        type: string
+      Optimization:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Optimization'
+      Print Management:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.PrintManagement'
+      Restore Image:
+        type: string
+      SMBIOS settings:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.SMBIOSSettings'
+      Security:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Security'
+      Shared Applications:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.SharedApplications'
+      Shared Profile:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Expiration'
+      Smart Guard:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.Expiration'
+      SmartMount:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.SmartMount'
+      Startup and Shutdown:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.StartupAndShutdown'
+      State:
+        type: string
+      Template:
+        type: string
+      Time Synchronization:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.TimeSynchronization'
+      Travel mode:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.TravelMode'
+      Type:
+        type: string
+      USB and Bluetooth:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.USBAndBluetooth'
+      Uptime:
+        type: string
+      host:
+        type: string
+      host_id:
+        type: string
+      host_state:
+        type: string
+      user:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.PrintManagement:
+    properties:
+      Show host printer UI:
+        type: string
+      Synchronize default printer:
+        type: string
+      Synchronize with host printers:
+        type: string
+    type: object
   github_com_Parallels_prl-devops-service_models.PullCatalogManifestResponse:
     properties:
       id:
@@ -98,19 +398,138 @@ definitions:
       manifest:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
     type: object
-  models.Advanced:
+  github_com_Parallels_prl-devops-service_models.SMBIOSSettings:
     properties:
-      Public SSH keys synchronization:
+      BIOS Version:
         type: string
-      Rosetta Linux:
+      Board Manufacturer:
         type: string
-      Share host location:
+      System serial number:
         type: string
-      Show developer tools:
+    type: object
+  github_com_Parallels_prl-devops-service_models.Security:
+    properties:
+      Archived:
         type: string
-      Swipe from edges:
+      Configuration is locked:
         type: string
-      VM hostname synchronization:
+      Custom password protection:
+        type: string
+      Encrypted:
+        type: string
+      Packed:
+        type: string
+      Protected:
+        type: string
+      TPM enabled:
+        type: string
+      TPM type:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.SharedApplications:
+    properties:
+      Bounce dock icon when app flashes:
+        type: string
+      Guest-to-host apps sharing:
+        type: string
+      Host-to-guest apps sharing:
+        type: string
+      Show guest apps folder in Dock:
+        type: string
+      Show guest notifications:
+        type: string
+      enabled:
+        type: boolean
+    type: object
+  github_com_Parallels_prl-devops-service_models.SmartMount:
+    properties:
+      CD/DVD drives:
+        type: string
+      Network shares:
+        type: string
+      Removable drives:
+        type: string
+      enabled:
+        type: boolean
+    type: object
+  github_com_Parallels_prl-devops-service_models.Sound0:
+    properties:
+      enabled:
+        type: boolean
+      mixer:
+        type: string
+      output:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.StartupAndShutdown:
+    properties:
+      Autostart:
+        type: string
+      Autostart delay:
+        type: integer
+      Autostop:
+        type: string
+      On shutdown:
+        type: string
+      On window close:
+        type: string
+      Pause idle:
+        type: string
+      Startup view:
+        type: string
+      Undo disks:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.TimeSynchronization:
+    properties:
+      Interval (in seconds):
+        type: integer
+      Smart mode:
+        type: string
+      Timezone synchronization disabled:
+        type: string
+      enabled:
+        type: boolean
+    type: object
+  github_com_Parallels_prl-devops-service_models.TravelMode:
+    properties:
+      Enter condition:
+        type: string
+      Enter threshold:
+        type: integer
+      Quit condition:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.USBAndBluetooth:
+    properties:
+      Automatic sharing bluetooth:
+        type: string
+      Automatic sharing cameras:
+        type: string
+      Automatic sharing gamepads:
+        type: string
+      Automatic sharing smart cards:
+        type: string
+      Support USB 3.0:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.Video:
+    properties:
+      3d-acceleration:
+        type: string
+      adapter-type:
+        type: string
+      automatic-video-memory:
+        type: string
+      high-resolution:
+        type: string
+      high-resolution-in-guest:
+        type: string
+      native-scaling-in-guest:
+        type: string
+      size:
+        type: string
+      vertical-sync:
         type: string
     type: object
   models.ApiCommonResponse:
@@ -182,23 +601,6 @@ definitions:
       username:
         type: string
     type: object
-  models.CPU:
-    properties:
-      VT-x:
-        type: boolean
-      accl:
-        type: string
-      auto:
-        type: string
-      cpus:
-        type: integer
-      hotplug:
-        type: boolean
-      mode:
-        type: string
-      type:
-        type: string
-    type: object
   models.CatalogManifestPackItem:
     properties:
       is_dir:
@@ -206,17 +608,6 @@ definitions:
       name:
         type: string
       path:
-        type: string
-    type: object
-  models.Cdrom0:
-    properties:
-      enabled:
-        type: boolean
-      image:
-        type: string
-      port:
-        type: string
-      state:
         type: string
     type: object
   models.ClaimRequest:
@@ -229,17 +620,6 @@ definitions:
       id:
         type: string
       name:
-        type: string
-    type: object
-  models.Coherence:
-    properties:
-      Auto-switch to full screen:
-        type: string
-      Disable aero:
-        type: string
-      Hide minimized windows:
-        type: string
-      Show Windows systray in Mac menu:
         type: string
     type: object
   models.CreateCatalogVirtualMachineRequest:
@@ -383,74 +763,6 @@ definitions:
       memory:
         type: string
     type: object
-  models.Expiration:
-    properties:
-      enabled:
-        type: boolean
-    type: object
-  models.Fullscreen:
-    properties:
-      Activate spaces on click:
-        type: string
-      Gamma control:
-        type: string
-      Optimize for games:
-        type: string
-      Scale view mode:
-        type: string
-      Use all displays:
-        type: string
-    type: object
-  models.GuestSharedFolders:
-    properties:
-      Automount:
-        type: string
-      enabled:
-        type: boolean
-    type: object
-  models.GuestTools:
-    properties:
-      state:
-        type: string
-      version:
-        type: string
-    type: object
-  models.Hardware:
-    properties:
-      cdrom0:
-        $ref: '#/definitions/models.Cdrom0'
-      cpu:
-        $ref: '#/definitions/models.CPU'
-      hdd0:
-        $ref: '#/definitions/models.Hdd0'
-      memory:
-        $ref: '#/definitions/models.Memory'
-      memory_quota:
-        $ref: '#/definitions/models.MemoryQuota'
-      net0:
-        $ref: '#/definitions/models.Net0'
-      sound0:
-        $ref: '#/definitions/models.Sound0'
-      usb:
-        $ref: '#/definitions/models.Expiration'
-      video:
-        $ref: '#/definitions/models.Video'
-    type: object
-  models.Hdd0:
-    properties:
-      enabled:
-        type: boolean
-      image:
-        type: string
-      online-compact:
-        type: string
-      port:
-        type: string
-      size:
-        type: string
-      type:
-        type: string
-    type: object
   models.HostResourceOverviewResponse:
     properties:
       cpu_brand:
@@ -535,20 +847,6 @@ definitions:
       token:
         type: string
     type: object
-  models.Memory:
-    properties:
-      auto:
-        type: string
-      hotplug:
-        type: boolean
-      size:
-        type: string
-    type: object
-  models.MemoryQuota:
-    properties:
-      auto:
-        type: string
-    type: object
   models.MinimumSpecRequirement:
     properties:
       cpu:
@@ -557,46 +855,6 @@ definitions:
         type: integer
       memory:
         type: integer
-    type: object
-  models.MiscellaneousSharing:
-    properties:
-      Shared clipboard:
-        type: string
-      Shared cloud:
-        type: string
-    type: object
-  models.Modality:
-    properties:
-      Capture mouse clicks:
-        type: string
-      Opacity (percentage):
-        type: integer
-      Show on all spaces:
-        type: string
-      Stay on top:
-        type: string
-    type: object
-  models.MouseAndKeyboard:
-    properties:
-      Keyboard optimization mode:
-        type: string
-      Smart mouse optimized for games:
-        type: string
-      Smooth scrolling:
-        type: string
-      Sticky mouse:
-        type: string
-    type: object
-  models.Net0:
-    properties:
-      card:
-        type: string
-      enabled:
-        type: boolean
-      mac:
-        type: string
-      type:
-        type: string
     type: object
   models.OAuthErrorResponse:
     properties:
@@ -637,29 +895,6 @@ definitions:
     - OAuthEmailNotVerified
     - OAuthUserBlocked
     - UnknownError
-  models.Optimization:
-    properties:
-      Adaptive hypervisor:
-        type: string
-      Auto compress virtual disks:
-        type: string
-      Disabled Windows logo:
-        type: string
-      Faster virtual machine:
-        type: string
-      Hypervisor type:
-        type: string
-      Longer battery life:
-        type: string
-      Nested virtualization:
-        type: string
-      PMU virtualization:
-        type: string
-      Resource quota:
-        type: string
-      Show battery status:
-        type: string
-    type: object
   models.OrchestratorAuthentication:
     properties:
       api_key:
@@ -727,6 +962,13 @@ definitions:
           type: string
         type: array
     type: object
+  models.OrchestratorHostUpdateRequest:
+    properties:
+      authentication:
+        $ref: '#/definitions/models.OrchestratorAuthentication'
+      description:
+        type: string
+    type: object
   models.PackerTemplateResponse:
     properties:
       addons:
@@ -793,107 +1035,6 @@ definitions:
       status:
         type: string
       uuid:
-        type: string
-    type: object
-  models.ParallelsVM:
-    properties:
-      Advanced:
-        $ref: '#/definitions/models.Advanced'
-      Allow select boot device:
-        type: string
-      BIOS type:
-        type: string
-      Boot order:
-        type: string
-      Coherence:
-        $ref: '#/definitions/models.Coherence'
-      Description:
-        type: string
-      EFI Secure boot:
-        type: string
-      Expiration:
-        $ref: '#/definitions/models.Expiration'
-      External boot device:
-        type: string
-      Fullscreen:
-        $ref: '#/definitions/models.Fullscreen'
-      Guest Shared Folders:
-        $ref: '#/definitions/models.GuestSharedFolders'
-      GuestTools:
-        $ref: '#/definitions/models.GuestTools'
-      Hardware:
-        $ref: '#/definitions/models.Hardware'
-      Home:
-        type: string
-      Home path:
-        type: string
-      Host Shared Folders:
-        additionalProperties: true
-        type: object
-      Host defined sharing:
-        type: string
-      ID:
-        type: string
-      Miscellaneous Sharing:
-        $ref: '#/definitions/models.MiscellaneousSharing'
-      Modality:
-        $ref: '#/definitions/models.Modality'
-      Mouse and Keyboard:
-        $ref: '#/definitions/models.MouseAndKeyboard'
-      Name:
-        type: string
-      OS:
-        type: string
-      Optimization:
-        $ref: '#/definitions/models.Optimization'
-      Print Management:
-        $ref: '#/definitions/models.PrintManagement'
-      Restore Image:
-        type: string
-      SMBIOS settings:
-        $ref: '#/definitions/models.SMBIOSSettings'
-      Security:
-        $ref: '#/definitions/models.Security'
-      Shared Applications:
-        $ref: '#/definitions/models.SharedApplications'
-      Shared Profile:
-        $ref: '#/definitions/models.Expiration'
-      Smart Guard:
-        $ref: '#/definitions/models.Expiration'
-      SmartMount:
-        $ref: '#/definitions/models.SmartMount'
-      Startup and Shutdown:
-        $ref: '#/definitions/models.StartupAndShutdown'
-      State:
-        type: string
-      Template:
-        type: string
-      Time Synchronization:
-        $ref: '#/definitions/models.TimeSynchronization'
-      Travel mode:
-        $ref: '#/definitions/models.TravelMode'
-      Type:
-        type: string
-      USB and Bluetooth:
-        $ref: '#/definitions/models.USBAndBluetooth'
-      Uptime:
-        type: string
-      host:
-        type: string
-      host_id:
-        type: string
-      host_state:
-        type: string
-      user:
-        type: string
-    type: object
-  models.PrintManagement:
-    properties:
-      Show host printer UI:
-        type: string
-      Synchronize default printer:
-        type: string
-      Synchronize with host printers:
         type: string
     type: object
   models.PullCatalogManifestRequest:
@@ -1009,34 +1150,6 @@ definitions:
       name:
         type: string
     type: object
-  models.SMBIOSSettings:
-    properties:
-      BIOS Version:
-        type: string
-      Board Manufacturer:
-        type: string
-      System serial number:
-        type: string
-    type: object
-  models.Security:
-    properties:
-      Archived:
-        type: string
-      Configuration is locked:
-        type: string
-      Custom password protection:
-        type: string
-      Encrypted:
-        type: string
-      Packed:
-        type: string
-      Protected:
-        type: string
-      TPM enabled:
-        type: string
-      TPM type:
-        type: string
-    type: object
   models.ServiceHealthCheck:
     properties:
       error_message:
@@ -1046,60 +1159,6 @@ definitions:
       message:
         type: string
       name:
-        type: string
-    type: object
-  models.SharedApplications:
-    properties:
-      Bounce dock icon when app flashes:
-        type: string
-      Guest-to-host apps sharing:
-        type: string
-      Host-to-guest apps sharing:
-        type: string
-      Show guest apps folder in Dock:
-        type: string
-      Show guest notifications:
-        type: string
-      enabled:
-        type: boolean
-    type: object
-  models.SmartMount:
-    properties:
-      CD/DVD drives:
-        type: string
-      Network shares:
-        type: string
-      Removable drives:
-        type: string
-      enabled:
-        type: boolean
-    type: object
-  models.Sound0:
-    properties:
-      enabled:
-        type: boolean
-      mixer:
-        type: string
-      output:
-        type: string
-    type: object
-  models.StartupAndShutdown:
-    properties:
-      Autostart:
-        type: string
-      Autostart delay:
-        type: integer
-      Autostop:
-        type: string
-      On shutdown:
-        type: string
-      On window close:
-        type: string
-      Pause idle:
-        type: string
-      Startup view:
-        type: string
-      Undo disks:
         type: string
     type: object
   models.SystemUsageItem:
@@ -1127,39 +1186,6 @@ definitions:
         $ref: '#/definitions/models.SystemUsageItem'
       total_reserved:
         $ref: '#/definitions/models.SystemUsageItem'
-    type: object
-  models.TimeSynchronization:
-    properties:
-      Interval (in seconds):
-        type: integer
-      Smart mode:
-        type: string
-      Timezone synchronization disabled:
-        type: string
-      enabled:
-        type: boolean
-    type: object
-  models.TravelMode:
-    properties:
-      Enter condition:
-        type: string
-      Enter threshold:
-        type: integer
-      Quit condition:
-        type: string
-    type: object
-  models.USBAndBluetooth:
-    properties:
-      Automatic sharing bluetooth:
-        type: string
-      Automatic sharing cameras:
-        type: string
-      Automatic sharing gamepads:
-        type: string
-      Automatic sharing smart cards:
-        type: string
-      Support USB 3.0:
-        type: string
     type: object
   models.UninstallToolsRequest:
     properties:
@@ -1222,25 +1248,6 @@ definitions:
     properties:
       valid:
         type: boolean
-    type: object
-  models.Video:
-    properties:
-      3d-acceleration:
-        type: string
-      adapter-type:
-        type: string
-      automatic-video-memory:
-        type: string
-      high-resolution:
-        type: string
-      high-resolution-in-guest:
-        type: string
-      native-scaling-in-guest:
-        type: string
-      size:
-        type: string
-      vertical-sync:
-        type: string
     type: object
   models.VirtualMachineCatalogManifestPatch:
     properties:
@@ -1370,7 +1377,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.7.0
+  version: 0.7.1
 paths:
   /health/probe:
     get:
@@ -3061,7 +3068,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.ParallelsVM'
+              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
             type: array
         "400":
           description: Bad Request
@@ -3149,7 +3156,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ParallelsVM'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -3287,7 +3294,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ParallelsVM'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -3605,7 +3612,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ParallelsVM'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -3674,6 +3681,36 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Register a Host in the orchestrator
+      tags:
+      - Orchestrator
+    put:
+      description: This endpoint updates a host in the orchestrator
+      parameters:
+      - description: Host Update Request
+        in: body
+        name: hostRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.OrchestratorHostUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.OrchestratorHostResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Update a Host in the orchestrator
       tags:
       - Orchestrator
   /v1/orchestrator/hosts/{id}:
@@ -3797,7 +3834,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.ParallelsVM'
+              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
             type: array
         "400":
           description: Bad Request
@@ -3900,7 +3937,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ParallelsVM'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -3971,7 +4008,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ParallelsVM'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -4076,7 +4113,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ParallelsVM'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -4152,7 +4189,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ParallelsVM'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -4188,7 +4225,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ParallelsVM'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -4213,7 +4250,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.ParallelsVM'
+              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
             type: array
         "400":
           description: Bad Request
@@ -4296,7 +4333,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ParallelsVM'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -4326,7 +4363,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ParallelsVM'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
@@ -4446,7 +4483,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ParallelsVM'
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM'
         "400":
           description: Bad Request
           schema:
