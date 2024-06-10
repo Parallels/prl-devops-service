@@ -277,11 +277,13 @@ func (s *ParallelsService) IsLicensed() bool {
 func (s *ParallelsService) refreshCacheVms(ctx basecontext.ApiContext) {
 	go func() {
 		for {
+			ctx.LogInfof("Waiting %s to refresh VM cache", config.Get().ParallelsRefreshInterval())
 			time.Sleep(config.Get().ParallelsRefreshInterval())
-			var err error
-			if cachedLocalVms, err = s.GetVms(ctx); err != nil {
+			vms, err := s.GetVms(ctx)
+			if err != nil {
 				ctx.LogErrorf("Error refreshing VM cache: %v", err)
 			}
+			cachedLocalVms = vms
 			ctx.LogInfof("VM cache refreshed")
 		}
 	}()
