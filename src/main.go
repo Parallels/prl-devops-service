@@ -78,9 +78,9 @@ func main() {
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	ctx := basecontext.NewRootBaseContext()
 	go func() {
 		<-c
-		ctx := basecontext.NewRootBaseContext()
 		sp := serviceprovider.Get()
 		if sp != nil {
 			db := sp.JsonDatabase
@@ -102,9 +102,18 @@ func main() {
 	}()
 
 	go func() {
-		// Call home every 24 hours
-		callHome()
-		time.Sleep(24 * time.Hour)
+		for {
+			select {
+			case <-c:
+				ctx.LogInfof("[Core] Exiting")
+				return
+			default:
+				// Call home every 24 hours
+				ctx.LogInfof("[Core] Calling home")
+				callHome()
+				time.Sleep(24 * time.Hour)
+			}
+		}
 	}()
 
 	cmd.Process()
