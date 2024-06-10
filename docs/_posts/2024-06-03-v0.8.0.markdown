@@ -1,0 +1,47 @@
+---
+layout: post
+title:  "Release 0.8.0"
+date:   2024-06-03 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+### Added
+
+- Added caching mechanism for  local vms, this allows a better management of the
+  local vms and reduces the amount of queries to the database, it does have the side
+  effect of not showing the vms in real time, but it will show them by default
+  every 30s you can change this by setting the environment variable `PARALLELS_DESKTOP_REFRESH_INTERVAL`
+- Added a new endpoint to update a host in a orchestrator `[PUT] /api/v1/orchestrator/hosts/{id}`
+- Added a backup system for the database, this will backup the database every 2h
+  and will keep the last 10 backups by default, this can be changed by setting the
+  environment variable `DATABASE_NUMBER_BACKUP_FILES` to the number of
+  backups you want to keep and `DATABASE_BACKUP_INTERVAL_MINUTES` to the interval
+  you want to backup the database
+- Moved the memory database to be saved to a file every 5 minutes, this will allow
+  for a better management of the memory database and will allow for a better
+  recovery in case of a crash, it will also save on exit or on crash, you can change
+  the interval by setting the environment variable `DATABASE_SAVE_INTERVAL_MINUTES`
+- Added K6 scripts to perform load tests on the API
+- Added a favicon to the documentation
+
+### Fixed
+
+- Fixed an issue where we were trying to get the virtual machines for other users
+  when not being a super admin
+- Fixed some memory leaks in the orchestrator
+- Fixed some other small issues
+- Fixed some issues that would report a missing vm immediately after
+  creating it
+
+### Changed
+
+- Moved database saving process to a 5 minutes setting to avoid overloading the
+  database with too many requests
+- Changed the way the orchestrator was checking for VMs status changes to avoid
+  overloading the database
+- Moved all the old commands to the new exec with context to enable timeouts
+- Added a 30 seconds timeout when checking the status of the local vms
+  
+
