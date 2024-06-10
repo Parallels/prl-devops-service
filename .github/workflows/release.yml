@@ -66,7 +66,9 @@ jobs:
 
           ./.github/workflow_scripts/generate-blog-records.sh
 
-          git add VERSION ./docs/_posts/* ./src/* ./helm/Chart.yaml ./badges/*
+          make build-helm-chart
+
+          git add VERSION ./docs/charts/* ./docs/_posts/* ./src/* ./helm/Chart.yaml ./badges/*
           git commit -m "Release extension version $NEW_VERSION"
 
           git push --set-upstream origin release/$NEW_VERSION

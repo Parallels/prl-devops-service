@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.8.1] - 2024-06-03
+
+### Fixed
+
+- Generation of the Helm Charts
+
 ## [0.8.0] - 2024-06-03
 
 ### Added
