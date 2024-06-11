@@ -11,6 +11,11 @@ This service is a wrapper for the Parallels Desktop DevOps Service. It allows yo
 to start, stop, pause, resume, and reset a virtual machine. It also allows you to
 get the status of a virtual machine.
 
+## Community
+
+Join our [Discord server](https://discord.gg/pEwZ254C3d) to ask questions, share
+your experience, and get help from the community.
+
 ## Licensing
 
 You can use the service for free with up to 10 users, without needing any
@@ -21,7 +26,7 @@ once you have purchased the Parallels Desktop Business license.
 
 ## Documentation
 
-The project documentation, including examples and quickstarts, can be found [here](https://parallels.github.io/prl-devops-service/).
+The project documentation, including examples and quick starts, can be found [here](https://parallels.github.io/prl-devops-service/).
 
 ## Contributing
 
