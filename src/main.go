@@ -21,7 +21,7 @@ import (
 var ver = "0.8.0"
 
 //	@title			Parallels Desktop DevOps Service
-//	@version		0.8.0
+//	@version		0.8.1
 //	@description	Parallels Desktop DevOps Service
 //	@termsOfService	http://swagger.io/terms/
 
@@ -37,10 +37,10 @@ var ver = "0.8.0"
 //	@in							header
 //	@name						X-Api-Key
 
-// @securityDefinitions.apikey	BearerAuth
-// @description				Type "Bearer" followed by a space and JWT token.
-// @in							header
-// @name						Authorization
+//	@securityDefinitions.apikey	BearerAuth
+//	@description				Type "Bearer" followed by a space and JWT token.
+//	@in							header
+//	@name						Authorization
 func main() {
 	// catching all of the exceptions
 	defer func() {
