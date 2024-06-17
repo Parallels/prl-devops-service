@@ -18,10 +18,7 @@ import (
 	"github.com/cjlapao/common-go/version"
 )
 
-var (
-	ver        = "0.8.0"
-	versionSvc = version.Get()
-)
+var ver = "0.8.0"
 
 //	@title			Parallels Desktop DevOps Service
 //	@version		0.8.0
@@ -40,10 +37,10 @@ var (
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	// catching all of the exceptions
 	defer func() {
@@ -63,6 +60,7 @@ func main() {
 			os.Exit(1)
 		}
 	}()
+	versionSvc := serviceprovider.VersionSvc
 
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = constants.Name
@@ -109,9 +107,9 @@ func main() {
 				return
 			default:
 				// Call home every 24 hours
+				time.Sleep(24 * time.Hour)
 				ctx.LogInfof("[Core] Calling home")
 				callHome()
-				time.Sleep(24 * time.Hour)
 			}
 		}
 	}()

@@ -7,6 +7,8 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/amplitude/analytics-go/amplitude"
 	"github.com/amplitude/analytics-go/amplitude/types"
 )
@@ -70,4 +72,22 @@ func TrackEvent(item TelemetryItem) {
 	}
 
 	svc.TrackEvent(item)
+}
+
+func SendStartEvent(cmd string) {
+	svc := Get()
+	if !svc.EnableTelemetry {
+		return
+	}
+
+	ctx := basecontext.NewRootBaseContext()
+	system := system.Get()
+	os := system.GetOperatingSystem()
+	properties := map[string]interface{}{
+		"version": serviceprovider.VersionSvc.String(),
+		"os":      os,
+		"mode":    cmd,
+	}
+
+	TrackEvent(NewTelemetryItem(ctx, StartEvent, properties, nil))
 }

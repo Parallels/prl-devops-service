@@ -13,8 +13,15 @@ get the status of a virtual machine.
 
 ## Community
 
+![Discord](./docs/img/discord_join_server.png)  
 Join our [Discord server](https://discord.gg/pEwZ254C3d) to ask questions, share
 your experience, and get help from the community.
+
+## Schedule a Demo
+
+If you want to schedule a demo, please schedule a meeting with out Solutions
+Architect [here](https://outlook.office.com/bookwithme/user/d6b4c940ec9d44079ed872ba1fcaaf68@alludo.com/meetingtype/you-CpOV8UyS0sFl9KjSWw2?anonymous&ep=mlink).
+We will go through the service and answer any questions you may have.
 
 ## Licensing
 
