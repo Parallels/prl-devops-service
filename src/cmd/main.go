@@ -6,6 +6,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/telemetry"
 	"github.com/cjlapao/common-go/helper"
 )
 
@@ -16,6 +17,14 @@ func Process() {
 	if helper.GetFlagSwitch("version", false) {
 		processVersion()
 		os.Exit(0)
+	}
+
+	if telemetry.Get() != nil {
+		cmd := command
+		if cmd == "" {
+			cmd = "api"
+		}
+		telemetry.SendStartEvent(cmd)
 	}
 
 	switch command {

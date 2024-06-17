@@ -68,10 +68,10 @@ func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, prop
 		item.Properties["hardware_id"] = hashedHardwareId
 	}
 
+	key := "unknown_license"
 	provider := serviceprovider.Get()
-	key := provider.License
-	if key == "" {
-		key = "unknown_license"
+	if provider != nil {
+		key = provider.License
 	}
 
 	if user, err := system.GetCurrentUser(ctx); err == nil {
