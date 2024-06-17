@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Generation of the Helm Charts
+- Issue where some missing details in telemetry would crash
+  
+### Changed
+
+- Added better readme documentation
+- Updated some documentation
 
 ## [0.8.0] - 2024-06-03
 
