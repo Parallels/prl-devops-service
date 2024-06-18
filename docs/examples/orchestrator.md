@@ -54,7 +54,7 @@ The service will run with default values, these are just fine for demos and to q
 
 ### Accessing the Orchestrator Service
 
-Once the docker container is working you can access the orchestrator using any rest client, like **Postman** to access the API. Or you can install our **[Visual Studio Code extension](https://marketplace.visualstudio.com/items?itemName=ParallelsDesktop.parallels-desktop)** to access the API directly from the editor.
+Once the docker container is working you can access the orchestrator using any rest client, like **Postman** to access the API. Or you can install our **[Visual Studio Code extension](https://marketplace.visualstudio.com/items?itemName=ParallelsDesktop.parallels-desktop){:target=\"_blank\"}** to access the API directly from the editor.
 
 ## Step 2: Installing the DevOps Service on the Hosts
 

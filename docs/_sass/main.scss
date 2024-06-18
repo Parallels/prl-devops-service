@@ -36,3 +36,17 @@ $hero-darken: $dark !default;
 .big_padding {
   padding: 2rem 16rem !important;
 }
+
+.index_release {
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+  }
+
+  h3 {
+    font-size: 1.2rem;
+  }
+}

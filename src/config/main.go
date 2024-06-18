@@ -19,7 +19,10 @@ import (
 	log "github.com/cjlapao/common-go-logger"
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/security"
+	"github.com/cjlapao/common-go/version"
 )
+
+var VersionSvc = version.Get()
 
 var globalConfig *Config
 
@@ -369,6 +372,33 @@ func (c *Config) Mode() string {
 	}
 
 	return c.mode
+}
+
+func (c *Config) SystemReservedCpu() int {
+	val := c.GetIntKey(constants.SYSTEM_RESERVED_CPU_ENV_VAR)
+	if val > 0 {
+		return val
+	}
+
+	return constants.DEFAULT_SYSTEM_RESERVED_CPU
+}
+
+func (c *Config) SystemReservedMemory() int {
+	val := c.GetIntKey(constants.SYSTEM_RESERVED_MEMORY_ENV_VAR)
+	if val > 0 {
+		return val
+	}
+
+	return constants.DEFAULT_SYSTEM_RESERVED_MEMORY
+}
+
+func (c *Config) SystemReservedDisk() int {
+	val := c.GetIntKey(constants.SYSTEM_RESERVED_DISK_ENV_VAR)
+	if val > 0 {
+		return val
+	}
+
+	return constants.DEFAULT_SYSTEM_RESERVED_DISK
 }
 
 func (c *Config) OrchestratorPullFrequency() int {

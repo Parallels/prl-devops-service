@@ -10,6 +10,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/cmd"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -37,10 +38,10 @@ var ver = "0.8.0"
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	// catching all of the exceptions
 	defer func() {
@@ -60,7 +61,7 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-	versionSvc := serviceprovider.VersionSvc
+	versionSvc := config.VersionSvc
 
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = constants.Name

@@ -55,6 +55,8 @@ func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, prop
 		item.Properties["hardware_id"] = item.DeviceId
 	}
 
+	item.Properties["version"] = config.VersionSvc.String()
+
 	config := config.Get()
 	if config != nil {
 		item.Properties["call_source"] = config.Source()
