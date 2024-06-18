@@ -70,7 +70,6 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 					tmpCatalogManifestFilePath := filepath.Join("/tmp", s.getMetaFilename(manifest.Name))
 					manifest.CleanupRequest.AddLocalFileCleanupOperation(tmpCatalogManifestFilePath, false)
 					catalogManifest, err = s.readManifestFromFile(tmpCatalogManifestFilePath)
-
 					if err != nil {
 						ctx.LogErrorf("Error reading manifest from file %v: %v", tmpCatalogManifestFilePath, err)
 						manifest.AddError(err)
@@ -78,8 +77,6 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 					}
 
 					manifest.CreatedAt = catalogManifest.CreatedAt
-					manifest.RequiredRoles = catalogManifest.RequiredRoles
-					manifest.RequiredClaims = catalogManifest.RequiredClaims
 				}
 			}
 
@@ -265,6 +262,10 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 						manifest.AddError(err)
 						break
 					}
+
+					manifest.ID = response.ID
+					manifest.Name = response.Name
+					manifest.CatalogId = response.CatalogId
 				} else {
 					ctx.LogInfof("Manifest pushed successfully, adding it to the database")
 					db := serviceprovider.Get().JsonDatabase

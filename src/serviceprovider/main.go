@@ -22,7 +22,6 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/Parallels/prl-devops-service/serviceprovider/vagrant"
 	sql_database "github.com/Parallels/prl-devops-service/sql"
-	"github.com/cjlapao/common-go/version"
 
 	log "github.com/cjlapao/common-go-logger"
 )
@@ -47,8 +46,6 @@ type ServiceProvider struct {
 	CurrentSystemUser       string
 	License                 string
 }
-
-var VersionSvc = version.Get()
 
 var globalProvider *ServiceProvider
 

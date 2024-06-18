@@ -13,7 +13,7 @@ get the status of a virtual machine.
 
 ## Community
 
-![Discord](./docs/img/discord_join_server.png)  
+[![Discord Server](./docs/img/discord_join_server.png)](https://discord.gg/pEwZ254C3d)  
 Join our [Discord server](https://discord.gg/pEwZ254C3d) to ask questions, share
 your experience, and get help from the community.
 

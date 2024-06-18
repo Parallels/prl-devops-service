@@ -43,7 +43,9 @@ The root object of the configuration file is the environment object, which conta
 | DATABASE_SAVE_INTERVAL_MINUTES | The interval in minutes that the database will be saved in minytes | 5 minutes |
 | CATALOG_CACHE_FOLDER | The folder where the catalog cache will be stored | /User/Folder/.prl-devops-service/catalog |
 | PARALLELS_DESKTOP_REFRESH_INTERVAL | The interval in seconds that the service will refresh the Parallels Desktop virtual machines in seconds | 15 seconds |
-
+| SYSTEM_RESERVED_CPU | The number of cpu cores that will be reserved for the system and not used for Orchestrator | 1 |
+| SYSTEM_RESERVED_MEMORY | The amount of memory that will be reserved for the system and not used for Orchestrator in Mb's | 2048 |
+| SYSTEM_RESERVED_DISK | The amount of disk space that will be reserved for the system and not used for Orchestrator in Mb's | 20000 |
 
 ### Rest API
 
@@ -66,6 +68,7 @@ The root object of the configuration file is the environment object, which conta
 | CORS_ALLOWED_METHODS | The methods that are allowed in the cors policy | "GET, HEAD, POST, PUT, DELETE, OPTIONS" |
 | ENABLE_PACKER_PLUGIN | Specifies whether the service should enable the packer plugin | false |
 | ENABLE_VAGRANT_PLUGIN | Specifies whether the service should enable the vagrant plugin | false |
+
 
 ### Json Web Tokens
 

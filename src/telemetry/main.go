@@ -7,7 +7,6 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/amplitude/analytics-go/amplitude"
 	"github.com/amplitude/analytics-go/amplitude/types"
@@ -84,7 +83,7 @@ func SendStartEvent(cmd string) {
 	system := system.Get()
 	os := system.GetOperatingSystem()
 	properties := map[string]interface{}{
-		"version": serviceprovider.VersionSvc.String(),
+		"version": config.VersionSvc.String(),
 		"os":      os,
 		"mode":    cmd,
 	}

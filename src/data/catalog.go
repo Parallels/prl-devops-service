@@ -94,8 +94,9 @@ func (j *JsonDatabase) GetCatalogManifestsByCatalogId(ctx basecontext.ApiContext
 	}
 
 	for _, manifest := range catalogManifests {
-		if strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) ||
-			strings.EqualFold(manifest.Name, helpers.NormalizeString(catalogId)) {
+		if strings.EqualFold(manifest.ID, helpers.NormalizeString(catalogId)) ||
+			strings.EqualFold(manifest.Name, helpers.NormalizeString(catalogId)) ||
+			strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) {
 			result = append(result, manifest)
 		}
 	}
@@ -233,6 +234,8 @@ func (j *JsonDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, catalog
 		return ErrCatalogManifestNotFound
 	}
 
+	deletedItems := make([]string, 0)
+
 	for {
 		catalogManifests, err := j.GetCatalogManifests(ctx, "")
 		if err != nil {
@@ -241,13 +244,16 @@ func (j *JsonDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, catalog
 
 		deletedSomething := false
 		for _, manifest := range catalogManifests {
-			if strings.EqualFold(manifest.ID, catalogIdOrId) || strings.EqualFold(manifest.CatalogId, catalogIdOrId) {
+			if strings.EqualFold(manifest.ID, catalogIdOrId) ||
+				strings.EqualFold(manifest.CatalogId, catalogIdOrId) ||
+				strings.EqualFold(manifest.Name, catalogIdOrId) {
 				index, err := GetRecordIndex(j.data.ManifestsCatalog, "id", manifest.ID)
 				if err != nil {
 					continue
 				}
 				j.data.ManifestsCatalog = append(j.data.ManifestsCatalog[:index], j.data.ManifestsCatalog[index+1:]...)
 				deletedSomething = true
+				deletedItems = append(deletedItems, catalogIdOrId)
 				break
 			}
 		}
@@ -257,7 +263,11 @@ func (j *JsonDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, catalog
 		}
 	}
 
-	return ErrCatalogManifestNotFound
+	if len(deletedItems) == 0 {
+		return ErrCatalogManifestNotFound
+	}
+
+	return nil
 }
 
 func (j *JsonDatabase) DeleteCatalogManifestVersion(ctx basecontext.ApiContext, catalogIdOrId string, version string) error {
@@ -275,12 +285,12 @@ func (j *JsonDatabase) DeleteCatalogManifestVersion(ctx basecontext.ApiContext, 
 	}
 
 	for _, manifest := range catalogManifests {
-		i, err := GetRecordIndex(catalogManifests, "id", manifest.ID)
+		i, err := GetRecordIndex(j.data.ManifestsCatalog, "id", manifest.ID)
 		if err != nil {
 			continue
 		}
 
-		if (strings.EqualFold(manifest.ID, catalogIdOrId) || strings.EqualFold(manifest.CatalogId, catalogIdOrId)) &&
+		if (strings.EqualFold(manifest.ID, catalogIdOrId) || strings.EqualFold(manifest.CatalogId, catalogIdOrId) || strings.EqualFold(manifest.Name, catalogIdOrId)) &&
 			strings.EqualFold(manifest.Version, version) {
 			j.data.ManifestsCatalog = append(j.data.ManifestsCatalog[:i], j.data.ManifestsCatalog[i+1:]...)
 			return nil
@@ -305,7 +315,7 @@ func (j *JsonDatabase) DeleteCatalogManifestVersionArch(ctx basecontext.ApiConte
 	}
 
 	for _, manifest := range catalogManifests {
-		if (strings.EqualFold(manifest.ID, catalogIdOrId) || strings.EqualFold(manifest.CatalogId, catalogIdOrId)) &&
+		if (strings.EqualFold(manifest.ID, catalogIdOrId) || strings.EqualFold(manifest.CatalogId, catalogIdOrId) || strings.EqualFold(manifest.Name, catalogIdOrId)) &&
 			strings.EqualFold(manifest.Version, version) &&
 			strings.EqualFold(manifest.Architecture, architecture) {
 			i, err := GetRecordIndex(j.data.ManifestsCatalog, "id", manifest.ID)

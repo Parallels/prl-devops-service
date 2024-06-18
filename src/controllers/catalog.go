@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -1262,21 +1264,40 @@ func DeleteCatalogManifestHandler() restapi.ControllerHandler {
 		catalogId := vars["catalogId"]
 
 		cleanRemote := http_helper.GetHttpRequestStrValue(r, constants.DELETE_REMOTE_MANIFEST_QUERY)
+		// by default we will clean the remote manifest
+		if cleanRemote == "" {
+			cleanRemote = "true"
+		}
+		var errorDeletingRemote error
+		var errorDeletingRecord error
 
 		manifest := catalog.NewManifestService(ctx)
 		if cleanRemote == "true" {
 			ctx.LogInfof("Deleting remote manifest %v", catalogId)
 			err = manifest.Delete(ctx, catalogId, "", "")
 			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromError(err))
-				return
+				errorDeletingRemote = err
 			}
 		}
 
 		err = dbService.DeleteCatalogManifest(ctx, catalogId)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
+			errorDeletingRecord = err
+		}
+
+		if errorDeletingRecord != nil || errorDeletingRemote != nil {
+			if errorDeletingRecord != nil && errorDeletingRemote != nil {
+				ReturnApiError(ctx, w, models.NewFromError(errors.New(fmt.Sprintf("Error deleting record: %v, Error deleting remote: %v", errorDeletingRecord, errorDeletingRemote))))
+				return
+			}
+			if errorDeletingRecord != nil {
+				ReturnApiCommonResponseWithDataAndCode(w, models.NewFromError(errorDeletingRemote), http.StatusAccepted)
+				return
+			}
+			if errorDeletingRemote != nil {
+				ReturnApiCommonResponseWithDataAndCode(w, models.NewFromError(errorDeletingRemote), http.StatusAccepted)
+				return
+			}
 		}
 
 		w.WriteHeader(http.StatusAccepted)
@@ -1312,21 +1333,40 @@ func DeleteCatalogManifestVersionHandler() restapi.ControllerHandler {
 		version := vars["version"]
 
 		cleanRemote := http_helper.GetHttpRequestStrValue(r, constants.DELETE_REMOTE_MANIFEST_QUERY)
+		// by default we will clean the remote manifest
+		if cleanRemote == "" {
+			cleanRemote = "true"
+		}
+		var errorDeletingRemote error
+		var errorDeletingRecord error
 
 		manifest := catalog.NewManifestService(ctx)
 		if cleanRemote == "true" {
 			ctx.LogInfof("Deleting remote manifest %v", catalogId)
 			err = manifest.Delete(ctx, catalogId, version, "")
 			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromError(err))
-				return
+				errorDeletingRemote = err
 			}
 		}
 
 		err = dbService.DeleteCatalogManifestVersion(ctx, catalogId, version)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
+			errorDeletingRecord = err
+		}
+
+		if errorDeletingRecord != nil || errorDeletingRemote != nil {
+			if errorDeletingRecord != nil && errorDeletingRemote != nil {
+				ReturnApiError(ctx, w, models.NewFromError(errors.New(fmt.Sprintf("Error deleting record: %v, Error deleting remote: %v", errorDeletingRecord, errorDeletingRemote))))
+				return
+			}
+			if errorDeletingRecord != nil {
+				ReturnApiCommonResponseWithDataAndCode(w, models.NewFromError(errorDeletingRemote), http.StatusAccepted)
+				return
+			}
+			if errorDeletingRemote != nil {
+				ReturnApiCommonResponseWithDataAndCode(w, models.NewFromError(errorDeletingRemote), http.StatusAccepted)
+				return
+			}
 		}
 
 		w.WriteHeader(http.StatusAccepted)
@@ -1364,21 +1404,40 @@ func DeleteCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler
 		architecture := vars["architecture"]
 
 		cleanRemote := http_helper.GetHttpRequestStrValue(r, constants.DELETE_REMOTE_MANIFEST_QUERY)
+		// by default we will clean the remote manifest
+		if cleanRemote == "" {
+			cleanRemote = "true"
+		}
+		var errorDeletingRemote error
+		var errorDeletingRecord error
 
 		manifest := catalog.NewManifestService(ctx)
 		if cleanRemote == "true" {
 			ctx.LogInfof("Deleting remote manifest %v", catalogId)
 			err = manifest.Delete(ctx, catalogId, version, architecture)
 			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromError(err))
-				return
+				errorDeletingRemote = err
 			}
 		}
 
 		err = dbService.DeleteCatalogManifestVersionArch(ctx, catalogId, version, architecture)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
+			errorDeletingRecord = err
+		}
+
+		if errorDeletingRecord != nil || errorDeletingRemote != nil {
+			if errorDeletingRecord != nil && errorDeletingRemote != nil {
+				ReturnApiError(ctx, w, models.NewFromError(errors.New(fmt.Sprintf("Error deleting record: %v, Error deleting remote: %v", errorDeletingRecord, errorDeletingRemote))))
+				return
+			}
+			if errorDeletingRecord != nil {
+				ReturnApiCommonResponseWithDataAndCode(w, models.NewFromError(errorDeletingRemote), http.StatusAccepted)
+				return
+			}
+			if errorDeletingRemote != nil {
+				ReturnApiCommonResponseWithDataAndCode(w, models.NewFromError(errorDeletingRemote), http.StatusAccepted)
+				return
+			}
 		}
 
 		w.WriteHeader(http.StatusAccepted)
