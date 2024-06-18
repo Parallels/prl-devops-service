@@ -7280,6 +7280,18 @@ const docTemplate = `{
                 "cpu_type": {
                     "type": "string"
                 },
+                "devops_version": {
+                    "type": "string"
+                },
+                "parallels_desktop_licensed": {
+                    "type": "boolean"
+                },
+                "parallels_desktop_version": {
+                    "type": "string"
+                },
+                "system_reserved": {
+                    "$ref": "#/definitions/models.SystemUsageItem"
+                },
                 "total": {
                     "$ref": "#/definitions/models.SystemUsageItem"
                 },
@@ -7590,7 +7602,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.8.1",
+	Version:          "0.8.2",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
