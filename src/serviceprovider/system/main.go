@@ -11,7 +11,10 @@ import (
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
+	"github.com/cjlapao/common-go/version"
 )
+
+var VersionSvc = version.Get()
 
 var globalSystemService *SystemService
 
@@ -705,4 +708,18 @@ func (s *SystemService) getLinuxArchitecture(ctx basecontext.ApiContext) (string
 		return "", err
 	}
 	return strings.ReplaceAll(cpuType, "\n", ""), nil
+}
+
+func (s *SystemService) GetHardwareUsage(ctx basecontext.ApiContext) (*models.SystemUsageResponse, error) {
+	result := &models.SystemUsageResponse{}
+
+	arch, err := s.GetArchitecture(ctx)
+	if err != nil {
+		arch = "unknown"
+	}
+
+	result.CpuType = arch
+	result.DevOpsVersion = VersionSvc.String()
+
+	return result, nil
 }

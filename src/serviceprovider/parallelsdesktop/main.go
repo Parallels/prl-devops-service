@@ -1680,6 +1680,9 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 
 	for _, vm := range vms {
 		if vm.State == "running" {
+			if result.TotalInUse == nil {
+				result.TotalInUse = &models.SystemUsageItem{}
+			}
 			result.TotalInUse.LogicalCpuCount += vm.Hardware.CPU.Cpus
 			memorySizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Memory.Size)
 			if err != nil {
@@ -1694,6 +1697,9 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 				result.TotalInUse.DiskSize += helpers.ConvertByteToMegabyte(hddSizeInt)
 			}
 		} else {
+			if result.TotalReserved == nil {
+				result.TotalReserved = &models.SystemUsageItem{}
+			}
 			result.TotalReserved.LogicalCpuCount += vm.Hardware.CPU.Cpus
 			memorySizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Memory.Size)
 			if err != nil {
@@ -1718,18 +1724,21 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	}
 	result.CpuType = systemInfo.CpuType
 	result.CpuBrand = systemInfo.CpuBrand
-	result.DevOpsVersion = config.VersionSvc.String()
+	result.DevOpsVersion = system.VersionSvc.String()
 	result.ParallelsDesktopVersion = s.Version()
 	result.ParallelsDesktopLicensed = s.isLicensed
 
+	result.SystemReserved = &models.SystemUsageItem{}
 	result.SystemReserved.LogicalCpuCount = int64(cfg.SystemReservedCpu())
 	result.SystemReserved.MemorySize = float64(cfg.SystemReservedMemory())
 	result.SystemReserved.DiskSize = float64(cfg.SystemReservedDisk())
 
+	result.Total = &models.SystemUsageItem{}
 	result.Total.LogicalCpuCount = int64(systemInfo.LogicalCpuCount)
 	result.Total.MemorySize = systemInfo.MemorySize
 	result.Total.DiskSize = systemInfo.DiskSize - systemInfo.FreeDiskSize
 
+	result.TotalAvailable = &models.SystemUsageItem{}
 	result.TotalAvailable.DiskSize = result.Total.DiskSize - result.SystemReserved.DiskSize - result.TotalReserved.DiskSize - result.TotalInUse.DiskSize
 	result.TotalAvailable.MemorySize = result.Total.MemorySize - result.SystemReserved.MemorySize - result.TotalInUse.MemorySize
 	result.TotalAvailable.LogicalCpuCount = result.Total.LogicalCpuCount - result.SystemReserved.LogicalCpuCount - result.TotalInUse.LogicalCpuCount

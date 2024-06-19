@@ -9,6 +9,7 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 )
@@ -261,8 +262,16 @@ func GetHardwareInfo() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
-		hardwareInfo, err := provider.ParallelsDesktopService.GetHardwareUsage(ctx)
-		if err != nil {
+		os := system.Get().GetOperatingSystem()
+		var hardwareInfo *models.SystemUsageResponse
+		var err error
+		if os == "macos" {
+			hardwareInfo, err = provider.ParallelsDesktopService.GetHardwareUsage(ctx)
+		} else {
+			hardwareInfo, err = provider.System.GetHardwareUsage(ctx)
+		}
+
+		if err != nil || hardwareInfo == nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}

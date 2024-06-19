@@ -18,7 +18,7 @@ func MapHostResourcesFromSystemUsageResponse(m models.SystemUsageResponse) data_
 	return result
 }
 
-func MapHostResourceItemFromSystemUsageItem(m models.SystemUsageItem) data_models.HostResourceItem {
+func MapHostResourceItemFromSystemUsageItem(m *models.SystemUsageItem) data_models.HostResourceItem {
 	result := data_models.HostResourceItem{
 		PhysicalCpuCount: m.PhysicalCpuCount,
 		LogicalCpuCount:  m.LogicalCpuCount,
@@ -29,20 +29,20 @@ func MapHostResourceItemFromSystemUsageItem(m models.SystemUsageItem) data_model
 	return result
 }
 
-func MapSystemUsageResponseFromHostResources(m data_models.HostResources) models.SystemUsageResponse {
+func MapSystemUsageResponseFromHostResources(m data_models.HostResources) *models.SystemUsageResponse {
 	result := models.SystemUsageResponse{
 		CpuType:        m.CpuType,
 		CpuBrand:       m.CpuBrand,
-		Total:          MapSystemUsageItemFromHostResourceItem(m.Total),
-		TotalAvailable: MapSystemUsageItemFromHostResourceItem(m.TotalAvailable),
-		TotalInUse:     MapSystemUsageItemFromHostResourceItem(m.TotalInUse),
-		TotalReserved:  MapSystemUsageItemFromHostResourceItem(m.TotalReserved),
+		Total:          MapSystemUsageItemFromHostResourceItem(&m.Total),
+		TotalAvailable: MapSystemUsageItemFromHostResourceItem(&m.TotalAvailable),
+		TotalInUse:     MapSystemUsageItemFromHostResourceItem(&m.TotalInUse),
+		TotalReserved:  MapSystemUsageItemFromHostResourceItem(&m.TotalReserved),
 	}
 
-	return result
+	return &result
 }
 
-func MapSystemUsageItemFromHostResourceItem(m data_models.HostResourceItem) models.SystemUsageItem {
+func MapSystemUsageItemFromHostResourceItem(m *data_models.HostResourceItem) *models.SystemUsageItem {
 	result := models.SystemUsageItem{
 		PhysicalCpuCount: m.PhysicalCpuCount,
 		LogicalCpuCount:  m.LogicalCpuCount,
@@ -50,7 +50,7 @@ func MapSystemUsageItemFromHostResourceItem(m data_models.HostResourceItem) mode
 		DiskSize:         m.DiskSize,
 	}
 
-	return result
+	return &result
 }
 
 func MapApiHostResourceItemFromHostResourceItem(m data_models.HostResourceItem) models.HostResourceItem {
