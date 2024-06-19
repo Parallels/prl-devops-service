@@ -2,8 +2,18 @@ apiVersion: v1
 entries:
   parallels-devops-service:
   - apiVersion: v2
+    appVersion: 0.8.4
+    created: "2024-06-19T12:20:16.856839313Z"
+    description: Parallels Desktop DevOps Service
+    digest: 23660e6fc4a59eccd018de4fc2575733bb98bf514566257d5f2dab47cb614bf2
+    name: parallels-devops-service
+    type: application
+    urls:
+    - https://parallels.github.io/prl-devops-service/charts/parallels-devops-service-0.8.4.tgz
+    version: 0.8.4
+  - apiVersion: v2
     appVersion: 0.8.3
-    created: "2024-06-19T10:48:48.642661896Z"
+    created: "2024-06-19T12:20:16.856416431Z"
     description: Parallels Desktop DevOps Service
     digest: 6b8d93c7857ad5e66cdf09f5247f67f2593cff526c364b027666b1b2ecda396c
     name: parallels-devops-service
@@ -13,7 +23,7 @@ entries:
     version: 0.8.3
   - apiVersion: v2
     appVersion: 0.8.2
-    created: "2024-06-19T10:48:48.642246726Z"
+    created: "2024-06-19T12:20:16.855933769Z"
     description: Parallels Desktop DevOps Service
     digest: 3db74c9beb62a456dd442f21e52e46bf5e88744af947360c7e95f11ba084a26b
     name: parallels-devops-service
@@ -23,7 +33,7 @@ entries:
     version: 0.8.2
   - apiVersion: v2
     appVersion: 0.8.1
-    created: "2024-06-19T10:48:48.641666476Z"
+    created: "2024-06-19T12:20:16.855478978Z"
     description: Parallels Desktop DevOps Service
     digest: 94d87635c30adfb14f1e2a402d8f3e5a36c8b65a1e3ec3ed73b9eab87fdc3f69
     name: parallels-devops-service
@@ -33,7 +43,7 @@ entries:
     version: 0.8.1
   - apiVersion: v2
     appVersion: 0.5.4
-    created: "2024-06-19T10:48:48.641212964Z"
+    created: "2024-06-19T12:20:16.855035228Z"
     description: Parallels Desktop DevOps Service
     digest: c2bc464c67821348b07472a34d54c7dea01cbd503942628e4342df3b699a3f62
     name: parallels-devops-service
@@ -41,4 +51,4 @@ entries:
     urls:
     - https://parallels.github.io/prl-devops-service/charts/parallels-devops-service-0.5.4.tgz
     version: 0.5.4
-generated: "2024-06-19T10:48:48.640568663Z"
+generated: "2024-06-19T12:20:16.854446317Z"
