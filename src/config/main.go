@@ -19,10 +19,7 @@ import (
 	log "github.com/cjlapao/common-go-logger"
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/security"
-	"github.com/cjlapao/common-go/version"
 )
-
-var VersionSvc = version.Get()
 
 var globalConfig *Config
 

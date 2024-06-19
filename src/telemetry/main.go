@@ -80,10 +80,10 @@ func SendStartEvent(cmd string) {
 	}
 
 	ctx := basecontext.NewRootBaseContext()
-	system := system.Get()
-	os := system.GetOperatingSystem()
+	sys := system.Get()
+	os := sys.GetOperatingSystem()
 	properties := map[string]interface{}{
-		"version": config.VersionSvc.String(),
+		"version": system.VersionSvc.String(),
 		"os":      os,
 		"mode":    cmd,
 	}

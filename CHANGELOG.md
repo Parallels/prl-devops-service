@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.8.3] - 2024-06-19
+
+### Fixed
+
+- Issue that caused a crash when the user was querying the hardware endpoint
+
 ## [0.8.2] - 2024-06-18
 
 ### Fixed
