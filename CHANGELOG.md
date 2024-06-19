@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.8.4] - 2024-06-19
+
+### Fixed
+
+- Issue with the workflow that would not change the internal version
+
 ## [0.8.3] - 2024-06-19
 
 ### Fixed
