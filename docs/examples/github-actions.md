@@ -33,8 +33,9 @@ On this guide, we will show you how to set up one of our demo repositories. They
 
 {% assign installationContent = site.pages | where:"url", "/docs/getting-started/installation/" | first %}
 
-{{ installationContent.content }}
+## Step 1: Install Parallels Desktop DevOps
 
+{{ installationContent.content }}
 
 ### Install Parallels Desktop for Mac
 

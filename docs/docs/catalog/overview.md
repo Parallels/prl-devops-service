@@ -19,7 +19,7 @@ The service is designed to enable operations on an organization to easily create
 
 The Catalog Repository is a service provided by the Parallels Desktop DevOps, written in GO. It is an extremely lightweight service that can be deployed in multiple ways, such as in a container or on a virtual machine. Additionally, we offer a Helm chart to install it in a Kubernetes cluster. The Catalog Repository takes advantage of the built-in Rest API capabilities of the Parallels Desktop DevOps service, making use of its security features to provide a strong and secure way of distributing virtual machines in a centralized manner.
 
-![Catalog Pulling Diagram]({{ site.url }}{{ site.baseurl }}/img/catalog/catalog_manifest.drawio.png)
+{% include animated_catalog_architecture.html %}
 
 ## How does it work?
 

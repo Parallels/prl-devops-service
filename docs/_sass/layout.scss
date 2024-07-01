@@ -561,3 +561,14 @@ p:has(> img) {
 #g49.test-svg {
     fill: red;
 }
+
+
+.animated-catalog-architecture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 450px;
+  }
+}

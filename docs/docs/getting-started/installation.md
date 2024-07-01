@@ -15,7 +15,6 @@ You can download the latest version of the **Parallels Desktop DevOps Service** 
 
 {% include inner-tabs.html data="download_tabs" %}
 
-
 ### Quick Configuration
 
 By default the **devops service** will run with default values but these can be configured by creating a `config.yaml` file in the same directory as the binary. Below is an example of a configuration file.
@@ -35,6 +34,14 @@ environment:
   log_level: DEBUG
   ROOT_PASSWORD: VeryStr0ngPassw0rd
 ```
+
+After this the service is ready to be started. You can start the service by running the following command.
+
+```powershell
+prldevops api
+```
+
+or if you want to start it as a daemon follow the instructions below.
 
 #### Start it as a service
 
