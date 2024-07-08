@@ -26,7 +26,7 @@ const (
 )
 
 func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, properties, options map[string]interface{}) TelemetryItem {
-	system := system.Get()
+	sys := system.Get()
 	item := TelemetryItem{
 		Type:       string(eventType),
 		Properties: properties,
@@ -40,20 +40,22 @@ func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, prop
 	}
 
 	// Adding default properties
-	item.Properties["os"] = system.GetOperatingSystem()
-	if architecture, err := system.GetArchitecture(ctx); err == nil {
+	item.Properties["os"] = sys.GetOperatingSystem()
+	if architecture, err := sys.GetArchitecture(ctx); err == nil {
 		item.Properties["architecture"] = architecture
 	} else {
 		item.Properties["architecture"] = unknown_user
 	}
 
-	if hid, err := system.GetUniqueId(ctx); err == nil {
+	if hid, err := sys.GetUniqueId(ctx); err == nil {
 		item.DeviceId = strings.ReplaceAll(hid, "\"", "")
 		item.Properties["hardware_id"] = item.DeviceId
 	} else {
 		item.DeviceId = unknown_user
 		item.Properties["hardware_id"] = item.DeviceId
 	}
+
+	item.Properties["version"] = system.VersionSvc.String()
 
 	config := config.Get()
 	if config != nil {
@@ -68,13 +70,13 @@ func NewTelemetryItem(ctx basecontext.ApiContext, eventType TelemetryEvent, prop
 		item.Properties["hardware_id"] = hashedHardwareId
 	}
 
+	key := "unknown_license"
 	provider := serviceprovider.Get()
-	key := provider.License
-	if key == "" {
-		key = "unknown_license"
+	if provider != nil {
+		key = provider.License
 	}
 
-	if user, err := system.GetCurrentUser(ctx); err == nil {
+	if user, err := sys.GetCurrentUser(ctx); err == nil {
 		hash := crypto.SHA256.New()
 		hash.Write([]byte(user))
 		hashedUser := base64.StdEncoding.EncodeToString(hash.Sum(nil))

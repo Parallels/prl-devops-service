@@ -10,4 +10,5 @@ const (
 	EventCallHome          TelemetryEvent = "DEVOPS_CALL_HOME"
 	EventCatalog           TelemetryEvent = "DEVOPS_CATALOG"
 	CallHomeEvent          TelemetryEvent = "DEVOPS_CALL_HOME"
+	StartEvent             TelemetryEvent = "DEVOPS_START"
 )

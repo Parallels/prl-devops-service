@@ -10,7 +10,7 @@ jobs:
     name: Assign Projects
     env:
       repo: ${{ github.head_ref }}
-      project: "Parallels Desktop DevOps Service"
+      project: "Parallels DevOps Service"
     runs-on: ubuntu-latest
     steps:
       - name: git checkout

@@ -44,6 +44,8 @@ type ParallelsService struct {
 	Users            []*models.ParallelsDesktopUser
 	isLicensed       bool
 	installed        bool
+	version          string
+	build            string
 	dependencies     []interfaces.Service
 }
 
@@ -120,6 +122,10 @@ func (s *ParallelsService) FindPath() string {
 }
 
 func (s *ParallelsService) Version() string {
+	if s.version != "" {
+		return s.version
+	}
+
 	cmd := helpers.Command{
 		Command: s.executable,
 		Args:    []string{"--version"},
@@ -130,13 +136,21 @@ func (s *ParallelsService) Version() string {
 		return "unknown"
 	}
 
-	v := strings.ReplaceAll(strings.TrimSpace(strings.ReplaceAll(stdout, "prlctl version  ", "")), "\n", "")
+	v := strings.ReplaceAll(strings.TrimSpace(strings.ReplaceAll(stdout, "prlctl version ", "")), "\n", "")
 	vParts := strings.Split(v, " ")
 	if len(vParts) > 0 {
-		return vParts[0]
+		s.version = vParts[0]
+		s.build = strings.ReplaceAll(vParts[1], "(", "")
+		s.build = strings.ReplaceAll(s.build, ")", "")
 	} else {
-		return v
+		s.version = v
 	}
+
+	if s.build == "" {
+		return s.version
+	}
+
+	return fmt.Sprintf("%s.%s", s.version, s.build)
 }
 
 func (s *ParallelsService) Install(asUser, version string, flags map[string]string) error {
@@ -1666,6 +1680,9 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 
 	for _, vm := range vms {
 		if vm.State == "running" {
+			if result.TotalInUse == nil {
+				result.TotalInUse = &models.SystemUsageItem{}
+			}
 			result.TotalInUse.LogicalCpuCount += vm.Hardware.CPU.Cpus
 			memorySizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Memory.Size)
 			if err != nil {
@@ -1680,6 +1697,9 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 				result.TotalInUse.DiskSize += helpers.ConvertByteToMegabyte(hddSizeInt)
 			}
 		} else {
+			if result.TotalReserved == nil {
+				result.TotalReserved = &models.SystemUsageItem{}
+			}
 			result.TotalReserved.LogicalCpuCount += vm.Hardware.CPU.Cpus
 			memorySizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Memory.Size)
 			if err != nil {
@@ -1696,6 +1716,7 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 		}
 	}
 
+	cfg := config.Get()
 	systemSrv := system.Get()
 	systemInfo, err := systemSrv.GetHardwareInfo(ctx)
 	if err != nil {
@@ -1703,13 +1724,24 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	}
 	result.CpuType = systemInfo.CpuType
 	result.CpuBrand = systemInfo.CpuBrand
+	result.DevOpsVersion = system.VersionSvc.String()
+	result.ParallelsDesktopVersion = s.Version()
+	result.ParallelsDesktopLicensed = s.isLicensed
+
+	result.SystemReserved = &models.SystemUsageItem{}
+	result.SystemReserved.LogicalCpuCount = int64(cfg.SystemReservedCpu())
+	result.SystemReserved.MemorySize = float64(cfg.SystemReservedMemory())
+	result.SystemReserved.DiskSize = float64(cfg.SystemReservedDisk())
+
+	result.Total = &models.SystemUsageItem{}
 	result.Total.LogicalCpuCount = int64(systemInfo.LogicalCpuCount)
 	result.Total.MemorySize = systemInfo.MemorySize
 	result.Total.DiskSize = systemInfo.DiskSize - systemInfo.FreeDiskSize
 
-	result.TotalAvailable.DiskSize = result.Total.DiskSize - result.TotalReserved.DiskSize - result.TotalInUse.DiskSize
-	result.TotalAvailable.MemorySize = result.Total.MemorySize - result.TotalInUse.MemorySize
-	result.TotalAvailable.LogicalCpuCount = result.Total.LogicalCpuCount - result.TotalInUse.LogicalCpuCount
+	result.TotalAvailable = &models.SystemUsageItem{}
+	result.TotalAvailable.DiskSize = result.Total.DiskSize - result.SystemReserved.DiskSize - result.TotalReserved.DiskSize - result.TotalInUse.DiskSize
+	result.TotalAvailable.MemorySize = result.Total.MemorySize - result.SystemReserved.MemorySize - result.TotalInUse.MemorySize
+	result.TotalAvailable.LogicalCpuCount = result.Total.LogicalCpuCount - result.SystemReserved.LogicalCpuCount - result.TotalInUse.LogicalCpuCount
 
 	return result, nil
 }

@@ -17,11 +17,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-## [0.8.1] - 2024-06-03
+## [0.8.4] - 2024-06-19
+
+### Fixed
+
+- Issue with the workflow that would not change the internal version
+
+## [0.8.3] - 2024-06-19
+
+### Fixed
+
+- Issue that caused a crash when the user was querying the hardware endpoint
+
+## [0.8.2] - 2024-06-18
+
+### Fixed
+
+- Issue that prevented the push of a manifest if the metadata already existed in
+  the catalog
+- Issue where the delete of a catalog would fail if the ID was used
+- Issue with documentation links in the index.md for discord
+
+### Changed
+
+- Added version to all telemetry events
+- Added more information to the hardware endpoint
+
+## [0.8.1] - 2024-06-17
 
 ### Fixed
 
 - Generation of the Helm Charts
+- Issue where some missing details in telemetry would crash
+  
+### Changed
+
+- Added better readme documentation
+- Updated some documentation
 
 ## [0.8.0] - 2024-06-03
 

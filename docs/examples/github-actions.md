@@ -17,17 +17,17 @@ Fortunately, GitHub allows you to run your own self-hosted runners, which enable
 
 In this guide, we will show you how to use our Parallels Desktop GitHub Action to set up your self-hosted runner on your Mac, Windows, or Linux Vms. This will enable you to run your CI/CD pipeline without any limitations and with no extra costs, all while maintaining the same level of security and isolation as the default Github Actions runners.
 
-If you're interested in learning more about self-hosted runners, then you can read more about them on the [Github documentation](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners).
+If you're interested in learning more about self-hosted runners, then you can read more about them on the [Github documentation](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners){:target=\"_blank\"}.
 
 **Let's get started!**
 
 ## Requirements
 
-- [Parallels Desktop for Mac](https://www.parallels.com/products/desktop/)
-- [Parallels Desktop DevOps Service](https://github.com/Parallels/prl-devops-service)
-- [GitHub account and repository](https://github.com)
+- [Parallels Desktop for Mac](https://www.parallels.com/products/desktop/){:target=\"_blank\"}
+- [Parallels Desktop DevOps Service](https://github.com/Parallels/prl-devops-service){:target=\"_blank\"}
+- [GitHub account and repository](https://github.com){:target=\"_blank\"}
 
-{% include notification.html message="You can try **Parallels Desktop** for free before purchasing by clicking this [link](https://www.parallels.com/products/desktop/trial/) and downloading our trial version" status="is-success" icon="comments-dollar" %}
+{% include notification.html message="You can try **Parallels Desktop** for free before purchasing by clicking this [link](https://www.parallels.com/products/desktop/trial/){:target=\"_blank\"} and downloading our trial version" status="is-success" icon="comments-dollar" %}
 
 On this guide, we will show you how to set up one of our demo repositories. They are free and open to use, so you can copy the code or take inspiration for your own projects.
 
@@ -83,7 +83,7 @@ It's worth noting that while this approach is optional, you can use any of the p
 
 ### Create a new Ubuntu Server 24.04 LTS Virtual Machine
 
-1. Download the Ubuntu Server 24.04 LTS ISO file from the [Ubuntu website](https://ubuntu.com/download/server)
+1. Download the Ubuntu Server 24.04 LTS ISO file from the [Ubuntu website](https://ubuntu.com/download/server){:target=\"_blank\"}
 2. Open Parallels Desktop
 3. Click on the "+" button on the top left corner
 4. Select "Install Windows or another OS from a DVD or image file"
@@ -111,11 +111,11 @@ sudo ./install
 
 and flow the installation steps.  
 
-You can also see a more detailed guide on how to install Parallel Tools [here](https://kb.parallels.com/en/129740).
+You can also see a more detailed guide on how to install Parallel Tools [here](https://kb.parallels.com/en/129740){:target=\"_blank\"}.
 
 ### Install the Github Actions Runner
 
-The installation process of the GitHub Actions Runner on the virtual machine can be facilitated by some scripts available on our [Github repository](https://github.com/Parallels/prlctl-scripts/tree/main/github/actions-runner)
+The installation process of the GitHub Actions Runner on the virtual machine can be facilitated by some scripts available on our [Github repository](https://github.com/Parallels/prlctl-scripts/tree/main/github/actions-runner){:target=\"_blank\"}
 
 To install the runner, you can run the following commands on the terminal:
 
@@ -163,11 +163,11 @@ We should also ensure that our 'Default' runner group is configured to utilize a
 
 ## Step 4: Creating our Github Actions Workflow
 
-Now that we have our builder virtual machine and our personal access token, we can create our Github Actions workflow. On this example we will be using a MAUI sample project from [https://github.com/dotnet/maui-samples](https://github.com/dotnet/maui-samples) and create a pipeline that will build the project.
+Now that we have our builder virtual machine and our personal access token, we can create our Github Actions workflow. On this example we will be using a MAUI sample project from [https://github.com/dotnet/maui-samples](https://github.com/dotnet/maui-samples){:target=\"_blank\"} and create a pipeline that will build the project.
 
-We selected the Weather Sample Application called WeatherTwentyOne, you can find the repository [here](https://github.com/dotnet/maui-samples/tree/main/8.0/Apps/WeatherTwentyOne/src).
+We selected the Weather Sample Application called WeatherTwentyOne, you can find the repository [here](https://github.com/dotnet/maui-samples/tree/main/8.0/Apps/WeatherTwentyOne/src){:target=\"_blank\"}.
 
-You can also find our repository with the Github Actions workflow [here](https://github.com/Locally-build/weather_twenty_one_maui).
+You can also find our repository with the Github Actions workflow [here](https://github.com/Locally-build/weather_twenty_one_maui){:target=\"_blank\"}.
 
 ### Create a new Github Actions Workflow
 

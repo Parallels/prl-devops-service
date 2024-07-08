@@ -6,6 +6,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
 	"github.com/Parallels/prl-devops-service/catalog/models"
+	db_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -56,6 +57,30 @@ func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId st
 	}
 
 	cleanupService := cleanupservice.NewCleanupRequest()
+	var foundCatalogIds []db_models.CatalogManifest = make([]db_models.CatalogManifest, 0)
+
+	allManifestForCatalogId, _ := db.GetCatalogManifestsByCatalogId(ctx, catalogId)
+	shouldCleanMainFolder := false
+
+	if len(allManifestForCatalogId) > 0 {
+		for idx, manifest := range allManifestForCatalogId {
+			isFoundInCleanItems := false
+			for _, cleanItem := range cleanItems {
+				if cleanItem.ID == manifest.ID {
+					isFoundInCleanItems = true
+					break
+				}
+			}
+
+			if !isFoundInCleanItems {
+				foundCatalogIds = append(foundCatalogIds, allManifestForCatalogId[idx])
+			}
+		}
+
+		if len(foundCatalogIds) == 0 {
+			shouldCleanMainFolder = true
+		}
+	}
 
 	for _, cleanItem := range cleanItems {
 		for _, rs := range s.remoteServices {
@@ -72,7 +97,9 @@ func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId st
 				packFilePath := filepath.Join(cleanItem.Path, cleanItem.PackFile)
 				cleanupService.AddRemoteFileCleanupOperation(metadataFilePath, false)
 				cleanupService.AddRemoteFileCleanupOperation(packFilePath, false)
-				cleanupService.AddRemoteFileCleanupOperation(cleanItem.Path, true)
+				if shouldCleanMainFolder {
+					cleanupService.AddRemoteFileCleanupOperation(cleanItem.Path, true)
+				}
 			}
 		}
 	}

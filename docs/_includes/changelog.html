@@ -1,0 +1,10 @@
+<ul>
+  {% for category in site.categories limit:5 %}
+  {% assign cat = category | first %}
+  {% if cat == "release" %}
+    <li><a name="{{ category | first }}">{{ cat  }}</a>
+    </li>
+  {% endif %}
+  {% endfor %}
+  </ul>
+  

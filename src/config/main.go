@@ -371,6 +371,33 @@ func (c *Config) Mode() string {
 	return c.mode
 }
 
+func (c *Config) SystemReservedCpu() int {
+	val := c.GetIntKey(constants.SYSTEM_RESERVED_CPU_ENV_VAR)
+	if val > 0 {
+		return val
+	}
+
+	return constants.DEFAULT_SYSTEM_RESERVED_CPU
+}
+
+func (c *Config) SystemReservedMemory() int {
+	val := c.GetIntKey(constants.SYSTEM_RESERVED_MEMORY_ENV_VAR)
+	if val > 0 {
+		return val
+	}
+
+	return constants.DEFAULT_SYSTEM_RESERVED_MEMORY
+}
+
+func (c *Config) SystemReservedDisk() int {
+	val := c.GetIntKey(constants.SYSTEM_RESERVED_DISK_ENV_VAR)
+	if val > 0 {
+		return val
+	}
+
+	return constants.DEFAULT_SYSTEM_RESERVED_DISK
+}
+
 func (c *Config) OrchestratorPullFrequency() int {
 	frequency := c.GetKey(constants.ORCHESTRATOR_PULL_FREQUENCY_SECONDS_ENV_VAR)
 	if frequency == "" {

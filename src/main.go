@@ -13,18 +13,16 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/Parallels/prl-devops-service/telemetry"
 
 	"github.com/cjlapao/common-go/version"
 )
 
-var (
-	ver        = "0.8.0"
-	versionSvc = version.Get()
-)
+var ver = "0.8.4"
 
 //	@title			Parallels Desktop DevOps Service
-//	@version		0.8.0
+//	@version		0.8.4
 //	@description	Parallels Desktop DevOps Service
 //	@termsOfService	http://swagger.io/terms/
 
@@ -63,6 +61,7 @@ func main() {
 			os.Exit(1)
 		}
 	}()
+	versionSvc := system.VersionSvc
 
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = constants.Name
@@ -109,9 +108,9 @@ func main() {
 				return
 			default:
 				// Call home every 24 hours
+				time.Sleep(24 * time.Hour)
 				ctx.LogInfof("[Core] Calling home")
 				callHome()
-				time.Sleep(24 * time.Hour)
 			}
 		}
 	}()

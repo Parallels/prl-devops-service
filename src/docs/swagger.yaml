@@ -1186,6 +1186,14 @@ definitions:
         type: string
       cpu_type:
         type: string
+      devops_version:
+        type: string
+      parallels_desktop_licensed:
+        type: boolean
+      parallels_desktop_version:
+        type: string
+      system_reserved:
+        $ref: '#/definitions/models.SystemUsageItem'
       total:
         $ref: '#/definitions/models.SystemUsageItem'
       total_available:
@@ -1385,7 +1393,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.8.0
+  version: 0.8.4
 paths:
   /health/probe:
     get:
