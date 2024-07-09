@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.8.5] - 2024-07-09
+
+### Fixed
+
+- Issue where the hardware info would crash if only one VM was present
+
 ## [0.8.4] - 2024-06-19
 
 ### Fixed
