@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.8.6] - 2024-07-11
+
+### Fixed
+
+- Issue when trying to update an orchestrator host that is offline
+
 ## [0.8.5] - 2024-07-09
 
 ### Fixed
