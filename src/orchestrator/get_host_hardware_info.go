@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"time"
+
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -9,6 +11,7 @@ import (
 
 func (s *OrchestratorService) GetHostHardwareInfo(host *models.OrchestratorHost) (*api_models.SystemUsageResponse, error) {
 	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(10 * time.Second)
 	path := "/v1/config/hardware"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {
