@@ -1,28 +1,5 @@
 {{- if .Values.storage.databasePath }}
 apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: {{ include "helm.fullname" . }}
-  namespace: {{ include "helm.namespace" . }}
-spec:
-  capacity:
-    storage: 1Gi
-  accessModes:
-  - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Delete
-  storageClassName: manual
-  local:
-    path: /mnt/pd-devops-{{ include "helm.fullname" . }}
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - {{ .Values.storage.node_name }}
----
-apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "helm.fullname" . }}
@@ -33,6 +10,5 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: manual
+  storageClassName: azurefile-csi-premium
 {{- end }}
-

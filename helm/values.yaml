@@ -2,13 +2,13 @@ replicaCount: 1
 
 image:
   repository: cjlapao/prl-devops-service
-  pullPolicy: always
+  pullPolicy: Always
   tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
-namespace: default
+namespace: prl-devops-service
 
 serviceAccount:
   create: true
@@ -30,7 +30,7 @@ securityContext: {}
   # runAsUser: 1000
 
 storage:
-  node_name: ''
+  node_name: 'aks-pool4-42584360-vmss000000'
   databasePath: '/go/bin/db'
 
 security:
@@ -73,7 +73,7 @@ ingress:
   annotations: {}
   gateway: ""
   create_gateway: false
-  host: ""
+  host: "prl-devops-service.dev03-cpcloud.alludo.space"
   apiPort: 80
   apiPrefix: /api
   tls:
@@ -82,7 +82,7 @@ ingress:
     tls_secret_name: ""
     certificate:
     privateKey:
-    
+
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -99,7 +99,7 @@ resources: {}
 autoscaling:
   enabled: false
   minReplicas: 1
-  maxReplicas: 100
+  maxReplicas: 2
   targetCPUUtilizationPercentage: 80
 
 nodeSelector: {}
@@ -107,4 +107,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-

@@ -1,0 +1,29 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "helm.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    {{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  rules:
+  - host: {{ .Values.ingress.host }}
+    http:
+      paths:
+      - path: {{ .Values.ingress.apiPrefix }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ include "helm.fullname" . }}
+            port:
+              number: {{ .Values.service.port }}
+{{- if .Values.ingress.tls.enabled }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.host }}
+    secretName: {{ .Values.ingress.tls.tls_secret_name }}
+{{- end }}
+{{- end }}
