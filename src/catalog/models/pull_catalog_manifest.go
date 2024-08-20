@@ -31,6 +31,7 @@ type PullCatalogManifestRequest struct {
 	ProviderMetadata   map[string]string `json:"provider_metadata,omitempty"`
 	StartAfterPull     bool              `json:"start_after_pull,omitempty"`
 	LocalMachineFolder string            `json:"-"`
+	AmplitudeEvent     string            `json:"client,omitempty"`
 }
 
 func (r *PullCatalogManifestRequest) Validate() error {

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/telemetry"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
@@ -1529,10 +1531,43 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+		sendTelemetry := false
+		var amplitudeEvent models.AmplitudeEvent
+		telemetryItem := telemetry.TelemetryItem{}
+		if request.AmplitudeEvent != "" {
+			decodedBytes, err := base64.StdEncoding.DecodeString(request.AmplitudeEvent)
+			if err == nil {
+				err := json.Unmarshal(decodedBytes, &amplitudeEvent)
+				if err == nil {
+					telemetryItem.Type = amplitudeEvent.EventType
+					if telemetryItem.Type == "" {
+						telemetryItem.Type = "DEVOPS_PULL_MANIFEST"
+					}
+					telemetryItem.Properties = amplitudeEvent.EventProperties
+					telemetryItem.Options = amplitudeEvent.UserProperties
+					telemetryItem.UserID = amplitudeEvent.UserId
+					telemetryItem.DeviceId = amplitudeEvent.DeviceId
+					if amplitudeEvent.Origin != "" {
+						telemetryItem.Properties["origin"] = amplitudeEvent.Origin
+					}
+					sendTelemetry = true
+				} else {
+					ctx.LogErrorf("Error unmarshalling amplitude event", err)
+				}
+			} else {
+				ctx.LogErrorf("Error decoding amplitude event", err)
+			}
+		}
 
 		manifest := catalog.NewManifestService(ctx)
 		resultManifest := manifest.Pull(ctx, &request)
+
 		if resultManifest.HasErrors() {
+			if sendTelemetry && amplitudeEvent.EventProperties != nil {
+				telemetryItem.Properties["success"] = "false"
+				telemetry.TrackEvent(telemetryItem)
+			}
+
 			errorMessage := "Error pulling manifest: \n"
 			for _, err := range resultManifest.Errors {
 				errorMessage += "\n" + err.Error() + " "
@@ -1542,6 +1577,11 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 				Code:    http.StatusBadRequest,
 			})
 			return
+		}
+
+		if sendTelemetry && amplitudeEvent.EventProperties != nil {
+			telemetryItem.Properties["success"] = "true"
+			telemetry.TrackEvent(telemetryItem)
 		}
 
 		resultData := mappers.BasePullCatalogManifestResponseToApi(*resultManifest)
