@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.8.7] - 2024-08-20
+
+### Added
+
+- Added client to the pull request from the catalog
+
 ## [0.8.6] - 2024-07-11
 
 ### Fixed
