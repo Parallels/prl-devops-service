@@ -40,6 +40,7 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		Path:           p.pdfile.Destination,
 		Connection:     p.pdfile.GetHostConnection(),
 		StartAfterPull: p.pdfile.StartAfterPull,
+		AmplitudeEvent: p.pdfile.Client,
 	}
 
 	if p.pdfile.Clone {

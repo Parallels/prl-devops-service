@@ -33,6 +33,16 @@ while [[ $# -gt 0 ]]; do
     INSTALL_SERVICE="false"
     shift # past argument
     ;;
+  -v)
+    VERSION=$2
+    shift # past argument
+    shift # past argument
+    ;;
+  --version)
+    VERSION=$2
+    shift # past argument
+    shift # past argument
+    ;;
   *)
     echo "Invalid option $1" >&2
     exit 1

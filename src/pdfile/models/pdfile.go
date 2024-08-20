@@ -32,6 +32,7 @@ type PDFile struct {
 	CloneTo        string                `json:"CLONE_TO,omitempty" yaml:"CLONE_TO,omitempty"`
 	CloneId        string                `json:"CLONE_ID,omitempty" yaml:"CLONE_ID,omitempty"`
 	Operation      string                `json:"RUN,omitempty" yaml:"RUN,omitempty"`
+	Client         string                `json:"CLIENT,omitempty" yaml:"CLIENT,omitempty"`
 }
 
 func NewPdFile() *PDFile {
