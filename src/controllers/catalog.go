@@ -1536,6 +1536,8 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 		telemetryItem := telemetry.TelemetryItem{}
 		if request.AmplitudeEvent != "" {
 			decodedBytes, err := base64.StdEncoding.DecodeString(request.AmplitudeEvent)
+			test := string(decodedBytes)
+			fmt.Println(test)
 			if err == nil {
 				err := json.Unmarshal(decodedBytes, &amplitudeEvent)
 				if err == nil {
@@ -1545,7 +1547,7 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 					}
 					telemetryItem.Properties = amplitudeEvent.EventProperties
 					telemetryItem.Options = amplitudeEvent.UserProperties
-					telemetryItem.UserID = amplitudeEvent.UserId
+					telemetryItem.UserID = amplitudeEvent.AppId
 					telemetryItem.DeviceId = amplitudeEvent.DeviceId
 					if amplitudeEvent.Origin != "" {
 						telemetryItem.Properties["origin"] = amplitudeEvent.Origin
