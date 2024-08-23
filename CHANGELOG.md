@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.8.8] - 2024-08-23
+
+### Fixed
+
+- Updated the helm chart to allow users to add nginx ingress
+- Updated the helm chart to allow multiple storage
+
 ## [0.8.7] - 2024-08-20
 
 ### Added
