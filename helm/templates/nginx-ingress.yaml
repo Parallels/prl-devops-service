@@ -1,0 +1,23 @@
+{{- if and .Values.ingress.enabled  .Values.ingress.nginx.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-{{ include "helm.fullname" . }}
+spec:
+  ingressClassName: {{ .Values.ingress.nginx.ingressClassName }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.host }}
+    secretName: {{ .Values.ingress.tls.tls_secret_name }}-tls
+  rules:
+  - host: {{ .Values.ingress.host }}
+    http:
+      paths:
+      - path: {{ .Values.ingress.apiPrefix }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ include "helm.fullname" . }}
+            port:
+              number: {{ .Values.service.port }}
+{{- end }}

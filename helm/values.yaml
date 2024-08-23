@@ -31,6 +31,9 @@ securityContext: {}
 
 storage:
   node_name: ''
+  storage_class: 'manual'
+  storage_size: '1Gi'
+  access_mode: 'ReadWriteOnce'
   databasePath: '/go/bin/db'
 
 security:
@@ -67,22 +70,26 @@ config:
   disableCatalogCaching: false
 
 ingress:
-  enabled: true
-  istio: false
+  enabled: false
+  istio:
+    enabled: false
+    gateway: ""
+    create_gateway: false
+  nginx:
+    enabled: false
+    ingressClassName: nginx
   prefix: parallels
   annotations: {}
-  gateway: ""
-  create_gateway: false
   host: ""
-  apiPort: 80
   apiPrefix: /api
+
   tls:
     enabled: false
     port: 443
     tls_secret_name: ""
+    caCertificate:
     certificate:
     privateKey:
-    
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

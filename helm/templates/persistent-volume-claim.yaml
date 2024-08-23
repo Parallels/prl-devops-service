@@ -1,0 +1,14 @@
+{{- if .Values.storage.databasePath }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "helm.fullname" . }}
+  namespace:  {{ include "helm.namespace" . }}
+spec:
+  accessModes:
+  - {{ .Values.storage.access_mode }}
+  resources:
+    requests:
+      storage: {{ .Values.storage.storage_size }}
+  storageClassName: {{ .Values.storage.storage_class }}
+{{- end }}

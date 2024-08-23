@@ -1,4 +1,4 @@
-{{- if and .Values.ingress.enabled  .Values.ingress.istio}}
+{{- if and .Values.ingress.enabled  .Values.ingress.istio.enabled}}
 {{- if .Values.ingress.create_gateway }}
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
@@ -25,7 +25,7 @@ spec:
         number: 443
         protocol: HTTPS
       tls:
-        credentialName: {{ .Values.ingress.tls.tls_secret_name }}
+        credentialName: {{ .Values.ingress.tls.tls_secret_name }}-tls
         mode: SIMPLE
 {{- end }}
 {{- end }}
