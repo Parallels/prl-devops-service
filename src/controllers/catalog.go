@@ -1543,7 +1543,7 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 				if err == nil {
 					telemetryItem.Type = amplitudeEvent.EventType
 					if telemetryItem.Type == "" {
-						telemetryItem.Type = "DEVOPS_PULL_MANIFEST"
+						telemetryItem.Type = "DEVOPS::PULL_MANIFEST"
 					}
 					telemetryItem.Properties = amplitudeEvent.EventProperties
 					telemetryItem.Options = amplitudeEvent.UserProperties
