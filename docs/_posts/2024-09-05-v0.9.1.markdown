@@ -1,0 +1,14 @@
+---
+layout: post
+title:  "Release 0.9.1"
+date:   2024-09-05 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+### Fixed
+
+- Updated telemetry event names to use same convention
+
+
