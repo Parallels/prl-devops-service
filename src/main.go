@@ -38,10 +38,10 @@ var ver = "0.9.0"
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	// catching all of the exceptions
 	defer func() {
@@ -107,10 +107,10 @@ func main() {
 				ctx.LogInfof("[Core] Exiting")
 				return
 			default:
-				// Call home every 24 hours
-				time.Sleep(24 * time.Hour)
-				ctx.LogInfof("[Core] Calling home")
-				callHome()
+				// Call home every 30 minutes
+				time.Sleep(30 * time.Minute)
+				ctx.LogInfof("[Core] Sending heartbeat")
+				sendHeartbeat()
 			}
 		}
 	}()
@@ -130,10 +130,10 @@ func cleanup(ctx basecontext.ApiContext, db *data.JsonDatabase) {
 	}
 }
 
-func callHome() {
+func sendHeartbeat() {
 	if telemetry.Get() == nil {
 		return
 	}
 	ctx := basecontext.NewRootBaseContext()
-	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.CallHomeEvent, nil, nil))
+	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.HeartbeatEvent, nil, nil))
 }
