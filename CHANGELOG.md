@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.9.0] - 2024-08-23
+
+### Fixed
+
+- Fixed an issue with the telemetry in pdfile
+
 ## [0.8.8] - 2024-08-23
 
 ### Fixed
