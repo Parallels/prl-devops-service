@@ -1,0 +1,14 @@
+---
+layout: post
+title:  "Release 0.9.0"
+date:   2024-08-23 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+### Fixed
+
+- Fixed an issue with the telemetry in pdfile
+
+
