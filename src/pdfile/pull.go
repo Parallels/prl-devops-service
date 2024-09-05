@@ -1,6 +1,7 @@
 package pdfile
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"github.com/Parallels/prl-devops-service/pdfile/models"
 	"github.com/Parallels/prl-devops-service/security"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/telemetry"
 	"github.com/cjlapao/common-go/helper"
 	"gopkg.in/yaml.v3"
 )
@@ -55,6 +57,34 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 	ctx.LogInfof("Pulling catalog machine %v", p.pdfile.MachineName)
 
 	manifest := catalog.NewManifestService(ctx)
+	sendTelemetry := false
+	var amplitudeEvent api_models.AmplitudeEvent
+	telemetryItem := telemetry.TelemetryItem{}
+	if body.AmplitudeEvent != "" {
+		decodedBytes, err := base64.StdEncoding.DecodeString(body.AmplitudeEvent)
+		if err == nil {
+			err := json.Unmarshal(decodedBytes, &amplitudeEvent)
+			if err == nil {
+				telemetryItem.Type = amplitudeEvent.EventType
+				if telemetryItem.Type == "" {
+					telemetryItem.Type = "DEVOPS:PULL_MANIFEST"
+				}
+				telemetryItem.Properties = amplitudeEvent.EventProperties
+				telemetryItem.Options = amplitudeEvent.UserProperties
+				telemetryItem.UserID = amplitudeEvent.AppId
+				telemetryItem.DeviceId = amplitudeEvent.DeviceId
+				if amplitudeEvent.Origin != "" {
+					telemetryItem.Properties["origin"] = amplitudeEvent.Origin
+				}
+				sendTelemetry = true
+			} else {
+				ctx.LogErrorf("Error unmarshalling amplitude event", err)
+			}
+		} else {
+			ctx.LogErrorf("Error decoding amplitude event", err)
+		}
+	}
+
 	resultManifest := manifest.Pull(ctx, &body)
 	if resultManifest.HasErrors() {
 		errorMessage := "Error pulling manifest:"
@@ -63,6 +93,9 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		}
 
 		diag.AddError(errors.New(errorMessage))
+		if sendTelemetry {
+			sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+		}
 		return nil, diag
 	}
 
@@ -73,6 +106,9 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 			cloneName, err := security.GenerateCryptoRandomString(20)
 			if err != nil {
 				diag.AddError(err)
+				if sendTelemetry {
+					sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+				}
 				return nil, diag
 			}
 
@@ -82,17 +118,26 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		provider := serviceprovider.Get()
 		if provider.ParallelsDesktopService == nil {
 			diag.AddError(errors.New("parallels Desktop service is not available"))
+			if sendTelemetry {
+				sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+			}
 			return nil, diag
 		}
 
 		err := provider.ParallelsDesktopService.CloneVm(ctx, resultManifest.MachineID, p.pdfile.CloneTo)
 		if err != nil {
 			diag.AddError(err)
+			if sendTelemetry {
+				sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+			}
 			return nil, diag
 		}
 		vm, err := provider.ParallelsDesktopService.GetVmSync(ctx, p.pdfile.CloneTo)
 		if err != nil {
 			diag.AddError(err)
+			if sendTelemetry {
+				sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+			}
 			return nil, diag
 		}
 
@@ -111,6 +156,9 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		vm, err := provider.ParallelsDesktopService.GetVmSync(ctx, executeMachine)
 		if err != nil {
 			diag.AddError(err)
+			if sendTelemetry {
+				sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+			}
 			return nil, diag
 		}
 
@@ -119,6 +167,9 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 			err := provider.ParallelsDesktopService.StartVm(ctx, executeMachine)
 			if err != nil {
 				diag.AddError(err)
+				if sendTelemetry {
+					sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+				}
 				return nil, diag
 			}
 
@@ -134,7 +185,10 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 				time.Sleep(1 * time.Second)
 				counter++
 				if counter > 60 {
-					diag.AddError(errors.New("Timeout waiting for machine to start"))
+					diag.AddError(errors.New("timeout waiting for machine to start"))
+					if sendTelemetry {
+						sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+					}
 					return nil, diag
 				}
 			}
@@ -145,6 +199,9 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 
 			if provider.ParallelsDesktopService == nil {
 				diag.AddError(errors.New("parallels Desktop service is not available"))
+				if sendTelemetry {
+					sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+				}
 				return nil, diag
 			}
 			commandRequest := api_models.VirtualMachineExecuteCommandRequest{
@@ -153,10 +210,16 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 			r, err := provider.ParallelsDesktopService.ExecuteCommandOnVm(ctx, executeMachine, &commandRequest)
 			if err != nil {
 				diag.AddError(err)
+				if sendTelemetry {
+					sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+				}
 				return nil, diag
 			}
 			if r.ExitCode != 0 {
 				diag.AddError(fmt.Errorf("Error executing command: %v, err: %v"+command, r.Error))
+				if sendTelemetry {
+					sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+				}
 				return nil, diag
 			}
 		}
@@ -179,6 +242,9 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 			err := provider.ParallelsDesktopService.StartVm(ctx, p.pdfile.CloneTo)
 			if err != nil {
 				diag.AddError(err)
+				if sendTelemetry {
+					sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+				}
 				return nil, diag
 			}
 		}
@@ -198,9 +264,46 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 	}
 	if err != nil {
 		diag.AddError(err)
+		if sendTelemetry {
+			sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
+		}
 		return nil, diag
+	}
+
+	if sendTelemetry {
+		sendTelemetryEvent(amplitudeEvent, telemetryItem, diag)
 	}
 
 	ctx.EnableLog()
 	return string(out), diag
+}
+
+func sendTelemetryEvent(amplitudeEvent api_models.AmplitudeEvent, telemetryItem telemetry.TelemetryItem, diag *diagnostics.PDFileDiagnostics) {
+	if amplitudeEvent.EventProperties == nil {
+		telemetryItem.Properties["success"] = "true"
+		telemetry.TrackEvent(telemetryItem)
+		telemetry.Get().Flush()
+		return
+	}
+
+	if diag == nil {
+		telemetryItem.Properties["success"] = "true"
+		telemetry.TrackEvent(telemetryItem)
+		telemetry.Get().Flush()
+		return
+	}
+
+	if diag.HasErrors() {
+		if amplitudeEvent.EventProperties != nil {
+			telemetryItem.Properties["success"] = "false"
+			telemetry.TrackEvent(telemetryItem)
+			telemetry.Get().Flush()
+		}
+	} else {
+		if amplitudeEvent.EventProperties != nil {
+			telemetryItem.Properties["success"] = "true"
+			telemetry.TrackEvent(telemetryItem)
+			telemetry.Get().Flush()
+		}
+	}
 }
