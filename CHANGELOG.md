@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.9.2] - 2024-09-06
+
+### Fixed
+
+- Added a progress message to show how much did we download/upload when using the command line
+
 ## [0.9.1] - 2024-09-05
 
 ### Fixed
