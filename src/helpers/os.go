@@ -357,7 +357,7 @@ func CopyDir(src string, dst string) (err error) {
 			os.RemoveAll(dst)
 		}
 
-		fmt.Printf("Copying folder with macos clone %s, %s\n", src, dst)
+		// fmt.Printf("Copying folder with macos clone %s, %s\n", src, dst)
 		cmd := Command{
 			Command: "cp",
 			Args:    []string{"-c", "-r", src, dst},
