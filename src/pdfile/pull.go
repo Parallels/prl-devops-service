@@ -26,6 +26,17 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 	ctx.DisableLog()
 	serviceprovider.InitServices(ctx)
 
+	progressChannel := make(chan int)
+	fileNameChannel := make(chan string)
+	stepChannel := make(chan string)
+
+	defer close(progressChannel)
+	defer close(fileNameChannel)
+
+	progress := 0
+	currentProgress := 0
+	fileName := ""
+
 	diag := diagnostics.NewPDFileDiagnostics()
 
 	if !p.pdfile.HasAuthentication() {
@@ -34,15 +45,18 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 	}
 
 	body := catalog_models.PullCatalogManifestRequest{
-		CatalogId:      p.pdfile.CatalogId,
-		Version:        p.pdfile.Version,
-		Architecture:   p.pdfile.Architecture,
-		Owner:          p.pdfile.Owner,
-		MachineName:    p.pdfile.MachineName,
-		Path:           p.pdfile.Destination,
-		Connection:     p.pdfile.GetHostConnection(),
-		StartAfterPull: p.pdfile.StartAfterPull,
-		AmplitudeEvent: p.pdfile.Client,
+		CatalogId:       p.pdfile.CatalogId,
+		Version:         p.pdfile.Version,
+		Architecture:    p.pdfile.Architecture,
+		Owner:           p.pdfile.Owner,
+		MachineName:     p.pdfile.MachineName,
+		Path:            p.pdfile.Destination,
+		Connection:      p.pdfile.GetHostConnection(),
+		StartAfterPull:  p.pdfile.StartAfterPull,
+		AmplitudeEvent:  p.pdfile.Client,
+		ProgressChannel: progressChannel,
+		FileNameChannel: fileNameChannel,
+		StepChannel:     stepChannel,
 	}
 
 	if p.pdfile.Clone {
@@ -85,6 +99,33 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		}
 	}
 
+	go func() {
+		for {
+			fileName = <-fileNameChannel
+		}
+	}()
+
+	// Printing Steps
+	go func() {
+		for {
+			step := <-stepChannel
+			clearLine()
+			fmt.Printf("\r%s", step)
+		}
+	}()
+
+	// Printing Download Progress
+	go func() {
+		for {
+			currentProgress = <-progressChannel
+			if currentProgress > progress {
+				progress = currentProgress
+				clearLine()
+				fmt.Printf("\rDownloading %s: %d%%", fileName, progress)
+			}
+		}
+	}()
+
 	resultManifest := manifest.Pull(ctx, &body)
 	if resultManifest.HasErrors() {
 		errorMessage := "Error pulling manifest:"
@@ -99,9 +140,11 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		return nil, diag
 	}
 
-	ctx.LogInfof("Machine %v pulled successfully", p.pdfile.MachineName)
+	fmt.Printf("\n")
+	fmt.Printf("Successfully pulled machine %v\n", p.pdfile.MachineName)
 	if p.pdfile.Clone {
-		ctx.LogInfof("Cloning machine %v", p.pdfile.MachineName)
+		clearLine()
+		fmt.Printf("\rCloning machine %v", p.pdfile.MachineName)
 		if p.pdfile.CloneTo == "" {
 			cloneName, err := security.GenerateCryptoRandomString(20)
 			if err != nil {
@@ -146,7 +189,8 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 	}
 
 	if len(p.pdfile.Execute) > 0 {
-		ctx.LogInfof("Executing commands on machine %v", resultManifest.MachineName)
+		clearLine()
+		fmt.Printf("\rExecuting commands on machine %v", resultManifest.MachineName)
 		provider := serviceprovider.Get()
 		executeMachine := resultManifest.ID
 		if p.pdfile.Clone {
@@ -196,7 +240,8 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		}
 
 		for _, command := range p.pdfile.Execute {
-
+			clearLine()
+			fmt.Printf("\rExecuting command %v on machine %v", command, resultManifest.MachineName)
 			if provider.ParallelsDesktopService == nil {
 				diag.AddError(errors.New("parallels Desktop service is not available"))
 				if sendTelemetry {
@@ -225,6 +270,7 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		}
 	}
 
+	fmt.Printf("\rFinished pulling manifest\n")
 	response := models.PullResponse{
 		MachineId:    resultManifest.ID,
 		MachineName:  resultManifest.MachineName,

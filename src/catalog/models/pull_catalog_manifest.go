@@ -31,6 +31,9 @@ type PullCatalogManifestRequest struct {
 	ProviderMetadata   map[string]string `json:"provider_metadata,omitempty"`
 	StartAfterPull     bool              `json:"start_after_pull,omitempty"`
 	LocalMachineFolder string            `json:"-"`
+	ProgressChannel    chan int          `json:"-"`
+	FileNameChannel    chan string       `json:"-"`
+	StepChannel        chan string       `json:"-"`
 	AmplitudeEvent     string            `json:"client,omitempty"`
 }
 

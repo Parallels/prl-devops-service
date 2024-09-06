@@ -57,6 +57,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 	}
 
 	ctx.LogInfof("Checking if the machine %v already exists", r.MachineName)
+	s.sendPullStepInfo(r, "Checking if the machine already exists")
 	exists, err := parallelsDesktopSvc.GetVmSync(ctx, r.MachineName)
 	if err != nil {
 		if errors.GetSystemErrorCode(err) != 404 {
@@ -132,6 +133,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 		manifest = &m
 		ctx.LogDebugf("Remote Manifest: %v", manifest)
 	} else {
+		s.sendPullStepInfo(r, "Checking if the manifest exists in the local catalog")
 		ctx.LogInfof("Checking if the manifest exists in the local catalog")
 		dto, err := db.GetCatalogManifestByName(ctx, r.CatalogId)
 		if err != nil {
@@ -190,6 +192,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 
 		if check {
 			ctx.LogInfof("Found remote service %v", rs.Name())
+			rs.SetProgressChannel(r.FileNameChannel, r.ProgressChannel)
 			foundProvider = true
 			r.LocalMachineFolder = fmt.Sprintf("%s.%s", filepath.Join(r.Path, r.MachineName), manifest.Type)
 			ctx.LogInfof("Local machine folder: %v", r.LocalMachineFolder)
@@ -246,7 +249,6 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					break
 				}
 
-				helpers.GlobalSpinner.Start()
 				cacheFileName := fmt.Sprintf("%s.pdpack", fileChecksum)
 				cacheMachineName := fmt.Sprintf("%s.%s", fileChecksum, manifest.Type)
 				cacheType := CatalogCacheTypeNone
@@ -275,16 +277,15 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 				}
 
 				if needsPulling {
+					s.sendPullStepInfo(r, "Pulling file")
 					if err := rs.PullFile(ctx, file.Path, file.Name, destinationFolder); err != nil {
 						ctx.LogErrorf("Error pulling file %v: %v", fileName, err)
 						response.AddError(err)
-						helpers.GlobalSpinner.Stop()
 						break
 					}
 					if cfg.IsCatalogCachingEnable() {
 						err := os.Rename(filepath.Join(destinationFolder, file.Name), filepath.Join(destinationFolder, cacheFileName))
 						if err != nil {
-							helpers.GlobalSpinner.Stop()
 							log.Fatal(err)
 						}
 					}
@@ -296,11 +297,11 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 				}
 
 				if cacheType == CatalogCacheTypeFile {
+					s.sendPullStepInfo(r, "Decompressing file")
 					ctx.LogInfof("Decompressing file %v", cacheFileName)
 					if err := s.decompressMachine(ctx, filepath.Join(destinationFolder, cacheFileName), filepath.Join(destinationFolder, cacheMachineName)); err != nil {
 						ctx.LogErrorf("Error decompressing file %v: %v", fileName, err)
 						response.AddError(err)
-						helpers.GlobalSpinner.Stop()
 						break
 					}
 
@@ -314,11 +315,11 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 				}
 
 				if cacheType == CatalogCacheTypeFolder {
+					s.sendPullStepInfo(r, "Copying machine to destination")
 					ctx.LogInfof("Copying machine folder %v to %v", cacheMachineName, r.LocalMachineFolder)
 					if err := helpers.CopyDir(filepath.Join(destinationFolder, cacheMachineName), r.LocalMachineFolder); err != nil {
 						ctx.LogErrorf("Error copying machine folder %v to %v: %v", cacheMachineName, r.LocalMachineFolder, err)
 						response.AddError(err)
-						helpers.GlobalSpinner.Stop()
 						break
 					}
 				}
@@ -328,7 +329,6 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					if err := systemSrv.ChangeFileUserOwner(ctx, r.Owner, r.LocalMachineFolder); err != nil {
 						ctx.LogErrorf("Error changing file %v owner to %v: %v", r.LocalMachineFolder, r.Owner, err)
 						response.AddError(err)
-						helpers.GlobalSpinner.Stop()
 						break
 					}
 				}
@@ -365,7 +365,6 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 	// Cleaning up
 	s.CleanPullRequest(ctx, r, response)
 
-	helpers.GlobalSpinner.Stop()
 	return response
 }
 

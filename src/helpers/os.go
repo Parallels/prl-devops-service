@@ -362,6 +362,13 @@ func CopyDir(src string, dst string) (err error) {
 			Command: "cp",
 			Args:    []string{"-c", "-r", src, dst},
 		}
+		// if the destination is a mounted volume, we cannot use the clone command
+		if strings.HasPrefix(dst, "/Volumes") {
+			cmd = Command{
+				Command: "cp",
+				Args:    []string{"-r", src, dst},
+			}
+		}
 
 		if _, err = ExecuteWithNoOutput(context.TODO(), cmd); err != nil {
 			return err
