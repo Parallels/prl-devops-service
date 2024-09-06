@@ -3,6 +3,7 @@ package pdfile
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -18,18 +19,57 @@ import (
 func (p *PDFileService) runPush(ctx basecontext.ApiContext) (interface{}, *diagnostics.PDFileDiagnostics) {
 	ctx.DisableLog()
 
+	progressChannel := make(chan int)
+	fileNameChannel := make(chan string)
+	stepChannel := make(chan string)
+
+	defer close(progressChannel)
+	defer close(fileNameChannel)
+
+	progress := 0
+	currentProgress := 0
+	fileName := ""
+
 	diag := diagnostics.NewPDFileDiagnostics()
 	body := models.PushCatalogManifestRequest{
-		CatalogId:      p.pdfile.CatalogId,
-		Version:        p.pdfile.Version,
-		Architecture:   p.pdfile.Architecture,
-		LocalPath:      p.pdfile.LocalPath,
-		RequiredRoles:  p.pdfile.Roles,
-		RequiredClaims: p.pdfile.Claims,
-		Description:    p.pdfile.Description,
-		Tags:           p.pdfile.Tags,
-		Connection:     p.pdfile.GetConnectionString(),
+		CatalogId:       p.pdfile.CatalogId,
+		Version:         p.pdfile.Version,
+		Architecture:    p.pdfile.Architecture,
+		LocalPath:       p.pdfile.LocalPath,
+		RequiredRoles:   p.pdfile.Roles,
+		RequiredClaims:  p.pdfile.Claims,
+		Description:     p.pdfile.Description,
+		Tags:            p.pdfile.Tags,
+		ProgressChannel: progressChannel,
+		FileNameChannel: fileNameChannel,
+		StepChannel:     stepChannel,
+		Connection:      p.pdfile.GetConnectionString(),
 	}
+
+	go func() {
+		for {
+			fileName = <-fileNameChannel
+		}
+	}()
+
+	go func() {
+		for {
+			step := <-stepChannel
+			clearLine()
+			fmt.Printf("\r%s", step)
+		}
+	}()
+
+	go func() {
+		for {
+			currentProgress = <-progressChannel
+			if currentProgress > progress {
+				progress = currentProgress
+				clearLine()
+				fmt.Printf("\rUploading %s: %d%%", fileName, progress)
+			}
+		}
+	}()
 
 	manifest := catalog.NewManifestService(ctx)
 	resultManifest := manifest.Push(ctx, &body)
@@ -62,6 +102,12 @@ func (p *PDFileService) runPush(ctx basecontext.ApiContext) (interface{}, *diagn
 		return nil, diag
 	}
 
+	clearLine()
+	fmt.Printf("\rFinished pushing manifest\n")
 	ctx.EnableLog()
 	return string(out), diag
+}
+
+func clearLine() {
+	fmt.Printf("\r\033[K")
 }

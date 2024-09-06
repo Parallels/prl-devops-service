@@ -33,6 +33,10 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 
 		if check {
 			executed = true
+			if r.ProgressChannel != nil {
+				ctx.LogDebugf("Setting progress channel for remote service %v", rs.Name())
+				rs.SetProgressChannel(r.FileNameChannel, r.ProgressChannel)
+			}
 			manifest.CleanupRequest.RemoteStorageService = rs
 			apiClient := apiclient.NewHttpClient(ctx)
 
@@ -224,6 +228,7 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 
 				ctx.LogInfof("Pushing manifest pack file %v", manifest.PackFile)
 				localPackPath := filepath.Dir(manifest.CompressedPath)
+				s.sendPushStepInfo(r, "Pushing manifest pack file")
 				if err := rs.PushFile(ctx, localPackPath, manifest.Path, manifest.PackFile); err != nil {
 					manifest.AddError(err)
 					break

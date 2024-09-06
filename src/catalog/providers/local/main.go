@@ -17,11 +17,14 @@ import (
 const providerName = "local-storage"
 
 type LocalProviderConfig struct {
-	Path string
+	Path            string
+	ProgressChannel chan int
 }
 
 type LocalProvider struct {
-	Config LocalProviderConfig
+	Config          LocalProviderConfig
+	ProgressChannel chan int
+	FileNameChannel chan string
 }
 
 func NewLocalProvider() *LocalProvider {
@@ -47,6 +50,11 @@ func (s *LocalProvider) GetProviderMeta(ctx basecontext.ApiContext) map[string]s
 
 func (s *LocalProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
 	return s.Config.Path
+}
+
+func (s *LocalProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int) {
+	s.ProgressChannel = progressChannel
+	s.FileNameChannel = fileNameChannel
 }
 
 func (s *LocalProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {

@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/pdfile/diagnostics"
 	"github.com/Parallels/prl-devops-service/pdfile/models"
 	"github.com/Parallels/prl-devops-service/pdfile/processors"
@@ -58,9 +57,7 @@ func (p *PDFileService) Run(ctx basecontext.ApiContext) (interface{}, *diagnosti
 	}
 
 	if strings.EqualFold(p.pdfile.Command, "push") {
-		helpers.GlobalSpinner.Start()
 		out, runDiag := p.runPush(ctx)
-		helpers.GlobalSpinner.Stop()
 		diag.Append(runDiag)
 		return out, diag
 	}

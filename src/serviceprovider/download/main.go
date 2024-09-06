@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 var globalDownloadService *DownloadService
@@ -34,13 +36,18 @@ func NewDownloadService() *DownloadService {
 	return globalDownloadService
 }
 
-func (s *DownloadService) DownloadFile(url string, headers map[string]string, destination string) error {
+func (s *DownloadService) DownloadFile(url string, headers map[string]string, destination string, progressReporter *helpers.ProgressReporter) error {
 	file, err := os.Create(filepath.Clean(destination))
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-
+	var progressWriter io.Writer
+	if progressReporter != nil {
+		progressWriter = helpers.NewProgressWriter(file, progressReporter.Size, progressReporter.Progress)
+	} else {
+		progressWriter = file
+	}
 	start := 0
 	for {
 		request, err := http.NewRequest("GET", url, nil)
@@ -69,7 +76,8 @@ func (s *DownloadService) DownloadFile(url string, headers map[string]string, de
 		if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusPartialContent {
 			return fmt.Errorf("HTTP request failed with status code %d", res.StatusCode)
 		}
-		if _, err = io.Copy(file, res.Body); err != nil {
+
+		if _, err = io.Copy(progressWriter, res.Body); err != nil {
 			return err
 		}
 

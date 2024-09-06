@@ -9,12 +9,15 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/common"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/serviceprovider/download"
 	"github.com/jfrog/jfrog-client-go/artifactory"
 	"github.com/jfrog/jfrog-client-go/artifactory/auth"
 	"github.com/jfrog/jfrog-client-go/artifactory/services"
 	"github.com/jfrog/jfrog-client-go/config"
 )
+
+var globalClient *artifactory.ArtifactoryServicesManager
 
 type ArtifactoryRepo struct {
 	Host     string
@@ -26,7 +29,9 @@ type ArtifactoryRepo struct {
 const providerName = "artifactory"
 
 type ArtifactoryProvider struct {
-	Repo ArtifactoryRepo
+	Repo            ArtifactoryRepo
+	ProgressChannel chan int
+	FileNameChannel chan string
 }
 
 func NewArtifactoryProvider() *ArtifactoryProvider {
@@ -47,10 +52,27 @@ func (s *ArtifactoryProvider) GetProviderMeta(ctx basecontext.ApiContext) map[st
 	}
 }
 
+func (s *ArtifactoryProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int) {
+	s.ProgressChannel = progressChannel
+	s.FileNameChannel = fileNameChannel
+}
+
 func (s *ArtifactoryProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
 	return "/"
 }
 
+// Check checks the connection to the Artifactory provider.
+// It parses the connection string and sets the necessary fields in the ArtifactoryProvider struct.
+// If the provider is not the expected provider or any required field is missing, it returns false and an error.
+// Otherwise, it returns true and no error.
+//
+// Parameters:
+// - ctx: The API context for logging and other operations.
+// - connection: The connection string to the Artifactory provider.
+//
+// Returns:
+// - bool: Indicates whether the connection is valid or not.
+// - error: An error if any required field is missing or if the provider is not the expected provider.
 func (s *ArtifactoryProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
 	parts := strings.Split(connection, ";")
 	provider := ""
@@ -90,7 +112,6 @@ func (s *ArtifactoryProvider) Check(ctx basecontext.ApiContext, connection strin
 	return true, nil
 }
 
-// uploadFile uploads a file to an S3 bucket
 func (s *ArtifactoryProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath string, path string, filename string) error {
 	ctx.LogInfof("[%s] Pushing file %s", s.Name(), filename)
 	localFilePath := filepath.Join(rootLocalPath, filename)
@@ -98,6 +119,8 @@ func (s *ArtifactoryProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 	if !strings.HasPrefix(remoteFilePath, "/") {
 		remoteFilePath = "/" + remoteFilePath
 	}
+
+	s.FileNameChannel <- filename
 
 	manager, err := s.getClient(ctx)
 	if err != nil {
@@ -141,7 +164,13 @@ func (s *ArtifactoryProvider) PullFile(ctx basecontext.ApiContext, path string, 
 	headers := make(map[string]string, 0)
 	headers["X-JFrog-Art-Api"] = s.Repo.ApiKey
 	headers["Content-Type"] = "application/json"
-	err := downloadSrv.DownloadFile(url, headers, destinationFilePath)
+
+	fileSize, err := s.GetFileSize(ctx, path, filename)
+	if err != nil {
+		return err
+	}
+	progressReporter := helpers.NewProgressReporter(fileSize, s.ProgressChannel)
+	err = downloadSrv.DownloadFile(url, headers, destinationFilePath, progressReporter)
 	if err != nil {
 		return err
 	}
@@ -242,6 +271,39 @@ func (s *ArtifactoryProvider) FileExists(ctx basecontext.ApiContext, path string
 	}
 
 	return true, nil
+}
+
+func (s *ArtifactoryProvider) GetFileSize(ctx basecontext.ApiContext, path string, fileName string) (int64, error) {
+	ctx.LogInfof("[%s] Checking if file %s exists", s.Name(), fileName)
+	fullPath := filepath.Join(s.Repo.RepoName, path, fileName)
+	fullPath = strings.TrimPrefix(fullPath, "/")
+	fullPath = strings.TrimSuffix(fullPath, "/")
+
+	host := s.getHost()
+
+	url := fmt.Sprintf("%s/%s", host, fullPath)
+	client := http.DefaultClient
+	request, err := http.NewRequest("HEAD", url, nil)
+	if err != nil {
+		return -1, err
+	}
+
+	request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	request.Header.Add("Content-Type", "application/json")
+
+	response, err := client.Do(request)
+	if err != nil {
+		return -1, err
+	}
+
+	if response.StatusCode != 200 {
+		return -1, nil
+	}
+
+	if response.ContentLength > 0 {
+		return response.ContentLength, nil
+	}
+	return -1, nil
 }
 
 func (s *ArtifactoryProvider) CreateFolder(ctx basecontext.ApiContext, folderPath string, folderName string) error {
@@ -363,6 +425,7 @@ func (s *ArtifactoryProvider) getClient(ctx basecontext.ApiContext) (artifactory
 		SetDialTimeout(180 * time.Second).
 		SetOverallRequestTimeout(60 * time.Minute).
 		SetHttpRetries(8).
+		SetThreads(1).
 		Build()
 	if err != nil {
 		return nil, err
@@ -373,5 +436,6 @@ func (s *ArtifactoryProvider) getClient(ctx basecontext.ApiContext) (artifactory
 		return nil, err
 	}
 
+	globalClient = &manager
 	return manager, nil
 }

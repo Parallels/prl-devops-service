@@ -6,11 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/common"
-	"github.com/briandowns/spinner"
+	"github.com/Parallels/prl-devops-service/helpers"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -20,16 +19,19 @@ import (
 )
 
 type S3Bucket struct {
-	Name      string
-	Region    string
-	AccessKey string
-	SecretKey string
+	Name            string
+	Region          string
+	AccessKey       string
+	SecretKey       string
+	ProgressChannel chan int
 }
 
 const providerName = "aws-s3"
 
 type AwsS3BucketProvider struct {
-	Bucket S3Bucket
+	Bucket          S3Bucket
+	ProgressChannel chan int
+	FileNameChannel chan string
 }
 
 func NewAwsS3Provider() *AwsS3BucketProvider {
@@ -52,6 +54,11 @@ func (s *AwsS3BucketProvider) GetProviderMeta(ctx basecontext.ApiContext) map[st
 
 func (s *AwsS3BucketProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
 	return "/"
+}
+
+func (s *AwsS3BucketProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int) {
+	s.ProgressChannel = progressChannel
+	s.FileNameChannel = fileNameChannel
 }
 
 func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
@@ -99,6 +106,9 @@ func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection strin
 // uploadFile uploads a file to an S3 bucket
 func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath string, path string, filename string) error {
 	ctx.LogInfof("Pushing file %s", filename)
+	if s.FileNameChannel != nil {
+		s.FileNameChannel <- filename
+	}
 	localFilePath := filepath.Join(rootLocalPath, filename)
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 
@@ -119,14 +129,23 @@ func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 	if err != nil {
 		return err
 	}
+
+	// Get the file info for size
+	fileInfo, err := file.Stat()
+	if err != nil {
+		ctx.LogInfof("ERROR:", err)
+		return err
+	}
+
 	defer file.Close()
+
+	cr := helpers.NewProgressReader(file, fileInfo.Size(), s.ProgressChannel)
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s.Bucket.Name),
 		Key:    aws.String(remoteFilePath),
-		Body:   file,
+		Body:   cr,
 	})
-
 	if err != nil {
 		return err
 	}
@@ -136,12 +155,11 @@ func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 
 func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, filename string, destination string) error {
 	ctx.LogInfof("Pulling file %s", filename)
+	if s.FileNameChannel != nil {
+		s.FileNameChannel <- filename
+	}
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 	destinationFilePath := filepath.Join(destination, filename)
-
-	loader := spinner.New(spinner.CharSets[9], 10*time.Second)
-	loader.Prefix = "Downloading file "
-	loader.Start()
 
 	// Create a new session using the default region and credentials.
 	var err error
@@ -149,6 +167,15 @@ func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 	if err != nil {
 		return err
 	}
+
+	headObjectOutput, err := s3.New(session).HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(s.Bucket.Name),
+		Key:    aws.String(remoteFilePath),
+	})
+	if err != nil {
+		return err
+	}
+	fileSize := *headObjectOutput.ContentLength
 
 	downloader := s3manager.NewDownloader(session, func(d *s3manager.Downloader) {
 		d.PartSize = 10 * 1024 * 1024 // The minimum/default allowed part size is 5MB
@@ -161,16 +188,16 @@ func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 		return err
 	}
 
+	cw := helpers.NewProgressWriterAt(f, fileSize, s.ProgressChannel)
+
 	// Write the contents of S3 Object to the file
-	_, err = downloader.Download(f, &s3.GetObjectInput{
+	_, err = downloader.Download(cw, &s3.GetObjectInput{
 		Bucket: aws.String(s.Bucket.Name),
 		Key:    aws.String(remoteFilePath),
 	})
 	if err != nil {
 		return err
 	}
-
-	loader.Stop()
 
 	return nil
 }
@@ -191,7 +218,6 @@ func (s *AwsS3BucketProvider) DeleteFile(ctx basecontext.ApiContext, path string
 		Bucket: aws.String(s.Bucket.Name),
 		Key:    aws.String(remoteFilePath),
 	})
-
 	if err != nil {
 		return err
 	}
@@ -240,7 +266,6 @@ func (s *AwsS3BucketProvider) FileExists(ctx basecontext.ApiContext, path string
 		Bucket: aws.String(s.Bucket.Name),
 		Key:    aws.String(fullPath),
 	})
-
 	if err != nil {
 		return false, err
 	}
@@ -280,7 +305,6 @@ func (s *AwsS3BucketProvider) CreateFolder(ctx basecontext.ApiContext, folderPat
 		Key:    aws.String(fullPath),
 		Body:   bytes.NewReader([]byte{}),
 	})
-
 	if err != nil {
 		return err
 	}

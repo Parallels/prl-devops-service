@@ -106,6 +106,7 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 	}
 
 	ctx.LogInfof("Compressing manifest files for %v", r.CatalogId)
+	s.sendPushStepInfo(r, "Compressing manifest files")
 	packFilePath, err := s.compressMachine(ctx, r.LocalPath, manifestPackFileName, "/tmp")
 	if err != nil {
 		return err
@@ -286,7 +287,6 @@ func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, pat
 		_, err = io.Copy(tarWriter, f)
 		return err
 	})
-
 	if err != nil {
 		return "", err
 	}
@@ -351,4 +351,16 @@ func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, m
 	endingTime := time.Now()
 	ctx.LogInfof("Finished decompressing machine from %s to %s, in %v", machineFilePath, destination, endingTime.Sub(staringTime))
 	return nil
+}
+
+func (s *CatalogManifestService) sendPullStepInfo(r *models.PullCatalogManifestRequest, msg string) {
+	if r.StepChannel != nil {
+		r.StepChannel <- msg
+	}
+}
+
+func (s *CatalogManifestService) sendPushStepInfo(r *models.PushCatalogManifestRequest, msg string) {
+	if r.StepChannel != nil {
+		r.StepChannel <- msg
+	}
 }

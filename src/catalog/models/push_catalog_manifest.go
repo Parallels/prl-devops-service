@@ -28,6 +28,9 @@ type PushCatalogManifestRequest struct {
 	RequiredClaims          []string               `json:"required_claims,omitempty"`
 	Tags                    []string               `json:"tags,omitempty"`
 	MinimumSpecRequirements MinimumSpecRequirement `json:"minimum_requirements,omitempty"`
+	ProgressChannel         chan int               `json:"-"`
+	FileNameChannel         chan string            `json:"-"`
+	StepChannel             chan string            `json:"-"`
 }
 
 type ImportRemoteMachineRequest struct {

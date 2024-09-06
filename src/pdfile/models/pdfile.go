@@ -65,6 +65,7 @@ func (p *PDFile) ParseProvider(value string) (PDFileProvider, error) {
 	if strings.Contains(value, ";") {
 		separator = ";"
 	}
+	value = strings.Replace(value, "PROVIDER ", "", 1)
 
 	providerParts := strings.Split(value, separator)
 	if len(providerParts) == 1 {
@@ -89,7 +90,7 @@ func (p *PDFile) ParseProvider(value string) (PDFileProvider, error) {
 		}
 
 		if strings.Contains(providerPart, "=") {
-			providerSegmentParts := strings.Split(providerPart, "=")
+			providerSegmentParts := strings.SplitN(providerPart, "=", 2)
 			if len(providerSegmentParts) == 2 {
 				if strings.ToLower(providerSegmentParts[0]) == "name" {
 					result.Name = strings.TrimSpace(providerSegmentParts[1])

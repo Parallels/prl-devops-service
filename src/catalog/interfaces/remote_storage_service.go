@@ -1,10 +1,13 @@
 package interfaces
 
-import "github.com/Parallels/prl-devops-service/basecontext"
+import (
+	"github.com/Parallels/prl-devops-service/basecontext"
+)
 
 type RemoteStorageService interface {
 	Name() string
 	Check(ctx basecontext.ApiContext, connection string) (bool, error)
+	SetProgressChannel(fileNameChannel chan string, progressChannel chan int)
 	GetProviderRootPath(ctx basecontext.ApiContext) string
 	FileChecksum(ctx basecontext.ApiContext, path string, fileName string) (string, error)
 	GetProviderMeta(ctx basecontext.ApiContext) map[string]string
