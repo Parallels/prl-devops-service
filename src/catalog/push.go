@@ -198,6 +198,24 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 				manifest.Path = filepath.Join(rs.GetProviderRootPath(ctx), manifest.CatalogId)
 				manifest.MetadataFile = s.getMetaFilename(manifest.Name)
 				manifest.PackFile = s.getPackFilename(manifest.Name)
+				if r.MinimumSpecRequirements.Cpu != 0 {
+					if manifest.MinimumSpecRequirements == nil {
+						manifest.MinimumSpecRequirements = &models.MinimumSpecRequirement{}
+					}
+					manifest.MinimumSpecRequirements.Cpu = r.MinimumSpecRequirements.Cpu
+				}
+				if r.MinimumSpecRequirements.Memory != 0 {
+					if manifest.MinimumSpecRequirements == nil {
+						manifest.MinimumSpecRequirements = &models.MinimumSpecRequirement{}
+					}
+					manifest.MinimumSpecRequirements.Memory = r.MinimumSpecRequirements.Memory
+				}
+				if r.MinimumSpecRequirements.Disk != 0 {
+					if manifest.MinimumSpecRequirements == nil {
+						manifest.MinimumSpecRequirements = &models.MinimumSpecRequirement{}
+					}
+					manifest.MinimumSpecRequirements.Disk = r.MinimumSpecRequirements.Disk
+				}
 				tempManifestContentFilePath := filepath.Join("/tmp", s.getMetaFilename(manifest.Name))
 				if manifest.Architecture == "amd64" {
 					manifest.Architecture = "x86_64"
