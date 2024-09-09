@@ -17,7 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-## [0.9.3] - 2024-09-06
+## [0.9.4] - 2024-09-09
+
+### Fixed
+
+- Fixed an issue where some pushes would not update the manifest in the catalog
+
+## [0.9.3] - 2024-09-09
 
 ### Fixed
 
