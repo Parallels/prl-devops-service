@@ -1,0 +1,14 @@
+---
+layout: post
+title:  "Release 0.9.4"
+date:   2024-09-09 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+### Fixed
+
+- Fixed an issue where some pushes would not update the manifest in the catalog
+
+
