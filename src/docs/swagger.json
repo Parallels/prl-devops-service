@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.9.2"
+        "version": "0.9.3"
     },
     "basePath": "/api",
     "paths": {
@@ -5471,6 +5471,20 @@
         }
     },
     "definitions": {
+        "github_com_Parallels_prl-devops-service_catalog_models.MinimumSpecRequirement": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "type": "integer"
+                },
+                "disk": {
+                    "type": "integer"
+                },
+                "memory": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_Parallels_prl-devops-service_models.Advanced": {
             "type": "object",
             "properties": {
@@ -5549,6 +5563,9 @@
                 },
                 "metadata_filename": {
                     "type": "string"
+                },
+                "minimum_requirements": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.MinimumSpecRequirement"
                 },
                 "name": {
                     "type": "string"
@@ -5807,6 +5824,20 @@
             "properties": {
                 "auto": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.MinimumSpecRequirement": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "type": "integer"
+                },
+                "disk": {
+                    "type": "integer"
+                },
+                "memory": {
+                    "type": "integer"
                 }
             }
         },
@@ -6768,20 +6799,6 @@
                 }
             }
         },
-        "models.MinimumSpecRequirement": {
-            "type": "object",
-            "properties": {
-                "cpu": {
-                    "type": "integer"
-                },
-                "disk": {
-                    "type": "integer"
-                },
-                "memory": {
-                    "type": "integer"
-                }
-            }
-        },
         "models.OAuthErrorResponse": {
             "type": "object",
             "properties": {
@@ -7114,7 +7131,7 @@
                     "type": "string"
                 },
                 "minimum_requirements": {
-                    "$ref": "#/definitions/models.MinimumSpecRequirement"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_catalog_models.MinimumSpecRequirement"
                 },
                 "required_claims": {
                     "type": "array",

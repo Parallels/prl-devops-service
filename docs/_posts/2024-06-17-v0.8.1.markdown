@@ -11,7 +11,7 @@ categories: release notes
 
 - Generation of the Helm Charts
 - Issue where some missing details in telemetry would crash
-  
+
 ### Changed
 
 - Added better readme documentation

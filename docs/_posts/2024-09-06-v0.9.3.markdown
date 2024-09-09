@@ -1,0 +1,15 @@
+---
+layout: post
+title:  "Release 0.9.3"
+date:   2024-09-06 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+### Fixed
+
+- Removed an extra debug line that existed in the code
+- Added minimum requirements to the pdfile and catalog db
+
+
