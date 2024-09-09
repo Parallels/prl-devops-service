@@ -46,6 +46,14 @@ func (p *PDFileService) runPush(ctx basecontext.ApiContext) (interface{}, *diagn
 		Connection:      p.pdfile.GetConnectionString(),
 	}
 
+	if p.pdfile.MinimumSpecRequirements != nil {
+		body.MinimumSpecRequirements = models.MinimumSpecRequirement{
+			Cpu:    p.pdfile.MinimumSpecRequirements.Cpu,
+			Memory: p.pdfile.MinimumSpecRequirements.Memory,
+			Disk:   p.pdfile.MinimumSpecRequirements.Disk,
+		}
+	}
+
 	go func() {
 		for {
 			fileName = <-fileNameChannel
