@@ -5478,6 +5478,20 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "github_com_Parallels_prl-devops-service_catalog_models.MinimumSpecRequirement": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "type": "integer"
+                },
+                "disk": {
+                    "type": "integer"
+                },
+                "memory": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_Parallels_prl-devops-service_models.Advanced": {
             "type": "object",
             "properties": {
@@ -5556,6 +5570,9 @@ const docTemplate = `{
                 },
                 "metadata_filename": {
                     "type": "string"
+                },
+                "minimum_requirements": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.MinimumSpecRequirement"
                 },
                 "name": {
                     "type": "string"
@@ -5814,6 +5831,20 @@ const docTemplate = `{
             "properties": {
                 "auto": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.MinimumSpecRequirement": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "type": "integer"
+                },
+                "disk": {
+                    "type": "integer"
+                },
+                "memory": {
+                    "type": "integer"
                 }
             }
         },
@@ -6775,20 +6806,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.MinimumSpecRequirement": {
-            "type": "object",
-            "properties": {
-                "cpu": {
-                    "type": "integer"
-                },
-                "disk": {
-                    "type": "integer"
-                },
-                "memory": {
-                    "type": "integer"
-                }
-            }
-        },
         "models.OAuthErrorResponse": {
             "type": "object",
             "properties": {
@@ -7121,7 +7138,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "minimum_requirements": {
-                    "$ref": "#/definitions/models.MinimumSpecRequirement"
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_catalog_models.MinimumSpecRequirement"
                 },
                 "required_claims": {
                     "type": "array",
@@ -7605,7 +7622,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.9.2",
+	Version:          "0.9.3",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
