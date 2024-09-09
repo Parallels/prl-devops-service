@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Removed an extra debug line that existed in the code
+- Added minimum requirements to the pdfile and catalog db
 
 ## [0.9.2] - 2024-09-06
 

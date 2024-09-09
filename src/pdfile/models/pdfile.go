@@ -6,33 +6,34 @@ import (
 )
 
 type PDFile struct {
-	Raw            []string              `json:"-" yaml:"-"`
-	Insecure       bool                  `json:"-" yaml:"-"`
-	Host           string                `json:"-" yaml:"-"`
-	From           string                `json:"FROM,omitempty" yaml:"FROM,omitempty"`
-	To             string                `json:"TO,omitempty" yaml:"TO,omitempty"`
-	Prefix         string                `json:"PREFIX,omitempty" yaml:"PREFIX,omitempty"`
-	Authentication *PDFileAuthentication `json:"AUTHENTICATION,omitempty" yaml:"AUTHENTICATION,omitempty"`
-	Description    string                `json:"DESCRIPTION,omitempty" yaml:"DESCRIPTION,omitempty"`
-	CatalogId      string                `json:"CATALOG_ID,omitempty" yaml:"CATALOG_ID,omitempty"`
-	Version        string                `json:"VERSION,omitempty" yaml:"VERSION,omitempty"`
-	Architecture   string                `json:"ARCHITECTURE,omitempty" yaml:"ARCHITECTURE,omitempty"`
-	LocalPath      string                `json:"LOCAL_PATH,omitempty" yaml:"LOCAL_PATH,omitempty"`
-	Destination    string                `json:"DESTINATION,omitempty" yaml:"DESTINATION,omitempty"`
-	MachineName    string                `json:"MACHINE_NAME,omitempty" yaml:"MACHINE_NAME,omitempty"`
-	Owner          string                `json:"OWNER,omitempty" yaml:"OWNER,omitempty"`
-	StartAfterPull bool                  `json:"START_AFTER_PULL,omitempty" yaml:"START_AFTER_PULL,omitempty"`
-	Roles          []string              `json:"ROLES,omitempty" yaml:"ROLES,omitempty"`
-	Claims         []string              `json:"CLAIMS,omitempty" yaml:"CLAIMS,omitempty"`
-	Tags           []string              `json:"TAGS,omitempty" yaml:"TAGS,omitempty"`
-	Provider       *PDFileProvider       `json:"PROVIDER,omitempty" yaml:"PROVIDER,omitempty"`
-	Command        string                `json:"COMMAND,omitempty" yaml:"COMMAND,omitempty"`
-	Execute        []string              `json:"EXECUTE,omitempty" yaml:"EXECUTE,omitempty"`
-	Clone          bool                  `json:"CLONE,omitempty" yaml:"CLONE,omitempty"`
-	CloneTo        string                `json:"CLONE_TO,omitempty" yaml:"CLONE_TO,omitempty"`
-	CloneId        string                `json:"CLONE_ID,omitempty" yaml:"CLONE_ID,omitempty"`
-	Operation      string                `json:"RUN,omitempty" yaml:"RUN,omitempty"`
-	Client         string                `json:"CLIENT,omitempty" yaml:"CLIENT,omitempty"`
+	Raw                     []string                      `json:"-" yaml:"-"`
+	Insecure                bool                          `json:"-" yaml:"-"`
+	Host                    string                        `json:"-" yaml:"-"`
+	From                    string                        `json:"FROM,omitempty" yaml:"FROM,omitempty"`
+	To                      string                        `json:"TO,omitempty" yaml:"TO,omitempty"`
+	Prefix                  string                        `json:"PREFIX,omitempty" yaml:"PREFIX,omitempty"`
+	Authentication          *PDFileAuthentication         `json:"AUTHENTICATION,omitempty" yaml:"AUTHENTICATION,omitempty"`
+	Description             string                        `json:"DESCRIPTION,omitempty" yaml:"DESCRIPTION,omitempty"`
+	CatalogId               string                        `json:"CATALOG_ID,omitempty" yaml:"CATALOG_ID,omitempty"`
+	Version                 string                        `json:"VERSION,omitempty" yaml:"VERSION,omitempty"`
+	Architecture            string                        `json:"ARCHITECTURE,omitempty" yaml:"ARCHITECTURE,omitempty"`
+	LocalPath               string                        `json:"LOCAL_PATH,omitempty" yaml:"LOCAL_PATH,omitempty"`
+	Destination             string                        `json:"DESTINATION,omitempty" yaml:"DESTINATION,omitempty"`
+	MachineName             string                        `json:"MACHINE_NAME,omitempty" yaml:"MACHINE_NAME,omitempty"`
+	Owner                   string                        `json:"OWNER,omitempty" yaml:"OWNER,omitempty"`
+	StartAfterPull          bool                          `json:"START_AFTER_PULL,omitempty" yaml:"START_AFTER_PULL,omitempty"`
+	Roles                   []string                      `json:"ROLES,omitempty" yaml:"ROLES,omitempty"`
+	Claims                  []string                      `json:"CLAIMS,omitempty" yaml:"CLAIMS,omitempty"`
+	Tags                    []string                      `json:"TAGS,omitempty" yaml:"TAGS,omitempty"`
+	Provider                *PDFileProvider               `json:"PROVIDER,omitempty" yaml:"PROVIDER,omitempty"`
+	MinimumSpecRequirements *PdFileMinimumSpecRequirement `json:"MINIMUM_REQUIREMENTS,omitempty" yaml:"MINIMUM_REQUIREMENTS,omitempty"`
+	Command                 string                        `json:"COMMAND,omitempty" yaml:"COMMAND,omitempty"`
+	Execute                 []string                      `json:"EXECUTE,omitempty" yaml:"EXECUTE,omitempty"`
+	Clone                   bool                          `json:"CLONE,omitempty" yaml:"CLONE,omitempty"`
+	CloneTo                 string                        `json:"CLONE_TO,omitempty" yaml:"CLONE_TO,omitempty"`
+	CloneId                 string                        `json:"CLONE_ID,omitempty" yaml:"CLONE_ID,omitempty"`
+	Operation               string                        `json:"RUN,omitempty" yaml:"RUN,omitempty"`
+	Client                  string                        `json:"CLIENT,omitempty" yaml:"CLIENT,omitempty"`
 }
 
 func NewPdFile() *PDFile {

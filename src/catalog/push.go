@@ -89,6 +89,24 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 				manifest.Path = catalogManifest.Path
 				manifest.MetadataFile = s.getMetaFilename(catalogManifest.Name)
 				manifest.PackFile = s.getPackFilename(catalogManifest.Name)
+				if r.MinimumSpecRequirements.Cpu != 0 {
+					if manifest.MinimumSpecRequirements == nil {
+						manifest.MinimumSpecRequirements = &models.MinimumSpecRequirement{}
+					}
+					manifest.MinimumSpecRequirements.Cpu = r.MinimumSpecRequirements.Cpu
+				}
+				if r.MinimumSpecRequirements.Memory != 0 {
+					if manifest.MinimumSpecRequirements == nil {
+						manifest.MinimumSpecRequirements = &models.MinimumSpecRequirement{}
+					}
+					manifest.MinimumSpecRequirements.Memory = r.MinimumSpecRequirements.Memory
+				}
+				if r.MinimumSpecRequirements.Disk != 0 {
+					if manifest.MinimumSpecRequirements == nil {
+						manifest.MinimumSpecRequirements = &models.MinimumSpecRequirement{}
+					}
+					manifest.MinimumSpecRequirements.Disk = r.MinimumSpecRequirements.Disk
+				}
 				localPackPath := filepath.Dir(manifest.CompressedPath)
 
 				// The catalog manifest metadata already exists checking if the files are up to date and pushing them if not
