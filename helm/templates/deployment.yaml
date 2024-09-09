@@ -46,162 +46,166 @@ spec:
               value: {{ .Values.service.targetPort | quote }}
             {{- if .Values.apiPrefix }}
             - name: API_PREFIX
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: API_PREFIX
             {{- end }}
             {{- if .Values.logLevel }}
             - name: LOG_LEVEL
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: LOG_LEVEL
             {{- end }}
             {{- if .Values.security.key }}
-            - name: ENCRYPTION_PRIVATE_KEY 
-              valueFrom: 
+            - name: ENCRYPTION_PRIVATE_KEY
+              valueFrom:
                 secretKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: ENCRYPTION_PRIVATE_KEY
             {{- end }}
             {{- if .Values.security.jwt.hmac_secret }}
-            - name: JWT_HMACS_SECRET 
-              valueFrom: 
+            - name: JWT_HMACS_SECRET
+              valueFrom:
                 secretKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: JWT_HMACS_SECRET
             {{- end }}
             {{- if .Values.security.jwt.rsa_private_key }}
-            - name: JWT_PRIVATE_KEY 
-              valueFrom: 
+            - name: JWT_PRIVATE_KEY
+              valueFrom:
                 secretKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: JWT_PRIVATE_KEY
             {{- end }}
             {{- if .Values.security.jwt.duration }}
             - name: JWT_DURATION
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: JWT_DURATION
             {{- end }}
             {{- if .Values.security.jwt.signing_method }}
             - name: JWT_SIGN_ALGORITHM
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: JWT_SIGN_ALGORITHM
             {{- end }}
             {{- if .Values.security.password.min_password_length }}
             - name: SECURITY_PASSWORD_MIN_PASSWORD_LENGTH
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: SECURITY_PASSWORD_MIN_PASSWORD_LENGTH
             {{- end }}
             {{- if .Values.security.password.max_password_length }}
             - name: SECURITY_PASSWORD_MAX_PASSWORD_LENGTH
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: SECURITY_PASSWORD_MAX_PASSWORD_LENGTH
             {{- end }}
             {{- if .Values.security.password.require_lowercase }}
             - name: SECURITY_PASSWORD_REQUIRE_LOWERCASE
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: SECURITY_PASSWORD_REQUIRE_LOWERCASE
             {{- end }}
             {{- if .Values.security.password.require_uppercase }}
             - name: SECURITY_PASSWORD_REQUIRE_UPPERCASE
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: SECURITY_PASSWORD_REQUIRE_UPPERCASE
             {{- end }}
             {{- if .Values.security.password.require_number }}
             - name: SECURITY_PASSWORD_REQUIRE_NUMBER
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: SECURITY_PASSWORD_REQUIRE_NUMBER
             {{- end }}
             {{- if .Values.security.password.require_special_characters }}
             - name: SECURITY_PASSWORD_REQUIRE_SPECIAL_CHAR
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: SECURITY_PASSWORD_REQUIRE_SPECIAL_CHAR
             {{- end }}
             {{- if .Values.security.password.salt_password }}
             - name: SECURITY_PASSWORD_SALT_PASSWORD
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: SECURITY_PASSWORD_SALT_PASSWORD
             {{- end }}
             {{- if .Values.security.brute_force.max_login_attempts }}
             - name: BRUTE_FORCE_MAX_LOGIN_ATTEMPTS
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: BRUTE_FORCE_MAX_LOGIN_ATTEMPTS
             {{- end }}
             {{- if .Values.security.brute_force.lockout_duration }}
             - name: BRUTE_FORCE_LOCKOUT_DURATION
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: BRUTE_FORCE_LOCKOUT_DURATION
             {{- end }}
             {{- if .Values.security.brute_force.increment_lockout_duration }}
             - name: BRUTE_FORCE_INCREMENTAL_WAIT
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: BRUTE_FORCE_INCREMENTAL_WAIT
             {{- end }}
             {{- if .Values.security.root_password }}
-            - name: ROOT_PASSWORD 
-              valueFrom: 
+            - name: ROOT_PASSWORD
+              valueFrom:
                 secretKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: SECURITY_ROOT_PASSWORD
             {{- end }}
             {{- if .Values.security.enable_tls }}
-            - name: TLS_ENABLED 
+            - name: TLS_ENABLED
               value: "true"
-            - name: TLS_CERTIFICATE 
-              valueFrom: 
+            - name: TLS_CERTIFICATE
+              valueFrom:
                 secretKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: TLS_CERTIFICATE
-            - name: TLS_PRIVATE_KEY 
-              valueFrom: 
+            - name: TLS_PRIVATE_KEY
+              valueFrom:
                 secretKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: TLS_PRIVATE_KEY
             {{- end }}
             {{- if .Values.config.disableCatalogCaching }}
-            - name: DISABLE_CATALOG_CACHING 
+            - name: DISABLE_CATALOG_CACHING
               value: "true"
             {{- end }}
             {{- if .Values.config.mode }}
             - name: MODE
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: MODE
             {{- end }}
             {{- if .Values.storage.databasePath }}
             - name: DATABASE_FOLDER
-              valueFrom: 
+              valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
                   key: DATABASE_FOLDER
             {{- end }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
