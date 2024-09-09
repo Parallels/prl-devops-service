@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `envFrom` key to Helm values
+
 ### Fixed
 
 ### Changed
@@ -98,7 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Generation of the Helm Charts
 - Issue where some missing details in telemetry would crash
-  
+
 ### Changed
 
 - Added better readme documentation
@@ -142,7 +144,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   overloading the database
 - Moved all the old commands to the new exec with context to enable timeouts
 - Added a 30 seconds timeout when checking the status of the local vms
-  
+
 ## [0.7.1] - 2024-05-29
 
 ### Added
@@ -175,7 +177,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed a issue with the orchestrator where it didn't start the auto refresh
-  
+
 ## [0.6.6] - 2024-05-16
 
 ### Fixed
@@ -243,7 +245,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved documentation on GitHub Actions and Orchestrator use cases
 - Added Start/Stop endpoints to the orchestrator
 - Added Amplitude Key to the docker images
-  
+
 ### Fixed
 
 - Fixed several issues with the orchestrator
