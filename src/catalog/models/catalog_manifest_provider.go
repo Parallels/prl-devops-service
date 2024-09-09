@@ -165,6 +165,7 @@ func (m *CatalogManifestProvider) Parse(connection string) error {
 			parts = strings.Split(m.Host, "@")
 		}
 		if len(parts) == 2 {
+			m.Host = parts[1]
 		} else if len(parts) > 2 {
 			lastIndex := len(userParts) - 1
 			otherParts := strings.Join(userParts[:lastIndex], ";")
@@ -193,6 +194,14 @@ func (m *CatalogManifestProvider) Parse(connection string) error {
 	}
 	if schema != "" {
 		m.Host = schema + "://" + m.Host
+	}
+	if strings.Contains(m.Host, ":") {
+		lastIndexOfAt := strings.LastIndex(m.Host, ":")
+		hostParts := []string{m.Host[:lastIndexOfAt], m.Host[lastIndexOfAt+1:]}
+		if len(hostParts) == 2 {
+			m.Host = hostParts[0]
+			m.Port = hostParts[1]
+		}
 	}
 
 	return nil

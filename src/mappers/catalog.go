@@ -38,6 +38,14 @@ func CatalogManifestToDto(m catalog_models.VirtualMachineCatalogManifest) data_m
 		DownloadCount:          m.DownloadCount,
 	}
 
+	if m.MinimumSpecRequirements != nil {
+		data.MinimumSpecRequirements = &data_models.MinimumSpecRequirement{
+			Cpu:    m.MinimumSpecRequirements.Cpu,
+			Memory: m.MinimumSpecRequirements.Memory,
+			Disk:   m.MinimumSpecRequirements.Disk,
+		}
+	}
+
 	if m.Provider != nil {
 		data.Provider = &data_models.CatalogManifestProvider{
 			Type:     m.Provider.Type,
@@ -96,6 +104,14 @@ func DtoCatalogManifestToBase(m data_models.CatalogManifest) catalog_models.Virt
 		RevokedAt:              m.RevokedAt,
 		RevokedBy:              m.RevokedBy,
 		DownloadCount:          m.DownloadCount,
+	}
+
+	if m.MinimumSpecRequirements != nil {
+		data.MinimumSpecRequirements = &catalog_models.MinimumSpecRequirement{
+			Cpu:    m.MinimumSpecRequirements.Cpu,
+			Memory: m.MinimumSpecRequirements.Memory,
+			Disk:   m.MinimumSpecRequirements.Disk,
+		}
 	}
 
 	if m.Provider != nil {
@@ -164,6 +180,14 @@ func CatalogManifestContentItemsToDto(m []catalog_models.VirtualMachineManifestC
 		result = append(result, CatalogManifestContentItemToDto(item))
 	}
 	return result
+}
+
+func CatalogManifestMinimumSpecsToDto(m catalog_models.MinimumSpecRequirement) data_models.MinimumSpecRequirement {
+	return data_models.MinimumSpecRequirement{
+		Cpu:    m.Cpu,
+		Memory: m.Memory,
+		Disk:   m.Disk,
+	}
 }
 
 func DtoCatalogManifestContentItemsToBase(m []data_models.CatalogManifestContentItem) []catalog_models.VirtualMachineManifestContentItem {
@@ -265,6 +289,14 @@ func DtoCatalogManifestToApi(m data_models.CatalogManifest) models.CatalogManife
 			Meta:     m.Provider.Meta,
 		}
 	}
+	if m.MinimumSpecRequirements != nil {
+		data.MinimumSpecRequirements = &models.MinimumSpecRequirement{
+			Cpu:    m.MinimumSpecRequirements.Cpu,
+			Memory: m.MinimumSpecRequirements.Memory,
+			Disk:   m.MinimumSpecRequirements.Disk,
+		}
+	}
+
 	if data.Provider.Meta == nil {
 		data.Provider.Meta = make(map[string]string)
 	}
