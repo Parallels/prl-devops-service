@@ -407,7 +407,19 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(ctx baseconte
 			return
 		}
 
-		if len(vms) != 1 {
+		var vm *api_models.ParallelsVM
+		if len(vms) > 1 {
+			for _, searchVM := range vms {
+				if searchVM.Name == r.MachineName {
+					vm = &searchVM
+					break
+				}
+			}
+		} else if len(vms) == 1 {
+			vm = &vms[0]
+		}
+
+		if vm == nil {
 			notFoundError := errors.Newf("Machine %v not found", r.MachineName)
 			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, notFoundError)
 			response.AddError(notFoundError)
@@ -416,11 +428,11 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(ctx baseconte
 		}
 
 		// Renaming only if the name is different
-		if vms[0].Name != r.MachineName {
-			response.ID = vms[0].ID
+		if vm.Name != r.MachineName {
+			response.ID = vm.ID
 			renameRequest := api_models.RenameVirtualMachineRequest{
-				ID:          vms[0].ID,
-				CurrentName: vms[0].Name,
+				ID:          vm.ID,
+				CurrentName: vm.Name,
 				NewName:     r.MachineName,
 			}
 
@@ -453,7 +465,19 @@ func (s *CatalogManifestService) startMachineWithParallelsDesktop(ctx basecontex
 			return
 		}
 
-		if len(vms) != 1 {
+		var vm *api_models.ParallelsVM
+		if len(vms) > 1 {
+			for _, searchVM := range vms {
+				if searchVM.Name == r.MachineName {
+					vm = &searchVM
+					break
+				}
+			}
+		} else if len(vms) == 1 {
+			vm = &vms[0]
+		}
+
+		if vm == nil {
 			notFoundError := errors.Newf("Machine %v not found", r.MachineName)
 			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, notFoundError)
 			response.AddError(notFoundError)
@@ -461,7 +485,7 @@ func (s *CatalogManifestService) startMachineWithParallelsDesktop(ctx basecontex
 			return
 		}
 
-		if err := parallelsDesktopSvc.StartVm(ctx, vms[0].ID); err != nil {
+		if err := parallelsDesktopSvc.StartVm(ctx, vm.ID); err != nil {
 			ctx.LogErrorf("Error starting machine %v: %v", r.MachineName, err)
 			response.AddError(err)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
