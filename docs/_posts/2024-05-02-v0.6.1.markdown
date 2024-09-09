@@ -13,7 +13,7 @@ categories: release notes
 - Improved documentation on GitHub Actions and Orchestrator use cases
 - Added Start/Stop endpoints to the orchestrator
 - Added Amplitude Key to the docker images
-  
+
 ### Fixed
 
 - Fixed several issues with the orchestrator
