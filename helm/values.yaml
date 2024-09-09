@@ -29,6 +29,10 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
+envFrom: []
+  # - secretRef:
+  #     name: mySecret
+
 storage:
   node_name: ''
   storage_class: 'manual'
@@ -114,4 +118,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
