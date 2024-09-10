@@ -88,6 +88,7 @@ type PullCatalogManifestResponse struct {
 	LocalPath      string                         `json:"local_path,omitempty"`
 	MachineName    string                         `json:"machine_name,omitempty"`
 	Manifest       *VirtualMachineCatalogManifest `json:"manifest,omitempty"`
+	LocalCachePath string                         `json:"local_cache_path,omitempty"`
 	CleanupRequest *cleanupservice.CleanupRequest `json:"-"`
 	Errors         []error                        `json:"-"`
 }

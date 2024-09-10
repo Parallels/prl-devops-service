@@ -272,12 +272,13 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 
 	fmt.Printf("\rFinished pulling manifest\n")
 	response := models.PullResponse{
-		MachineId:    resultManifest.ID,
-		MachineName:  resultManifest.MachineName,
-		CatalogId:    resultManifest.Manifest.CatalogId,
-		Version:      resultManifest.Manifest.Version,
-		Architecture: resultManifest.Manifest.Architecture,
-		Type:         resultManifest.Manifest.Type,
+		MachineId:      resultManifest.ID,
+		MachineName:    resultManifest.MachineName,
+		CatalogId:      resultManifest.Manifest.CatalogId,
+		Version:        resultManifest.Manifest.Version,
+		Architecture:   resultManifest.Manifest.Architecture,
+		LocalCachePath: resultManifest.LocalCachePath,
+		Type:           resultManifest.Manifest.Type,
 	}
 
 	if p.pdfile.Clone {

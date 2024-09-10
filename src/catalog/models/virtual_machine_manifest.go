@@ -34,6 +34,7 @@ type VirtualMachineCatalogManifest struct {
 	CompressedChecksum      string                              `json:"compressed_checksum"`
 	VirtualMachineContents  []VirtualMachineManifestContentItem `json:"virtual_machine_contents"`
 	PackContents            []VirtualMachineManifestContentItem `json:"pack_contents"`
+	PackSize                int64                               `json:"pack_size,omitempty"`
 	Tainted                 bool                                `json:"tainted"`
 	TaintedBy               string                              `json:"tainted_by"`
 	TaintedAt               string                              `json:"tainted_at"`

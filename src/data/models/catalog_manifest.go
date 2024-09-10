@@ -25,6 +25,7 @@ type CatalogManifest struct {
 	DownloadCount           int                          `json:"download_count"`
 	VirtualMachineContents  []CatalogManifestContentItem `json:"virtual_machine_contents"`
 	PackContents            []CatalogManifestContentItem `json:"pack_contents"`
+	PackSize                int64                        `json:"pack_size,omitempty"`
 	MinimumSpecRequirements *MinimumSpecRequirement      `json:"minimum_requirements,omitempty"`
 	Tainted                 bool                         `json:"tainted"`
 	TaintedBy               string                       `json:"tainted_by"`

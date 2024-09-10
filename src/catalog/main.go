@@ -123,6 +123,7 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 	}
 
 	manifest.Size = fileInfo.Size()
+	manifest.PackSize = fileInfo.Size()
 
 	ctx.LogInfof("Getting manifest package checksum for %v", r.CatalogId)
 	checksum, err := helpers.GetFileMD5Checksum(packFilePath)

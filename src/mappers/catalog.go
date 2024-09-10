@@ -27,6 +27,7 @@ func CatalogManifestToDto(m catalog_models.VirtualMachineCatalogManifest) data_m
 		LastDownloadedUser:     m.LastDownloadedUser,
 		VirtualMachineContents: CatalogManifestContentItemsToDto(m.VirtualMachineContents),
 		PackContents:           CatalogManifestContentItemsToDto(m.PackContents),
+		PackSize:               m.PackSize,
 		Size:                   m.Size,
 		Tainted:                m.Tainted,
 		TaintedBy:              m.TaintedBy,
@@ -96,6 +97,7 @@ func DtoCatalogManifestToBase(m data_models.CatalogManifest) catalog_models.Virt
 		Size:                   m.Size,
 		VirtualMachineContents: DtoCatalogManifestContentItemsToBase(m.VirtualMachineContents),
 		PackContents:           DtoCatalogManifestContentItemsToBase(m.PackContents),
+		PackSize:               m.PackSize,
 		Tainted:                m.Tainted,
 		TaintedBy:              m.TaintedBy,
 		TaintedAt:              m.TaintedAt,
@@ -224,6 +226,7 @@ func ApiCatalogManifestToDto(m models.CatalogManifest) data_models.CatalogManife
 		Revoked:            m.Revoked,
 		RevokedAt:          m.RevokedAt,
 		RevokedBy:          m.RevokedBy,
+		PackSize:           m.PackSize,
 		DownloadCount:      m.DownloadCount,
 	}
 
@@ -271,6 +274,7 @@ func DtoCatalogManifestToApi(m data_models.CatalogManifest) models.CatalogManife
 		Revoked:            m.Revoked,
 		RevokedAt:          m.RevokedAt,
 		RevokedBy:          m.RevokedBy,
+		PackSize:           m.PackSize,
 		DownloadCount:      m.DownloadCount,
 	}
 
@@ -364,6 +368,7 @@ func ApiCatalogManifestToCatalogManifest(m models.CatalogManifest) catalog_model
 		RevokedAt:          m.RevokedAt,
 		RevokedBy:          m.RevokedBy,
 		DownloadCount:      m.DownloadCount,
+		PackSize:           m.PackSize,
 	}
 
 	if m.Provider != nil {
