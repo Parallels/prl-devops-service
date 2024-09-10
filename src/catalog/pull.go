@@ -324,6 +324,10 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					}
 				}
 
+				if cfg.IsCatalogCachingEnable() {
+					response.LocalCachePath = filepath.Join(destinationFolder, cacheMachineName)
+				}
+
 				systemSrv := serviceProvider.System
 				if r.Owner != "" && r.Owner != "root" {
 					if err := systemSrv.ChangeFileUserOwner(ctx, r.Owner, r.LocalMachineFolder); err != nil {

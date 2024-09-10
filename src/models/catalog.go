@@ -29,6 +29,7 @@ type CatalogManifest struct {
 	RevokedAt               string                        `json:"revoked_at,omitempty" yaml:"revoked_at,omitempty"`
 	RevokedBy               string                        `json:"revoked_by,omitempty" yaml:"revoked_by,omitempty"`
 	PackContents            []CatalogManifestPackItem     `json:"pack_contents,omitempty" yaml:"pack_contents,omitempty"`
+	PackSize                int64                         `json:"pack_size,omitempty" yaml:"pack_size,omitempty"`
 	MinimumSpecRequirements *MinimumSpecRequirement       `json:"minimum_requirements,omitempty" yaml:"minimum_requirements,omitempty"`
 }
 
