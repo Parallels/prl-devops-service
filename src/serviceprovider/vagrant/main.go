@@ -328,7 +328,7 @@ func (s *VagrantService) getVagrantFolderPath(ctx basecontext.ApiContext, reques
 		} else {
 			destinationFilePath := filepath.Join(vagrantFileFolder, "Vagrantfile")
 			downloadService := download.NewDownloadService()
-			if err := downloadService.DownloadFile(request.VagrantFilePath, nil, destinationFilePath); err != nil {
+			if err := downloadService.DownloadFile(request.VagrantFilePath, nil, destinationFilePath, nil); err != nil {
 				return "", err
 			}
 

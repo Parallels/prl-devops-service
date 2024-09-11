@@ -1,4 +1,4 @@
-{{- if and .Values.ingress.enabled  .Values.ingress.istio}}
+{{- if and .Values.ingress.enabled  .Values.ingress.istio.enabled }}
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:

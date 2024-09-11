@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
@@ -12,7 +11,6 @@ import (
 	"github.com/Parallels/prl-devops-service/pdfile/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider/parallelsdesktop"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
-	"github.com/briandowns/spinner"
 	"github.com/cjlapao/common-go/helper"
 )
 
@@ -226,11 +224,8 @@ func processCatalogListCmd(ctx basecontext.ApiContext, filepath string) {
 func processCatalogPushCmd(ctx basecontext.ApiContext, filePath string) {
 	svc := catalogInitPdFile(ctx, "push", filePath)
 
-	s := spinner.New(spinner.CharSets[9], 500*time.Millisecond)
-
 	out, diags := svc.Run(ctx)
 
-	s.Stop()
 	if diags.HasErrors() {
 		for _, err := range diags.Errors() {
 			fmt.Println(err)

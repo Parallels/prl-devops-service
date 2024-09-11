@@ -1,4 +1,4 @@
-{{- if .Values.storage.databasePath }}
+{{- if and .Values.storage.databasePath .Values.storage.node_name }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -21,18 +21,5 @@ spec:
           operator: In
           values:
           - {{ .Values.storage.node_name }}
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ include "helm.fullname" . }}
-  namespace: {{ include "helm.namespace" . }}
-spec:
-  accessModes:
-  - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-  storageClassName: manual
 {{- end }}
 

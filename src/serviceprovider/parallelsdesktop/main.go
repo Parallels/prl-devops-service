@@ -1671,7 +1671,12 @@ func (s *ParallelsService) RunCustomCommand(ctx basecontext.ApiContext, vm *mode
 }
 
 func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models.SystemUsageResponse, error) {
-	result := &models.SystemUsageResponse{}
+	result := &models.SystemUsageResponse{
+		TotalInUse:     &models.SystemUsageItem{},
+		TotalReserved:  &models.SystemUsageItem{},
+		SystemReserved: &models.SystemUsageItem{},
+		Total:          &models.SystemUsageItem{},
+	}
 
 	vms, err := s.GetCachedVms(ctx, "")
 	if err != nil {

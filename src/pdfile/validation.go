@@ -73,7 +73,11 @@ func (p *PDFileService) Validate() *diagnostics.PDFileDiagnostics {
 			continue
 		case "DESCRIPTION":
 			continue
+		case "CLIENT":
+			continue
 		case "EXECUTE":
+			continue
+		case "MINIMUM_REQUIREMENT":
 			continue
 		case "CLONE":
 			continue

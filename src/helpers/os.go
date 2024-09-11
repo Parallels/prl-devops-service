@@ -357,10 +357,17 @@ func CopyDir(src string, dst string) (err error) {
 			os.RemoveAll(dst)
 		}
 
-		fmt.Printf("Copying folder with macos clone %s, %s\n", src, dst)
+		// fmt.Printf("Copying folder with macos clone %s, %s\n", src, dst)
 		cmd := Command{
 			Command: "cp",
 			Args:    []string{"-c", "-r", src, dst},
+		}
+		// if the destination is a mounted volume, we cannot use the clone command
+		if strings.HasPrefix(dst, "/Volumes") {
+			cmd = Command{
+				Command: "cp",
+				Args:    []string{"-r", src, dst},
+			}
 		}
 
 		if _, err = ExecuteWithNoOutput(context.TODO(), cmd); err != nil {

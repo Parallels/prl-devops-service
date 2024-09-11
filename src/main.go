@@ -19,10 +19,10 @@ import (
 	"github.com/cjlapao/common-go/version"
 )
 
-var ver = "0.8.4"
+var ver = "0.9.4"
 
 //	@title			Parallels Desktop DevOps Service
-//	@version		0.8.4
+//	@version		0.9.4
 //	@description	Parallels Desktop DevOps Service
 //	@termsOfService	http://swagger.io/terms/
 
@@ -107,10 +107,10 @@ func main() {
 				ctx.LogInfof("[Core] Exiting")
 				return
 			default:
-				// Call home every 24 hours
-				time.Sleep(24 * time.Hour)
-				ctx.LogInfof("[Core] Calling home")
-				callHome()
+				// Call home every 30 minutes
+				time.Sleep(30 * time.Minute)
+				ctx.LogInfof("[Core] Sending heartbeat")
+				sendHeartbeat()
 			}
 		}
 	}()
@@ -130,10 +130,10 @@ func cleanup(ctx basecontext.ApiContext, db *data.JsonDatabase) {
 	}
 }
 
-func callHome() {
+func sendHeartbeat() {
 	if telemetry.Get() == nil {
 		return
 	}
 	ctx := basecontext.NewRootBaseContext()
-	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.CallHomeEvent, nil, nil))
+	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.HeartbeatEvent, nil, nil))
 }

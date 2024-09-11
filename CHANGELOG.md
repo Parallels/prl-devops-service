@@ -17,6 +17,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.9.4] - 2024-09-09
+
+### Fixed
+
+- Fixed an issue where some pushes would not update the manifest in the catalog
+
+## [0.9.3] - 2024-09-09
+
+### Fixed
+
+- Removed an extra debug line that existed in the code
+- Added minimum requirements to the pdfile and catalog db
+- Fixed an issue with the pull command that would break if you had more than one machine starting with the same name
+- Add `envFrom` key to Helm values
+
+## [0.9.2] - 2024-09-06
+
+### Fixed
+
+- Added a progress message to show how much did we download/upload when using the command line
+
+## [0.9.1] - 2024-09-05
+
+### Fixed
+
+- Updated telemetry event names to use same convention
+
+## [0.9.0] - 2024-09-05
+
+### Fixed
+
+- Fixed an issue with the telemetry in pdfile
+
+## [0.8.8] - 2024-08-23
+
+### Fixed
+
+- Updated the helm chart to allow users to add nginx ingress
+- Updated the helm chart to allow multiple storage
+
+## [0.8.7] - 2024-08-20
+
+### Added
+
+- Added client to the pull request from the catalog
+
+## [0.8.6] - 2024-07-11
+
+### Fixed
+
+- Issue when trying to update an orchestrator host that is offline
+
+## [0.8.5] - 2024-07-09
+
+### Fixed
+
+- Issue where the hardware info would crash if only one VM was present
+
 ## [0.8.4] - 2024-06-19
 
 ### Fixed
@@ -49,7 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Generation of the Helm Charts
 - Issue where some missing details in telemetry would crash
-  
+
 ### Changed
 
 - Added better readme documentation
@@ -93,7 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   overloading the database
 - Moved all the old commands to the new exec with context to enable timeouts
 - Added a 30 seconds timeout when checking the status of the local vms
-  
+
 ## [0.7.1] - 2024-05-29
 
 ### Added
@@ -126,7 +184,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed a issue with the orchestrator where it didn't start the auto refresh
-  
+
 ## [0.6.6] - 2024-05-16
 
 ### Fixed
@@ -194,7 +252,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved documentation on GitHub Actions and Orchestrator use cases
 - Added Start/Stop endpoints to the orchestrator
 - Added Amplitude Key to the docker images
-  
+
 ### Fixed
 
 - Fixed several issues with the orchestrator

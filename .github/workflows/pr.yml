@@ -2,7 +2,7 @@ name: Pull Request
 
 on:
   pull_request:
-    branches: 
+    branches:
       - main
 
 jobs:
@@ -37,7 +37,7 @@ jobs:
 
           go test -coverprofile coverage.txt -covermode count -v ./...
           gocov convert coverage.txt | gocov-xml > ../cobertura-coverage.xml
-      
+
       - name: Upload Code Coverage
         uses: actions/upload-artifact@v2
         with:
@@ -55,10 +55,10 @@ jobs:
           hide_complexity: false
           indicators: true
           output: both
-          thresholds: '40 80'
-          
+          thresholds: "40 80"
+
       - name: Add Coverage PR Comment
-        if: false  
+        if: false
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           recreate: true
@@ -67,10 +67,11 @@ jobs:
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: '-no-fail -fmt sarif -out results.sarif ./...'
+          args: "-no-fail -fmt sarif -out results.sarif ./..."
 
       - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v2
+        if: false
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
 

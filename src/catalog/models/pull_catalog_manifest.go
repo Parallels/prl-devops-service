@@ -31,6 +31,10 @@ type PullCatalogManifestRequest struct {
 	ProviderMetadata   map[string]string `json:"provider_metadata,omitempty"`
 	StartAfterPull     bool              `json:"start_after_pull,omitempty"`
 	LocalMachineFolder string            `json:"-"`
+	ProgressChannel    chan int          `json:"-"`
+	FileNameChannel    chan string       `json:"-"`
+	StepChannel        chan string       `json:"-"`
+	AmplitudeEvent     string            `json:"client,omitempty"`
 }
 
 func (r *PullCatalogManifestRequest) Validate() error {
@@ -84,6 +88,7 @@ type PullCatalogManifestResponse struct {
 	LocalPath      string                         `json:"local_path,omitempty"`
 	MachineName    string                         `json:"machine_name,omitempty"`
 	Manifest       *VirtualMachineCatalogManifest `json:"manifest,omitempty"`
+	LocalCachePath string                         `json:"local_cache_path,omitempty"`
 	CleanupRequest *cleanupservice.CleanupRequest `json:"-"`
 	Errors         []error                        `json:"-"`
 }

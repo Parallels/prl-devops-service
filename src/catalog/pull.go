@@ -57,6 +57,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 	}
 
 	ctx.LogInfof("Checking if the machine %v already exists", r.MachineName)
+	s.sendPullStepInfo(r, "Checking if the machine already exists")
 	exists, err := parallelsDesktopSvc.GetVmSync(ctx, r.MachineName)
 	if err != nil {
 		if errors.GetSystemErrorCode(err) != 404 {
@@ -132,6 +133,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 		manifest = &m
 		ctx.LogDebugf("Remote Manifest: %v", manifest)
 	} else {
+		s.sendPullStepInfo(r, "Checking if the manifest exists in the local catalog")
 		ctx.LogInfof("Checking if the manifest exists in the local catalog")
 		dto, err := db.GetCatalogManifestByName(ctx, r.CatalogId)
 		if err != nil {
@@ -190,6 +192,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 
 		if check {
 			ctx.LogInfof("Found remote service %v", rs.Name())
+			rs.SetProgressChannel(r.FileNameChannel, r.ProgressChannel)
 			foundProvider = true
 			r.LocalMachineFolder = fmt.Sprintf("%s.%s", filepath.Join(r.Path, r.MachineName), manifest.Type)
 			ctx.LogInfof("Local machine folder: %v", r.LocalMachineFolder)
@@ -246,7 +249,6 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					break
 				}
 
-				helpers.GlobalSpinner.Start()
 				cacheFileName := fmt.Sprintf("%s.pdpack", fileChecksum)
 				cacheMachineName := fmt.Sprintf("%s.%s", fileChecksum, manifest.Type)
 				cacheType := CatalogCacheTypeNone
@@ -275,16 +277,15 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 				}
 
 				if needsPulling {
+					s.sendPullStepInfo(r, "Pulling file")
 					if err := rs.PullFile(ctx, file.Path, file.Name, destinationFolder); err != nil {
 						ctx.LogErrorf("Error pulling file %v: %v", fileName, err)
 						response.AddError(err)
-						helpers.GlobalSpinner.Stop()
 						break
 					}
 					if cfg.IsCatalogCachingEnable() {
 						err := os.Rename(filepath.Join(destinationFolder, file.Name), filepath.Join(destinationFolder, cacheFileName))
 						if err != nil {
-							helpers.GlobalSpinner.Stop()
 							log.Fatal(err)
 						}
 					}
@@ -296,11 +297,11 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 				}
 
 				if cacheType == CatalogCacheTypeFile {
+					s.sendPullStepInfo(r, "Decompressing file")
 					ctx.LogInfof("Decompressing file %v", cacheFileName)
 					if err := s.decompressMachine(ctx, filepath.Join(destinationFolder, cacheFileName), filepath.Join(destinationFolder, cacheMachineName)); err != nil {
 						ctx.LogErrorf("Error decompressing file %v: %v", fileName, err)
 						response.AddError(err)
-						helpers.GlobalSpinner.Stop()
 						break
 					}
 
@@ -314,13 +315,17 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 				}
 
 				if cacheType == CatalogCacheTypeFolder {
+					s.sendPullStepInfo(r, "Copying machine to destination")
 					ctx.LogInfof("Copying machine folder %v to %v", cacheMachineName, r.LocalMachineFolder)
 					if err := helpers.CopyDir(filepath.Join(destinationFolder, cacheMachineName), r.LocalMachineFolder); err != nil {
 						ctx.LogErrorf("Error copying machine folder %v to %v: %v", cacheMachineName, r.LocalMachineFolder, err)
 						response.AddError(err)
-						helpers.GlobalSpinner.Stop()
 						break
 					}
+				}
+
+				if cfg.IsCatalogCachingEnable() {
+					response.LocalCachePath = filepath.Join(destinationFolder, cacheMachineName)
 				}
 
 				systemSrv := serviceProvider.System
@@ -328,7 +333,6 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 					if err := systemSrv.ChangeFileUserOwner(ctx, r.Owner, r.LocalMachineFolder); err != nil {
 						ctx.LogErrorf("Error changing file %v owner to %v: %v", r.LocalMachineFolder, r.Owner, err)
 						response.AddError(err)
-						helpers.GlobalSpinner.Stop()
 						break
 					}
 				}
@@ -365,7 +369,6 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 	// Cleaning up
 	s.CleanPullRequest(ctx, r, response)
 
-	helpers.GlobalSpinner.Stop()
 	return response
 }
 
@@ -408,7 +411,19 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(ctx baseconte
 			return
 		}
 
-		if len(vms) != 1 {
+		var vm *api_models.ParallelsVM
+		if len(vms) > 1 {
+			for _, searchVM := range vms {
+				if searchVM.Name == r.MachineName {
+					vm = &searchVM
+					break
+				}
+			}
+		} else if len(vms) == 1 {
+			vm = &vms[0]
+		}
+
+		if vm == nil {
 			notFoundError := errors.Newf("Machine %v not found", r.MachineName)
 			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, notFoundError)
 			response.AddError(notFoundError)
@@ -417,11 +432,11 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(ctx baseconte
 		}
 
 		// Renaming only if the name is different
-		if vms[0].Name != r.MachineName {
-			response.ID = vms[0].ID
+		if vm.Name != r.MachineName {
+			response.ID = vm.ID
 			renameRequest := api_models.RenameVirtualMachineRequest{
-				ID:          vms[0].ID,
-				CurrentName: vms[0].Name,
+				ID:          vm.ID,
+				CurrentName: vm.Name,
 				NewName:     r.MachineName,
 			}
 
@@ -454,7 +469,19 @@ func (s *CatalogManifestService) startMachineWithParallelsDesktop(ctx basecontex
 			return
 		}
 
-		if len(vms) != 1 {
+		var vm *api_models.ParallelsVM
+		if len(vms) > 1 {
+			for _, searchVM := range vms {
+				if searchVM.Name == r.MachineName {
+					vm = &searchVM
+					break
+				}
+			}
+		} else if len(vms) == 1 {
+			vm = &vms[0]
+		}
+
+		if vm == nil {
 			notFoundError := errors.Newf("Machine %v not found", r.MachineName)
 			ctx.LogErrorf("Error getting machine %v: %v", r.MachineName, notFoundError)
 			response.AddError(notFoundError)
@@ -462,7 +489,7 @@ func (s *CatalogManifestService) startMachineWithParallelsDesktop(ctx basecontex
 			return
 		}
 
-		if err := parallelsDesktopSvc.StartVm(ctx, vms[0].ID); err != nil {
+		if err := parallelsDesktopSvc.StartVm(ctx, vm.ID); err != nil {
 			ctx.LogErrorf("Error starting machine %v: %v", r.MachineName, err)
 			response.AddError(err)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)

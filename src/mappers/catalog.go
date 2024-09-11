@@ -27,6 +27,7 @@ func CatalogManifestToDto(m catalog_models.VirtualMachineCatalogManifest) data_m
 		LastDownloadedUser:     m.LastDownloadedUser,
 		VirtualMachineContents: CatalogManifestContentItemsToDto(m.VirtualMachineContents),
 		PackContents:           CatalogManifestContentItemsToDto(m.PackContents),
+		PackSize:               m.PackSize,
 		Size:                   m.Size,
 		Tainted:                m.Tainted,
 		TaintedBy:              m.TaintedBy,
@@ -36,6 +37,14 @@ func CatalogManifestToDto(m catalog_models.VirtualMachineCatalogManifest) data_m
 		RevokedAt:              m.RevokedAt,
 		RevokedBy:              m.RevokedBy,
 		DownloadCount:          m.DownloadCount,
+	}
+
+	if m.MinimumSpecRequirements != nil {
+		data.MinimumSpecRequirements = &data_models.MinimumSpecRequirement{
+			Cpu:    m.MinimumSpecRequirements.Cpu,
+			Memory: m.MinimumSpecRequirements.Memory,
+			Disk:   m.MinimumSpecRequirements.Disk,
+		}
 	}
 
 	if m.Provider != nil {
@@ -88,6 +97,7 @@ func DtoCatalogManifestToBase(m data_models.CatalogManifest) catalog_models.Virt
 		Size:                   m.Size,
 		VirtualMachineContents: DtoCatalogManifestContentItemsToBase(m.VirtualMachineContents),
 		PackContents:           DtoCatalogManifestContentItemsToBase(m.PackContents),
+		PackSize:               m.PackSize,
 		Tainted:                m.Tainted,
 		TaintedBy:              m.TaintedBy,
 		TaintedAt:              m.TaintedAt,
@@ -96,6 +106,14 @@ func DtoCatalogManifestToBase(m data_models.CatalogManifest) catalog_models.Virt
 		RevokedAt:              m.RevokedAt,
 		RevokedBy:              m.RevokedBy,
 		DownloadCount:          m.DownloadCount,
+	}
+
+	if m.MinimumSpecRequirements != nil {
+		data.MinimumSpecRequirements = &catalog_models.MinimumSpecRequirement{
+			Cpu:    m.MinimumSpecRequirements.Cpu,
+			Memory: m.MinimumSpecRequirements.Memory,
+			Disk:   m.MinimumSpecRequirements.Disk,
+		}
 	}
 
 	if m.Provider != nil {
@@ -166,6 +184,14 @@ func CatalogManifestContentItemsToDto(m []catalog_models.VirtualMachineManifestC
 	return result
 }
 
+func CatalogManifestMinimumSpecsToDto(m catalog_models.MinimumSpecRequirement) data_models.MinimumSpecRequirement {
+	return data_models.MinimumSpecRequirement{
+		Cpu:    m.Cpu,
+		Memory: m.Memory,
+		Disk:   m.Disk,
+	}
+}
+
 func DtoCatalogManifestContentItemsToBase(m []data_models.CatalogManifestContentItem) []catalog_models.VirtualMachineManifestContentItem {
 	var result []catalog_models.VirtualMachineManifestContentItem
 	for _, item := range m {
@@ -200,6 +226,7 @@ func ApiCatalogManifestToDto(m models.CatalogManifest) data_models.CatalogManife
 		Revoked:            m.Revoked,
 		RevokedAt:          m.RevokedAt,
 		RevokedBy:          m.RevokedBy,
+		PackSize:           m.PackSize,
 		DownloadCount:      m.DownloadCount,
 	}
 
@@ -247,6 +274,7 @@ func DtoCatalogManifestToApi(m data_models.CatalogManifest) models.CatalogManife
 		Revoked:            m.Revoked,
 		RevokedAt:          m.RevokedAt,
 		RevokedBy:          m.RevokedBy,
+		PackSize:           m.PackSize,
 		DownloadCount:      m.DownloadCount,
 	}
 
@@ -265,6 +293,14 @@ func DtoCatalogManifestToApi(m data_models.CatalogManifest) models.CatalogManife
 			Meta:     m.Provider.Meta,
 		}
 	}
+	if m.MinimumSpecRequirements != nil {
+		data.MinimumSpecRequirements = &models.MinimumSpecRequirement{
+			Cpu:    m.MinimumSpecRequirements.Cpu,
+			Memory: m.MinimumSpecRequirements.Memory,
+			Disk:   m.MinimumSpecRequirements.Disk,
+		}
+	}
+
 	if data.Provider.Meta == nil {
 		data.Provider.Meta = make(map[string]string)
 	}
@@ -332,6 +368,7 @@ func ApiCatalogManifestToCatalogManifest(m models.CatalogManifest) catalog_model
 		RevokedAt:          m.RevokedAt,
 		RevokedBy:          m.RevokedBy,
 		DownloadCount:      m.DownloadCount,
+		PackSize:           m.PackSize,
 	}
 
 	if m.Provider != nil {

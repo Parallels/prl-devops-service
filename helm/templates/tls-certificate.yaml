@@ -1,0 +1,12 @@
+{{- if and .Values.ingress.enabled  .Values.ingress.nginx.enabled }}
+apiVersion: v1
+data:
+  ca.crt: {{ .Values.ingress.tls.caCertificate | quote }}
+  tls.crt: {{ .Values.ingress.tls.certificate | quote }}
+  tls.key: {{ .Values.ingress.tls.privateKey | quote }}
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+  name: {{ include "helm.fullname" . }}-tls
+  namespace: {{ include "helm.namespace" . }}
+{{- end }}

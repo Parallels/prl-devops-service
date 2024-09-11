@@ -17,15 +17,18 @@ import (
 )
 
 type AzureStorageAccount struct {
-	Name          string `json:"storage_account_name"`
-	Key           string `json:"storage_account_key"`
-	ContainerName string `json:"container_name"`
+	Name            string `json:"storage_account_name"`
+	Key             string `json:"storage_account_key"`
+	ContainerName   string `json:"container_name"`
+	ProgressChannel chan int
 }
 
 const providerName = "azure-storage-account"
 
 type AzureStorageAccountProvider struct {
-	StorageAccount AzureStorageAccount
+	StorageAccount  AzureStorageAccount
+	ProgressChannel chan int
+	FileNameChannel chan string
 }
 
 func NewAzureStorageAccountProvider() *AzureStorageAccountProvider {
@@ -47,6 +50,11 @@ func (s *AzureStorageAccountProvider) GetProviderMeta(ctx basecontext.ApiContext
 
 func (s *AzureStorageAccountProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
 	return "/"
+}
+
+func (s *AzureStorageAccountProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int) {
+	s.ProgressChannel = progressChannel
+	s.FileNameChannel = fileNameChannel
 }
 
 func (s *AzureStorageAccountProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
@@ -103,6 +111,12 @@ func (s *AzureStorageAccountProvider) PushFile(ctx basecontext.ApiContext, rootL
 		return err
 	}
 
+	fileInfo, err := file.Stat()
+	if err != nil {
+		ctx.LogInfof("ERROR:", err)
+		return err
+	}
+
 	defer file.Close()
 
 	md5, err := helpers.GetFileMD5Checksum(localFilePath)
@@ -114,6 +128,11 @@ func (s *AzureStorageAccountProvider) PushFile(ctx basecontext.ApiContext, rootL
 	_, err = azblob.UploadFileToBlockBlob(ctx.Context(), file, blobUrl, azblob.UploadToBlockBlobOptions{
 		BlockSize:   4 * 1024 * 1024,
 		Parallelism: 16,
+		Progress: func(bytesTransferred int64) {
+			if s.ProgressChannel != nil {
+				s.ProgressChannel <- int(bytesTransferred * 100 / fileInfo.Size())
+			}
+		},
 	})
 	if err != nil {
 		return err
@@ -155,7 +174,22 @@ func (s *AzureStorageAccountProvider) PullFile(ctx basecontext.ApiContext, path 
 	downloadContext, cancel := context.WithTimeout(ctx.Context(), 5*time.Hour)
 	defer cancel()
 
-	err = azblob.DownloadBlobToFile(downloadContext, blobUrl.BlobURL, 0, azblob.CountToEnd, file, azblob.DownloadFromBlobOptions{})
+	properties, err := blobUrl.GetProperties(downloadContext, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
+	if err != nil {
+		return err
+	}
+
+	if properties.ContentLength() == 0 {
+		return nil
+	}
+
+	err = azblob.DownloadBlobToFile(downloadContext, blobUrl.BlobURL, 0, azblob.CountToEnd, file, azblob.DownloadFromBlobOptions{
+		Progress: func(bytesTransferred int64) {
+			if s.ProgressChannel != nil {
+				s.ProgressChannel <- int(bytesTransferred * 100 / properties.ContentLength())
+			}
+		},
+	})
 
 	return err
 }
