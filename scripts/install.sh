@@ -182,6 +182,8 @@ function install_standard() {
   if [ "$INSTALL_SERVICE" = "true" ]; then
     if [ "$OS" = "darwin" ]; then
       echo "Installing prldevops service"
+
+      sudo "$DESTINATION"/prldevops install service
       if [ -f "/Library/LaunchDaemons/com.parallels.prl-devops-service.plist" ]; then
         echo "Restarting prl-devops-service"
         launchctl unload /Library/LaunchDaemons/com.parallels.prl-devops-service.plist
