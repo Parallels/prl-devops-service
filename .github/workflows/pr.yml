@@ -39,7 +39,7 @@ jobs:
           gocov convert coverage.txt | gocov-xml > ../cobertura-coverage.xml
 
       - name: Upload Code Coverage
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: code-coverage
           path: ${{ github.workspace }}/cobertura-coverage.xml
