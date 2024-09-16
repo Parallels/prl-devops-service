@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.9.5] - 2024-09-16
+
+### Fixed
+
+- Fixed the service install plist
+
 ## [0.9.4] - 2024-09-09
 
 ### Fixed
