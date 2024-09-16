@@ -24,6 +24,7 @@ type PlistTemplateData struct {
 	TokenDurationMinutes     string
 	Mode                     string
 	UseOrchestratorResources string
+	LogOutput                bool
 }
 
 var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
@@ -104,14 +105,14 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     <key>SuccessfulExit</key>
     <false/>
   </dict>
+  {{- if .LogOutput }}
   <key>StandardErrorPath</key>
-  <string>/tmp/api-service.job.err</string>
+  <string>/tmp/devops-service.job.err</string>
   <key>StandardOutPath</key>
-  <key>RunAtLoad</key>
-  <true/>
-  <string>/tmp/api-service.job.out</string> 
+  <string>/tmp/devops-service.job.out</string> 
+  {{- end }}
 </dict>
-</plist>"`
+</plist>`
 
 func generatePlist(path string, config ApiServiceConfig) (string, error) {
 	// Define the text template
@@ -136,6 +137,7 @@ func generatePlist(path string, config ApiServiceConfig) (string, error) {
 		TlsPrivateKey:        config.TLSPrivateKey,
 		TokenDurationMinutes: config.TokenDurationMinutes,
 		Mode:                 config.Mode,
+		LogOutput:            config.LogOutput,
 	}
 	if config.EnableTLS {
 		templateData.EnableTLS = "true"
