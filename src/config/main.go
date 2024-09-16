@@ -46,7 +46,7 @@ func New(ctx basecontext.ApiContext) *Config {
 		mode:       "api",
 		ctx:        ctx,
 		fileFormat: "yaml",
-		filename:   "config.yml",
+		filename:   "prldevops_config",
 		config:     ConfigFile{},
 	}
 
@@ -77,11 +77,20 @@ func (c *Config) Load() bool {
 			fileName = configFileName
 		}
 	} else {
+		configFolder := filepath.Join(filepath.Dir(execPath), "prldevops_config")
 		for _, extension := range extensions {
-			configFolder := filepath.Join(filepath.Dir(execPath), "config")
 			if _, err := os.Stat(fmt.Sprintf("%s%s", configFolder, extension)); !os.IsNotExist(err) {
 				fileName = fmt.Sprintf("%s%s", configFolder, extension)
 				break
+			}
+		}
+		if fileName == "" {
+			configFolder = filepath.Join(filepath.Dir(execPath), "config")
+			for _, extension := range extensions {
+				if _, err := os.Stat(fmt.Sprintf("%s%s", configFolder, extension)); !os.IsNotExist(err) {
+					fileName = fmt.Sprintf("%s%s", configFolder, extension)
+					break
+				}
 			}
 		}
 	}
@@ -143,7 +152,7 @@ func (c *Config) Save() bool {
 		}
 	}
 
-	err = helper.WriteToFile(string(content), c.filename)
+	err = helper.WriteToFile(string(content), fmt.Sprintf("%s.%s", c.filename, c.fileFormat))
 	if err != nil {
 		c.ctx.LogErrorf("Error saving configuration file: %s", err.Error())
 		return false

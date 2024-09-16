@@ -16,4 +16,5 @@ type ApiServiceConfig struct {
 	TokenDurationMinutes     string `json:"token_duration_minutes,omitempty"`
 	Mode                     string `json:"mode,omitempty"`
 	UseOrchestratorResources bool   `json:"use_orchestrator_resources,omitempty"`
+	LogOutput                bool   `json:"log_output,omitempty"`
 }
