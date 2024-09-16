@@ -5586,6 +5586,9 @@ const docTemplate = `{
                 "pack_filename": {
                     "type": "string"
                 },
+                "pack_size": {
+                    "type": "integer"
+                },
                 "path": {
                     "type": "string"
                 },
@@ -7140,6 +7143,9 @@ const docTemplate = `{
                 "minimum_requirements": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_catalog_models.MinimumSpecRequirement"
                 },
+                "pack_size": {
+                    "type": "integer"
+                },
                 "required_claims": {
                     "type": "array",
                     "items": {
@@ -7622,7 +7628,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.9.4",
+	Version:          "0.9.5",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},

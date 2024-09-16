@@ -71,6 +71,8 @@ definitions:
         type: array
       pack_filename:
         type: string
+      pack_size:
+        type: integer
       path:
         type: string
       provider:
@@ -1095,6 +1097,8 @@ definitions:
         type: string
       minimum_requirements:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_catalog_models.MinimumSpecRequirement'
+      pack_size:
+        type: integer
       required_claims:
         items:
           type: string
@@ -1406,7 +1410,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.9.4
+  version: 0.9.5
 paths:
   /health/probe:
     get:
