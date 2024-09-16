@@ -113,6 +113,7 @@ function install() {
   if [ "$INSTALL_SERVICE" = "true" ]; then
     if [ "$OS" = "darwin" ]; then
       echo "Installing prldevops service"
+      sudo "$DESTINATION"/prldevops install service
       if [ -f "/Library/LaunchDaemons/com.parallels.prl-devops-service.plist" ]; then
         echo "Restarting prl-devops-service"
         sudo launchctl unload /Library/LaunchDaemons/com.parallels.prl-devops-service.plist
@@ -183,7 +184,7 @@ function install_standard() {
     if [ "$OS" = "darwin" ]; then
       echo "Installing prldevops service"
 
-      sudo "$DESTINATION"/prldevops install service
+      "$DESTINATION"/prldevops install service
       if [ -f "/Library/LaunchDaemons/com.parallels.prl-devops-service.plist" ]; then
         echo "Restarting prl-devops-service"
         launchctl unload /Library/LaunchDaemons/com.parallels.prl-devops-service.plist
@@ -250,6 +251,19 @@ function uninstall_standard() {
 
     echo "Removing prldevops from $DESTINATION"
     rm "$DESTINATION/prldevops"
+    sudo rm "$DESTINATION/prldevops"
+    if [ -f "$DESTINATION/config.yml" ]; then
+      echo "Removing configuration file from $DESTINATION"
+      rm "$DESTINATION/config.yml"
+    fi
+    if [ -f "$DESTINATION/config.yaml" ]; then
+      echo "Removing configuration file from $DESTINATION"
+      rm "$DESTINATION/config.yaml"
+    fi
+    if [ -f "$DESTINATION/config.json" ]; then
+      echo "Removing configuration file from $DESTINATION"
+      rm "$DESTINATION/config.json"
+    fi
     echo "prldevops has been uninstalled"
   else
     echo "prldevops is not installed in $DESTINATION"
