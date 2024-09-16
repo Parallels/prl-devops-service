@@ -215,6 +215,19 @@ function uninstall() {
 
     echo "Removing prldevops from $DESTINATION"
     sudo rm "$DESTINATION/prldevops"
+    if [ -f "$DESTINATION/config.yml" ]; then
+      echo "Removing configuration file from $DESTINATION"
+      sudo rm "$DESTINATION/config.yml"
+    fi
+    if [ -f "$DESTINATION/config.yaml" ]; then
+      echo "Removing configuration file from $DESTINATION"
+      sudo rm "$DESTINATION/config.yaml"
+    fi
+    if [ -f "$DESTINATION/config.json" ]; then
+      echo "Removing configuration file from $DESTINATION"
+      sudo rm "$DESTINATION/config.json"
+    fi
+
     echo "prldevops has been uninstalled"
   else
     echo "prldevops is not installed in $DESTINATION"
