@@ -3,6 +3,7 @@ package apiclient
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/models"
 )
 
@@ -24,12 +26,13 @@ const (
 )
 
 type HttpClientService struct {
-	timeout       time.Duration
-	context       context.Context
-	ctx           basecontext.ApiContext
-	headers       map[string]string
-	authorization *HttpClientServiceAuthorization
-	authorizer    *HttpClientServiceAuthorizer
+	timeout              time.Duration
+	context              context.Context
+	ctx                  basecontext.ApiContext
+	headers              map[string]string
+	authorization        *HttpClientServiceAuthorization
+	authorizer           *HttpClientServiceAuthorizer
+	disableTlsValidation bool
 }
 
 type HttpClientServiceResponse struct {
@@ -39,12 +42,18 @@ type HttpClientServiceResponse struct {
 }
 
 func NewHttpClient(ctx basecontext.ApiContext) *HttpClientService {
-	return &HttpClientService{
+	client := &HttpClientService{
 		ctx:           ctx,
 		headers:       make(map[string]string, 0),
 		authorizer:    nil,
 		authorization: nil,
 	}
+
+	cfg := config.Get()
+	if cfg != nil {
+		client.disableTlsValidation = cfg.DisableTlsValidation()
+	}
+	return client
 }
 
 func (c *HttpClientService) WithContext(ctx context.Context) *HttpClientService {
@@ -150,6 +159,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 				}).DialContext,
 				ResponseHeaderTimeout: c.timeout,
 				ExpectContinueTimeout: c.timeout,
+				TLSClientConfig:       &tls.Config{InsecureSkipVerify: c.disableTlsValidation},
 			},
 			Timeout: c.timeout,
 		}
@@ -159,6 +169,11 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 		defer cancel()
 	} else {
 		client = http.DefaultClient
+		if c.disableTlsValidation {
+			client.Transport = &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			}
+		}
 	}
 
 	if data != nil {
