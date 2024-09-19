@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+## [0.9.6] - 2024-09-19
+
+### Fixed
+
+- Added the ability to disable the tls validation
+  
 ## [0.9.5] - 2024-09-16
 
 ### Fixed
