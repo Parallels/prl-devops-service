@@ -184,6 +184,10 @@ spec:
                   name: {{ include "helm.fullname" . }}
                   key: TLS_PRIVATE_KEY
             {{- end }}
+            {{- if .Values.security.disable_tls_validation }}
+            - name: TLS_DISABLE_VALIDATION
+              value: "true"
+            {{- end }}
             {{- if .Values.config.disableCatalogCaching }}
             - name: DISABLE_CATALOG_CACHING
               value: "true"

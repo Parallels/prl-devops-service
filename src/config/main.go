@@ -461,6 +461,12 @@ func (c *Config) UseOrchestratorResources() bool {
 	return false
 }
 
+func (c *Config) DisableTlsValidation() bool {
+	val := c.GetBoolKey(constants.TLS_DISABLE_VALIDATION_ENV_VAR)
+
+	return val
+}
+
 func (c *Config) GetReverseProxyConfig() *ReverseProxyConfig {
 	return c.config.ReverseProxy
 }

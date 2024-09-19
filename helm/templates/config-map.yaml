@@ -28,3 +28,4 @@ data:
   BRUTE_FORCE_MAX_LOGIN_ATTEMPTS: {{ .Values.security.brute_force.max_login_attempts | quote }}
   BRUTE_FORCE_LOCKOUT_DURATION: {{ .Values.security.brute_force.lockout_duration | quote }}
   BRUTE_FORCE_INCREMENTAL_WAIT: {{ .Values.security.brute_force.increment_lockout_duration | quote }}
+  TLS_DISABLE_VALIDATION: {{ .Values.security.disable_tls_validation | quote }}
