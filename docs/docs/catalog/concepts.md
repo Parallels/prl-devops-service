@@ -9,7 +9,6 @@ toc: true
 
 # Concepts
 
-
 ## Catalog Manifest Metadata
 
 The Catalog Manifest Metadata is a JSON file that includes all the essential information required to recreate a virtual machine in the same state as it existed earlier. This file also contains details about the Storage Provider where the virtual machine will be stored. It's important to note that the Service doesn't store any parts of the Virtual Machine. Instead, it passes all the relevant information to the [storage provider](#storage-providers), making it a lightweight approach for distributing the API.
@@ -24,7 +23,7 @@ This is the designated storage location for all large files. The service can hav
 
 ## Connection String
 
- The connection string for accessing different storage providers requires specific variables, starting with the provider's name. 
+ The connection string for accessing different storage providers requires specific variables, starting with the provider's name.
 
 Some examples of connection strings are:
 
@@ -88,16 +87,15 @@ Pulling a virtual machine from the catalog manifest service allows clients to do
 
 ## Pulling a Virtual Machine Diagram
 
-![Pulling a Virtual Machine](../../../img/devtools_service-catalog_manifest_pulling.drawio.png)
+![Pulling a Virtual Machine](../../../img/catalog/catalog_manifest_pulling.drawio.png)
 
 # Caching
 
 A Virtual Machine (VM) file can be very large, and it can take a lot of time to pull it every time you want to use it. To solve this problem, we have implemented a caching mechanism that allows you to cache the VM locally and then use it from the cache. The mechanism works by checking if the content checksum matches the one in the cache, and if it does, the client will use the cached version. This will significantly reduce the time it takes to pull the VM and make the process much faster.
 
-
 # PDFile
 
-We have developed a file structure similar to Docker manifest files which we call PDFile. This file contains all the necessary information required to push or pull a virtual machine from the catalog that makes it easy to share or store, allowing for a better automation flow. 
+We have developed a file structure similar to Docker manifest files which we call PDFile. This file contains all the necessary information required to push or pull a virtual machine from the catalog that makes it easy to share or store, allowing for a better automation flow.
 
 Here is an example of a PDFile:
 
