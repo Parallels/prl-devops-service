@@ -10,7 +10,7 @@ import (
 func processHelp(command string) {
 	fmt.Printf("%v\n", constants.Name)
 	fmt.Printf("\n")
-	fmt.Printf("  Find out more at: https://github.com/Parallesl/prl-devops-service\n")
+	fmt.Printf("  Find out more at: https://github.com/Parallels/prl-devops-service\n")
 	fmt.Printf("\n")
 	switch command {
 	case constants.API_COMMAND:
