@@ -20,10 +20,10 @@ import (
 	"github.com/cjlapao/common-go/version"
 )
 
-var ver = "0.9.6.1"
+var ver = "0.9.7"
 
 //	@title			Parallels Desktop DevOps Service
-//	@version		0.9.6
+//	@version		0.9.7
 //	@description	Parallels Desktop DevOps Service
 //	@termsOfService	http://swagger.io/terms/
 
@@ -39,10 +39,10 @@ var ver = "0.9.6.1"
 //	@in							header
 //	@name						X-Api-Key
 
-// @securityDefinitions.apikey	BearerAuth
-// @description				Type "Bearer" followed by a space and JWT token.
-// @in							header
-// @name						Authorization
+//	@securityDefinitions.apikey	BearerAuth
+//	@description				Type "Bearer" followed by a space and JWT token.
+//	@in							header
+//	@name						Authorization
 func main() {
 	// catching all of the exceptions
 	defer func() {
