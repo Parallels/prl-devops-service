@@ -257,3 +257,36 @@ func (s *AzureStorageAccountProvider) DeleteFolder(ctx basecontext.ApiContext, f
 func (s *AzureStorageAccountProvider) FolderExists(ctx basecontext.ApiContext, folderPath string, folderName string) (bool, error) {
 	return true, nil
 }
+
+func (s *AzureStorageAccountProvider) FileSize(ctx basecontext.ApiContext, path string, fileName string) (int64, error) {
+	ctx.LogInfof("Getting file %s size", fileName)
+	remoteFilePath := strings.TrimPrefix(filepath.Join(path, fileName), "/")
+	credential, err := azblob.NewSharedKeyCredential(s.StorageAccount.Name, s.StorageAccount.Key)
+	if err != nil {
+		return -1, fmt.Errorf("invalid credentials with error: %s", err.Error())
+	}
+	URL, _ := url.Parse(
+		fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", s.StorageAccount.Name, s.StorageAccount.ContainerName, remoteFilePath))
+
+	blobUrl := azblob.NewBlockBlobURL(*URL, azblob.NewPipeline(credential, azblob.PipelineOptions{
+		Retry: azblob.RetryOptions{
+			MaxTries:   5,
+			TryTimeout: 40 * time.Minute,
+		},
+	}))
+
+	// Create a new context with a longer deadline
+	downloadContext, cancel := context.WithTimeout(ctx.Context(), 5*time.Hour)
+	defer cancel()
+
+	properties, err := blobUrl.GetProperties(downloadContext, azblob.BlobAccessConditions{}, azblob.ClientProvidedKeyOptions{})
+	if err != nil {
+		return -1, err
+	}
+
+	if properties.ContentLength() == 0 {
+		return 0, nil
+	}
+
+	return properties.ContentLength(), nil
+}

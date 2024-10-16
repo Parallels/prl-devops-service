@@ -228,3 +228,18 @@ func (s *LocalProvider) FolderExists(ctx basecontext.ApiContext, path string, fi
 	exists := helper.FileExists(fullPath)
 	return exists, nil
 }
+
+func (s *LocalProvider) FileSize(ctx basecontext.ApiContext, path string, fileName string) (int64, error) {
+	fullPath := filepath.Join(path, fileName)
+
+	if !strings.HasPrefix(fullPath, s.Config.Path) {
+		fullPath = filepath.Join(s.Config.Path, fullPath)
+	}
+
+	fileInfo, err := os.Stat(fullPath)
+	if err != nil {
+		return 0, err
+	}
+
+	return fileInfo.Size(), nil
+}

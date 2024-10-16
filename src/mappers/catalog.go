@@ -25,6 +25,8 @@ func CatalogManifestToDto(m catalog_models.VirtualMachineCatalogManifest) data_m
 		RequiredClaims:         m.RequiredClaims,
 		LastDownloadedAt:       m.LastDownloadedAt,
 		LastDownloadedUser:     m.LastDownloadedUser,
+		IsCompressed:           m.IsCompressed,
+		PackRelativePath:       m.PackRelativePath,
 		VirtualMachineContents: CatalogManifestContentItemsToDto(m.VirtualMachineContents),
 		PackContents:           CatalogManifestContentItemsToDto(m.PackContents),
 		PackSize:               m.PackSize,
@@ -48,18 +50,8 @@ func CatalogManifestToDto(m catalog_models.VirtualMachineCatalogManifest) data_m
 	}
 
 	if m.Provider != nil {
-		data.Provider = &data_models.CatalogManifestProvider{
-			Type:     m.Provider.Type,
-			Host:     m.Provider.Host,
-			Port:     m.Provider.Port,
-			Username: m.Provider.Username,
-			Password: m.Provider.Password,
-			ApiKey:   m.Provider.ApiKey,
-			Meta:     m.Provider.Meta,
-		}
-	}
-	if data.Provider.Meta == nil {
-		data.Provider.Meta = make(map[string]string)
+		provider := CatalogManifestProviderToDto(*m.Provider)
+		data.Provider = &provider
 	}
 
 	if m.Tags == nil {
@@ -73,6 +65,42 @@ func CatalogManifestToDto(m catalog_models.VirtualMachineCatalogManifest) data_m
 	}
 
 	return data
+}
+
+func CatalogManifestProviderToDto(m catalog_models.CatalogManifestProvider) data_models.CatalogManifestProvider {
+	provider := data_models.CatalogManifestProvider{
+		Type:     m.Type,
+		Host:     m.Host,
+		Port:     m.Port,
+		Username: m.Username,
+		Password: m.Password,
+		ApiKey:   m.ApiKey,
+		Meta:     m.Meta,
+	}
+
+	if provider.Meta == nil {
+		provider.Meta = make(map[string]string)
+	}
+
+	return provider
+}
+
+func DtoCatalogManifestProviderToBase(m data_models.CatalogManifestProvider) catalog_models.CatalogManifestProvider {
+	provider := catalog_models.CatalogManifestProvider{
+		Type:     m.Type,
+		Host:     m.Host,
+		Port:     m.Port,
+		Username: m.Username,
+		Password: m.Password,
+		ApiKey:   m.ApiKey,
+		Meta:     m.Meta,
+	}
+
+	if provider.Meta == nil {
+		provider.Meta = make(map[string]string)
+	}
+
+	return provider
 }
 
 func DtoCatalogManifestToBase(m data_models.CatalogManifest) catalog_models.VirtualMachineCatalogManifest {
@@ -94,6 +122,8 @@ func DtoCatalogManifestToBase(m data_models.CatalogManifest) catalog_models.Virt
 		RequiredClaims:         m.RequiredClaims,
 		LastDownloadedAt:       m.LastDownloadedAt,
 		LastDownloadedUser:     m.LastDownloadedUser,
+		IsCompressed:           m.IsCompressed,
+		PackRelativePath:       m.PackRelativePath,
 		Size:                   m.Size,
 		VirtualMachineContents: DtoCatalogManifestContentItemsToBase(m.VirtualMachineContents),
 		PackContents:           DtoCatalogManifestContentItemsToBase(m.PackContents),
@@ -117,18 +147,20 @@ func DtoCatalogManifestToBase(m data_models.CatalogManifest) catalog_models.Virt
 	}
 
 	if m.Provider != nil {
-		data.Provider = &catalog_models.CatalogManifestProvider{
-			Type:     m.Provider.Type,
-			Host:     m.Provider.Host,
-			Port:     m.Provider.Port,
-			Username: m.Provider.Username,
-			Password: m.Provider.Password,
-			ApiKey:   m.Provider.ApiKey,
-			Meta:     m.Provider.Meta,
-		}
+		provider := DtoCatalogManifestProviderToBase(*m.Provider)
+		data.Provider = &provider
 	}
-	if data.Provider.Meta == nil {
-		data.Provider.Meta = make(map[string]string)
+
+	if m.Tags == nil {
+		data.Tags = make([]string, 0)
+	}
+
+	if m.RequiredRoles == nil {
+		data.RequiredRoles = make([]string, 0)
+	}
+
+	if m.RequiredClaims == nil {
+		data.RequiredClaims = make([]string, 0)
 	}
 
 	return data
@@ -219,6 +251,8 @@ func ApiCatalogManifestToDto(m models.CatalogManifest) data_models.CatalogManife
 		UpdatedAt:          m.UpdatedAt,
 		LastDownloadedAt:   m.LastDownloadedAt,
 		LastDownloadedUser: m.LastDownloadedUser,
+		IsCompressed:       m.IsCompressed,
+		PackRelativePath:   m.PackRelativePath,
 		Tainted:            m.Tainted,
 		TaintedBy:          m.TaintedBy,
 		TaintedAt:          m.TaintedAt,
@@ -231,21 +265,41 @@ func ApiCatalogManifestToDto(m models.CatalogManifest) data_models.CatalogManife
 	}
 
 	if m.Provider != nil {
-		data.Provider = &data_models.CatalogManifestProvider{
-			Type:     m.Provider.Type,
-			Host:     m.Provider.Host,
-			Port:     m.Provider.Port,
-			Username: m.Provider.Username,
-			Password: m.Provider.Password,
-			ApiKey:   m.Provider.ApiKey,
-			Meta:     m.Provider.Meta,
-		}
+		provider := ApiCatalogManifestProviderToDto(*m.Provider)
+		data.Provider = &provider
 	}
-	if data.Provider.Meta == nil {
-		data.Provider.Meta = make(map[string]string)
+
+	if data.Tags == nil {
+		data.Tags = make([]string, 0)
+	}
+
+	if data.RequiredRoles == nil {
+		data.RequiredRoles = make([]string, 0)
+	}
+
+	if data.RequiredClaims == nil {
+		data.RequiredClaims = make([]string, 0)
 	}
 
 	return data
+}
+
+func ApiCatalogManifestProviderToDto(m models.RemoteVirtualMachineProvider) data_models.CatalogManifestProvider {
+	provider := data_models.CatalogManifestProvider{
+		Type:     m.Type,
+		Host:     m.Host,
+		Port:     m.Port,
+		Username: m.Username,
+		Password: m.Password,
+		ApiKey:   m.ApiKey,
+		Meta:     m.Meta,
+	}
+
+	if provider.Meta == nil {
+		provider.Meta = make(map[string]string)
+	}
+
+	return provider
 }
 
 func DtoCatalogManifestToApi(m data_models.CatalogManifest) models.CatalogManifest {
@@ -276,6 +330,7 @@ func DtoCatalogManifestToApi(m data_models.CatalogManifest) models.CatalogManife
 		RevokedBy:          m.RevokedBy,
 		PackSize:           m.PackSize,
 		DownloadCount:      m.DownloadCount,
+		IsCompressed:       m.IsCompressed,
 	}
 
 	if data.Tags == nil {
@@ -299,10 +354,6 @@ func DtoCatalogManifestToApi(m data_models.CatalogManifest) models.CatalogManife
 			Memory: m.MinimumSpecRequirements.Memory,
 			Disk:   m.MinimumSpecRequirements.Disk,
 		}
-	}
-
-	if data.Provider.Meta == nil {
-		data.Provider.Meta = make(map[string]string)
 	}
 
 	if m.PackContents != nil {
@@ -369,6 +420,7 @@ func ApiCatalogManifestToCatalogManifest(m models.CatalogManifest) catalog_model
 		RevokedBy:          m.RevokedBy,
 		DownloadCount:      m.DownloadCount,
 		PackSize:           m.PackSize,
+		IsCompressed:       m.IsCompressed,
 	}
 
 	if m.Provider != nil {
@@ -402,6 +454,14 @@ func ApiCatalogManifestToCatalogManifest(m models.CatalogManifest) catalog_model
 
 func BaseImportCatalogManifestResponseToApi(m catalog_models.ImportCatalogManifestResponse) models.ImportCatalogManifestResponse {
 	data := models.ImportCatalogManifestResponse{
+		ID: m.ID,
+	}
+
+	return data
+}
+
+func BaseImportVmResponseToApi(m catalog_models.ImportVmResponse) models.ImportVmResponse {
+	data := models.ImportVmResponse{
 		ID: m.ID,
 	}
 

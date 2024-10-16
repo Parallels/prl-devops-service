@@ -35,6 +35,7 @@ var extensions = []string{
 type Config struct {
 	ctx                 basecontext.ApiContext
 	mode                string
+	command             string
 	includeOwnResources bool
 	fileFormat          string
 	filename            string
@@ -297,7 +298,7 @@ func (c *Config) DbBackupInterval() time.Duration {
 func (c *Config) DbSaveInterval() time.Duration {
 	interval := c.GetIntKey(constants.DATABASE_SAVE_INTERVAL_ENV_VAR)
 	if interval == 0 {
-		return 5 * time.Minute
+		return 30 * time.Second
 	}
 
 	return time.Duration(interval) * time.Minute
@@ -369,6 +370,21 @@ func (c *Config) IsCatalogCachingEnable() bool {
 	}
 
 	return true
+}
+
+func (c *Config) IsDatabaseAutoRecover() bool {
+	envVar := c.GetKey(constants.SYSTEM_AUTO_RECOVER_DATABASE_ENV_VAR)
+	if envVar == "" ||
+		envVar == "true" ||
+		envVar == "1" ||
+		envVar == "yes" ||
+		envVar == "y" ||
+		envVar == "t" ||
+		envVar == "on" {
+		return true
+	}
+
+	return false
 }
 
 func (c *Config) Mode() string {
@@ -459,6 +475,14 @@ func (c *Config) UseOrchestratorResources() bool {
 	}
 
 	return false
+}
+
+func (c *Config) SetRunningCommand(command string) {
+	c.command = command
+}
+
+func (c *Config) GetRunningCommand() string {
+	return c.command
 }
 
 func (c *Config) DisableTlsValidation() bool {

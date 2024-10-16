@@ -46,6 +46,7 @@ The root object of the configuration file is the environment object, which conta
 | SYSTEM_RESERVED_CPU | The number of cpu cores that will be reserved for the system and not used for Orchestrator | 1 |
 | SYSTEM_RESERVED_MEMORY | The amount of memory that will be reserved for the system and not used for Orchestrator in Mb's | 2048 |
 | SYSTEM_RESERVED_DISK | The amount of disk space that will be reserved for the system and not used for Orchestrator in Mb's | 20000 |
+| SYSTEM_AUTO_RECOVER_DATABASE | Specifies whether the system should auto recover the database if it is corrupted | true |
 
 ### Rest API
 
@@ -69,14 +70,13 @@ The root object of the configuration file is the environment object, which conta
 | ENABLE_PACKER_PLUGIN | Specifies whether the service should enable the packer plugin | false |
 | ENABLE_VAGRANT_PLUGIN | Specifies whether the service should enable the vagrant plugin | false |
 
-
 ### Json Web Tokens
 
 | Flag | Description | Default Value |
 | ---- | ----------- | ------------- |
 | JWT_SIGN_ALGORITHM | The algorithm that will be used to sign the jwt tokens. This can be either `HS256`, `RS256`, `HS384`, `RS384`, `HS512`, `RS512` | HS256 |
 | JWT_PRIVATE_KEY | The private key that will be used to sign the jwt tokens. This is only required if you are using `RS256`, `RS384` or `RS512` | |
-| JWT_HMACS_SECRET | The secret that will be used to sign the jwt tokens. This is only required if you are using `HS256`, `HS384` or `HS512`. Defaults to random | 
+| JWT_HMACS_SECRET | The secret that will be used to sign the jwt tokens. This is only required if you are using `HS256`, `HS384` or `HS512`. Defaults to random |
 | JWT_DURATION | The duration that the jwt token will be valid for. You can use the following format, for example, 5 minutes would be `5m` or 1 hour would be `1h` | 15m |
 
 ### Password Complexity

@@ -57,7 +57,7 @@ func (s *BrewService) FindPath() string {
 		Command: "which",
 		Args:    []string{"brew"},
 	}
-	out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
+	out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
 		s.ctx.LogWarnf("Brew executable not found, trying to find it in the default locations")
@@ -88,7 +88,7 @@ func (s *BrewService) Version() string {
 		Args:    []string{"--version"},
 	}
 
-	stdout, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), cmd)
+	stdout, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return "unknown"
 	}
@@ -126,7 +126,7 @@ func (s *BrewService) Install(asUser, version string, flags map[string]string) e
 	}
 
 	s.ctx.LogInfof("Installing %s with command: %v", s.Name(), cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func (s *BrewService) Uninstall(asUser string, uninstallDependencies bool) error
 			Args:    []string{"-c", "\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)\""},
 		}
 
-		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 		if err != nil {
 			return err
 		}

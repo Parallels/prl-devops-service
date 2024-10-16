@@ -7,7 +7,7 @@ toolchain go1.22.1
 require (
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/amplitude/analytics-go v1.0.1
-	github.com/aws/aws-sdk-go v1.50.15
+	github.com/aws/aws-sdk-go v1.55.5
 	github.com/briandowns/spinner v1.23.0
 	github.com/cjlapao/common-go v0.0.39
 	github.com/cjlapao/common-go-cryptorand v0.0.6

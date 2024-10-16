@@ -39,7 +39,7 @@ jobs:
               catch (err) {
                 return false;
               }
-          
+
               if (!v) {
                 return false;
               } else {
@@ -80,6 +80,10 @@ jobs:
       - name: Parse version from package.json
         run: |
           echo "EXT_VERSION=$(cat ./VERSION)" >> "$GITHUB_ENV"
+      - name: Generate release notes
+        run: |
+          ./.github/workflow_scripts/get-latest-changelog.sh --output-to-file
+          cat release_notes.md
       - name: Create release and upload release asset
         uses: actions/github-script@v6
         with:
@@ -88,14 +92,12 @@ jobs:
             const release = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
+              body: fs.readFileSync("release_notes.md", "utf8"),
               tag_name: "release-v${{ env.EXT_VERSION }}",
               name: "v${{ env.EXT_VERSION }}",
               draft: false,
               prerelease: false
             });
-
-            core.summary.addLink(`Release v${{ env.EXT_VERSION }}`, release.data.html_url);
-            await core.summary.write();
   releases-matrix:
     needs: release
     name: Release Go Binary
@@ -113,21 +115,21 @@ jobs:
           - goarch: "386"
             goos: darwin
     steps:
-    - uses: actions/checkout@v3
-    - name: Add Inbuilt Variables
-      run: |
-        sed -i "s/var AmplitudeApiKey = \"\"/var AmplitudeApiKey = \"${{ env.AmplitudeApiKey }}\"/g" ./src/constants/amplitude.go
+      - uses: actions/checkout@v3
+      - name: Add Inbuilt Variables
+        run: |
+          sed -i "s/var AmplitudeApiKey = \"\"/var AmplitudeApiKey = \"${{ env.AmplitudeApiKey }}\"/g" ./src/constants/amplitude.go
 
-    - uses: wangyoucao577/go-release-action@v1
-      timeout-minutes: 10
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        goos: ${{ matrix.goos }}
-        goarch: ${{ matrix.goarch }}
-        goversion: "https://dl.google.com/go/go1.21.1.linux-amd64.tar.gz"
-        project_path: "./src"
-        binary_name: "prldevops"
-        release_name: "v${{ env.EXT_VERSION }}"
+      - uses: wangyoucao577/go-release-action@v1
+        timeout-minutes: 10
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          goversion: "https://dl.google.com/go/go1.21.1.linux-amd64.tar.gz"
+          project_path: "./src"
+          binary_name: "prldevops"
+          release_name: "v${{ env.EXT_VERSION }}"
 
   build-containers:
     needs: release
@@ -137,22 +139,21 @@ jobs:
     name: Build Docker Images
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Add Inbuilt Variables
-      run: |
-        sed -i "s/var AmplitudeApiKey = \"\"/var AmplitudeApiKey = \"${{ env.AmplitudeApiKey }}\"/g" ./src/constants/amplitude.go
-    - uses: docker/setup-buildx-action@v1
-    - uses: docker/login-action@v1
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-    - uses: docker/build-push-action@v2
-      with:
-        context: .
-        file: ./Dockerfile
-        platforms: linux/amd64,linux/arm64
-        push: true
-        tags: |
-          ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:latest
-          ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:${{ env.EXT_VERSION }}
-        
+      - uses: actions/checkout@v3
+      - name: Add Inbuilt Variables
+        run: |
+          sed -i "s/var AmplitudeApiKey = \"\"/var AmplitudeApiKey = \"${{ env.AmplitudeApiKey }}\"/g" ./src/constants/amplitude.go
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:latest
+            ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:${{ env.EXT_VERSION }}

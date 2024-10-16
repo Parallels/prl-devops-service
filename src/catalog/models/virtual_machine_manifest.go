@@ -29,6 +29,8 @@ type VirtualMachineCatalogManifest struct {
 	UpdatedAt               string                              `json:"updated_at"`
 	LastDownloadedAt        string                              `json:"last_downloaded_at"`
 	LastDownloadedUser      string                              `json:"last_downloaded_user"`
+	IsCompressed            bool                                `json:"is_compressed"`
+	PackRelativePath        string                              `json:"pack_relative_path"`
 	DownloadCount           int                                 `json:"download_count"`
 	CompressedPath          string                              `json:"-"`
 	CompressedChecksum      string                              `json:"compressed_checksum"`
@@ -43,6 +45,12 @@ type VirtualMachineCatalogManifest struct {
 	RevokedAt               string                              `json:"revoked_at"`
 	RevokedBy               string                              `json:"revoked_by"`
 	MinimumSpecRequirements *MinimumSpecRequirement             `json:"minimum_requirements,omitempty"`
+	CacheDate               string                              `json:"cache_date,omitempty"`
+	CacheLocalFullPath      string                              `json:"cache_local_path,omitempty"`
+	CacheMetadataName       string                              `json:"cache_metadata_name,omitempty"`
+	CacheFileName           string                              `json:"cache_file_name,omitempty"`
+	CacheType               string                              `json:"cache_type,omitempty"`
+	CacheSize               int64                               `json:"cache_size,omitempty"`
 	CleanupRequest          *cleanupservice.CleanupRequest      `json:"-"`
 	Errors                  []error                             `json:"-"`
 }
@@ -56,7 +64,7 @@ func NewVirtualMachineCatalogManifest() *VirtualMachineCatalogManifest {
 	}
 }
 
-func (m *VirtualMachineCatalogManifest) Validate() error {
+func (m *VirtualMachineCatalogManifest) Validate(importVm bool) error {
 	if m.ID == "" {
 		m.ID = helpers.GenerateId()
 	}
@@ -79,18 +87,18 @@ func (m *VirtualMachineCatalogManifest) Validate() error {
 
 	m.Name = fmt.Sprintf("%s-%s-%s", helpers.NormalizeString(m.CatalogId), helpers.NormalizeString(m.Architecture), helpers.NormalizeString(m.Version))
 
-	if m.Path == "" {
-		return errors.NewWithCode("Path is required", 400)
+	if !importVm {
+		if m.Path == "" {
+			return errors.NewWithCode("Path is required", 400)
+		}
+		if m.PackFile == "" {
+			return errors.NewWithCode("PackFile is required", 400)
+		}
+		if m.MetadataFile == "" {
+			return errors.NewWithCode("MetadataFile is required", 400)
+		}
 	}
-	if m.PackFile == "" {
-		return errors.NewWithCode("PackFile is required", 400)
-	}
-	if m.MetadataFile == "" {
-		return errors.NewWithCode("MetadataFile is required", 400)
-	}
-	if m.Provider == nil {
-		return errors.NewWithCode("Provider is required", 400)
-	}
+
 	if m.RequiredClaims == nil {
 		m.RequiredClaims = []string{}
 	}
@@ -152,4 +160,9 @@ func (t VirtualMachineManifestArchitectureType) MarshalJSON() ([]byte, error) {
 func (t *VirtualMachineManifestArchitectureType) UnmarshalJSON(b []byte) error {
 	*t = VirtualMachineManifestArchitectureType(b)
 	return nil
+}
+
+type VirtualMachineCatalogManifestList struct {
+	TotalSize int64                           `json:"total_size"`
+	Manifests []VirtualMachineCatalogManifest `json:"manifests"`
 }

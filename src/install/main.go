@@ -108,13 +108,13 @@ func installServiceOnMac(ctx basecontext.ApiContext, config ApiServiceConfig) er
 		Args:    []string{"launchctl", "load", daemonPath},
 	}
 
-	if _, err := helpers.ExecuteWithNoOutput(ctx.Context(), chownCmd); err != nil {
+	if _, err := helpers.ExecuteWithNoOutput(ctx.Context(), chownCmd, helpers.ExecutionTimeout); err != nil {
 		return err
 	}
-	if _, err := helpers.ExecuteWithNoOutput(ctx.Context(), chmod); err != nil {
+	if _, err := helpers.ExecuteWithNoOutput(ctx.Context(), chmod, helpers.ExecutionTimeout); err != nil {
 		return err
 	}
-	if _, err := helpers.ExecuteWithNoOutput(ctx.Context(), launchdLoadCmd); err != nil {
+	if _, err := helpers.ExecuteWithNoOutput(ctx.Context(), launchdLoadCmd, helpers.ExecutionTimeout); err != nil {
 		return err
 	}
 
@@ -131,7 +131,7 @@ func uninstallServiceOnMac(ctx basecontext.ApiContext, removeDatabase bool) erro
 		Args:    []string{"launchctl", "unload", daemonPath},
 	}
 
-	if _, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd); err != nil {
+	if _, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout); err != nil {
 		return err
 	}
 

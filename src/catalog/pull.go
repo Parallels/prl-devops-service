@@ -190,113 +190,144 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 			break
 		}
 
-		if check {
-			ctx.LogInfof("Found remote service %v", rs.Name())
-			rs.SetProgressChannel(r.FileNameChannel, r.ProgressChannel)
-			foundProvider = true
-			r.LocalMachineFolder = fmt.Sprintf("%s.%s", filepath.Join(r.Path, r.MachineName), manifest.Type)
-			ctx.LogInfof("Local machine folder: %v", r.LocalMachineFolder)
-			count := 1
-			for {
-				if helper.FileExists(r.LocalMachineFolder) {
-					ctx.LogInfof("Local machine folder %v already exists, attempting to create a different one", r.LocalMachineFolder)
-					r.LocalMachineFolder = fmt.Sprintf("%s_%v.%s", filepath.Join(r.Path, r.MachineName), count, manifest.Type)
-					count += 1
-				} else {
-					break
-				}
+		if !check {
+			continue
+		}
+
+		ctx.LogInfof("Found remote service %v", rs.Name())
+		rs.SetProgressChannel(r.FileNameChannel, r.ProgressChannel)
+		foundProvider = true
+		r.LocalMachineFolder = fmt.Sprintf("%s.%s", filepath.Join(r.Path, r.MachineName), manifest.Type)
+		ctx.LogInfof("Local machine folder: %v", r.LocalMachineFolder)
+		count := 1
+		for {
+			if helper.FileExists(r.LocalMachineFolder) {
+				ctx.LogInfof("Local machine folder %v already exists, attempting to create a different one", r.LocalMachineFolder)
+				r.LocalMachineFolder = fmt.Sprintf("%s_%v.%s", filepath.Join(r.Path, r.MachineName), count, manifest.Type)
+				count += 1
+			} else {
+				break
+			}
+		}
+
+		if err := helpers.CreateDirIfNotExist(r.LocalMachineFolder); err != nil {
+			ctx.LogErrorf("Error creating local machine folder %v: %v", r.LocalMachineFolder, err)
+			response.AddError(err)
+			break
+		}
+
+		ctx.LogInfof("Created local machine folder %v", r.LocalMachineFolder)
+
+		ctx.LogInfof("Pulling manifest %v", manifest.Name)
+		packContent := make([]models.VirtualMachineManifestContentItem, 0)
+		if manifest.PackContents == nil {
+			ctx.LogDebugf("Manifest %v does not have pack contents, adding default files", manifest.Name)
+			packContent = append(packContent, models.VirtualMachineManifestContentItem{
+				Path: manifest.Path,
+				Name: manifest.PackFile,
+			})
+			packContent = append(packContent, models.VirtualMachineManifestContentItem{
+				Path: manifest.Path,
+				Name: manifest.MetadataFile,
+			})
+			ctx.LogDebugf("default file content %v", packContent)
+		} else {
+			ctx.LogDebugf("Manifest %v has pack contents, adding them", manifest.Name)
+			packContent = append(packContent, manifest.PackContents...)
+		}
+		ctx.LogDebugf("pack content %v", packContent)
+
+		for _, file := range packContent {
+			if strings.HasSuffix(file.Name, ".meta") {
+				ctx.LogDebugf("Skipping meta file %v", file.Name)
+				continue
 			}
 
-			if err := helpers.CreateDirIfNotExist(r.LocalMachineFolder); err != nil {
-				ctx.LogErrorf("Error creating local machine folder %v: %v", r.LocalMachineFolder, err)
+			destinationFolder := r.Path
+			fileName := file.Name
+			fileChecksum, err := rs.FileChecksum(ctx, file.Path, file.Name)
+			if err != nil {
+				ctx.LogErrorf("Error getting file %v checksum: %v", fileName, err)
 				response.AddError(err)
 				break
 			}
 
-			ctx.LogInfof("Created local machine folder %v", r.LocalMachineFolder)
-
-			ctx.LogInfof("Pulling manifest %v", manifest.Name)
-			packContent := make([]models.VirtualMachineManifestContentItem, 0)
-			if manifest.PackContents == nil {
-				ctx.LogDebugf("Manifest %v does not have pack contents, adding default files", manifest.Name)
-				packContent = append(packContent, models.VirtualMachineManifestContentItem{
-					Path: manifest.Path,
-					Name: manifest.PackFile,
-				})
-				packContent = append(packContent, models.VirtualMachineManifestContentItem{
-					Path: manifest.Path,
-					Name: manifest.MetadataFile,
-				})
-				ctx.LogDebugf("default file content %v", packContent)
-			} else {
-				ctx.LogDebugf("Manifest %v has pack contents, adding them", manifest.Name)
-				packContent = append(packContent, manifest.PackContents...)
-			}
-			ctx.LogDebugf("pack content %v", packContent)
-
-			for _, file := range packContent {
-				if strings.HasSuffix(file.Name, ".meta") {
-					ctx.LogDebugf("Skipping meta file %v", file.Name)
-					continue
-				}
-
-				destinationFolder := r.Path
-				fileName := file.Name
-				fileChecksum, err := rs.FileChecksum(ctx, file.Path, file.Name)
+			filePath := filepath.Join(file.Path, fileName)
+			fileExtension := filepath.Ext(filePath)
+			cacheFileName := fmt.Sprintf("%s%s", fileChecksum, fileExtension)
+			cacheMachineName := fmt.Sprintf("%s.%s", fileChecksum, manifest.Type)
+			cacheType := CatalogCacheTypeNone
+			needsPulling := false
+			// checking for the caching system to see if we need to pull the file
+			if cfg.IsCatalogCachingEnable() {
+				destinationFolder, err = cfg.CatalogCacheFolder()
 				if err != nil {
-					ctx.LogErrorf("Error getting file %v checksum: %v", fileName, err)
-					response.AddError(err)
-					break
+					destinationFolder = r.Path
 				}
 
-				cacheFileName := fmt.Sprintf("%s.pdpack", fileChecksum)
-				cacheMachineName := fmt.Sprintf("%s.%s", fileChecksum, manifest.Type)
-				cacheType := CatalogCacheTypeNone
-				needsPulling := false
-				// checking for the caching system to see if we need to pull the file
-				if cfg.IsCatalogCachingEnable() {
-					destinationFolder, err = cfg.CatalogCacheFolder()
-					if err != nil {
-						destinationFolder = r.Path
-					}
-
-					// checking if the compressed file is already in the cache
-					if helper.FileExists(filepath.Join(destinationFolder, cacheFileName)) {
-						ctx.LogInfof("Compressed File %v already exists in cache", fileName)
-						cacheType = CatalogCacheTypeFile
-					} else if helper.FileExists(filepath.Join(destinationFolder, cacheMachineName)) {
-						ctx.LogInfof("Machine Folder %v already exists in cache", cacheMachineName)
+				// checking if the compressed file is already in the cache
+				if helper.FileExists(filepath.Join(destinationFolder, cacheFileName)) {
+					ctx.LogInfof("Compressed File %v already exists in cache", fileName)
+					if info, err := os.Stat(filepath.Join(destinationFolder, cacheFileName)); err == nil && info.IsDir() {
+						ctx.LogInfof("Cache file %v is a directory, treating it as a folder", cacheFileName)
 						cacheType = CatalogCacheTypeFolder
 					} else {
 						cacheType = CatalogCacheTypeFile
-						needsPulling = true
+					}
+				} else if helper.FileExists(filepath.Join(destinationFolder, cacheMachineName)) {
+					ctx.LogInfof("Machine Folder %v already exists in cache", cacheMachineName)
+					if info, err := os.Stat(filepath.Join(destinationFolder, cacheMachineName)); err == nil && info.IsDir() {
+						ctx.LogInfof("Cache file %v is a directory, treating it as a folder", cacheMachineName)
+						cacheType = CatalogCacheTypeFolder
+					} else {
+						cacheType = CatalogCacheTypeFile
 					}
 				} else {
 					cacheType = CatalogCacheTypeFile
 					needsPulling = true
 				}
+			} else {
+				cacheType = CatalogCacheTypeFile
+				needsPulling = true
+			}
 
-				if needsPulling {
-					s.sendPullStepInfo(r, "Pulling file")
-					if err := rs.PullFile(ctx, file.Path, file.Name, destinationFolder); err != nil {
-						ctx.LogErrorf("Error pulling file %v: %v", fileName, err)
+			if needsPulling {
+				s.sendPullStepInfo(r, "Pulling file")
+				if err := rs.PullFile(ctx, file.Path, file.Name, destinationFolder); err != nil {
+					ctx.LogErrorf("Error pulling file %v: %v", fileName, err)
+					response.AddError(err)
+					break
+				}
+				if cfg.IsCatalogCachingEnable() {
+					err := os.Rename(filepath.Join(destinationFolder, file.Name), filepath.Join(destinationFolder, cacheFileName))
+					if err != nil {
+						log.Fatal(err)
+					}
+					if err := rs.PullFile(ctx, file.Path, manifest.MetadataFile, destinationFolder); err != nil {
+						ctx.LogErrorf("Error pulling file %v: %v", manifest.MetadataFile, err)
 						response.AddError(err)
 						break
 					}
-					if cfg.IsCatalogCachingEnable() {
-						err := os.Rename(filepath.Join(destinationFolder, file.Name), filepath.Join(destinationFolder, cacheFileName))
-						if err != nil {
-							log.Fatal(err)
-						}
+					err = os.Rename(filepath.Join(destinationFolder, manifest.MetadataFile), filepath.Join(destinationFolder, fmt.Sprintf("%s.meta", cacheMachineName)))
+					if err != nil {
+						log.Fatal(err)
 					}
 				}
+			}
 
-				if !cfg.IsCatalogCachingEnable() {
-					cacheFileName = file.Name
-					response.CleanupRequest.AddLocalFileCleanupOperation(filepath.Join(destinationFolder, file.Name), false)
-				}
+			if !cfg.IsCatalogCachingEnable() {
+				cacheFileName = file.Name
+				response.CleanupRequest.AddLocalFileCleanupOperation(filepath.Join(destinationFolder, file.Name), false)
+			}
 
-				if cacheType == CatalogCacheTypeFile {
+			if cacheType == CatalogCacheTypeFile {
+				if manifest.IsCompressed || strings.HasSuffix(fileName, ".pdpack") {
+					isPdPack := false
+					if strings.HasSuffix(fileName, ".pdpack") {
+						isPdPack = true
+					} else {
+						cacheMachineName = cacheMachineName + ".tmp"
+					}
 					s.sendPullStepInfo(r, "Decompressing file")
 					ctx.LogInfof("Decompressing file %v", cacheFileName)
 					if err := s.decompressMachine(ctx, filepath.Join(destinationFolder, cacheFileName), filepath.Join(destinationFolder, cacheMachineName)); err != nil {
@@ -311,43 +342,93 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 						break
 					}
 
-					cacheType = CatalogCacheTypeFolder
-				}
+					if !isPdPack {
+						// Checking the content of the folder to understand if this is a vm or if the vm is inside a folder
+						content, err := os.ReadDir(filepath.Join(destinationFolder, cacheMachineName))
+						if err != nil {
+							ctx.LogErrorf("Error reading folder %v: %v", cacheMachineName, err)
+							response.AddError(err)
+							break
+						}
 
-				if cacheType == CatalogCacheTypeFolder {
-					s.sendPullStepInfo(r, "Copying machine to destination")
-					ctx.LogInfof("Copying machine folder %v to %v", cacheMachineName, r.LocalMachineFolder)
-					if err := helpers.CopyDir(filepath.Join(destinationFolder, cacheMachineName), r.LocalMachineFolder); err != nil {
-						ctx.LogErrorf("Error copying machine folder %v to %v: %v", cacheMachineName, r.LocalMachineFolder, err)
+						// Detecting if we have a config.pvs file
+						for _, item := range content {
+							if item.Name() == "config.pvs" {
+								tempCacheMachineName := cacheMachineName
+								cacheMachineName = strings.Replace(cacheFileName, ".tmp", "", 1)
+								if err := os.Rename(filepath.Join(destinationFolder, tempCacheMachineName), filepath.Join(destinationFolder, fmt.Sprintf("%s.%s", fileChecksum, manifest.Type))); err != nil {
+									ctx.LogErrorf("Error renaming file %v to %v: %v", cacheFileName, cacheMachineName, err)
+									response.AddError(err)
+									break
+								}
+								break
+							}
+							if item.IsDir() && (strings.HasSuffix(item.Name(), ".pvm") || strings.HasSuffix(item.Name(), ".macvm")) {
+								tempCacheMachineName := cacheMachineName
+								itemExtension := filepath.Ext(item.Name())
+								machineName := filepath.Join(destinationFolder, fmt.Sprintf("%s%s", fileChecksum, itemExtension))
+								if err := os.Rename(filepath.Join(destinationFolder, tempCacheMachineName, item.Name()), machineName); err != nil {
+									ctx.LogErrorf("Error renaming folder %v to %v: %v", item.Name(), destinationFolder, err)
+									response.AddError(err)
+									break
+								}
+								if err := os.Remove(filepath.Join(destinationFolder, tempCacheMachineName)); err != nil {
+									ctx.LogErrorf("Error removing temporary folder %v: %v", tempCacheMachineName, err)
+									response.AddError(err)
+									break
+								}
+								cacheMachineName = fmt.Sprintf("%s%s", fileChecksum, itemExtension)
+							}
+						}
+					}
+				} else {
+					if err := os.Rename(filepath.Join(destinationFolder, cacheFileName), filepath.Join(destinationFolder, fmt.Sprintf("%s.%s", fileChecksum, manifest.Type))); err != nil {
+						ctx.LogErrorf("Error renaming file %v to %v: %v", cacheFileName, cacheMachineName, err)
 						response.AddError(err)
 						break
 					}
 				}
 
-				if cfg.IsCatalogCachingEnable() {
-					response.LocalCachePath = filepath.Join(destinationFolder, cacheMachineName)
-				}
+				cacheType = CatalogCacheTypeFolder
+			}
 
-				systemSrv := serviceProvider.System
-				if r.Owner != "" && r.Owner != "root" {
-					if err := systemSrv.ChangeFileUserOwner(ctx, r.Owner, r.LocalMachineFolder); err != nil {
-						ctx.LogErrorf("Error changing file %v owner to %v: %v", r.LocalMachineFolder, r.Owner, err)
-						response.AddError(err)
-						break
-					}
+			if cacheType == CatalogCacheTypeFolder {
+				s.sendPullStepInfo(r, fmt.Sprintf("Copying machine to %s", filepath.Join(destinationFolder, cacheMachineName)))
+				ctx.LogInfof("Copying machine folder %v to %v", cacheMachineName, r.LocalMachineFolder)
+				if err := helpers.CopyDir(filepath.Join(destinationFolder, cacheMachineName), r.LocalMachineFolder); err != nil {
+					ctx.LogErrorf("Error copying machine folder %v to %v: %v", cacheMachineName, r.LocalMachineFolder, err)
+					response.AddError(err)
+					break
 				}
 			}
 
-			if response.HasErrors() {
-				response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
+			if cfg.IsCatalogCachingEnable() {
+				response.LocalCachePath = filepath.Join(destinationFolder, cacheMachineName)
 			}
 
-			ctx.LogInfof("Finished pulling pack file for manifest %v", manifest.Name)
+			systemSrv := serviceProvider.System
+			if r.Owner != "" && r.Owner != "root" {
+				if err := systemSrv.ChangeFileUserOwner(ctx, r.Owner, r.LocalMachineFolder); err != nil {
+					ctx.LogErrorf("Error changing file %v owner to %v: %v", r.LocalMachineFolder, r.Owner, err)
+					response.AddError(err)
+					break
+				}
+			}
 		}
+
+		if response.HasErrors() {
+			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
+		}
+
+		ctx.LogInfof("Finished pulling pack file for manifest %v", manifest.Name)
 	}
 
 	if !foundProvider {
 		response.AddError(errors.New("No remote service was able to pull the manifest"))
+	}
+
+	if response.HasErrors() {
+		return response
 	}
 
 	if r.LocalMachineFolder == "" {

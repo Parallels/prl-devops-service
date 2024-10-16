@@ -8,12 +8,13 @@ import (
 )
 
 var (
-	ErrPushMissingLocalPath    = errors.NewWithCode("missing local path", 400)
-	ErrPushMissingCatalogId    = errors.NewWithCode("missing catalog_id", 400)
-	ErrPushMissingVersion      = errors.NewWithCode("missing version", 400)
-	ErrPushVersionInvalidChars = errors.NewWithCode("version contains invalid characters", 400)
-	ErrMissingArchitecture     = errors.NewWithCode("missing architecture", 400)
-	ErrInvalidArchitecture     = errors.NewWithCode("invalid architecture, needs to be either x86_64 or arm64", 400)
+	ErrPushMissingLocalPath     = errors.NewWithCode("missing local path", 400)
+	ErrPushMissingCatalogId     = errors.NewWithCode("missing catalog_id", 400)
+	ErrPushMissingVersion       = errors.NewWithCode("missing version", 400)
+	ErrPushVersionInvalidChars  = errors.NewWithCode("version contains invalid characters", 400)
+	ErrMissingArchitecture      = errors.NewWithCode("missing architecture", 400)
+	ErrInvalidArchitecture      = errors.NewWithCode("invalid architecture, needs to be either x86_64 or arm64", 400)
+	ErrMissingMachineRemotePath = errors.NewWithCode("missing machine remote path", 400)
 )
 
 type PushCatalogManifestRequest struct {

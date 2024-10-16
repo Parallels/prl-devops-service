@@ -10,6 +10,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/cmd"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -19,7 +20,7 @@ import (
 	"github.com/cjlapao/common-go/version"
 )
 
-var ver = "0.9.6"
+var ver = "0.9.6.1"
 
 //	@title			Parallels Desktop DevOps Service
 //	@version		0.9.6
@@ -38,10 +39,10 @@ var ver = "0.9.6"
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	// catching all of the exceptions
 	defer func() {
@@ -54,7 +55,7 @@ func main() {
 				if db != nil {
 					ctx := basecontext.NewRootBaseContext()
 					_ = db.SaveNow(ctx)
-					_ = db.SaveAs(ctx, fmt.Sprintf("data.panic.%s.json", strings.ReplaceAll(time.Now().Format("2006-01-02-15-04-05"), "-", "_")))
+					_ = db.SaveAs(ctx, fmt.Sprintf("data.json.%s.panic", strings.ReplaceAll(time.Now().Format("20060102150405"), "-", "_")))
 				}
 			}
 			fmt.Fprintf(os.Stderr, "Exception: %v\n", err)
@@ -80,20 +81,23 @@ func main() {
 	ctx := basecontext.NewRootBaseContext()
 	go func() {
 		<-c
-		sp := serviceprovider.Get()
-		if sp != nil {
-			db := sp.JsonDatabase
-			if db != nil {
-				cleanup(ctx, db)
-				retries := 0
-				maxRetries := 10
-				for {
-					retries++
-					if !db.IsConnected() || retries > maxRetries {
-						break
+		cfg := config.Get()
+		if cfg.GetRunningCommand() == constants.API_COMMAND || cfg.GetRunningCommand() == "" {
+			sp := serviceprovider.Get()
+			if sp != nil {
+				db := sp.JsonDatabase
+				if db != nil {
+					cleanup(ctx, db)
+					retries := 0
+					maxRetries := 10
+					for {
+						retries++
+						if !db.IsConnected() || retries > maxRetries {
+							break
+						}
+						ctx.LogInfof("[Core] Waiting for database to disconnect")
+						time.Sleep(5 * time.Second)
 					}
-					ctx.LogInfof("[Core] Waiting for database to disconnect")
-					time.Sleep(5 * time.Second)
 				}
 			}
 		}

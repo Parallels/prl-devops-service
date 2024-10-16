@@ -20,6 +20,8 @@ type CatalogManifest struct {
 	RequiredRoles           []string                      `json:"required_roles,omitempty" yaml:"required_roles,omitempty"`
 	LastDownloadedAt        string                        `json:"last_downloaded_at,omitempty" yaml:"last_downloaded_at,omitempty"`
 	LastDownloadedUser      string                        `json:"last_downloaded_user,omitempty" yaml:"last_downloaded_user,omitempty"`
+	IsCompressed            bool                          `json:"is_compressed,omitempty" yaml:"is_compressed,omitempty"`
+	PackRelativePath        string                        `json:"pack_relative_path,omitempty" yaml:"pack_relative_path,omitempty"`
 	DownloadCount           int                           `json:"download_count,omitempty" yaml:"download_count,omitempty"`
 	Tainted                 bool                          `json:"tainted,omitempty" yaml:"tainted,omitempty"`
 	TaintedBy               string                        `json:"tainted_by,omitempty" yaml:"tainted_by,omitempty"`
@@ -64,5 +66,9 @@ type PullCatalogManifestResponse struct {
 }
 
 type ImportCatalogManifestResponse struct {
+	ID string `json:"id,omitempty" yaml:"id,omitempty"`
+}
+
+type ImportVmResponse struct {
 	ID string `json:"id,omitempty" yaml:"id,omitempty"`
 }

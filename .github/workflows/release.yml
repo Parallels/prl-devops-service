@@ -31,18 +31,18 @@ jobs:
       - name: Setup Go 1.21.x
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21.x'
+          go-version: "1.21.x"
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Check for Changes to the Changelog
         id: diff
-        if: true
+        if: false
         run: |
-            NEW_VERSION=$(./.github/workflow_scripts/increment-version.sh -t ${{ inputs.version }} -f VERSION)
-            LAST_CHANGELOG_VERSION=$(./.github/workflow_scripts/get-latest-changlog-version.sh)
-            if [ "$NEW_VERSION" != "$LAST_CHANGELOG_VERSION" ]; then
-              echo "Changelog not updated for version $NEW_VERSION lastest version is $LAST_CHANGELOG_VERSION"
-              exit 1
-            fi
+          NEW_VERSION=$(./.github/workflow_scripts/increment-version.sh -t ${{ inputs.version }} -f VERSION)
+          LAST_CHANGELOG_VERSION=$(./.github/workflow_scripts/get-latest-changelog-version.sh)
+          if [ "$NEW_VERSION" != "$LAST_CHANGELOG_VERSION" ]; then
+            echo "Changelog not updated for version $NEW_VERSION lastest version is $LAST_CHANGELOG_VERSION"
+            exit 1
+          fi
       - name: Bump version and push
         run: |
           git config --global user.email "cjlapao@gmail.com"
@@ -64,25 +64,28 @@ jobs:
           swag init -g main.go
           cd ..
 
+          # Generate changelog for the new version
+          ./.github/workflow_scripts/generate-changelog.sh --repo ${{ github.repository }} --version $NEW_VERSION
+
+          # Generate blog records for the new version
           ./.github/workflow_scripts/generate-blog-records.sh
 
+          # Generate Helm Chart
           make build-helm-chart
 
-          git add VERSION ./docs/charts/* ./docs/_posts/* ./src/* ./helm/Chart.yaml ./badges/*
+          git add VERSION CHANGELOG.md ./docs/charts/* ./docs/_posts/* ./src/* ./helm/Chart.yaml ./badges/* 
           git commit -m "Release extension version $NEW_VERSION"
 
           git push --set-upstream origin release/$NEW_VERSION
 
           echo "new_version=$NEW_VERSION" >> "$GITHUB_ENV"
 
-
       - name: Create PR
         run: |
-          LAST_PR=$(gh pr list --repo ${{ github.repository }} --limit 1 --state merged --search "Release version" --json number | jq -r '.[0].number')
-          ./.github/workflow_scripts/generate-release-notes.sh ${{ github.repository }} "$LAST_PR" ${{ env.new_version }}
+          ./.github/workflow_scripts/generate-changelog.sh --mode RELEASE --repo ${{ github.repository }} --version ${{ env.new_version }} --output-to-file 
           gh pr create \
             --title "Release version ${{ env.new_version }}" \
-            --body-file releasenotes.md \
+            --body-file release_notes.md \
             --base main \
             --head release/${{ env.new_version }}
           gh pr edit --add-label release-request

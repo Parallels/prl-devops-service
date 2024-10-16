@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/telemetry"
 	"github.com/cjlapao/common-go/helper"
@@ -26,6 +27,9 @@ func Process() {
 		}
 		telemetry.SendStartEvent(cmd)
 	}
+
+	cfg := config.Get()
+	cfg.SetRunningCommand(command)
 
 	switch command {
 	case constants.API_COMMAND:

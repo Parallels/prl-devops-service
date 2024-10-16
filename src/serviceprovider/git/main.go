@@ -54,7 +54,7 @@ func (s *GitService) FindPath() string {
 		Command: "which",
 		Args:    []string{"git"},
 	}
-	out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
+	out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 	path := strings.ReplaceAll(strings.TrimSpace(out), "\n", "")
 	if err != nil || path == "" {
 		s.ctx.LogWarnf("Git executable not found, trying to find it in the default locations")
@@ -81,7 +81,7 @@ func (s *GitService) Version() string {
 		Args:    []string{"--version"},
 	}
 
-	stdout, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), cmd)
+	stdout, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return "unknown"
 	}
@@ -130,7 +130,7 @@ func (s *GitService) Install(asUser, version string, flags map[string]string) er
 	}
 
 	s.ctx.LogInfof("Installing %s with command: %v", s.Name(), cmd.String())
-	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (s *GitService) Uninstall(asUser string, uninstallDependencies bool) error 
 			}
 		}
 
-		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 		if err != nil {
 			return err
 		}
@@ -230,7 +230,7 @@ func (s *GitService) Clone(ctx basecontext.ApiContext, repoURL string, owner str
 		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), helpers.Command{
 			Command: "chown",
 			Args:    []string{"-R", owner, path},
-		})
+		}, helpers.ExecutionTimeout)
 		if err != nil {
 			return "", err
 		}
@@ -238,7 +238,7 @@ func (s *GitService) Clone(ctx basecontext.ApiContext, repoURL string, owner str
 		cmd.Args = append(cmd.Args, "clone", repoURL, path)
 
 		ctx.LogInfof(cmd.String())
-		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
+		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 		if err != nil {
 			buildError := errors.NewWithCodef(400, "failed to pull repository %v, error: %v", path, err.Error())
 			return "", buildError

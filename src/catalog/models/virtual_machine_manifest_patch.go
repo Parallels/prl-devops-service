@@ -8,6 +8,8 @@ type VirtualMachineCatalogManifestPatch struct {
 	RequiredRoles  []string                       `json:"required_roles"`
 	RequiredClaims []string                       `json:"required_claims"`
 	Tags           []string                       `json:"tags"`
+	Provider       *CatalogManifestProvider       `json:"-"`
+	Connection     string                         `json:"connection"`
 	CleanupRequest *cleanupservice.CleanupRequest `json:"-"`
 	Errors         []error                        `json:"-"`
 }
@@ -31,6 +33,12 @@ func (m *VirtualMachineCatalogManifestPatch) Validate() error {
 	}
 	if m.Tags == nil {
 		m.Tags = []string{}
+	}
+	if m.Connection != "" {
+		m.Provider = &CatalogManifestProvider{}
+		if err := m.Provider.Parse(m.Connection); err != nil {
+			return err
+		}
 	}
 
 	return nil
