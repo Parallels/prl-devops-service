@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.7] - 2024-10-16
+
+- Fixed an issue where the copy would fail if the source and destination were in a removable disk
+- Fixed an issue where the metadata would contain the provider credentials in the file
+- Fixed an issue where if the vm was very big it could timeout during cp process
+- Fixed an issue where running prldevops command in the same machine as running the api would corrupt the database
+- Added a new endpoint to update a catalog manifest provider connection string
+- Added the ability to use environment variables in the pdfile
+- Added the ability to import vms from a remote storage that are not in pdpack format
+- Added the ability to auto recover the database from a backup if it is corrupted
+- Added a controller to delete the catalog cache
+- Added a controller to delete the catalog cache for a specific manifest
+- Added a controller to get all the existing catalog cache
+- Added a retry to the load of the database to account for slow mount devices
+- Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. List any dependencies that are required for this change.
+- Fixes # (issue)
+- Fixed a missing image in the catalog documentation
+
 ## [0.9.6] - 2024-09-19
 
 ### Fixed

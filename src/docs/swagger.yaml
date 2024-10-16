@@ -55,6 +55,8 @@ definitions:
         type: integer
       id:
         type: string
+      is_compressed:
+        type: boolean
       last_downloaded_at:
         type: string
       last_downloaded_user:
@@ -70,6 +72,8 @@ definitions:
           $ref: '#/definitions/models.CatalogManifestPackItem'
         type: array
       pack_filename:
+        type: string
+      pack_relative_path:
         type: string
       pack_size:
         type: integer
@@ -216,6 +220,11 @@ definitions:
         type: integer
     type: object
   github_com_Parallels_prl-devops-service_models.ImportCatalogManifestResponse:
+    properties:
+      id:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.ImportVmResponse:
     properties:
       id:
         type: string
@@ -815,6 +824,43 @@ definitions:
       version:
         type: string
     type: object
+  models.ImportVmRequest:
+    properties:
+      architecture:
+        type: string
+      catalog_id:
+        type: string
+      connection:
+        type: string
+      description:
+        type: string
+      force:
+        type: boolean
+      is_compressed:
+        type: boolean
+      machine_remote_path:
+        type: string
+      provider_metadata:
+        additionalProperties:
+          type: string
+        type: object
+      required_claims:
+        items:
+          type: string
+        type: array
+      required_roles:
+        items:
+          type: string
+        type: array
+      tags:
+        items:
+          type: string
+        type: array
+      type:
+        type: string
+      version:
+        type: string
+    type: object
   models.InstallToolsRequest:
     properties:
       all:
@@ -1284,6 +1330,8 @@ definitions:
     type: object
   models.VirtualMachineCatalogManifestPatch:
     properties:
+      connection:
+        type: string
       required_claims:
         items:
           type: string
@@ -1410,7 +1458,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.9.6
+  version: 0.9.7
 paths:
   /health/probe:
     get:
@@ -2505,16 +2553,6 @@ paths:
         name: catalogId
         required: true
         type: string
-      - description: Version
-        in: path
-        name: version
-        required: true
-        type: string
-      - description: Architecture
-        in: path
-        name: architecture
-        required: true
-        type: string
       - description: Body
         in: body
         name: request
@@ -2539,7 +2577,7 @@ paths:
       security:
       - ApiKeyAuth: []
       - BearerAuth: []
-      summary: Adds claims to a catalog manifest version
+      summary: Updates a catalog
       tags:
       - Catalogs
   /v1/catalog/{catalogId}/{version}/{architecture}/download:
@@ -2884,6 +2922,87 @@ paths:
       summary: UnTaints a catalog manifest version
       tags:
       - Catalogs
+  /v1/catalog/cache:
+    delete:
+      description: This endpoint returns all the remote catalog cache if any
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes all catalog cache
+      tags:
+      - Catalogs
+    get:
+      description: This endpoint returns all the remote catalog cache if any
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets catalog cache
+      tags:
+      - Catalogs
+  /v1/catalog/cache/{catalogId}:
+    delete:
+      description: This endpoint returns all the remote catalog cache if any
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes catalog cache item
+      tags:
+      - Catalogs
   /v1/catalog/import:
     put:
       description: This endpoint imports a remote catalog manifest metadata into the
@@ -2914,6 +3033,39 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Imports a remote catalog manifest metadata into the catalog inventory
+      tags:
+      - Catalogs
+  /v1/catalog/import-vm:
+    put:
+      description: This endpoint imports a virtual machine in pvm or macvm format
+        into the catalog inventory generating the metadata for it
+      parameters:
+      - description: Vm Impoty request
+        in: body
+        name: importRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.ImportVmRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ImportVmResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Imports a vm into the catalog inventory generating the metadata for
+        it
       tags:
       - Catalogs
   /v1/catalog/pull:

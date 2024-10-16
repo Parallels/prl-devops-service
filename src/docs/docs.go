@@ -1381,6 +1381,139 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/catalog/cache": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the remote catalog cache if any",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Gets catalog cache",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the remote catalog cache if any",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Deletes all catalog cache",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/cache/{catalogId}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the remote catalog cache if any",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Deletes catalog cache item",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/catalog/import": {
             "put": {
                 "security": [
@@ -1415,6 +1548,57 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ImportCatalogManifestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/import-vm": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint imports a virtual machine in pvm or macvm format into the catalog inventory generating the metadata for it",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Imports a vm into the catalog inventory generating the metadata for it",
+                "parameters": [
+                    {
+                        "description": "Vm Impoty request",
+                        "name": "importRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ImportVmRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ImportVmResponse"
                         }
                     },
                     "400": {
@@ -1945,26 +2129,12 @@ const docTemplate = `{
                 "tags": [
                     "Catalogs"
                 ],
-                "summary": "Adds claims to a catalog manifest version",
+                "summary": "Updates a catalog",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "Catalog ID",
                         "name": "catalogId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Version",
-                        "name": "version",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Architecture",
-                        "name": "architecture",
                         "in": "path",
                         "required": true
                     },
@@ -5562,6 +5732,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "is_compressed": {
+                    "type": "boolean"
+                },
                 "last_downloaded_at": {
                     "type": "string"
                 },
@@ -5584,6 +5757,9 @@ const docTemplate = `{
                     }
                 },
                 "pack_filename": {
+                    "type": "string"
+                },
+                "pack_relative_path": {
                     "type": "string"
                 },
                 "pack_size": {
@@ -5808,6 +5984,14 @@ const docTemplate = `{
             }
         },
         "github_com_Parallels_prl-devops-service_models.ImportCatalogManifestResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.ImportVmResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -6725,6 +6909,62 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ImportVmRequest": {
+            "type": "object",
+            "properties": {
+                "architecture": {
+                    "type": "string"
+                },
+                "catalog_id": {
+                    "type": "string"
+                },
+                "connection": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "force": {
+                    "type": "boolean"
+                },
+                "is_compressed": {
+                    "type": "boolean"
+                },
+                "machine_remote_path": {
+                    "type": "string"
+                },
+                "provider_metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "required_claims": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required_roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "type": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
         "models.InstallToolsRequest": {
             "type": "object",
             "properties": {
@@ -7431,6 +7671,9 @@ const docTemplate = `{
         "models.VirtualMachineCatalogManifestPatch": {
             "type": "object",
             "properties": {
+                "connection": {
+                    "type": "string"
+                },
                 "required_claims": {
                     "type": "array",
                     "items": {
@@ -7628,7 +7871,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.9.6",
+	Version:          "0.9.7",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
