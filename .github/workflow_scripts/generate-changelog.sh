@@ -110,7 +110,7 @@ function insert_changelog_content() {
 
   echo "$content" >"$content_file"
 
-  line_number=$((line_number + 2))
+  line_number=$((line_number + 3))
 
   awk -v lineno="$line_number" -v content_file="$content_file" '
     NR == lineno {
