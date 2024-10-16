@@ -28,8 +28,15 @@ func (p ProviderCommandProcessor) Process(ctx basecontext.ApiContext, line strin
 		dest.Provider = &models.PDFileProvider{}
 	}
 
-	if strings.EqualFold(command.Argument, "NAME") {
-		dest.Provider.Name = command.Argument
+	if strings.HasPrefix(command.Argument, "NAME") {
+		parts := strings.Split(command.Argument, "=")
+		if len(parts) != 2 {
+			parts = strings.Split(command.Argument, " ")
+		}
+		if len(parts) != 2 {
+			diag.AddError(errors.New("Provider name is missing argument"))
+		}
+		dest.Provider.Name = parts[1]
 	} else {
 		provider, err := dest.ParseProvider(line)
 		if err != nil {

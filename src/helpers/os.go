@@ -28,7 +28,7 @@ type Command struct {
 	Args             []string
 }
 
-const executionTimeout = 1 * time.Minute
+const ExecutionTimeout = 3 * time.Minute
 
 func (c *Command) String() string {
 	return fmt.Sprintf("%s %s", c.Command, strings.Join(c.Args, " "))
@@ -45,14 +45,18 @@ func CreateDirIfNotExist(path string) error {
 	return nil
 }
 
-func ExecuteWithNoOutput(ctx context.Context, command Command) (string, error) {
+func ExecuteWithNoOutput(ctx context.Context, command Command, timeout time.Duration) (string, error) {
 	var executionContext context.Context
 	var cancel context.CancelFunc
+	if timeout == 0 {
+		timeout = ExecutionTimeout
+	}
+
 	if ctx != nil {
-		executionContext, cancel = context.WithTimeout(ctx, executionTimeout)
+		executionContext, cancel = context.WithTimeout(ctx, timeout)
 	} else {
 		ctx = context.TODO()
-		executionContext, cancel = context.WithTimeout(ctx, executionTimeout)
+		executionContext, cancel = context.WithTimeout(ctx, timeout)
 	}
 
 	defer cancel()
@@ -79,14 +83,17 @@ func ExecuteWithNoOutput(ctx context.Context, command Command) (string, error) {
 	return stdOut.String(), nil
 }
 
-func ExecuteWithOutput(ctx context.Context, command Command) (stdout string, stderr string, exitCode int, err error) {
+func ExecuteWithOutput(ctx context.Context, command Command, timeout time.Duration) (stdout string, stderr string, exitCode int, err error) {
 	var executionContext context.Context
 	var cancel context.CancelFunc
+	if timeout == 0 {
+		timeout = ExecutionTimeout
+	}
 	if ctx != nil {
-		executionContext, cancel = context.WithTimeout(ctx, executionTimeout)
+		executionContext, cancel = context.WithTimeout(ctx, timeout)
 	} else {
 		ctx = context.TODO()
-		executionContext, cancel = context.WithTimeout(ctx, executionTimeout)
+		executionContext, cancel = context.WithTimeout(ctx, timeout)
 	}
 
 	defer cancel()
@@ -363,29 +370,31 @@ func CopyDir(src string, dst string) (err error) {
 			Args:    []string{"-c", "-r", src, dst},
 		}
 		// if the destination is a mounted volume, we cannot use the clone command
-		if strings.HasPrefix(dst, "/Volumes") {
+		if strings.HasPrefix(dst, "/Volumes") && !strings.HasPrefix(src, "/Volumes") {
 			cmd = Command{
 				Command: "cp",
 				Args:    []string{"-r", src, dst},
 			}
 		}
 
-		if _, err = ExecuteWithNoOutput(context.TODO(), cmd); err != nil {
+		if _, err := ExecuteWithNoOutput(context.TODO(), cmd, 2*time.Hour); err != nil {
 			return err
 		}
-		return
+
+		return nil
 	}
 
+	println("passed")
 	if FileExists(src) {
 		err = os.MkdirAll(dst, si.Mode())
 		if err != nil {
-			return
+			return err
 		}
 	}
 
 	entries, err := ioutil.ReadDir(src)
 	if err != nil {
-		return
+		return err
 	}
 
 	for _, entry := range entries {
@@ -395,7 +404,7 @@ func CopyDir(src string, dst string) (err error) {
 		if entry.IsDir() {
 			err = CopyDir(srcPath, dstPath)
 			if err != nil {
-				return
+				return err
 			}
 		} else {
 			// Skip symlinks.
@@ -405,12 +414,12 @@ func CopyDir(src string, dst string) (err error) {
 
 			err = CopyFile(srcPath, dstPath)
 			if err != nil {
-				return
+				return err
 			}
 		}
 	}
 
-	return
+	return nil
 }
 
 // CopyFile copies a file from src to dst. If src and dst files exist, and are
@@ -446,7 +455,7 @@ func CopyFile(src, dst string) (err error) {
 			Args:    []string{"-c", src, dst},
 		}
 
-		if _, err := ExecuteWithNoOutput(context.Background(), cmd); err != nil {
+		if _, err := ExecuteWithNoOutput(context.Background(), cmd, 2*time.Hour); err != nil {
 			return err
 		}
 

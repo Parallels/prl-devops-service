@@ -2,6 +2,7 @@ package data
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -58,6 +60,7 @@ type JsonDatabaseConfig struct {
 	NumberOfBackupFiles int           `json:"number_of_backup_files"`
 	SaveInterval        time.Duration `json:"save_interval"`
 	BackupInterval      time.Duration `json:"backup_interval"`
+	AutoRecover         bool          `json:"auto_recover"`
 }
 
 func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase {
@@ -72,6 +75,7 @@ func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase 
 			NumberOfBackupFiles: cfg.DbNumberBackupFiles(),
 			SaveInterval:        cfg.DbSaveInterval(),
 			BackupInterval:      cfg.DbBackupInterval(),
+			AutoRecover:         cfg.IsDatabaseAutoRecover(),
 		},
 		ctx:         ctx,
 		connected:   false,
@@ -103,104 +107,49 @@ func (j *JsonDatabase) Connect(ctx basecontext.ApiContext) error {
 
 func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
 	ctx.LogInfof("[Database] Loading database from %s", j.filename)
-	var data Data
-
-	if _, err := os.Stat(j.filename); os.IsNotExist(err) {
-		ctx.LogInfof("[Database] Database file does not exist, creating new file")
-		file, err := os.Create(j.filename)
-		if err != nil {
-			ctx.LogErrorf("[Database] Error creating database file: %v", err)
-			return err
+	if j.Config.AutoRecover {
+		// recover from residual save files if any
+		if recovered, err := j.recoverFromResidualSaveFiles(ctx, "*.save"); err != nil {
+			ctx.LogErrorf("[Database] Error recovering from residual save files: %v", err)
+			j.removeGlobFiles(ctx, "*.save")
+		} else if recovered {
+			return nil
 		}
-		if err := file.Close(); err != nil {
-			return err
+		// Recover from residual save files if any
+		if recovered, err := j.recoverFromResidualSaveFiles(ctx, "*.save_bak"); err != nil {
+			ctx.LogErrorf("[Database] Error recovering from residual save files: %v", err)
+			j.removeGlobFiles(ctx, "*.save")
+		} else if recovered {
+			return nil
+		}
+		// Recover from crash files if any
+		if recovered, err := j.recoverFromResidualSaveFiles(ctx, "*.panic"); err != nil {
+			ctx.LogErrorf("[Database] Error recovering from panic file files: %v", err)
+			j.removeGlobFiles(ctx, "*.panic")
+		} else if recovered {
+			return nil
 		}
 	}
 
-	file, err := os.Open(j.filename)
+	isEmpty, err := j.IsDataFileEmpty(ctx)
 	if err != nil {
-		ctx.LogErrorf("[Database] Error opening database file: %v", err)
+		ctx.LogErrorf("[Database] Error checking if database file is empty: %v", err)
 		return err
-	}
-
-	defer file.Close()
-
-	if err != nil {
-		ctx.LogErrorf("[Database] Error getting database file info: %v", err)
-		return err
-	}
-
-	isEmpty := false
-	fileContent, err := helper.ReadFromFile(j.filename)
-	if err != nil {
-		isEmpty = true
-	}
-	if fileContent == nil || len(fileContent) == 0 {
-		isEmpty = true
 	}
 
 	if isEmpty {
-		ctx.LogInfof("[Database] Database file is empty, creating new file")
-		j.data = Data{
-			Users:            make([]models.User, 0),
-			Claims:           make([]models.Claim, 0),
-			Roles:            make([]models.Role, 0),
-			ApiKeys:          make([]models.ApiKey, 0),
-			PackerTemplates:  make([]models.PackerTemplate, 0),
-			ManifestsCatalog: make([]models.CatalogManifest, 0),
-		}
-
-		err = j.SaveNow(ctx)
-		if err != nil {
-			ctx.LogErrorf("[Database] Error saving database file: %v", err)
+		if err := j.loadFromEmpty(ctx); err != nil {
+			ctx.LogErrorf("[Database] Error loading database file: %v", err)
 			return err
 		}
-
-		j.connected = true
 		return nil
 	} else {
-		ctx.LogInfof("[Database] Database file is not empty, loading data")
-
-		// Backup the file before attempting to read it
-		if err := j.Backup(ctx); err != nil {
-			ctx.LogErrorf("[Database] Error managing backup files: %v", err)
-		}
-
-		content, err := helper.ReadFromFile(j.filename)
-		if err != nil {
-			ctx.LogErrorf("[Database] Error reading database file: %v", err)
-			return err
-		}
-		if content == nil {
-			ctx.LogErrorf("[Database] Error reading database file: %v", err)
+		if err := j.loadFromFile(ctx); err != nil {
+			ctx.LogErrorf("[Database] Error loading database file: %v",
+				err)
 			return err
 		}
 
-		// Trying to read the file unencrypted
-		err = json.Unmarshal(content, &data)
-		if err != nil {
-			// Trying to read the file encrypted
-			cfg := config.Get()
-			if cfg.EncryptionPrivateKey() == "" {
-				ctx.LogErrorf("[Database] Error reading database file: %v", err)
-				return err
-			}
-
-			content, err := security.DecryptString(cfg.EncryptionPrivateKey(), content)
-			if err != nil {
-				ctx.LogErrorf("[Database] Error decrypting database file: %v", err)
-				return err
-			}
-
-			err = json.Unmarshal([]byte(content), &data)
-			if err != nil {
-				ctx.LogErrorf("[Database] Error reading database file: %v", err)
-				return err
-			}
-		}
-
-		j.data = data
-		j.connected = true
 		return nil
 	}
 }
@@ -297,6 +246,12 @@ func (j *JsonDatabase) ProcessSaveQueue(ctx basecontext.ApiContext) {
 func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 	j.saveMutex.Lock()
 	cfg := config.Get()
+	if cfg.GetRunningCommand() != constants.API_COMMAND && cfg.GetRunningCommand() != "" {
+		ctx.LogDebugf("[Database] Skipping save request, command running: %s", cfg.GetRunningCommand())
+		j.saveMutex.Unlock()
+		return nil
+	}
+
 	ctx.LogDebugf("[Database] Saving database to %s", j.filename)
 	j.isSaving = true
 	if j.filename == "" {
@@ -305,36 +260,48 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 	}
 
 	// Trying to open the file and waiting for it to be ready
-	var file *os.File
+	dateTimeForFile := time.Now().Format("20060102150405")
+	tempFileName := j.filename + "." + dateTimeForFile + ".save"
+	var tempFile *os.File
 	openCount := 0
+	maxOpenAttempts := 10
 	for {
 		openCount++
-		ctx.LogDebugf("[Database] Trying to open file %s, attempt %v", j.filename, openCount)
+		ctx.LogDebugf("[Database] Trying to open file %s, attempt %v", tempFileName, openCount)
 		var fileOpenError error
-		file, fileOpenError = os.OpenFile(j.filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
+		tempFile, fileOpenError = os.OpenFile(tempFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 		if fileOpenError == nil {
 			ctx.LogDebugf("[Database] File %s opened successfully", j.filename)
 			break
 		}
+		ctx.LogDebugf("[Database] Error opening file %s: %v", tempFileName, fileOpenError)
+		if openCount > maxOpenAttempts {
+			ctx.LogDebugf("[Database] Max attempts reached, aborting save")
+			j.isSaving = false
+			j.saveMutex.Unlock()
+			return errors.NewFromError(fileOpenError)
+		}
+
+		time.Sleep(1 * time.Second)
 	}
 
-	defer file.Close()
+	defer tempFile.Close()
 
-	ctx.LogDebugf("[Database] File %s opened successfully", j.filename)
 	jsonString, err := json.MarshalIndent(j.data, "", "  ")
 	if err != nil {
-		ctx.LogDebugf("[Database] Error marshalling data: %v", err)
+		ctx.LogDebugf("[Database] Error marshalling data to temp file: %v", err)
 		j.isSaving = false
 		j.saveMutex.Unlock()
 		return errors.NewFromError(err)
 	}
 
 	ctx.LogDebugf("[Database] Data marshalled successfully")
+	// encrypting the data before saving it
 	if cfg.EncryptionPrivateKey() != "" {
 		encJsonString, err := security.EncryptString(cfg.EncryptionPrivateKey(), string(jsonString))
 		if err != nil {
 			ctx.LogDebugf("[Database] Error encrypting data: %v", err)
-			_, saveErr := file.Write(jsonString)
+			_, saveErr := tempFile.Write(jsonString)
 			if saveErr != nil {
 				ctx.LogDebugf("[Database] Error writing data: %v", saveErr)
 				j.isSaving = false
@@ -351,24 +318,96 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 	}
 
 	ctx.LogDebugf("[Database] Writing data to file")
-	_, err = file.Write(jsonString)
+	_, err = tempFile.Write(jsonString)
 	if err != nil {
-		ctx.LogDebugf("[Database] Error writing data: %v", err)
+		ctx.LogDebugf("[Database] Error writing data to temp file: %v", err)
 		j.isSaving = false
 		j.saveMutex.Unlock()
 		return err
 	}
 
-	if err := file.Close(); err != nil {
-		ctx.LogDebugf("[Database] Error closing file: %v", err)
+	if err := tempFile.Close(); err != nil {
+		ctx.LogDebugf("[Database] Error closing temp file: %v", err)
 		j.isSaving = false
 		j.saveMutex.Unlock()
 		return err
+	}
+
+	// Copy the current file to a backup file
+	if err = j.copyCurrentDbFileToTemp(ctx, dateTimeForFile); err != nil {
+		ctx.LogDebugf("[Database] Error copying current file to backup: %v", err)
+		j.isSaving = false
+		j.saveMutex.Unlock()
+		return err
+	}
+
+	// Rename the temp file to the original filename
+	err = os.Rename(tempFileName, j.filename)
+	if err != nil {
+		ctx.LogDebugf("[Database] Error renaming temp file: %v", err)
+		j.isSaving = false
+		j.saveMutex.Unlock()
+		return err
+	}
+
+	// Delete the save backup temp file
+	backupFilename := j.filename + "." + dateTimeForFile + ".save_bak"
+	if helper.FileExists(backupFilename) {
+		ctx.LogDebugf("[Database] Backup file %s exists, deleting it", backupFilename)
+
+		err = os.Remove(backupFilename)
+		if err != nil {
+			ctx.LogDebugf("[Database] Error deleting temp file: %v", err)
+			j.isSaving = false
+			j.saveMutex.Unlock()
+			return err
+		}
 	}
 
 	ctx.LogDebugf("[Database] File %s saved successfully", j.filename)
 	j.isSaving = false
 	j.saveMutex.Unlock()
+	return nil
+}
+
+func (j *JsonDatabase) copyCurrentDbFileToTemp(ctx basecontext.ApiContext, dateTimeForFile string) error {
+	// Copy current file to a backup file
+	backupFilename := j.filename + "." + dateTimeForFile + ".save_bak"
+	inputFile, err := os.Open(j.filename)
+	if err != nil {
+		ctx.LogDebugf("[Database] Error opening file for backup: %v", err)
+		j.isSaving = false
+		j.saveMutex.Unlock()
+		return err
+	}
+	defer inputFile.Close()
+
+	outputFile, err := os.Create(backupFilename)
+	if err != nil {
+		ctx.LogDebugf("[Database] Error creating backup file: %v", err)
+		j.isSaving = false
+		j.saveMutex.Unlock()
+		return err
+	}
+	defer outputFile.Close()
+
+	_, err = io.Copy(outputFile, inputFile)
+	if err != nil {
+		ctx.LogDebugf("[Database] Error copying to backup file: %v", err)
+		j.isSaving = false
+		j.saveMutex.Unlock()
+		return err
+	}
+
+	// Delete the original file
+	err = os.Remove(j.filename)
+	if err != nil {
+		ctx.LogDebugf("[Database] Error deleting original file: %v", err)
+		j.isSaving = false
+		j.saveMutex.Unlock()
+		return err
+	}
+
 	return nil
 }
 
@@ -387,4 +426,241 @@ func UnlockRecord(ctx basecontext.ApiContext, dbRecord *models.DbRecord) {
 	mutexLock.Lock()
 	dbRecord.IsLocked = false
 	mutexLock.Unlock()
+}
+
+func (j *JsonDatabase) removeAllBackupSavedFiles(ctx basecontext.ApiContext, glob string) error {
+	// Delete all *.save and *.save_bak files
+	saveFiles, err := filepath.Glob(j.filename + glob)
+	if err != nil {
+		ctx.LogErrorf("[Database] Error finding save files: %v", err)
+		return err
+	}
+	for _, file := range saveFiles {
+		if err := os.Remove(file); err != nil {
+			ctx.LogErrorf("[Database] Error deleting save file %s: %v", file, err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (j *JsonDatabase) recoverFromResidualSaveFiles(ctx basecontext.ApiContext, glob string) (bool, error) {
+	var data Data
+	// Checking if there is any previous backing up saving files to recover from
+	saveBackFiles, err := filepath.Glob(j.filename + glob)
+	if err != nil {
+		ctx.LogErrorf("[Database] Error finding save files: %v", err)
+		return false, err
+	}
+	if len(saveBackFiles) > 0 {
+		ctx.LogInfof("[Database] Found %d save files, attempting to recover the latest one", len(saveBackFiles))
+		latestSaveFile := saveBackFiles[len(saveBackFiles)-1]
+		content, err := helper.ReadFromFile(latestSaveFile)
+		if err != nil {
+			ctx.LogErrorf("[Database] Error reading save file %s: %v", latestSaveFile, err)
+			return false, err
+		}
+		if len(content) == 0 {
+			ctx.LogInfof("[Database] Save file %s is empty, ignoring", latestSaveFile)
+			return false, nil
+		}
+		err = json.Unmarshal(content, &data)
+		if err != nil {
+			ctx.LogErrorf("[Database] Error unmarshalling save file %s: %v", latestSaveFile, err)
+			return false, err
+		}
+		j.data = data
+		j.connected = true
+		ctx.LogInfof("[Database] Successfully recovered data from save file %s", latestSaveFile)
+		if err := j.SaveNow(ctx); err != nil {
+			ctx.LogErrorf("[Database] Error saving database: %v", err)
+			return false, err
+		}
+
+		if err := j.removeAllBackupSavedFiles(ctx, glob); err != nil {
+			ctx.LogErrorf("[Database] Error removing backup files: %v", err)
+			return false, err
+		}
+
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (j *JsonDatabase) recoverFromBackupFile(ctx basecontext.ApiContext) error {
+	var data Data
+
+	// Check if there are any backup files available
+	backupFiles, err := filepath.Glob(j.filename + ".save.bak.*")
+	if err != nil {
+		ctx.LogErrorf("[Database] Error finding backup files: %v", err)
+		return err
+	}
+	if len(backupFiles) > 0 {
+		ctx.LogInfof("[Database] Found %d backup files, attempting to recover the latest one", len(backupFiles))
+		latestBackupFile := backupFiles[len(backupFiles)-1]
+		content, err := helper.ReadFromFile(latestBackupFile)
+		if err != nil {
+			ctx.LogErrorf("[Database] Error reading backup file %s: %v", latestBackupFile, err)
+			return err
+		}
+
+		if len(content) == 0 {
+			ctx.LogInfof("[Database] Save file %s is empty, ignoring", latestBackupFile)
+			return nil
+		}
+
+		err = json.Unmarshal(content, &data)
+		if err != nil {
+			ctx.LogErrorf("[Database] Error unmarshalling backup file %s: %v", latestBackupFile, err)
+			return err
+		}
+		j.data = data
+		ctx.LogInfof("[Database] Successfully recovered data from backup file %s", latestBackupFile)
+		return nil
+	}
+
+	return nil
+}
+
+func (j *JsonDatabase) loadFromFile(ctx basecontext.ApiContext) error {
+	var data Data
+	ctx.LogInfof("[Database] Database file is not empty, loading data")
+
+	// Backup the file before attempting to read it
+	if err := j.Backup(ctx); err != nil {
+		ctx.LogErrorf("[Database] Error managing backup files: %v", err)
+	}
+
+	content, err := helper.ReadFromFile(j.filename)
+	if err != nil {
+		ctx.LogErrorf("[Database] Error reading database file: %v", err)
+		return err
+	}
+	if content == nil {
+		ctx.LogErrorf("[Database] Error reading database file: %v", err)
+		return err
+	}
+
+	// Trying to read the file unencrypted
+	err = json.Unmarshal(content, &data)
+	if err != nil {
+		// Trying to read the file encrypted
+		cfg := config.Get()
+		if cfg.EncryptionPrivateKey() == "" {
+			ctx.LogErrorf("[Database] Error reading database file: %v", err)
+			return err
+		}
+
+		content, err := security.DecryptString(cfg.EncryptionPrivateKey(), content)
+		if err != nil {
+			ctx.LogErrorf("[Database] Error decrypting database file: %v", err)
+			return err
+		}
+
+		err = json.Unmarshal([]byte(content), &data)
+		if err != nil {
+			ctx.LogErrorf("[Database] Error reading database file: %v", err)
+			return err
+		}
+	}
+
+	j.data = data
+	j.connected = true
+	return nil
+}
+
+func (j *JsonDatabase) loadFromEmpty(ctx basecontext.ApiContext) error {
+	ctx.LogInfof("[Database] Database file is empty, creating new file")
+	j.data = Data{
+		Users:            make([]models.User, 0),
+		Claims:           make([]models.Claim, 0),
+		Roles:            make([]models.Role, 0),
+		ApiKeys:          make([]models.ApiKey, 0),
+		PackerTemplates:  make([]models.PackerTemplate, 0),
+		ManifestsCatalog: make([]models.CatalogManifest, 0),
+	}
+
+	if j.Config.AutoRecover {
+		// Check if there are any backup files available
+		if err := j.recoverFromBackupFile(ctx); err != nil {
+			ctx.LogErrorf("[Database] Error recovering from backup file: %v", err)
+			return err
+		}
+	}
+
+	if err := j.SaveNow(ctx); err != nil {
+		ctx.LogErrorf("[Database] Error saving database file: %v", err)
+		return err
+	}
+
+	j.connected = true
+	return nil
+}
+
+func (j *JsonDatabase) IsDataFileEmpty(ctx basecontext.ApiContext) (bool, error) {
+	// Retry opening the file every 200ms for 10 times
+	retryCount := 0
+	maxRetries := 10
+	retryInterval := 200 * time.Millisecond
+
+	// Adding a delay to allow for slow mounts to be ready
+	for {
+		if _, err := os.Stat(j.filename); os.IsNotExist(err) {
+			ctx.LogInfof("[Database] Database file does not exist, creating new file")
+
+			if retryCount >= maxRetries {
+				ctx.LogErrorf("[Database] Error opening database file after %d retries: %v", maxRetries, err)
+				break
+			}
+			retryCount++
+			time.Sleep(retryInterval)
+		} else {
+			break
+		}
+	}
+
+	if _, err := os.Stat(j.filename); os.IsNotExist(err) {
+		ctx.LogInfof("[Database] Database file does not exist, creating new file")
+		file, err := os.Create(j.filename)
+		if err != nil {
+			ctx.LogErrorf("[Database] Error creating database file: %v", err)
+			return true, err
+		}
+		if err := file.Close(); err != nil {
+			return true, err
+		}
+	}
+
+	file, err := os.Open(j.filename)
+	if err != nil {
+		ctx.LogErrorf("[Database] Error opening database file: %v", err)
+		return true, err
+	}
+
+	defer file.Close()
+
+	isEmpty := false
+	file.Close()
+
+	fileContent, _ := helper.ReadFromFile(j.filename)
+	isEmpty = len(fileContent) == 0
+
+	return isEmpty, nil
+}
+
+func (j *JsonDatabase) removeGlobFiles(ctx basecontext.ApiContext, glob string) {
+	filesToDelete, err := filepath.Glob(j.filename + glob)
+	if err != nil {
+		ctx.LogErrorf("[Database] Error finding files to delete: %v", err)
+		return
+	}
+
+	for _, file := range filesToDelete {
+		if err := os.Remove(file); err != nil {
+			ctx.LogErrorf("[Database] Error deleting file %s: %v", file, err)
+		}
+	}
 }

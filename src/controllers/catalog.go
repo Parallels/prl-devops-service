@@ -12,6 +12,7 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/constants"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -24,6 +25,31 @@ import (
 
 func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string) {
 	ctx.LogInfof("Registering version %s Catalog Manifests handlers", version)
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/catalog/cache").
+		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithHandler(GetCatalogCacheHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/catalog/cache").
+		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithHandler(DeleteCatalogCacheHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/catalog/cache/{catalogId}").
+		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithHandler(DeleteCatalogCacheItemHandler()).
+		Register()
+
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
@@ -161,6 +187,14 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.PATCH).
+		WithVersion(version).
+		WithPath("/catalog/{catalogId}/{version}/{architecture}/connection").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(UpdateCatalogManifestProviderHandler()).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/tags").
@@ -190,6 +224,14 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithPath("/catalog/import").
 		WithRequiredClaim(constants.PUSH_CATALOG_MANIFEST_CLAIM).
 		WithHandler(ImportCatalogManifestHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/catalog/import-vm").
+		WithRequiredClaim(constants.PUSH_CATALOG_MANIFEST_CLAIM).
+		WithHandler(ImportVmHandler()).
 		Register()
 }
 
@@ -1210,7 +1252,7 @@ func CreateCatalogManifestHandler() restapi.ControllerHandler {
 				Code:    http.StatusBadRequest,
 			})
 		}
-		if err := request.Validate(); err != nil {
+		if err := request.Validate(true); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
@@ -1617,6 +1659,7 @@ func ImportCatalogManifestHandler() restapi.ControllerHandler {
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
+			return
 		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -1645,5 +1688,256 @@ func ImportCatalogManifestHandler() restapi.ControllerHandler {
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest imported: %v", resultData.ID)
+	}
+}
+
+// @Summary		Imports a vm into the catalog inventory generating the metadata for it
+// @Description	This endpoint imports a virtual machine in pvm or macvm format into the catalog inventory generating the metadata for it
+// @Tags			Catalogs
+// @Produce		json
+// @Param			importRequest	body		catalog_models.ImportVmRequest	true	"Vm Impoty request"
+// @Success		200				{object}	models.ImportVmResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/import-vm [put]
+func ImportVmHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request catalog_models.ImportVmRequest
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		manifest := catalog.NewManifestService(ctx)
+		resultManifest := manifest.ImportVm(ctx, &request)
+		if resultManifest.HasErrors() {
+			errorMessage := "Error importing vm: \n"
+			for _, err := range resultManifest.Errors {
+				errorMessage += "\n" + err.Error() + " "
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		resultData := mappers.BaseImportVmResponseToApi(*resultManifest)
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(resultData)
+		ctx.LogInfof("Manifest imported: %v", resultData.ID)
+	}
+}
+
+// @Summary		Updates a catalog
+// @Description	This endpoint adds claims to a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string										true	"Catalog ID"
+// @Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/claims [patch]
+func UpdateCatalogManifestProviderHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var request catalog_models.VirtualMachineCatalogManifestPatch
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		if request.Connection == "" {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "No connection provided",
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		vars := mux.Vars(r)
+		catalogId := vars["catalogId"]
+		version := vars["version"]
+		architecture := vars["architecture"]
+
+		manifest, err := dbService.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		dboProvider := data_models.CatalogManifestProvider{
+			Type: request.Provider.Type,
+			Meta: request.Provider.Meta,
+		}
+		manifest.Provider = &dboProvider
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		catalogRequest := mappers.DtoCatalogManifestToBase(*manifest)
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.Errors = []error{}
+
+		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		if resultOp.HasErrors() {
+			errorMessage := "Error pushing manifest: \n"
+			for _, err := range resultOp.Errors {
+				if err == nil {
+					errorMessage += "\n" + "error connecting to the provider" + " "
+				} else {
+					errorMessage += "\n" + err.Error() + " "
+				}
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if err := dbService.UpdateCatalogManifestProvider(ctx, manifest.ID, dboProvider); err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(manifest)
+		ctx.LogInfof("Manifest Claims Updated: %v", manifest.ID)
+	}
+}
+
+// @Summary		Gets catalog cache
+// @Description	This endpoint returns all the remote catalog cache if any
+// @Tags			Catalogs
+// @Produce		json
+// @Success		200	{object}	[]models.CatalogManifest
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/cache [get]
+func GetCatalogCacheHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		items, err := catalogSvc.GetCacheItems(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		// responseManifests := mappers.DtoCatalogManifestsToApi(manifestsDto)
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(items)
+		ctx.LogInfof("Manifests cached items returned: %v", len(items.Manifests))
+	}
+}
+
+// @Summary		Deletes all catalog cache
+// @Description	This endpoint returns all the remote catalog cache if any
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path	string	true	"Catalog ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/cache [delete]
+func DeleteCatalogCacheHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		err := catalogSvc.CleanAllCache(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		// responseManifests := mappers.DtoCatalogManifestsToApi(manifestsDto)
+
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfof("Removed all cached items")
+	}
+}
+
+// @Summary		Deletes catalog cache item
+// @Description	This endpoint returns all the remote catalog cache if any
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path	string	true	"Catalog ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/cache/{catalogId} [delete]
+func DeleteCatalogCacheItemHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		vars := mux.Vars(r)
+		catalogId := vars["catalogId"]
+		if catalogId == "" {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Catalog ID is required",
+				Code:    http.StatusBadRequest,
+			})
+		}
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		err := catalogSvc.CleanCacheFile(ctx, catalogId)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		// responseManifests := mappers.DtoCatalogManifestsToApi(manifestsDto)
+
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfof("Manifests cached item %v removed", len(catalogId))
 	}
 }

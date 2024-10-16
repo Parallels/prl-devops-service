@@ -23,7 +23,7 @@
       "envFile": "${workspaceFolder}/.env",
       "args": [
         "push",
-        "${workspaceFolder}/.local/pdfiles/build-empty-machine.artifactory.push.pdfile",
+        "${workspaceFolder}/.local/pdfiles/build-empty-machine.aws.push.pdfile",
       ]
     },
     {

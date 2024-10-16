@@ -19,11 +19,13 @@ import (
 )
 
 type S3Bucket struct {
-	Name            string
-	Region          string
-	AccessKey       string
-	SecretKey       string
-	ProgressChannel chan int
+	Name                         string
+	Region                       string
+	AccessKey                    string
+	SecretKey                    string
+	SessionToken                 string
+	UseEnvironmentAuthentication string
+	ProgressChannel              chan int
 }
 
 const providerName = "aws-s3"
@@ -44,11 +46,13 @@ func (s *AwsS3BucketProvider) Name() string {
 
 func (s *AwsS3BucketProvider) GetProviderMeta(ctx basecontext.ApiContext) map[string]string {
 	return map[string]string{
-		common.PROVIDER_VAR_NAME: providerName,
-		"bucket":                 s.Bucket.Name,
-		"region":                 s.Bucket.Region,
-		"access_key":             s.Bucket.AccessKey,
-		"secret_key":             s.Bucket.SecretKey,
+		common.PROVIDER_VAR_NAME:         providerName,
+		"bucket":                         s.Bucket.Name,
+		"region":                         s.Bucket.Region,
+		"access_key":                     s.Bucket.AccessKey,
+		"secret_key":                     s.Bucket.SecretKey,
+		"session_token":                  s.Bucket.SessionToken,
+		"use_environment_authentication": s.Bucket.UseEnvironmentAuthentication,
 	}
 }
 
@@ -80,6 +84,12 @@ func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection strin
 		}
 		if strings.Contains(strings.ToLower(part), "secret_key=") {
 			s.Bucket.SecretKey = strings.ReplaceAll(part, "secret_key=", "")
+		}
+		if strings.Contains(strings.ToLower(part), "session_token=") {
+			s.Bucket.SessionToken = strings.ReplaceAll(part, "session_token=", "")
+		}
+		if strings.Contains(strings.ToLower(part), "use_environment_authentication=") {
+			s.Bucket.UseEnvironmentAuthentication = strings.ReplaceAll(part, "use_environment_authentication=", "")
 		}
 	}
 	if provider == "" || !strings.EqualFold(provider, providerName) {
@@ -267,6 +277,9 @@ func (s *AwsS3BucketProvider) FileExists(ctx basecontext.ApiContext, path string
 		Key:    aws.String(fullPath),
 	})
 	if err != nil {
+		if strings.Contains(err.Error(), "NotFound") {
+			return false, nil
+		}
 		return false, err
 	}
 
@@ -378,12 +391,43 @@ func (s *AwsS3BucketProvider) FolderExists(ctx basecontext.ApiContext, folderPat
 	return false, nil
 }
 
-func (s *AwsS3BucketProvider) createSession() (*session.Session, error) {
+func (s *AwsS3BucketProvider) FileSize(ctx basecontext.ApiContext, path string, filename string) (int64, error) {
+	ctx.LogInfof("Checking file %s size", filename)
+	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
+
 	// Create a new session using the default region and credentials.
 	var err error
+	session, err := s.createSession()
+	if err != nil {
+		return -1, err
+	}
+
+	headObjectOutput, err := s3.New(session).HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(s.Bucket.Name),
+		Key:    aws.String(remoteFilePath),
+	})
+	if err != nil {
+		return -1, err
+	}
+	fileSize := *headObjectOutput.ContentLength
+
+	return fileSize, nil
+}
+
+func (s *AwsS3BucketProvider) createSession() (*session.Session, error) {
+	// Create a new session using the default region and credentials.
+	var creds *credentials.Credentials
+	var err error
+
+	if s.Bucket.UseEnvironmentAuthentication == "true" {
+		creds = credentials.NewEnvCredentials()
+	} else {
+		creds = credentials.NewStaticCredentials(s.Bucket.AccessKey, s.Bucket.SecretKey, s.Bucket.SessionToken)
+	}
+
 	session := session.Must(session.NewSession(&aws.Config{
 		Region:      &s.Bucket.Region,
-		Credentials: credentials.NewStaticCredentials(s.Bucket.AccessKey, s.Bucket.SecretKey, ""),
+		Credentials: creds,
 	}))
 
 	return session, err

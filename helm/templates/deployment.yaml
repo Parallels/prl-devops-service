@@ -206,6 +206,13 @@ spec:
                   name: {{ include "helm.fullname" . }}
                   key: DATABASE_FOLDER
             {{- end }}
+            {{- if .Values.storage.autoRecover }}
+            - name: SYSTEM_AUTO_RECOVER_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: SYSTEM_AUTO_RECOVER_DATABASE
+            {{- end }}
           {{- with .Values.envFrom }}
           envFrom:
             {{- toYaml . | nindent 12 }}

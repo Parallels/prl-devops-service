@@ -130,7 +130,7 @@ func (s *SystemService) getMacSystemUsers(ctx basecontext.ApiContext) ([]models.
 		Args:    []string{".", "list", "/Users"},
 	}
 
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd)
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -185,13 +185,13 @@ func (s *SystemService) getLinuxSystemUsers(ctx basecontext.ApiContext) ([]model
 	}
 	usersCmdOut := ""
 
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), usersCmd)
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), usersCmd, helpers.ExecutionTimeout)
 	if err != nil {
 		catCommand := helpers.Command{
 			Command: "cat",
 			Args:    []string{"/etc/passwd"},
 		}
-		out, err := helpers.ExecuteWithNoOutput(ctx.Context(), catCommand)
+		out, err := helpers.ExecuteWithNoOutput(ctx.Context(), catCommand, helpers.ExecutionTimeout)
 		if err != nil {
 			return nil, err
 		} else {
@@ -268,7 +268,7 @@ func (s *SystemService) getUserHomeMac(ctx basecontext.ApiContext, user string) 
 		Command: "dscl",
 		Args:    []string{".", "read", "/Users/" + user, "NFSHomeDirectory"},
 	}
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd)
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -282,13 +282,13 @@ func (s *SystemService) getUserHomeLinux(ctx basecontext.ApiContext, user string
 		Command: "/bin/getent",
 		Args:    []string{"passwd"},
 	}
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd)
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		catCmd := helpers.Command{
 			Command: "cat",
 			Args:    []string{"/etc/passwd"},
 		}
-		out, err := helpers.ExecuteWithNoOutput(ctx.Context(), catCmd)
+		out, err := helpers.ExecuteWithNoOutput(ctx.Context(), catCmd, helpers.ExecutionTimeout)
 		if err != nil {
 			return "", err
 		} else {
@@ -334,7 +334,7 @@ func (s *SystemService) getUserIdMac(ctx basecontext.ApiContext, user string) (i
 		Command: "dscl",
 		Args:    []string{".", "read", "/Users/" + user, "UniqueID"},
 	}
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd)
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return -1, err
 	}
@@ -357,7 +357,7 @@ func (s *SystemService) getUserIdLinux(ctx basecontext.ApiContext, user string) 
 		Command: "/bin/id",
 		Args:    []string{"-u", user},
 	}
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd)
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return -1, err
 	}
@@ -407,7 +407,7 @@ func (s *SystemService) getMacCurrentUser(ctx basecontext.ApiContext) (string, e
 	cmd := helpers.Command{
 		Command: "whoami",
 	}
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd)
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -460,7 +460,7 @@ func (s *SystemService) getUniqueIdMac(ctx basecontext.ApiContext) (string, erro
 		Command: "ioreg",
 		Args:    []string{"-rd1", "-c", "IOPlatformExpertDevice"},
 	}
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd)
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -486,7 +486,7 @@ func (s *SystemService) getUniqueIdLinux(ctx basecontext.ApiContext) (string, er
 		Args:    []string{"/etc/machine-id"},
 	}
 
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd)
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -500,7 +500,7 @@ func (s *SystemService) getUniqueIdWindows(ctx basecontext.ApiContext) (string, 
 		Args:    []string{"path", "win32_computersystemproduct", "get", "UUID"},
 	}
 
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd)
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -525,7 +525,7 @@ func (s *SystemService) changeMacFileUserOwner(userName string, filePath string)
 		Command: "chown",
 		Args:    []string{"-R", userName, filePath},
 	}
-	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return err
 	}
@@ -538,7 +538,7 @@ func (s *SystemService) changeLinuxFileUserOwner(userName string, filePath strin
 		Command: "chown",
 		Args:    []string{"-R", userName, filePath},
 	}
-	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd)
+	_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return err
 	}
@@ -594,27 +594,27 @@ func (s *SystemService) getMacSystemHardwareInfo(ctx basecontext.ApiContext) (*m
 		Command: "df",
 		Args:    []string{"-h", "/"},
 	}
-	cpuBrand, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cpuBrandNameCmd)
+	cpuBrand, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cpuBrandNameCmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return nil, err
 	}
-	cpuType, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cpuTypeCmd)
+	cpuType, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cpuTypeCmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return nil, err
 	}
-	physicalCpuCount, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), physicalCpuCountCmd)
+	physicalCpuCount, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), physicalCpuCountCmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return nil, err
 	}
-	logicalCpuCount, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), logicalCpuCountCmd)
+	logicalCpuCount, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), logicalCpuCountCmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return nil, err
 	}
-	memorySize, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), memorySizeCmd)
+	memorySize, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), memorySizeCmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return nil, err
 	}
-	diskAvailable, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), diskAvailableCmd)
+	diskAvailable, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), diskAvailableCmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -691,7 +691,7 @@ func (s *SystemService) getMacArchitecture(ctx basecontext.ApiContext) (string, 
 		Command: "uname",
 		Args:    []string{"-m"},
 	}
-	cpuType, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cpuTypeCmd)
+	cpuType, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cpuTypeCmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -703,7 +703,7 @@ func (s *SystemService) getLinuxArchitecture(ctx basecontext.ApiContext) (string
 		Command: "uname",
 		Args:    []string{"-m"},
 	}
-	cpuType, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cpuTypeCmd)
+	cpuType, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cpuTypeCmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return "", err
 	}

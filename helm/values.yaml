@@ -42,6 +42,7 @@ storage:
   storage_size: "1Gi"
   access_mode: "ReadWriteOnce"
   databasePath: "/go/bin/db"
+  autoRecover: true
 
 security:
   jwt:

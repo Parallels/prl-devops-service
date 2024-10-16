@@ -2,6 +2,8 @@ package catalog
 
 import (
 	"archive/tar"
+	"bufio"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,9 +20,17 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/providers/aws_s3_bucket"
 	"github.com/Parallels/prl-devops-service/catalog/providers/azurestorageaccount"
 	"github.com/Parallels/prl-devops-service/catalog/providers/local"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 
 	"github.com/cjlapao/common-go/helper"
+)
+
+type CompressorType int
+
+const (
+	CompressorTypeGzip CompressorType = iota
+	CompressorTypeTar
 )
 
 type CatalogManifestService struct {
@@ -297,15 +307,106 @@ func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, pat
 	return tarFilePath, nil
 }
 
+// detectFileType determines whether a file is gzip, tar, tar.gz, or unknown.
+func (s *CatalogManifestService) detectFileType(filepath string) (string, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return "unknown", err
+	}
+	defer file.Close()
+
+	// Read the first 512 bytes
+	header := make([]byte, 512)
+	n, err := file.Read(header)
+	if err != nil && err != io.EOF {
+		return "", fmt.Errorf("could not read file header: %w", err)
+	}
+	header = header[:n]
+
+	// Reset file offset to the beginning
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("could not reset file offset: %w", err)
+	}
+
+	// Check for Gzip magic number
+	if n >= 2 && header[0] == 0x1F && header[1] == 0x8B {
+		// It's a gzip file, but is it a compressed tar?
+		gzipReader, err := gzip.NewReader(file)
+		if err != nil {
+			return "gzip", nil
+		}
+		defer gzipReader.Close()
+
+		// Read the first 512 bytes of the decompressed data
+		tarHeader := make([]byte, 512)
+		n, err := gzipReader.Read(tarHeader)
+		if err != nil && err != io.EOF {
+			return "gzip", nil // It's a gzip file, but not a tar archive
+		}
+		tarHeader = tarHeader[:n]
+
+		// Check for tar magic string in decompressed data
+		if n > 262 {
+			tarMagic := string(tarHeader[257 : 257+5])
+			if tarMagic == "ustar" || tarMagic == "ustar\x00" {
+				return "tar.gz", nil
+			}
+		}
+		return "gzip", nil
+	}
+
+	// Check for Tar magic string at offset 257
+	if n > 262 {
+		tarMagic := string(header[257 : 257+5])
+		if tarMagic == "ustar" || tarMagic == "ustar\x00" {
+			return "tar", nil
+		}
+	}
+
+	// If none of the above, return unknown
+	return "unknown", errors.New("file format not recognized as gzip or tar")
+}
+
 func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, machineFilePath string, destination string) error {
 	staringTime := time.Now()
-	tarFile, err := os.Open(filepath.Clean(machineFilePath))
+	filePath := filepath.Clean(machineFilePath)
+	compressedFile, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
-	defer tarFile.Close()
+	defer compressedFile.Close()
 
-	tarReader := tar.NewReader(tarFile)
+	fileType, err := s.detectFileType(filePath)
+	if err != nil {
+		return err
+	}
+
+	var fileReader io.Reader
+
+	switch fileType {
+	case "tar":
+		fileReader = compressedFile
+	case "gzip":
+		// Create a gzip reader
+		bufferReader := bufio.NewReader(compressedFile)
+		gzipReader, err := gzip.NewReader(bufferReader)
+		if err != nil {
+			return err
+		}
+		defer gzipReader.Close()
+		fileReader = gzipReader
+	case "tar.gz":
+		// Create a gzip reader
+		bufferReader := bufio.NewReader(compressedFile)
+		gzipReader, err := gzip.NewReader(bufferReader)
+		if err != nil {
+			return err
+		}
+		defer gzipReader.Close()
+		fileReader = gzipReader
+	}
+
+	tarReader := tar.NewReader(fileReader)
 	for {
 		header, err := tarReader.Next()
 		if err != nil {

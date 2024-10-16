@@ -40,7 +40,7 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 	diag := diagnostics.NewPDFileDiagnostics()
 
 	if !p.pdfile.HasAuthentication() {
-		diag.AddError(errors.New("Username and password or apikey are required for authentication"))
+		diag.AddError(errors.New("username and password or apikey are required for authentication"))
 		return nil, diag
 	}
 

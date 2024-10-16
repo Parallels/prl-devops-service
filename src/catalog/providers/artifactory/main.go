@@ -402,10 +402,24 @@ func (s *ArtifactoryProvider) FolderExists(ctx basecontext.ApiContext, folderPat
 	return true, nil
 }
 
+func (s *ArtifactoryProvider) FileSize(ctx basecontext.ApiContext, path string, fileName string) (int64, error) {
+	ctx.LogInfof("[%s] Checking file %s size", s.Name(), fileName)
+
+	headers := make(map[string]string, 0)
+	headers["X-JFrog-Art-Api"] = s.Repo.ApiKey
+	headers["Content-Type"] = "application/json"
+
+	fileSize, err := s.GetFileSize(ctx, path, fileName)
+	if err != nil {
+		return -1, err
+	}
+	return fileSize, nil
+}
+
 func (s *ArtifactoryProvider) getHost() string {
 	host := s.Repo.Host
 	if !strings.HasSuffix(host, "/artifactory") {
-		host = host + "/artifactory"
+		host += "/artifactory"
 	}
 
 	return host

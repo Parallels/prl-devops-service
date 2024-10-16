@@ -22,6 +22,8 @@ type CatalogManifest struct {
 	UpdatedAt               string                       `json:"updated_at"`
 	LastDownloadedAt        string                       `json:"last_downloaded_at"`
 	LastDownloadedUser      string                       `json:"last_downloaded_user"`
+	IsCompressed            bool                         `json:"is_compressed"`
+	PackRelativePath        string                       `json:"pack_relative_path"`
 	DownloadCount           int                          `json:"download_count"`
 	VirtualMachineContents  []CatalogManifestContentItem `json:"virtual_machine_contents"`
 	PackContents            []CatalogManifestContentItem `json:"pack_contents"`

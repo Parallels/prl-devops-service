@@ -141,7 +141,8 @@ func (j *JsonDatabase) GetCatalogManifestsByCatalogIdVersionAndArch(ctx basecont
 	}
 
 	for _, manifest := range catalogManifests {
-		if (strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) ||
+		if (strings.EqualFold(manifest.ID, helpers.NormalizeString(catalogId)) ||
+			strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) ||
 			strings.EqualFold(manifest.Name, helpers.NormalizeString(catalogId))) &&
 			strings.EqualFold(manifest.Version, version) &&
 			strings.EqualFold(manifest.Architecture, arch) {
@@ -696,4 +697,19 @@ func (j *JsonDatabase) RevokeCatalogManifestVersion(ctx basecontext.ApiContext, 
 	}
 
 	return nil, ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) UpdateCatalogManifestProvider(ctx basecontext.ApiContext, recordId string, provider models.CatalogManifestProvider) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if strings.EqualFold(manifest.ID, recordId) {
+			j.data.ManifestsCatalog[i].Provider = &provider
+			return nil
+		}
+	}
+
+	return ErrCatalogManifestNotFound
 }

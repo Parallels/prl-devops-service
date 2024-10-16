@@ -10,6 +10,7 @@ type RemoteStorageService interface {
 	SetProgressChannel(fileNameChannel chan string, progressChannel chan int)
 	GetProviderRootPath(ctx basecontext.ApiContext) string
 	FileChecksum(ctx basecontext.ApiContext, path string, fileName string) (string, error)
+	FileSize(ctx basecontext.ApiContext, path string, fileName string) (int64, error)
 	GetProviderMeta(ctx basecontext.ApiContext) map[string]string
 	FileExists(ctx basecontext.ApiContext, path string, fileName string) (bool, error)
 	PushFile(ctx basecontext.ApiContext, rootLocalPath string, path string, filename string) error
