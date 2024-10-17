@@ -126,8 +126,6 @@ func (p *PDFileService) Validate() *diagnostics.PDFileDiagnostics {
 		}
 	} else {
 		if runCMD == "push" ||
-			runCMD == "pull" ||
-			runCMD == "delete" ||
 			runCMD == "import" ||
 			runCMD == "list" {
 			diag.AddError(fmt.Errorf("provider command not found"))

@@ -70,9 +70,15 @@ func (t *TelemetryService) Callback(result types.ExecuteResult) {
 }
 
 func (t *TelemetryService) Flush() {
+	if t.client == nil {
+		return
+	}
 	t.client.Flush()
 }
 
 func (t *TelemetryService) Close() {
+	if t.client == nil {
+		return
+	}
 	t.client.Shutdown()
 }

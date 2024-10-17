@@ -298,7 +298,7 @@ func (c *Config) DbBackupInterval() time.Duration {
 func (c *Config) DbSaveInterval() time.Duration {
 	interval := c.GetIntKey(constants.DATABASE_SAVE_INTERVAL_ENV_VAR)
 	if interval == 0 {
-		return 30 * time.Second
+		return 2 * time.Minute
 	}
 
 	return time.Duration(interval) * time.Minute
