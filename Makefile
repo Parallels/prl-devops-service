@@ -82,6 +82,17 @@ endif
 	@cd src && CGO_ENABLED=0 GOOS="linux" GOARCH="amd64" go build -o ../out/binaries/$(PACKAGE_NAME)-linux-amd64
 	@echo "Build finished."
 
+.PHONY: build-windows-amd64
+build-windows-amd64:
+	@echo "Building..."
+ifeq ($(wildcard ./out/.*),)
+	@echo "Creating out directory..."
+	@mkdir out
+	@mkdir out/binaries
+endif
+	@cd src && CGO_ENABLED=0 GOOS="windows" GOARCH="amd64" go build -o ../out/binaries/$(PACKAGE_NAME)-linux-amd64
+	@echo "Build finished."
+
 .PHONY: build-alpine
 build-alpine:
 	@echo "Building..."
