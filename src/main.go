@@ -39,10 +39,10 @@ var ver = "0.9.7"
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	// catching all of the exceptions
 	defer func() {
@@ -95,7 +95,7 @@ func main() {
 						if !db.IsConnected() || retries > maxRetries {
 							break
 						}
-						ctx.LogInfof("[Core] Waiting for database to disconnect")
+						ctx.LogInfof("[Core] Waiting for database to disconnect...")
 						time.Sleep(5 * time.Second)
 					}
 				}
