@@ -23,6 +23,7 @@ require (
 	github.com/swaggo/files/v2 v2.0.0
 	github.com/swaggo/swag v1.16.3
 	golang.org/x/crypto v0.21.0
+	golang.org/x/sys v0.18.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -82,7 +83,6 @@ require (
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect

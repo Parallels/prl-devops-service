@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.8] - 2024-10-17
+
+- Fixed an issue where we would not be able to compile for windows
+- Fixed an issue where the clone copy would not always be used
+- Fixed an issue where the telemetry could generate a nil pointer issue
+- Fixed an issue where the pull file would still need the provider even if not needed
+- Fixed an issue where the db was being saved more often that needed
+
 ## [0.9.7] - 2024-10-16
 
 - Fixed an issue where the copy would fail if the source and destination were in a removable disk
