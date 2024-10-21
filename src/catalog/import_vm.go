@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -96,7 +95,7 @@ func (s *CatalogManifestService) ImportVm(ctx basecontext.ApiContext, r *models.
 				}
 				catalogManifest = models.NewVirtualMachineCatalogManifest()
 
-				catalogManifest.Name = fmt.Sprintf("%v-%v", r.CatalogId, r.Version)
+				catalogManifest.Name = r.Name()
 				catalogManifest.Type = r.Type
 				catalogManifest.Description = r.Description
 				catalogManifest.RequiredClaims = r.RequiredClaims
@@ -117,11 +116,10 @@ func (s *CatalogManifestService) ImportVm(ctx basecontext.ApiContext, r *models.
 					response.AddError(err)
 					break
 				}
-
 			}
 		} else {
 			catalogManifest = models.NewVirtualMachineCatalogManifest()
-			catalogManifest.Name = fmt.Sprintf("%v-%v", r.CatalogId, r.Version)
+			catalogManifest.Name = r.Name()
 			catalogManifest.Type = r.Type
 			catalogManifest.Description = r.Description
 			catalogManifest.RequiredClaims = r.RequiredClaims
