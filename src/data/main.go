@@ -337,7 +337,6 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 	if err = j.copyCurrentDbFileToTemp(ctx, dateTimeForFile); err != nil {
 		ctx.LogDebugf("[Database] Error copying current file to backup: %v", err)
 		j.isSaving = false
-		j.saveMutex.Unlock()
 		return err
 	}
 
