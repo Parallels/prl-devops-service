@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.9] - 2024-10-24
+
+- Fixed an issue where the name of the catalog would be wrong when importing vms
+
 ## [0.9.8] - 2024-10-17
 
 - Fixed an issue where we would not be able to compile for windows

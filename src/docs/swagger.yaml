@@ -1458,7 +1458,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.9.8
+  version: 0.9.9
 paths:
   /health/probe:
     get:
