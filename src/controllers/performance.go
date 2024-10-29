@@ -34,6 +34,7 @@ func PerformDbTestHandler() restapi.ControllerHandler {
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
+			return
 		}
 
 		if request.TestCount == 0 {

@@ -53,6 +53,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
+			return
 		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
