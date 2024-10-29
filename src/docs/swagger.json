@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.9.8"
+        "version": "0.9.9"
     },
     "basePath": "/api",
     "paths": {
@@ -7797,6 +7797,12 @@
             "properties": {
                 "command": {
                     "type": "string"
+                },
+                "environment_variables": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 }
             }
         },
