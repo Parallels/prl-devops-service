@@ -3,7 +3,8 @@ package models
 import "github.com/Parallels/prl-devops-service/errors"
 
 type VirtualMachineExecuteCommandRequest struct {
-	Command string `json:"command"`
+	EnvironmentVariables map[string]string `json:"environment_variables,omitempty"`
+	Command              string            `json:"command"`
 }
 
 func (r *VirtualMachineExecuteCommandRequest) Validate() error {
