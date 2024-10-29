@@ -1,0 +1,16 @@
+---
+layout: post
+title:  "Release 0.9.9"
+date:   2024-10-29 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+- Fixed an issue where in some endpoints, if the body was wrong, we would receive two json body instead of the correct one
+- Added environment variables to the execute endpoint
+- Fixed some issue with the pipeline
+- Bumps the bundler group with 1 update in the /docs directory: [rexml](https://github.com/ruby/rexml).
+- Fixed an issue where the name of the catalog would be wrong when importing vms
+
+
