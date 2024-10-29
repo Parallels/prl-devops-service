@@ -124,6 +124,7 @@ func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
+			return
 		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -187,6 +188,7 @@ func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
+			return
 		}
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{

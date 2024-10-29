@@ -190,6 +190,7 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
+			return
 		}
 
 		if err := request.Validate(); err != nil {
