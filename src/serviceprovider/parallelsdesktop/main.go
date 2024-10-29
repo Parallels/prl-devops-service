@@ -1572,16 +1572,35 @@ func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id str
 	cmd := helpers.Command{
 		Command: "sudo",
 	}
-	args := make([]string, 0)
+
+	envVars := ""
+	bashCommand := ""
+	commandParts := strings.Split(r.Command, " ")
+	command := ""
+
+	if len(commandParts) > 1 {
+		command = strings.Join(commandParts, " ")
+	} else {
+		command = commandParts[0]
+	}
+
+	for key, value := range r.EnvironmentVariables {
+		envVars += fmt.Sprintf(`%s='%s' `, key, value)
+	}
+
+	envVars = strings.TrimSpace(envVars)
+	if envVars != "" {
+		bashCommand = fmt.Sprintf("env %s bash -c '%s'", envVars, command)
+	} else {
+		bashCommand = command
+	}
+
+	cmd.Args = make([]string, 0)
 	// Setting the owner in the command
 	if vm.User != "root" {
-		args = append(args, "-u", vm.User)
+		cmd.Args = append(cmd.Args, "-u", vm.User)
 	}
-	args = append(args, s.executable, "exec", vm.ID)
-	commandParts := strings.Split(r.Command, " ")
-	args = append(args, commandParts...)
-
-	cmd.Args = args
+	cmd.Args = append(cmd.Args, s.executable, "exec", vm.ID, bashCommand)
 
 	ctx.LogInfof("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
 	stdout, stderr, exitCode, cmdError := helpers.ExecuteWithOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
@@ -1749,4 +1768,25 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	result.TotalAvailable.LogicalCpuCount = result.Total.LogicalCpuCount - result.SystemReserved.LogicalCpuCount - result.TotalInUse.LogicalCpuCount
 
 	return result, nil
+}
+
+func escapeForBashC(command string) string {
+	var escaped strings.Builder
+	for i := 0; i < len(command); i++ {
+		switch command[i] {
+		case '"':
+			if i == 0 || command[i-1] != '\\' {
+				escaped.WriteString("\\\"")
+			} else {
+				escaped.WriteByte('"')
+			}
+		case '$':
+			escaped.WriteString("\\$")
+		default:
+			escaped.WriteByte(command[i])
+		}
+	}
+	result := escaped.String()
+
+	return result
 }

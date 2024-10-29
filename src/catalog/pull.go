@@ -418,6 +418,7 @@ func (s *CatalogManifestService) Pull(ctx basecontext.ApiContext, r *models.Pull
 
 		if response.HasErrors() {
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
+			break
 		}
 
 		ctx.LogInfof("Finished pulling pack file for manifest %v", manifest.Name)

@@ -6,7 +6,7 @@ on:
 
 jobs:
   assign-projects:
-    if: ${{ github.event.pull_request.draft == false && !startsWith(github.event.pull_request, 'BUMP') && !startsWith(github.head_ref, 'release/') && github.event_name == 'pull_request'}}
+    if: ${{ github.event.pull_request.draft == false && !startsWith(github.event.pull_request, 'BUMP') && !startsWith(github.event.pull_request, 'Bump') && !startsWith(github.head_ref, 'release/') && github.event_name == 'pull_request'}}
     name: Assign Projects
     env:
       repo: ${{ github.head_ref }}
@@ -18,7 +18,6 @@ jobs:
 
       - name: Assign Project
         env:
-            GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
         run: |
-            gh pr edit  ${{ env.repo }} --add-project "${{ env.project }}"
-
+          gh pr edit  ${{ env.repo }} --add-project "${{ env.project }}"
