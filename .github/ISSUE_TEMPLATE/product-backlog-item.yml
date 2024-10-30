@@ -7,7 +7,7 @@ labels:
 assignees:
   - cjlapao
 projects:
-  - DevOps Service
+  - Parallels DevOps Service
 body:
   - type: textarea
     id: description
@@ -28,7 +28,7 @@ body:
   - type: textarea
     id: describe_feature
     attributes:
-      label: "**Acceptance Criteria**"
+      label: Acceptance Criteria
       render: markdown
       placeholder: |-
         - [ ] **Criterion 1**: Detailed description of the first acceptance criterion.
@@ -37,9 +37,9 @@ body:
     validations:
       required: true
   - type: checkboxes
-    id: priority
+    id: definition_of_done
     attributes:
-      label: Priority
+      label: Definition of Done
       options:
         - label: Code implemented following best practices.
         - label: Unit tests written and passing.
@@ -51,7 +51,7 @@ body:
   - type: textarea
     id: assumptions_and_constraints
     attributes:
-      label: "**Assumptions and Constraints**"
+      label: Assumptions and Constraints
       render: markdown
       placeholder: |-
         - **Assumption 1**: Detailed description of the first assumption.
@@ -61,7 +61,7 @@ body:
   - type: textarea
     id: dependencies
     attributes:
-      label: "**Assumptions and Constraints**"
+      label: Assumptions and Constraints
       render: markdown
       placeholder: |-
         - **Dependency 1**: Detailed description of the first dependency.
