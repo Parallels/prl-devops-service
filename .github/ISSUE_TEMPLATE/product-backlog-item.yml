@@ -7,7 +7,7 @@ labels:
 assignees:
   - cjlapao
 projects:
-  - Parallels DevOps Service
+  - "Parallels/6"
 body:
   - type: textarea
     id: description
