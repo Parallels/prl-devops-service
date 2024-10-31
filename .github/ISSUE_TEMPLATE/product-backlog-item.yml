@@ -29,7 +29,6 @@ body:
     id: describe_feature
     attributes:
       label: Acceptance Criteria
-      render: markdown
       placeholder: |-
         - [ ] **Criterion 1**: Detailed description of the first acceptance criterion.
       description: |
@@ -52,7 +51,6 @@ body:
     id: assumptions_and_constraints
     attributes:
       label: Assumptions and Constraints
-      render: markdown
       placeholder: |-
         - **Assumption 1**: Detailed description of the first assumption.
           - List any assumptions that are being made about the item.
@@ -62,7 +60,6 @@ body:
     id: dependencies
     attributes:
       label: Assumptions and Constraints
-      render: markdown
       placeholder: |-
         - **Dependency 1**: Detailed description of the first dependency.
   - type: textarea
