@@ -3,11 +3,13 @@ package models
 type ParallelsVMs []ParallelsVM
 
 type ParallelsVM struct {
+	ID                    string                 `json:"ID"`
 	Host                  string                 `json:"host,omitempty"`
 	HostId                string                 `json:"host_id,omitempty"`
 	HostState             string                 `json:"host_state,omitempty"`
+	HostExternalIpAddress string                 `json:"host_external_ip_address,omitempty"`
+	InternalIpAddress     string                 `json:"internal_ip_address,omitempty"`
 	User                  string                 `json:"user"`
-	ID                    string                 `json:"ID"`
 	Name                  string                 `json:"Name"`
 	Description           string                 `json:"Description"`
 	Type                  string                 `json:"Type"`
@@ -47,6 +49,7 @@ type ParallelsVM struct {
 	Advanced              Advanced               `json:"Advanced"`
 	PrintManagement       PrintManagement        `json:"Print Management,omitempty"`
 	GuestSharedFolders    GuestSharedFolders     `json:"Guest Shared Folders,omitempty"`
+	NetworkInformation    NetworkInformation     `json:"Network,omitempty"`
 }
 
 type Advanced struct {
@@ -260,4 +263,22 @@ type USBAndBluetooth struct {
 	AutomaticSharingSmartCards string `json:"Automatic sharing smart cards"`
 	AutomaticSharingGamepads   string `json:"Automatic sharing gamepads"`
 	SupportUSB30               string `json:"Support USB 3.0"`
+}
+
+type NetworkInformation struct {
+	Conditioned string                        `json:"Conditioned"`
+	Inbound     NetworkInformationBound       `json:"Inbound"`
+	Outbound    NetworkInformationBound       `json:"Outbound"`
+	IPAddresses []NetworkInformationIPAddress `json:"ipAddresses"`
+}
+
+type NetworkInformationIPAddress struct {
+	Type string `json:"type"`
+	IP   string `json:"ip"`
+}
+
+type NetworkInformationBound struct {
+	Bandwidth  string `json:"Bandwidth"`
+	PacketLoss string `json:"Packet Loss"`
+	Delay      string `json:"Delay"`
 }

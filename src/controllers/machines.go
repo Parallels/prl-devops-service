@@ -155,6 +155,14 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 			Register()
 
 		restapi.NewController().
+			WithMethod(restapi.POST).
+			WithVersion(version).
+			WithPath("/machines/{id}/upload").
+			WithRequiredClaim(constants.UPDATE_VM_CLAIM).
+			WithHandler(UploadFileToVirtualMachineHandler()).
+			Register()
+
+		restapi.NewController().
 			WithMethod(restapi.PUT).
 			WithVersion(version).
 			WithPath("/machines/{id}/rename").
@@ -786,6 +794,56 @@ func ExecuteCommandOnVirtualMachineHandler() restapi.ControllerHandler {
 		id := params["id"]
 
 		if response, err := svc.ExecuteCommandOnVm(ctx, id, &request); err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		} else {
+			w.WriteHeader(http.StatusOK)
+			defer r.Body.Close()
+			_ = json.NewEncoder(w).Encode(response)
+			ctx.LogInfof("Command executed on machine: %v", id)
+		}
+	}
+}
+
+// @Summary		Uploads a file to a virtual machine
+// @Description	This endpoint executes a command on a virtual machine
+// @Tags			Machines
+// @Produce		json
+// @Param			id				path		string										true	"Machine ID"
+// @Param			executeRequest	body		models.VirtualMachineUploadRequest	true	"Machine Upload file Command Request"
+// @Success		200				{object}	models.VirtualMachineUploadResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/upload [post]
+func UploadFileToVirtualMachineHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.VirtualMachineUploadRequest
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		params := mux.Vars(r)
+		id := params["id"]
+
+		if response, err := svc.LocalUploadToVm(ctx, id, &request); err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		} else {

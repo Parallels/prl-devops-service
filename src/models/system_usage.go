@@ -4,8 +4,11 @@ type SystemUsageResponse struct {
 	CpuType                  string           `json:"cpu_type,omitempty"`
 	CpuBrand                 string           `json:"cpu_brand,omitempty"`
 	DevOpsVersion            string           `json:"devops_version,omitempty"`
+	OsName                   string           `json:"os_name,omitempty"`
+	OsVersion                string           `json:"os_version,omitempty"`
 	ParallelsDesktopVersion  string           `json:"parallels_desktop_version,omitempty"`
 	ParallelsDesktopLicensed bool             `json:"parallels_desktop_licensed,omitempty"`
+	ExternalIpAddress        string           `json:"external_ip_address,omitempty"`
 	SystemReserved           *SystemUsageItem `json:"system_reserved,omitempty"`
 	Total                    *SystemUsageItem `json:"total,omitempty"`
 	TotalAvailable           *SystemUsageItem `json:"total_available,omitempty"`
