@@ -7,6 +7,8 @@ type VirtualMachine struct {
 	HostId                string                             `json:"host_id,omitempty"`
 	HostState             string                             `json:"host_state,omitempty"`
 	User                  string                             `json:"user,omitempty"`
+	HostExternalIpAddress string                             `json:"host_external_ip_address,omitempty"`
+	InternalIpAddress     string                             `json:"internal_ip_address,omitempty"`
 	Host                  string                             `json:"host,omitempty"`
 	Name                  string                             `json:"name,omitempty"`
 	Description           string                             `json:"description,omitempty"`
@@ -47,6 +49,7 @@ type VirtualMachine struct {
 	Advanced              VirtualMachineAdvanced             `json:"advanced,omitempty"`
 	PrintManagement       VirtualMachinePrintManagement      `json:"print _management,omitempty"`
 	GuestSharedFolders    VirtualMachineGuestSharedFolders   `json:"guest_shared_folders,omitempty"`
+	NetworkInformation    VirtualMachineNetworkInformation   `json:"network_information,omitempty"`
 	CreatedAt             string                             `json:"created_at,omitempty"`
 	UpdatedAt             string                             `json:"updated_at,omitempty"`
 }
@@ -56,6 +59,15 @@ func (m *VirtualMachine) Diff(source VirtualMachine) bool {
 		return true
 	}
 	if m.HostId != source.HostId {
+		return true
+	}
+	if m.HostState != source.HostState {
+		return true
+	}
+	if m.HostExternalIpAddress != source.HostExternalIpAddress {
+		return true
+	}
+	if m.InternalIpAddress != source.InternalIpAddress {
 		return true
 	}
 	if m.User != source.User {
@@ -191,6 +203,9 @@ func (m *VirtualMachine) Diff(source VirtualMachine) bool {
 		return true
 	}
 	if m.GuestSharedFolders.Diff(source.GuestSharedFolders) {
+		return true
+	}
+	if m.NetworkInformation.Diff(source.NetworkInformation) {
 		return true
 	}
 
@@ -923,6 +938,71 @@ func (m *VirtualMachineUSBAndBluetooth) Diff(source VirtualMachineUSBAndBluetoot
 		return true
 	}
 	if m.SupportUSB30 != source.SupportUSB30 {
+		return true
+	}
+
+	return false
+}
+
+type VirtualMachineNetworkInformation struct {
+	Conditioned string                                      `json:"conditioned"`
+	Inbound     VirtualMachineNetworkInformationBound       `json:"inbound"`
+	Outbound    VirtualMachineNetworkInformationBound       `json:"outbound"`
+	IPAddresses []VirtualMachineNetworkInformationIPAddress `json:"ip_addresses"`
+}
+
+func (m *VirtualMachineNetworkInformation) Diff(source VirtualMachineNetworkInformation) bool {
+	if m.Conditioned != source.Conditioned {
+		return true
+	}
+
+	if m.Inbound.Diff(source.Inbound) {
+		return true
+	}
+
+	if m.Outbound.Diff(source.Outbound) {
+		return true
+	}
+
+	for i, v := range m.IPAddresses {
+		if v.Diff(source.IPAddresses[i]) {
+			return true
+		}
+	}
+
+	return false
+}
+
+type VirtualMachineNetworkInformationIPAddress struct {
+	Type string `json:"type"`
+	IP   string `json:"ip"`
+}
+
+func (m *VirtualMachineNetworkInformationIPAddress) Diff(source VirtualMachineNetworkInformationIPAddress) bool {
+	if m.Type != source.Type {
+		return true
+	}
+	if m.IP != source.IP {
+		return true
+	}
+
+	return false
+}
+
+type VirtualMachineNetworkInformationBound struct {
+	Bandwidth  string `json:"bandwidth"`
+	PacketLoss string `json:"packet_loss"`
+	Delay      string `json:"delay"`
+}
+
+func (m *VirtualMachineNetworkInformationBound) Diff(source VirtualMachineNetworkInformationBound) bool {
+	if m.Bandwidth != source.Bandwidth {
+		return true
+	}
+	if m.PacketLoss != source.PacketLoss {
+		return true
+	}
+	if m.Delay != source.Delay {
 		return true
 	}
 

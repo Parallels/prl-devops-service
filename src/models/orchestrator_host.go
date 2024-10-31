@@ -83,17 +83,21 @@ func (o *OrchestratorHostRequest) Validate() error {
 }
 
 type OrchestratorHostResponse struct {
-	ID             string           `json:"id"`
-	Enabled        bool             `json:"enabled"`
-	Host           string           `json:"host"`
-	Architecture   string           `json:"architecture"`
-	CpuModel       string           `json:"cpu_model"`
-	Description    string           `json:"description,omitempty"`
-	Tags           []string         `json:"tags,omitempty"`
-	State          string           `json:"state,omitempty"`
-	Resources      HostResourceItem `json:"resources,omitempty"`
-	RequiredClaims []string         `json:"required_claims,omitempty"`
-	RequiredRoles  []string         `json:"required_roles,omitempty"`
+	ID                string           `json:"id"`
+	Enabled           bool             `json:"enabled"`
+	Host              string           `json:"host"`
+	Architecture      string           `json:"architecture"`
+	CpuModel          string           `json:"cpu_model"`
+	OsVersion         string           `json:"os_version,omitempty"`
+	OsName            string           `json:"os_name,omitempty"`
+	ExternalIpAddress string           `json:"external_ip_address,omitempty"`
+	DevOpsVersion     string           `json:"devops_version,omitempty"`
+	Description       string           `json:"description,omitempty"`
+	Tags              []string         `json:"tags,omitempty"`
+	State             string           `json:"state,omitempty"`
+	Resources         HostResourceItem `json:"resources,omitempty"`
+	RequiredClaims    []string         `json:"required_claims,omitempty"`
+	RequiredRoles     []string         `json:"required_roles,omitempty"`
 }
 
 type OrchestratorHostUpdateRequest struct {

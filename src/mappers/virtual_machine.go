@@ -9,6 +9,9 @@ func MapDtoVirtualMachineFromApi(m models.ParallelsVM) data_models.VirtualMachin
 	mapped := data_models.VirtualMachine{
 		HostId:                m.HostId,
 		Host:                  m.Host,
+		HostState:             m.HostState,
+		HostExternalIpAddress: m.HostExternalIpAddress,
+		InternalIpAddress:     m.InternalIpAddress,
 		User:                  m.User,
 		ID:                    m.ID,
 		Name:                  m.Name,
@@ -49,6 +52,7 @@ func MapDtoVirtualMachineFromApi(m models.ParallelsVM) data_models.VirtualMachin
 		Advanced:              MapDtoVirtualMachineAdvancedFromApi(m.Advanced),
 		PrintManagement:       MapDtoVirtualMachinePrintManagementFromApi(m.PrintManagement),
 		GuestSharedFolders:    MapDtoVirtualMachineGuestSharedFoldersFromApi(m.GuestSharedFolders),
+		NetworkInformation:    MapDtoVirtualMachineNetworkInformationFromApi(m.NetworkInformation),
 	}
 
 	return mapped
@@ -59,6 +63,8 @@ func MapDtoVirtualMachineToApi(m data_models.VirtualMachine) models.ParallelsVM 
 		HostId:                m.HostId,
 		Host:                  m.Host,
 		HostState:             m.HostState,
+		HostExternalIpAddress: m.HostExternalIpAddress,
+		InternalIpAddress:     m.InternalIpAddress,
 		User:                  m.User,
 		ID:                    m.ID,
 		Name:                  m.Name,
@@ -99,6 +105,7 @@ func MapDtoVirtualMachineToApi(m data_models.VirtualMachine) models.ParallelsVM 
 		Advanced:              MapDtoVirtualMachineAdvancedToApi(m.Advanced),
 		PrintManagement:       MapDtoVirtualMachinePrintManagementToApi(m.PrintManagement),
 		GuestSharedFolders:    MapDtoVirtualMachineGuestSharedFoldersToApi(m.GuestSharedFolders),
+		NetworkInformation:    MapDtoVirtualNetworkInformationToApi(m.NetworkInformation),
 	}
 
 	return mapped

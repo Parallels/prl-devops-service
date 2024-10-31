@@ -1,10 +1,12 @@
 package system
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/errors"
@@ -19,14 +21,16 @@ var VersionSvc = version.Get()
 var globalSystemService *SystemService
 
 type SystemServiceCache struct {
-	IsCached        bool
-	SystemUsers     []models.SystemUser
-	CurrentUser     string
-	CurrentUserHome string
-	UniqueId        string
-	HardwareInfo    *models.SystemHardwareInfo
-	OperatingSystem string
-	Architecture    string
+	IsCached                     bool
+	SystemUsers                  []models.SystemUser
+	CurrentUser                  string
+	CurrentUserHome              string
+	UniqueId                     string
+	HardwareInfo                 *models.SystemHardwareInfo
+	OperatingSystem              string
+	Architecture                 string
+	ExternalIpAddress            string
+	LastUpdatedExternalIpAddress int64
 }
 
 type SystemService struct {
@@ -715,11 +719,208 @@ func (s *SystemService) GetHardwareUsage(ctx basecontext.ApiContext) (*models.Sy
 
 	arch, err := s.GetArchitecture(ctx)
 	if err != nil {
-		arch = "unknown"
+		arch = err.Error()
 	}
 
 	result.CpuType = arch
 	result.DevOpsVersion = VersionSvc.String()
 
+	external_ip, err := s.GetExternalIp(ctx)
+	if err == nil {
+		result.ExternalIpAddress = external_ip
+	}
+	os_version, err := s.GetOsVersion(ctx)
+	if err == nil {
+		result.OsVersion = os_version
+	}
+
+	result.OsName = s.GetOSName()
+
 	return result, nil
+}
+
+func (s *SystemService) GetExternalIp(ctx basecontext.ApiContext) (string, error) {
+	os := s.GetOperatingSystem()
+	switch os {
+	case "macos":
+		return s.getUniversalExternalIp(ctx)
+	case "linux":
+		return s.getUniversalExternalIp(ctx)
+	case "windows":
+		return s.getUniversalExternalIp(ctx)
+	default:
+		return "", fmt.Errorf("operating System %s not implemented yet", os)
+	}
+}
+
+func (s *SystemService) getUniversalExternalIp(ctx basecontext.ApiContext) (string, error) {
+	// First we check if we already have the external ip cached and if the cache is not expired
+	if s.cache.ExternalIpAddress != "" && s.cache.LastUpdatedExternalIpAddress > 0 {
+		currentTime := time.Now().Unix()
+		if currentTime-s.cache.LastUpdatedExternalIpAddress < 2*3600 {
+			ctx.LogDebugf("Returning cached external IP address")
+			return s.cache.ExternalIpAddress, nil
+		}
+	}
+
+	// first lets try to get the external ip using the ifconfig.me service and curl
+	cmd := helpers.Command{
+		Command: "curl",
+		Args:    []string{"ifconfig.me"},
+	}
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		cmd = helpers.Command{
+			Command: "wget",
+			Args:    []string{"-qO-", "ifconfig.me"},
+		}
+		out, err = helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	s.cache.ExternalIpAddress = strings.TrimSpace(out)
+	s.cache.LastUpdatedExternalIpAddress = time.Now().Unix()
+	return strings.TrimSpace(out), nil
+}
+
+func (s *SystemService) GetOsVersion(ctx basecontext.ApiContext) (string, error) {
+	os := s.GetOperatingSystem()
+	switch os {
+	case "macos":
+		return s.getOsVersionForMac(ctx)
+	case "linux":
+		return s.getOsVersionForLinux(ctx)
+	case "windows":
+		return s.getOsVersionForWindows(ctx)
+	default:
+		return "", fmt.Errorf("operating System %s not implemented yet", os)
+	}
+}
+
+func (s *SystemService) getOsVersionForMac(ctx basecontext.ApiContext) (string, error) {
+	// first lets try to get the external ip using the ifconfig.me service and curl
+	cmd := helpers.Command{
+		Command: "sw_vers",
+		Args:    []string{"-productVersion"},
+	}
+
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(out), nil
+}
+
+func (s *SystemService) getOsVersionForLinux(ctx basecontext.ApiContext) (string, error) {
+	// first lets try to get the external ip using the ifconfig.me service and curl
+	cmd := helpers.Command{
+		Command: "sysctl",
+		Args:    []string{"kernel.osrelease"},
+	}
+
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(out), nil
+}
+
+func (s *SystemService) getOsVersionForWindows(ctx basecontext.ApiContext) (string, error) {
+	// first lets try to get the external ip using the ifconfig.me service and curl
+	cmd := helpers.Command{
+		Command: "ver",
+	}
+
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(out), "\r\n", ""), "\n", ""), nil
+}
+
+func (s *SystemService) GetOsTempFolder(ctx basecontext.ApiContext) (string, error) {
+	os := s.GetOperatingSystem()
+	switch os {
+	case "macos":
+		return s.getOsTempFolderFoMac(ctx)
+	case "linux":
+		return s.getOsTempFolderForLinux(ctx)
+	case "windows":
+		return s.getOsTempFolderForWindows(ctx)
+	default:
+		return "", fmt.Errorf("operating System %s not implemented yet", os)
+	}
+}
+
+func (s *SystemService) getOsTempFolderFoMac(ctx basecontext.ApiContext) (string, error) {
+	cmd := helpers.Command{
+		Command: "echo",
+		Args:    []string{"$TMPDIR"},
+	}
+
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return "", err
+	}
+
+	if out == "" {
+		out = "/tmp"
+	}
+
+	return strings.TrimSpace(out), nil
+}
+
+func (s *SystemService) getOsTempFolderForLinux(ctx basecontext.ApiContext) (string, error) {
+	cmd := helpers.Command{
+		Command: "echo",
+		Args:    []string{"$TMPDIR"},
+	}
+
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return "", err
+	}
+
+	if out == "" {
+		out = "/tmp"
+	}
+
+	return strings.TrimSpace(out), nil
+}
+
+func (s *SystemService) getOsTempFolderForWindows(ctx basecontext.ApiContext) (string, error) {
+	cmd := helpers.Command{
+		Command: "echo",
+		Args:    []string{"%TEMP%"},
+	}
+
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return "", err
+	}
+
+	if out == "" {
+		out = "/tmp"
+	}
+
+	return strings.TrimSpace(out), nil
+}
+
+func (s *SystemService) GetOSName() string {
+	os := runtime.GOOS
+	switch os {
+	case "darwin":
+		return "macOS"
+	case "linux":
+		return "Linux"
+	case "windows":
+		return "Windows"
+	default:
+		return "Unknown"
+	}
 }

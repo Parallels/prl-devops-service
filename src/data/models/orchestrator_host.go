@@ -13,7 +13,11 @@ type OrchestratorHost struct {
 	Enabled                   bool                            `json:"enabled"`
 	Host                      string                          `json:"host"`
 	Architecture              string                          `json:"architecture"`
-	CpuModel                  string                          `json:"cpu_model"`
+	CpuModel                  string                          `json:"cpu_model,omitempty"`
+	OsVersion                 string                          `json:"os_version,omitempty"`
+	OsName                    string                          `json:"os_name,omitempty"`
+	ExternalIpAddress         string                          `json:"external_ip_address,omitempty"`
+	DevOpsVersion             string                          `json:"devops_version,omitempty"`
 	Description               string                          `json:"description,omitempty"`
 	Tags                      []string                        `json:"tags,omitempty"`
 	Port                      string                          `json:"port,omitempty"`
@@ -85,6 +89,18 @@ func (o *OrchestratorHost) Diff(source OrchestratorHost) bool {
 		return true
 	}
 	if o.Enabled != source.Enabled {
+		return true
+	}
+	if o.OsVersion != source.OsVersion {
+		return true
+	}
+	if o.OsName != source.OsName {
+		return true
+	}
+	if o.DevOpsVersion != source.DevOpsVersion {
+		return true
+	}
+	if o.ExternalIpAddress != source.ExternalIpAddress {
 		return true
 	}
 	if o.Architecture != source.Architecture {

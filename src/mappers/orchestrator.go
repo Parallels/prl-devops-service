@@ -9,16 +9,20 @@ import (
 
 func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.OrchestratorHostResponse {
 	result := models.OrchestratorHostResponse{
-		ID:             dto.ID,
-		Enabled:        dto.Enabled,
-		Host:           dto.GetHost(),
-		Architecture:   dto.Architecture,
-		CpuModel:       dto.CpuModel,
-		Description:    dto.Description,
-		Tags:           dto.Tags,
-		RequiredClaims: dto.RequiredClaims,
-		RequiredRoles:  dto.RequiredRoles,
-		State:          dto.State,
+		ID:                dto.ID,
+		Enabled:           dto.Enabled,
+		Host:              dto.GetHost(),
+		Architecture:      dto.Architecture,
+		CpuModel:          dto.CpuModel,
+		OsVersion:         dto.OsVersion,
+		OsName:            dto.OsName,
+		ExternalIpAddress: dto.ExternalIpAddress,
+		DevOpsVersion:     dto.DevOpsVersion,
+		Description:       dto.Description,
+		Tags:              dto.Tags,
+		RequiredClaims:    dto.RequiredClaims,
+		RequiredRoles:     dto.RequiredRoles,
+		State:             dto.State,
 	}
 
 	if dto.Resources != nil {

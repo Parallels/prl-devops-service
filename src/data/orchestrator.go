@@ -180,6 +180,10 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 				j.data.OrchestratorHosts[index].Enabled = host.Enabled
 				j.data.OrchestratorHosts[index].UpdatedAt = helpers.GetUtcCurrentDateTime()
 				j.data.OrchestratorHosts[index].Host = host.Host
+				j.data.OrchestratorHosts[index].OsVersion = host.OsVersion
+				j.data.OrchestratorHosts[index].OsName = host.OsName
+				j.data.OrchestratorHosts[index].ExternalIpAddress = host.ExternalIpAddress
+				j.data.OrchestratorHosts[index].DevOpsVersion = host.DevOpsVersion
 				j.data.OrchestratorHosts[index].Architecture = host.Architecture
 				j.data.OrchestratorHosts[index].CpuModel = host.CpuModel
 				j.data.OrchestratorHosts[index].Port = host.Port

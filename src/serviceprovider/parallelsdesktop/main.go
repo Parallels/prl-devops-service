@@ -313,7 +313,7 @@ func (s *ParallelsService) refreshCacheVms(ctx basecontext.ApiContext) {
 
 func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string) ([]models.ParallelsVM, error) {
 	ctx.LogInfof("Getting VMs for user: %s", username)
-
+	externalIp, _ := system.Get().GetExternalIp(ctx)
 	var userMachines []models.ParallelsVM
 	cmd := helpers.Command{
 		Command: "sudo",
@@ -331,6 +331,16 @@ func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string
 	err = json.Unmarshal([]byte(stdout), &userMachines)
 	if err != nil {
 		return nil, err
+	}
+
+	// updating the internal and external IP address
+	for i := range userMachines {
+		if externalIp != "" {
+			userMachines[i].HostExternalIpAddress = externalIp
+		}
+		if len(userMachines[i].NetworkInformation.IPAddresses) > 0 {
+			userMachines[i].InternalIpAddress = userMachines[i].NetworkInformation.IPAddresses[0].IP
+		}
 	}
 
 	ctx.LogInfof("User %s has %s VMs", username, len(userMachines))
@@ -1555,6 +1565,64 @@ func (s *ParallelsService) SetTimeSyncOperation(ctx basecontext.ApiContext, vm *
 	return nil
 }
 
+func (s *ParallelsService) LocalUploadToVm(ctx basecontext.ApiContext, id string, r *models.VirtualMachineUploadRequest) (*models.VirtualMachineUploadResponse, error) {
+	response := models.VirtualMachineUploadResponse{}
+
+	vm, err := s.findVmSync(ctx, id)
+	if err != nil {
+		response.Error = err.Error()
+		return &response, err
+	}
+	if vm == nil {
+		err := errors.Newf("VM with ID %s was not found", id)
+		response.Error = err.Error()
+		return &response, err
+	}
+
+	if vm.State != "running" {
+		err := errors.New("VM is not running")
+		response.Error = err.Error()
+		return &response, err
+	}
+
+	if r.LocalPath == "" {
+		err := errors.New("Local path is required")
+		response.Error = err.Error()
+		return &response, err
+	}
+
+	if _, err := os.Stat(r.LocalPath); os.IsNotExist(err) {
+		err := errors.Newf("file %s does not exist", r.LocalPath)
+		response.Error = err.Error()
+		return &response, err
+	}
+
+	if r.RemotePath == "" {
+		r.RemotePath = "/tmp"
+	}
+	response.LocalPath = r.RemotePath
+	cmd := helpers.Command{
+		Command: "tar",
+		Args:    make([]string, 0),
+	}
+
+	cmd.Args = append(cmd.Args, "cz", "--no-mac-metadata", "-f", "-", r.LocalPath, "|", "sudo")
+
+	if vm.User != "root" {
+		cmd.Args = append(cmd.Args, "-u", vm.User)
+	}
+
+	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, "exec", vm.ID, "tar", "xzf", "-", "-C", r.RemotePath)
+	ctx.LogInfof("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		response.Error = err.Error()
+		return &response, err
+	}
+
+	return &response, nil
+}
+
 func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id string, r *models.VirtualMachineExecuteCommandRequest) (*models.VirtualMachineExecuteCommandResponse, error) {
 	response := &models.VirtualMachineExecuteCommandResponse{}
 	vm, err := s.findVmSync(ctx, id)
@@ -1597,9 +1665,14 @@ func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id str
 
 	cmd.Args = make([]string, 0)
 	// Setting the owner in the command
-	if vm.User != "root" {
-		cmd.Args = append(cmd.Args, "-u", vm.User)
+	if !r.UseSudo {
+		if r.User != "" {
+			cmd.Args = append(cmd.Args, "-u", r.User)
+		} else if vm.User != "root" {
+			cmd.Args = append(cmd.Args, "-u", vm.User)
+		}
 	}
+
 	cmd.Args = append(cmd.Args, s.executable, "exec", vm.ID, bashCommand)
 
 	ctx.LogInfof("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
@@ -1766,6 +1839,16 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	result.TotalAvailable.DiskSize = result.Total.DiskSize - result.SystemReserved.DiskSize - result.TotalReserved.DiskSize - result.TotalInUse.DiskSize
 	result.TotalAvailable.MemorySize = result.Total.MemorySize - result.SystemReserved.MemorySize - result.TotalInUse.MemorySize
 	result.TotalAvailable.LogicalCpuCount = result.Total.LogicalCpuCount - result.SystemReserved.LogicalCpuCount - result.TotalInUse.LogicalCpuCount
+
+	external_ip, err := systemSrv.GetExternalIp(ctx)
+	if err == nil {
+		result.ExternalIpAddress = external_ip
+	}
+	osVersion, err := systemSrv.GetOsVersion(ctx)
+	if err == nil {
+		result.OsVersion = osVersion
+	}
+	result.OsName = systemSrv.GetOSName()
 
 	return result, nil
 }
