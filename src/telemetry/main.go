@@ -41,6 +41,8 @@ func New(ctx basecontext.ApiContext) *TelemetryService {
 	config := amplitude.NewConfig(key)
 	config.FlushQueueSize = 100
 	config.FlushInterval = time.Second * 5
+	config.Logger = &EmptyLogger{}
+
 	// adding a callback to read what is the status
 	config.ExecuteCallback = func(result types.ExecuteResult) {
 		svc.Callback(result)

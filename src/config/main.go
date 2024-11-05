@@ -129,7 +129,7 @@ func (c *Config) Load() bool {
 		c.fileFormat = "yaml"
 	}
 
-	c.LogLevel(true)
+	c.LogLevel(false)
 	c.filename = fileName
 	return true
 }
@@ -153,13 +153,19 @@ func (c *Config) Save() bool {
 		}
 	}
 
-	err = helper.WriteToFile(string(content), fmt.Sprintf("%s.%s", c.filename, c.fileFormat))
+	filename := strings.TrimSuffix(c.filename, filepath.Ext(c.filename))
+	err = helper.WriteToFile(string(content), fmt.Sprintf("%s.%s", filename, c.fileFormat))
 	if err != nil {
 		c.ctx.LogErrorf("Error saving configuration file: %s", err.Error())
 		return false
 	}
 
 	return true
+}
+
+func (c *Config) CleanReverseProxyDataFromConfig() error {
+	c.config.ReverseProxy = nil
+	return nil
 }
 
 func (c *Config) ApiPort() string {
@@ -491,8 +497,44 @@ func (c *Config) DisableTlsValidation() bool {
 	return val
 }
 
+func (c *Config) IsReverseProxyEnabled() bool {
+	reverseProxyEnabled := c.GetKey(constants.ENABLE_REVERSE_PROXY_ENV_VAR)
+	if reverseProxyEnabled == "" || reverseProxyEnabled == "false" {
+		return false
+	}
+
+	return true
+}
+
 func (c *Config) GetReverseProxyConfig() *ReverseProxyConfig {
+	if c.config.ReverseProxy == nil {
+		c.config.ReverseProxy = &ReverseProxyConfig{
+			Host: "localhost",
+			Port: "8080",
+		}
+		if c.TlsEnabled() {
+			c.config.ReverseProxy.Ssl = &ReverseProxyConfigSsl{
+				Enabled: true,
+				Cert:    c.TlsCertificate(),
+				Key:     c.TlsPrivateKey(),
+			}
+		}
+		if c.IsCorsEnabled() {
+			c.config.ReverseProxy.Cors = &ReverseProxyConfigCors{
+				Enabled:        true,
+				AllowedOrigins: []string{"*"},
+				AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH", "CONNECT", "TRACE"},
+				AllowedHeaders: []string{"*"},
+			}
+		}
+	}
+
 	return c.config.ReverseProxy
+}
+
+func (c *Config) EnableReverseProxy(value bool) bool {
+	c.SetKey(constants.ENABLE_REVERSE_PROXY_ENV_VAR, strconv.FormatBool(value))
+	return true
 }
 
 func (c *Config) GetKey(key string) string {
@@ -540,4 +582,16 @@ func (c *Config) GetBoolKey(key string) bool {
 	}
 
 	return boolVal
+}
+
+func (c *Config) SetKey(key string, value string) {
+	c.config.Environment[strings.ToLower(key)] = value
+}
+
+func (c *Config) SetIntKey(key string, value int) {
+	c.SetKey(key, strconv.Itoa(value))
+}
+
+func (c *Config) SetBoolKey(key string, value bool) {
+	c.SetKey(key, strconv.FormatBool(value))
 }

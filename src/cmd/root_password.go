@@ -10,9 +10,10 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processRootPassword(ctx basecontext.ApiContext) {
+func processRootPassword(ctx basecontext.ApiContext, cmd string) {
 	ctx.LogInfof("Updating root password")
 	_ = os.Setenv(constants.SOURCE_ENV_VAR, "root_password")
+	processTelemetry(cmd)
 	rootPassword := helper.GetFlagValue(constants.PASSWORD_FLAG, "")
 	if rootPassword != "" {
 		serviceprovider.InitServices(ctx)

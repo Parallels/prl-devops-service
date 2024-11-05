@@ -23,6 +23,8 @@ type OrchestratorHost struct {
 	Port                      string                          `json:"port,omitempty"`
 	Schema                    string                          `json:"schema,omitempty"`
 	PathPrefix                string                          `json:"path_prefix,omitempty"`
+	ParallelsDesktopVersion   string                          `json:"parallels_desktop_version,omitempty"`
+	ParallelsDesktopLicensed  bool                            `json:"parallels_desktop_licensed,omitempty"`
 	Authentication            *OrchestratorHostAuthentication `json:"authentication,omitempty"`
 	Resources                 *HostResources                  `json:"resources,omitempty"`
 	State                     string                          `json:"state,omitempty"`
@@ -30,6 +32,9 @@ type OrchestratorHost struct {
 	LastUnhealthyErrorMessage string                          `json:"last_seen_error_message,omitempty"`
 	HealthCheck               *models.ApiHealthCheck          `json:"-"`
 	VirtualMachines           []VirtualMachine                `json:"virtual_machines,omitempty"`
+	IsReverseProxyEnabled     bool                            `json:"is_reverse_proxy_enabled,omitempty"`
+	ReverseProxy              *ReverseProxy                   `json:"reverse_proxy,omitempty"`
+	ReverseProxyHosts         []*ReverseProxyHost             `json:"reverse_proxy_hosts,omitempty"`
 	CreatedAt                 string                          `json:"created_at,omitempty"`
 	UpdatedAt                 string                          `json:"updated_at,omitempty"`
 	RequiredClaims            []string                        `json:"required_claims,omitempty"`
@@ -196,6 +201,22 @@ func (o *OrchestratorHost) Diff(source OrchestratorHost) bool {
 					return true
 				}
 			}
+		}
+	}
+
+	if o.ReverseProxy != nil && source.ReverseProxy != nil {
+		if o.ReverseProxy.Diff(*source.ReverseProxy) {
+			return true
+		}
+	}
+
+	if len(o.ReverseProxyHosts) != len(source.ReverseProxyHosts) {
+		return true
+	}
+
+	for i, rpHost := range o.ReverseProxyHosts {
+		if rpHost.Diff(*source.ReverseProxyHosts[i]) {
+			return true
 		}
 	}
 

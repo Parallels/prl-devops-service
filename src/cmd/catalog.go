@@ -14,7 +14,7 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processCatalog(ctx basecontext.ApiContext, operation string, filePath string) {
+func processCatalog(ctx basecontext.ApiContext, cmd string, operation string, filePath string) {
 	// processing the command help
 	if helper.GetFlagSwitch(constants.HELP_FLAG, false) || helper.GetCommandAt(1) == "help" {
 		processHelp(constants.CATALOG_COMMAND)
@@ -22,6 +22,7 @@ func processCatalog(ctx basecontext.ApiContext, operation string, filePath strin
 	}
 	ctx.ToggleLogTimestamps(false)
 	_ = os.Setenv(constants.SOURCE_ENV_VAR, "catalog")
+	processTelemetry(cmd)
 
 	if operation != "list" {
 		if filePath == "" {

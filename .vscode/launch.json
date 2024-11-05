@@ -22,8 +22,8 @@
       // Comment out if you do not need to setup environment variables for the module
       "envFile": "${workspaceFolder}/.env",
       "args": [
-        "push",
-        "${workspaceFolder}/.local/pdfiles/build-empty-machine.aws.push.pdfile",
+        "pull",
+        "${workspaceFolder}/.local/pdfiles/build-empty-machine.aws.pull.pdfile",
       ]
     },
     {

@@ -17,6 +17,7 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 	registerConfigHandlers(ctx, version)
 	registerOrchestratorHostsHandlers(ctx, version)
 	registerPerformanceHandlers(ctx, version)
+	registerReverseProxyHandlers(ctx, version)
 
 	return nil
 }

@@ -219,6 +219,19 @@ definitions:
       physical_cpu_count:
         type: integer
     type: object
+  github_com_Parallels_prl-devops-service_models.HostReverseProxy:
+    properties:
+      enabled:
+        type: boolean
+      host:
+        type: string
+      hosts:
+        items:
+          $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        type: array
+      port:
+        type: string
+    type: object
   github_com_Parallels_prl-devops-service_models.ImportCatalogManifestResponse:
     properties:
       id:
@@ -362,6 +375,8 @@ definitions:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.MouseAndKeyboard'
       Name:
         type: string
+      Network:
+        $ref: '#/definitions/models.NetworkInformation'
       OS:
         type: string
       Optimization:
@@ -400,9 +415,13 @@ definitions:
         type: string
       host:
         type: string
+      host_external_ip_address:
+        type: string
       host_id:
         type: string
       host_state:
+        type: string
+      internal_ip_address:
         type: string
       user:
         type: string
@@ -428,6 +447,96 @@ definitions:
         type: string
       manifest:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
+    type: object
+  github_com_Parallels_prl-devops-service_models.ReverseProxy:
+    properties:
+      enabled:
+        type: boolean
+      host:
+        type: string
+      port:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.ReverseProxyHost:
+    properties:
+      cors:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostCors'
+      host:
+        type: string
+      http_routes:
+        items:
+          $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostHttpRoute'
+        type: array
+      id:
+        type: string
+      port:
+        type: string
+      tcp_route:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTcpRoute'
+      tls:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTls'
+    type: object
+  github_com_Parallels_prl-devops-service_models.ReverseProxyHostCors:
+    properties:
+      allowed_headers:
+        items:
+          type: string
+        type: array
+      allowed_methods:
+        items:
+          type: string
+        type: array
+      allowed_origins:
+        items:
+          type: string
+        type: array
+      enabled:
+        type: boolean
+    type: object
+  github_com_Parallels_prl-devops-service_models.ReverseProxyHostHttpRoute:
+    properties:
+      id:
+        type: string
+      path:
+        type: string
+      pattern:
+        type: string
+      request_headers:
+        additionalProperties:
+          type: string
+        type: object
+      response_headers:
+        additionalProperties:
+          type: string
+        type: object
+      schema:
+        type: string
+      target_host:
+        type: string
+      target_port:
+        type: string
+      target_vm_id:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.ReverseProxyHostTcpRoute:
+    properties:
+      id:
+        type: string
+      target_host:
+        type: string
+      target_port:
+        type: string
+      target_vm_id:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.ReverseProxyHostTls:
+    properties:
+      cert:
+        type: string
+      enabled:
+        type: boolean
+      key:
+        type: string
     type: object
   github_com_Parallels_prl-devops-service_models.SMBIOSSettings:
     properties:
@@ -915,6 +1024,35 @@ definitions:
       token:
         type: string
     type: object
+  models.NetworkInformation:
+    properties:
+      Conditioned:
+        type: string
+      Inbound:
+        $ref: '#/definitions/models.NetworkInformationBound'
+      Outbound:
+        $ref: '#/definitions/models.NetworkInformationBound'
+      ipAddresses:
+        items:
+          $ref: '#/definitions/models.NetworkInformationIPAddress'
+        type: array
+    type: object
+  models.NetworkInformationBound:
+    properties:
+      Bandwidth:
+        type: string
+      Delay:
+        type: string
+      Packet Loss:
+        type: string
+    type: object
+  models.NetworkInformationIPAddress:
+    properties:
+      ip:
+        type: string
+      type:
+        type: string
+    type: object
   models.OAuthErrorResponse:
     properties:
       error:
@@ -998,11 +1136,25 @@ definitions:
         type: string
       description:
         type: string
+      devops_version:
+        type: string
       enabled:
         type: boolean
+      external_ip_address:
+        type: string
       host:
         type: string
       id:
+        type: string
+      is_reverse_proxy_enabled:
+        type: boolean
+      os_name:
+        type: string
+      os_version:
+        type: string
+      parallels_desktop_licensed:
+        type: boolean
+      parallels_desktop_version:
         type: string
       required_claims:
         items:
@@ -1014,6 +1166,8 @@ definitions:
         type: array
       resources:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
+      reverse_proxy:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostReverseProxy'
       state:
         type: string
       tags:
@@ -1209,6 +1363,66 @@ definitions:
       new_name:
         type: string
     type: object
+  models.ReverseProxyHostCreateRequest:
+    properties:
+      cors:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostCors'
+      host:
+        type: string
+      http_routes:
+        items:
+          $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostHttpRoute'
+        type: array
+      port:
+        type: string
+      tcp_route:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTcpRoute'
+      tls:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTls'
+    type: object
+  models.ReverseProxyHostHttpRouteCreateRequest:
+    properties:
+      path:
+        type: string
+      pattern:
+        type: string
+      request_headers:
+        additionalProperties:
+          type: string
+        type: object
+      response_headers:
+        additionalProperties:
+          type: string
+        type: object
+      schema:
+        type: string
+      target_host:
+        type: string
+      target_port:
+        type: string
+      target_vm_id:
+        type: string
+    type: object
+  models.ReverseProxyHostTcpRouteCreateRequest:
+    properties:
+      target_host:
+        type: string
+      target_port:
+        type: string
+      target_vm_id:
+        type: string
+    type: object
+  models.ReverseProxyHostUpdateRequest:
+    properties:
+      cors:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostCors'
+      host:
+        type: string
+      port:
+        type: string
+      tls:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTls'
+    type: object
   models.RoleRequest:
     properties:
       name:
@@ -1232,6 +1446,19 @@ definitions:
       name:
         type: string
     type: object
+  models.SystemReverseProxy:
+    properties:
+      enabled:
+        type: boolean
+      host:
+        type: string
+      hosts:
+        items:
+          $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        type: array
+      port:
+        type: string
+    type: object
   models.SystemUsageItem:
     properties:
       disk_count:
@@ -1251,10 +1478,20 @@ definitions:
         type: string
       devops_version:
         type: string
+      external_ip_address:
+        type: string
+      is_reverse_proxy_enabled:
+        type: boolean
+      os_name:
+        type: string
+      os_version:
+        type: string
       parallels_desktop_licensed:
         type: boolean
       parallels_desktop_version:
         type: string
+      reverse_proxy:
+        $ref: '#/definitions/models.SystemReverseProxy'
       system_reserved:
         $ref: '#/definitions/models.SystemUsageItem'
       total:
@@ -1421,6 +1658,14 @@ definitions:
         additionalProperties:
           type: string
         type: object
+      script:
+        $ref: '#/definitions/models.VirtualMachineExecuteCommandScript'
+      use_ssh:
+        type: boolean
+      use_sudo:
+        type: boolean
+      user:
+        type: string
     type: object
   models.VirtualMachineExecuteCommandResponse:
     properties:
@@ -1431,6 +1676,15 @@ definitions:
       stderr:
         type: string
       stdout:
+        type: string
+    type: object
+  models.VirtualMachineExecuteCommandScript:
+    properties:
+      parameters:
+        type: string
+      path:
+        type: string
+      remote_path:
         type: string
     type: object
   models.VirtualMachineOperationResponse:
@@ -1449,6 +1703,20 @@ definitions:
       ip_configured:
         type: string
       status:
+        type: string
+    type: object
+  models.VirtualMachineUploadRequest:
+    properties:
+      path:
+        type: string
+      remote_path:
+        type: string
+    type: object
+  models.VirtualMachineUploadResponse:
+    properties:
+      error:
+        type: string
+      path:
         type: string
     type: object
 info:
@@ -3780,6 +4048,42 @@ paths:
       summary: Unregister a virtual machine
       tags:
       - Machines
+  /v1/machines/{id}/upload:
+    post:
+      description: This endpoint executes a command on a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Machine Upload file Command Request
+        in: body
+        name: executeRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.VirtualMachineUploadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineUploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Uploads a file to a virtual machine
+      tags:
+      - Machines
   /v1/machines/register:
     post:
       description: This endpoint registers a virtual machine
@@ -4429,6 +4733,347 @@ paths:
       summary: Register a virtual machine in a orchestrator host
       tags:
       - Orchestrator
+  /v1/orchestrator/hosts/{id}/reverse-proxy/disable:
+    put:
+      description: This endpoint disables orchestrator host reverse proxy
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Disables orchestrator host reverse proxy
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/reverse-proxy/enable:
+    put:
+      description: This endpoint enables orchestrator host reverse proxy
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Enables orchestrator host reverse proxy
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/reverse-proxy/hosts:
+    get:
+      description: This endpoint returns orchestrator host reverse proxy hosts
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets orchestrator host reverse proxy hosts
+      tags:
+      - Orchestrator
+    post:
+      description: This endpoint creates a orchestrator host reverse proxy host
+      parameters:
+      - description: Create Host Reverse Proxy Host Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReverseProxyHostCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a orchestrator host reverse proxy host
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}:
+    delete:
+      description: This endpoint deletes an orchestrator host reverse proxy host
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Reverse Proxy Host ID
+        in: path
+        name: reverse_proxy_host_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes an orchestrator host reverse proxy host
+      tags:
+      - Orchestrator
+    get:
+      description: This endpoint returns orchestrator host reverse proxy hosts
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets orchestrator host reverse proxy hosts
+      tags:
+      - Orchestrator
+    put:
+      description: This endpoint updates an orchestrator host reverse proxy host
+      parameters:
+      - description: Update Host Reverse Proxy Host Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReverseProxyHostUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Updates an orchestrator host reverse proxy host
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/http_routes:
+    post:
+      description: This endpoint upserts an orchestrator host reverse proxy host http
+        route
+      parameters:
+      - description: Upsert Host Reverse Proxy Host Http Routes Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReverseProxyHostUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Upserts an orchestrator host reverse proxy host http route
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/http_routes/{route_id}:
+    delete:
+      description: This endpoint deletes an orchestrator host reverse proxy host http
+        route
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Reverse Proxy Host ID
+        in: path
+        name: reverse_proxy_host_id
+        required: true
+        type: string
+      - description: Route ID
+        in: path
+        name: route_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes an orchestrator host reverse proxy host http route
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/tcp_route:
+    post:
+      description: This endpoint updates an orchestrator host reverse proxy host tcp
+        route
+      parameters:
+      - description: Update Host Reverse Proxy Host tcp Routes Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReverseProxyHostUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Update an orchestrator host reverse proxy host tcp route
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/reverse-proxy/restart:
+    put:
+      description: This endpoint restarts orchestrator host reverse proxy
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Restarts orchestrator host reverse proxy
+      tags:
+      - Orchestrator
   /v1/orchestrator/machines:
     get:
       description: This endpoint returns orchestrator Virtual Machines
@@ -4795,6 +5440,336 @@ paths:
       summary: Gets Parallels Desktop active license
       tags:
       - Config
+  /v1/reverse-proxy:
+    get:
+      description: This endpoint returns the reverse proxy configuration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxy'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets reverse proxy configuration
+      tags:
+      - ReverseProxy
+  /v1/reverse-proxy/disable:
+    put:
+      description: This endpoint will disable the reverse proxy
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Disable the reverse proxy
+      tags:
+      - ReverseProxy
+  /v1/reverse-proxy/enable:
+    put:
+      description: This endpoint will enable the reverse proxy
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Enable the reverse proxy
+      tags:
+      - ReverseProxy
+  /v1/reverse-proxy/hosts:
+    get:
+      description: This endpoint returns all the reverse proxy hosts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the reverse proxy hosts
+      tags:
+      - ReverseProxy
+    post:
+      description: This endpoint creates a reverse proxy host
+      parameters:
+      - description: Reverse Host Request
+        in: body
+        name: reverse_proxy_create_request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReverseProxyHostCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a reverse proxy host
+      tags:
+      - ReverseProxy
+  /v1/reverse-proxy/hosts/{id}:
+    delete:
+      description: This endpoint Deletes a reverse proxy host
+      parameters:
+      - description: Reverse Proxy Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Delete a a reverse proxy host
+      tags:
+      - ReverseProxy
+    get:
+      description: This endpoint returns a reverse proxy host
+      parameters:
+      - description: Reverse Proxy Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the reverse proxy host
+      tags:
+      - ReverseProxy
+    put:
+      description: This endpoint creates a reverse proxy host
+      parameters:
+      - description: Reverse Host Request
+        in: body
+        name: reverse_proxy_update_request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReverseProxyHostUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Updates a reverse proxy host
+      tags:
+      - ReverseProxy
+  /v1/reverse-proxy/hosts/{id}/http_route:
+    post:
+      description: This endpoint creates or updates a reverse proxy host HTTP route
+      parameters:
+      - description: Reverse Host Request
+        in: body
+        name: reverse_proxy_http_route_request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReverseProxyHostHttpRouteCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates or updates a reverse proxy host HTTP route
+      tags:
+      - ReverseProxy
+  /v1/reverse-proxy/hosts/{id}/http_routes:
+    post:
+      description: This endpoint updates a reverse proxy host TCP route
+      parameters:
+      - description: Reverse Host Request
+        in: body
+        name: reverse_proxy_tcp_route_request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReverseProxyHostTcpRouteCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Updates a reverse proxy host TCP route
+      tags:
+      - ReverseProxy
+  /v1/reverse-proxy/hosts/{id}/http_routes/{http_route_id}:
+    delete:
+      description: This endpoint Deletes a reverse proxy host HTTP route
+      parameters:
+      - description: Reverse Proxy Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Reverse Proxy Host HTTP Route ID
+        in: path
+        name: http_route_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Delete a a reverse proxy host HTTP route
+      tags:
+      - ReverseProxy
+  /v1/reverse-proxy/restart:
+    put:
+      description: This endpoint will restart the reverse proxy
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Restarts the reverse proxy
+      tags:
+      - ReverseProxy
   /v1/templates/packer:
     get:
       description: This endpoint returns all the packer templates

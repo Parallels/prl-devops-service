@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/orchestrator"
+	"github.com/Parallels/prl-devops-service/reverse_proxy"
 	bruteforceguard "github.com/Parallels/prl-devops-service/security/brute_force_guard"
 	"github.com/Parallels/prl-devops-service/security/jwt"
 	"github.com/Parallels/prl-devops-service/security/password"
@@ -60,6 +61,28 @@ func Start(ctx basecontext.ApiContext) {
 			ctx.LogErrorf("Error applying migration: %v", err)
 		}
 	}
+
+	// lets import any reverse proxy configuration hosts we have into the db and remove them from the config
+	// this is to allow any misconfiguration to be corrected and to import old configurations
+	// rpConfig := cfg.GetReverseProxyConfig()
+	// if rpConfig != nil {
+	// 	for _, host := range rpConfig.Hosts {
+	// 		if host != nil {
+	// 			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
+	// 				if _, err := dbService.GetReverseProxyHost(ctx, host.Host); err != nil {
+	// 					if errors.GetSystemErrorCode(err) == 404 {
+	// 						dbHost := models.ReverseProxyHost{
+	// 							ID:   helpers.GenerateId(),
+	// 							Host: host.Host,
+	// 						}
+
+	// 						_, _ = dbService.CreateReverseProxyHost(ctx, host)
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	if cfg.IsOrchestrator() {
 		ctx := basecontext.NewRootBaseContext()
@@ -157,6 +180,15 @@ func Start(ctx basecontext.ApiContext) {
 		}
 		orchestratorBackgroundService := orchestrator.NewOrchestratorService(ctx)
 		go orchestratorBackgroundService.Start(true)
+	}
+	if cfg.IsReverseProxyEnabled() {
+		ctx.LogInfof("Starting Reverse Proxy Service")
+		reverseProxyService := reverse_proxy.New(ctx)
+		go func() {
+			if err := reverseProxyService.Start(); err != nil {
+				ctx.LogErrorf("Error starting reverse proxy service: %v", err)
+			}
+		}()
 	}
 }
 

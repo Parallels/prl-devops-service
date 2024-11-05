@@ -18,6 +18,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 )
 
@@ -178,7 +179,6 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 
 	if data != nil {
 		reqBody, err := json.MarshalIndent(data, "", "  ")
-		c.ctx.LogDebugf("[Api Client] Request body: \n%s", string(reqBody))
 		if err != nil {
 			return &apiResponse, fmt.Errorf("error marshalling data, err: %v", err)
 		}
@@ -233,10 +233,10 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 
 	if c.authorizer != nil {
 		if c.authorizer.BearerToken != "" {
-			c.ctx.LogDebugf("[Api Client] Setting Authorization header to Bearer %s", c.authorizer.BearerToken)
+			c.ctx.LogDebugf("[Api Client] Setting Authorization header to Bearer %s", helpers.ObfuscateString(c.authorizer.BearerToken))
 			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.authorizer.BearerToken))
 		} else if c.authorizer.ApiKey != "" {
-			c.ctx.LogDebugf("[Api Client] Setting Authorization header to X-Api-Key %s", c.authorizer.ApiKey)
+			c.ctx.LogDebugf("[Api Client] Setting Authorization header to X-Api-Key %s", helpers.ObfuscateString(c.authorizer.ApiKey))
 			req.Header.Set("X-Api-Key", c.authorizer.ApiKey)
 		}
 	}
@@ -245,7 +245,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	if c.headers != nil && len(c.headers) > 0 {
+	if len(c.headers) > 0 {
 		for k, v := range c.headers {
 			req.Header.Set(k, v)
 		}
@@ -357,7 +357,7 @@ func getJwtToken(ctx basecontext.ApiContext, baseUrl, username, password string)
 	hostAndPath := fmt.Sprintf("%s://%s/%s", h.Scheme, h.Host, DEFAULT_API_LOGIN_URL)
 
 	c := NewHttpClient(ctx)
-	c.ctx.LogDebugf("[Api Client] Getting token from %s with username and password", hostAndPath, username, password)
+	c.ctx.LogDebugf("[Api Client] Getting token from %s with username %s and password %s", hostAndPath, username, helpers.ObfuscateString(password))
 
 	var tokenResponse models.LoginResponse
 	if _, err := c.Post(hostAndPath, tokenRequest, &tokenResponse); err != nil {

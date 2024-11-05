@@ -41,6 +41,8 @@ type Data struct {
 	PackerTemplates   []models.PackerTemplate   `json:"virtual_machine_templates"`
 	ManifestsCatalog  []models.CatalogManifest  `json:"catalog_manifests"`
 	OrchestratorHosts []models.OrchestratorHost `json:"orchestrator_hosts"`
+	ReverseProxy      *models.ReverseProxy      `json:"reverse_proxy"`
+	ReverseProxyHosts []models.ReverseProxyHost `json:"reverse_proxy_hosts"`
 }
 
 type JsonDatabase struct {

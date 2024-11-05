@@ -18,7 +18,7 @@ type InstallServiceResult struct {
 	Message string `json:"message,omitempty" yaml:"message,omitempty"`
 }
 
-func processInstall(ctx basecontext.ApiContext) {
+func processInstall(ctx basecontext.ApiContext, cmd string) {
 	system := system.SystemService{}
 	if system.GetOperatingSystem() != "macos" {
 		ctx.LogErrorf("The install command is only available for macOS")
@@ -36,6 +36,8 @@ func processInstall(ctx basecontext.ApiContext) {
 	ctx.DisableLog()
 	serviceprovider.InitServices(ctx)
 	providerSvc := serviceprovider.Get()
+	processTelemetry(cmd)
+
 	ctx.EnableLog()
 	if providerSvc == nil {
 		ctx.LogErrorf("There was an error during initialization, exiting...")
