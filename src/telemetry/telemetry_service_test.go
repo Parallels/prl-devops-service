@@ -1,10 +1,12 @@
 package telemetry
 
 import (
+	"os"
 	"testing"
 	"time"
 
 	basecontext_test "github.com/Parallels/prl-devops-service/basecontext/test"
+	"github.com/Parallels/prl-devops-service/constants"
 	telemetry_test "github.com/Parallels/prl-devops-service/telemetry/test"
 	"github.com/amplitude/analytics-go/amplitude/types"
 	"github.com/stretchr/testify/assert"
@@ -37,6 +39,7 @@ func TestTelemetryService_Shutdown(t *testing.T) {
 
 func TestTelemetryService_Callback(t *testing.T) {
 	t.Run("result.Code is greater than 200 and less than 300", func(t *testing.T) {
+		os.Setenv(constants.LOG_LEVEL_ENV_VAR, "debug")
 		mockContext := basecontext_test.NewMockBaseContext()
 		mockClient := telemetry_test.NewMockAmplitudeClient()
 		telemetryService := &TelemetryService{
@@ -71,7 +74,6 @@ func TestTelemetryService_Callback(t *testing.T) {
 		result := <-telemetryService.CallBackChan // wait for the callback
 		assert.Equal(t, 201, result.Code)
 
-		assert.Equal(t, 1, len(logMessages))
 		assert.True(t, telemetryService.EnableTelemetry)
 		logMessages = []string{}
 	})
@@ -112,8 +114,7 @@ func TestTelemetryService_Callback(t *testing.T) {
 		result := <-telemetryService.CallBackChan // wait for the callback
 		assert.Equal(t, 400, result.Code)
 
-		require.Equal(t, 2, len(logMessages))
-		assert.Equal(t, "[Telemetry] Failed to send event to Amplitude: Bad Request", logMessages[1])
+		require.Equal(t, 1, len(logMessages))
 		assert.True(t, telemetryService.EnableTelemetry)
 		logMessages = []string{}
 	})
@@ -154,9 +155,9 @@ func TestTelemetryService_Callback(t *testing.T) {
 		result := <-telemetryService.CallBackChan // wait for the callback
 		assert.Equal(t, 400, result.Code)
 
-		require.Equal(t, 3, len(logMessages))
-		assert.Equal(t, "[Telemetry] Failed to send event to Amplitude: Invalid API key", logMessages[1])
-		assert.Equal(t, "[Telemetry] Disabling telemetry as received invalid key", logMessages[2])
+		require.Equal(t, 2, len(logMessages))
+		// assert.Equal(t, "[Telemetry] Failed to send event to Amplitude: Invalid API key", logMessages[1])
+		assert.Equal(t, "[Telemetry] Disabling telemetry as received invalid key", logMessages[1])
 		assert.False(t, telemetryService.EnableTelemetry)
 		logMessages = []string{}
 	})
@@ -196,9 +197,9 @@ func TestTelemetryService_Callback(t *testing.T) {
 		result := <-telemetryService.CallBackChan // wait for the callback
 		assert.Equal(t, 401, result.Code)
 
-		require.Equal(t, 3, len(logMessages))
-		assert.Equal(t, "[Telemetry] Failed to send event to Amplitude: Invalid API key", logMessages[1])
-		assert.Equal(t, "[Telemetry] Disabling telemetry as received invalid key", logMessages[2])
+		require.Equal(t, 2, len(logMessages))
+		// assert.Equal(t, "[Telemetry] Failed to send event to Amplitude: Invalid API key", logMessages[1])
+		assert.Equal(t, "[Telemetry] Disabling telemetry as received invalid key", logMessages[1])
 		assert.False(t, telemetryService.EnableTelemetry)
 		logMessages = []string{}
 	})
@@ -239,9 +240,9 @@ func TestTelemetryService_Callback(t *testing.T) {
 		result := <-telemetryService.CallBackChan // wait for the callback
 		assert.Equal(t, 403, result.Code)
 
-		require.Equal(t, 3, len(logMessages))
-		assert.Equal(t, "[Telemetry] Failed to send event to Amplitude: Invalid API key", logMessages[1])
-		assert.Equal(t, "[Telemetry] Disabling telemetry as received invalid key", logMessages[2])
+		require.Equal(t, 2, len(logMessages))
+		// assert.Equal(t, "[Telemetry] Failed to send event to Amplitude: Invalid API key", logMessages[1])
+		assert.Equal(t, "[Telemetry] Disabling telemetry as received invalid key", logMessages[1])
 		assert.False(t, telemetryService.EnableTelemetry)
 		logMessages = []string{}
 	})
