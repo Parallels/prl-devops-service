@@ -104,6 +104,16 @@ endif
 	@cd src && CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o ../out/binaries/$(PACKAGE_NAME)-alpine
 	@echo "Build finished."
 
+.PHONY: push-beta-container
+push-beta-container:
+	@echo "Building..."
+ifeq ($(wildcard ./out/.*),)
+	@echo "Creating out directory..."
+	@mkdir out
+	@mkdir out/binaries
+endif
+	@echo "Build finished."
+
 .PHONY: clean
 clean:
 	@echo "Cleaning..."

@@ -2,6 +2,7 @@
 MODE="INSTALL"
 INSTALL_SERVICE="true"
 STD_USER="false"
+PRE_RELEASE="false"
 while [[ $# -gt 0 ]]; do
   case $1 in
   -i)
@@ -48,6 +49,10 @@ while [[ $# -gt 0 ]]; do
     STD_USER="true"
     shift # past argument
     ;;
+  --pre-release)
+    PRE_RELEASE="true"
+    shift # past argument
+    ;;
   *)
     echo "Invalid option $1" >&2
     exit 1
@@ -62,7 +67,12 @@ fi
 function install() {
   if [ -z "$VERSION" ]; then
     # Get latest version from github
-    VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases/latest | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"')
+    if [ "$PRE_RELEASE" = "true" ]; then
+      # $(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases | jq '[.[] | select(.prerelease == true)] | sort_by(.created_at) | .[0]' | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"')
+      VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"' | head -n 1)
+    else
+      VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases/latest | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"')
+    fi
   fi
 
   if [[ ! $VERSION == *-beta ]]; then
@@ -132,7 +142,11 @@ function install() {
 function install_standard() {
   if [ -z "$VERSION" ]; then
     # Get latest version from github
-    VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases/latest | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"')
+    if [ "$PRE_RELEASE" = "true" ]; then
+      VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"' | head -n 1)
+    else
+      VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases/latest | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"')
+    fi
   fi
 
   if [[ ! $VERSION == *-beta ]]; then
