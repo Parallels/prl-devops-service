@@ -13,6 +13,7 @@ var (
 	ErrOrchestratorHostEmptyIdOrHost          = errors.NewWithCode("no host specified", 500)
 	ErrOrchestratorHostEmptyName              = errors.NewWithCode("host name cannot be empty", 500)
 	ErrOrchestratorHostNotFound               = errors.NewWithCode("host not found", 404)
+	ErrOrchestratorReverseProxyHostNotFound   = errors.NewWithCode("reverse proxy host not found", 404)
 	ErrOrchestratorHostVirtualMachineNotFound = errors.NewWithCode("host virtual machine not found", 404)
 )
 
@@ -200,7 +201,15 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 				j.data.OrchestratorHosts[index].LastUnhealthyErrorMessage = host.LastUnhealthyErrorMessage
 				j.data.OrchestratorHosts[index].HealthCheck = host.HealthCheck
 				j.data.OrchestratorHosts[index].VirtualMachines = host.VirtualMachines
+				// Other Data
+				j.data.OrchestratorHosts[index].ParallelsDesktopVersion = host.ParallelsDesktopVersion
+				j.data.OrchestratorHosts[index].ParallelsDesktopLicensed = host.ParallelsDesktopLicensed
+				// Reverse Proxy Hosts
+				j.data.OrchestratorHosts[index].IsReverseProxyEnabled = host.IsReverseProxyEnabled
+				j.data.OrchestratorHosts[index].ReverseProxy = host.ReverseProxy
+				j.data.OrchestratorHosts[index].ReverseProxyHosts = host.ReverseProxyHosts
 
+				_ = j.SaveNow(ctx)
 				return &j.data.OrchestratorHosts[index], nil
 			} else {
 				ctx.LogDebugf("[Database] No changes detected for host %s", host.Host)
@@ -436,4 +445,53 @@ func (j *JsonDatabase) GetOrchestratorHostVirtualMachine(ctx basecontext.ApiCont
 	}
 
 	return nil, ErrOrchestratorHostVirtualMachineNotFound
+}
+
+func (j *JsonDatabase) GetOrchestratorReverseProxyHosts(ctx basecontext.ApiContext, hostId string, filter string) ([]*models.ReverseProxyHost, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	host, err := j.GetOrchestratorHost(ctx, hostId)
+	if err != nil {
+		return nil, err
+	}
+
+	dbFilter, err := ParseFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	filteredData, err := FilterByProperty(host.ReverseProxyHosts, dbFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	return filteredData, nil
+}
+
+func (j *JsonDatabase) GetOrchestratorReverseProxyHost(ctx basecontext.ApiContext, hostId string, rpIdOrName string) (*models.ReverseProxyHost, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	hosts, err := j.GetOrchestratorHosts(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, host := range hosts {
+		dbHost := host.GetHost()
+		ctx.LogDebugf("host: %s", dbHost)
+		if strings.EqualFold(host.ID, hostId) || strings.EqualFold(host.GetHost(), hostId) {
+			for _, rpHost := range host.ReverseProxyHosts {
+				hostname := rpHost.GetHost()
+				if strings.EqualFold(rpHost.ID, rpIdOrName) || strings.EqualFold(hostname, rpIdOrName) {
+					return rpHost, nil
+				}
+			}
+		}
+	}
+
+	return nil, ErrOrchestratorReverseProxyHostNotFound
 }

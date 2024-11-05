@@ -5,7 +5,9 @@ import (
 	"net/http"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -262,6 +264,7 @@ func GetHardwareInfo() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
+		cfg := config.Get()
 		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		os := system.Get().GetOperatingSystem()
@@ -271,6 +274,27 @@ func GetHardwareInfo() restapi.ControllerHandler {
 			hardwareInfo, err = provider.ParallelsDesktopService.GetHardwareUsage(ctx)
 		} else {
 			hardwareInfo, err = provider.System.GetHardwareUsage(ctx)
+		}
+
+		if cfg.IsReverseProxyEnabled() {
+			hardwareInfo.IsReverseProxyEnabled = true
+			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
+				if reverseProxy, err := dbService.GetReverseProxyConfig(ctx); err == nil {
+					hardwareInfo.ReverseProxy = &models.SystemReverseProxy{
+						Enabled: true,
+						Host:    reverseProxy.Host,
+						Port:    reverseProxy.Port,
+					}
+					if hosts, err := dbService.GetReverseProxyHosts(ctx, ""); err == nil {
+						if len(hosts) > 0 {
+							apiHosts := mappers.DtoReverseProxyHostsToApi(hosts)
+							hardwareInfo.ReverseProxy.Hosts = apiHosts
+						}
+					}
+				}
+			}
+		} else {
+			hardwareInfo.IsReverseProxyEnabled = false
 		}
 
 		if err != nil || hardwareInfo == nil {

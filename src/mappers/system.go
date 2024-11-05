@@ -29,6 +29,22 @@ func MapHostResourceItemFromSystemUsageItem(m *models.SystemUsageItem) data_mode
 	return result
 }
 
+func MapHostReverseProxyFromSystemReverseProxy(m *models.SystemReverseProxy) data_models.HostReverseProxy {
+	result := data_models.HostReverseProxy{
+		Enabled: m.Enabled,
+		Host:    m.Host,
+		Port:    m.Port,
+	}
+	if len(m.Hosts) > 0 {
+		result.Hosts = make([]data_models.ReverseProxyHost, 0)
+		for _, host := range m.Hosts {
+			result.Hosts = append(result.Hosts, ApiReverseProxyHostToDto(host))
+		}
+	}
+
+	return result
+}
+
 func MapSystemUsageResponseFromHostResources(m data_models.HostResources) *models.SystemUsageResponse {
 	result := models.SystemUsageResponse{
 		CpuType:        m.CpuType,

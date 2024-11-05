@@ -9,8 +9,9 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processUninstall(ctx basecontext.ApiContext) {
+func processUninstall(ctx basecontext.ApiContext, cmd string) {
 	ctx.ToggleLogTimestamps(false)
+	processTelemetry(cmd)
 	removeDatabase := helper.GetFlagSwitch("full", false)
 	_ = os.Setenv(constants.SOURCE_ENV_VAR, "uninstall")
 

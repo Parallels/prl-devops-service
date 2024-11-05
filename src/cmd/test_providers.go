@@ -10,8 +10,9 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processTestProviders(ctx basecontext.ApiContext) {
+func processTestProviders(ctx basecontext.ApiContext, cmd string) {
 	subcommand := helper.GetCommandAt(1)
+	processTelemetry(cmd)
 	_ = os.Setenv(constants.SOURCE_ENV_VAR, "test")
 	switch subcommand {
 	case constants.TEST_CATALOG_PROVIDERS_FLAG:

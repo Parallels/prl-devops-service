@@ -12,7 +12,7 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processGenerateSecurityKey(ctx basecontext.ApiContext) {
+func processGenerateSecurityKey(ctx basecontext.ApiContext, cmd string) {
 	// processing the command help
 	if helper.GetFlagSwitch(constants.HELP_FLAG, false) || helper.GetCommandAt(1) == "help" {
 		processHelp(constants.GENERATE_SECURITY_KEY_COMMAND)
@@ -20,6 +20,7 @@ func processGenerateSecurityKey(ctx basecontext.ApiContext) {
 	}
 	_ = os.Setenv(constants.SOURCE_ENV_VAR, constants.GENERATE_SECURITY_KEY_COMMAND)
 
+	processTelemetry(cmd)
 	filename := "private.key"
 	ctx.ToggleLogTimestamps(false)
 	cfg := config.Get()

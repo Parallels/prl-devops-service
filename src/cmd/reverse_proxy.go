@@ -11,7 +11,7 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processReverseProxy(ctx basecontext.ApiContext) {
+func processReverseProxy(ctx basecontext.ApiContext, cmd string) {
 	// processing the command help
 	if helper.GetFlagSwitch(constants.HELP_FLAG, false) || helper.GetCommandAt(1) == "help" {
 		processHelp(constants.REVERSE_PROXY_COMMAND)
@@ -22,6 +22,7 @@ func processReverseProxy(ctx basecontext.ApiContext) {
 	// Loading configuration
 	cfg := config.New(ctx)
 	cfg.Load()
+	processTelemetry(cmd)
 
 	service := reverse_proxy.New(ctx)
 	if service == nil {

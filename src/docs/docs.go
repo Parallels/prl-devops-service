@@ -3818,6 +3818,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/machines/{id}/upload": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint executes a command on a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Uploads a file to a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Machine Upload file Command Request",
+                        "name": "executeRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineUploadRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.VirtualMachineUploadResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/orchestrator/hosts": {
             "get": {
                 "security": [
@@ -4806,6 +4864,556 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/orchestrator/hosts/{id}/reverse-proxy/disable": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint disables orchestrator host reverse proxy",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Disables orchestrator host reverse proxy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{id}/reverse-proxy/enable": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint enables orchestrator host reverse proxy",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Enables orchestrator host reverse proxy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{id}/reverse-proxy/hosts": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns orchestrator host reverse proxy hosts",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Gets orchestrator host reverse proxy hosts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint creates a orchestrator host reverse proxy host",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Creates a orchestrator host reverse proxy host",
+                "parameters": [
+                    {
+                        "description": "Create Host Reverse Proxy Host Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ReverseProxyHostCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns orchestrator host reverse proxy hosts",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Gets orchestrator host reverse proxy hosts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint updates an orchestrator host reverse proxy host",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Updates an orchestrator host reverse proxy host",
+                "parameters": [
+                    {
+                        "description": "Update Host Reverse Proxy Host Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ReverseProxyHostUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes an orchestrator host reverse proxy host",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Deletes an orchestrator host reverse proxy host",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Reverse Proxy Host ID",
+                        "name": "reverse_proxy_host_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/http_routes": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint upserts an orchestrator host reverse proxy host http route",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Upserts an orchestrator host reverse proxy host http route",
+                "parameters": [
+                    {
+                        "description": "Upsert Host Reverse Proxy Host Http Routes Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ReverseProxyHostUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/http_routes/{route_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes an orchestrator host reverse proxy host http route",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Deletes an orchestrator host reverse proxy host http route",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Reverse Proxy Host ID",
+                        "name": "reverse_proxy_host_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Route ID",
+                        "name": "route_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/tcp_route": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint updates an orchestrator host reverse proxy host tcp route",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Update an orchestrator host reverse proxy host tcp route",
+                "parameters": [
+                    {
+                        "description": "Update Host Reverse Proxy Host tcp Routes Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ReverseProxyHostUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{id}/reverse-proxy/restart": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint restarts orchestrator host reverse proxy",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Restarts orchestrator host reverse proxy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/orchestrator/machines": {
             "get": {
                 "security": [
@@ -5405,6 +6013,549 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/reverse-proxy": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns the reverse proxy configuration",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Gets reverse proxy configuration",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxy"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/reverse-proxy/disable": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint will disable the reverse proxy",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Disable the reverse proxy",
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/reverse-proxy/enable": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint will enable the reverse proxy",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Enable the reverse proxy",
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/reverse-proxy/hosts": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the reverse proxy hosts",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Gets all the reverse proxy hosts",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint creates a reverse proxy host",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Creates a reverse proxy host",
+                "parameters": [
+                    {
+                        "description": "Reverse Host Request",
+                        "name": "reverse_proxy_create_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ReverseProxyHostCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/reverse-proxy/hosts/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns a reverse proxy host",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Gets all the reverse proxy host",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reverse Proxy Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint creates a reverse proxy host",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Updates a reverse proxy host",
+                "parameters": [
+                    {
+                        "description": "Reverse Host Request",
+                        "name": "reverse_proxy_update_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ReverseProxyHostUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint Deletes a reverse proxy host",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Delete a a reverse proxy host",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reverse Proxy Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/reverse-proxy/hosts/{id}/http_route": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint creates or updates a reverse proxy host HTTP route",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Creates or updates a reverse proxy host HTTP route",
+                "parameters": [
+                    {
+                        "description": "Reverse Host Request",
+                        "name": "reverse_proxy_http_route_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ReverseProxyHostHttpRouteCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/reverse-proxy/hosts/{id}/http_routes": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint updates a reverse proxy host TCP route",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Updates a reverse proxy host TCP route",
+                "parameters": [
+                    {
+                        "description": "Reverse Host Request",
+                        "name": "reverse_proxy_tcp_route_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ReverseProxyHostTcpRouteCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/reverse-proxy/hosts/{id}/http_routes/{http_route_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint Deletes a reverse proxy host HTTP route",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Delete a a reverse proxy host HTTP route",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reverse Proxy Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Reverse Proxy Host HTTP Route ID",
+                        "name": "http_route_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/reverse-proxy/restart": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint will restart the reverse proxy",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Restarts the reverse proxy",
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/templates/packer": {
             "get": {
                 "security": [
@@ -5983,6 +7134,26 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_Parallels_prl-devops-service_models.HostReverseProxy": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "hosts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                    }
+                },
+                "port": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_Parallels_prl-devops-service_models.ImportCatalogManifestResponse": {
             "type": "object",
             "properties": {
@@ -6202,6 +7373,9 @@ const docTemplate = `{
                 "Name": {
                     "type": "string"
                 },
+                "Network": {
+                    "$ref": "#/definitions/models.NetworkInformation"
+                },
                 "OS": {
                     "type": "string"
                 },
@@ -6259,10 +7433,16 @@ const docTemplate = `{
                 "host": {
                     "type": "string"
                 },
+                "host_external_ip_address": {
+                    "type": "string"
+                },
                 "host_id": {
                     "type": "string"
                 },
                 "host_state": {
+                    "type": "string"
+                },
+                "internal_ip_address": {
                     "type": "string"
                 },
                 "user": {
@@ -6301,6 +7481,144 @@ const docTemplate = `{
                 },
                 "manifest": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.ReverseProxy": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.ReverseProxyHost": {
+            "type": "object",
+            "properties": {
+                "cors": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostCors"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "http_routes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostHttpRoute"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "tcp_route": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTcpRoute"
+                },
+                "tls": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTls"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.ReverseProxyHostCors": {
+            "type": "object",
+            "properties": {
+                "allowed_headers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "allowed_methods": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "allowed_origins": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.ReverseProxyHostHttpRoute": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "pattern": {
+                    "type": "string"
+                },
+                "request_headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "response_headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "schema": {
+                    "type": "string"
+                },
+                "target_host": {
+                    "type": "string"
+                },
+                "target_port": {
+                    "type": "string"
+                },
+                "target_vm_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.ReverseProxyHostTcpRoute": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "target_host": {
+                    "type": "string"
+                },
+                "target_port": {
+                    "type": "string"
+                },
+                "target_vm_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.ReverseProxyHostTls": {
+            "type": "object",
+            "properties": {
+                "cert": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "key": {
+                    "type": "string"
                 }
             }
         },
@@ -7049,6 +8367,51 @@ const docTemplate = `{
                 }
             }
         },
+        "models.NetworkInformation": {
+            "type": "object",
+            "properties": {
+                "Conditioned": {
+                    "type": "string"
+                },
+                "Inbound": {
+                    "$ref": "#/definitions/models.NetworkInformationBound"
+                },
+                "Outbound": {
+                    "$ref": "#/definitions/models.NetworkInformationBound"
+                },
+                "ipAddresses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.NetworkInformationIPAddress"
+                    }
+                }
+            }
+        },
+        "models.NetworkInformationBound": {
+            "type": "object",
+            "properties": {
+                "Bandwidth": {
+                    "type": "string"
+                },
+                "Delay": {
+                    "type": "string"
+                },
+                "Packet Loss": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.NetworkInformationIPAddress": {
+            "type": "object",
+            "properties": {
+                "ip": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "models.OAuthErrorResponse": {
             "type": "object",
             "properties": {
@@ -7163,13 +8526,34 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "devops_version": {
+                    "type": "string"
+                },
                 "enabled": {
                     "type": "boolean"
+                },
+                "external_ip_address": {
+                    "type": "string"
                 },
                 "host": {
                     "type": "string"
                 },
                 "id": {
+                    "type": "string"
+                },
+                "is_reverse_proxy_enabled": {
+                    "type": "boolean"
+                },
+                "os_name": {
+                    "type": "string"
+                },
+                "os_version": {
+                    "type": "string"
+                },
+                "parallels_desktop_licensed": {
+                    "type": "boolean"
+                },
+                "parallels_desktop_version": {
                     "type": "string"
                 },
                 "required_claims": {
@@ -7186,6 +8570,9 @@ const docTemplate = `{
                 },
                 "resources": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
+                },
+                "reverse_proxy": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostReverseProxy"
                 },
                 "state": {
                     "type": "string"
@@ -7484,6 +8871,98 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ReverseProxyHostCreateRequest": {
+            "type": "object",
+            "properties": {
+                "cors": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostCors"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "http_routes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostHttpRoute"
+                    }
+                },
+                "port": {
+                    "type": "string"
+                },
+                "tcp_route": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTcpRoute"
+                },
+                "tls": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTls"
+                }
+            }
+        },
+        "models.ReverseProxyHostHttpRouteCreateRequest": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string"
+                },
+                "pattern": {
+                    "type": "string"
+                },
+                "request_headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "response_headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "schema": {
+                    "type": "string"
+                },
+                "target_host": {
+                    "type": "string"
+                },
+                "target_port": {
+                    "type": "string"
+                },
+                "target_vm_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ReverseProxyHostTcpRouteCreateRequest": {
+            "type": "object",
+            "properties": {
+                "target_host": {
+                    "type": "string"
+                },
+                "target_port": {
+                    "type": "string"
+                },
+                "target_vm_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ReverseProxyHostUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "cors": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostCors"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "tls": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTls"
+                }
+            }
+        },
         "models.RoleRequest": {
             "type": "object",
             "properties": {
@@ -7520,6 +8999,26 @@ const docTemplate = `{
                 }
             }
         },
+        "models.SystemReverseProxy": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "hosts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                    }
+                },
+                "port": {
+                    "type": "string"
+                }
+            }
+        },
         "models.SystemUsageItem": {
             "type": "object",
             "properties": {
@@ -7549,11 +9048,26 @@ const docTemplate = `{
                 "devops_version": {
                     "type": "string"
                 },
+                "external_ip_address": {
+                    "type": "string"
+                },
+                "is_reverse_proxy_enabled": {
+                    "type": "boolean"
+                },
+                "os_name": {
+                    "type": "string"
+                },
+                "os_version": {
+                    "type": "string"
+                },
                 "parallels_desktop_licensed": {
                     "type": "boolean"
                 },
                 "parallels_desktop_version": {
                     "type": "string"
+                },
+                "reverse_proxy": {
+                    "$ref": "#/definitions/models.SystemReverseProxy"
                 },
                 "system_reserved": {
                     "$ref": "#/definitions/models.SystemUsageItem"
@@ -7810,6 +9324,18 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "string"
                     }
+                },
+                "script": {
+                    "$ref": "#/definitions/models.VirtualMachineExecuteCommandScript"
+                },
+                "use_ssh": {
+                    "type": "boolean"
+                },
+                "use_sudo": {
+                    "type": "boolean"
+                },
+                "user": {
+                    "type": "string"
                 }
             }
         },
@@ -7826,6 +9352,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "stdout": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineExecuteCommandScript": {
+            "type": "object",
+            "properties": {
+                "parameters": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "remote_path": {
                     "type": "string"
                 }
             }
@@ -7854,6 +9394,28 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineUploadRequest": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string"
+                },
+                "remote_path": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.VirtualMachineUploadResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "path": {
                     "type": "string"
                 }
             }

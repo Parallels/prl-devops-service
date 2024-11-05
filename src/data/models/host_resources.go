@@ -1,29 +1,23 @@
 package models
 
 type HostResourceOverviewResponseItem struct {
-	CpuType           string           `json:"cpu_type,omitempty"`
-	CpuBrand          string           `json:"cpu_brand,omitempty"`
-	DevOpsVersion     string           `json:"devops_version,omitempty"`
-	OSName            string           `json:"os_name,omitempty"`
-	OsVersion         string           `json:"os_version,omitempty"`
-	ExternalIpAddress string           `json:"external_ip_address,omitempty"`
-	Total             HostResourceItem `json:"total,omitempty"`
-	TotalAvailable    HostResourceItem `json:"total_available,omitempty"`
-	TotalInUse        HostResourceItem `json:"total_in_use,omitempty"`
-	TotalReserved     HostResourceItem `json:"total_reserved,omitempty"`
+	CpuType        string            `json:"cpu_type,omitempty"`
+	CpuBrand       string            `json:"cpu_brand,omitempty"`
+	ReverseProxy   *HostReverseProxy `json:"reverse_proxy,omitempty"`
+	Total          HostResourceItem  `json:"total,omitempty"`
+	TotalAvailable HostResourceItem  `json:"total_available,omitempty"`
+	TotalInUse     HostResourceItem  `json:"total_in_use,omitempty"`
+	TotalReserved  HostResourceItem  `json:"total_reserved,omitempty"`
 }
 
 type HostResources struct {
-	CpuType           string           `json:"cpu_type,omitempty"`
-	CpuBrand          string           `json:"cpu_brand,omitempty"`
-	DevOpsVersion     string           `json:"devops_version,omitempty"`
-	OsName            string           `json:"os_name,omitempty"`
-	OsVersion         string           `json:"os_version,omitempty"`
-	ExternalIpAddress string           `json:"external_ip_address,omitempty"`
-	Total             HostResourceItem `json:"total,omitempty"`
-	TotalAvailable    HostResourceItem `json:"total_available,omitempty"`
-	TotalInUse        HostResourceItem `json:"total_in_use,omitempty"`
-	TotalReserved     HostResourceItem `json:"total_reserved,omitempty"`
+	CpuType        string            `json:"cpu_type,omitempty"`
+	CpuBrand       string            `json:"cpu_brand,omitempty"`
+	ReverseProxy   *HostReverseProxy `json:"reverse_proxy,omitempty"`
+	Total          HostResourceItem  `json:"total,omitempty"`
+	TotalAvailable HostResourceItem  `json:"total_available,omitempty"`
+	TotalInUse     HostResourceItem  `json:"total_in_use,omitempty"`
+	TotalReserved  HostResourceItem  `json:"total_reserved,omitempty"`
 }
 
 func (c *HostResources) Diff(source HostResources) bool {
@@ -73,4 +67,11 @@ func (c *HostResourceItem) Diff(source HostResourceItem) bool {
 	}
 
 	return false
+}
+
+type HostReverseProxy struct {
+	Enabled bool               `json:"enabled,omitempty"`
+	Host    string             `json:"host,omitempty"`
+	Port    string             `json:"port,omitempty"`
+	Hosts   []ReverseProxyHost `json:"hosts,omitempty"`
 }

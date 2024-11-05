@@ -9,24 +9,40 @@ import (
 
 func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.OrchestratorHostResponse {
 	result := models.OrchestratorHostResponse{
-		ID:                dto.ID,
-		Enabled:           dto.Enabled,
-		Host:              dto.GetHost(),
-		Architecture:      dto.Architecture,
-		CpuModel:          dto.CpuModel,
-		OsVersion:         dto.OsVersion,
-		OsName:            dto.OsName,
-		ExternalIpAddress: dto.ExternalIpAddress,
-		DevOpsVersion:     dto.DevOpsVersion,
-		Description:       dto.Description,
-		Tags:              dto.Tags,
-		RequiredClaims:    dto.RequiredClaims,
-		RequiredRoles:     dto.RequiredRoles,
-		State:             dto.State,
+		ID:                       dto.ID,
+		Enabled:                  dto.Enabled,
+		Host:                     dto.GetHost(),
+		Architecture:             dto.Architecture,
+		CpuModel:                 dto.CpuModel,
+		OsVersion:                dto.OsVersion,
+		OsName:                   dto.OsName,
+		ExternalIpAddress:        dto.ExternalIpAddress,
+		DevOpsVersion:            dto.DevOpsVersion,
+		Description:              dto.Description,
+		ParallelsDesktopVersion:  dto.ParallelsDesktopVersion,
+		ParallelsDesktopLicensed: dto.ParallelsDesktopLicensed,
+		IsReverseProxyEnabled:    dto.IsReverseProxyEnabled,
+		Tags:                     dto.Tags,
+		RequiredClaims:           dto.RequiredClaims,
+		RequiredRoles:            dto.RequiredRoles,
+		State:                    dto.State,
 	}
 
 	if dto.Resources != nil {
 		result.Resources = DtoOrchestratorResourceItemToApi(dto.Resources.Total)
+	}
+
+	if dto.ReverseProxy != nil {
+		result.ReverseProxy = &models.HostReverseProxy{
+			Host: dto.ReverseProxy.Host,
+			Port: dto.ReverseProxy.Port,
+		}
+	}
+	if len(dto.ReverseProxyHosts) > 0 {
+		result.ReverseProxy.Hosts = make([]models.ReverseProxyHost, 0)
+		for _, host := range dto.ReverseProxyHosts {
+			result.ReverseProxy.Hosts = append(result.ReverseProxy.Hosts, DtoReverseProxyHostToApi(*host))
+		}
 	}
 	return result
 }
@@ -95,6 +111,40 @@ func ApiOrchestratorResourceItemToDto(request models.HostResourceItem) data_mode
 		MemorySize:       request.MemorySize,
 		DiskSize:         request.DiskSize,
 		FreeDiskSize:     request.FreeDiskSize,
+	}
+
+	return result
+}
+
+func DtoOrchestratorReverseProxyToApi(dto data_models.HostReverseProxy) models.HostReverseProxy {
+	result := models.HostReverseProxy{
+		Enabled: dto.Enabled,
+		Host:    dto.Host,
+		Port:    dto.Port,
+	}
+
+	if len(dto.Hosts) > 0 {
+		result.Hosts = make([]models.ReverseProxyHost, 0)
+		for _, host := range dto.Hosts {
+			result.Hosts = append(result.Hosts, DtoReverseProxyHostToApi(host))
+		}
+	}
+
+	return result
+}
+
+func ApiOrchestratorReverseProxyToDto(request models.HostReverseProxy) data_models.HostReverseProxy {
+	result := data_models.HostReverseProxy{
+		Enabled: request.Enabled,
+		Host:    request.Host,
+		Port:    request.Port,
+	}
+
+	if len(request.Hosts) > 0 {
+		result.Hosts = make([]data_models.ReverseProxyHost, 0)
+		for _, host := range request.Hosts {
+			result.Hosts = append(result.Hosts, ApiReverseProxyHostToDto(host))
+		}
 	}
 
 	return result

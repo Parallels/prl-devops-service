@@ -16,7 +16,7 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processApi(ctx basecontext.ApiContext) {
+func processApi(ctx basecontext.ApiContext, cmd string) {
 	// processing the command help
 	if helper.GetFlagSwitch(constants.HELP_FLAG, false) || helper.GetCommandAt(1) == "help" {
 		processHelp(constants.API_COMMAND)
@@ -25,6 +25,7 @@ func processApi(ctx basecontext.ApiContext) {
 
 	_ = os.Setenv(constants.SOURCE_ENV_VAR, "api")
 	versionSvc.PrintAnsiHeader()
+	processTelemetry(cmd)
 	startup.Init(ctx)
 
 	startup.Start(ctx)

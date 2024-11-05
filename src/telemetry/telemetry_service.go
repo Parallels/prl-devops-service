@@ -22,7 +22,7 @@ func (t *TelemetryService) TrackEvent(item TelemetryItem) {
 		return
 	}
 
-	t.ctx.LogInfof("[Telemetry] Sending Amplitude Tracking event %s", item.Type)
+	t.ctx.LogDebugf("[Telemetry] Sending Amplitude Tracking event %s", item.Type)
 
 	// Create a new event
 	if len(item.UserID) < 5 {

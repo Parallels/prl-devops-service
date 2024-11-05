@@ -174,6 +174,21 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	host.Resources = &dtoResources
 	host.Architecture = hardwareInfo.CpuType
 	host.CpuModel = hardwareInfo.CpuBrand
+	host.ParallelsDesktopVersion = hardwareInfo.ParallelsDesktopVersion
+	host.ParallelsDesktopLicensed = hardwareInfo.ParallelsDesktopLicensed
+	host.IsReverseProxyEnabled = hardwareInfo.IsReverseProxyEnabled
+	if hardwareInfo.ReverseProxy != nil {
+		host.ReverseProxy = &models.ReverseProxy{
+			Host: hardwareInfo.ReverseProxy.Host,
+			Port: hardwareInfo.ReverseProxy.Port,
+		}
+		host.ReverseProxyHosts = make([]*models.ReverseProxyHost, 0)
+		for _, rpHost := range hardwareInfo.ReverseProxy.Hosts {
+			dtoHost := mappers.ApiReverseProxyHostToDto(rpHost)
+			host.ReverseProxyHosts = append(host.ReverseProxyHosts, &dtoHost)
+		}
+	}
+
 	s.ctx.LogInfof("[Orchestrator] Host %s has %v CPU Cores and %v Mb of RAM", host.Host, host.Resources.Total.LogicalCpuCount, host.Resources.Total.MemorySize)
 
 	// Updating the Virtual Machines
@@ -216,6 +231,8 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 		hostToSave.HealthCheck = host.HealthCheck
 		hostToSave.Resources = host.Resources
 		hostToSave.VirtualMachines = host.VirtualMachines
+		hostToSave.ReverseProxy = host.ReverseProxy
+		hostToSave.ReverseProxyHosts = host.ReverseProxyHosts
 	}
 
 	if _, err := s.db.UpdateOrchestratorHost(s.ctx, &hostToSave); err != nil {

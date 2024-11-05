@@ -117,3 +117,11 @@ func SanitizeArchivePath(d, t string) (v string, err error) {
 
 	return "", fmt.Errorf("%s: %s", "content filepath is tainted", t)
 }
+
+func ObfuscateString(value string) string {
+	if len(value) <= 4 {
+		return value
+	}
+
+	return value[0:2] + "****" + value[len(value)-2:]
+}

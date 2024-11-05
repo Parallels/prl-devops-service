@@ -12,7 +12,7 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func processParallelsDesktop(ctx basecontext.ApiContext) {
+func processParallelsDesktop(ctx basecontext.ApiContext, cmd string) {
 	command := helper.GetCommandAt(0)
 	// processing the command help
 	if helper.GetFlagSwitch(constants.HELP_FLAG, false) || helper.GetCommandAt(1) == "help" {
@@ -22,6 +22,7 @@ func processParallelsDesktop(ctx basecontext.ApiContext) {
 	_ = os.Setenv(constants.SOURCE_ENV_VAR, "parallels_desktop")
 	ctx.ToggleLogTimestamps(false)
 	pdSvc := parallelsdesktop.New(ctx)
+	processTelemetry(cmd)
 
 	switch command {
 	case constants.START_COMMAND:
