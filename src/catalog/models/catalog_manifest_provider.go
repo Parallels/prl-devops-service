@@ -182,6 +182,15 @@ func (m *CatalogManifestProvider) Parse(connection string) error {
 			m.Username = ""
 			m.Password = ""
 		}
+
+		if strings.HasPrefix(parts[1], "http://") || strings.HasPrefix(parts[1], "https://") {
+			schemaParts := strings.Split(parts[1], "://")
+			if len(schemaParts) == 2 {
+				schema = schemaParts[0]
+				parts[1] = schemaParts[1]
+			}
+		}
+
 		if strings.ContainsAny(parts[1], ":") {
 			hostParts := strings.Split(parts[1], ":")
 			if len(hostParts) == 2 {
@@ -192,9 +201,7 @@ func (m *CatalogManifestProvider) Parse(connection string) error {
 			m.Host = parts[1]
 		}
 	}
-	if schema != "" {
-		m.Host = schema + "://" + m.Host
-	}
+
 	if strings.Contains(m.Host, ":") {
 		lastIndexOfAt := strings.LastIndex(m.Host, ":")
 		hostParts := []string{m.Host[:lastIndexOfAt], m.Host[lastIndexOfAt+1:]}
@@ -202,6 +209,10 @@ func (m *CatalogManifestProvider) Parse(connection string) error {
 			m.Host = hostParts[0]
 			m.Port = hostParts[1]
 		}
+	}
+
+	if schema != "" {
+		m.Host = schema + "://" + m.Host
 	}
 
 	return nil

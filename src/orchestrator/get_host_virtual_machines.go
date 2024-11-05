@@ -73,6 +73,43 @@ func (s *OrchestratorService) GetHostVirtualMachine(ctx basecontext.ApiContext, 
 	return vm, nil
 }
 
+func (s *OrchestratorService) GetHostAppleVirtualMachines(ctx basecontext.ApiContext, hostId string, vmId string) ([]*models.VirtualMachine, error) {
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	hosts, err := dbService.GetOrchestratorHosts(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	appleVms := make([]*models.VirtualMachine, 0)
+
+	vms, err := dbService.GetOrchestratorHostVirtualMachines(ctx, hostId, "")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, vm := range vms {
+		if vm.Type == "APPLE_VZ_VM" {
+			appleVms = append(appleVms, &vm)
+		}
+	}
+
+	// Updating Host State for each VM
+	for _, host := range hosts {
+		for _, vm := range appleVms {
+			if vm.HostId == host.ID {
+				vm.HostState = host.State
+				break
+			}
+		}
+	}
+
+	return appleVms, nil
+}
+
 func (s *OrchestratorService) GetHostVirtualMachinesInfo(host *models.OrchestratorHost) ([]api_models.ParallelsVM, error) {
 	httpClient := s.getApiClient(*host)
 	path := "/v1/machines"

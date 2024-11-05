@@ -350,6 +350,7 @@ func (j *JsonDatabase) GetOrchestratorReservedResources(ctx basecontext.ApiConte
 					result[host.Resources.CpuType] = models.HostResourceItem{}
 				}
 				item := result[host.Resources.CpuType]
+				item.TotalAppleVms += host.Resources.TotalAppleVms
 				item.LogicalCpuCount += host.Resources.TotalReserved.LogicalCpuCount
 				item.PhysicalCpuCount += host.Resources.TotalReserved.PhysicalCpuCount
 				item.FreeDiskSize += host.Resources.TotalReserved.FreeDiskSize

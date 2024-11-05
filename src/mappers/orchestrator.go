@@ -30,6 +30,7 @@ func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.O
 
 	if dto.Resources != nil {
 		result.Resources = DtoOrchestratorResourceItemToApi(dto.Resources.Total)
+		result.Resources.TotalAppleVms = dto.Resources.TotalAppleVms
 	}
 
 	if dto.ReverseProxy != nil {
@@ -94,6 +95,7 @@ func ApiOrchestratorAuthenticationToDto(request models.OrchestratorAuthenticatio
 
 func DtoOrchestratorResourceItemToApi(dto data_models.HostResourceItem) models.HostResourceItem {
 	result := models.HostResourceItem{
+		TotalAppleVms:    dto.TotalAppleVms,
 		PhysicalCpuCount: dto.PhysicalCpuCount,
 		LogicalCpuCount:  dto.LogicalCpuCount,
 		MemorySize:       dto.MemorySize,
@@ -106,6 +108,7 @@ func DtoOrchestratorResourceItemToApi(dto data_models.HostResourceItem) models.H
 
 func ApiOrchestratorResourceItemToDto(request models.HostResourceItem) data_models.HostResourceItem {
 	result := data_models.HostResourceItem{
+		TotalAppleVms:    request.TotalAppleVms,
 		PhysicalCpuCount: request.PhysicalCpuCount,
 		LogicalCpuCount:  request.LogicalCpuCount,
 		MemorySize:       request.MemorySize,

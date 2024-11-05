@@ -208,6 +208,15 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
 	}
 
+	totalAppleVms := 0
+	for _, vm := range host.VirtualMachines {
+		if vm.Type == "APPLE_VZ_VM" {
+			totalAppleVms++
+		}
+	}
+
+	host.Resources.TotalAppleVms = int64(totalAppleVms)
+
 	_ = s.persistHost(&host)
 
 	// Free up memory
