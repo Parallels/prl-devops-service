@@ -3,6 +3,7 @@ package models
 import "strconv"
 
 type CreateVirtualMachineSpecs struct {
+	Type   string `json:"type,omitempty"`
 	Cpu    string `json:"cpu,omitempty"`
 	Memory string `json:"memory,omitempty"`
 	Disk   string `json:"disk,omitempty"`

@@ -4,6 +4,7 @@ type HostResourceOverviewResponseItem struct {
 	CpuType        string            `json:"cpu_type,omitempty"`
 	CpuBrand       string            `json:"cpu_brand,omitempty"`
 	ReverseProxy   *HostReverseProxy `json:"reverse_proxy,omitempty"`
+	TotalAppleVms  int64             `json:"total_apple_vms,omitempty"`
 	Total          HostResourceItem  `json:"total,omitempty"`
 	TotalAvailable HostResourceItem  `json:"total_available,omitempty"`
 	TotalInUse     HostResourceItem  `json:"total_in_use,omitempty"`
@@ -14,6 +15,7 @@ type HostResources struct {
 	CpuType        string            `json:"cpu_type,omitempty"`
 	CpuBrand       string            `json:"cpu_brand,omitempty"`
 	ReverseProxy   *HostReverseProxy `json:"reverse_proxy,omitempty"`
+	TotalAppleVms  int64             `json:"total_apple_vms,omitempty"`
 	Total          HostResourceItem  `json:"total,omitempty"`
 	TotalAvailable HostResourceItem  `json:"total_available,omitempty"`
 	TotalInUse     HostResourceItem  `json:"total_in_use,omitempty"`
@@ -36,12 +38,16 @@ func (c *HostResources) Diff(source HostResources) bool {
 	if c.TotalReserved.Diff(source.TotalReserved) {
 		return true
 	}
+	if c.TotalAppleVms != source.TotalAppleVms {
+		return true
+	}
 
 	return false
 }
 
 type HostResourceItem struct {
 	CpuType          string  `json:"cpu_type,omitempty"`
+	TotalAppleVms    int64   `json:"total_apple_vms,omitempty"`
 	PhysicalCpuCount int64   `json:"physical_cpu_count,omitempty"`
 	LogicalCpuCount  int64   `json:"logical_cpu_count"`
 	MemorySize       float64 `json:"memory_size,omitempty"`
@@ -63,6 +69,9 @@ func (c *HostResourceItem) Diff(source HostResourceItem) bool {
 		return true
 	}
 	if c.FreeDiskSize != source.FreeDiskSize {
+		return true
+	}
+	if c.TotalAppleVms != source.TotalAppleVms {
 		return true
 	}
 

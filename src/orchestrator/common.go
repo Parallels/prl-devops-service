@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	HealthyState = "healthy"
+	HealthyState      = "healthy"
+	MaxNumberAppleVms = 2
 )
 
 func (s *OrchestratorService) getApiClient(request models.OrchestratorHost) *apiclient.HttpClientService {

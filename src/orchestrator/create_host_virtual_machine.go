@@ -1,10 +1,13 @@
 package orchestrator
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -66,6 +69,7 @@ func (s *OrchestratorService) CreateVirtualMachine(ctx basecontext.ApiContext, r
 		}
 	}
 
+	s.Refresh()
 	return &response, apiError
 }
 
@@ -83,6 +87,13 @@ func (s *OrchestratorService) CreateHosVirtualMachine(ctx basecontext.ApiContext
 	}
 
 	specs := s.getSpecsFromRequest(request)
+	if specs == nil {
+		apiError = &models.ApiErrorResponse{
+			Message: "There was an error getting the specs from the request",
+			Code:    500,
+		}
+		return nil, apiError
+	}
 
 	host, err := dbService.GetOrchestratorHost(ctx, hostId)
 	if err != nil {
@@ -143,18 +154,38 @@ func (s *OrchestratorService) CallCreateHostVirtualMachine(host data_models.Orch
 
 func (s *OrchestratorService) getSpecsFromRequest(request models.CreateVirtualMachineRequest) *models.CreateVirtualMachineSpecs {
 	var specs *models.CreateVirtualMachineSpecs
+	var err error
 	switch {
-	case request.CatalogManifest != nil && request.CatalogManifest.Specs != nil:
-		specs = request.CatalogManifest.Specs
+	case request.CatalogManifest != nil:
+		specs, err = s.getCatalogSpecs(request.CatalogManifest.Connection, request.CatalogManifest.CatalogId, request.CatalogManifest.Version, request.Architecture)
+		if err != nil {
+			return nil
+		}
+		if request.CatalogManifest.Specs != nil {
+			if request.CatalogManifest.Specs.Cpu != "" && request.CatalogManifest.Specs.Cpu != "0" {
+				specs.Cpu = request.CatalogManifest.Specs.Cpu
+			}
+			if request.CatalogManifest.Specs.Memory != "" && request.CatalogManifest.Specs.Memory != "0" {
+				specs.Memory = request.CatalogManifest.Specs.Memory
+			}
+			if request.CatalogManifest.Specs.Disk != "" && request.CatalogManifest.Specs.Disk != "0" {
+				specs.Disk = request.CatalogManifest.Specs.Disk
+			}
+		}
 	case request.VagrantBox != nil && request.VagrantBox.Specs != nil:
 		specs = request.VagrantBox.Specs
 	case request.PackerTemplate != nil && request.PackerTemplate.Specs != nil:
 		specs = request.PackerTemplate.Specs
 	default:
 		specs = &models.CreateVirtualMachineSpecs{
+			Type:   "pvm",
 			Cpu:    "2",
 			Memory: "2048",
 		}
+	}
+
+	if specs.Type == "" {
+		specs.Type = "pvm"
 	}
 
 	return specs
@@ -200,6 +231,18 @@ func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, ar
 	availableCpus := host.Resources.TotalAvailable.LogicalCpuCount - systemCPUThreshold
 	availableMemory := host.Resources.TotalAvailable.MemorySize - systemMemoryThreshold
 
+	// Checking for the maximum number of Apple VMs
+	if strings.EqualFold(specs.Type, "macvm") {
+		if host.Resources.TotalAppleVms >= MaxNumberAppleVms {
+			apiError = &models.ApiErrorResponse{
+				Message: "Host has reached the maximum number of Apple VMs",
+				Code:    400,
+			}
+
+			return false, apiError
+		}
+	}
+
 	if availableCpus <= specs.GetCpuCount() ||
 		availableMemory <= specs.GetMemorySize() {
 		if availableCpus <= specs.GetCpuCount() {
@@ -221,4 +264,70 @@ func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, ar
 	}
 
 	return true, nil
+}
+
+func (s *OrchestratorService) getCatalogSpecs(connection string, catalogId string, version string, architecture string) (*models.CreateVirtualMachineSpecs, error) {
+	provider := catalog_models.CatalogManifestProvider{}
+	if err := provider.Parse(connection); err != nil {
+		return nil, err
+	}
+
+	host := data_models.OrchestratorHost{
+		Host: provider.GetUrl(),
+		Authentication: &data_models.OrchestratorHostAuthentication{
+			Username: provider.Username,
+			Password: provider.Password,
+			ApiKey:   provider.ApiKey,
+		},
+	}
+
+	httpClient := s.getApiClient(host)
+	path := "/api/v1/catalog/" + catalogId + "/" + version + "/" + architecture
+	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.CatalogManifest
+	apiResponse, err := httpClient.Get(url.String(), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if apiResponse.StatusCode != 200 {
+		return nil, errors.NewWithCodef(400, "Error getting hardware info for host %s: %v", host.Host, apiResponse.StatusCode)
+	}
+
+	result := models.CreateVirtualMachineSpecs{}
+	result.Type = response.Type
+
+	if response.MinimumSpecRequirements != nil {
+		result.Cpu = strconv.Itoa(response.MinimumSpecRequirements.Cpu)
+		result.Memory = strconv.Itoa(response.MinimumSpecRequirements.Memory)
+		result.Disk = strconv.Itoa(response.MinimumSpecRequirements.Disk)
+	}
+
+	// Setting the default values
+	if response.Type == "" {
+		result.Type = "pvm"
+	}
+	if result.Cpu == "" || result.Cpu == "0" {
+		result.Cpu = "2"
+	}
+	if result.Memory == "" || result.Memory == "0" {
+		result.Memory = "2048"
+	}
+	if result.Disk == "" || result.Disk == "0" {
+		if response.PackSize > 0 {
+			result.Disk = strconv.Itoa(int(response.PackSize))
+		} else {
+			result.Disk = "35000"
+		}
+	}
+
+	return &result, nil
 }

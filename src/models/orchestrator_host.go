@@ -9,6 +9,7 @@ import (
 )
 
 type HostResourceItem struct {
+	TotalAppleVms    int64   `json:"total_apple_vms,omitempty"`
 	PhysicalCpuCount int64   `json:"physical_cpu_count,omitempty"`
 	LogicalCpuCount  int64   `json:"logical_cpu_count"`
 	MemorySize       float64 `json:"memory_size,omitempty"`
