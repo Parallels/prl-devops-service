@@ -12,7 +12,7 @@ type VirtualMachineExecuteCommandRequest struct {
 }
 
 func (r *VirtualMachineExecuteCommandRequest) Validate() error {
-	if r.Command == "" || r.Script == nil {
+	if r.Command == "" && r.Script == nil {
 		if r.Script == nil {
 			return errors.NewWithCode("missing script", 400)
 		}
