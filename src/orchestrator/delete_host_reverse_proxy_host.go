@@ -36,6 +36,7 @@ func (s *OrchestratorService) DeleteHostReverseProxyHost(ctx basecontext.ApiCont
 		return err
 	}
 
+	s.Refresh()
 	return nil
 }
 
@@ -56,6 +57,5 @@ func (s *OrchestratorService) CallDeleteHostReverseProxyHost(host *data_models.O
 		return errors.NewWithCodef(400, "Error deleting reverse proxy host %s: %v", rpHostId, api_response.StatusCode)
 	}
 
-	s.Refresh()
 	return nil
 }

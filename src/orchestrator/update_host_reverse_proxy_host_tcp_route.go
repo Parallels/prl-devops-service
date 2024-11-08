@@ -62,6 +62,7 @@ func (s *OrchestratorService) UpdateHostReverseProxyHostTcpRoute(ctx basecontext
 		return nil, api_error
 	}
 
+	s.Refresh()
 	return resp, nil
 }
 

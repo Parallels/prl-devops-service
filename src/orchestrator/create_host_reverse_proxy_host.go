@@ -62,6 +62,7 @@ func (s *OrchestratorService) CreateHostReverseProxyHost(ctx basecontext.ApiCont
 		return nil, api_error
 	}
 
+	s.Refresh()
 	return resp, nil
 }
 
@@ -79,6 +80,5 @@ func (s *OrchestratorService) CallCreateHostReverseProxyHost(host *data_models.O
 		return nil, err
 	}
 
-	s.Refresh()
 	return &rep, nil
 }
