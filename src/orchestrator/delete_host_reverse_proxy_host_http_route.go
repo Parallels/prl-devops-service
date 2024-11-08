@@ -36,6 +36,7 @@ func (s *OrchestratorService) DeleteHostReverseProxyHostHttpRoute(ctx basecontex
 		return err
 	}
 
+	s.Refresh()
 	return nil
 }
 
@@ -56,6 +57,5 @@ func (s *OrchestratorService) CallHostReverseProxyHostHttpRoute(host *data_model
 		return errors.NewWithCodef(400, "Error deleting reverse proxy host %s http route %v: %v", rpHostId, httpRouteId, api_response.StatusCode)
 	}
 
-	s.Refresh()
 	return nil
 }
