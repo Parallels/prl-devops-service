@@ -218,6 +218,8 @@ definitions:
         type: number
       physical_cpu_count:
         type: integer
+      total_apple_vms:
+        type: integer
     type: object
   github_com_Parallels_prl-devops-service_models.HostReverseProxy:
     properties:
@@ -901,6 +903,8 @@ definitions:
       disk:
         type: string
       memory:
+        type: string
+      type:
         type: string
     type: object
   models.HostResourceOverviewResponse:
@@ -1730,7 +1734,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.9.9
+  version: 0.9.10
 paths:
   /health/probe:
     get:
@@ -4309,6 +4313,36 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Enable a host in the orchestrator
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/hardware:
+    get:
+      description: This endpoint returns a host hardware info from the orchestrator
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SystemUsageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a host hardware info from the orchestrator
       tags:
       - Orchestrator
   /v1/orchestrator/hosts/{id}/machines:

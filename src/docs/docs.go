@@ -4190,6 +4190,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/orchestrator/hosts/{id}/hardware": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns a host hardware info from the orchestrator",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Gets a host hardware info from the orchestrator",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SystemUsageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/orchestrator/hosts/{id}/machines": {
             "get": {
                 "security": [
@@ -7131,6 +7180,9 @@ const docTemplate = `{
                 },
                 "physical_cpu_count": {
                     "type": "integer"
+                },
+                "total_apple_vms": {
+                    "type": "integer"
                 }
             }
         },
@@ -8177,6 +8229,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "memory": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -9439,7 +9494,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.9.9",
+	Version:          "0.9.10",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
