@@ -226,10 +226,10 @@ func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, ar
 		return false, apiError
 	}
 
-	systemCPUThreshold := int64(1)
-	systemMemoryThreshold := float64(1024)
-	availableCpus := host.Resources.TotalAvailable.LogicalCpuCount - systemCPUThreshold
-	availableMemory := host.Resources.TotalAvailable.MemorySize - systemMemoryThreshold
+	// We will trust that the host has the reserved cpus setup correctly
+	// otherwise we would potentially go above the reserved cpus
+	availableCpus := host.Resources.TotalAvailable.LogicalCpuCount
+	availableMemory := host.Resources.TotalAvailable.MemorySize
 
 	// Checking for the maximum number of Apple VMs
 	if strings.EqualFold(specs.Type, "macvm") {
