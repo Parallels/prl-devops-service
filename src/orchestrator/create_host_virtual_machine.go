@@ -243,9 +243,9 @@ func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, ar
 		}
 	}
 
-	if availableCpus <= specs.GetCpuCount() ||
-		availableMemory <= specs.GetMemorySize() {
-		if availableCpus <= specs.GetCpuCount() {
+	if availableCpus < specs.GetCpuCount() ||
+		availableMemory < specs.GetMemorySize() {
+		if availableCpus < specs.GetCpuCount() {
 			apiError = &models.ApiErrorResponse{
 				Message: "Host does not have enough CPU resources",
 				Code:    400,

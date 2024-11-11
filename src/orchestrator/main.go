@@ -33,7 +33,7 @@ func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
 		globalOrchestratorService = &OrchestratorService{
 			ctx:                ctx,
 			timeout:            2 * time.Minute,
-			healthCheckTimeout: 5 * time.Second,
+			healthCheckTimeout: 10 * time.Second,
 		}
 		cfg := config.Get()
 		globalOrchestratorService.refreshInterval = time.Duration(cfg.OrchestratorPullFrequency()) * time.Second
