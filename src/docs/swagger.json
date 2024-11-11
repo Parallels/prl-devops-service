@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.9.9"
+        "version": "0.9.10"
     },
     "basePath": "/api",
     "paths": {
@@ -4183,6 +4183,55 @@
                 }
             }
         },
+        "/v1/orchestrator/hosts/{id}/hardware": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns a host hardware info from the orchestrator",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Gets a host hardware info from the orchestrator",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SystemUsageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/orchestrator/hosts/{id}/machines": {
             "get": {
                 "security": [
@@ -7124,6 +7173,9 @@
                 },
                 "physical_cpu_count": {
                     "type": "integer"
+                },
+                "total_apple_vms": {
+                    "type": "integer"
                 }
             }
         },
@@ -8170,6 +8222,9 @@
                     "type": "string"
                 },
                 "memory": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }

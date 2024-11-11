@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.10] - 2024-11-11
+
+- Fixed an issue with the CPU threshold that was added twice to the orchestrator
+- Fixed an issue with the CPU count as it was not taking into consideration we already had reserved cpus
+- Added a higher timeout to orchestrator hosts health checks
+- added missing timeout in some of the orchestrator api calls
+- Adds the support for an orchestrator to query the hardware endpoint of a host returning the raw data to use with terraform
+- Fixed a bug on the execute endpoint where it would give an error if the command was present but the script was not
+- Fixed an issue where the orchestrator would not take into account the 2 vms limitation when gathering the necessary space 
+- fixes #229 
+- Added the new reverse proxy to allow advanced port forwarding to the target vm
+- Added the same endpoints to be controlled by the orchestrator
+- Added better hardware info where we added more information about the system
+- Fixed an issue with the logs being showed where they should not be
+- resolves [PBI] Enable reverse proxy for port forwarding #226
+- Added the External IP Address to every virtual machine if known
+- Added the Internal IP Address to every virtual machine if running
+- Changed the docker image from scratch to alpine to allow for cpu and external ip address
+- Added the external IP Address to the config hardware endpoint
+- Added the OS name to the config hardware endpoint
+- Added the OS version if available to the config hardware endpoint
+- Added the new hardware fields to the orchestrator hosts endpointFixes # (issue)
+- resolves #224 
+
 ## [0.9.9] - 2024-10-29
 
 - Fixed an issue where in some endpoints, if the body was wrong, we would receive two json body instead of the correct one
