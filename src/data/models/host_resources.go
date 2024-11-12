@@ -5,6 +5,7 @@ type HostResourceOverviewResponseItem struct {
 	CpuBrand       string            `json:"cpu_brand,omitempty"`
 	ReverseProxy   *HostReverseProxy `json:"reverse_proxy,omitempty"`
 	TotalAppleVms  int64             `json:"total_apple_vms,omitempty"`
+	SystemReserved HostResourceItem  `json:"system_reserved,omitempty"`
 	Total          HostResourceItem  `json:"total,omitempty"`
 	TotalAvailable HostResourceItem  `json:"total_available,omitempty"`
 	TotalInUse     HostResourceItem  `json:"total_in_use,omitempty"`
@@ -16,6 +17,7 @@ type HostResources struct {
 	CpuBrand       string            `json:"cpu_brand,omitempty"`
 	ReverseProxy   *HostReverseProxy `json:"reverse_proxy,omitempty"`
 	TotalAppleVms  int64             `json:"total_apple_vms,omitempty"`
+	SystemReserved HostResourceItem  `json:"system_reserved,omitempty"`
 	Total          HostResourceItem  `json:"total,omitempty"`
 	TotalAvailable HostResourceItem  `json:"total_available,omitempty"`
 	TotalInUse     HostResourceItem  `json:"total_in_use,omitempty"`
@@ -29,6 +31,19 @@ func (c *HostResources) Diff(source HostResources) bool {
 	if c.Total.Diff(source.Total) {
 		return true
 	}
+	if c.TotalAppleVms != source.TotalAppleVms {
+		return true
+	}
+	if c.ReverseProxy == nil && source.ReverseProxy != nil {
+		return true
+	}
+	if c.ReverseProxy != nil && source.ReverseProxy == nil {
+		return true
+	}
+	if c.ReverseProxy != nil && source.ReverseProxy != nil {
+		c.ReverseProxy.Diff(*source.ReverseProxy)
+	}
+
 	if c.TotalAvailable.Diff(source.TotalAvailable) {
 		return true
 	}
@@ -39,6 +54,9 @@ func (c *HostResources) Diff(source HostResources) bool {
 		return true
 	}
 	if c.TotalAppleVms != source.TotalAppleVms {
+		return true
+	}
+	if c.SystemReserved.Diff(source.SystemReserved) {
 		return true
 	}
 
@@ -83,4 +101,27 @@ type HostReverseProxy struct {
 	Host    string             `json:"host,omitempty"`
 	Port    string             `json:"port,omitempty"`
 	Hosts   []ReverseProxyHost `json:"hosts,omitempty"`
+}
+
+func (c *HostReverseProxy) Diff(source HostReverseProxy) bool {
+	if c.Enabled != source.Enabled {
+		return true
+	}
+	if c.Host != source.Host {
+		return true
+	}
+	if c.Port != source.Port {
+		return true
+	}
+	if len(c.Hosts) != len(source.Hosts) {
+		return true
+	}
+
+	for i, host := range c.Hosts {
+		if host.Diff(source.Hosts[i]) {
+			return true
+		}
+	}
+
+	return false
 }

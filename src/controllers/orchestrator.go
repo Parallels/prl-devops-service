@@ -722,6 +722,7 @@ func GetOrchestratorOverviewHandler() restapi.ControllerHandler {
 
 		for _, value := range resources {
 			item := models.HostResourceOverviewResponse{}
+			item.SystemReserved = mappers.MapApiHostResourceItemFromHostResourceItem(value.SystemReserved)
 			item.Total = mappers.MapApiHostResourceItemFromHostResourceItem(value.Total)
 			item.TotalAvailable = mappers.MapApiHostResourceItemFromHostResourceItem(value.TotalAvailable)
 			item.TotalInUse = mappers.MapApiHostResourceItemFromHostResourceItem(value.TotalInUse)

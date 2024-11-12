@@ -27,16 +27,15 @@ func (s *OrchestratorService) GetHosts(ctx basecontext.ApiContext, filter string
 
 	var wg sync.WaitGroup
 	mutex := sync.Mutex{}
-
+	wg.Add(len(dtoOrchestratorHosts))
 	for _, host := range dtoOrchestratorHosts {
 		starTime := time.Now()
-		wg.Add(1)
 		go func(host models.OrchestratorHost) {
-			ctx.LogDebugf("Processing Host: %v", host.Host)
 			defer wg.Done()
-
+			ctx.LogDebugf("Processing Host: %v", host.Host)
 			if host.Enabled {
 				host.State = s.GetHostHealthCheckState(&host)
+				ctx.LogDebugf("Host State: %v", host.State)
 			}
 
 			mutex.Lock()
