@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.11] - 2024-11-12
+
+- Improved orchestrator timeouts
+- Added system-reserved data to the orchestrator
+
 ## [0.9.10] - 2024-11-11
 
 - Fixed an issue with the CPU threshold that was added twice to the orchestrator

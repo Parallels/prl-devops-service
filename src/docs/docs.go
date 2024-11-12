@@ -8245,6 +8245,9 @@ const docTemplate = `{
                 "cpu_type": {
                     "type": "string"
                 },
+                "system_reserved": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
+                },
                 "total": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
                 },
@@ -9494,7 +9497,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.9.10",
+	Version:          "0.9.11",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},

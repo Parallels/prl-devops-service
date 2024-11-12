@@ -913,6 +913,8 @@ definitions:
         type: string
       cpu_type:
         type: string
+      system_reserved:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
       total:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
       total_available:
@@ -1734,7 +1736,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.9.10
+  version: 0.9.11
 paths:
   /health/probe:
     get:
