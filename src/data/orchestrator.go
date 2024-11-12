@@ -86,7 +86,7 @@ func (j *JsonDatabase) GetOrchestratorHost(ctx basecontext.ApiContext, idOrHost 
 
 	for _, host := range hosts {
 		dbHost := host.GetHost()
-		ctx.LogDebugf("host: %s", dbHost)
+		ctx.LogDebugf("Processing Host: %s", dbHost)
 		if strings.EqualFold(host.ID, idOrHost) || strings.EqualFold(host.GetHost(), idOrHost) {
 			return &host, nil
 		}
@@ -173,8 +173,10 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 
 	for _, dbHost := range j.data.OrchestratorHosts {
 		if strings.EqualFold(dbHost.ID, host.ID) || strings.EqualFold(dbHost.Host, host.Host) {
+			ctx.LogDebugf("[Database] Host %s already exists with ID %s", host.Host, dbHost.ID)
 			index, err := GetRecordIndex(j.data.OrchestratorHosts, "id", host.ID)
 			if err != nil {
+				ctx.LogDebugf("[Database] Error getting host index: %v", err.Error())
 				return nil, err
 			}
 			if host.Diff(j.data.OrchestratorHosts[index]) {
@@ -210,6 +212,7 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 				j.data.OrchestratorHosts[index].ReverseProxyHosts = host.ReverseProxyHosts
 
 				_ = j.SaveNow(ctx)
+				ctx.LogDebugf("[Database] Host %s updated and saved", host.Host)
 				return &j.data.OrchestratorHosts[index], nil
 			} else {
 				ctx.LogDebugf("[Database] No changes detected for host %s", host.Host)
@@ -217,6 +220,8 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 			}
 		}
 	}
+
+	ctx.LogDebugf("[Database] Host %s not found, cannot update it", host.Host)
 
 	return nil, ErrOrchestratorHostNotFound
 }
@@ -288,6 +293,8 @@ func (j *JsonDatabase) GetOrchestratorAvailableResources(ctx basecontext.ApiCont
 				item.PhysicalCpuCount += host.Resources.TotalAvailable.PhysicalCpuCount
 				item.FreeDiskSize += host.Resources.TotalAvailable.FreeDiskSize
 				item.MemorySize += host.Resources.TotalAvailable.MemorySize
+				item.DiskSize += host.Resources.TotalAvailable.DiskSize
+				item.TotalAppleVms += host.Resources.TotalAvailable.TotalAppleVms
 				result[host.Resources.CpuType] = item
 			}
 		}
@@ -310,6 +317,8 @@ func (j *JsonDatabase) GetOrchestratorTotalResources(ctx basecontext.ApiContext)
 				item.PhysicalCpuCount += host.Resources.Total.PhysicalCpuCount
 				item.FreeDiskSize += host.Resources.Total.FreeDiskSize
 				item.MemorySize += host.Resources.Total.MemorySize
+				item.DiskSize += host.Resources.Total.DiskSize
+				item.TotalAppleVms += host.Resources.Total.TotalAppleVms
 				result[host.Resources.CpuType] = item
 			}
 		}
@@ -331,6 +340,8 @@ func (j *JsonDatabase) GetOrchestratorInUseResources(ctx basecontext.ApiContext)
 				item.LogicalCpuCount += host.Resources.TotalInUse.LogicalCpuCount
 				item.PhysicalCpuCount += host.Resources.TotalInUse.PhysicalCpuCount
 				item.FreeDiskSize += host.Resources.TotalInUse.FreeDiskSize
+				item.DiskSize += host.Resources.TotalInUse.DiskSize
+				item.TotalAppleVms += host.Resources.TotalInUse.TotalAppleVms
 				item.MemorySize += host.Resources.TotalInUse.MemorySize
 				result[host.Resources.CpuType] = item
 			}
@@ -355,6 +366,31 @@ func (j *JsonDatabase) GetOrchestratorReservedResources(ctx basecontext.ApiConte
 				item.PhysicalCpuCount += host.Resources.TotalReserved.PhysicalCpuCount
 				item.FreeDiskSize += host.Resources.TotalReserved.FreeDiskSize
 				item.MemorySize += host.Resources.TotalReserved.MemorySize
+				item.DiskSize += host.Resources.TotalReserved.DiskSize
+				item.TotalAppleVms += host.Resources.TotalReserved.TotalAppleVms
+				result[host.Resources.CpuType] = item
+			}
+		}
+	}
+
+	return result
+}
+
+func (j *JsonDatabase) GetOrchestratorSystemReservedResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
+	result := make(map[string]models.HostResourceItem)
+
+	for _, host := range j.data.OrchestratorHosts {
+		if host.State == "healthy" && host.Enabled {
+			if host.Resources != nil {
+				if _, ok := result[host.Resources.CpuType]; !ok {
+					result[host.Resources.CpuType] = models.HostResourceItem{}
+				}
+				item := result[host.Resources.CpuType]
+				item.LogicalCpuCount += host.Resources.SystemReserved.LogicalCpuCount
+				item.PhysicalCpuCount += host.Resources.SystemReserved.PhysicalCpuCount
+				item.FreeDiskSize += host.Resources.SystemReserved.FreeDiskSize
+				item.DiskSize += host.Resources.SystemReserved.DiskSize
+				item.MemorySize += host.Resources.SystemReserved.MemorySize
 				result[host.Resources.CpuType] = item
 			}
 		}

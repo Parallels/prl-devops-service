@@ -16,10 +16,12 @@ func (s *OrchestratorService) GetResources(ctx basecontext.ApiContext) ([]models
 	inUseResources := dbService.GetOrchestratorInUseResources(ctx)
 	availableResources := dbService.GetOrchestratorAvailableResources(ctx)
 	reservedResources := dbService.GetOrchestratorReservedResources(ctx)
+	systemReservedResources := dbService.GetOrchestratorSystemReservedResources(ctx)
 
 	result := make([]models.HostResourceOverviewResponseItem, 0)
 	for key, value := range totalResources {
 		item := models.HostResourceOverviewResponseItem{}
+		item.SystemReserved = systemReservedResources[key]
 		item.Total = value
 		item.TotalAvailable = availableResources[key]
 		item.TotalInUse = inUseResources[key]

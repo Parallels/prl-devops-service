@@ -195,13 +195,31 @@ func (o *OrchestratorHost) Diff(source OrchestratorHost) bool {
 	}
 
 	for _, vm := range o.VirtualMachines {
+		found := false
 		for _, vm2 := range source.VirtualMachines {
 			if vm.ID == vm2.ID {
+				found = true
 				if vm.Diff(vm2) {
 					return true
 				}
+				break
 			}
 		}
+		if !found {
+			return true
+		}
+	}
+
+	if o.IsReverseProxyEnabled != source.IsReverseProxyEnabled {
+		return true
+	}
+
+	if o.ReverseProxy != nil && source.ReverseProxy == nil {
+		return true
+	}
+
+	if o.ReverseProxy == nil && source.ReverseProxy != nil {
+		return true
 	}
 
 	if o.ReverseProxy != nil && source.ReverseProxy != nil {

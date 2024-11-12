@@ -75,10 +75,9 @@ func (c *HttpClientService) WithHeaders(headers map[string]string) *HttpClientSe
 }
 
 func (c *HttpClientService) WithTimeout(duration time.Duration) *HttpClientService {
-	// context, cancel := context.WithTimeout(context.Background(), duration)
-	// defer cancel()
+	context, _ := context.WithTimeout(context.Background(), duration)
 
-	// c.context = context
+	c.context = context
 	c.timeout = duration
 	return c
 }
@@ -142,40 +141,39 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 
 	var client *http.Client
 	var req *http.Request
-	if c.timeout > 0 {
-		c.ctx.LogDebugf("[Api Client] Setting timeout to %v for host %v\n", c.timeout, url)
-		client = &http.Client{
-			Transport: &http.Transport{
-				TLSHandshakeTimeout: c.timeout,
-				IdleConnTimeout:     c.timeout,
-				Dial: (&net.Dialer{
-					Timeout:   c.timeout,
-					KeepAlive: c.timeout,
-					Deadline:  time.Now().Add(c.timeout),
-				}).Dial,
-				DialContext: (&net.Dialer{
-					Timeout:   c.timeout,
-					KeepAlive: c.timeout,
-					Deadline:  time.Now().Add(c.timeout),
-				}).DialContext,
-				ResponseHeaderTimeout: c.timeout,
-				ExpectContinueTimeout: c.timeout,
-				TLSClientConfig:       &tls.Config{InsecureSkipVerify: c.disableTlsValidation},
-			},
-			Timeout: c.timeout,
-		}
-		context, cancel := context.WithTimeout(context.Background(), c.timeout)
-		c.context = context
+	var ctx context.Context
+	var cancel context.CancelFunc
 
-		defer cancel()
-	} else {
-		client = http.DefaultClient
-		if c.disableTlsValidation {
-			client.Transport = &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			}
-		}
+	// Ensure the timeout is set to 3 seconds if not already set
+	if c.timeout == 0 || c.timeout > 5*time.Minute {
+		c.timeout = 5 * time.Minute
 	}
+
+	c.ctx.LogDebugf("[Api Client] Setting timeout to %v for host %v", c.timeout, url)
+	client = &http.Client{
+		Transport: &http.Transport{
+			TLSHandshakeTimeout: c.timeout,
+			IdleConnTimeout:     c.timeout,
+			Dial: (&net.Dialer{
+				Timeout:   c.timeout,
+				KeepAlive: c.timeout,
+				Deadline:  time.Now().Add(c.timeout),
+			}).Dial,
+			DialContext: (&net.Dialer{
+				Timeout:   c.timeout,
+				KeepAlive: c.timeout,
+				Deadline:  time.Now().Add(c.timeout),
+			}).DialContext,
+			ResponseHeaderTimeout: c.timeout,
+			ExpectContinueTimeout: c.timeout,
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: c.disableTlsValidation},
+		},
+		Timeout: c.timeout,
+	}
+
+	ctx, cancel = context.WithTimeout(context.Background(), c.timeout)
+	c.context = ctx
+	defer cancel()
 
 	if data != nil {
 		reqBody, err := json.MarshalIndent(data, "", "  ")
@@ -220,7 +218,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 		}
 		if c.authorization.Username != "" && c.authorization.Password != "" {
 			c.ctx.LogDebugf("[Api Client] Getting Client Authorization with username %s ", c.authorization.Username)
-			token, err := getJwtToken(c.ctx, url, c.authorization.Username, c.authorization.Password)
+			token, err := getJwtToken(c.ctx, c.timeout, url, c.authorization.Username, c.authorization.Password)
 			if err != nil {
 				apiResponse.StatusCode = 401
 				return &apiResponse, err
@@ -256,6 +254,8 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 		return &apiResponse, fmt.Errorf("error %s data on %s, err: %v", verb, url, err)
 	}
 
+	defer response.Body.Close()
+
 	apiResponse.StatusCode = response.StatusCode
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		var errMsg models.ApiErrorResponse
@@ -288,7 +288,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 			c.ctx.LogTracef("[Api Client] Response body: \n%s", string(body))
 			apiResponse.Data = destination
 		} else {
-			if body == nil || len(body) == 0 {
+			if len(body) == 0 {
 				return &apiResponse, nil
 			}
 
@@ -302,7 +302,6 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 			apiResponse.Data = bodyData
 		}
 	}
-
 	return &apiResponse, nil
 }
 
@@ -335,7 +334,7 @@ func (c *HttpClientService) GetFileFromUrl(fileUrl string, destinationPath strin
 	return nil
 }
 
-func getJwtToken(ctx basecontext.ApiContext, baseUrl, username, password string) (string, error) {
+func getJwtToken(ctx basecontext.ApiContext, timeout time.Duration, baseUrl, username, password string) (string, error) {
 	if username == "" {
 		return "", errors.New("username cannot be empty")
 	}
@@ -356,7 +355,12 @@ func getJwtToken(ctx basecontext.ApiContext, baseUrl, username, password string)
 
 	hostAndPath := fmt.Sprintf("%s://%s/%s", h.Scheme, h.Host, DEFAULT_API_LOGIN_URL)
 
+	// setting the timeout in the get token request
 	c := NewHttpClient(ctx)
+	if timeout > 0 {
+		c.WithTimeout(timeout)
+	}
+
 	c.ctx.LogDebugf("[Api Client] Getting token from %s with username %s and password %s", hostAndPath, username, helpers.ObfuscateString(password))
 
 	var tokenResponse models.LoginResponse

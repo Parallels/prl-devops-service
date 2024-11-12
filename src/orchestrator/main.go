@@ -9,6 +9,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	apimodels "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -32,8 +33,8 @@ func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
 	if globalOrchestratorService == nil {
 		globalOrchestratorService = &OrchestratorService{
 			ctx:                ctx,
-			timeout:            2 * time.Minute,
-			healthCheckTimeout: 10 * time.Second,
+			timeout:            5 * time.Minute,
+			healthCheckTimeout: 3 * time.Second,
 		}
 		cfg := config.Get()
 		globalOrchestratorService.refreshInterval = time.Duration(cfg.OrchestratorPullFrequency()) * time.Second
@@ -148,6 +149,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 		_ = s.persistHost(&host)
 		return
 	} else {
+		s.ctx.LogInfof("[Orchestrator] host %s is alive and well: %s", host.Host, healthCheck.Message)
 		host.SetHealthy()
 		host.HealthCheck = healthCheck
 	}
@@ -189,8 +191,6 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 		}
 	}
 
-	s.ctx.LogInfof("[Orchestrator] Host %s has %v CPU Cores and %v Mb of RAM", host.Host, host.Resources.Total.LogicalCpuCount, host.Resources.Total.MemorySize)
-
 	// Updating the Virtual Machines
 	vms, err := s.GetHostVirtualMachinesInfo(&host)
 	if err != nil {
@@ -216,6 +216,9 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	}
 
 	host.Resources.TotalAppleVms = int64(totalAppleVms)
+	host.UpdatedAt = helpers.GetUtcCurrentDateTime()
+
+	s.ctx.LogInfof("[Orchestrator] Host %s has %v CPU Cores and %v Mb of RAM, contains %v VMs of which %v are MacVMs", host.Host, host.Resources.Total.LogicalCpuCount, host.Resources.Total.MemorySize, len(host.VirtualMachines), host.Resources.TotalAppleVms)
 
 	_ = s.persistHost(&host)
 
@@ -223,6 +226,8 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	host.HealthCheck = nil
 	host.Resources = nil
 	host.VirtualMachines = nil
+	host.ReverseProxy = nil
+	host.ReverseProxyHosts = nil
 }
 
 func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
@@ -235,20 +240,18 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 		s.ctx.LogErrorf("[Orchestrator] Error getting host %s: %v", host.Host, err.Error())
 		return err
 	}
-	if oldHost.UpdatedAt != host.UpdatedAt {
-		hostToSave = *oldHost
-		hostToSave.HealthCheck = host.HealthCheck
-		hostToSave.Resources = host.Resources
-		hostToSave.VirtualMachines = host.VirtualMachines
-		hostToSave.ReverseProxy = host.ReverseProxy
-		hostToSave.ReverseProxyHosts = host.ReverseProxyHosts
+	s.ctx.LogDebugf("[Orchestrator] oldHost: %v, updated at %s and new one %s updated at %v", oldHost.ID, oldHost.UpdatedAt, host.ID, host.UpdatedAt)
+	if oldHost.UpdatedAt > host.UpdatedAt {
+		s.ctx.LogDebugf("[Orchestrator] Host %s was updated by another process, skipping", host.Host)
+	} else {
+		s.ctx.LogDebugf("[Orchestrator] Saving host %s", host.Host)
+		if _, err := s.db.UpdateOrchestratorHost(s.ctx, &hostToSave); err != nil {
+			s.ctx.LogErrorf("[Orchestrator] Error saving host %s: %v", host.Host, err.Error())
+			return err
+		}
 	}
 
-	if _, err := s.db.UpdateOrchestratorHost(s.ctx, &hostToSave); err != nil {
-		s.ctx.LogErrorf("[Orchestrator] Error saving host %s: %v", host.Host, err.Error())
-		return err
-	}
-
+	s.ctx.LogDebugf("[Orchestrator] Host %s saved, freeing up memory", host.Host)
 	// Free up memory
 	hostToSave.HealthCheck = nil
 	hostToSave.Resources = nil
