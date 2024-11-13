@@ -7186,6 +7186,29 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_Parallels_prl-devops-service_models.HostResources": {
+            "type": "object",
+            "properties": {
+                "system_reserved": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
+                },
+                "total": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
+                },
+                "total_apple_vms": {
+                    "type": "integer"
+                },
+                "total_available": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
+                },
+                "total_in_use": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
+                },
+                "total_reserved": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
+                }
+            }
+        },
         "github_com_Parallels_prl-devops-service_models.HostReverseProxy": {
             "type": "object",
             "properties": {
@@ -8584,6 +8607,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "detailed_resources": {
+                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResources"
+                },
                 "devops_version": {
                     "type": "string"
                 },
@@ -8631,6 +8657,12 @@ const docTemplate = `{
                 },
                 "reverse_proxy": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostReverseProxy"
+                },
+                "reverse_proxy_hosts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                    }
                 },
                 "state": {
                     "type": "string"
@@ -9497,7 +9529,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.9.11",
+	Version:          "0.9.12",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
