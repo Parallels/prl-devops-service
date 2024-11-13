@@ -31,6 +31,15 @@ func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.O
 	if dto.Resources != nil {
 		result.Resources = DtoOrchestratorResourceItemToApi(dto.Resources.Total)
 		result.Resources.TotalAppleVms = dto.Resources.TotalAppleVms
+
+		result.DetailedResources = &models.HostResources{
+			TotalAppleVms:  dto.Resources.TotalAppleVms,
+			SystemReserved: DtoOrchestratorResourceItemToApi(dto.Resources.SystemReserved),
+			Total:          DtoOrchestratorResourceItemToApi(dto.Resources.Total),
+			TotalAvailable: DtoOrchestratorResourceItemToApi(dto.Resources.TotalAvailable),
+			TotalInUse:     DtoOrchestratorResourceItemToApi(dto.Resources.TotalInUse),
+			TotalReserved:  DtoOrchestratorResourceItemToApi(dto.Resources.TotalReserved),
+		}
 	}
 
 	if dto.ReverseProxy != nil {
@@ -40,6 +49,11 @@ func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.O
 		}
 	}
 	if len(dto.ReverseProxyHosts) > 0 {
+		result.ReverseProxyHosts = make([]*models.ReverseProxyHost, 0)
+		for _, host := range dto.ReverseProxyHosts {
+			dtoHost := DtoReverseProxyHostToApi(*host)
+			result.ReverseProxyHosts = append(result.ReverseProxyHosts, &dtoHost)
+		}
 		result.ReverseProxy.Hosts = make([]models.ReverseProxyHost, 0)
 		for _, host := range dto.ReverseProxyHosts {
 			result.ReverseProxy.Hosts = append(result.ReverseProxy.Hosts, DtoReverseProxyHostToApi(*host))

@@ -242,6 +242,10 @@ function uninstall() {
       echo "Removing configuration file from $DESTINATION"
       sudo rm "$DESTINATION/config.json"
     fi
+    echo "Removing current database"
+    if [ -f "/etc/prl-devops-service" ]; then
+      sudo rm -rf "/etc/prl-devops-service"
+    fi
 
     echo "prldevops has been uninstalled"
   else

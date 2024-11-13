@@ -253,7 +253,7 @@ func (s *CatalogManifestService) Push(ctx basecontext.ApiContext, r *models.Push
 					UpdatedAt: helpers.GetUtcCurrentDateTime(),
 				})
 
-			cleanManifest := manifest
+			cleanManifest := *manifest
 			cleanManifest.Provider = nil
 			manifestContent, err := json.MarshalIndent(cleanManifest, "", "  ")
 			if err != nil {
