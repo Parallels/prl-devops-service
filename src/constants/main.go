@@ -38,6 +38,8 @@ const (
 	DEFAULT_SYSTEM_RESERVED_CPU             = 1
 	DEFAULT_SYSTEM_RESERVED_MEMORY          = 2048
 	DEFAULT_SYSTEM_RESERVED_DISK            = 20000
+	DEFAULT_REVERSE_PROXY_PORT              = "5080"
+	DEFAULT_REVERSE_PROXY_HOST              = "0.0.0.0"
 
 	API_MODE          = "api"
 	CLI_MODE          = "cli"

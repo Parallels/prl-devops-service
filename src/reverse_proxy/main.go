@@ -20,6 +20,7 @@ import (
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
+	"github.com/Parallels/prl-devops-service/reverse_proxy/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
@@ -45,6 +46,33 @@ func Get(ctx basecontext.ApiContext) *ReverseProxyService {
 	}
 
 	return globalReverseProxyService
+}
+
+func GetConfig() models.ReverseProxyConfig {
+	cfg := config.Get()
+	result := models.ReverseProxyConfig{}
+	if cfg == nil || globalReverseProxyService == nil {
+		result.Enabled = false
+	}
+
+	result.Host = cfg.ReverseProxyHost()
+	result.Port = cfg.ReverseProxyPort()
+	result.Enabled = cfg.IsReverseProxyEnabled()
+
+	// Returning db data if available and not different from the config
+	dtoRp, _ := globalReverseProxyService.db.GetReverseProxyConfig(globalReverseProxyService.api_ctx)
+	if dtoRp != nil {
+		if !dtoRp.Diff(mappers.ConfigReverseProxyToDto(result)) {
+			result.Host = dtoRp.Host
+			result.Port = dtoRp.Port
+			result.Enabled = dtoRp.Enabled
+			result.ID = dtoRp.ID
+		}
+
+		return result
+	}
+
+	return result
 }
 
 func New(ctx basecontext.ApiContext) *ReverseProxyService {
@@ -117,11 +145,48 @@ func (rps *ReverseProxyService) ImportFromConfig() error {
 	return nil
 }
 
+func (rps *ReverseProxyService) CheckChangesInConfiguration() error {
+	cfg := config.Get()
+	dtoRp, _ := rps.db.GetReverseProxyConfig(rps.api_ctx)
+	if dtoRp == nil && cfg.IsReverseProxyEnabled() {
+		dto := data_models.ReverseProxy{
+			ID:      helpers.GenerateId(),
+			Enabled: cfg.IsReverseProxyEnabled(),
+			Host:    cfg.ReverseProxyHost(),
+			Port:    cfg.ReverseProxyPort(),
+		}
+		if _, err := rps.db.UpdateReverseProxy(rps.api_ctx, dto); err != nil {
+			return err
+		}
+
+		dtoRp = &dto
+		rps.host = dto.Host
+		rps.port = dto.Port
+		rps.api_ctx.LogDebugf("Reverse proxy configuration imported: %v", dtoRp)
+	} else {
+		configRp := GetConfig()
+		if dtoRp.Diff(mappers.ConfigReverseProxyToDto(configRp)) {
+			dto := mappers.ConfigReverseProxyToDto(GetConfig())
+			if _, err := rps.db.UpdateReverseProxy(rps.api_ctx, dto); err != nil {
+				return err
+			}
+		}
+		rps.host = configRp.Host
+		rps.port = configRp.Port
+	}
+
+	return nil
+}
+
 func (rps *ReverseProxyService) LoadFromDb() error {
 	dtoRp, err := rps.db.GetReverseProxyConfig(rps.api_ctx)
 	if err != nil {
 		return err
 	}
+	if dtoRp == nil {
+		return nil
+	}
+
 	rps.host = dtoRp.Host
 	rps.port = dtoRp.Port
 	hosts, err := rps.db.GetReverseProxyHosts(rps.api_ctx, "")
@@ -162,6 +227,7 @@ func (rps *ReverseProxyService) LoadFromDb() error {
 }
 
 func (rps *ReverseProxyService) Start() error {
+	cfg := config.Get()
 	rps.ctx, rps.cancelFunc = context.WithCancel(context.Background())
 	errorChan := make(chan error, 1)
 
@@ -178,14 +244,18 @@ func (rps *ReverseProxyService) Start() error {
 		rps.api_ctx.LogErrorf("Error loading reverse proxy config from db: %s", err)
 		return err
 	}
+	if err := rps.CheckChangesInConfiguration(); err != nil {
+		rps.api_ctx.LogErrorf("Error checking changes in reverse proxy config: %s", err)
+		return err
+	}
 
 	if rps.port == "" {
-		rps.port = "8080"
-		rps.api_ctx.LogWarnf("[Reverse Proxy] Port not set for reverse proxy, using default port 8080")
+		rps.port = cfg.ReverseProxyPort()
+		rps.api_ctx.LogWarnf("[Reverse Proxy] Port not set for reverse proxy, using default port", rps.port)
 	}
 	if rps.host == "" {
-		rps.host = "localhost"
-		rps.api_ctx.LogWarnf("[Reverse Proxy] Host not set for reverse proxy, using default host localhost")
+		rps.host = cfg.ReverseProxyHost()
+		rps.api_ctx.LogWarnf("[Reverse Proxy] Host not set for reverse proxy, using default host", rps.host)
 	}
 
 	rps.api_ctx.LogInfof("[Reverse Proxy] Starting reverse proxy on %s:%s", rps.host, rps.port)
@@ -208,7 +278,10 @@ func (rps *ReverseProxyService) Start() error {
 
 func (rps *ReverseProxyService) Stop() error {
 	rps.api_ctx.LogInfof("[Reverse Proxy] Stopping reverse proxy service")
-	rps.cancelFunc()
+	// fixing a possible issue with the cancel function not being called
+	if rps.cancelFunc != nil {
+		rps.cancelFunc()
+	}
 
 	for _, listener := range rps.tcpListeners {
 		rps.api_ctx.LogInfof("[Reverse Proxy] [TCP Route] Closing listener")

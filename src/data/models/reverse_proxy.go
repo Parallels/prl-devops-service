@@ -6,14 +6,18 @@ import (
 )
 
 type ReverseProxy struct {
-	ID     string `json:"id"`
-	HostID string `json:"host_id,omitempty"`
-	Host   string `json:"host"`
-	Port   string `json:"port"`
+	ID      string `json:"id"`
+	HostID  string `json:"host_id,omitempty"`
+	Enabled bool   `json:"enabled"`
+	Host    string `json:"host"`
+	Port    string `json:"port"`
 }
 
 func (o *ReverseProxy) Diff(source ReverseProxy) bool {
 	if o == nil {
+		return true
+	}
+	if o.Enabled != source.Enabled {
 		return true
 	}
 	if o.Host != source.Host {

@@ -27,6 +27,7 @@ func registerReverseProxyHandlers(ctx basecontext.ApiContext, version string) {
 		WithRequiredClaim(constants.CONFIGURE_REVERSE_PROXY_CLAIM).
 		WithHandler(GetReverseProxyConfigHandler()).
 		Register()
+
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).WithPath("/reverse-proxy/hosts").
@@ -95,55 +96,45 @@ func registerReverseProxyHandlers(ctx basecontext.ApiContext, version string) {
 		Register()
 }
 
-//	@Summary		Gets reverse proxy configuration
-//	@Description	This endpoint returns the reverse proxy configuration
-//	@Tags			ReverseProxy
-//	@Produce		json
-//	@Success		200	{object}	[]models.ReverseProxy
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/reverse-proxy [get]
+// @Summary		Gets reverse proxy configuration
+// @Description	This endpoint returns the reverse proxy configuration
+// @Tags			ReverseProxy
+// @Produce		json
+// @Success		200	{object}	[]models.ReverseProxy
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy [get]
 func GetReverseProxyConfigHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
-		cfg := config.Get()
+
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
 
-		config, err := dbService.GetReverseProxyConfig(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
-		}
-
-		result := mappers.DtoReverseProxyToApi(*config)
-		if cfg.IsReverseProxyEnabled() {
-			result.Enabled = true
+		config := reverse_proxy.GetConfig()
+		if !config.Enabled {
+			config.Host = ""
+			config.Port = ""
 		}
 
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(config)
 		ctx.LogInfof("Reverse Proxy Config returned successfully")
 	}
 }
 
-//	@Summary		Gets all the reverse proxy hosts
-//	@Description	This endpoint returns all the reverse proxy hosts
-//	@Tags			ReverseProxy
-//	@Produce		json
-//	@Success		200	{object}	[]models.ReverseProxyHost
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/reverse-proxy/hosts [get]
+// @Summary		Gets all the reverse proxy hosts
+// @Description	This endpoint returns all the reverse proxy hosts
+// @Tags			ReverseProxy
+// @Produce		json
+// @Success		200	{object}	[]models.ReverseProxyHost
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy/hosts [get]
 func GetReverseProxyHostsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -152,6 +143,12 @@ func GetReverseProxyHostsHandler() restapi.ControllerHandler {
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		cfg := config.Get()
+		if !cfg.IsReverseProxyEnabled() {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
 			return
 		}
 
@@ -178,17 +175,17 @@ func GetReverseProxyHostsHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets all the reverse proxy host
-//	@Description	This endpoint returns a reverse proxy host
-//	@Tags			ReverseProxy
-//	@Produce		json
-//	@Param			id	path		string	true	"Reverse Proxy Host ID"
-//	@Success		200	{object}	models.ReverseProxyHost
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/reverse-proxy/hosts/{id}  [get]
+// @Summary		Gets all the reverse proxy host
+// @Description	This endpoint returns a reverse proxy host
+// @Tags			ReverseProxy
+// @Produce		json
+// @Param			id	path		string	true	"Reverse Proxy Host ID"
+// @Success		200	{object}	models.ReverseProxyHost
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy/hosts/{id}  [get]
 func GetReverseProxyHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -197,6 +194,12 @@ func GetReverseProxyHostHandler() restapi.ControllerHandler {
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		cfg := config.Get()
+		if !cfg.IsReverseProxyEnabled() {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
 			return
 		}
 
@@ -217,17 +220,17 @@ func GetReverseProxyHostHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Creates a reverse proxy host
-//	@Description	This endpoint creates a reverse proxy host
-//	@Tags			ReverseProxy
-//	@Produce		json
-//	@Param			reverse_proxy_create_request	body		models.ReverseProxyHostCreateRequest	true	"Reverse Host Request"
-//	@Success		200								{object}	models.ReverseProxyHost
-//	@Failure		400								{object}	models.ApiErrorResponse
-//	@Failure		401								{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/reverse-proxy/hosts [post]
+// @Summary		Creates a reverse proxy host
+// @Description	This endpoint creates a reverse proxy host
+// @Tags			ReverseProxy
+// @Produce		json
+// @Param			reverse_proxy_create_request	body		models.ReverseProxyHostCreateRequest	true	"Reverse Host Request"
+// @Success		200								{object}	models.ReverseProxyHost
+// @Failure		400								{object}	models.ApiErrorResponse
+// @Failure		401								{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy/hosts [post]
 func CreateReverseProxyHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -246,6 +249,12 @@ func CreateReverseProxyHostHandler() restapi.ControllerHandler {
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
+			return
+		}
+
+		cfg := config.Get()
+		if !cfg.IsReverseProxyEnabled() {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
 			return
 		}
 
@@ -277,17 +286,17 @@ func CreateReverseProxyHostHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Updates a reverse proxy host
-//	@Description	This endpoint creates a reverse proxy host
-//	@Tags			ReverseProxy
-//	@Produce		json
-//	@Param			reverse_proxy_update_request	body		models.ReverseProxyHostUpdateRequest	true	"Reverse Host Request"
-//	@Success		200								{object}	models.ReverseProxyHost
-//	@Failure		400								{object}	models.ApiErrorResponse
-//	@Failure		401								{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/reverse-proxy/hosts/{id} [put]
+// @Summary		Updates a reverse proxy host
+// @Description	This endpoint creates a reverse proxy host
+// @Tags			ReverseProxy
+// @Produce		json
+// @Param			reverse_proxy_update_request	body		models.ReverseProxyHostUpdateRequest	true	"Reverse Host Request"
+// @Success		200								{object}	models.ReverseProxyHost
+// @Failure		400								{object}	models.ApiErrorResponse
+// @Failure		401								{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy/hosts/{id} [put]
 func UpdateReverseProxyHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -306,6 +315,11 @@ func UpdateReverseProxyHostHandler() restapi.ControllerHandler {
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
+			return
+		}
+		cfg := config.Get()
+		if !cfg.IsReverseProxyEnabled() {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
 			return
 		}
 
@@ -362,17 +376,17 @@ func UpdateReverseProxyHostHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Delete a a reverse proxy host
-//	@Description	This endpoint Deletes a reverse proxy host
-//	@Tags			ReverseProxy
-//	@Produce		json
-//	@Param			id	path	string	true	"Reverse Proxy Host ID"
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/reverse-proxy/hosts/{id} [delete]
+// @Summary		Delete a a reverse proxy host
+// @Description	This endpoint Deletes a reverse proxy host
+// @Tags			ReverseProxy
+// @Produce		json
+// @Param			id	path	string	true	"Reverse Proxy Host ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy/hosts/{id} [delete]
 func DeleteReverseProxyHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -381,6 +395,11 @@ func DeleteReverseProxyHostHandler() restapi.ControllerHandler {
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+		cfg := config.Get()
+		if !cfg.IsReverseProxyEnabled() {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
 			return
 		}
 
@@ -404,17 +423,17 @@ func DeleteReverseProxyHostHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Creates or updates a reverse proxy host HTTP route
-//	@Description	This endpoint creates or updates a reverse proxy host HTTP route
-//	@Tags			ReverseProxy
-//	@Produce		json
-//	@Param			reverse_proxy_http_route_request	body		models.ReverseProxyHostHttpRouteCreateRequest	true	"Reverse Host Request"
-//	@Success		200									{object}	models.ReverseProxyHost
-//	@Failure		400									{object}	models.ApiErrorResponse
-//	@Failure		401									{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/reverse-proxy/hosts/{id}/http_route [post]
+// @Summary		Creates or updates a reverse proxy host HTTP route
+// @Description	This endpoint creates or updates a reverse proxy host HTTP route
+// @Tags			ReverseProxy
+// @Produce		json
+// @Param			reverse_proxy_http_route_request	body		models.ReverseProxyHostHttpRouteCreateRequest	true	"Reverse Host Request"
+// @Success		200									{object}	models.ReverseProxyHost
+// @Failure		400									{object}	models.ApiErrorResponse
+// @Failure		401									{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy/hosts/{id}/http_route [post]
 func UpsertReverseProxyHostHttpRouteHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -433,6 +452,11 @@ func UpsertReverseProxyHostHttpRouteHandler() restapi.ControllerHandler {
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
+			return
+		}
+		cfg := config.Get()
+		if !cfg.IsReverseProxyEnabled() {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
 			return
 		}
 
@@ -508,18 +532,18 @@ func UpsertReverseProxyHostHttpRouteHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Delete a a reverse proxy host HTTP route
-//	@Description	This endpoint Deletes a reverse proxy host HTTP route
-//	@Tags			ReverseProxy
-//	@Produce		json
-//	@Param			id				path	string	true	"Reverse Proxy Host ID"
-//	@Param			http_route_id	path	string	true	"Reverse Proxy Host HTTP Route ID"
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/reverse-proxy/hosts/{id}/http_routes/{http_route_id} [delete]
+// @Summary		Delete a a reverse proxy host HTTP route
+// @Description	This endpoint Deletes a reverse proxy host HTTP route
+// @Tags			ReverseProxy
+// @Produce		json
+// @Param			id				path	string	true	"Reverse Proxy Host ID"
+// @Param			http_route_id	path	string	true	"Reverse Proxy Host HTTP Route ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy/hosts/{id}/http_routes/{http_route_id} [delete]
 func DeleteReverseProxyHostHttpRoutesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -528,6 +552,11 @@ func DeleteReverseProxyHostHttpRoutesHandler() restapi.ControllerHandler {
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+		cfg := config.Get()
+		if !cfg.IsReverseProxyEnabled() {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
 			return
 		}
 
@@ -552,17 +581,17 @@ func DeleteReverseProxyHostHttpRoutesHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Updates a reverse proxy host TCP route
-//	@Description	This endpoint updates a reverse proxy host TCP route
-//	@Tags			ReverseProxy
-//	@Produce		json
-//	@Param			reverse_proxy_tcp_route_request	body		models.ReverseProxyHostTcpRouteCreateRequest	true	"Reverse Host Request"
-//	@Success		200								{object}	models.ReverseProxyHost
-//	@Failure		400								{object}	models.ApiErrorResponse
-//	@Failure		401								{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/reverse-proxy/hosts/{id}/http_routes [post]
+// @Summary		Updates a reverse proxy host TCP route
+// @Description	This endpoint updates a reverse proxy host TCP route
+// @Tags			ReverseProxy
+// @Produce		json
+// @Param			reverse_proxy_tcp_route_request	body		models.ReverseProxyHostTcpRouteCreateRequest	true	"Reverse Host Request"
+// @Success		200								{object}	models.ReverseProxyHost
+// @Failure		400								{object}	models.ApiErrorResponse
+// @Failure		401								{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy/hosts/{id}/http_routes [post]
 func UpdateReverseProxyHostTcpRouteHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -581,6 +610,11 @@ func UpdateReverseProxyHostTcpRouteHandler() restapi.ControllerHandler {
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
+			return
+		}
+		cfg := config.Get()
+		if !cfg.IsReverseProxyEnabled() {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
 			return
 		}
 
@@ -641,21 +675,27 @@ func UpdateReverseProxyHostTcpRouteHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Restarts the reverse proxy
-//	@Description	This endpoint will restart the reverse proxy
-//	@Tags			ReverseProxy
-//	@Produce		json
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/reverse-proxy/restart [put]
+// @Summary		Restarts the reverse proxy
+// @Description	This endpoint will restart the reverse proxy
+// @Tags			ReverseProxy
+// @Produce		json
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy/restart [put]
 func RestartReverseProxyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+
+		rpConfig := reverse_proxy.GetConfig()
+		if !rpConfig.Enabled {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
+			return
+		}
 
 		rps := reverse_proxy.Get(ctx)
 		if err := rps.Restart(); err != nil {
@@ -668,16 +708,16 @@ func RestartReverseProxyHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Enable the reverse proxy
-//	@Description	This endpoint will enable the reverse proxy
-//	@Tags			ReverseProxy
-//	@Produce		json
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/reverse-proxy/enable [put]
+// @Summary		Enable the reverse proxy
+// @Description	This endpoint will enable the reverse proxy
+// @Tags			ReverseProxy
+// @Produce		json
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy/enable [put]
 func EnableReverseProxyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -698,6 +738,18 @@ func EnableReverseProxyHandler() restapi.ControllerHandler {
 				}
 			}()
 		}
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		if _, err := dbService.EnableProxyConfig(ctx); err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
 		cfg.EnableReverseProxy(true)
 		cfg.Save()
 
@@ -706,16 +758,16 @@ func EnableReverseProxyHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Disable the reverse proxy
-//	@Description	This endpoint will disable the reverse proxy
-//	@Tags			ReverseProxy
-//	@Produce		json
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/reverse-proxy/disable [put]
+// @Summary		Disable the reverse proxy
+// @Description	This endpoint will disable the reverse proxy
+// @Tags			ReverseProxy
+// @Produce		json
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy/disable [put]
 func DisableReverseProxyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -726,6 +778,17 @@ func DisableReverseProxyHandler() restapi.ControllerHandler {
 		rps := reverse_proxy.Get(ctx)
 		if cfg.IsReverseProxyEnabled() {
 			_ = rps.Stop()
+		}
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		if _, err := dbService.DisableProxyConfig(ctx); err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
 		}
 
 		cfg.EnableReverseProxy(false)
