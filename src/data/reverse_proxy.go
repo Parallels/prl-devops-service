@@ -25,6 +25,34 @@ func (j *JsonDatabase) GetReverseProxyConfig(ctx basecontext.ApiContext) (*model
 	return j.data.ReverseProxy, nil
 }
 
+func (j *JsonDatabase) EnableProxyConfig(ctx basecontext.ApiContext) (*models.ReverseProxy, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	if j.data.ReverseProxy == nil {
+		return nil, errors.NewWithCode("reverse proxy config not found", 404)
+	}
+
+	j.data.ReverseProxy.Enabled = true
+
+	return j.data.ReverseProxy, nil
+}
+
+func (j *JsonDatabase) DisableProxyConfig(ctx basecontext.ApiContext) (*models.ReverseProxy, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	if j.data.ReverseProxy == nil {
+		return nil, errors.NewWithCode("reverse proxy config not found", 404)
+	}
+
+	j.data.ReverseProxy.Enabled = false
+
+	return j.data.ReverseProxy, nil
+}
+
 func (j *JsonDatabase) UpdateReverseProxy(ctx basecontext.ApiContext, rp models.ReverseProxy) (*models.ReverseProxy, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -32,6 +60,11 @@ func (j *JsonDatabase) UpdateReverseProxy(ctx basecontext.ApiContext, rp models.
 
 	if j.data.ReverseProxy.Diff(rp) {
 		rpCopy := rp
+		if j.data.ReverseProxy != nil {
+			rpCopy.ID = j.data.ReverseProxy.ID
+		} else {
+			rpCopy.ID = helpers.GenerateId()
+		}
 		j.data.ReverseProxy = &rpCopy
 		_ = j.SaveNow(ctx)
 		return &rp, nil
