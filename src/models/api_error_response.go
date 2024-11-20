@@ -52,7 +52,11 @@ func NewFromError(err error) ApiErrorResponse {
 	if IsSystemError(err) {
 
 		code := GetSystemErrorCode(err)
-		return NewFromErrorWithCode(err, code)
+		result := ApiErrorResponse{
+			Message: err.Error(),
+			Code:    code,
+		}
+		return result
 	} else {
 		return NewFromErrorWithCode(err, 404)
 	}

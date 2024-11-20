@@ -22,14 +22,14 @@ func GetBaseContext(r *http.Request) *basecontext.BaseContext {
 func Recover(ctx basecontext.ApiContext, r *http.Request, w http.ResponseWriter) {
 	if err := recover(); err != nil {
 		ctx.LogErrorf("Recovered from panic: %v", err)
-		ReturnApiError(ctx, w, models.NewFromErrorWithCode(fmt.Errorf("Internal Server Error"), http.StatusInternalServerError))
+		ReturnApiError(ctx, w, models.NewFromErrorWithCode(fmt.Errorf("internal server error"), http.StatusInternalServerError))
 
 		fmt.Printf("Recovered from panic: %v", err)
 	}
 }
 
 func ReturnApiError(ctx basecontext.ApiContext, w http.ResponseWriter, err models.ApiErrorResponse) {
-	ctx.LogErrorf("Error: %s", err.Message)
+	ctx.LogErrorf("Error: %v", err.Message)
 	w.WriteHeader(err.Code)
 
 	_ = json.NewEncoder(w).Encode(err)

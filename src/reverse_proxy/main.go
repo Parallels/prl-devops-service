@@ -202,7 +202,23 @@ func (rps *ReverseProxyService) LoadFromDb() error {
 				if route.TargetVmId != "" {
 					vm, err := prl_svc.GetVm(rps.api_ctx, route.TargetVmId)
 					if err != nil || vm.InternalIpAddress == "" || vm.InternalIpAddress == "-" || vm.State != "running" {
-						rps.api_ctx.LogErrorf("Error getting vm %s for reverse proxy route: %s", route.TargetVmId, err)
+						e := ""
+						if err != nil {
+							e = err.Error()
+						}
+						if vm == nil {
+							e = "vm could not be found"
+						}
+						if vm != nil && vm.InternalIpAddress == "" {
+							e = "vm internal ip address is empty"
+						}
+						if vm != nil && vm.InternalIpAddress == "-" {
+							e = "vm internal ip address is not assigned"
+						}
+						if vm != nil && vm.State != "running" {
+							e = "vm is not running"
+						}
+						rps.api_ctx.LogErrorf("Error getting vm %s for reverse proxy route: %s", route.TargetVmId, e)
 						hostCopy.HttpRoutes[i].TargetHost = "---"
 					} else {
 						hostCopy.HttpRoutes[i].TargetHost = vm.InternalIpAddress
@@ -267,9 +283,9 @@ func (rps *ReverseProxyService) Start() error {
 			rps.api_ctx.LogErrorf("[Reverse Proxy] Error starting reverse proxy: %s", err)
 		}
 		return err
-		// case <-rps.ctx.Done():
-		// 	rps.api_ctx.LogInfof("[Reverse Proxy] Stopping reverse proxy due to context cancellation")
-		// 	return nil
+	case <-rps.ctx.Done():
+		rps.api_ctx.LogInfof("[Reverse Proxy] Stopping reverse proxy due to context cancellation")
+		return nil
 	default:
 	}
 
@@ -291,10 +307,10 @@ func (rps *ReverseProxyService) Stop() error {
 		rps.api_ctx.LogInfof("[Reverse Proxy] [TCP Route] Listener closed")
 	}
 
-	for _, server := range rps.httpListeners {
-		ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
+	ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
+	for _, server := range rps.httpListeners {
 		rps.api_ctx.LogInfof("[Reverse Proxy] [HTTP Route] Closing server")
 		if err := server.Shutdown(ctxShutdown); err != nil {
 			rps.api_ctx.LogErrorf("[Reverse Proxy] [HTTP Route] Error shutting down server: %s", err)
@@ -302,6 +318,8 @@ func (rps *ReverseProxyService) Stop() error {
 
 		rps.api_ctx.LogInfof("[Reverse Proxy] [HTTP Route] Server closed")
 	}
+
+	cancel()
 
 	rps.wg.Wait()
 
