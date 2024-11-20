@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"time"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
@@ -35,6 +37,8 @@ func (s *OrchestratorService) EnableHostReverseProxy(ctx basecontext.ApiContext,
 
 func (s *OrchestratorService) CallEnableHostReverseProxy(host *models.OrchestratorHost) error {
 	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(1 * time.Minute)
+
 	path := "/reverse-proxy/enable"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {

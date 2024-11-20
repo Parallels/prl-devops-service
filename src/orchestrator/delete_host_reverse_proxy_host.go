@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"time"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
@@ -42,6 +44,8 @@ func (s *OrchestratorService) DeleteHostReverseProxyHost(ctx basecontext.ApiCont
 
 func (s *OrchestratorService) CallDeleteHostReverseProxyHost(host *data_models.OrchestratorHost, rpHostId string) error {
 	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(1 * time.Minute)
+
 	path := "/reverse-proxy/hosts/" + rpHostId
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {

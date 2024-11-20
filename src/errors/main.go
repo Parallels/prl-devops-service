@@ -28,6 +28,14 @@ func (e SystemError) Code() int {
 	return e.code
 }
 
+func (e SystemError) Description() string {
+	return e.description
+}
+
+func (e SystemError) Message() string {
+	return e.message
+}
+
 func New(message string) *SystemError {
 	err := &SystemError{
 		message: message,

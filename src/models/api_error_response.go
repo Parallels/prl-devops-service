@@ -2,9 +2,15 @@ package models
 
 import "github.com/Parallels/prl-devops-service/errors"
 
-type ApiErrorResponse struct {
+type ApiNestedError struct {
 	Message string `json:"message"`
 	Code    int    `json:"code"`
+}
+
+type ApiErrorResponse struct {
+	Message     string           `json:"message"`
+	NestedError []ApiNestedError `json:"nested_error,omitempty"`
+	Code        int              `json:"code"`
 }
 
 func IsSystemError(err error) bool {
@@ -42,7 +48,11 @@ func GetSystemErrorCode(err error) int {
 func NewFromError(err error) ApiErrorResponse {
 	if IsSystemError(err) {
 		code := GetSystemErrorCode(err)
-		return NewFromErrorWithCode(err, code)
+		result := ApiErrorResponse{
+			Message: err.Error(),
+			Code:    code,
+		}
+		return result
 	} else {
 		return NewFromErrorWithCode(err, 404)
 	}
