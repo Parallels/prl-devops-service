@@ -9,7 +9,7 @@ type CatalogManifest struct {
 	Version                 string                        `json:"version,omitempty" yaml:"version,omitempty"`
 	Type                    string                        `json:"type,omitempty" yaml:"type,omitempty"`
 	Tags                    []string                      `json:"tags,omitempty" yaml:"tags,omitempty"`
-	Size                    string                        `json:"size,omitempty" yaml:"size,omitempty"`
+	Size                    int64                         `json:"size,omitempty" yaml:"size,omitempty"`
 	Path                    string                        `json:"path,omitempty" yaml:"path,omitempty"`
 	PackFilename            string                        `json:"pack_filename,omitempty" yaml:"pack_filename,omitempty"`
 	MetadataFilename        string                        `json:"metadata_filename,omitempty" yaml:"metadata_filename,omitempty"`
@@ -33,6 +33,12 @@ type CatalogManifest struct {
 	PackContents            []CatalogManifestPackItem     `json:"pack_contents,omitempty" yaml:"pack_contents,omitempty"`
 	PackSize                int64                         `json:"pack_size,omitempty" yaml:"pack_size,omitempty"`
 	MinimumSpecRequirements *MinimumSpecRequirement       `json:"minimum_requirements,omitempty" yaml:"minimum_requirements,omitempty"`
+	CacheDate               string                        `json:"cache_date,omitempty"`
+	CacheLocalFullPath      string                        `json:"cache_local_path,omitempty"`
+	CacheMetadataName       string                        `json:"cache_metadata_name,omitempty"`
+	CacheFileName           string                        `json:"cache_file_name,omitempty"`
+	CacheType               string                        `json:"cache_type,omitempty"`
+	CacheSize               int64                         `json:"cache_size,omitempty"`
 }
 
 type MinimumSpecRequirement struct {
@@ -52,9 +58,14 @@ type RemoteVirtualMachineProvider struct {
 }
 
 type CatalogManifestPackItem struct {
-	IsDir bool   `json:"is_dir,omitempty" yaml:"is_dir,omitempty"`
-	Name  string `json:"name,omitempty" yaml:"name,omitempty"`
-	Path  string `json:"path,omitempty" yaml:"path,omitempty"`
+	IsDir     bool   `json:"is_dir,omitempty" yaml:"is_dir,omitempty"`
+	Name      string `json:"name,omitempty" yaml:"name,omitempty"`
+	Path      string `json:"path,omitempty" yaml:"path,omitempty"`
+	Checksum  string `json:"hash,omitempty" yaml:"hash,omitempty"`
+	Size      int64  `json:"size,omitempty" yaml:"size,omitempty"`
+	CreatedAt string `json:"created_at,omitempty" yaml:"created_at,omitempty"`
+	UpdatedAt string `json:"updated_at,omitempty" yaml:"updated_at,omitempty"`
+	DeletedAt string `json:"deleted_at,omitempty" yaml:"deleted_at,omitempty"`
 }
 
 type PullCatalogManifestResponse struct {
@@ -71,4 +82,9 @@ type ImportCatalogManifestResponse struct {
 
 type ImportVmResponse struct {
 	ID string `json:"id,omitempty" yaml:"id,omitempty"`
+}
+
+type VirtualMachineCatalogManifestList struct {
+	TotalSize int64             `json:"total_size"`
+	Manifests []CatalogManifest `json:"manifests"`
 }

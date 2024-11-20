@@ -6,6 +6,8 @@ import (
 
 type SystemError struct {
 	message     string
+	NestedError []NestedError
+	Path        string
 	code        int
 	description string
 }
@@ -13,15 +15,29 @@ type SystemError struct {
 func (e SystemError) Error() string {
 	msg := ""
 	if e.code != 0 {
-		msg = fmt.Sprintf("error code: %v, %v", e.code, e.message)
+		msg = fmt.Sprintf("error %v: %v", e.code, e.message)
 	} else {
 		msg = fmt.Sprintf("error: %v", e.message)
 	}
 	if e.description != "" {
 		msg = fmt.Sprintf("%v, description: %v", msg, e.description)
 	}
+	if e.Path != "" {
+		msg = fmt.Sprintf("%v, path: %v", msg, e.Path)
+	}
+	if len(e.NestedError) > 0 {
+		msg = fmt.Sprintf("%v, nested errors: %v", msg, e.NestedError)
+	}
 
 	return msg
+}
+
+func (e SystemError) Message() string {
+	return e.message
+}
+
+func (e SystemError) Description() string {
+	return e.description
 }
 
 func (e SystemError) Code() int {
@@ -117,6 +133,35 @@ func NewWithDescription(message string, description string) *SystemError {
 func NewWithDescriptionf(format string, a ...interface{}) *SystemError {
 	err := &SystemError{
 		message: fmt.Sprintf(format, a...),
+	}
+
+	return err
+}
+
+func NewWithCodeAndNestedErrorf(sysError SystemError, code int, format string, a ...interface{}) *SystemError {
+	err := &SystemError{
+		message: fmt.Sprintf(format, a...),
+		code:    code,
+	}
+	err.NestedError = make([]NestedError, 0)
+	nestedError := NestedError{
+		Message:     sysError.Message(),
+		Code:        sysError.Code(),
+		Path:        sysError.Path,
+		Description: sysError.Description(),
+	}
+
+	err.NestedError = append(err.NestedError, nestedError)
+	if len(sysError.NestedError) > 0 {
+		for _, nestedError := range sysError.NestedError {
+			nestedError := NestedError{
+				Message:     nestedError.Message,
+				Code:        nestedError.Code,
+				Path:        nestedError.Path,
+				Description: nestedError.Description,
+			}
+			err.NestedError = append(err.NestedError, nestedError)
+		}
 	}
 
 	return err

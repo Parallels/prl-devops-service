@@ -467,3 +467,128 @@ func BaseImportVmResponseToApi(m catalog_models.ImportVmResponse) models.ImportV
 
 	return data
 }
+
+func BaseVirtualMachineCatalogManifestListToApi(m catalog_models.VirtualMachineCatalogManifestList) models.VirtualMachineCatalogManifestList {
+	data := models.VirtualMachineCatalogManifestList{
+		TotalSize: m.TotalSize,
+		Manifests: BaseVirtualMachineCatalogManifestsToApi(m.Manifests),
+	}
+
+	return data
+}
+
+func BaseVirtualMachineCatalogManifestToApi(m catalog_models.VirtualMachineCatalogManifest) models.CatalogManifest {
+	data := models.CatalogManifest{
+		ID:                      m.ID,
+		CatalogId:               m.CatalogId,
+		Version:                 m.Version,
+		Name:                    m.Name,
+		Description:             m.Description,
+		Architecture:            m.Architecture,
+		Type:                    m.Type,
+		Tags:                    m.Tags,
+		Size:                    m.Size,
+		Path:                    m.Path,
+		PackFilename:            m.PackFile,
+		MetadataFilename:        m.MetadataFile,
+		CreatedAt:               m.CreatedAt,
+		Provider:                BaseRemoteVirtualMachineProviderToApi(m.Provider),
+		UpdatedAt:               m.UpdatedAt,
+		RequiredClaims:          m.RequiredClaims,
+		RequiredRoles:           m.RequiredRoles,
+		LastDownloadedAt:        m.LastDownloadedAt,
+		LastDownloadedUser:      m.LastDownloadedUser,
+		IsCompressed:            m.IsCompressed,
+		PackRelativePath:        m.PackRelativePath,
+		DownloadCount:           m.DownloadCount,
+		PackContents:            BaseCatalogManifestContentItemsToApi(m.PackContents),
+		PackSize:                m.PackSize,
+		Tainted:                 m.Tainted,
+		TaintedBy:               m.TaintedBy,
+		TaintedAt:               m.TaintedAt,
+		UnTaintedBy:             m.UnTaintedBy,
+		Revoked:                 m.Revoked,
+		RevokedAt:               m.RevokedAt,
+		RevokedBy:               m.RevokedBy,
+		MinimumSpecRequirements: BaseMinimumSpecRequirementToApi(m.MinimumSpecRequirements),
+		CacheDate:               m.CacheDate,
+		CacheLocalFullPath:      m.CacheLocalFullPath,
+		CacheMetadataName:       m.CacheMetadataName,
+		CacheFileName:           m.CacheFileName,
+		CacheType:               m.CacheType,
+		CacheSize:               m.CacheSize,
+	}
+
+	return data
+}
+
+func BaseVirtualMachineCatalogManifestsToApi(m []catalog_models.VirtualMachineCatalogManifest) []models.CatalogManifest {
+	var result []models.CatalogManifest
+	if len(m) == 0 {
+		result = make([]models.CatalogManifest, 0)
+		return result
+	}
+
+	for _, item := range m {
+		result = append(result, BaseVirtualMachineCatalogManifestToApi(item))
+	}
+	return result
+}
+
+func BaseCatalogManifestContentItemToApi(m catalog_models.VirtualMachineManifestContentItem) models.CatalogManifestPackItem {
+	result := models.CatalogManifestPackItem{
+		IsDir:     m.IsDir,
+		Name:      m.Name,
+		Path:      m.Path,
+		Checksum:  m.Checksum,
+		Size:      m.Size,
+		CreatedAt: m.CreatedAt,
+		UpdatedAt: m.UpdatedAt,
+		DeletedAt: m.DeletedAt,
+	}
+
+	return result
+}
+
+func BaseCatalogManifestContentItemsToApi(m []catalog_models.VirtualMachineManifestContentItem) []models.CatalogManifestPackItem {
+	var result []models.CatalogManifestPackItem
+	if len(m) == 0 {
+		result = make([]models.CatalogManifestPackItem, 0)
+		return result
+	}
+
+	for _, item := range m {
+		result = append(result, BaseCatalogManifestContentItemToApi(item))
+	}
+	return result
+}
+
+func BaseMinimumSpecRequirementToApi(m *catalog_models.MinimumSpecRequirement) *models.MinimumSpecRequirement {
+	if m == nil {
+		return nil
+	}
+	result := &models.MinimumSpecRequirement{
+		Cpu:    m.Cpu,
+		Memory: m.Memory,
+		Disk:   m.Disk,
+	}
+
+	return result
+}
+
+func BaseRemoteVirtualMachineProviderToApi(m *catalog_models.CatalogManifestProvider) *models.RemoteVirtualMachineProvider {
+	if m == nil {
+		return nil
+	}
+	result := &models.RemoteVirtualMachineProvider{
+		Type:     m.Type,
+		Host:     m.Host,
+		Port:     m.Port,
+		Username: m.Username,
+		Password: m.Password,
+		ApiKey:   m.ApiKey,
+		Meta:     m.Meta,
+	}
+
+	return result
+}

@@ -51,6 +51,14 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/catalog/cache/{catalogId}/{version}").
+		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithHandler(DeleteCatalogCacheItemVersionHandler()).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/catalog").
@@ -1880,10 +1888,10 @@ func GetCatalogCacheHandler() restapi.ControllerHandler {
 			return
 		}
 
-		// responseManifests := mappers.DtoCatalogManifestsToApi(manifestsDto)
+		responseManifests := mappers.BaseVirtualMachineCatalogManifestListToApi(items)
 
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(items)
+		_ = json.NewEncoder(w).Encode(responseManifests)
 		ctx.LogInfof("Manifests cached items returned: %v", len(items.Manifests))
 	}
 }
@@ -1919,8 +1927,8 @@ func DeleteCatalogCacheHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Deletes catalog cache item
-// @Description	This endpoint returns all the remote catalog cache if any
+// @Summary		Deletes catalog cache item and all its versions
+// @Description	This endpoint returns all the remote catalog cache if any and all its versions
 // @Tags			Catalogs
 // @Produce		json
 // @Param			catalogId	path	string	true	"Catalog ID"
@@ -1947,7 +1955,58 @@ func DeleteCatalogCacheItemHandler() restapi.ControllerHandler {
 		}
 
 		catalogSvc := catalog.NewManifestService(ctx)
-		err := catalogSvc.CleanCacheFile(ctx, catalogId)
+		err := catalogSvc.CleanCacheFile(ctx, catalogId, "")
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		// responseManifests := mappers.DtoCatalogManifestsToApi(manifestsDto)
+
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfof("Manifests cached item %v removed", len(catalogId))
+	}
+}
+
+// @Summary		Deletes catalog cache version item
+// @Description	This endpoint deletes a version of a cache ite,
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId	path	string	true	"Catalog ID"
+// @Param			version	path	string	true	"Version"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/cache/{catalogId}/{version} [delete]
+func DeleteCatalogCacheItemVersionHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		vars := mux.Vars(r)
+		catalogId := vars["catalogId"]
+		version := vars["version"]
+		if catalogId == "" {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Catalog ID is required",
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if version == "" {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Version is required",
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		err := catalogSvc.CleanCacheFile(ctx, catalogId, version)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
