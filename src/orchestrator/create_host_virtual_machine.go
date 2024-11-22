@@ -129,6 +129,7 @@ func (s *OrchestratorService) CreateHosVirtualMachine(ctx basecontext.ApiContext
 		}
 	}
 
+	s.Refresh()
 	return &response, apiError
 }
 

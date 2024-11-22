@@ -1,9 +1,13 @@
 NAME ?= prldevops
 export PACKAGE_NAME ?= $(NAME)
+export DOCKER_PACKAGE_NAME ?= "prl-devops-service"
 ifeq ($(OS),Windows_NT)
-	export VERSION=$(shell type VERSION)
+	export VERSION:=$(shell type VERSION)
 else
-	export VERSION=$(shell cat VERSION)
+	export VERSION:=$(shell cat VERSION)
+	export BUILD_ID:=$(shell date +%s)
+	export SHORT_VERSION:=$(shell echo $(VERSION) | cut -d'.' -f1,2)
+	export BUILD_VERSION:=$(shell echo $(SHORT_VERSION).$(BUILD_ID))
 endif
 
 COBERTURA = cobertura
@@ -104,15 +108,45 @@ endif
 	@cd src && CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o ../out/binaries/$(PACKAGE_NAME)-alpine
 	@echo "Build finished."
 
+.PHONY: push-alpha-container
+push-alpha-container:
+	@echo "Building $(BUILD_VERSION) Alpha Container..."
+	@docker build -t cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_alpha \
+		-t cjlapao/$(DOCKER_PACKAGE_NAME):latest_alpha \
+		--build-arg VERSION=$(BUILD_VERSION) \
+		--build-arg BUILD_ENV=debug \
+		--build-arg OS=linux \
+		--build-arg ARCHITECTURE=amd64 \
+		-f Dockerfile .
+	@echo "Pushing $(BUILD_VERSION) Container..."
+	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_alpha tag..."
+	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_alpha
+	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):latest_alpha tag..."
+	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):latest_alpha
+	@echo "Build finished. Pushed to cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_alpha and cjlapao/$(DOCKER_PACKAGE_NAME):latest_alpha."
+
+.PHONY: clean-alpha
+clean-alpha-container:
+	@echo "Removing all alpha versions from Docker Hub..."
+	@./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*alpha.*$' 
+	@echo "All alpha versions removed."
+
 .PHONY: push-beta-container
 push-beta-container:
-	@echo "Building..."
-ifeq ($(wildcard ./out/.*),)
-	@echo "Creating out directory..."
-	@mkdir out
-	@mkdir out/binaries
-endif
-	@echo "Build finished."
+	@echo "Building $(BUILD_VERSION) Beta Container..."
+	@docker build -t cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_beta \
+		-t cjlapao/$(DOCKER_PACKAGE_NAME):unstable \
+		--build-arg VERSION=$(BUILD_VERSION) \
+		--build-arg BUILD_ENV=debug \
+		--build-arg OS=linux \
+		--build-arg ARCHITECTURE=amd64 \
+		-f Dockerfile .
+	@echo "Pushing $(BUILD_VERSION) Container..."
+	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_beta tag..."
+	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_beta
+	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):unstable tag..."
+	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):unstable
+	@echo "Build finished. Pushed to cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_beta and cjlapao/$(DOCKER_PACKAGE_NAME):unstable."
 
 .PHONY: clean
 clean:

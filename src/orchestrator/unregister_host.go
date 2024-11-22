@@ -16,5 +16,6 @@ func (s *OrchestratorService) UnregisterHost(ctx basecontext.ApiContext, hostId 
 		return err
 	}
 
+	s.Refresh()
 	return nil
 }

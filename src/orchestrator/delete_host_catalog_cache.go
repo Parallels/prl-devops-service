@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"time"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
@@ -33,11 +35,13 @@ func (s *OrchestratorService) DeleteHostCatalogCacheItem(ctx basecontext.ApiCont
 		return err
 	}
 
+	s.Refresh()
 	return nil
 }
 
 func (s *OrchestratorService) CallDeleteHostCatalogCacheItem(host *models.OrchestratorHost, catalogId string, versionId string) error {
 	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(5 * time.Minute) // sometimes deleting files can take a bit, waiting for 5 minutes
 	path := "/v1/catalog/cache"
 	if catalogId != "" {
 		path = path + "/" + catalogId

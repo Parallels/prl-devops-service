@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 ############################
 # STEP 1 build executable binary
 ############################
@@ -15,7 +16,18 @@ COPY ./src .
 RUN go get -d -v
 
 # Build the binary.
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /go/bin/prl-devops-service
+ARG BUILD_ENV=production
+ARG VERSION
+ARG OS=linux
+ARG ARCHITECTURE=amd64
+
+RUN --mount=type=secret,id=amplitude_api_key,env=AMPLITUDE_API_KEY
+
+RUN if [ "$BUILD_ENV" = "production" ]; then \
+  CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="-s -w -X main.ver=$VERSION -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o /go/bin/prl-devops-service; \
+  else \
+  CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="-s -w -X main.ver=$VERSION" -o /go/bin/prl-devops-service; \
+  fi
 
 ############################
 # STEP 2 build a small image
@@ -23,12 +35,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /go/bin/prl-devops-ser
 FROM alpine:latest
 
 RUN apk update && apk add curl coreutils bash musl-utils ca-certificates
-# Copy our static executable.
-# COPY --from=builder /bin/cat /bin/cat
-# COPY --from=builder /usr/bin/whoami /usr/bin/whoami
-# COPY --from=builder /usr/bin/getent /usr/bin/getent
-# COPY --from=builder /bin/uname /usr/bin/uname
-# COPY --from=builder /usr/bin/id /usr/bin/id
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /tmp/

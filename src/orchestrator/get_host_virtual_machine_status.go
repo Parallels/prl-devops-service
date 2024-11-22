@@ -8,8 +8,13 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 )
 
-func (s *OrchestratorService) GetVirtualMachineStatus(ctx basecontext.ApiContext, vmId string) (*models.VirtualMachineStatusResponse, error) {
-	vm, err := s.GetVirtualMachine(ctx, vmId)
+func (s *OrchestratorService) GetVirtualMachineStatus(ctx basecontext.ApiContext, vmId string, noCache bool) (*models.VirtualMachineStatusResponse, error) {
+	if noCache {
+		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
+		s.Refresh()
+	}
+
+	vm, err := s.GetVirtualMachine(ctx, vmId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +39,7 @@ func (s *OrchestratorService) GetVirtualMachineStatus(ctx basecontext.ApiContext
 		return nil, errors.NewWithCodef(400, "Host %s is not healthy", host.ID)
 	}
 
-	result, err := s.GetHostVirtualMachineStatus(ctx, vm.HostId, vmId)
+	result, err := s.GetHostVirtualMachineStatus(ctx, vm.HostId, vmId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +47,12 @@ func (s *OrchestratorService) GetVirtualMachineStatus(ctx basecontext.ApiContext
 	return result, nil
 }
 
-func (s *OrchestratorService) GetHostVirtualMachineStatus(ctx basecontext.ApiContext, hostId string, vmId string) (*models.VirtualMachineStatusResponse, error) {
+func (s *OrchestratorService) GetHostVirtualMachineStatus(ctx basecontext.ApiContext, hostId string, vmId string, noCache bool) (*models.VirtualMachineStatusResponse, error) {
+	if noCache {
+		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
+		s.Refresh()
+	}
+
 	host, err := s.GetHost(ctx, hostId)
 	if err != nil {
 		return nil, err
@@ -60,7 +70,7 @@ func (s *OrchestratorService) GetHostVirtualMachineStatus(ctx basecontext.ApiCon
 		return nil, errors.NewWithCodef(400, "Host %s is not healthy", hostId)
 	}
 
-	vm, err := s.GetHostVirtualMachine(ctx, hostId, vmId)
+	vm, err := s.GetHostVirtualMachine(ctx, hostId, vmId, false)
 	if err != nil {
 		return nil, err
 	}

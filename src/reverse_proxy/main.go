@@ -26,10 +26,25 @@ import (
 
 var globalReverseProxyService *ReverseProxyService
 
+type reverseProxyOperationRequest struct {
+	operation func() error
+	result    chan error
+}
+
+type reverseProxyServiceState int
+
+const (
+	ReverseProxyServiceStateStopped reverseProxyServiceState = iota
+	ReverseProxyServiceStateStarting
+	ReverseProxyServiceStateStarted
+	ReverseProxyServiceStateStopping
+)
+
 type ReverseProxyService struct {
 	enabled          bool
 	host             string
 	port             string
+	State            reverseProxyServiceState
 	forwarding_hosts []*data_models.ReverseProxyHost
 	db               *data.JsonDatabase
 	api_ctx          basecontext.ApiContext
@@ -38,6 +53,9 @@ type ReverseProxyService struct {
 	tcpListeners     []net.Listener
 	httpListeners    []*http.Server
 	wg               *sync.WaitGroup
+
+	opQueue   chan reverseProxyOperationRequest
+	queueOnce sync.Once
 }
 
 func Get(ctx basecontext.ApiContext) *ReverseProxyService {
@@ -50,7 +68,10 @@ func Get(ctx basecontext.ApiContext) *ReverseProxyService {
 
 func GetConfig() models.ReverseProxyConfig {
 	cfg := config.Get()
-	result := models.ReverseProxyConfig{}
+	result := models.ReverseProxyConfig{
+		Enabled: false,
+	}
+
 	if cfg == nil || globalReverseProxyService == nil {
 		result.Enabled = false
 	}
@@ -60,8 +81,8 @@ func GetConfig() models.ReverseProxyConfig {
 	result.Enabled = cfg.IsReverseProxyEnabled()
 
 	// Returning db data if available and not different from the config
-	dtoRp, _ := globalReverseProxyService.db.GetReverseProxyConfig(globalReverseProxyService.api_ctx)
-	if dtoRp != nil {
+	dtoRp, err := globalReverseProxyService.db.GetReverseProxyConfig(globalReverseProxyService.api_ctx)
+	if dtoRp != nil && err == nil {
 		if !dtoRp.Diff(mappers.ConfigReverseProxyToDto(result)) {
 			result.Host = dtoRp.Host
 			result.Port = dtoRp.Port
@@ -88,6 +109,7 @@ func New(ctx basecontext.ApiContext) *ReverseProxyService {
 		tcpListeners:  []net.Listener{},
 		httpListeners: []*http.Server{},
 		wg:            &sync.WaitGroup{},
+		State:         ReverseProxyServiceStateStopped,
 	}
 
 	return globalReverseProxyService
@@ -229,7 +251,13 @@ func (rps *ReverseProxyService) LoadFromDb() error {
 		if hostCopy.TcpRoute != nil && hostCopy.TcpRoute.TargetVmId != "" {
 			vm, err := prl_svc.GetVm(rps.api_ctx, hostCopy.TcpRoute.TargetVmId)
 			if err != nil || vm.InternalIpAddress == "" || vm.InternalIpAddress == "-" || vm.State != "running" {
-				rps.api_ctx.LogErrorf("Error getting vm %s for reverse proxy tcp route: %s", hostCopy.TcpRoute.TargetVmId, err)
+				if err != nil {
+					rps.api_ctx.LogErrorf("Error getting vm %s for reverse proxy tcp route: %s", hostCopy.TcpRoute.TargetVmId, err)
+				} else if vm == nil {
+					rps.api_ctx.LogErrorf("Error getting vm %s for reverse proxy tcp route: vm could not be found", hostCopy.TcpRoute.TargetVmId)
+				} else if vm.InternalIpAddress == "" || vm.InternalIpAddress == "-" {
+					rps.api_ctx.LogErrorf("Error getting vm %s for reverse proxy tcp route: vm internal ip address is empty", hostCopy.TcpRoute.TargetVmId)
+				}
 				hostCopy.TcpRoute.TargetHost = "---"
 			} else {
 				hostCopy.TcpRoute.TargetHost = vm.InternalIpAddress
@@ -243,6 +271,22 @@ func (rps *ReverseProxyService) LoadFromDb() error {
 }
 
 func (rps *ReverseProxyService) Start() error {
+	rps.initQueue()
+	resultChan := make(chan error)
+	rps.opQueue <- reverseProxyOperationRequest{
+		operation: rps.startInternal,
+		result:    resultChan,
+	}
+	return <-resultChan
+}
+
+func (rps *ReverseProxyService) startInternal() error {
+	if rps.State == ReverseProxyServiceStateStarted || rps.State == ReverseProxyServiceStateStarting {
+		rps.api_ctx.LogInfof("[Reverse Proxy] Reverse proxy service already started")
+		return nil
+	}
+
+	rps.State = ReverseProxyServiceStateStarting
 	cfg := config.Get()
 	rps.ctx, rps.cancelFunc = context.WithCancel(context.Background())
 	errorChan := make(chan error, 1)
@@ -289,10 +333,29 @@ func (rps *ReverseProxyService) Start() error {
 	default:
 	}
 
+	rps.api_ctx.LogInfof("[Reverse Proxy] Reverse proxy started")
+	rps.State = ReverseProxyServiceStateStarted
 	return nil
 }
 
 func (rps *ReverseProxyService) Stop() error {
+	rps.initQueue()
+	resultChan := make(chan error)
+	rps.opQueue <- reverseProxyOperationRequest{
+		operation: rps.stopInternal,
+		result:    resultChan,
+	}
+	return <-resultChan
+}
+
+func (rps *ReverseProxyService) stopInternal() error {
+	if rps.State == ReverseProxyServiceStateStopped || rps.State == ReverseProxyServiceStateStopping {
+		rps.api_ctx.LogInfof("[Reverse Proxy] Reverse proxy service already stopped")
+		return nil
+	}
+
+	rps.State = ReverseProxyServiceStateStopping
+
 	rps.api_ctx.LogInfof("[Reverse Proxy] Stopping reverse proxy service")
 	// fixing a possible issue with the cancel function not being called
 	if rps.cancelFunc != nil {
@@ -300,6 +363,7 @@ func (rps *ReverseProxyService) Stop() error {
 	}
 
 	for _, listener := range rps.tcpListeners {
+		// Check if the listener is already closed
 		rps.api_ctx.LogInfof("[Reverse Proxy] [TCP Route] Closing listener")
 		if err := listener.Close(); err != nil {
 			rps.api_ctx.LogErrorf("[Reverse Proxy] [TCP Route] Error closing listener: %s", err)
@@ -311,9 +375,14 @@ func (rps *ReverseProxyService) Stop() error {
 	defer cancel()
 
 	for _, server := range rps.httpListeners {
+
 		rps.api_ctx.LogInfof("[Reverse Proxy] [HTTP Route] Closing server")
 		if err := server.Shutdown(ctxShutdown); err != nil {
-			rps.api_ctx.LogErrorf("[Reverse Proxy] [HTTP Route] Error shutting down server: %s", err)
+			if err == http.ErrServerClosed {
+				rps.api_ctx.LogInfof("[Reverse Proxy] [HTTP Route] Server already closed")
+			} else {
+				rps.api_ctx.LogErrorf("[Reverse Proxy] [HTTP Route] Error shutting down server: %s", err)
+			}
 		}
 
 		rps.api_ctx.LogInfof("[Reverse Proxy] [HTTP Route] Server closed")
@@ -324,17 +393,28 @@ func (rps *ReverseProxyService) Stop() error {
 	rps.wg.Wait()
 
 	rps.api_ctx.LogInfof("[Reverse Proxy] Reverse proxy service stopped")
+	rps.State = ReverseProxyServiceStateStopped
 	return nil
 }
 
 func (rps *ReverseProxyService) Restart() error {
-	if err := rps.Stop(); err != nil {
+	rps.initQueue()
+	resultChan := make(chan error)
+	rps.opQueue <- reverseProxyOperationRequest{
+		operation: rps.restartInternal,
+		result:    resultChan,
+	}
+	return <-resultChan
+}
+
+func (rps *ReverseProxyService) restartInternal() error {
+	if err := rps.stopInternal(); err != nil {
 		return err
 	}
 
 	done := make(chan error, 1)
 	go func() {
-		done <- rps.Start()
+		done <- rps.startInternal()
 	}()
 
 	return <-done
@@ -498,6 +578,7 @@ func (rps *ReverseProxyService) listenHttpRoute(host *data_models.ReverseProxyHo
 			target = fmt.Sprintf("%s:%s", host.Host, host.Port)
 		}
 
+		// TODO: Add the ability to have a rewrite of the path URL and the schema
 		if strings.EqualFold(target, req.Host) {
 			for _, route := range host.HttpRoutes {
 				if route.TargetHost == "" || route.TargetHost == "---" {
@@ -627,6 +708,20 @@ func (rps *ReverseProxyService) copyWithContext(ctx context.Context, dst io.Writ
 				return
 			}
 		}
+	}
+}
+
+func (rps *ReverseProxyService) initQueue() {
+	rps.queueOnce.Do(func() {
+		rps.opQueue = make(chan reverseProxyOperationRequest, 100)
+		go rps.processQueue()
+	})
+}
+
+func (rps *ReverseProxyService) processQueue() {
+	for req := range rps.opQueue {
+		err := req.operation()
+		req.result <- err
 	}
 }
 

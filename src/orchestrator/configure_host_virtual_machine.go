@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"time"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
@@ -8,8 +10,13 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 )
 
-func (s *OrchestratorService) ConfigureVirtualMachine(ctx basecontext.ApiContext, vmId string, request models.VirtualMachineConfigRequest) (*models.VirtualMachineConfigResponse, error) {
-	vm, err := s.GetVirtualMachine(ctx, vmId)
+func (s *OrchestratorService) ConfigureVirtualMachine(ctx basecontext.ApiContext, vmId string, request models.VirtualMachineConfigRequest, noCache bool) (*models.VirtualMachineConfigResponse, error) {
+	if noCache {
+		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
+		s.Refresh()
+	}
+
+	vm, err := s.GetVirtualMachine(ctx, vmId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +41,7 @@ func (s *OrchestratorService) ConfigureVirtualMachine(ctx basecontext.ApiContext
 		return nil, errors.NewWithCodef(400, "Host %s is not healthy", host.ID)
 	}
 
-	result, err := s.ConfigureHostVirtualMachine(ctx, vm.HostId, vmId, request)
+	result, err := s.ConfigureHostVirtualMachine(ctx, vm.HostId, vmId, request, false)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +49,11 @@ func (s *OrchestratorService) ConfigureVirtualMachine(ctx basecontext.ApiContext
 	return result, nil
 }
 
-func (s *OrchestratorService) ConfigureHostVirtualMachine(ctx basecontext.ApiContext, hostId string, vmId string, request models.VirtualMachineConfigRequest) (*models.VirtualMachineConfigResponse, error) {
+func (s *OrchestratorService) ConfigureHostVirtualMachine(ctx basecontext.ApiContext, hostId string, vmId string, request models.VirtualMachineConfigRequest, useCache bool) (*models.VirtualMachineConfigResponse, error) {
+	if !useCache {
+		s.Refresh()
+	}
+
 	host, err := s.GetHost(ctx, hostId)
 	if err != nil {
 		return nil, err
@@ -60,7 +71,7 @@ func (s *OrchestratorService) ConfigureHostVirtualMachine(ctx basecontext.ApiCon
 		return nil, errors.NewWithCodef(400, "Host %s is not healthy", hostId)
 	}
 
-	vm, err := s.GetHostVirtualMachine(ctx, hostId, vmId)
+	vm, err := s.GetHostVirtualMachine(ctx, hostId, vmId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -79,6 +90,7 @@ func (s *OrchestratorService) ConfigureHostVirtualMachine(ctx basecontext.ApiCon
 
 func (s *OrchestratorService) CallConfigureHostVirtualMachine(host *data_models.OrchestratorHost, vmId string, request models.VirtualMachineConfigRequest) (*models.VirtualMachineConfigResponse, error) {
 	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(3 * time.Minute)
 	path := "/machines/" + vmId + "/set"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {

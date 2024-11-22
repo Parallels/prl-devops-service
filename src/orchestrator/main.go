@@ -205,6 +205,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 		dtoVm := mappers.MapDtoVirtualMachineFromApi(vm)
 		dtoVm.HostId = host.ID
 		dtoVm.Host = host.GetHost()
+		dtoVm.HostUrl = host.GetHostUrl()
 		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
 	}
 

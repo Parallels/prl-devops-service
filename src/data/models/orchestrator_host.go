@@ -69,6 +69,15 @@ func (o OrchestratorHost) GetHost() string {
 	return url.String()
 }
 
+func (o OrchestratorHost) GetHostUrl() string {
+	url, err := url.Parse(o.Host)
+	if err != nil {
+		return ""
+	} else {
+		return url.Path
+	}
+}
+
 func (o *OrchestratorHost) SetUnhealthy(reason string) {
 	if o.State == "unhealthy" {
 		return

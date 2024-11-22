@@ -1,6 +1,8 @@
 package models
 
-import "github.com/Parallels/prl-devops-service/errors"
+import (
+	"github.com/Parallels/prl-devops-service/errors"
+)
 
 type ApiErrorStack struct {
 	Message     string `json:"message"`

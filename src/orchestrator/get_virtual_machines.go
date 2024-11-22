@@ -10,7 +10,12 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
-func (s *OrchestratorService) GetVirtualMachines(ctx basecontext.ApiContext, filter string) ([]models.VirtualMachine, error) {
+func (s *OrchestratorService) GetVirtualMachines(ctx basecontext.ApiContext, filter string, noCache bool) ([]models.VirtualMachine, error) {
+	if noCache {
+		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
+		s.Refresh()
+	}
+
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, err
@@ -44,7 +49,12 @@ func (s *OrchestratorService) GetVirtualMachines(ctx basecontext.ApiContext, fil
 	return result, nil
 }
 
-func (s *OrchestratorService) GetVirtualMachine(ctx basecontext.ApiContext, idOrName string) (*models.VirtualMachine, error) {
+func (s *OrchestratorService) GetVirtualMachine(ctx basecontext.ApiContext, idOrName string, noCache bool) (*models.VirtualMachine, error) {
+	if noCache {
+		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
+		s.Refresh()
+	}
+
 	retryCount := 0
 	var resultVm *models.VirtualMachine
 

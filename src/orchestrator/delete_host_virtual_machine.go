@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"time"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
@@ -9,7 +11,7 @@ import (
 )
 
 func (s *OrchestratorService) DeleteVirtualMachine(ctx basecontext.ApiContext, vmId string) error {
-	vm, err := s.GetVirtualMachine(ctx, vmId)
+	vm, err := s.GetVirtualMachine(ctx, vmId, false)
 	if err != nil {
 		return err
 	}
@@ -66,7 +68,7 @@ func (s *OrchestratorService) DeleteHostVirtualMachine(ctx basecontext.ApiContex
 		return errors.NewWithCodef(400, "Host %s is not healthy", hostId)
 	}
 
-	vm, err := s.GetHostVirtualMachine(ctx, hostId, vmId)
+	vm, err := s.GetHostVirtualMachine(ctx, hostId, vmId, false)
 	if err != nil {
 		return err
 	}
@@ -85,11 +87,14 @@ func (s *OrchestratorService) DeleteHostVirtualMachine(ctx basecontext.ApiContex
 		return err
 	}
 
+	s.Refresh()
 	return nil
 }
 
 func (s *OrchestratorService) CallDeleteHostVirtualMachine(host *models.OrchestratorHost, vmId string) error {
 	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(10 * time.Minute) // deleting virtual machines can take a while, waiting for 10 minutes
+
 	path := "/v1/machines/" + vmId
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {
