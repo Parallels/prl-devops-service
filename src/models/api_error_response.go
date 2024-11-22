@@ -1,8 +1,6 @@
 package models
 
 import (
-	"fmt"
-
 	"github.com/Parallels/prl-devops-service/errors"
 )
 
@@ -67,7 +65,6 @@ func NewFromError(err error) ApiErrorResponse {
 }
 
 func NewFromErrorWithCode(err error, code int) ApiErrorResponse {
-	fmt.Println("[TEST]: %v", err)
 	message := ApiErrorResponse{
 		Code: code,
 	}
