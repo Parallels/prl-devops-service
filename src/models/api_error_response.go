@@ -1,6 +1,10 @@
 package models
 
-import "github.com/Parallels/prl-devops-service/errors"
+import (
+	"fmt"
+
+	"github.com/Parallels/prl-devops-service/errors"
+)
 
 type ApiErrorStack struct {
 	Message     string `json:"message"`
@@ -63,6 +67,7 @@ func NewFromError(err error) ApiErrorResponse {
 }
 
 func NewFromErrorWithCode(err error, code int) ApiErrorResponse {
+	fmt.Println("[TEST]: %v", err)
 	message := ApiErrorResponse{
 		Code: code,
 	}

@@ -6,7 +6,12 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
-func (s *OrchestratorService) GetResources(ctx basecontext.ApiContext) ([]models.HostResourceOverviewResponseItem, error) {
+func (s *OrchestratorService) GetResources(ctx basecontext.ApiContext, noCache bool) ([]models.HostResourceOverviewResponseItem, error) {
+	if noCache {
+		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
+		s.Refresh()
+	}
+
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, err

@@ -32,6 +32,7 @@ func (s *OrchestratorService) EnableHostReverseProxy(ctx basecontext.ApiContext,
 		return err
 	}
 
+	s.Refresh()
 	return nil
 }
 

@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"time"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
@@ -9,7 +11,7 @@ import (
 )
 
 func (s *OrchestratorService) UnregisterHostVirtualMachine(ctx basecontext.ApiContext, hostId string, vmId string, request models.UnregisterVirtualMachineRequest) (*models.ParallelsVM, error) {
-	vm, err := s.GetVirtualMachine(ctx, vmId)
+	vm, err := s.GetVirtualMachine(ctx, vmId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -38,6 +40,7 @@ func (s *OrchestratorService) UnregisterHostVirtualMachine(ctx basecontext.ApiCo
 
 func (s *OrchestratorService) CallUnregisterHostVirtualMachine(host *data_models.OrchestratorHost, vmId string, request models.UnregisterVirtualMachineRequest) (*models.ParallelsVM, error) {
 	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(3 * time.Minute)
 	path := "/machines/" + vmId + "/unregister"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {

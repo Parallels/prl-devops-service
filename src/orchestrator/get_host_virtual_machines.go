@@ -11,7 +11,11 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
-func (s *OrchestratorService) GetHostVirtualMachines(ctx basecontext.ApiContext, hostId string, filter string) ([]*models.VirtualMachine, error) {
+func (s *OrchestratorService) GetHostVirtualMachines(ctx basecontext.ApiContext, hostId string, filter string, noCache bool) ([]*models.VirtualMachine, error) {
+	if noCache {
+		s.Refresh()
+	}
+
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, err
@@ -45,7 +49,11 @@ func (s *OrchestratorService) GetHostVirtualMachines(ctx basecontext.ApiContext,
 	return result, nil
 }
 
-func (s *OrchestratorService) GetHostVirtualMachine(ctx basecontext.ApiContext, hostId string, vmId string) (*models.VirtualMachine, error) {
+func (s *OrchestratorService) GetHostVirtualMachine(ctx basecontext.ApiContext, hostId string, vmId string, noCache bool) (*models.VirtualMachine, error) {
+	if noCache {
+		s.Refresh()
+	}
+
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, err

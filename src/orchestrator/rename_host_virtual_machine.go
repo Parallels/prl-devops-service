@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"time"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
@@ -9,7 +11,7 @@ import (
 )
 
 func (s *OrchestratorService) RenameVirtualMachine(ctx basecontext.ApiContext, vmId string, request models.RenameVirtualMachineRequest) (*models.ParallelsVM, error) {
-	vm, err := s.GetVirtualMachine(ctx, vmId)
+	vm, err := s.GetVirtualMachine(ctx, vmId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +62,7 @@ func (s *OrchestratorService) RenameHostVirtualMachine(ctx basecontext.ApiContex
 		return nil, errors.NewWithCodef(400, "Host %s is not healthy", hostId)
 	}
 
-	vm, err := s.GetHostVirtualMachine(ctx, hostId, vmId)
+	vm, err := s.GetHostVirtualMachine(ctx, hostId, vmId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -79,6 +81,7 @@ func (s *OrchestratorService) RenameHostVirtualMachine(ctx basecontext.ApiContex
 
 func (s *OrchestratorService) CallRenameHostVirtualMachine(host *data_models.OrchestratorHost, vmId string, request models.RenameVirtualMachineRequest) (*models.ParallelsVM, error) {
 	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(2 * time.Minute)
 	path := "/machines/" + vmId + "/rename"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {

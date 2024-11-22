@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"time"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
@@ -29,6 +31,7 @@ func (s *OrchestratorService) RegisterHostVirtualMachine(ctx basecontext.ApiCont
 
 func (s *OrchestratorService) CallRegisterHostVirtualMachine(host *data_models.OrchestratorHost, request models.RegisterVirtualMachineRequest) (*models.ParallelsVM, error) {
 	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(2 * time.Minute)
 	path := "/machines/register"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {

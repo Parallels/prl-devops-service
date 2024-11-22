@@ -142,13 +142,13 @@ func (s *BruteForceGuard) processEnvironmentVariables() {
 		if err != nil {
 			s.ctx.LogWarnf("[BruteForceGuard] Invalid value for %s: %s", constants.BRUTE_FORCE_MAX_LOGIN_ATTEMPTS_ENV_VAR, err.Error())
 		} else {
-			s.ctx.LogDebugf("[BruteForceGuard] Setting %s to %d", constants.BRUTE_FORCE_MAX_LOGIN_ATTEMPTS_ENV_VAR, maxLoginAttempts)
+			s.ctx.LogDebugf("[BruteForceGuard] Setting %s to %v", constants.BRUTE_FORCE_MAX_LOGIN_ATTEMPTS_ENV_VAR, maxLoginAttempts)
 			s.options.WithMaxLoginAttempts(maxLoginAttempts)
 		}
 	}
 
 	if cfg.GetKey(constants.BRUTE_FORCE_LOCKOUT_DURATION_ENV_VAR) != "" {
-		s.ctx.LogDebugf("[BruteForceGuard] Setting %s to %s", constants.BRUTE_FORCE_LOCKOUT_DURATION_ENV_VAR, cfg.GetKey(constants.BRUTE_FORCE_LOCKOUT_DURATION_ENV_VAR))
+		s.ctx.LogDebugf("[BruteForceGuard] Setting %s to %v", constants.BRUTE_FORCE_LOCKOUT_DURATION_ENV_VAR, cfg.GetKey(constants.BRUTE_FORCE_LOCKOUT_DURATION_ENV_VAR))
 		s.options.WithBlockDuration(cfg.GetKey(constants.BRUTE_FORCE_LOCKOUT_DURATION_ENV_VAR))
 	}
 

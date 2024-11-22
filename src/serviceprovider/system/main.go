@@ -105,7 +105,7 @@ func (s *SystemService) Installed() bool {
 
 func (s *SystemService) GetSystemUsers(ctx basecontext.ApiContext) ([]models.SystemUser, error) {
 	if s.cache.SystemUsers != nil && len(s.cache.SystemUsers) > 0 {
-		ctx.LogDebugf("Returning cached system users")
+		ctx.LogDebugf("[SYSTEM] Returning cached system users")
 		return s.cache.SystemUsers, nil
 	}
 
@@ -385,7 +385,7 @@ func (s *SystemService) getUserIdWindows(ctx basecontext.ApiContext, user string
 
 func (s *SystemService) GetCurrentUser(ctx basecontext.ApiContext) (string, error) {
 	if s.cache.CurrentUser != "" {
-		ctx.LogDebugf("Returning cached current user")
+		ctx.LogDebugf("[SYSTEM] Returning cached current user")
 		return s.cache.CurrentUser, nil
 	}
 
@@ -439,7 +439,7 @@ func (s *SystemService) getWindowsCurrentUser(ctx basecontext.ApiContext) (strin
 
 func (s *SystemService) GetUniqueId(ctx basecontext.ApiContext) (string, error) {
 	if s.cache.UniqueId != "" {
-		ctx.LogDebugf("Returning cached unique id")
+		ctx.LogDebugf("[SYSTEM] Returning cached unique id")
 		return s.cache.UniqueId, nil
 	}
 
@@ -552,7 +552,7 @@ func (s *SystemService) changeLinuxFileUserOwner(userName string, filePath strin
 
 func (s *SystemService) GetHardwareInfo(ctx basecontext.ApiContext) (*models.SystemHardwareInfo, error) {
 	if s.cache.HardwareInfo != nil {
-		ctx.LogDebugf("Returning cached hardware info")
+		ctx.LogDebugf("[SYSTEM] Returning cached hardware info")
 		return s.cache.HardwareInfo, nil
 	}
 
@@ -670,7 +670,7 @@ func (s *SystemService) parseDfCommand(output string) (totalDisk float64, freeDi
 
 func (s *SystemService) GetArchitecture(ctx basecontext.ApiContext) (string, error) {
 	if s.cache.Architecture != "" {
-		ctx.LogDebugf("Returning cached architecture")
+		ctx.LogDebugf("[SYSTEM] Returning cached architecture")
 		return s.cache.Architecture, nil
 	}
 
@@ -758,7 +758,7 @@ func (s *SystemService) getUniversalExternalIp(ctx basecontext.ApiContext) (stri
 	if s.cache.ExternalIpAddress != "" && s.cache.LastUpdatedExternalIpAddress > 0 {
 		currentTime := time.Now().Unix()
 		if currentTime-s.cache.LastUpdatedExternalIpAddress < 2*3600 {
-			ctx.LogDebugf("Returning cached external IP address")
+			ctx.LogDebugf("[SYSTEM] Returning cached external IP address")
 			return s.cache.ExternalIpAddress, nil
 		}
 	}
