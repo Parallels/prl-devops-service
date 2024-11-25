@@ -17,6 +17,15 @@ type HostResourceItem struct {
 	FreeDiskSize     float64 `json:"free_disk_size,omitempty"`
 }
 
+type HostResources struct {
+	TotalAppleVms  int64            `json:"total_apple_vms,omitempty"`
+	SystemReserved HostResourceItem `json:"system_reserved,omitempty"`
+	Total          HostResourceItem `json:"total,omitempty"`
+	TotalAvailable HostResourceItem `json:"total_available,omitempty"`
+	TotalInUse     HostResourceItem `json:"total_in_use,omitempty"`
+	TotalReserved  HostResourceItem `json:"total_reserved,omitempty"`
+}
+
 type HostReverseProxy struct {
 	Enabled bool               `json:"enabled,omitempty"`
 	Host    string             `json:"host,omitempty"`
@@ -91,25 +100,27 @@ func (o *OrchestratorHostRequest) Validate() error {
 }
 
 type OrchestratorHostResponse struct {
-	ID                       string            `json:"id"`
-	Enabled                  bool              `json:"enabled"`
-	Host                     string            `json:"host"`
-	Architecture             string            `json:"architecture"`
-	CpuModel                 string            `json:"cpu_model"`
-	OsVersion                string            `json:"os_version,omitempty"`
-	OsName                   string            `json:"os_name,omitempty"`
-	ExternalIpAddress        string            `json:"external_ip_address,omitempty"`
-	DevOpsVersion            string            `json:"devops_version,omitempty"`
-	Description              string            `json:"description,omitempty"`
-	Tags                     []string          `json:"tags,omitempty"`
-	State                    string            `json:"state,omitempty"`
-	ParallelsDesktopVersion  string            `json:"parallels_desktop_version,omitempty"`
-	ParallelsDesktopLicensed bool              `json:"parallels_desktop_licensed,omitempty"`
-	IsReverseProxyEnabled    bool              `json:"is_reverse_proxy_enabled"`
-	ReverseProxy             *HostReverseProxy `json:"reverse_proxy,omitempty"`
-	Resources                HostResourceItem  `json:"resources,omitempty"`
-	RequiredClaims           []string          `json:"required_claims,omitempty"`
-	RequiredRoles            []string          `json:"required_roles,omitempty"`
+	ID                       string              `json:"id"`
+	Enabled                  bool                `json:"enabled"`
+	Host                     string              `json:"host"`
+	Architecture             string              `json:"architecture"`
+	CpuModel                 string              `json:"cpu_model"`
+	OsVersion                string              `json:"os_version,omitempty"`
+	OsName                   string              `json:"os_name,omitempty"`
+	ExternalIpAddress        string              `json:"external_ip_address,omitempty"`
+	DevOpsVersion            string              `json:"devops_version,omitempty"`
+	Description              string              `json:"description,omitempty"`
+	Tags                     []string            `json:"tags,omitempty"`
+	State                    string              `json:"state,omitempty"`
+	ParallelsDesktopVersion  string              `json:"parallels_desktop_version,omitempty"`
+	ParallelsDesktopLicensed bool                `json:"parallels_desktop_licensed,omitempty"`
+	IsReverseProxyEnabled    bool                `json:"is_reverse_proxy_enabled"`
+	ReverseProxy             *HostReverseProxy   `json:"reverse_proxy,omitempty"`
+	ReverseProxyHosts        []*ReverseProxyHost `json:"reverse_proxy_hosts,omitempty"`
+	Resources                HostResourceItem    `json:"resources,omitempty"`
+	DetailedResources        *HostResources      `json:"detailed_resources,omitempty"`
+	RequiredClaims           []string            `json:"required_claims,omitempty"`
+	RequiredRoles            []string            `json:"required_roles,omitempty"`
 }
 
 type OrchestratorHostUpdateRequest struct {

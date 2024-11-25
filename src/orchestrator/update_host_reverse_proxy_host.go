@@ -1,6 +1,8 @@
 package orchestrator
 
 import (
+	"time"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -68,6 +70,8 @@ func (s *OrchestratorService) UpdateHostReverseProxyHost(ctx basecontext.ApiCont
 
 func (s *OrchestratorService) CallUpdateHostReverseProxyHost(host *data_models.OrchestratorHost, rpHostId string, r models.ReverseProxyHostUpdateRequest) (*models.ReverseProxyHost, error) {
 	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(1 * time.Minute)
+
 	path := "/reverse-proxy/hosts/" + rpHostId
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {

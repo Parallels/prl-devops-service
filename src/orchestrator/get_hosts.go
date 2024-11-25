@@ -32,16 +32,16 @@ func (s *OrchestratorService) GetHosts(ctx basecontext.ApiContext, filter string
 		starTime := time.Now()
 		go func(host models.OrchestratorHost) {
 			defer wg.Done()
-			ctx.LogDebugf("Processing Host: %v", host.Host)
+			ctx.LogDebugf("[Orchestrator] Processing Host: %v", host.Host)
 			if host.Enabled {
 				host.State = s.GetHostHealthCheckState(&host)
-				ctx.LogDebugf("Host State: %v", host.State)
+				ctx.LogDebugf("[Orchestrator] Host %v state: %v", host.Host, host.State)
 			}
 
 			mutex.Lock()
 			result = append(result, &host)
 			mutex.Unlock()
-			ctx.LogDebugf("Processing Host: %v - Time: %v", host.Host, time.Since(starTime))
+			ctx.LogDebugf("[Orchestrator] Processing Host: %v - Time: %v", host.Host, time.Since(starTime))
 		}(host)
 	}
 

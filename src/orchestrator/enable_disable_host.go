@@ -27,6 +27,7 @@ func (s *OrchestratorService) EnableHost(ctx basecontext.ApiContext, hostIdOrHos
 		return nil, err
 	}
 
+	s.Refresh()
 	return updatedHost, nil
 }
 
@@ -50,5 +51,6 @@ func (s *OrchestratorService) DisableHost(ctx basecontext.ApiContext, hostIdOrHo
 		return nil, err
 	}
 
+	s.Refresh()
 	return updatedHost, nil
 }

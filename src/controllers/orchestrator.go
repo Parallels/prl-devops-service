@@ -272,6 +272,41 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithHandler(CreateOrchestratorVirtualMachineHandler()).
 		Register()
 
+	// region Catalog Cache
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/orchestrator/hosts/{id}/catalog/cache").
+		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithHandler(GetOrchestratorHostCatalogCacheHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/orchestrator/hosts/{id}/catalog/cache").
+		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithHandler(DeleteOrchestratorHostCatalogCacheHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/orchestrator/hosts/{id}/catalog/cache/{catalog_id}").
+		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithHandler(DeleteOrchestratorHostCatalogCacheItemHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/orchestrator/hosts/{id}/catalog/cache/{catalog_id}/{catalog_version}").
+		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithHandler(DeleteOrchestratorHostCatalogCacheItemVersionHandler()).
+		Register()
+
+		// endregion
+
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
@@ -714,7 +749,12 @@ func GetOrchestratorOverviewHandler() restapi.ControllerHandler {
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
 		result := make([]models.HostResourceOverviewResponse, 0)
-		resources, err := orchestratorSvc.GetResources(ctx)
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
+
+		resources, err := orchestratorSvc.GetResources(ctx, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -790,8 +830,12 @@ func GetOrchestratorVirtualMachinesHandler() restapi.ControllerHandler {
 		filter := GetFilterHeader(r)
 		defer Recover(ctx, r, w)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
-		vms, err := orchestratorSvc.GetVirtualMachines(ctx, filter)
+		vms, err := orchestratorSvc.GetVirtualMachines(ctx, filter, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -827,8 +871,12 @@ func GetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 
 		vars := mux.Vars(r)
 		id := vars["id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
-		vm, err := orchestratorSvc.GetVirtualMachine(ctx, id)
+		vm, err := orchestratorSvc.GetVirtualMachine(ctx, id, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -894,8 +942,12 @@ func GetOrchestratorVirtualMachineStatusHandler() restapi.ControllerHandler {
 
 		vars := mux.Vars(r)
 		id := vars["id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
-		response, err := orchestratorSvc.GetVirtualMachineStatus(ctx, id)
+		response, err := orchestratorSvc.GetVirtualMachineStatus(ctx, id, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -978,6 +1030,10 @@ func SetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 
 		vars := mux.Vars(r)
 		id := vars["id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -994,7 +1050,7 @@ func SetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		response, err := orchestratorSvc.ConfigureVirtualMachine(ctx, id, request)
+		response, err := orchestratorSvc.ConfigureVirtualMachine(ctx, id, request, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1026,6 +1082,10 @@ func StartOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 
 		vars := mux.Vars(r)
 		id := vars["id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
 		request := models.VirtualMachineConfigRequest{
 			Operations: []*models.VirtualMachineConfigRequestOperation{
@@ -1036,7 +1096,7 @@ func StartOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			},
 		}
 
-		response, err := orchestratorSvc.ConfigureVirtualMachine(ctx, id, request)
+		response, err := orchestratorSvc.ConfigureVirtualMachine(ctx, id, request, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1068,6 +1128,10 @@ func StopOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 
 		vars := mux.Vars(r)
 		id := vars["id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
 		request := models.VirtualMachineConfigRequest{
 			Operations: []*models.VirtualMachineConfigRequestOperation{
@@ -1078,7 +1142,7 @@ func StopOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			},
 		}
 
-		response, err := orchestratorSvc.ConfigureVirtualMachine(ctx, id, request)
+		response, err := orchestratorSvc.ConfigureVirtualMachine(ctx, id, request, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1111,6 +1175,10 @@ func ExecutesOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 
 		vars := mux.Vars(r)
 		id := vars["id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -1127,7 +1195,7 @@ func ExecutesOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		response, err := orchestratorSvc.ExecuteOnVirtualMachine(ctx, id, request)
+		response, err := orchestratorSvc.ExecuteOnVirtualMachine(ctx, id, request, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1159,8 +1227,12 @@ func GetOrchestratorHostVirtualMachinesHandler() restapi.ControllerHandler {
 
 		vars := mux.Vars(r)
 		id := vars["id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
-		vms, err := orchestratorSvc.GetHostVirtualMachines(ctx, id, GetFilterHeader(r))
+		vms, err := orchestratorSvc.GetHostVirtualMachines(ctx, id, GetFilterHeader(r), noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
 			return
@@ -1199,8 +1271,12 @@ func GetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		vmId := vars["vmId"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
-		vm, err := orchestratorSvc.GetHostVirtualMachine(ctx, id, vmId)
+		vm, err := orchestratorSvc.GetHostVirtualMachine(ctx, id, vmId, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
 			return
@@ -1270,8 +1346,12 @@ func GetOrchestratorHostVirtualMachineStatusHandler() restapi.ControllerHandler 
 		vars := mux.Vars(r)
 		id := vars["id"]
 		vmId := vars["vmId"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
-		response, err := orchestratorSvc.GetHostVirtualMachineStatus(ctx, id, vmId)
+		response, err := orchestratorSvc.GetHostVirtualMachineStatus(ctx, id, vmId, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1358,6 +1438,10 @@ func SetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		vmId := vars["vmId"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -1374,7 +1458,7 @@ func SetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		response, err := orchestratorSvc.ConfigureHostVirtualMachine(ctx, id, vmId, request)
+		response, err := orchestratorSvc.ConfigureHostVirtualMachine(ctx, id, vmId, request, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1408,6 +1492,10 @@ func StartOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		vmId := vars["vmId"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
 		request := models.VirtualMachineConfigRequest{
 			Operations: []*models.VirtualMachineConfigRequestOperation{
@@ -1418,7 +1506,7 @@ func StartOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			},
 		}
 
-		response, err := orchestratorSvc.ConfigureHostVirtualMachine(ctx, id, vmId, request)
+		response, err := orchestratorSvc.ConfigureHostVirtualMachine(ctx, id, vmId, request, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1452,6 +1540,10 @@ func StopOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		vmId := vars["vmId"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
 		request := models.VirtualMachineConfigRequest{
 			Operations: []*models.VirtualMachineConfigRequestOperation{
@@ -1462,7 +1554,7 @@ func StopOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			},
 		}
 
-		response, err := orchestratorSvc.ConfigureHostVirtualMachine(ctx, id, vmId, request)
+		response, err := orchestratorSvc.ConfigureHostVirtualMachine(ctx, id, vmId, request, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1497,6 +1589,10 @@ func ExecutesOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		vmId := vars["vmId"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -1513,7 +1609,7 @@ func ExecutesOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		response, err := orchestratorSvc.ExecuteOnHostVirtualMachine(ctx, id, vmId, request)
+		response, err := orchestratorSvc.ExecuteOnHostVirtualMachine(ctx, id, vmId, request, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1743,9 +1839,13 @@ func GetOrchestratorHostReverseProxyHostsHandler() restapi.ControllerHandler {
 
 		vars := mux.Vars(r)
 		id := vars["id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.GetHostReverseProxyHosts(ctx, id, "")
+		response, err := orchestratorSvc.GetHostReverseProxyHosts(ctx, id, "", noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1777,9 +1877,13 @@ func GetOrchestratorHostReverseProxyHostHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		reverseProxyHostId := vars["reverse_proxy_host_id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
 
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.GetHostReverseProxyHost(ctx, id, reverseProxyHostId)
+		response, err := orchestratorSvc.GetHostReverseProxyHost(ctx, id, reverseProxyHostId, noCache)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -2157,6 +2261,145 @@ func DisableOrchestratorHostReverseProxyHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("Successfully disabled orchestrator host %s reverse proxy", id)
+	}
+}
+
+// endregion
+
+// region Orchestrator Hosts Catalog Cache
+
+// @Summary		Gets orchestrator host catalog cache
+// @Description	This endpoint returns orchestrator host catalog cache
+// @Tags			Orchestrator
+// @Produce		json
+// @Param			id	path	string	true	"Host ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/hosts/{id}/catalog/cache [get]
+func GetOrchestratorHostCatalogCacheHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+		cacheItems, err := orchestratorSvc.GetHostCatalogCache(ctx, id)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(cacheItems)
+		ctx.LogInfof("Successfully got host %s cached Items", id)
+	}
+}
+
+// @Summary		Deletes an orchestrator host cache items
+// @Description	This endpoint deletes an orchestrator host cache items
+// @Tags			Orchestrator
+// @Produce		json
+// @Param			id						path	string	true	"Host ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/hosts/{id}/catalog/cache [delete]
+func DeleteOrchestratorHostCatalogCacheHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		err := orchestratorSvc.DeleteHostCatalogCacheItem(ctx, id, "", "")
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfof("Successfully deleted the orchestrator host %s catalog cache", id)
+	}
+}
+
+// @Summary		Deletes an orchestrator host cache item and all its children
+// @Description	This endpoint deletes an orchestrator host cache item and all its children
+// @Tags			Orchestrator
+// @Produce		json
+// @Param			id						path	string	true	"Host ID"
+// @Param			catalog_id				path	string	true	"Catalog ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/hosts/{id}/catalog/cache/{catalog_id} [delete]
+func DeleteOrchestratorHostCatalogCacheItemHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+		catalogId := vars["catalog_id"]
+
+		err := orchestratorSvc.DeleteHostCatalogCacheItem(ctx, id, catalogId, "")
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfof("Successfully deleted the orchestrator host %s catalog cache item %v", id, catalogId)
+	}
+}
+
+// @Summary		Deletes an orchestrator host cache item and all its children
+// @Description	This endpoint deletes an orchestrator host cache item and all its children
+// @Tags			Orchestrator
+// @Produce		json
+// @Param			id						path	string	true	"Host ID"
+// @Param			catalog_id				path	string	true	"Catalog ID"
+// @Param			catalog_version			path	string	true	"Catalog Version"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/hosts/{id}/catalog/cache/{catalog_id}/{catalog_version} [delete]
+func DeleteOrchestratorHostCatalogCacheItemVersionHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+		catalogId := vars["catalog_id"]
+		catalogVersion := vars["catalog_version"]
+
+		err := orchestratorSvc.DeleteHostCatalogCacheItem(ctx, id, catalogId, catalogVersion)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfof("Successfully deleted the orchestrator host %s catalog cache item %v and version", id, catalogId, catalogVersion)
 	}
 }
 

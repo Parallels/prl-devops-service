@@ -221,6 +221,21 @@ definitions:
       total_apple_vms:
         type: integer
     type: object
+  github_com_Parallels_prl-devops-service_models.HostResources:
+    properties:
+      system_reserved:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
+      total:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
+      total_apple_vms:
+        type: integer
+      total_available:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
+      total_in_use:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
+      total_reserved:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
+    type: object
   github_com_Parallels_prl-devops-service_models.HostReverseProxy:
     properties:
       enabled:
@@ -1142,6 +1157,8 @@ definitions:
         type: string
       description:
         type: string
+      detailed_resources:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResources'
       devops_version:
         type: string
       enabled:
@@ -1174,6 +1191,10 @@ definitions:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
       reverse_proxy:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostReverseProxy'
+      reverse_proxy_hosts:
+        items:
+          $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        type: array
       state:
         type: string
       tags:
@@ -1736,7 +1757,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.9.11
+  version: 0.9.12
 paths:
   /health/probe:
     get:

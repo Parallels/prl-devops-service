@@ -26,6 +26,8 @@ const (
 	DEFAULT_API_LOGIN_URL = "api/v1/auth/token"
 )
 
+var defaultTimeout = 5 * time.Hour
+
 type HttpClientService struct {
 	timeout              time.Duration
 	context              context.Context
@@ -144,9 +146,9 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 	var ctx context.Context
 	var cancel context.CancelFunc
 
-	// Ensure the timeout is set to 3 seconds if not already set
-	if c.timeout == 0 || c.timeout > 5*time.Minute {
-		c.timeout = 5 * time.Minute
+	// Ensure the timeout is set to a reasonable value
+	if c.timeout == 0 {
+		c.timeout = defaultTimeout
 	}
 
 	c.ctx.LogDebugf("[Api Client] Setting timeout to %v for host %v", c.timeout, url)

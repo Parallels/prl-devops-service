@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.12] - 2024-11-13
+
+- Fix timeout for the apis and set the default to 5 hours
+- Added more information to the orchestrator hosts endpoint
+- Added a fix for the push copy file
+- Added a fix in the uninstall of the root service to also clear the database file
+
 ## [0.9.11] - 2024-11-12
 
 - Improved orchestrator timeouts

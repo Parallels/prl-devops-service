@@ -506,29 +506,25 @@ func (c *Config) IsReverseProxyEnabled() bool {
 	return true
 }
 
-func (c *Config) GetReverseProxyConfig() *ReverseProxyConfig {
-	if c.config.ReverseProxy == nil {
-		c.config.ReverseProxy = &ReverseProxyConfig{
-			Host: "localhost",
-			Port: "8080",
-		}
-		if c.TlsEnabled() {
-			c.config.ReverseProxy.Ssl = &ReverseProxyConfigSsl{
-				Enabled: true,
-				Cert:    c.TlsCertificate(),
-				Key:     c.TlsPrivateKey(),
-			}
-		}
-		if c.IsCorsEnabled() {
-			c.config.ReverseProxy.Cors = &ReverseProxyConfigCors{
-				Enabled:        true,
-				AllowedOrigins: []string{"*"},
-				AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH", "CONNECT", "TRACE"},
-				AllowedHeaders: []string{"*"},
-			}
-		}
+func (c *Config) ReverseProxyHost() string {
+	host := c.GetKey(constants.REVERSE_PROXY_HOST_ENV_VAR)
+	if host == "" {
+		host = constants.DEFAULT_REVERSE_PROXY_HOST
 	}
 
+	return host
+}
+
+func (c *Config) ReverseProxyPort() string {
+	port := c.GetKey(constants.REVERSE_PROXY_PORT_ENV_VAR)
+	if port == "" {
+		port = constants.DEFAULT_REVERSE_PROXY_PORT
+	}
+
+	return port
+}
+
+func (c *Config) GetReverseProxyConfig() *ReverseProxyConfig {
 	return c.config.ReverseProxy
 }
 

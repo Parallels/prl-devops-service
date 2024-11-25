@@ -7,7 +7,12 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
-func (s *OrchestratorService) GetHostReverseProxyHosts(ctx basecontext.ApiContext, hostId string, filter string) ([]*models.ReverseProxyHost, error) {
+func (s *OrchestratorService) GetHostReverseProxyHosts(ctx basecontext.ApiContext, hostId string, filter string, noCache bool) ([]*models.ReverseProxyHost, error) {
+	if noCache {
+		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
+		s.Refresh()
+	}
+
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, err
@@ -21,7 +26,12 @@ func (s *OrchestratorService) GetHostReverseProxyHosts(ctx basecontext.ApiContex
 	return hosts, nil
 }
 
-func (s *OrchestratorService) GetHostReverseProxyHost(ctx basecontext.ApiContext, hostId string, rpHostId string) (*models.ReverseProxyHost, error) {
+func (s *OrchestratorService) GetHostReverseProxyHost(ctx basecontext.ApiContext, hostId string, rpHostId string, noCache bool) (*models.ReverseProxyHost, error) {
+	if noCache {
+		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
+		s.Refresh()
+	}
+
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, err

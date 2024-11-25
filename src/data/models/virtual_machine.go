@@ -4,6 +4,7 @@ import "encoding/json"
 
 type VirtualMachine struct {
 	ID                    string                             `json:"ID,omitempty"`
+	HostUrl               string                             `json:"host_url,omitempty"`
 	HostId                string                             `json:"host_id,omitempty"`
 	HostState             string                             `json:"host_state,omitempty"`
 	User                  string                             `json:"user,omitempty"`
@@ -59,6 +60,9 @@ func (m *VirtualMachine) Diff(source VirtualMachine) bool {
 		return true
 	}
 	if m.HostId != source.HostId {
+		return true
+	}
+	if m.HostUrl != source.HostUrl {
 		return true
 	}
 	if m.HostState != source.HostState {
