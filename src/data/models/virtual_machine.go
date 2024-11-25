@@ -62,6 +62,9 @@ func (m *VirtualMachine) Diff(source VirtualMachine) bool {
 	if m.HostId != source.HostId {
 		return true
 	}
+	if m.HostUrl != source.HostUrl {
+		return true
+	}
 	if m.HostState != source.HostState {
 		return true
 	}
