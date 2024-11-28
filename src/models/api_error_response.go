@@ -5,16 +5,16 @@ import (
 )
 
 type ApiErrorStack struct {
-	Message     string `json:"message"`
+	Error       string `json:"error"`
 	Description string `json:"description,omitempty"`
 	Path        string `json:"path,omitempty"`
-	Code        int    `json:"code"`
+	Code        int    `json:"code,omitempty"`
 }
 
 type ApiErrorResponse struct {
 	Message string          `json:"message"`
 	Stack   []ApiErrorStack `json:"stack,omitempty"`
-	Code    int             `json:"code"`
+	Code    int             `json:"code,omitempty"`
 }
 
 func IsSystemError(err error) bool {
@@ -69,26 +69,24 @@ func NewFromErrorWithCode(err error, code int) ApiErrorResponse {
 		Code: code,
 	}
 	if IsSystemError(err) {
-		sysError, ok := err.(errors.SystemError)
-		if ok {
-			message.Message = sysError.Message()
-			if len(sysError.NestedError) > 0 {
-				for _, nestedError := range sysError.NestedError {
-					stack := ApiErrorStack{
-						Message: nestedError.Message,
-					}
-					if nestedError.Path != "" {
-						stack.Path = nestedError.Path
-					}
-					if nestedError.Code != 0 {
-						stack.Code = nestedError.Code
-					}
-					if nestedError.Description != "" {
-						stack.Description = nestedError.Description
-					}
-
-					message.Stack = append(message.Stack, stack)
+		sysError := extractSystemError(err)
+		message.Message = sysError.Message()
+		if len(sysError.Stack) > 0 {
+			for _, nestedError := range sysError.Stack {
+				stack := ApiErrorStack{
+					Error: nestedError.Error,
 				}
+				if nestedError.Path != nil {
+					stack.Path = *nestedError.Path
+				}
+				if nestedError.Code != nil {
+					stack.Code = *nestedError.Code
+				}
+				if nestedError.Description != nil {
+					stack.Description = *nestedError.Description
+				}
+
+				message.Stack = append(message.Stack, stack)
 			}
 		}
 	} else {
@@ -101,17 +99,38 @@ func NewFromErrorWithCode(err error, code int) ApiErrorResponse {
 func (r *ApiErrorResponse) ToError() *errors.SystemError {
 	err := errors.NewWithCode(r.Message, r.Code)
 	if len(r.Stack) > 0 {
-		err.NestedError = make([]errors.NestedError, 0)
+		err.Stack = make([]errors.StackItem, 0)
 		for _, stack := range r.Stack {
-			nestedError := errors.NestedError{
-				Message:     stack.Message,
-				Code:        stack.Code,
-				Path:        stack.Path,
-				Description: stack.Description,
+			nestedError := errors.StackItem{
+				Error: stack.Error,
 			}
-			err.NestedError = append(err.NestedError, nestedError)
+			if stack.Path != "" {
+				nestedError.Path = &stack.Path
+			}
+			if stack.Code != 0 {
+				nestedError.Code = &stack.Code
+			}
+			if stack.Description != "" {
+				nestedError.Description = &stack.Description
+			}
+			err.Stack = append(err.Stack, nestedError)
 		}
 	}
 
 	return err
+}
+
+func extractSystemError(err error) *errors.SystemError {
+	if IsSystemError(err) {
+		sysError, ok := err.(errors.SystemError)
+		if !ok {
+			sysErrorP, ok := err.(*errors.SystemError)
+			if ok {
+				sysError = *sysErrorP
+			}
+		}
+		return &sysError
+	}
+
+	return nil
 }

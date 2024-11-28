@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"runtime/debug"
 
@@ -23,15 +22,10 @@ func GetBaseContext(r *http.Request) *basecontext.BaseContext {
 
 func Recover(ctx basecontext.ApiContext, r *http.Request, w http.ResponseWriter) {
 	if err := recover(); err != nil {
-		ctx.LogErrorf("Recovered from panic: %v\n%v", err, debug.Stack())
+		ctx.LogErrorf("Recovered from panic: %v\n%v", err, string(debug.Stack()))
 		sysErr := errors.NewWithCodef(http.StatusInternalServerError, "internal server error")
-		sysErr.NestedError = make([]errors.NestedError, 0)
-		sysErr.NestedError = append(sysErr.NestedError, errors.NestedError{
-			Message: fmt.Sprintf("%v", err.(error)),
-		}, errors.NestedError{
-			Message: string(debug.Stack()),
-		})
-
+		sysErr.Stack = make([]errors.StackItem, 0)
+		sysErr.AddStackMessage(string(debug.Stack()))
 		ReturnApiError(ctx, w, models.NewFromErrorWithCode(sysErr, http.StatusInternalServerError))
 	}
 }

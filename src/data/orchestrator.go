@@ -532,3 +532,16 @@ func (j *JsonDatabase) GetOrchestratorReverseProxyHost(ctx basecontext.ApiContex
 
 	return nil, ErrOrchestratorReverseProxyHostNotFound
 }
+
+func (j *JsonDatabase) GetOrchestratorReverseProxyConfig(ctx basecontext.ApiContext, hostId string) (*models.ReverseProxy, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	host, err := j.GetOrchestratorHost(ctx, hostId)
+	if err != nil {
+		return nil, err
+	}
+
+	return host.ReverseProxy, nil
+}

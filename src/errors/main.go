@@ -2,11 +2,12 @@ package errors
 
 import (
 	"fmt"
+	"strings"
 )
 
 type SystemError struct {
 	message     string
-	NestedError []NestedError
+	Stack       []StackItem
 	Path        string
 	code        int
 	description string
@@ -25,11 +26,37 @@ func (e SystemError) Error() string {
 	if e.Path != "" {
 		msg = fmt.Sprintf("%v, path: %v", msg, e.Path)
 	}
-	if len(e.NestedError) > 0 {
-		msg = fmt.Sprintf("%v, nested errors: %v", msg, e.NestedError)
+	if len(e.Stack) > 0 {
+		msg = fmt.Sprintf("%v, nested errors: %v", msg, e.Stack)
 	}
 
 	return msg
+}
+
+func (e *SystemError) AddStackError(err error) {
+	if e.Stack == nil {
+		e.Stack = make([]StackItem, 0)
+	}
+
+	e.AddStackMessage(err.Error())
+}
+
+func (e *SystemError) AddStackMessage(msg string) {
+	if e.Stack == nil {
+		e.Stack = make([]StackItem, 0)
+	}
+
+	errorMsg := strings.ReplaceAll(msg, "\t", "")
+	lines := strings.Split(errorMsg, "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		e.Stack = append(e.Stack, StackItem{
+			Error: line,
+		})
+	}
 }
 
 func (e SystemError) Message() string {
@@ -143,24 +170,31 @@ func NewWithCodeAndNestedErrorf(sysError SystemError, code int, format string, a
 		message: fmt.Sprintf(format, a...),
 		code:    code,
 	}
-	err.NestedError = make([]NestedError, 0)
-	nestedError := NestedError{
-		Message:     sysError.Message(),
-		Code:        sysError.Code(),
-		Path:        sysError.Path,
-		Description: sysError.Description(),
+	err.Stack = make([]StackItem, 0)
+
+	stackErrors := StackItem{
+		Error: sysError.Message(),
+	}
+	if sysError.Code() != 0 {
+		stackErrors.Code = &sysError.code
+	}
+	if sysError.Description() != "" {
+		stackErrors.Description = &sysError.description
+	}
+	if sysError.Path != "" {
+		stackErrors.Path = &sysError.Path
 	}
 
-	err.NestedError = append(err.NestedError, nestedError)
-	if len(sysError.NestedError) > 0 {
-		for _, nestedError := range sysError.NestedError {
-			nestedError := NestedError{
-				Message:     nestedError.Message,
+	err.Stack = append(err.Stack, stackErrors)
+	if len(sysError.Stack) > 0 {
+		for _, nestedError := range sysError.Stack {
+			nestedError := StackItem{
+				Error:       nestedError.Error,
 				Code:        nestedError.Code,
 				Path:        nestedError.Path,
 				Description: nestedError.Description,
 			}
-			err.NestedError = append(err.NestedError, nestedError)
+			err.Stack = append(err.Stack, nestedError)
 		}
 	}
 
