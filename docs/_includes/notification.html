@@ -1,27 +1,27 @@
 <div x-data="{visible: true}" markdown="0">
-    <div class="notification {{ include.status | default: 'is-warning' }}" x-show.transition.duration.300ms="visible">
-        {% if include.dismissable %}
-            <button class="delete" x-on:click="visible = false"></button>
+  <div class="notification {{ include.status | default: 'is-warning' }}" x-show.transition.duration.300ms="visible">
+    {% if include.dismissable %}
+    <button title="close" class="delete" x-on:click="visible = false"></button>
+    {% endif %}
+    <article class="media">
+      {% if include.icon != 'false' %}
+      <div class="media-left">
+        {% if include.status == 'is-info' %}
+        {% assign icon_default = include.icon | default: 'info' %}
+        {% elsif include.status == 'is-warning' %}
+        {% assign icon_default = include.icon | default: 'exclamation-triangle' %}
+        {% elsif include.status == 'is-danger' %}
+        {% assign icon_default = include.icon | default: 'exclamation' %}
+        {% else if include.icon %}
+        {% assign icon_default = include.icon %}
         {% endif %}
-        <article class="media">
-            {% if include.icon != 'false' %}
-                <div class="media-left">
-                    {% if include.status == 'is-info' %}
-                        {% assign icon_default = include.icon | default: 'info' %}
-                    {% elsif include.status == 'is-warning' %}
-                        {% assign icon_default = include.icon | default: 'exclamation-triangle' %}
-                    {% elsif include.status == 'is-danger' %}
-                        {% assign icon_default = include.icon | default: 'circle-exclamation' %}
-                    {% else if include.icon %}
-                        {% assign icon_default = include.icon %}
-                    {% endif %}
-                    {% assign icon = "fa-" | append: icon_default %}
-                    <span class="icon"><i class="fa-solid {{icon}} fa-lg"></i></span>
-                </div>
-            {% endif %}
-            <div class="media-content">
-                <div class="content">{{ include.message | markdownify }}</div>
-            </div>
-        </article>
-    </div>
+        {% assign icon = "fa-" | append: icon_default %}
+        <span class="icon"><i class="fa-solid {{icon}} fa-lg"></i></span>
+      </div>
+      {% endif %}
+      <div class="media-content">
+        <div class="content">{{ include.message | markdownify }}</div>
+      </div>
+    </article>
+  </div>
 </div>

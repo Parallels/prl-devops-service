@@ -10,9 +10,6 @@ version: 0.5.4
 
 {{ installationContent.content }}
 
-
-
-
 ### Getting Help
 
 If you need help with the service you can run the following command to get a list of all the available commands.
@@ -29,8 +26,8 @@ For example:
 prldevops api --help
 ```
 
-<div class="flex flex-center">
-  <img style="width: calc(100% - 30%)" src="{{ site.url }}{{ site.baseurl }}/img/prldevops_help.gif" alt="DevOps Help"/>
+<div class="document-img">
+  <img src="{{ site.url }}{{ site.baseurl }}/img/prldevops_help.gif" alt="DevOps Help"/>
 </div>
 
 ### Installing Tools
@@ -47,7 +44,7 @@ prldevops install
 
 ### Next Steps
 
-You now have the service installed and running, you can dive a bit more into our [official documentation]({{ site.url }}{{ site.baseurl }}/docs/) to see what else you can do with the service. 
+You now have the service installed and running, you can dive a bit more into our [official documentation]({{ site.url }}{{ site.baseurl }}/docs/) to see what else you can do with the service.
 
 You can also check our examples and tutorials to see how you can use the service to automate your virtual machine management.
 

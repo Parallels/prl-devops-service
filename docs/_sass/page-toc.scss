@@ -1,0 +1,57 @@
+.page-toc {
+  padding: 16px 48px 5px 24px;
+  border-radius: 6px;
+  border: solid 1px #b6b6b6;
+  background-color: #f7f7f7;
+  margin-bottom: 32px;
+
+  .content-label {
+    font-family: 'Open Sans';
+    font-size: 12px;
+    font-weight: bold;
+    font-stretch: normal;
+    font-style: normal;
+    line-height: 2;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #303236;
+    margin-bottom: 10px;
+  }
+
+  .menu-item {
+    font-family: 'Open Sans';
+    font-size: 16px;
+    font-weight: normal;
+    font-stretch: normal;
+    font-style: normal;
+    line-height: 1.5;
+    letter-spacing: normal;
+    color: #303236;
+  }
+
+  li {
+    padding-bottom: 10px;
+  }
+
+  ul {
+    &.menu-root-item {
+      li {
+        border-left: unset;
+      }
+    }
+  }
+
+  .menu-list {
+    a {
+      padding: unset;
+    }
+
+    li {
+      border-left: 1px solid #b6b6b6;
+    }
+  }
+
+  @media screen and (max-width: 768px) {
+    display: none;
+  }
+}

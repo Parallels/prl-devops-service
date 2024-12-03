@@ -1,7 +1,7 @@
 title: Parallels Desktop DevOps Service | Manage and Orchestrate VMs Efficientlye
 brand: Parallels Desktop
 brand_url: https://www.parallels.com/products/desktop
-brand_img: pl-logo-dk.png
+brand_img: devops-logo.svg
 email: support@parallels.com
 tagline: "Parallels Desktop DevOps Service"
 description: >-
@@ -9,7 +9,7 @@ description: >-
   Ideal for CI/CD pipelines. Free for up to 10 users.
 baseurl: "/prl-devops-service" # the subpath of your site, e.g. /blog
 url: "https://parallels.github.io" # the base hostname & protocol for your site, e.g. http://example.com
-github_username:  Parallels
+github_username: Parallels
 permalink: pretty
 
 version: 0.5.5
@@ -30,7 +30,7 @@ plugins:
 disqus:
   shortname: parallels
 
-exclude: 
+exclude:
   - Gemfile
   - clean-theme.gemspec
   - Gemfile.lock
@@ -46,14 +46,12 @@ sass:
   style: compressed
 
 defaults:
-  -
-    scope:
+  - scope:
       path: ""
       type: "pages"
     values:
       show_sidebar: false
-  -
-    scope:
+  - scope:
       path: ""
       type: "posts"
     values:
@@ -73,5 +71,5 @@ footer_menu: footer
 fixed_navbar: true
 
 collections:
-  products: 
+  products:
     output: true

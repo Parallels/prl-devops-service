@@ -15,7 +15,6 @@ You can download the latest version of the **Parallels Desktop DevOps Service** 
 
 {% include inner-tabs.html data="download_tabs" %}
 
-
 ### Quick Configuration
 
 By default the **devops service** will run with default values but these can be configured by creating a `config.yaml` file in the same directory as the binary. Below is an example of a configuration file.
@@ -45,7 +44,7 @@ sudo prldevops install service /usr/bin/prldevops
 launchctl start com.parallels.devops-service
 ```
 
-This command will start the service, and the REST API can then be accessed at `http://localhost:80`. 
+This command will start the service, and the REST API can then be accessed at `http://localhost:80`.
 
 {% include notification.html message="To change the configuration you will need to stop the daemon before doing any changes." status="is-info" icon="info" %}
 
@@ -60,7 +59,6 @@ curl http://localhost:80/api/health/probe
 or to go to the browser and navigate to the [swagger page](http://localhost:80//swagger/index.html){:target="_blank"}.
 
 We also make available a Postman collection that you can import and use to interact with the `DevOps Service`. You can download it [here]({{ site.url }}{{ site.baseurl }}/Parallels_Desktop_API.postman_collection.json){:target="_blank"}.
-
 
 ### Running the service as a container
 

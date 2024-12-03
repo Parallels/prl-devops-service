@@ -1,0 +1,50 @@
+{% if page.callouts %}
+{% assign callouts=site.data.[page.callouts] %}
+<div class="hero-callout {% if callouts.height %} {{ callouts.height }} {% else %} is-medium {% endif %} {{ callouts.style }}">
+  <div class="hero-callout-body">
+    <div class="hero-callout-container">
+      <div class="columns hero-callout-columns is-multiline is-centered">
+        {% for callout in callouts.items %}
+        <div class="column is-4 has-text-centered">
+          {% if callout.icon %}
+          <div class="icon pr-callout-icon">
+            {% if callout.icon_brand %}
+            <i class="fab {{ callout.icon }} fa-2x"></i>
+            {% else %}
+            <i class="fas {{ callout.icon }} fa-2x"></i>
+            {% endif %}
+          </div>
+          {% else if callout.img_icon %}
+          <div class="icon pr-callout-icon">
+            <img class="img-icon" src="{{ site.baseurl }}/assets/img/{{ callout.img_icon }}" alt="{{ callout.img_icon }}">
+          </div>
+          {% endif %}
+          <div class="callout-body-container">
+            <p class="title">{{ callout.title }}</p>
+            {% if callout.subtitle %}
+            <p class="subtitle">{{ callout.subtitle }}</p>
+            {% endif %}
+
+            {% if callout.description %}
+            <div class="description">
+              <div class="content">
+                <p>{{ callout.description | newline_to_br }}</p>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if callout.call_to_action_name %}
+            <div class="callout-action">
+              <a href="{{ callout.call_to_action_link | relative_url }}" class="callout-action-button">
+                {{ callout.call_to_action_name }}<i class="fas fa-arrow-right"></i>
+              </a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}

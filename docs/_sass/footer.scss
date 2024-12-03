@@ -1,0 +1,69 @@
+.footer {
+  padding: 28px 32px 34px 44px;
+  background-color: hsl(0, 0%, 96%);
+  min-height: 92px;
+  width: 100%;
+
+  .footer-container {
+    display: flex;
+    align-items: center;
+    font-family: 'Open Sans';
+    font-size: 16px;
+    font-weight: 600;
+    font-stretch: normal;
+    font-style: normal;
+    line-height: 1.5;
+    letter-spacing: normal;
+    color: #7b7d85;
+
+    .prl-spacer {
+      flex-grow: 1;
+      flex-shrink: 1;
+    }
+
+    .copyright {
+      display: flex;
+
+      @media screen and (max-width: 768px) {
+        flex-direction: column;
+        align-items: end;
+      }
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      margin-right: 20px;
+
+      @media screen and (max-width: 768px) {
+        align-items: flex-start;
+        margin-right: 0 !important;
+        flex-direction: column;
+      }
+
+      .footer-alludo-icon {
+        fill: #7b7d85;
+      }
+
+      svg {
+        width: 132px;
+        height: 24px;
+        margin-left: 6px;
+        margin-bottom: 15px;
+
+        @media screen and (max-width: 768px) {
+          margin-left: 0;
+        }
+      }
+
+
+      .logo {
+        font-size: 20px;
+        font-weight: 800;
+        color: #7b7d85;
+      }
+
+
+    }
+  }
+}

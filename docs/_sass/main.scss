@@ -13,29 +13,27 @@ $dark: #363636;
 @import "../node_modules/bulma/bulma.sass";
 $hero-darken: $dark !default;
 
+@import "../node_modules/bulma-block-list/src/block-list.scss";
 @import "layout";
 @import "hero";
 @import "syntax";
 @import "showcase";
 @import "api";
-@import "../node_modules/bulma-block-list/src/block-list.scss";
+@import "tabs";
+@import "buttons";
+@import "notifications";
+@import "menu-bar";
+@import "page-toc";
+@import "navbar";
+@import "footer";
 
 .gh-sponsor {
   color: #ea4aaa;
 }
 
-.tab-container {
-  padding: 0 2.5rem;
-}
 
 
-.footer {
-  border-top: #A7AEB5 solid 1px;
-}
 
-.big_padding {
-  padding: 2rem 16rem !important;
-}
 
 .index_release {
   h1 {

@@ -27,6 +27,8 @@ var getJSON = function (url, callback) {
   xhr.send();
 };
 
+
+
 function getOS() {
   const userAgent = window.navigator.userAgent,
     platform =
@@ -72,6 +74,20 @@ window.onload = function () {
       document.getElementById("download_tab_linux_content").style.display = "block";
     }
   }
+
+  document.querySelectorAll('aside[data-target="page-menu"]').forEach(function (element) {
+    element.addEventListener('click', function () {
+      target_menu = document.querySelectorAll('aside[data-id="page-menu"]');
+      target_menu.forEach(function (menu) {
+        menu.classList.toggle('expanded');
+      });
+      caret = element.querySelectorAll('i[data-target="page-menu"]');
+      caret.forEach(function (c) {
+        c.classList.toggle('expanded');
+      });
+      element.classList.toggle('expanded');
+    });
+  });  
 };
 
 jQuery(function() {
@@ -117,7 +133,6 @@ jQuery(function() {
 		});
 	}
 });
-
 
 // jQuery(function() {
 //     var $el;

@@ -42,7 +42,6 @@ service beyond 10 users, you will need to purchase a Parallels Desktop Business
 license. The good news is that no extra license is required for this service
 once you have purchased the Parallels Desktop Business license.
 
-
 <p class="title is-4">Latest Release</p>
 <div class="columns is-multiline">
     {% for post in site.posts limit:1 %}

@@ -1,18 +1,18 @@
 style: is-light
 items:
   - title: Run a Catalog service
-    description: |- 
-      Quickly share golden images in a secure way with your organization or team
-    icon: fa-book-open
+    description: |-
+      Securely share golden images with your team quickly.
+    img_icon: open-book.svg
     call_to_action_name: Get Started
     call_to_action_link: /examples/remote-catalog
   - title: Control Multiple Hosts
     description: Manage multiple hosts seamless in a single pane
     call_to_action_name: Get Started
     call_to_action_link: /examples/orchestrator
-    icon: fa-server
-  - title: Github Actions 
+    img_icon: servers.svg
+  - title: Github Actions
     description: Work with Github Actions and automate your CI/CD pipeline
-    icon: fa-rocket
+    img_icon: rocket.svg
     call_to_action_name: Get Started
     call_to_action_link: /examples/github-actions

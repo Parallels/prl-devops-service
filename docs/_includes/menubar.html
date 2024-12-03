@@ -1,138 +1,273 @@
-{% assign menus = site.data.[page.menubar] %}
-{% assign urlParts = page.url | split: '/' %}
+{% assign submenu_class_env = "sub-menu-item" %}
+{% assign item_class_env = "menu-item-%level%" %}
+{% assign root_class= "menu-item-root" %}
+{% assign minHeader = 2 %}
+{% assign maxHeader = 6 %}
 
-<aside class="menu">
-    {% for menu in menus %}
-    {% assign hidden = menu.hidden | default: false %}
-    {% if hidden == false %}
-        <p class="menu-label">{{ menu.label }}</p>
-        <ul class="menu-list">
-            {% for item in menu.items %}
-            {% assign hidden = item.hidden | default: false %}
-            {% if hidden == false %}
-                <li>
-                    {% if item.link %}
-                        {% assign subUrl = item.link | append: menu.label | replace: ' ', '_' %}
-                    {% else %} 
-                        {% assign subUrl = item.path %}
-                    {% endif %}
-                    {% assign itemUrlParts = item.link | split: '/' %}
-                    {% assign itemCheckArray = page.url | split: subUrl%}
-                    {% if item.link %} 
-                        {% if item.items %}
-                            <a href="{{ item.link | relative_url }}" class="item {% if itemCheckArray[0] == '' or item.link == page.url %}is-active is-expanded{% endif %} prevent-select">
-                                <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
-                                <span class="prevent-select">{{ item.name }}</span>
-                            </a>
-                        {% else %}
-                            <a href="{{ item.link | relative_url }}" class="item {% if item.link == page.url %}is-active{% endif %} prevent-select">
-                                <span class="prevent-select" >{{ item.name }}</span>
-                            </a>
-                        {% endif %} 
-                    {% else %}
-                    <span class="item {% if itemCheckArray[0] == '' %}is-expanded is-active {% endif %} prevent-select">
-                        <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
-                        <span class="prevent-select">{{ item.name }}</span>
-                    </span>
-                {% endif %}
-                {% if item.items %}
-                    <ul class="sub-item-list {% if itemCheckArray[0] == '' or item.link == page.url %} is-show {% endif %}">
-                    {% for subitem in item.items %}
-                        {% assign hidden = subitem.hidden | default: false %}
-                        {% if hidden == false %}
-                            {% if subitem.link %}
-                                {% assign subItemUrl = subitem.link %}
-                            {% else %} 
-                                {% assign subItemUrl = subitem.path %}
-                            {% endif %}
-                            {% assign subItemUrlParts = subitem.link | split: '/' %}
-                            {% assign subItemCheckArray = page.url | split: subItemUrl %}
-                            <li>
-                            {%if subItemUrl == page.url %}
-                                <span class="item level-1 {% if  subItemUrl == page.url %}is-expanded is-active {% endif %} prevent-select">
-                                    {% if subitem.items %}
-                                    <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
-                                    {% endif %}
-                                    <span class="prevent-select" >{{ subitem.name }}</span>
-                                </span>
-                            {% else %}
-                                {% if subitem.items %}
-                                    <span class="item level-1 {% if subItemCheckArray[0] == '' %}is-expanded {% endif %} prevent-select">
-                                        {% if subitem.items %}
-                                        <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
-                                        {% endif %}
-                                        <span class="prevent-select" >{{ subitem.name }}</span>
-                                    </span>
-                                {% else %}
-                                <a href="{{ subitem.link | relative_url }}" class="sub-item level-1 {% if subitem.link == page.url %}is-active {% endif %} prevent-select">
-                                    {% if subitem.items %}
-                                    <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
-                                    {% endif %}
-                                    {{ subitem.name }}
-                                </a>
-                                {% endif %}
-                            {% endif %}
-                            {% if subitem.items %}
-                                <ul class="sub-item-list level-2 {% if subitem.link == page.url %} is-show {% endif %}">
-                                {% assign sorted_docs = subitem.items  %}
-                                {% for subSubitem in sorted_docs %}
-                                    {% assign hidden = subSubitem.hidden | default: false %}
-                                    {% if hidden == false %}
-                                    <li>
-                                        <a href="{{ subSubitem.link | relative_url }}" class="sub-item leve-2 {% if subSubitem.link == page.url %}is-active{% endif %} prevent-select">
-                                            <span class="prevent-select"> {{ subSubitem.name }} </span>
-                                            {% if subSubitem.method %}
-                                            <span class="api-doc prevent-select">
-                                                <span class="endpoint {{ subSubitem.method | upcase }} prevent-select"></span>
-                                            </span>
-                                            {% else %}
-                                            <span class=" prevent-select"></span>
-                                            {% endif %}
-                                        </a>
-                                    </li>
-                                    {% endif %}
-                                {% endfor %}
-                                </ul>
-                            {% endif %}
-                            </li>
-                        {% endif %}
-                    {% endfor %}
-                    </ul>
-                    {% endif %}
-                </li>
-            {% endif %}
-            {% endfor %}
-        </ul>
-    {% endif %}
+{% capture tocWorkspace %}
+{% capture newline %}
+{% endcapture %}
+{% assign newline = newline | rstrip %} <!-- Remove the extra spacing but preserve the newline -->
+
+{% capture deprecation_warnings %}{% endcapture %}
+
+{% if include.baseurl %}
+{% capture deprecation_warnings %}{{ deprecation_warnings }}<!-- jekyll-toc :: "baseurl" has been deprecated, use "base_url" instead -->{{ newline }}{% endcapture %}
+{% endif %}
+
+{% if include.skipNoIDs %}
+{% capture deprecation_warnings %}{{ deprecation_warnings }}<!-- jekyll-toc :: "skipNoIDs" has been deprecated, use "skip_no_ids" instead -->{{ newline }}{% endcapture %}
+{% endif %}
+
+{% capture jekyll_toc %}{% endcapture %}
+{% assign orderedList = include.ordered | default: false %}
+{% assign flatToc = include.flat_toc | default: false %}
+{% assign baseURL = include.base_url | default: include.baseurl | default: '' %}
+{% assign skipNoIDs = include.skip_no_ids | default: include.skipNoIDs | default: false %}
+{% assign nodes = include.html | strip | split: '<h' %} {% assign firstHeader=true %} {% assign currLevel=0 %} {% assign lastLevel=0 %} {% capture listModifier %}{% if orderedList %}ol{% else %}ul{%
+  endif %}{% endcapture %} {% for node in nodes %} {% if node=="" %} {% continue %} {% endif %} {% assign currLevel=node | replace: '"' , '' | slice: 0, 1 | times: 1 %} {% if currLevel < minHeader or
+  currLevel> maxHeader %}
+  {% continue %}
+  {% endif %}
+
+  {% assign _workspace = node | split: '</h' %} {% assign _idWorkspace=_workspace[0] | split: 'id="' %} {% assign _idWorkspace=_idWorkspace[1] | split: '"' %} {% assign htmlID=_idWorkspace[0] %} {%
+  assign _classWorkspace=_workspace[0] | split: 'class="' %} {% assign _classWorkspace=_classWorkspace[1] | split: '"' %} {% assign htmlClass=_classWorkspace[0] %} {% if htmlClass contains "no_toc" %}
+  {% continue %} {% endif %} {% if firstHeader %} {% assign minHeader=currLevel %} {% endif %} {% capture _hAttrToStrip %}{{ _workspace[0] | split: '>' | first }}>{% endcapture %}
+{% assign header = _workspace[0] | replace: _hAttrToStrip, '' %}
+
+{% if item_class_env and item_class_env != blank %}
+{% capture listItemClass %} class="{{ item_class_env | replace: '%level%', currLevel | split: '.' | join: ' ' }}"{% endcapture %}
+{% endif %}
+
+{% if submenu_class_env and submenu_class_env != blank %}
+{% assign subMenuLevel = currLevel | minus: 1 %}
+{% capture subMenuClass %} class="{{ submenu_class_env | replace: '%level%', subMenuLevel | split: '.' | join: ' ' }}"{% endcapture %}
+{% endif %}
+
+{% capture anchorBody %}{% if include.sanitize %}{{ header | strip_html }}{% else %}{{ header }}{% endif %}{% endcapture %}
+
+{% if htmlID %}
+{% capture anchorAttributes %} href="{% if baseURL %}{{ baseURL }}{% endif %}#{{ htmlID }}"{% endcapture %}
+
+{% if include.anchor_class %}
+{% capture anchorAttributes %}{{ anchorAttributes }} class="{{ include.anchor_class | split: '.' | join: ' ' }}"{% endcapture %}
+{% endif %}
+
+{% capture listItem %}<a{{ anchorAttributes }}>{{ anchorBody }}</a>{% endcapture %}
+  {% elsif skipNoIDs == true %}
+  {% continue %}
+  {% else %}
+  {% capture listItem %}{{ anchorBody }}{% endcapture %}
+  {% endif %}
+
+  {% if currLevel > lastLevel and flatToc == false %}
+  {% capture jekyll_toc %}{{ jekyll_toc }}<{{ listModifier }}{{ subMenuClass }}>{% endcapture %}
+    {% elsif currLevel < lastLevel and flatToc==false %} {% assign repeatCount=lastLevel | minus: currLevel %} {% for i in (1..repeatCount) %} {% capture jekyll_toc %}{{ jekyll_toc }}</li>
+  </{{ listModifier }}>{% endcapture %}
+  {% endfor %}
+
+  {% capture jekyll_toc %}{{ jekyll_toc }}</li>{% endcapture %}
+  {% else %}
+  {% capture jekyll_toc %}{{ jekyll_toc }}</li>{% endcapture %}
+  {% endif %}
+
+  {% capture jekyll_toc %}{{ jekyll_toc }}<li{{ listItemClass }}>{{ listItem }}{% endcapture %}
+
+    {% assign lastLevel = currLevel %}
+    {% assign firstHeader = false %}
     {% endfor %}
-</aside>
 
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    var $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll(".item"), 0);
-    if ($navbarBurgers.length > 0) {
-      $navbarBurgers.forEach(function ($el) {
+    {% if flatToc == true %}
+    {% assign repeatCount = 1 %}
+    {% else %}
+    {% assign repeatCount = minHeader | minus: 1 %}
+    {% assign repeatCount = lastLevel | minus: repeatCount %}
+    {% endif %}
 
-          $el.addEventListener("click", function () {
-            $el.classList.toggle("is-expanded");
-            $ul = $el.nextElementSibling;
-            if ($el.classList.contains("is-expanded")) {
-              $ul.classList.add("is-show");
-            } else {
-              $ul.classList.remove("is-show");
-            }
-            console.log($ul);
-            console.log($ul.children);
-            ul_children = $ul.children;
-            for (var i = 0; i < ul_children.length; i++) {
-              console.log(ul_children[i].classList);
-              if (ul_children[i].classList.contains("sub-item-list")) {
-                ul_children[i].classList.remove("is-show");
-              }
-            }
-          });
-        
-      });
-    }
-  });
-</script>
+    {% for i in (1..repeatCount) %}
+    {% capture jekyll_toc %}{{ jekyll_toc }}</li>
+    </{{ listModifier }}>{% endcapture %}
+    {% endfor %}
+
+    {% if jekyll_toc != '' %}
+    {% assign rootAttributes = '' %}
+    {% if root_class and root_class != blank %}
+    {% capture rootAttributes %} class="{{ root_class | split: '.' | join: ' ' }}"{% endcapture %}
+    {% endif %}
+
+    {% if include.id and include.id != blank %}
+    {% capture rootAttributes %}{{ rootAttributes }} id="{{ include.id }}"{% endcapture %}
+    {% endif %}
+
+    {% if rootAttributes %}
+    {% assign nodes = jekyll_toc | split: '>' %}
+    {% capture jekyll_toc %}<{{ listModifier }}{{ rootAttributes }}>{{ nodes | shift | join: '>' }}>{% endcapture %}
+      {% endif %}
+      {% endif %}
+      {% endcapture %}{% assign tocWorkspace = '' %}
+
+      {% assign menus = site.data.[page.menubar] %}
+      {% assign urlParts = page.url | split: '/' %}
+      <aside class="menu" aria-expanded="false" data-id="page-menu">
+        {% for menu in menus %}
+        {% assign hidden = menu.hidden | default: false %}
+        {% if hidden == false %}
+        {% for item in menu.items %}
+        {% if item.link %}
+        {% assign subUrl = item.link | append: menu.label | replace: ' ', '_' %}
+        {% else %}
+        {% assign subUrl = item.path %}
+        {% endif %}
+        {% assign itemCheckArray = page.url | split: subUrl%}
+        {% assign hasActiveItem = false %}
+        {% if itemCheckArray[0] == '' or item.link == page.url %}
+        {% assign hasActiveItem = true %}
+        {% endif %}
+        {% endfor %}
+        <p class="menu-label {% if hasActiveItem %}is-active {% endif %}">{{ menu.label }}</p>
+        <ul class="menu-list {% if hasActiveItem %}is-active {% endif %}">
+          {% for item in menu.items %}
+          {% assign hidden = item.hidden | default: false %}
+          {% if hidden == false %}
+          <li class="menu-item {% if itemCheckArray[0]=='' or item.link==page.url %}is-active {% endif %}">
+            {% if item.link %}
+            {% assign subUrl = item.link | append: menu.label | replace: ' ', '_' %}
+            {% else %}
+            {% assign subUrl = item.path %}
+            {% endif %}
+            {% assign itemUrlParts = item.link | split: '/' %}
+            {% assign itemCheckArray = page.url | split: subUrl%}
+            {% if item.link %}
+            {% if item.items %}
+            <a href=" {{ item.link | relative_url }}" class="item {% if itemCheckArray[0] == '' or item.link == page.url %}is-active is-expanded{% endif %} prevent-select">
+              <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
+              <span class="prevent-select">{{ item.name }}</span>
+            </a>
+            {% if itemCheckArray[0] == '' or item.link == page.url %}
+            <div class="contents page-toc-menu {% if include.side_toc %}column is-4 side-toc {% else %}mt-3{% endif %}">
+              <div class="menu">
+                <p class="menu-label">{{ include.contents_title }}</p>
+                {{ jekyll_toc | markdownify | strip }}
+              </div>
+            </div>
+            {% endif %}
+            {% else %}
+            <a href="{{ item.link | relative_url }}" class="item {% if item.link == page.url %}is-active{% endif %} prevent-select">
+              <span class="prevent-select">{{ item.name }}</span>
+            </a>
+            {% if itemCheckArray[0] == '' or item.link == page.url %}
+            <div class="page-toc-menu">
+              <div class="menu">
+                <p class="menu-label">{{ include.contents_title }}</p>
+                {{ jekyll_toc | markdownify | strip }}
+              </div>
+            </div>
+            {% endif %}
+            {% endif %}
+            {% else %}
+            <span class="item {% if itemCheckArray[0] == '' %}is-expanded is-active {% endif %} prevent-select">
+              <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
+              <span class="prevent-select">{{ item.name }}</span>
+            </span>
+            {% endif %}
+            {% if item.items %}
+            <ul class="sub-item-list {% if itemCheckArray[0] == '' or item.link == page.url %} is-show {% endif %}">
+              {% for subitem in item.items %}
+              {% assign hidden = subitem.hidden | default: false %}
+              {% if hidden == false %}
+              {% if subitem.link %}
+              {% assign subItemUrl = subitem.link %}
+              {% else %}
+              {% assign subItemUrl = subitem.path %}
+              {% endif %}
+              {% assign subItemUrlParts = subitem.link | split: '/' %}
+              {% assign subItemCheckArray = page.url | split: subItemUrl %}
+              <li>
+                {%if subItemUrl == page.url %}
+                <span class="item level-1 {% if  subItemUrl == page.url %}is-expanded is-active {% endif %} prevent-select">
+                  {% if subitem.items %}
+                  <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
+                  {% endif %}
+                  <span class="prevent-select">{{ subitem.name }}</span>
+                </span>
+                {% else %}
+                {% if subitem.items %}
+                <span class="item level-1 {% if subItemCheckArray[0] == '' %}is-expanded {% endif %} prevent-select">
+                  {% if subitem.items %}
+                  <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
+                  {% endif %}
+                  <span class="prevent-select">{{ subitem.name }}</span>
+                </span>
+                {% else %}
+                <a href="{{ subitem.link | relative_url }}" class="sub-item level-1 {% if subitem.link == page.url %}is-active {% endif %} prevent-select">
+                  {% if subitem.items %}
+                  <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
+                  {% endif %}
+                  {{ subitem.name }}
+                </a>
+                {% endif %}
+                {% endif %}
+                {% if subitem.items %}
+                <ul class="sub-item-list level-2 {% if subitem.link == page.url %} is-show {% endif %}">
+                  {% assign sorted_docs = subitem.items %}
+                  {% for subSubitem in sorted_docs %}
+                  {% assign hidden = subSubitem.hidden | default: false %}
+                  {% if hidden == false %}
+                  <li>
+                    <a href="{{ subSubitem.link | relative_url }}" class="sub-item leve-2 {% if subSubitem.link == page.url %}is-active{% endif %} prevent-select">
+                      <span class="prevent-select"> {{ subSubitem.name }} </span>
+                      {% if subSubitem.method %}
+                      <span class="api-doc prevent-select">
+                        <span class="endpoint {{ subSubitem.method | upcase }} prevent-select"></span>
+                      </span>
+                      {% else %}
+                      <span class=" prevent-select"></span>
+                      {% endif %}
+                    </a>
+                  </li>
+                  {% endif %}
+                  {% endfor %}
+                </ul>
+                {% endif %}
+              </li>
+              {% endif %}
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </li>
+          {% endif %}
+          {% endfor %}
+        </ul>
+        {% endif %}
+        {% endfor %}
+      </aside>
+
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          var $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll(".item"), 0);
+          if ($navbarBurgers.length > 0) {
+            $navbarBurgers.forEach(function ($el) {
+
+              $el.addEventListener("click", function () {
+                $el.classList.toggle("is-expanded");
+                $ul = $el.nextElementSibling;
+                if ($el.classList.contains("is-expanded")) {
+                  $ul.classList.add("is-show");
+                } else {
+                  $ul.classList.remove("is-show");
+                }
+                console.log($ul);
+                console.log($ul.children);
+                ul_children = $ul.children;
+                for (var i = 0; i < ul_children.length; i++) {
+                  console.log(ul_children[i].classList);
+                  if (ul_children[i].classList.contains("sub-item-list")) {
+                    ul_children[i].classList.remove("is-show");
+                  }
+                }
+              });
+
+            });
+          }
+        });
+      </script>

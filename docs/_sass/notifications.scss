@@ -1,0 +1,53 @@
+.notification {
+  padding: 12px 21px 12px 27px;
+  border-radius: 6px;
+
+
+  &.is-info {
+    background-color: #3e8ed0;
+    color: #fff;
+
+    i {
+      color: #fff;
+    }
+
+    p {
+      color: #fff;
+      font-family: 'Open Sans';
+      font-size: 16px;
+      font-weight: normal;
+      font-stretch: normal;
+      font-style: normal;
+      line-height: 1.5;
+      letter-spacing: normal;
+    }
+  }
+
+
+  &.is-warning {
+
+    color: #303236;
+
+    i {
+      color: #303236;
+    }
+
+    p {
+      color: #303236;
+      font-family: 'Open Sans';
+      font-size: 16px;
+      font-weight: normal;
+      font-stretch: normal;
+      font-style: normal;
+      line-height: 1.5;
+      letter-spacing: normal;
+    }
+  }
+
+  .media {
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    text-align: inherit;
+  }
+}

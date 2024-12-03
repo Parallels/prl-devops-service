@@ -1,0 +1,22 @@
+<div class="hero-column">
+  <div class="hero-title {% if page.is_home %}hero-home-section{% endif %}">
+    <div class="hero-text-container {% if page.is_home %}hero-home-section{% endif %} {% if page.menubar %}hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
+      {% if page.is_home %}
+      {% else %}
+      <p class="hero-title {% if page.is_home %}home-title{% endif %} {% if page.menubar %}hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
+        {{ page.title }}
+      </p>
+      {% endif %}
+      <p class="hero-subtitle {% if page.is_home %}home-subtitle{% endif %} {% if page.menubar %}hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
+        {{ page.subtitle }}
+      </p>
+    </div>
+  </div>
+  {% if page.hero_link %}
+  <div class="hero-link {% if page.is_home %}home-section{% endif %}">
+    <a href="{{ page.hero_link | relative_url }}" class="text-button is-info is-large">
+      {{- page.hero_link_text -}}<i class="fas fa-arrow-right"></i>
+    </a>
+  </div>
+  {% endif %}
+</div>

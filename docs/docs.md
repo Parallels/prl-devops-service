@@ -1,6 +1,7 @@
 ---
 layout: page
 title: Documentation
+subtitle: User-friendly hub with guides, API docs, and tutorials
 menubar: docs_menu
 show_sidebar: false
 ---
