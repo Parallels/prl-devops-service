@@ -74,6 +74,7 @@ func GetConfig() models.ReverseProxyConfig {
 
 	if cfg == nil || globalReverseProxyService == nil {
 		result.Enabled = false
+		return result
 	}
 
 	result.Host = cfg.ReverseProxyHost()

@@ -304,8 +304,16 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithRequiredClaim(constants.SUPER_USER_ROLE).
 		WithHandler(DeleteOrchestratorHostCatalogCacheItemVersionHandler()).
 		Register()
-
 		// endregion
+
+	// region Reverse Proxy
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/orchestrator/hosts/{id}/reverse-proxy").
+		WithRequiredClaim(constants.LIST_REVERSE_PROXY_HOSTS_CLAIM).
+		WithHandler(GetOrchestratorHostReverseProxyConfigHandler()).
+		Register()
 
 	restapi.NewController().
 		WithMethod(restapi.GET).
@@ -394,6 +402,7 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithRequiredClaim(constants.CONFIGURE_REVERSE_PROXY_CLAIM).
 		WithHandler(DisableOrchestratorHostReverseProxyHandler()).
 		Register()
+	// endregion
 }
 
 // @Summary		Gets all hosts from the orchestrator
@@ -1819,6 +1828,43 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 }
 
 // region Orchestrator Reverse Proxy
+
+// @Summary		Gets orchestrator host reverse proxy configuration
+// @Description	This endpoint returns orchestrator host reverse proxy configuration
+// @Tags			Orchestrator
+// @Produce		json
+// @Param			id	path		string	true	"Host ID"
+// @Success		200	{object}	models.ReverseProxy
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/hosts/{id}/reverse-proxy [get]
+func GetOrchestratorHostReverseProxyConfigHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
+
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+		response, err := orchestratorSvc.GetHostReverseProxyConfig(ctx, id, "", noCache)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Successfully got orchestrator host %s reverse proxy config", id)
+	}
+}
 
 // @Summary		Gets orchestrator host reverse proxy hosts
 // @Description	This endpoint returns orchestrator host reverse proxy hosts
