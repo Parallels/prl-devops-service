@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/catalog"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/tests"
 	"github.com/cjlapao/common-go/helper"
@@ -20,6 +21,15 @@ func processTestProviders(ctx basecontext.ApiContext, cmd string) {
 			ctx.LogErrorf(err.Error())
 			os.Exit(1)
 		}
+	case "unzip":
+		rootctx := basecontext.NewBaseContext()
+		filename := helper.GetFlagValue("zip-file", "")
+		destination := helper.GetFlagValue("destination", "")
+		if destination == "" {
+			destination = "/tmp"
+		}
+		cSrv := catalog.NewManifestService(rootctx)
+		cSrv.Unzip(rootctx, filename, destination)
 	default:
 		processHelp(constants.TEST_COMMAND)
 

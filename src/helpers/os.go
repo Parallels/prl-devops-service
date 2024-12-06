@@ -307,7 +307,9 @@ func GetFileMD5Checksum(path string) (string, error) {
 	return checksum, nil
 }
 
-func CopyTarChunks(file *os.File, reader *tar.Reader) error {
+func CopyTarChunks(file *os.File, reader *tar.Reader, fileSize int64) error {
+	// extractedSize := int64(0)
+	// lastPrintTime := time.Now()
 	for {
 		_, err := io.CopyN(file, reader, 1024)
 		if err != nil {
@@ -316,6 +318,12 @@ func CopyTarChunks(file *os.File, reader *tar.Reader) error {
 			}
 			return err
 		}
+		// extractedSize += 1024
+		// percentage := float64(extractedSize) / float64(fileSize) * 100
+		// if time.Since(lastPrintTime) >= 10*time.Second {
+		// 	fmt.Printf("\rExtracted: %.2f%%", percentage)
+		// 	lastPrintTime = time.Now()
+		// }
 	}
 
 	return nil

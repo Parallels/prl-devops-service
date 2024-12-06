@@ -367,6 +367,10 @@ func (s *CatalogManifestService) detectFileType(filepath string) (string, error)
 	return "unknown", errors.New("file format not recognized as gzip or tar")
 }
 
+func (s *CatalogManifestService) Unzip(ctx basecontext.ApiContext, machineFilePath string, destination string) error {
+	return s.decompressMachine(ctx, machineFilePath, destination)
+}
+
 func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, machineFilePath string, destination string) error {
 	staringTime := time.Now()
 	filePath := filepath.Clean(machineFilePath)
@@ -432,26 +436,76 @@ func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, m
 
 		switch header.Typeflag {
 		case tar.TypeDir:
+			ctx.LogDebugf("Directory type found for file %v (byte %v, rune %v)", machineFilePath, header.Typeflag, string(header.Typeflag))
 			if _, err := os.Stat(machineFilePath); os.IsNotExist(err) {
 				if err := os.MkdirAll(machineFilePath, os.FileMode(header.Mode)); err != nil {
 					return err
 				}
 			}
 		case tar.TypeReg:
+			ctx.LogDebugf("HardFile type found for file %v (byte %v, rune %v): size %v", machineFilePath, header.Typeflag, string(header.Typeflag), header.Size)
 			file, err := os.OpenFile(filepath.Clean(machineFilePath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(header.Mode))
 			if err != nil {
 				return err
 			}
 			defer file.Close()
 
-			if err := helpers.CopyTarChunks(file, tarReader); err != nil {
+			if err := helpers.CopyTarChunks(file, tarReader, header.Size); err != nil {
 				return err
 			}
+		case tar.TypeGNUSparse:
+			ctx.LogDebugf("Sparse File type found for file %v (byte %v, rune %v): size %v", machineFilePath, header.Typeflag, string(header.Typeflag), header.Size)
+			file, err := os.OpenFile(filepath.Clean(machineFilePath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			if err := helpers.CopyTarChunks(file, tarReader, header.Size); err != nil {
+				return err
+			}
+		case tar.TypeSymlink:
+			ctx.LogDebugf("Symlink File type found for file %v (byte %v, rune %v)", machineFilePath, header.Typeflag, string(header.Typeflag))
+			os.Symlink(header.Linkname, machineFilePath)
+		default:
+			ctx.LogWarnf("Unknown type found for file %v, ignoring (byte %v, rune %v)", machineFilePath, header.Typeflag, string(header.Typeflag))
 		}
 	}
 
 	endingTime := time.Now()
 	ctx.LogInfof("Finished decompressing machine from %s to %s, in %v", machineFilePath, destination, endingTime.Sub(staringTime))
+	return nil
+}
+
+func handleSparseFile(header *tar.Header, tarReader *tar.Reader, destDir string) error {
+	outFile, err := os.Create(destDir + "/" + header.Name)
+	if err != nil {
+		return fmt.Errorf("error creating file: %v", err)
+	}
+	defer outFile.Close()
+
+	fmt.Printf("Writing sparse file: %s (%d bytes)\n", header.Name, header.Size)
+
+	// Copy exactly the size of the sparse file
+	if _, err := io.CopyN(outFile, tarReader, header.Size); err != nil && err != io.EOF {
+		return fmt.Errorf("error writing sparse file content: %v", err)
+	}
+	return nil
+}
+
+func handleRegularFile(header *tar.Header, tarReader *tar.Reader, destDir string) error {
+	outFile, err := os.Create(destDir + "/" + header.Name)
+	if err != nil {
+		return fmt.Errorf("error creating file: %v", err)
+	}
+	defer outFile.Close()
+
+	fmt.Printf("Writing regular file: %s (%d bytes)\n", header.Name, header.Size)
+
+	// Copy exactly the size of the regular file
+	if _, err := io.CopyN(outFile, tarReader, header.Size); err != nil && err != io.EOF {
+		return fmt.Errorf("error writing file content: %v", err)
+	}
 	return nil
 }
 
