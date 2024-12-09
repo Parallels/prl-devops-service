@@ -2,7 +2,7 @@
 layout: post
 title:  "Release 0.8.1"
 date:   2024-06-03 00:00:00 +0000
-categories: release notes
+categories: Changelog
 ---
 
 # Whats New
@@ -16,5 +16,3 @@ categories: release notes
 
 - Added better readme documentation
 - Updated some documentation
-
-

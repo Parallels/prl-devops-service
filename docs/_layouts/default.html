@@ -17,8 +17,6 @@
 {% assign content_padding = '' %}
 {% endif %}
 {% assign sideContent = page.side_toc | default: false %}
-
-
 <html dir="{{ site.direction | default: 'ltr' }}" lang="{{ site.lang | default: 'en' }}" {% if site.fixed_navbar %}class="has-navbar-fixed-{{ site.fixed_navbar }}" {% endif %}>
 {% include head.html %}
 
@@ -44,9 +42,9 @@
   </aside>
   {% endif %}
   <section class="body-container {% if page.menubar_toc %}with-menu-bar-toc{% endif %}">
-    <div class="columns body-columns is-multiline flex-justify-center">
+    <div class="columns body-columns is-multiline flex-justify-center {% if page.toc %}{% unless page.menubar%}has-side-toc{% endunless %}{%endif%}">
       {% if page.menubar_toc %}
-      <div class="column is-4-desktop is-4-tablet {% if sideContent %}has-side-toc{% endif %}">
+      <div class="column  {% if sideContent %}has-side-toc{% endif %}">
         {% assign contentsTitle = page.toc_title | default: 'Contents' %}
         {% include toc.html html=content class='menu-list1' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent %}
       </div>
@@ -54,8 +52,14 @@
       <div class="menu-bar column">
         {% include menubar.html html=content %}
       </div>
+      {% elsif page.toc %}
+      <div class="toc-menu column">
+        {% assign contentsTitle = page.toc_title | default: 'Contents' %}
+        {% assign sideContent = page.side_toc | default: false %}
+        {% include toc.html html=content class='menu-list' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent item_class="menu-item-level-%level%" submenu_class="level-%level%" %}
+      </div>
       {% endif %}
-      <div class="page-body{%if page.layout != 'api' %} {% endif %} column {% if page.menubar %}with-menu-bar{% endif %} {% if sideContent %}has-side-toc{% endif %}">
+      <div class="page-body{%if page.layout == 'api' %} api-document{% endif %} column {% if page.menubar %}with-menu-bar{% endif %} {% if sideContent %}has-side-toc{% endif %}">
         {% include tabs.html %}
         {% include showcase.html %}
         {% include sponsors.html %}

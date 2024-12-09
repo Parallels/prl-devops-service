@@ -2,7 +2,7 @@
 layout: post
 title:  "Release 0.9.7"
 date:   2024-10-16 00:00:00 +0000
-categories: release notes
+categories: Changelog
 ---
 
 # Whats New
@@ -22,5 +22,3 @@ categories: release notes
 - Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. List any dependencies that are required for this change.
 - Fixes # (issue)
 - Fixed a missing image in the catalog documentation
-
-

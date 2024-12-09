@@ -2,7 +2,7 @@
 layout: post
 title:  "Release 0.8.0"
 date:   2024-06-03 00:00:00 +0000
-categories: release notes
+categories: Changelog
 ---
 
 # Whats New
@@ -43,5 +43,3 @@ categories: release notes
   overloading the database
 - Moved all the old commands to the new exec with context to enable timeouts
 - Added a 30 seconds timeout when checking the status of the local vms
-
-

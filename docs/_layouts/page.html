@@ -2,10 +2,13 @@
 layout: default
 ---
 {% if page.toc %}
+{% unless page.menubar == null %}
 {% assign contentsTitle = page.toc_title | default: 'Contents' %}
 {% assign sideContent = page.side_toc | default: false %}
 {% include toc.html html=content class='menu-list' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent item_class="menu-item-level-%level%" submenu_class="level-%level%" %}
+{% endunless %}
 {% endif %}
+
 <div class="content">
   {{ content }}
 </div>

@@ -105,6 +105,7 @@ run:
     - vendor
   skip-files:
     - .*_test\.go
+    - src\api_documentation\example_processor\golang.go
 
 output:
   print-issued-lines: true

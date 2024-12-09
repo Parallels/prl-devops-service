@@ -27,8 +27,6 @@ var getJSON = function (url, callback) {
   xhr.send();
 };
 
-
-
 function getOS() {
   const userAgent = window.navigator.userAgent,
     platform =
@@ -89,6 +87,83 @@ window.onload = function () {
     });
   });  
 };
+
+document.addEventListener("DOMContentLoaded", function () {
+  const tabContainers = document.querySelectorAll('[data-type="tabs"]');
+  for (let i = 0; i < tabContainers.length; i++) {
+    const tabContainer = tabContainers[i];
+    const defaultTab = tabContainer.getAttribute('data-default');
+    setupTabs(tabContainer, defaultTab);
+  }
+})
+
+function setupTabs(tabContainerSelector, defaultTabTarget) {
+  const tabContainer = tabContainerSelector;
+
+  if (!tabContainer) {
+    console.error(`Tab container with selector "${tabContainerSelector}" not found.`);
+    return;
+  }
+
+  const tabs = tabContainer.querySelectorAll('[data-target]');
+  const tabBlocks = tabContainer.querySelectorAll('.tab-block');
+
+  // showing the first tab as default unless default is set
+  if (tabs.length > 0) {
+    var tab
+    if (defaultTabTarget) {
+      for (let i = 0; i < tabs.length; i++) {
+        if (tabs[i].getAttribute('data-target') === defaultTabTarget) {
+          console.log("foundit")
+          tab = tabs[i];
+          break;
+        }
+      }
+    } else {
+      tab = tabs[0];
+    }
+
+    if (tab) {
+      const firstTabTarget = tab.getAttribute('data-target');
+    const tabBlock = tabContainer.querySelector(`#${firstTabTarget}`);
+      // Set the first tab as active
+      tab.classList.add('active');
+      tab.parentElement.classList.add('is-active');
+
+      if (tabBlock) {
+        tabBlock.classList.add('is-selected');
+      }
+
+    }
+  }
+
+  // Add click event listeners to each tab
+  tabs.forEach(tab => {
+    tab.addEventListener('click', event => {
+      event.preventDefault();
+
+      // Hide all tab blocks
+      tabBlocks.forEach(block => block.classList.remove('is-selected'));
+
+      // Remove active class from all tabs
+      tabs.forEach(tab => {
+        tab.classList.remove('active')
+        tab.parentElement.classList.remove('is-active');
+      });
+
+      // Show the target tab block
+      const target = tab.getAttribute('data-target');
+      const targetBlock = tabContainer.querySelector(`#${target}`);
+      if (targetBlock) {
+        targetBlock.classList.add('is-selected');
+      }
+
+      // Add active class to the clicked tab
+      tab.classList.add('active');
+      tab.parentElement.classList.add('is-active');
+    });
+  });
+}
 
 jQuery(function() {
     var $el;

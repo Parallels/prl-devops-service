@@ -87,6 +87,10 @@ body {
       width: calc(100% - 310px);
     }
 
+    &.api-document {
+      max-width: 100%;
+    }
+
     @media screen and (max-width: 1200px) {
       // padding: 32px 60px 32px 60px;
 
@@ -219,7 +223,6 @@ section:first-of-type {
 .github_source_header {
   display: block;
   max-width: 11.7rem;
-  width: 11.7rem;
   color: #000;
   display: flex;
 
@@ -618,4 +621,21 @@ p:has(> img) {
 
 #g49.test-svg {
   fill: red;
+}
+
+.toc-menu {
+  width: 360px;
+  max-width: 360px;
+
+  @media screen and (max-width: 1139.95px) {
+    display: none;
+
+  }
+}
+
+.columns {
+  &.has-side-toc {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
 }

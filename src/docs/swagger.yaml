@@ -45,6 +45,18 @@ definitions:
     properties:
       architecture:
         type: string
+      cache_date:
+        type: string
+      cache_file_name:
+        type: string
+      cache_local_path:
+        type: string
+      cache_metadata_name:
+        type: string
+      cache_size:
+        type: integer
+      cache_type:
+        type: string
       catalog_id:
         type: string
       created_at:
@@ -96,7 +108,7 @@ definitions:
       revoked_by:
         type: string
       size:
-        type: string
+        type: integer
       tags:
         items:
           type: string
@@ -438,6 +450,8 @@ definitions:
         type: string
       host_state:
         type: string
+      host_url:
+        type: string
       internal_ip_address:
         type: string
       user:
@@ -706,6 +720,21 @@ definitions:
         type: integer
       message:
         type: string
+      stack:
+        items:
+          $ref: '#/definitions/models.ApiErrorStack'
+        type: array
+    type: object
+  models.ApiErrorStack:
+    properties:
+      code:
+        type: integer
+      description:
+        type: string
+      message:
+        type: string
+      path:
+        type: string
     type: object
   models.ApiKeyRequest:
     properties:
@@ -760,11 +789,21 @@ definitions:
     type: object
   models.CatalogManifestPackItem:
     properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      hash:
+        type: string
       is_dir:
         type: boolean
       name:
         type: string
       path:
+        type: string
+      size:
+        type: integer
+      updated_at:
         type: string
     type: object
   models.ClaimRequest:
@@ -3276,7 +3315,8 @@ paths:
       - Catalogs
   /v1/catalog/cache/{catalogId}:
     delete:
-      description: This endpoint returns all the remote catalog cache if any
+      description: This endpoint returns all the remote catalog cache if any and all
+        its versions
       parameters:
       - description: Catalog ID
         in: path
@@ -3299,7 +3339,40 @@ paths:
       security:
       - ApiKeyAuth: []
       - BearerAuth: []
-      summary: Deletes catalog cache item
+      summary: Deletes catalog cache item and all its versions
+      tags:
+      - Catalogs
+  /v1/catalog/cache/{catalogId}/{version}:
+    delete:
+      description: This endpoint deletes a version of a cache ite,
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes catalog cache version item
       tags:
       - Catalogs
   /v1/catalog/import:
@@ -4288,6 +4361,134 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Gets a host from the orchestrator
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/catalog/cache:
+    delete:
+      description: This endpoint deletes an orchestrator host cache items
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes an orchestrator host cache items
+      tags:
+      - Orchestrator
+    get:
+      description: This endpoint returns orchestrator host catalog cache
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets orchestrator host catalog cache
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/catalog/cache/{catalog_id}:
+    delete:
+      description: This endpoint deletes an orchestrator host cache item and all its
+        children
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Catalog ID
+        in: path
+        name: catalog_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes an orchestrator host cache item and all its children
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/catalog/cache/{catalog_id}/{catalog_version}:
+    delete:
+      description: This endpoint deletes an orchestrator host cache item and all its
+        children
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Catalog ID
+        in: path
+        name: catalog_id
+        required: true
+        type: string
+      - description: Catalog Version
+        in: path
+        name: catalog_version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes an orchestrator host cache item and all its children
       tags:
       - Orchestrator
   /v1/orchestrator/hosts/{id}/disable:

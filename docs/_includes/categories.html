@@ -1,0 +1,8 @@
+<div class="categories">
+  <div class="categories-container">
+    <a class="category-button" href="{{ site.baseurl }}/categories">All</a>
+    {% for category in site.categories %}
+    <a class="category-button" href="{{ site.baseurl }}/categories/{{ category | first | slugify }}">{{ category | first }}</a>
+    {% endfor %}
+  </div>
+</div>

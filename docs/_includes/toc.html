@@ -104,7 +104,7 @@
       {% endif %}
       {% endcapture %}{% assign tocWorkspace = '' %}
 
-      <div class="page-toc {% if include.side_toc %}column is-4 side-toc {% else %}mt-3{% endif %}">
+      <div class="page-toc">
         <div class="menu">
           <p class="content-label">{{ include.contents_title }}</p>
           {{ jekyll_toc | markdownify | strip }}

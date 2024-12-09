@@ -2,7 +2,7 @@
 layout: post
 title:  "Release 0.9.12"
 date:   2024-11-13 00:00:00 +0000
-categories: release notes
+categories: Changelog
 ---
 
 # Whats New
@@ -11,5 +11,3 @@ categories: release notes
 - Added more information to the orchestrator hosts endpoint
 - Added a fix for the push copy file
 - Added a fix in the uninstall of the root service to also clear the database file
-
-

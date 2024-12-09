@@ -2,7 +2,7 @@
 layout: post
 title:  "Release 0.8.4"
 date:   2024-06-19 00:00:00 +0000
-categories: release notes
+categories: Changelog
 ---
 
 # Whats New
@@ -10,5 +10,3 @@ categories: release notes
 ### Fixed
 
 - Issue with the workflow that would not change the internal version
-
-

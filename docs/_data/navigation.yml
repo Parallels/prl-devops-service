@@ -5,12 +5,30 @@
 - name: Features
   link: /features/
   hidden: true
-- name: Examples
+- name: Resources
   link: /#
   dropdown:
-    - name: Run a Catalog service
+    - name: Blog
+      description: Read the latest news, updates and tips from the Parallels Desktop DevOps Service team.
+      link: /blog-posts/
+    - name: Schedule a Demo
+      description: Get a personalized demo of Parallels Desktop DevOps Service where you can ask questions and get answers.
+      link: https://outlook.office.com/bookwithme/user/d6b4c940ec9d44079ed872ba1fcaaf68@alludo.com/meetingtype/you-CpOV8UyS0sFl9KjSWw2?anonymous&ep=mlink)
+    - name: Success Stories
+      description: See how other companies are using Parallels Desktop DevOps Service to improve their workflows.
+      link: /blog-posts/success-stories/
+    - name: RestApi Endpoints
+      description: Learn how to use the RestApi endpoints to interact with the Parallels Desktop DevOps Service.
+      link: /rest-api/
+- name: Solutions
+  link: /#
+  dropdown:
+    - name: Run a Golden Image Catalog
+      description: Run your own Golden Image Catalog where you can store and share your golden images with the world or within your own company.
       link: /examples/remote-catalog/
     - name: Control Multiple Hosts
+      description: Run your own Orchestrator where you can control multiple Parallels Desktop hosts and VMs with full automation.
       link: /examples/orchestrator/
-    - name: Github Actions
+    - name: Run CI/CD Pipelines with Github Actions
+      description: Learn how to run your CI/CD pipelines with Github Actions and Parallels Desktop DevOps Service using your own runners for building the software.
       link: /examples/github-actions/

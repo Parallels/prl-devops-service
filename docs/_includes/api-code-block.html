@@ -1,0 +1,15 @@
+{% assign language= include.language | default: 'plaintext' %}
+{% assign content= include.content | default: '' %}
+{% capture code_block %}
+{%- if include.content %}
+```{{ language }}
+{{ content }}
+```
+{%- endif %}
+{% endcapture %}
+
+{% if include.debug %}
+{{ code_block | inspect }}
+{% endif %}
+
+{{ code_block | markdownify }}

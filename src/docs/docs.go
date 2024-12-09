@@ -1478,19 +1478,72 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint returns all the remote catalog cache if any",
+                "description": "This endpoint returns all the remote catalog cache if any and all its versions",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Catalogs"
                 ],
-                "summary": "Deletes catalog cache item",
+                "summary": "Deletes catalog cache item and all its versions",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "Catalog ID",
                         "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/cache/{catalogId}/{version}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a version of a cache ite,",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Deletes catalog cache version item",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalogId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Version",
+                        "name": "version",
                         "in": "path",
                         "required": true
                     }
@@ -4087,6 +4140,209 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Host ID",
                         "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{id}/catalog/cache": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns orchestrator host catalog cache",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Gets orchestrator host catalog cache",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes an orchestrator host cache items",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Deletes an orchestrator host cache items",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{id}/catalog/cache/{catalog_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes an orchestrator host cache item and all its children",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Deletes an orchestrator host cache item and all its children",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalog_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{id}/catalog/cache/{catalog_id}/{catalog_version}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes an orchestrator host cache item and all its children",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Deletes an orchestrator host cache item and all its children",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Catalog ID",
+                        "name": "catalog_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Catalog Version",
+                        "name": "catalog_version",
                         "in": "path",
                         "required": true
                     }
@@ -6917,6 +7173,24 @@ const docTemplate = `{
                 "architecture": {
                     "type": "string"
                 },
+                "cache_date": {
+                    "type": "string"
+                },
+                "cache_file_name": {
+                    "type": "string"
+                },
+                "cache_local_path": {
+                    "type": "string"
+                },
+                "cache_metadata_name": {
+                    "type": "string"
+                },
+                "cache_size": {
+                    "type": "integer"
+                },
+                "cache_type": {
+                    "type": "string"
+                },
                 "catalog_id": {
                     "type": "string"
                 },
@@ -6993,7 +7267,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "size": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "tags": {
                     "type": "array",
@@ -7517,6 +7791,9 @@ const docTemplate = `{
                 "host_state": {
                     "type": "string"
                 },
+                "host_url": {
+                    "type": "string"
+                },
                 "internal_ip_address": {
                     "type": "string"
                 },
@@ -7927,6 +8204,29 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string"
+                },
+                "stack": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ApiErrorStack"
+                    }
+                }
+            }
+        },
+        "models.ApiErrorStack": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
                 }
             }
         },
@@ -8011,6 +8311,15 @@ const docTemplate = `{
         "models.CatalogManifestPackItem": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "hash": {
+                    "type": "string"
+                },
                 "is_dir": {
                     "type": "boolean"
                 },
@@ -8018,6 +8327,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "path": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
