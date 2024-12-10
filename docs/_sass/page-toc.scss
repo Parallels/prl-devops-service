@@ -1,9 +1,45 @@
+.side-toc-menu {
+  width: 100%;
+  display: none;
+  padding-top: 36px;
+
+  @media screen and (min-width: $medium-breakpoint) {
+    display: flex;
+    width: 200px;
+    max-width: 200px;
+  }
+
+  @media screen and (min-width: $max-breakpoint) {
+    display: flex;
+    width: 232px;
+    max-width: 232px;
+  }
+
+  .page-toc {
+    background-color: unset !important;
+    border: unset !important;
+  }
+
+  .level-2 {
+    margin: 5px 0 0 5px;
+  }
+
+  a {
+    font-size: 14px;
+    font-weight: normal;
+  }
+}
+
 .page-toc {
-  padding: 16px 48px 5px 24px;
+  padding: 16px 10px 5px 20px;
   border-radius: 6px;
   border: solid 1px #b6b6b6;
   background-color: #f7f7f7;
   margin-bottom: 32px;
+
+  @media screen and (max-width: $medium-breakpoint) {
+    display: none;
+  }
 
   .content-label {
     font-family: 'Open Sans';
@@ -20,7 +56,7 @@
 
   .menu-item {
     font-family: 'Open Sans';
-    font-size: 16px;
+    font-size: 14px;
     font-weight: normal;
     font-stretch: normal;
     font-style: normal;
@@ -49,9 +85,5 @@
     li {
       border-left: 1px solid #b6b6b6;
     }
-  }
-
-  @media screen and (max-width: 768px) {
-    display: none;
   }
 }

@@ -1,0 +1,36 @@
+---
+layout: default
+---
+{% if page.about %}
+<section class="about-section">
+  <div class="about-container">
+    <h1>About</h1>
+    <div class="about-content">
+      {{ page.about | markdownify }}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% if page.contact_callouts %}
+{% assign callouts=site.data[page.contact_callouts] %}
+<section class="homepage-callout is-contacts">
+  {% include callouts.html callouts=callouts show_callout_action=true %}
+</section>
+{% endif %}
+{% if page.licensing %}
+<section class="licensing-section">
+  <div class="licensing-container">
+    <h1>Licensing</h1>
+    {{ page.licensing | markdownify }}
+  </div>
+</section>
+{% endif %}
+<section class="content">
+  {{ content }}
+</section>
+<section class="whats-new-section">
+  <div class="whats-new-container">
+    <h1>What's New</h1>
+    {% include whats_new.html %}
+  </div>
+</section>

@@ -1,4 +1,12 @@
 .api-document {
+
+  .highlight {
+    background-color: #f7f7f7;
+    border-radius: unset;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+
   font-family: "Open Sans";
   font-size: 16px;
   font-weight: normal;
@@ -37,6 +45,7 @@
       }
     }
   }
+
   .code-title {
     &.good {
       color: #66bb6a;
@@ -639,6 +648,33 @@
     border-bottom-right-radius: 10px;
   }
 
+  .endpoint-params {
+    .highlighter-rouge {
+      padding-top: 10px;
+    }
+
+    .highlight {
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
+      box-shadow: 0 0 0 1px #eee;
+    }
+
+    pre {
+      order: 0;
+      box-shadow: unset;
+      border-radius: unset;
+      padding: 10px;
+      border-left: unset;
+      border-right: unset;
+      border-bottom: unset;
+      border-bottom-left-radius: unset;
+      border-bottom-right-radius: unset;
+
+    }
+  }
+
   .right-code {
     width: 40%;
     float: left;
@@ -886,4 +922,15 @@
     margin-bottom: 0;
     padding-bottom: 0;
   }
+}
+
+.responses-tab-container {
+  .highlight {
+    white-space: unset;
+  }
+
+  pre.highlight {
+    background-color: #f7f7f7;
+  }
+
 }

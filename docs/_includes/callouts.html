@@ -1,50 +1,52 @@
-{% if page.callouts %}
-{% assign callouts=site.data.[page.callouts] %}
-<div class="hero-callout {% if callouts.height %} {{ callouts.height }} {% else %} is-medium {% endif %} {{ callouts.style }}">
-  <div class="hero-callout-body">
-    <div class="hero-callout-container">
-      <div class="columns hero-callout-columns is-multiline is-centered">
-        {% for callout in callouts.items %}
-        <div class="column is-4 has-text-centered">
+{% if include.callouts %}
+<div class="callout-container">
+  {% for callout in callouts.items %}
+  <div class="callout-item{% if include.full_button %} link{% endif %}{% unless include.full_button %} no-link{% endunless %}">
+    {% if include.full_button %}
+    <a href="{{ callout.call_to_action_link | relative_url }}">
+      {% else %}
+      <div class="callout-body">
+        {% endif %}
+        {% if callout.icon or callout.img_icon %}
+        <div class="callout-icon{% if callout.icon or callout.icon_brand %} font-icon{% endif %}">
           {% if callout.icon %}
-          <div class="icon pr-callout-icon">
-            {% if callout.icon_brand %}
-            <i class="fab {{ callout.icon }} fa-2x"></i>
-            {% else %}
-            <i class="fas {{ callout.icon }} fa-2x"></i>
-            {% endif %}
-          </div>
-          {% else if callout.img_icon %}
-          <div class="icon pr-callout-icon">
-            <img class="img-icon" src="{{ site.baseurl }}/assets/img/{{ callout.img_icon }}" alt="{{ callout.img_icon }}">
-          </div>
+          {% if callout.icon_brand %}
+          <i class="fab {{ callout.icon }} fa-2x{%if callout.icon_class%} {{ callout.icon_class }}{% endif%}"></i>
+          {% else %}
+          <i class="fas {{ callout.icon }} fa-2x{%if callout.icon_class%} {{ callout.icon_class }}{% endif%}"></i>
           {% endif %}
-          <div class="callout-body-container">
-            <p class="title">{{ callout.title }}</p>
-            {% if callout.subtitle %}
-            <p class="subtitle">{{ callout.subtitle }}</p>
-            {% endif %}
-
-            {% if callout.description %}
-            <div class="description">
-              <div class="content">
-                <p>{{ callout.description | newline_to_br }}</p>
-              </div>
-            </div>
-            {% endif %}
-
-            {% if callout.call_to_action_name %}
-            <div class="callout-action">
-              <a href="{{ callout.call_to_action_link | relative_url }}" class="callout-action-button">
-                {{ callout.call_to_action_name }}<i class="fas fa-arrow-right"></i>
-              </a>
-            </div>
-            {% endif %}
-          </div>
+          {% else if callout.img_icon %}
+          <img class="img-icon{%if callout.icon_class%} {{ callout.icon_class }}{% endif%}" src="{{ site.baseurl }}/assets/img/{{ callout.img_icon }}" alt="{{ callout.img_icon }}">
+          {% endif %}
         </div>
-        {% endfor %}
-      </div>
-    </div>
+        {% endif %}
+        <div class="callout-body-container">
+          <p class="title">{{ callout.title }}</p>
+          {% if callout.subtitle %}
+          <p class="subtitle">{{ callout.subtitle }}</p>
+          {% endif %}
+          {% if callout.description %}
+          <p class="description">{{ callout.description | newline_to_br }}</p>
+          {% endif %}
+        </div>
+        {% if include.show_callout_action and callout.call_to_action_name %}
+        {% unless include.full_button %}
+        <div class="callout-action">
+          <a href="{{ callout.call_to_action_link | relative_url }}" {% if callout.call_to_action_link | contains: "http" %}target="_black" {% endif %} class="callout-action-button">
+            {{ callout.call_to_action_name }}
+            {% if callout.use_arrow %}
+            <i class="fas fa-arrow-right"></i>
+            {% endif %}
+          </a>
+        </div>
+        {% endunless %}
+        {% endif %}
+        {% if include.full_button %}
+    </a>
+    {% else %}
   </div>
+  {% endif %}
+</div>
+{% endfor %}
 </div>
 {% endif %}

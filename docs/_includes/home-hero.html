@@ -1,0 +1,34 @@
+<section class="homepage-hero">
+  <div class="hero-container">
+    <div class="hero-text-container">
+      <div class="hero-title">
+        <p class="hero-title-text">
+          {{ page.subtitle }}
+        </p>
+        <p class="hero-description">
+          {{ page.description }}
+        </p>
+      </div>
+      <div class="hero-details">
+        <section class="version">
+          <span class="version-label">Latest release: {{site.version}}</span>
+        </section>
+        <section class="homepage-links">
+          <div class="homepage-links-container">
+            <a href="{{ site.baseurl }}/quick-start" class="text-button is-primary">
+              <span>Get Started</span>
+            </a>
+            <a href="{{ page.hero_link }}" class="text-button is-primary">
+              <span>Learn More</span><i class="fas fa-arrow-down"></i></a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+  {% if page.callouts %}
+  {% assign callouts=site.data[page.callouts] %}
+  <div class="homepage-callout is-hero">
+    {% include callouts.html callouts=callouts show_callout_action=false full_button=true %}
+  </div>
+  {% endif %}
+</section>

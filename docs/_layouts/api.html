@@ -215,7 +215,7 @@ layout: default
       </section>
       {% if endpoint.example_blocks and endpoint.example_blocks[0].code_block %}
       <section class="right-code">
-        {% for block in endpoint.response_blocks %}
+        {% for block in endpoint.example_blocks %}
         {% include api-code.html block=block %}
         {% endfor %}
       </section>

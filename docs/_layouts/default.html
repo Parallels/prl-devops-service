@@ -22,8 +22,14 @@
 
 <body>
   {% include header.html %}
-  <section class="hero-section {% if page.is_home %}hero-home-section{% endif %} {% if page.menubar %}hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
-    <div class="hero-container {% if page.is_home %}hero-home-section{% endif %}">
+  {% if page.is_home %}
+  {% include home-hero.html %}
+  <section class="home-page">
+    {{ content }}
+  </section>
+  {% else %}
+  <section class="hero-section{% if page.is_home %} hero-home-section{% endif %}{% if page.menubar %} hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
+    <div class="hero-container{% if page.is_home %} hero-home-section{% endif %}{% if page.menubar %} with-menu-bar{% endif %}{% if sideContent %} with-side-toc{% endif %}">
       {% unless page.hide_hero %}
       {% include hero.html %}
       {% endunless %}
@@ -42,24 +48,26 @@
   </aside>
   {% endif %}
   <section class="body-container {% if page.menubar_toc %}with-menu-bar-toc{% endif %}">
-    <div class="columns body-columns is-multiline flex-justify-center {% if page.toc %}{% unless page.menubar%}has-side-toc{% endunless %}{%endif%}">
+    <div
+      class="columns body-columns is-multiline flex-justify-center{% if page.menubar %}{% unless page.toc%} with-menu-bar{% endunless %}{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
       {% if page.menubar_toc %}
-      <div class="column  {% if sideContent %}has-side-toc{% endif %}">
+      <div class="column{% if page.menubar %}{% unless page.toc%} with-menu-bar{% endunless %}{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
         {% assign contentsTitle = page.toc_title | default: 'Contents' %}
         {% include toc.html html=content class='menu-list1' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent %}
       </div>
       {% elsif page.menubar %}
-      <div class="menu-bar column">
+      <div class="menu-bar">
         {% include menubar.html html=content %}
       </div>
       {% elsif page.toc %}
-      <div class="toc-menu column">
+      <div class="side-toc-menu">
         {% assign contentsTitle = page.toc_title | default: 'Contents' %}
         {% assign sideContent = page.side_toc | default: false %}
-        {% include toc.html html=content class='menu-list' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent item_class="menu-item-level-%level%" submenu_class="level-%level%" %}
+        {% include toc.html html=content class='menu-list' h_min=2 h_max=3 contents_title=contentsTitle side_toc=sideContent item_class="menu-item-level-%level%" submenu_class="level-%level%" %}
       </div>
       {% endif %}
-      <div class="page-body{%if page.layout == 'api' %} api-document{% endif %} column {% if page.menubar %}with-menu-bar{% endif %} {% if sideContent %}has-side-toc{% endif %}">
+      <div
+        class="page-body{%if page.layout == 'api' %} api-document{% endif %} column{% if page.menubar %}{% unless page.toc%} with-menu-bar{% endunless %}{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
         {% include tabs.html %}
         {% include showcase.html %}
         {% include sponsors.html %}
@@ -72,8 +80,8 @@
       </div>
       {% endif %}
     </div>
-
   </section>
+  {% endif %}
   {% unless page.hide_footer %}
   {% include footer.html %}
   {% endunless %}

@@ -1,27 +1,34 @@
 .menu-bar {
   // border-right: 1px solid #eee;
-  width: 168px;
+  width: 100%;
+  padding: unset;
+  flex-basis: unset;
+  flex-grow: 0;
+  flex-shrink: 0;
+  transition: min-width 0.3s ease;
 
-  &.column {
-    padding: unset;
+  @media screen and (min-width: $medium-breakpoint) {
+    display: flex;
     padding-top: 36px;
-    flex-basis: unset;
-    flex-grow: 0;
-    flex-shrink: 0;
-    transition: min-width 0.3s ease;
+    width: 200px;
+  }
 
-    @media screen and (max-width: 768px) {
-      width: 100%;
-      margin-right: unset;
-      padding-left: 15px;
-      padding-right: 15px;
-      margin-bottom: 20px;
-      padding-top: unset;
-    }
+  @media screen and (min-width: $max-breakpoint) {
+    width: 232px;
   }
 
   .menu {
+    width: 100%;
+    display: none;
+
+    @media screen and (min-width: $medium-breakpoint) {
+      display: block;
+    }
+
     &.expanded {
+      display: block;
+      padding: 0 20px;
+
       &:first-child {
         margin-top: 16px;
       }
@@ -40,19 +47,19 @@
     // padding-left: 110px;
     transition: padding-left 0.3s ease;
 
-    @media screen and (max-width: 1200px) {
-      width: 100%;
-      margin-right: unset;
-      margin-bottom: 20px;
-      // padding-left: 60px;
-    }
+    // @media screen and (max-width: $max-breakpoint) {
+    //   width: 100%;
+    //   margin-right: unset;
+    //   margin-bottom: 20px;
+    //   // padding-left: 60px;
+    // }
 
-    @media screen and (max-width: 768px) {
-      width: 100%;
-      margin-right: unset;
-      margin-bottom: 20px;
-      // padding-left: 35px;
-    }
+    // @media screen and (max-width: $medium-breakpoint) {
+    //   width: 100%;
+    //   margin-right: unset;
+    //   margin-bottom: 20px;
+    //   // padding-left: 35px;
+    // }
 
     &.menu-label:not(:last-child) {
       margin-bottom: 0;
@@ -67,23 +74,34 @@
     display: flex;
     align-items: center;
 
-    @media screen and (max-width: 1200px) {
+    @media screen and (max-width: $max-breakpoint) {
       // margin-left: 68px;
     }
 
-    @media screen and (max-width: 768px) {
+    @media screen and (max-width: $medium-breakpoint) {
       margin-left: unset;
       padding-left: 20px;
+    }
+
+    &:hover {
+      background-color: #f7f7f7;
+      color: #303236;
+      border-radius: 6px;
+    }
+
+    a {
+      &:hover {
+        color: inherit;
+        background-color: inherit;
+        border-radius: unset;
+      }
     }
 
     &.is-active {
       border-radius: 6px;
       background-color: #f7f7f7;
       color: #303236;
-
-      @media screen and (max-width: 768px) {
-        display: block;
-      }
+      display: grid;
     }
 
   }
@@ -152,8 +170,13 @@
 
     .page-toc-menu {
       padding-left: 22px;
+      display: block;
 
-      @media screen and (min-width: 769px) {
+      .menu {
+        display: block;
+      }
+
+      @media screen and (min-width: $medium-breakpoint) {
         display: none;
       }
 
@@ -210,7 +233,7 @@
 
 aside {
   &.menu {
-    @media screen and (max-width: 768px) {
+    @media screen and (max-width: $medium-breakpoint) {
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.3s ease;
@@ -230,6 +253,16 @@ aside {
     display: none;
     height: 42px;
     border-bottom: 1px solid #dedede;
+
+
+    @media screen and (max-width: $medium-breakpoint) {
+      width: 100%;
+      height: 40px;
+      display: flex;
+      padding-left: 20px;
+      padding-right: 20px;
+      margin-top: 12px;
+    }
 
     .show {
       display: flex;
@@ -288,16 +321,6 @@ aside {
           }
         }
       }
-
-    }
-
-    @media screen and (max-width: 768px) {
-      width: 100%;
-      height: 40px;
-      display: flex;
-      padding-left: 20px;
-      padding-right: 20px;
-      margin-top: 12px;
     }
   }
 }
