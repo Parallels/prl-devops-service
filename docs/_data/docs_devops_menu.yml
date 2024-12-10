@@ -1,0 +1,44 @@
+- label: Getting Started
+  items:
+    - name: Installation
+      link: /docs/devops/getting-started/installation/
+    - name: Configuration
+      link: docs/devops/getting-started/configuration/
+    - name: Docker Container
+      link: docs/devops/getting-started/docker/
+    - name: Kubernetes
+      link: docs/devops/getting-started/kubernetes/
+- label: Security
+  items:
+    - name: Hardening Security
+      link: docs/devops/security/hardening-security/
+- label: RestAPI
+  items:
+    - name: Overview
+      link: docs/devops/restapi/overview/
+    - name: Authentication
+      link: docs/devops/restapi/authentication/
+    - name: Endpoints
+      hidden: true
+      path: docs/devops/restapi/endpoints/
+- label: Catalog
+  items:
+    - name: Overview
+      link: docs/devops/catalog/overview/
+    - name: Concepts
+      link: docs/devops/catalog/concepts/
+    - name: PDFile
+      link: docs/devops/catalog/pdfile/
+- label: Orchestrator
+  items:
+    - name: Overview
+      link: docs/devops/orchestrator/overview/
+- label: Reverse Proxy
+  hidden: true
+  items:
+    - name: Overview
+      link: docs/devops/reverse-proxy/overview/
+    - name: Getting Started
+      link: docs/devops/reverse-proxy/getting-started/
+    - name: Configuration
+      link: docs/devops/reverse-proxy/configuration/

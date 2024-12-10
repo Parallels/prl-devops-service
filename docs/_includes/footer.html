@@ -1,5 +1,6 @@
 <footer class="footer">
-  <div class="footer-container">
+  <div
+    class="footer-container{% if page.is_home %} homepage{% endif %}{%if page.layout == 'api' %} api-document{% endif %}{% if page.menubar %} with-menu-bar{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
     <div class="logo-container">
       <p>
         Enabled by

@@ -1,7 +1,20 @@
 - name: Quick Start
   link: /quick-start/
 - name: Documentation
-  link: /docs/
+  link: /#
+  dropdown:
+    - name: Parallels DevOps Service
+      description: The documentation for Parallels Desktop DevOps Service. you can find all the information you need to get started.
+      link: /docs/devops
+    - name: Parallels Visual Studio Code Extension
+      description: The official documentation for the Parallels Visual Studio Code Extension, our new integration for developers.
+      link: /docs//vscode-extension/
+    - name: Terraform Provider
+      description: Find some examples on how to use the Terraform Provider for Parallels Desktop DevOps Service in different scenarios.
+      link: /docs//terraform-provider/
+    - name: Github Actions
+      description: Learn how to use the Github Actions with Parallels Desktop DevOps Service to automate your CI/CD pipelines.
+      link: /docs//github-actions/
 - name: Features
   link: /features/
   hidden: true
@@ -21,7 +34,7 @@
       description: Learn how to use the RestApi endpoints to interact with the Parallels Desktop DevOps Service.
       link: /rest-api/
 - name: Solutions
-  link: /#
+  link: /solutions/
   dropdown:
     - name: Run a Golden Image Catalog
       description: Run your own Golden Image Catalog where you can store and share your golden images with the world or within your own company.

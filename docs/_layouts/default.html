@@ -67,7 +67,7 @@
       </div>
       {% endif %}
       <div
-        class="page-body{%if page.layout == 'api' %} api-document{% endif %} column{% if page.menubar %}{% unless page.toc%} with-menu-bar{% endunless %}{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
+        class="page-body{%if page.layout == 'api' %} api-document{% endif %} column{% if page.menubar %} with-menu-bar{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
         {% include tabs.html %}
         {% include showcase.html %}
         {% include sponsors.html %}

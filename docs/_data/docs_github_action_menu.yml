@@ -1,0 +1,10 @@
+- label: Getting Started
+  items:
+    - name: Installation
+      link: /docs/devops/getting-started/installation/
+    - name: Configuration
+      link: docs/devops/getting-started/configuration/
+    - name: Docker Container
+      link: docs/devops/getting-started/docker/
+    - name: Kubernetes
+      link: docs/devops/getting-started/kubernetes/
