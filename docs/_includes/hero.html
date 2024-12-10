@@ -19,4 +19,11 @@
     </a>
   </div>
   {% endif %}
+  {% if page.badges %}
+  <div class="hero-badges">
+    {% for badge in page.badges %}
+    <span class="tag is-rounded is-info">{{ badge | markdownify }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
 </div>

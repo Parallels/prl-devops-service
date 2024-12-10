@@ -467,6 +467,19 @@ func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, m
 		case tar.TypeSymlink:
 			ctx.LogDebugf("Symlink File type found for file %v (byte %v, rune %v)", machineFilePath, header.Typeflag, string(header.Typeflag))
 			os.Symlink(header.Linkname, machineFilePath)
+			realLinkPath, err := filepath.EvalSymlinks(filepath.Join(destination, header.Linkname))
+			if err != nil {
+				ctx.LogWarnf("Error resolving symlink path: %v", header.Linkname)
+				if err := os.Remove(machineFilePath); err != nil {
+					return fmt.Errorf("failed to remove invalid symlink: %v", err)
+				}
+			} else {
+				relLinkPath, err := filepath.Rel(destination, realLinkPath)
+				if err != nil || strings.HasPrefix(filepath.Clean(relLinkPath), "..") {
+					return fmt.Errorf("invalid symlink path: %v", header.Linkname)
+				}
+				os.Symlink(realLinkPath, machineFilePath)
+			}
 		default:
 			ctx.LogWarnf("Unknown type found for file %v, ignoring (byte %v, rune %v)", machineFilePath, header.Typeflag, string(header.Typeflag))
 		}
