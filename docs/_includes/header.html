@@ -1,7 +1,7 @@
 <div class="navigation">
   <header class="navigation-header">
     <div class="navigation-logo">
-      <a href="{% if site.brand_url %} {{ site.brand_url }}{% else %} {{ site.baseurl }} {% endif %}/" class="prl-header-link" target="_blank">
+      <a href="{{ site.baseurl }}/" class="prl-header-link" target="_blank">
         {% if site.brand_img %}
         <img alt="logo" src="{{ site.baseurl }}/assets/img/{{ site.brand_img}}" />
         {% else %}

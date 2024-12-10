@@ -13,6 +13,7 @@
       description: Find some examples on how to use the Terraform Provider for Parallels Desktop DevOps Service in different scenarios.
       link: /docs//terraform-provider/
     - name: Github Actions
+      hidden: true
       description: Learn how to use the Github Actions with Parallels Desktop DevOps Service to automate your CI/CD pipelines.
       link: /docs//github-actions/
 - name: Features
