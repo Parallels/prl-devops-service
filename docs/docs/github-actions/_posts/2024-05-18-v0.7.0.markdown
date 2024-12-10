@@ -1,0 +1,17 @@
+---
+layout: post
+title:  "Release 0.7.0"
+date:   2024-05-18 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+### Fixed
+
+- Fixed an issue where the user was not being set as super admin even if the
+  flag was set to true
+- Fixed an issue where the user was not being able to be updated
+- Fixed an issue with the service plist
+
+

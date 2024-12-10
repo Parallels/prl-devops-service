@@ -1,0 +1,14 @@
+---
+layout: post
+title:  "Release 0.9.5"
+date:   2024-09-16 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+### Fixed
+
+- Fixed the service install plist
+
+

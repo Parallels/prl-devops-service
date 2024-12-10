@@ -1,0 +1,213 @@
+{% capture highlight %}
+{% assign blockLanguage = include.block.language | default: 'plaintext' %}
+{% assign language= include.block.language %}
+{% assign title = include.block.title %}
+
+{% if language == 'http' %}
+{% assign language = 'powershell' %}
+    {% if title == null or title == '' %}
+        {% assign title = 'cURL' %}
+    {% endif %}
+{% elsif language == 'python' %}
+    {% if title == null or title == '' %}
+        {% assign title = 'Python' %}
+    {% endif %}
+{% elsif language == 'javascript' %}
+    {% if title == null or title == '' %}
+        {% assign title = 'JQuery' %}
+    {% endif %}
+{% elsif language == 'csharp' %}
+    {% if title == null or title == '' %}
+        {% assign title = 'C#' %}
+    {% endif %}
+{% elsif language == 'java' %}
+    {% if title == null or title == '' %}
+        {% assign title = 'Java' %}
+    {% endif %}
+{% elsif language == 'go' %}
+    {% if title == null or title == '' %}
+        {% assign title = 'Go' %}
+    {% endif %}
+
+{% endif %}
+
+{% if site.api.schema %}
+    {% assign schema= site.api.schema %}
+{% else %}
+    {% assign schema= 'http' %}
+{% endif %}
+
+{% if site.api.host %}
+    {% assign host= site.api.host %}
+    {% if site.api.prefix  %}
+        {% assign host= host | append: site.api.prefix %}
+    {% endif %}
+{% else %}
+    {% assign host= 'localhost' %}
+    {% if site.api.prefix  %}
+        {% assign host= host | append: site.api.prefix %}
+    {% endif %}
+{% endif %}
+
+```{{ language }}
+{%- if include.block.code_block %}
+{{ include.block.code_block }}
+{%- else %}
+    {%- if blockLanguage == 'http' %}
+curl --location --request {{ include.endpoint.method | upcase }} '{{ schema }}://{{ host}}{{include.endpoint.path}}' \
+--header 'Content-Type: application/json' \
+        {%- if include.endpoint.requires_authorization %}
+--header 'Authorization: Bearer <your-token>' \
+        {%- endif -%}
+        {%- if include.endpoint.request_body %}
+--data '{{ include.endpoint.request_body  }}'
+        {%- endif %}
+    {%- elsif blockLanguage == 'python' %}
+import requests
+import json
+
+url = "{{ schema }}://{{ host}}{{include.endpoint.path}}"
+
+        {%- if include.endpoint.request_body %}
+payload = json.dumps({{ include.endpoint.request_body  }})
+        {%- endif %}
+
+headers = {
+  'Content-Type': 'application/json'
+        {%- if include.endpoint.requires_authorization %},
+  'Authorization': 'Bearer <your-token>'
+        {%- endif %}
+}
+
+response = requests.request("{{ include.endpoint.method | upcase }}", url, headers=headers, data=payload)
+
+print(response.text)
+    {%- elsif blockLanguage == 'javascript' %}
+var settings = {
+    url: "{{ schema }}://{{ host}}{{include.endpoint.path}}"
+    method: "{{ include.endpoint.method | upcase }}",
+    timeout: 0,
+    headers: {
+        "Content-Type": "application/json"
+        {%- if include.endpoint.requires_authorization %},
+        "Authorization": "Bearer <your-token>"
+        {%- endif %}
+    },
+    data: JSON.stringify({{ include.endpoint.request_body  }}),
+};
+
+$.ajax(settings).done(function (response) {
+    console.log(response);
+});
+    {%- elsif blockLanguage == 'csharp' %}
+using System;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ConsoleApp
+{
+    class Program
+    {
+        static async Task Main(string[] args)
+        {
+            var client = new HttpClient();
+            var request = new HttpRequestMessage
+            {
+                Method = new HttpMethod("{{ include.endpoint.method | upcase }}"),
+                RequestUri = new Uri("{{ schema }}://{{ host}}{{include.endpoint.path}}"),
+                Content = new StringContent("{{ include.endpoint.request_body  }}", Encoding.UTF8, "application/json")
+            };
+            request.Headers.Add("Content-Type", "application/json");
+            {%- if include.endpoint.requires_authorization %}
+            request.Headers.Add("Authorization", "Bearer <your-token>");
+            {%- endif %}
+
+            {% if include.endpoint.request_body %}
+            request.Content = new StringContent("{{ include.endpoint.request_body  }}", Encoding.UTF8, "application/json");
+            {% endif %}
+
+            var response = await client.SendAsync(request);
+            Console.WriteLine(await response.Content.ReadAsStringAsync());
+        }
+    }
+    {%- elsif blockLanguage == 'java' %}
+OkHttpClient client = new OkHttpClient()
+    .newBuilder()
+    .build();
+
+MediaType mediaType = MediaType.parse("application/json");
+        {% if include.endpoint.request_body %}
+RequestBody body = RequestBody.create(mediaType, "{{ include.endpoint.request_body |  strip_newlines }}");
+        {% endif %}
+
+Request request = new Request.Builder()
+    .url("{{ schema }}://{{ host }}{{include.endpoint.path}}")
+    .method("{{ include.endpoint.method | upcase }}", body)
+    .addHeader("Content-Type", "application/json")
+    {%- if include.endpoint.requires_authorization %}
+    .addHeader("Authorization", "Bearer <your-token>")
+    {%- endif %}
+    .build();
+
+Response response = client
+    .newCall(request)
+    .execute();
+    {%- elsif blockLanguage == 'go' %}
+package main
+
+import (
+    "fmt"
+    "strings"
+    "net/http"
+    "io/ioutil"
+)
+
+func main() {
+    url := "{{schema }}://{{ host }}{{include.endpoint.path}}"
+    method := "{{ include.endpoint.method | upcase }}"
+
+        {%- if include.endpoint.request_body %}
+    payload := strings.NewReader(``)
+        {%- endif %}
+
+    client := &http.Client{}
+
+    {%- if include.endpoint.requires_authorization %}
+    req, err := http.NewRequest(method, url, payload)
+    {%- else %}
+    req, err := http.NewRequest(method, url, nil)
+    {%- endif %}
+
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    req.Header.Add("Content-Type", "application/json")
+    {%- if include.endpoint.requires_authorization %}
+    req.Header.Add("Authorization", "Bearer <your-token>")
+    {%- endif %}
+
+    res, err := client.Do(req)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    defer res.Body.Close()
+
+    body, err := ioutil.ReadAll(res.Body)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    fmt.Println(string(body))
+}
+    {% endif -%}
+{%- endif %}
+```
+{: title="{{ title }}" }
+{% endcapture %}
+
+
+
+{{ highlight | markdownify }}

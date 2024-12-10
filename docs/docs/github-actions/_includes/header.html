@@ -1,0 +1,68 @@
+<nav class="navbar sticky is-primary {% if site.fixed_navbar %} is-fixed-{{ site.fixed_navbar }} {% endif %}" x-data="{ openNav: false }">
+  <div class="container">
+    <div class="navbar-brand">
+      <a href="{% if site.brand_url %} {{ site.brand_url }}{% else %} {{ site.baseurl }} {% endif %}/" class="navbar-item" target="_blank">
+        {% if site.brand_img %}
+        <img alt="logo" src="{{ site.baseurl }}/assets/img/{{ site.brand_img}}" />
+        {% else %}
+        {{ site.brand }}
+        {% endif %}
+      </a>
+      <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navMenu" :class="{ 'is-active': openNav }" x-on:click="openNav = !openNav">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </a>
+    </div>
+    <div class="navbar-menu" id="navMenu" :class="{ 'is-active': openNav }">
+      <div class="navbar-start">
+        <a href="{{ site.baseurl }}/" class="navbar-item {% if page.url == " /" %}is-active{% endif %}">Home</a>
+        {% if site.data.navigation %}
+        {% for item in site.data.navigation %}
+            {% assign hidden = item.hidden | default: false %}
+            {% if hidden == false %}
+                {% if item.dropdown %}
+                <div class="navbar-item has-dropdown is-hoverable {% if site.fixed_navbar == 'bottom' %} has-dropdown-up {% endif %}">
+                <a href="{{ item.link | relative_url }}" class="navbar-link {% if page.url contains item.link %}is-active{% endif %}">{{ item.name }}</a>
+                <div class="navbar-dropdown">
+                    {% for subitem in item.dropdown %}
+                    <a href="{{ subitem.link | relative_url }}" class="navbar-item {% if subitem.link == page.url %}is-active{% endif %}">{{ subitem.name }}</a>
+                    {% endfor %}
+                </div>
+                </div>
+                {% else %}
+                <a href="{{ item.link | relative_url }}" class="navbar-item {% if item.link == page.url %}is-active{% endif %}">{{ item.name }}</a>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        {% endif %}
+      </div>
+
+      <div class="navbar-end">
+        <div class="github_source_header">
+          <a href="https://github.com/Parallels/prl-devops-service/" title="Go to repository" class="md-source" data-md-component="source">
+            <div class="github_source">
+              <span class="github_icon">
+                <i class="fab fa-github"></i>
+              </span>
+            </div>
+            <div class="source_facts_container">
+              GitHub
+              <ul class="source_facts">
+                <li class="source_fact source_fact--version">{{ site.version }}</li>
+                <li class="source_fact source_fact--stars">{{ site.stars }}</li>
+                <li class="source_fact source_fact--forks">{{ site.forks }}</li>
+              </ul>
+            </div>
+          </a>
+        </div>
+        {% if site.gh_sponsor %}
+        <a class="navbar-item" href="https://github.com/sponsors/{{ site.gh_sponsor }}">
+          <span class="icon gh-sponsor"><i class="fas fa-heart"></i></span>
+          <span>Sponsor</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>

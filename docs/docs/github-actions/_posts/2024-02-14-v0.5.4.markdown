@@ -1,0 +1,14 @@
+---
+layout: post
+title:  "Release 0.5.4"
+date:   2024-02-12 00:00:00 +0000
+categories: release notes
+---
+
+New release of the Parallels Desktop DevOps Service.
+
+# What's New
+
+## Fixed
+
+- Improved user_id to fix issue with sending telemetry

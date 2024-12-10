@@ -1,0 +1,77 @@
+title: Parallels Desktop DevOps Service | Manage and Orchestrate VMs Efficientlye
+brand: Parallels Desktop
+brand_url: https://www.parallels.com/products/desktop
+brand_img: pl-logo-dk.png
+email: support@parallels.com
+tagline: "Parallels Desktop DevOps Service"
+description: >-
+  Explore Parallels Desktop DevOps Service for efficient management and orchestration of multiple Parallels Desktop hosts and VMs. 
+  Ideal for CI/CD pipelines. Free for up to 10 users.
+baseurl: "/prl-devops-service" # the subpath of your site, e.g. /blog
+url: "https://parallels.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+github_username:  Parallels
+permalink: pretty
+
+version: 0.5.5
+stars: 4
+forks: 0
+
+theme: bulma-clean-theme
+remote-theme: chrisrhymes/bulma-clean-theme
+
+plugins:
+  - jekyll-sitemap
+  - jekyll-paginate
+  - jekyll-feed
+  - jekyll-seo-tag
+  - kramdown-parser-gfm
+  - jekyll-redirect-from
+
+disqus:
+  shortname: parallels
+
+exclude: 
+  - Gemfile
+  - clean-theme.gemspec
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
+livereload: true
+
+sass:
+  style: compressed
+
+defaults:
+  -
+    scope:
+      path: ""
+      type: "pages"
+    values:
+      show_sidebar: false
+  -
+    scope:
+      path: ""
+      type: "posts"
+    values:
+      author: "Parallels Desktop DevOps Service"
+      layout: post
+      image: /assets/img/new_release_v1.png
+      show_sidebar: false
+
+api:
+  schema: http
+  host: localhost
+  prefix: /api/v1
+
+markdown: kramdown
+highlighter: rouge
+footer_menu: footer
+fixed_navbar: true
+
+collections:
+  products: 
+    output: true

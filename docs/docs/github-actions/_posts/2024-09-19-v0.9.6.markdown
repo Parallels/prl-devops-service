@@ -1,0 +1,14 @@
+---
+layout: post
+title:  "Release 0.9.6"
+date:   2024-09-19 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+### Fixed
+
+- Added the ability to disable the tls validation
+  
+

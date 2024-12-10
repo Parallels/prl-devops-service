@@ -1,0 +1,15 @@
+---
+layout: post
+title:  "Release 0.8.8"
+date:   2024-08-23 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+### Fixed
+
+- Updated the helm chart to allow users to add nginx ingress
+- Updated the helm chart to allow multiple storage
+
+

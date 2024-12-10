@@ -1,0 +1,14 @@
+---
+layout: post
+title:  "Release 0.8.6"
+date:   2024-07-11 00:00:00 +0000
+categories: release notes
+---
+
+# Whats New
+
+### Fixed
+
+- Issue when trying to update an orchestrator host that is offline
+
+

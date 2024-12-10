@@ -1,0 +1,4 @@
+{% if include.src %}
+    {% assign alt = include.alt | default: "Image" %}
+<p><img alt="{{ alt }}" src="{{ site.url }}{{ site.baseurl }}{{ include.src }}"></p>
+{% endif %}

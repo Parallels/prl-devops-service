@@ -1,0 +1,9 @@
+<div>
+      <h1>{{ post.title}}</h1>
+  <div class="index_release" >
+    {{ post.content }}
+  </div>
+  <footer class="card-footer">
+      <p class="card-footer-item">Published: {{ post.date | date: "%b %-d, %Y" }}</p>
+  </footer>
+</div>

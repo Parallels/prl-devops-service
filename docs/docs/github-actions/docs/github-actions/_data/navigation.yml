@@ -1,0 +1,17 @@
+- name: Quick Start
+  link: /quick-start/
+- name: Documentation
+  link: /docs/
+- name: Features
+  link: /features/
+  hidden: true
+- name: Examples
+  link: /#
+  dropdown:
+    - name: Run a Catalog service
+      link: /examples/remote-catalog/
+    - name: Control Multiple Hosts
+      link: /examples/orchestrator/
+    - name: Github Actions
+      link: /examples/github-actions/
+

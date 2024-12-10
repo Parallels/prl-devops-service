@@ -1,0 +1,138 @@
+{% assign menus = site.data.[page.menubar] %}
+{% assign urlParts = page.url | split: '/' %}
+
+<aside class="menu">
+    {% for menu in menus %}
+    {% assign hidden = menu.hidden | default: false %}
+    {% if hidden == false %}
+        <p class="menu-label">{{ menu.label }}</p>
+        <ul class="menu-list">
+            {% for item in menu.items %}
+            {% assign hidden = item.hidden | default: false %}
+            {% if hidden == false %}
+                <li>
+                    {% if item.link %}
+                        {% assign subUrl = item.link | append: menu.label | replace: ' ', '_' %}
+                    {% else %} 
+                        {% assign subUrl = item.path %}
+                    {% endif %}
+                    {% assign itemUrlParts = item.link | split: '/' %}
+                    {% assign itemCheckArray = page.url | split: subUrl%}
+                    {% if item.link %} 
+                        {% if item.items %}
+                            <a href="{{ item.link | relative_url }}" class="item {% if itemCheckArray[0] == '' or item.link == page.url %}is-active is-expanded{% endif %} prevent-select">
+                                <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
+                                <span class="prevent-select">{{ item.name }}</span>
+                            </a>
+                        {% else %}
+                            <a href="{{ item.link | relative_url }}" class="item {% if item.link == page.url %}is-active{% endif %} prevent-select">
+                                <span class="prevent-select" >{{ item.name }}</span>
+                            </a>
+                        {% endif %} 
+                    {% else %}
+                    <span class="item {% if itemCheckArray[0] == '' %}is-expanded is-active {% endif %} prevent-select">
+                        <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
+                        <span class="prevent-select">{{ item.name }}</span>
+                    </span>
+                {% endif %}
+                {% if item.items %}
+                    <ul class="sub-item-list {% if itemCheckArray[0] == '' or item.link == page.url %} is-show {% endif %}">
+                    {% for subitem in item.items %}
+                        {% assign hidden = subitem.hidden | default: false %}
+                        {% if hidden == false %}
+                            {% if subitem.link %}
+                                {% assign subItemUrl = subitem.link %}
+                            {% else %} 
+                                {% assign subItemUrl = subitem.path %}
+                            {% endif %}
+                            {% assign subItemUrlParts = subitem.link | split: '/' %}
+                            {% assign subItemCheckArray = page.url | split: subItemUrl %}
+                            <li>
+                            {%if subItemUrl == page.url %}
+                                <span class="item level-1 {% if  subItemUrl == page.url %}is-expanded is-active {% endif %} prevent-select">
+                                    {% if subitem.items %}
+                                    <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
+                                    {% endif %}
+                                    <span class="prevent-select" >{{ subitem.name }}</span>
+                                </span>
+                            {% else %}
+                                {% if subitem.items %}
+                                    <span class="item level-1 {% if subItemCheckArray[0] == '' %}is-expanded {% endif %} prevent-select">
+                                        {% if subitem.items %}
+                                        <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
+                                        {% endif %}
+                                        <span class="prevent-select" >{{ subitem.name }}</span>
+                                    </span>
+                                {% else %}
+                                <a href="{{ subitem.link | relative_url }}" class="sub-item level-1 {% if subitem.link == page.url %}is-active {% endif %} prevent-select">
+                                    {% if subitem.items %}
+                                    <span class="chevron fa-solid fa-chevron-right prevent-select"></span>
+                                    {% endif %}
+                                    {{ subitem.name }}
+                                </a>
+                                {% endif %}
+                            {% endif %}
+                            {% if subitem.items %}
+                                <ul class="sub-item-list level-2 {% if subitem.link == page.url %} is-show {% endif %}">
+                                {% assign sorted_docs = subitem.items  %}
+                                {% for subSubitem in sorted_docs %}
+                                    {% assign hidden = subSubitem.hidden | default: false %}
+                                    {% if hidden == false %}
+                                    <li>
+                                        <a href="{{ subSubitem.link | relative_url }}" class="sub-item leve-2 {% if subSubitem.link == page.url %}is-active{% endif %} prevent-select">
+                                            <span class="prevent-select"> {{ subSubitem.name }} </span>
+                                            {% if subSubitem.method %}
+                                            <span class="api-doc prevent-select">
+                                                <span class="endpoint {{ subSubitem.method | upcase }} prevent-select"></span>
+                                            </span>
+                                            {% else %}
+                                            <span class=" prevent-select"></span>
+                                            {% endif %}
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                </ul>
+                            {% endif %}
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    </ul>
+                    {% endif %}
+                </li>
+            {% endif %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+    {% endfor %}
+</aside>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll(".item"), 0);
+    if ($navbarBurgers.length > 0) {
+      $navbarBurgers.forEach(function ($el) {
+
+          $el.addEventListener("click", function () {
+            $el.classList.toggle("is-expanded");
+            $ul = $el.nextElementSibling;
+            if ($el.classList.contains("is-expanded")) {
+              $ul.classList.add("is-show");
+            } else {
+              $ul.classList.remove("is-show");
+            }
+            console.log($ul);
+            console.log($ul.children);
+            ul_children = $ul.children;
+            for (var i = 0; i < ul_children.length; i++) {
+              console.log(ul_children[i].classList);
+              if (ul_children[i].classList.contains("sub-item-list")) {
+                ul_children[i].classList.remove("is-show");
+              }
+            }
+          });
+        
+      });
+    }
+  });
+</script>
