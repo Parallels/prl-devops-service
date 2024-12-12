@@ -15,10 +15,10 @@ items:
     actions:
       - name: Schedule Date
         url: https://outlook.office.com/bookwithme/user/d6b4c940ec9d44079ed872ba1fcaaf68@alludo.com/meetingtype/you-CpOV8UyS0sFl9KjSWw2?anonymous&ep=mlink
-  - title: leave Feedback
+  - title: Leave Feedback
     description: We strive to enhance our services. We kindly invite your to share your feedback regarding your experience.
     img_icon: feedback.svg
     icon_class: callout-contacts-icon
     actions:
       - name: Leave Feedback
-        url: https://outlook.office.com/bookwithme/user/d6b4c940ec9d44079ed872ba1fcaaf68@alludo.com/meetingtype/you-CpOV8UyS0sFl9KjSWw2?anonymous&ep=mlink
+        url: https://forms.office.com/Pages/ResponsePage.aspx?id=IUeHM3fdfkuXt4Y8LL58c3OoxoqFsg9NlkiK69RaS0pUQ003VUpZSTBUOEQ0VjhQSVhSUVA1WFg0NS4u
