@@ -31,10 +31,9 @@ If you're interested in learning more about self-hosted runners, then you can re
 
 On this guide, we will show you how to set up one of our demo repositories. They are free and open to use, so you can copy the code or take inspiration for your own projects.
 
-{% assign installationContent = site.pages | where:"url", "/docs/getting-started/installation/" | first %}
+{% assign installationContent = site.pages | where:"url", "/docs/devops/getting-started/installation/" | first %}
 
 {{ installationContent.content }}
-
 
 ### Install Parallels Desktop for Mac
 
@@ -131,6 +130,7 @@ chmod +x /home/remove-runner.sh
 ```
 
 Where:
+
 - `$yourUsername` is your username used to login to the virtual machine
 - `$yourOrganization>` is your Github organization or your Github username
 - `$yourGithubPAT>` is your Github Personal Access Token
@@ -138,6 +138,7 @@ Where:
 ### Check the Runner is registered and running
 
 Once you have run the script, you can verify if your runner has been registered and is running by following these steps:
+
 1. Go to your Github repository.
 2. Click on the 'Settings' tab.
 3. Select 'Actions' from the left-hand menu.

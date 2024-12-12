@@ -1,0 +1,31 @@
+{% assign endpoint = include.endpoint %}
+{% if endpoint.response_blocks.size > 0 %}
+<section class="api-code-block api-responses">
+  {% if include.title %}
+  <span class="code-title">{{ include.title }}</span>
+  {% endif %}
+  <div id="{{ endpoint.path | slugify }}-responses-tab-container" class="tab-container" data-type="tabs" data-default="_200_ok">
+    <div class="api-tabs is-boxed">
+      <ul>
+        {% for response in endpoint.response_blocks %}
+        {% assign code = response.code | plus: 0 %}
+        <li class="api-tab">
+          <a href="#" data-target="_{{ response.code }}_{{ response.code_description | slugify}}">
+            <span
+              class="code-title{% if code >= 200 and code < 300 %} good{% endif %}{% if code >= 400 and code < 500 %} bad{% endif %}{% if code >= 500 and code < 600 %} error{% endif %}">{{ response.code }}</span>
+            <span class="code-description">{{ response.code_description }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="api-tab-blocks" data-type="tab-blocks">
+      {% for response in endpoint.response_blocks %}
+      <div class="" api-tab-block" data-type="tab-block" id="_{{ response.code }}_{{ response.code_description | slugify}}">
+        {% include api-code-block.html content=response.code_block language='json' %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}

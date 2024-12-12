@@ -1,0 +1,319 @@
+.menu-bar {
+  // border-right: 1px solid #eee;
+  width: 100%;
+  padding: unset;
+  flex-basis: unset;
+  flex-grow: 0;
+  flex-shrink: 0;
+  transition: min-width 0.3s ease;
+
+  @media screen and (min-width: $l-breakpoint) {
+    display: flex;
+    width: $side-menu-l-width;
+  }
+
+  @media screen and (min-width: $xl-breakpoint) {
+    width: $side-menu-xl-width;
+  }
+
+  .menu {
+    width: 100%;
+    display: none;
+
+    @media screen and (min-width: $l-breakpoint) {
+      display: block;
+    }
+
+    &.expanded {
+      display: block;
+      padding: 0 20px;
+
+      &:first-child {
+        margin-top: 16px;
+      }
+    }
+  }
+
+  .menu-label {
+    font-family: 'Open Sans';
+    font-size: 12px;
+    font-weight: bold;
+    font-stretch: normal;
+    font-style: normal;
+    line-height: 2;
+    letter-spacing: 1px;
+    color: $font-base-color;
+    transition: padding-left 0.3s ease;
+    user-select: none;
+    -webkit-user-select: none;
+
+    &.menu-label:not(:last-child) {
+      margin-bottom: 0;
+    }
+  }
+
+  .menu-item {
+    transition: margin-left 0.3s ease;
+    padding: 1px 0;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+
+    @media screen and (max-width: $l-breakpoint) {
+      margin-left: unset;
+      padding-left: 20px;
+    }
+
+    a {
+      width: 100%;
+
+      &:hover {
+        background-color: $light-hover-color;
+        color: $font-base-color;
+        border-radius: $hover-border-radius;
+      }
+    }
+
+    &.is-active {
+      @media screen and (max-width: $l-breakpoint) {
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        border-radius: $hover-border-radius;
+        background-color: $light-hover-color;
+        color: $font-base-color;
+      }
+
+      a {
+        border-radius: $hover-border-radius;
+        background-color: $light-hover-color;
+        color: $font-base-color;
+        display: grid;
+      }
+    }
+
+  }
+
+  .menu-list {
+    .item {
+      &.is-active {
+        border-radius: $hover-border-radius;
+        background-color: $light-hover-color;
+        color: $font-base-color;
+      }
+
+      .is-active {
+        background-color: #485fc7;
+        color: #fff;
+
+        &.level-1 {
+          background-color: #8095f2;
+          color: #fff;
+        }
+
+        &.level-2 {
+          background-color: #8095f2;
+          color: #fff;
+        }
+
+        .chevron {
+          color: #fff;
+        }
+      }
+
+      .is-expanded {
+        .is-active {
+          background-color: #485fc7;
+          color: #fff;
+
+          &.level-1 {
+            background-color: #8095f2;
+            color: #fff;
+          }
+
+          &.level-2 {
+            background-color: #8095f2;
+            color: #fff;
+          }
+
+          .chevron {
+            color: #fff;
+          }
+        }
+      }
+    }
+
+    a {
+      font-family: 'Open Sans';
+      font-size: 16px;
+      font-weight: normal;
+      font-stretch: normal;
+      font-style: normal;
+      line-height: 1.5;
+      letter-spacing: normal;
+      color: $font-base-color;
+      cursor: pointer;
+      padding: 8px 8px 8px;
+    }
+
+    .page-toc-menu {
+      padding-left: 22px;
+      display: block;
+
+      .menu {
+        display: block;
+      }
+
+      @media screen and (min-width: $l-breakpoint) {
+        display: none;
+      }
+
+      .menu-item-root {
+        border-left: unset;
+        margin: unset;
+        padding-left: unset;
+
+        &:last-child {
+          padding-bottom: 10px;
+        }
+      }
+
+      .sub-menu-item {
+        margin: unset;
+        margin-left: 24px;
+        border-left: 1px solid #b6b6b6;
+        padding-left: unset;
+      }
+
+      .menu {
+        font-family: 'Open Sans';
+        font-size: 16px;
+        font-weight: normal;
+        font-stretch: normal;
+        font-style: normal;
+        line-height: 1.5;
+        letter-spacing: normal;
+        color: #303236;
+      }
+
+      li {
+        ul {
+          .sub-item-list {
+            display: block;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 200ms linear;
+            border-left: 1px solid #dbdbdb;
+            padding-left: 1.75em;
+            margin: 0;
+          }
+
+          .is-show {
+            display: block;
+            max-height: 1000px;
+            margin: 0em 0em 0.75em 0rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+aside {
+  &.menu {
+    @media screen and (max-width: $l-breakpoint) {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+
+      &.expanded {
+        max-height: 2000px;
+      }
+    }
+  }
+
+  .filler {
+    flex-grow: 1;
+    flex-shrink: 1;
+  }
+
+  &.menu-button {
+
+    height: 42px;
+    border-bottom: 1px solid #dedede;
+    width: 100%;
+    height: 40px;
+    display: flex;
+    padding-left: 20px;
+    padding-right: 20px;
+    margin-top: 12px;
+
+
+    @media screen and (min-width: $l-breakpoint) {
+      display: none;
+    }
+
+    .show {
+      display: flex;
+    }
+
+    .page-body-menu-btn {
+      display: flex;
+      width: 100%;
+      align-items: center;
+
+      .menu-button-text {
+        font-family: 'Open Sans';
+        font-size: 14px;
+        font-weight: bold;
+        font-stretch: normal;
+        font-style: normal;
+        line-height: 1.71;
+        letter-spacing: 1.17px;
+        color: #303236;
+      }
+
+      .menu-button-icon {
+        font-family: 'Open Sans';
+        font-size: 14px;
+        font-weight: bold;
+        font-stretch: normal;
+        font-style: normal;
+        line-height: 1.71;
+        letter-spacing: 1.17px;
+        color: #303236;
+
+        i {
+          width: 32px;
+          height: 32px;
+          font-size: 14px;
+          font-weight: bold;
+          font-stretch: normal;
+          font-style: normal;
+          line-height: 1.71;
+          letter-spacing: 1.17px;
+          color: #303236;
+          text-align: center;
+          display: flex;
+          align-self: center;
+          align-items: center;
+          justify-content: center;
+
+          &:before {
+            content: "\f107";
+          }
+
+          &.expanded {
+            &:before {
+              content: "\f106";
+            }
+          }
+        }
+      }
+    }
+  }
+}

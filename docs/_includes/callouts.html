@@ -1,0 +1,55 @@
+{% if include.callouts %}
+<div class="callout-container">
+  {% for callout in callouts.items %}
+  {% unless callout.hidden %}
+  <div class="callout-item{% if include.full_button %} link{% endif %}{% unless include.full_button %} no-link{% endunless %}">
+    {% if callout.url %}
+    <a class="callout-item-link" href="{{ callout.url | relative_url }}">
+      {% endif %}
+      <div class="callout-body">
+
+        {% if callout.icon or callout.img_icon %}
+        <div class="callout-icon{% if callout.icon or callout.icon_brand %} font-icon{% endif %}">
+          {% if callout.icon %}
+          {% if callout.icon_brand %}
+          <i class="fab {{ callout.icon }} fa-2x{%if callout.icon_class%} {{ callout.icon_class }}{% endif%}"></i>
+          {% else %}
+          <i class="fas {{ callout.icon }} fa-2x{%if callout.icon_class%} {{ callout.icon_class }}{% endif%}"></i>
+          {% endif %}
+          {% else if callout.img_icon %}
+          <img class="img-icon{%if callout.icon_class%} {{ callout.icon_class }}{% endif%}" src="{{ site.baseurl }}/assets/img/{{ callout.img_icon }}" alt="{{ callout.img_icon }}">
+          {% endif %}
+        </div>
+        {% endif %}
+        <div class="callout-body-container">
+          <p class="title">{{ callout.title }}</p>
+          {% if callout.subtitle %}
+          <p class="subtitle">{{ callout.subtitle }}</p>
+          {% endif %}
+          {% if callout.description %}
+          <p class="description">{{ callout.description | newline_to_br }}</p>
+          {% endif %}
+          {% if callout.actions.size >0 %}
+          <div class="callout-action">
+            {% for callout_action in callout.actions %}
+            {% if callout_action.url %}
+            <a href="{{ callout_action.url | relative_url }}" {% if callout_action.url | contains: "http" %}target="_black" {% endif %} class="callout-action-button">
+              {{ callout_action.name }}
+              {% if callout_action.use_arrow %}
+              <i class="fas fa-arrow-right"></i>
+              {% endif %}
+            </a>
+            {% endif %}
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% if callout.url %}
+    </a>
+    {% endif %}
+  </div>
+  {% endunless %}
+  {% endfor %}
+</div>
+{% endif %}

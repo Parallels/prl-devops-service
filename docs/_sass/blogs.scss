@@ -1,0 +1,43 @@
+.categories {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.categories-container {
+  gap: 40px;
+  color: #AFB3B8;
+  width: min-content;
+  display: grid;
+  font-size: 14px;
+  grid-auto-flow: column;
+  grid-auto-columns: min-content;
+  align-items: center;
+  white-space: nowrap;
+
+  .category-button {
+    color: #303236;
+    background-color: #fff;
+    border-radius: 0.5rem;
+    padding: 1.25rem 2rem;
+    gap: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    display: flex;
+    font-family: 'Open Sans';
+    font-size: 20px;
+    box-shadow: 0 0 1px 0px rgba(255, 255, 255, 0.4) inset, 0 0 1px 0px rgba(255, 255, 255, 0.4);
+    transition: all 0.3s ease;
+    align-items: center;
+    font-family: Inter, Arial, Helvetica, sans-serif;
+    font-weight: 500;
+    line-height: 1;
+    justify-content: center;
+
+    &:hover {
+      background-color: #f5f5f5;
+      box-shadow: 0 0 1px 0px rgba(255, 255, 255, 0.4) inset, 0 0 1px 0px rgba(255, 255, 255, 0.4);
+    }
+  }
+}

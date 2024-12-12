@@ -35,9 +35,10 @@
       // Comment out if you do not need to setup environment variables for the module
       "envFile": "${workspaceFolder}/.env",
       "args": [
-        "install",
-        "parallels-desktop",
-        "--license="
+        "test",
+        "unzip",
+        "--zip-file=/Volumes/local_storage_m2/test.pvm",
+        "--destination=/Volumes/local_storage_m2/test_folder_devops",
       ]
     },
     {
@@ -52,7 +53,15 @@
       "apiVersion": 2,
       "trace": "log",
       "logOutput": "rpc",
-    }
+    },
+    {
+      "name": "Api Documentation Generator",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/src/api_documentation",
+      "envFile": "${workspaceFolder}/.env",
+    },
   ],
   "inputs": [
     {

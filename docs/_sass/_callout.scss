@@ -1,0 +1,265 @@
+.callout-contacts-icon {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.has-hero {
+  top: -10px;
+
+  @media screen and (min-width: $m-breakpoint) {
+    top: -15px;
+  }
+
+  @media screen and (min-width: $l-breakpoint) {
+    top: -15px;
+  }
+
+
+  @media screen and (min-width: $xl-breakpoint) {
+    top: -15px;
+  }
+}
+
+.callout-section {
+  position: relative;
+}
+
+.callout-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  user-select: none;
+  padding: 0 20px;
+  -webkit-user-select: none;
+
+  @media screen and (min-width: $m-breakpoint) {
+    gap: 16px;
+    flex-direction: column;
+    padding: 0 20px;
+  }
+
+  @media screen and (min-width: $l-breakpoint) {
+    gap: 16px;
+    flex-direction: row;
+  }
+
+
+  @media screen and (min-width: $xl-breakpoint) {
+    gap: 32px;
+    flex-direction: row;
+  }
+
+
+  .callout-item {
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+    height: 100%;
+    width: 100%;
+    flex-direction: row;
+
+    @media screen and (min-width: $m-breakpoint) {}
+
+    @media screen and (min-width: $l-breakpoint) {
+      min-width: 274px;
+      max-width: 274px;
+      flex-direction: column;
+    }
+
+
+    @media screen and (min-width: $xl-breakpoint) {
+      min-width: 320px;
+      max-width: 320px;
+      flex-direction: column;
+    }
+
+    .callout-item-link {
+      width: 100%;
+    }
+
+    &.no-link {
+      background-color: #fff;
+
+      .callout-body {
+        height: 100%;
+        padding: 30px;
+        background-color: #fff;
+        border: 1px solid $border-color;
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+
+        @media screen and (min-width: $m-breakpoint) {
+          flex-direction: row;
+        }
+
+        @media screen and (min-width: $l-breakpoint) {
+          flex-direction: column;
+        }
+
+
+        @media screen and (min-width: $xl-breakpoint) {
+          flex-direction: column;
+        }
+
+        &:hover {
+          background-color: $border-color;
+        }
+      }
+    }
+
+    &.link {
+      cursor: pointer;
+
+      a {
+        height: 100%;
+        padding: 26px;
+        border: 1px solid $border-color;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        cursor: pointer;
+
+        @media screen and (min-width: $m-breakpoint) {
+
+          flex-direction: row;
+        }
+
+        @media screen and (min-width: $l-breakpoint) {
+          flex-direction: column;
+        }
+
+
+        @media screen and (min-width: $xl-breakpoint) {
+          flex-direction: column;
+        }
+
+        &:hover {
+          background-color: $border-color;
+        }
+      }
+    }
+
+    .callout-icon {
+      padding: 5px;
+      display: flex;
+      margin-right: 28px;
+
+      @media screen and (min-width: $m-breakpoint) {}
+
+      @media screen and (min-width: $l-breakpoint) {
+        margin-bottom: 23px;
+        margin-right: unset;
+      }
+
+
+      @media screen and (min-width: $xl-breakpoint) {
+        margin-bottom: 23px;
+        margin-right: unset;
+      }
+
+      &.font-icon {
+        align-items: center;
+        display: inline-flex;
+        justify-content: center;
+        width: 33px;
+        height: 33px;
+      }
+
+      img {
+        width: 33px;
+        height: 33px;
+      }
+    }
+
+    .callout-body-container {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      flex: 1;
+
+      .title {
+        font-family: "Open Sans";
+        font-size: 20px;
+        font-weight: bold;
+        font-stretch: normal;
+        font-style: normal;
+        line-height: 1.5;
+        letter-spacing: normal;
+        color: $font-base-color;
+        margin-bottom: 6px;
+
+        @media screen and (min-width: $l-breakpoint) {
+          margin-bottom: 8px;
+        }
+
+        @media screen and (min-width: $xl-breakpoint) {
+          margin-bottom: 8px;
+        }
+      }
+
+      .description {
+        font-family: "Open Sans";
+        font-size: 16px;
+        font-weight: normal;
+        font-stretch: normal;
+        font-style: normal;
+        line-height: 1.5;
+        letter-spacing: normal;
+        color: $font-lighter-color;
+        flex: 1;
+      }
+    }
+
+
+    .callout-action {
+      display: flex;
+      align-items: center;
+      justify-content: start;
+      margin-top: 20px;
+
+      @media screen and (max-width: $m-breakpoint) {
+        margin-top: 20px;
+      }
+
+      @media screen and (min-width: $l-breakpoint) {
+        margin-top: 29px;
+      }
+
+
+      @media screen and (min-width: $xl-breakpoint) {
+        margin-top: 29px;
+      }
+
+      .callout-action-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Open Sans';
+        font-size: 16px;
+        font-weight: 600;
+        font-stretch: normal;
+        font-style: normal;
+        line-height: 1.5;
+        letter-spacing: normal;
+        color: #3d73d8;
+
+        &:not(:first-child) {
+          padding-left: 10px;
+        }
+
+        i {
+          margin-left: 0.5rem;
+          font-stretch: normal;
+          font-style: normal;
+          line-height: 1.5;
+          letter-spacing: normal;
+          color: #3d73d8;
+        }
+      }
+    }
+  }
+}

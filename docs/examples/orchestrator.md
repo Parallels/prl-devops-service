@@ -42,7 +42,7 @@ On the example we will show we will only use one host as this is the simplest wa
 {% include notification.html message="While you can follow this guide with only one host, it is best to have multiple hosts to see the full potential" status="is-warning" icon="info" %}
 </div>
 
-{% assign installationContent = site.pages | where:"url", "/docs/getting-started/installation/" | first %}
+{% assign installationContent = site.pages | where:"url", "/docs/devops/getting-started/installation/" | first %}
 
 ## Step 1: Install Parallels Desktop DevOps
 
@@ -58,7 +58,7 @@ Once the docker container is working you can access the orchestrator using any r
 
 ## Step 2: Installing the DevOps Service on the Hosts
 
-For each host we want to add to the orchestrator service, we need to install the DevOps service. The DevOps service is responsible for creating and managing virtual machines on the host. You can find the installation instructions on the [Installation Guide]({{ site.url }}{{ site.baseurl }}/docs/getting-started/installation/){:target="_blank"}.
+For each host we want to add to the orchestrator service, we need to install the DevOps service. The DevOps service is responsible for creating and managing virtual machines on the host. You can find the installation instructions on the [Installation Guide]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/installation/){:target="_blank"}.
 
 ### Configuration
 
@@ -97,7 +97,7 @@ To view the resources available in the orchestrator service, you can click on th
 
 ![List Orchestrator Resources]({{ site.url }}{{ site.baseurl }}/img/vscode_extension/list_orchestrator_resources.gif)
 
-#### List Virtual Machine 
+#### List Virtual Machine
 
 To view the list of virtual machines running on the orchestrator service, you can click on the `Virtual Machines` tree item and expand it, this will show you the list of virtual machines running on the orchestrator service.
 
@@ -124,6 +124,7 @@ To add a host to the orchestrator service, we need to make a POST request to the
 ```
 
 Where:
+
 - `host` is the hostname of the host
 - `description` is a description of the host
 - `tags` are the tags associated with the host, this can be omitted if not needed it
@@ -141,13 +142,13 @@ To list the hosts added to the orchestrator service, you can make a GET request 
 
 You can also request how much resources are available in the orchestrator service by making a GET request to the `/api/v1/orchestrator/overview/resources` endpoint. This will return a list of resources available in the orchestrator service.
 
-#### List Virtual Machine 
+#### List Virtual Machine
 
 To list the virtual machines running on the orchestrator service, you can make a GET request to the `/api/v1/orchestrator/vms` endpoint. This will return a list of virtual machines running on the orchestrator service.
 
 ## Step 4: Creating a CI/CD Pipeline
 
-Now that we have our hosts added to the orchestrator service, we can create a CI/CD pipeline that will run a simple test on a virtual machine. We will use GitHub Actions to create the pipeline and run it. 
+Now that we have our hosts added to the orchestrator service, we can create a CI/CD pipeline that will run a simple test on a virtual machine. We will use GitHub Actions to create the pipeline and run it.
 This will just be a simple example to show how the orchestrator service can be used, it will leave the created VM without cleaning it so you can have a look at it.
 
 If you want to know more about how our GitHub Action works in a CI/CD pipeline environment or to better understand how does the pipeline file works you can check [this example]({{ site.url }}{{ site.baseurl }}/examples/github-actions/){:target="_blank"}.

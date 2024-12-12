@@ -2,7 +2,7 @@
 layout: post
 title:  "Release 0.6.2"
 date:   2024-05-13 00:00:00 +0000
-categories: release notes
+categories: Changelog
 ---
 
 # Whats New
@@ -18,5 +18,3 @@ categories: release notes
   string correctly
 - Fixed an issue with concurrency configuration saving that could lead to old
   results being saved
-
-

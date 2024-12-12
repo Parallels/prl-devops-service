@@ -1,0 +1,36 @@
+{% if endpoint.example_blocks.size > 0 %}
+<section class="api-code-block api-responses">
+  {% if include.title %}
+  <span class="code-title">{{ include.title }}</span>
+  {% endif %}
+  <div class="code-body">
+    <div class="code-path">
+      <span class="endpoint {{ endpoint.method | upcase }}"></span>
+      <span class="path-text">{{ endpoint.path }}</span>
+      {% if endpoint.requires_authorization %}
+      <span class="authorization tag is-warning">Authorized</span>
+      {% endif %}
+    </div>
+    <div id="{{ endpoint.path | slugify }}-example-tab-container" class="tab-container" data-type="tabs" data-default="_curl_powershell">
+      <div class="api-tabs is-boxed">
+        <ul>
+          {% for example in endpoint.example_blocks %}
+          <li class="api-tab">
+            <a href="#" data-target="_{{ example.title | slugify }}_{{ example.language | slugify}}">
+              <span class="code-title">{{ example.title }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="api-tab-blocks" data-type="tab-blocks">
+        {% for example in endpoint.example_blocks %}
+        <div class="api-tab-block" data-type="tab-block" id="_{{ example.title | slugify }}_{{ example.language | slugify}}">
+          {% include api-code-block.html content=example.code_block language=example.language %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}

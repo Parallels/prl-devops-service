@@ -2,7 +2,7 @@
 layout: post
 title:  "Release 0.5.4"
 date:   2024-02-12 00:00:00 +0000
-categories: release notes
+categories: Changelog
 ---
 
 New release of the Parallels Desktop DevOps Service.

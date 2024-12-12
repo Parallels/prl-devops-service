@@ -1,0 +1,15 @@
+style: is-light
+items:
+  - title: Run a Catalog service
+    description: |-
+      Securely share golden images with your team quickly.
+    img_icon: catalog.svg
+    url: /examples/remote-catalog
+  - title: Control Multiple Hosts
+    description: Manage multiple hosts seamless in a single pane
+    url: /examples/orchestrator
+    img_icon: hosts.svg
+  - title: Github Actions
+    description: Work with Github Actions and automate your CI/CD pipeline
+    img_icon: github_actions.svg
+    url: /examples/github-actions

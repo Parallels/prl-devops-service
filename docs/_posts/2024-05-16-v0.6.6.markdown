@@ -2,7 +2,7 @@
 layout: post
 title:  "Release 0.6.6"
 date:   2024-05-16 00:00:00 +0000
-categories: release notes
+categories: Changelog
 ---
 
 # Whats New
@@ -13,5 +13,3 @@ categories: release notes
 - Fixed an issue with the orchestrator where sometimes it could report back
   a 500 server error
 - Fixed an issue with the copy command that would take a long time to copy
-
-

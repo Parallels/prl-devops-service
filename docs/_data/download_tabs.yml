@@ -1,92 +1,83 @@
 style: boxed
 icon_size: xl
 items:
-- default: true
-  title: Mac
-  icon: apple
-  icon_brand: true
-  content: |-
-    <div class="mt-2 flex flex-column">
-      <span>
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-arm64.tar.gz" class="button is-primary">
+  - default: true
+    title: Mac
+    icon: apple
+    icon_brand: true
+    content: |-
+      <div class="mt-2 flex flex-column">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-arm64.tar.gz" class="text-button is-primary">
           Parallels Desktop DevOps Service for Mac with Apple Silicon
         </a>
-      </span>
-      <span>
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-amd64.tar.gz" class="button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-amd64.tar.gz" class="text-button  is-primary">
           Parallels Desktop DevOps Service for Mac with Intel chip
         </a>
-      </span>
-    </div>
-    <div class="mt-3">
-    <p>
-    You can download the release from the links above, after downloading the binary, copy it to a directory in your path, such as /usr/local/bin, and make it executable.
-    </p>
-    <p>
-    Or just run the script we created to make it easier to install the service on your mac, you can run the following command in your terminal to install the service.
-    </p>
-    <div class="language-bash highlighter-rouge">
-    <div class="highlight">
-    <pre class="highlight">
-    <code>
-    <span class="nb">/bin/bash</span> -c "$(curl -fsSL https://raw.githubusercontent.com/Parallels/prl-devops-service/main/scripts/install.sh)"
-    </code>
-    </pre>
-    </div>
-    </div>
-    </div>
-- title: Linux
-  icon: linux
-  icon_brand: true
-  content: |-
-    <div class="mt-2 notification is-warning">
-      <article class="media">
-          <div class="media-left">
-              <span class="icon"><i class="fa-solid fa-exclamation-circle fa-lg"></i></span>
+      </div>
+      <div class="mt-3">
+      <p>
+      You can download the release from the links above, after downloading the binary, copy it to a directory in your path, such as /usr/local/bin, and make it executable.
+      </p>
+      <p>
+      Or just run the script we created to make it easier to install the service on your mac, you can run the following command in your terminal to install the service.
+      </p>
+      <div class="language-bash highlighter-rouge">
+      <div class="highlight">
+      <pre class="highlight">
+      <code>
+      <span class="nb">/bin/bash</span><span class="n"> -c "$(curl -fsSL https://raw.githubusercontent.com/Parallels/prl-devops-service/main/scripts/install.sh)"</span>
+      </code>
+      </pre>
+      </div>
+      </div>
+      </div>
+  - title: Linux
+    icon: linux
+    default: false
+    icon_brand: true
+    content: |-
+      <div class="notification is-warning">
+        <article class="media">
+            <div class="media-left">
+                <span class="icon"><i class="fa-solid fa-exclamation fa-lg"></i></span>
+              </div>
+            <div class="media-content">
+              <div class="content">Please be aware that running this service in linux you will only have access to the orchestrator and catalog features</div>
             </div>
-          <div class="media-content">
-            <div class="content">Please be aware that running this service in linux you will only have access to the orchestrator and catalog features</div>
-          </div>
-      </article>
-    </div>
-    <div class="flex flex-column">
-      <span>
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--linux-x86.tar.gz" class="button is-primary">
+        </article>
+      </div>
+      <div class="flex flex-column">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--linux-x86.tar.gz" class="text-button is-primary">
           Parallels Desktop DevOps Service x64
         </a>
-      </span>
-      <span>
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--linux-amd64.tar.gz" class="button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--linux-amd64.tar.gz" class="text-button is-primary">
           Parallels Desktop DevOps Service x64
         </a>
-      </span>
-      <span>
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-arm64.tar.gz" class="button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-arm64.tar.gz" class="text-button is-primary">
           Parallels Desktop DevOps Service amr64
         </a>
-      </span>
-    </div>
-          <div class="mt-3">
-    <p>
-    You can download the release from the links above, after downloading the binary, copy it to a directory in your path, such as /usr/local/bin, and make it executable.
-    </p>
-    <p>
-    Or just run the script we created to make it easier to install the service on your mac, you can run the following command in your terminal to install the service.
-    </p>
-    <div class="language-bash highlighter-rouge">
-    <div class="highlight">
-    <pre class="highlight">
-    <code>
-    <span class="nb">/bin/bash</span> -c "$(curl -fsSL https://raw.githubusercontent.com/Parallels/prl-devops-service/main/scripts/install.sh)"
-    </code>
-    </pre>
-    </div>
-    </div>
-    </div>
-- title: Windows
-  icon: windows
-  icon_brand: true
-  content: |-
+      </div>
+            <div class="mt-3">
+      <p>
+      You can download the release from the links above, after downloading the binary, copy it to a directory in your path, such as /usr/local/bin, and make it executable.
+      </p>
+      <p>
+      Or just run the script we created to make it easier to install the service on your mac, you can run the following command in your terminal to install the service.
+      </p>
+      <div class="language-bash highlighter-rouge">
+      <div class="highlight">
+      <pre class="highlight">
+      <code>
+      <span class="nb">/bin/bash</span> -c "$(curl -fsSL https://raw.githubusercontent.com/Parallels/prl-devops-service/main/scripts/install.sh)"
+      </code>
+      </pre>
+      </div>
+      </div>
+      </div>
+  - title: Windows
+    icon: windows
+    icon_brand: true
+    content: |-
       <div class="mt-2 notification is-warning">
         <article class="media">
             <div class="media-left">
@@ -98,35 +89,29 @@ items:
         </article>
       </div>
       <div class="flex flex-column">
-        <span>
-          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--windows-amd64.tar.gz" class="button is-primary">
-            Parallels Desktop DevOps Service x64
-          </a>
-        </span>
-        <span>
-          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--windows-x86.tar.gz" class="button is-primary">
-            Parallels Desktop DevOps Service x86
-          </a>
-        </span>
-        <span>
-          <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--windows-arm64.tar.gz" class="button is-primary">
-            Parallels Desktop DevOps Service arm64
-          </a>
-        </span>
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--windows-amd64.tar.gz" class="text-button is-primary">
+          Parallels Desktop DevOps Service x64
+        </a>
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--windows-x86.tar.gz" class="text-button is-primary">
+          Parallels Desktop DevOps Service x86
+        </a>
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--windows-arm64.tar.gz" class="text-button is-primary">
+          Parallels Desktop DevOps Service arm64
+        </a>
       </div>
-- title: From Source
-  icon: github
-  icon_brand: true
-  content: |-
-    <div class="mt-2 flex flex-column">
-    <p>You will need to clone the repository from github and then build the project using the following commands.</p>
-    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
-    <span class="nb">git clone</span> https://github.com/Parallels/prl-devops-service
-    <span class="nb">make</span> build</code></pre></div>
-    </div>
-    <p>this will create the binary in the <code class="language-plaintext highlighter-rouge">out/binaries</code> folder. you can then execute the binary from there,or move it to a location in your path.</p>
-    <p>After downloading the binary, copy it to a directory in your path, such as /usr/local/bin, and make it executable.</p>
-    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
-    <span class="nb">sudo mv </span>prldevops /usr/local/bin
-    <span class="nb">sudo chmod</span> +x /usr/local/bin/prldevops</code></pre></div></div>
-    </div>
+  - title: From Source
+    icon: github
+    icon_brand: true
+    content: |-
+      <div class="mt-2 flex flex-column">
+      <p>You will need to clone the repository from github and then build the project using the following commands.</p>
+      <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+      <span class="nb">git clone</span> https://github.com/Parallels/prl-devops-service
+      <span class="nb">make</span> build</code></pre></div>
+      </div>
+      <p>this will create the binary in the <code class="language-plaintext highlighter-rouge">out/binaries</code> folder. you can then execute the binary from there,or move it to a location in your path.</p>
+      <p>After downloading the binary, copy it to a directory in your path, such as /usr/local/bin, and make it executable.</p>
+      <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+      <span class="nb">sudo mv </span>prldevops /usr/local/bin
+      <span class="nb">sudo chmod</span> +x /usr/local/bin/prldevops</code></pre></div></div>
+      </div>

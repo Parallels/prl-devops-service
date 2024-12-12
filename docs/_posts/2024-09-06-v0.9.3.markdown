@@ -2,7 +2,7 @@
 layout: post
 title:  "Release 0.9.3"
 date:   2024-09-06 00:00:00 +0000
-categories: release notes
+categories: Changelog
 ---
 
 # Whats New
@@ -13,5 +13,3 @@ categories: release notes
 - Added minimum requirements to the pdfile and catalog db
 - Fixed an issue with the pull command that would break if you had more than one machine starting with the same name
 - Add `envFrom` key to Helm values
-
-

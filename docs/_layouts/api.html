@@ -1,96 +1,220 @@
 ---
 layout: default
 ---
-<div class="api-doc">
-    <div class="main">
-        {% if page.content %}
-        <section class="doc-content header">
-            <section class="left-docs header">
-                {{ page.content | markdownify }}
-            </section>
-            <section class="right-code header">
-            </section>
-        </section>
-        {% endif %}
-        {% assign endpoints = page.endpoints %}
-        {% for endpoint in endpoints %}
-        {% assign path = site.api.prefix | append: endpoint.path %}
-        {% assign id = site.api.prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
-        <section class="doc-content">
-            <section class="left-docs">
-                {% if endpoint.title %}
-                    <h6 class="endpoint-title">
-                        {{ endpoint.title }}:
-                    </h6>
-                {% endif %}
-                    <h4 class="api-endpoint-header">
-                        <div class="endpoint-header">
-                            <a class="endpoint-link" id="{{ id }}">
-                                {{ path }}
-                                {% if endpoint.method %}
-                                    <span class="endpoint {{ endpoint.method | upcase }}"></span>
-                                {% endif %}
-                                {% if endpoint.requires_authorization %}
-                                    {% include tag.html tag="Authorized" style="is-warning" %}
-                                {% endif %}
-                            </a>
-                        </div>
-                        <div>
-                            {% if endpoint.default_required_roles or endpoint.default_required_claims %}
-                                {% if endpoint.default_required_roles %}
-                                    {% for role in endpoint.default_required_roles %}
-                                        <span class="tag is-info is-light "><span class="title">Role:</span> {{ role }}</span>
-                                    {% endfor %}
-                                {% endif %}
-                                {% if endpoint.default_required_claims %}
-                                    {% for claim in endpoint.default_required_claims %}
-                                        <span class="tag is-success is-light "><span class="title">Claim:</span> {{ claim }}</span>
-                                    {% endfor %}
-                                {% endif %}
-                            {% endif %}
-                        </div>
-                    </h4>
-                {% if endpoint.description %}
-                    <p class="description">{{ endpoint.description }}</p>
-                {% endif %}
-                {% if endpoint.parameters and endpoint.parameters[0].name %}
-                        <h6>Parameters</h6>
-                        <dl>
-                                {% for parameter in endpoint.parameters %}
-                                        <dt>
-                                            {{ parameter.name }}
-                                            {% if parameter.required %}
-                                                <span class="tag is-danger is-light">required</span>
-                                            {% else %}
-                                                <span class="tag is-info is-light">optional</span>
-                                            {% endif %}
-                                        </dt>
-                                        <dd>
-                                            {% if parameter.type %}
-                                                <span class="tag is-success is-light">{{ parameter.type }}</span>
-                                            {% endif %}
-                                            {{ parameter.content }}
-                                        </dd>
-                                {% endfor %}
-                        </dl>
-                {% endif %}
-
-                {{ endpoint.content_markdown | markdownify | replace: "<dl>", "<h6>Parameters</h6><dl>" }}
-
-                {% if endpoint.left_code_blocks %}
-                    {% for block in endpoint.left_code_blocks %}
-                        {% include api-code.html block=block endpoint=endpoint %}
-                        {% endfor %}
-                    {% endif %}
-            </section>
-            {% if endpoint.right_code_blocks and endpoint.right_code_blocks[0].code_block %}
-                    <section class="right-code">
-                        {% for block in endpoint.right_code_blocks %}
-                                {% include api-code.html block=block %}
-                        {% endfor %}
-                </section>
-            {% endif %}
-        </section>
-        {% endfor %}
+{% assign url = page.url | split: '/' %}
+{% assign page_name = url | last %}
+<div class="api-document{% if page.categories %} has-categories{% endif %}">
+  {% if page.categories %}
+  <div class="category-menu">
+    <div class="api-menu-container">
+      <div class="api-dropdown-root-item{% if page_name == 'rest-api' %} active{% endif %}">
+        <a class="api-menu-item" href="{{ site.baseurl }}/rest-api">All </a>
+      </div>
+      {% for category in page.categories %}
+      {% if category.endpoints.size > 0 %}
+      <div class="api-dropdown-link{% if page_name == category.path %} expanded{% endif %}" target="dropdown-{{ category.path }}">
+        <div class="api-dropdown-root-item{% if page_name == category.path %} active{% endif %}{% if page_name == category.path %} expanded{% endif %}">
+          <a class="api-dropdown-expand-btn{% if page_name == category.path %} expanded{% endif %}" type="button" title="dropdown-{{ page_name }}" target="dropdown-{{ category.path }}">
+            <svg class="svg-button" focusable="false" viewBox="0 0 20 20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="fill: none;">
+              <path d="M18 7L10 15L2 7" stroke-width="2" stroke-miterlimit="10"></path>
+            </svg>
+          </a>
+          <a class="api-menu-item{% if page_name == category.path %} active{% endif %}" href="{{ site.baseurl }}/rest-api/{{ category.path }}">
+            <div class="menu-item-text">
+              {{ category.name }}
+            </div>
+          </a>
+        </div>
+        <div class="api-dropdown-menu{% if page_name == category.path %} expanded{% endif %}" target="dropdown-{{ category.path }}">
+          <ul>
+            {% for endpoint in category.endpoints %}
+            <li class="api-dropdown-menu-item">
+              <span class="endpoint {{ endpoint.method | upcase }}"></span>
+              <a href=" {{ site.baseurl }}/rest-api/{{ category.path }}?#{{ endpoint.path }}">{{ endpoint.path }}</a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% else %}
+      <div class="api-dropdown-root-item{% if page_name == category.path %} active{% endif %}">
+        <a class="api-menu-item" href="{{ site.baseurl }}/rest-api/{{ category.path }}">
+          {{ category.name }}
+        </a>
+      </div>
+      {% endif %}
+      {% endfor %}
     </div>
+  </div>
+  {% endif %}
+  <div class="api-page-body">
+    {% if page.content %}
+    <section class="doc-content header">
+      <section class="left-docs header">
+        {{ page.content | markdownify }}
+      </section>
+      <section class="right-code header">
+      </section>
+    </section>
+    {% endif %}
+    {% assign endpoints = page.endpoints %}
+    {% for endpoint in endpoints %}
+    {% assign path = page.api_prefix | append: endpoint.path %}
+    {% assign id = site.api_prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
+    <section class="api-main-content">
+      <section class="api-main-body">
+        {% if endpoint.title %}
+        <h6 class="endpoint-title">
+          {{ endpoint.title }}:
+        </h6>
+        {% endif %}
+        <h4 class="api-endpoint-header">
+          <div class="endpoint-header">
+            <a class="endpoint-link" id="{{ id }}">
+              {{ path }}
+              {% if endpoint.method %}
+              <span class="endpoint {{ endpoint.method | upcase }}"></span>
+              {% endif %}
+              {% if endpoint.requires_authorization %}
+              {% include tag.html tag="Authorized" style="is-warning" %}
+              {% endif %}
+            </a>
+          </div>
+          <div>
+            {% if endpoint.default_required_roles or endpoint.default_required_claims %}
+            {% if endpoint.default_required_roles %}
+            {% for role in endpoint.default_required_roles %}
+            <span class="tag is-info is-light "><span class="title">Role:</span> {{ role }}</span>
+            {% endfor %}
+            {% endif %}
+            {% if endpoint.default_required_claims %}
+            {% for claim in endpoint.default_required_claims %}
+            <span class="tag is-success is-light "><span class="title">Claim:</span> {{ claim }}</span>
+            {% endfor %}
+            {% endif %}
+            {% endif %}
+          </div>
+        </h4>
+        {% if endpoint.description %}
+        <p class="description">{{ endpoint.description }}</p>
+        {% endif %}
+        {% if endpoint.content_markdown %}
+        <div class="markdown-content">
+          {{ endpoint.content_markdown | markdownify  }}
+        </div>
+        {% endif %}
+        {% if endpoint.headers and endpoint.headers[0].name %}
+        <h6>Headers</h6>
+        <div class="endpoint-headers">
+          {% for header in endpoint.headers %}
+          <span>
+            {{ header.name }}
+            {% if header.description %}
+            <span class="tag is-info is-light">{{ header.description }}</span>
+            {% endif %}
+            {% if header.required %}
+            <span class="tag is-danger is-light">required</span>
+            {% else %}
+            <span class="tag is-info is-light">optional</span>
+            {% endif %}
+          </span>
+          <span>
+            {% if header.type %}
+            <span class="tag is-success is-light">{{ header.type }}</span>
+            {% endif %}
+            {{ header.content }}
+          </span>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if endpoint.parameters and endpoint.parameters[0].name %}
+        <h6>Parameters</h6>
+        <div class="endpoint-params">
+          {% for parameter in endpoint.parameters %}
+          {% if parameter.type == 'path' %}
+          <span>
+            {{ parameter.name }}
+            {% if parameter.description %}
+            <span class="tag is-info is-light">{{ parameter.description }}</span>
+            {% endif %}
+            {% if parameter.required %}
+            <span class="tag is-danger is-light">required</span>
+            {% else %}
+            <span class="tag is-info is-light">optional</span>
+            {% endif %}
+          </span>
+          <span>
+            {% if parameter.type %}
+            <span class="tag is-success is-light">{{ parameter.type }}</span>
+            {% endif %}
+            {{ parameter.content }}
+          </span>
+          {% else if parameter.type == 'object' %}
+          <div>
+            <div>
+              <span>
+                {{ parameter.name }}
+                {% if parameter.description %}
+                <span class="tag is-info is-light">{{ parameter.description }}</span>
+                {% endif %}
+                {% if parameter.required %}
+                <span class="tag is-danger is-light">required</span>
+                {% endif %}
+              </span>
+              <span>
+                {% if parameter.type %}
+                <span class="tag is-success is-light">{{ parameter.type }}</span>
+                {% endif %}
+                {{ parameter.content }}
+              </span>
+            </div>
+            <div>
+              {% include api-code-block.html content=parameter.body language='json' %}
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+      </section>
+      <section class="api-code-blocks">
+        {% if endpoint.example_blocks and endpoint.example_blocks[0].code_block %}
+        {% include api-code-block-examples.html endpoint=endpoint title="Request examples" %}
+        {% endif %}
+        {% if endpoint.response_blocks.size > 1 %}
+        {% include api-code-block-responses.html endpoint=endpoint title="Responses" %}
+        {% endif %}
+      </section>
+    </section>
+    {% endfor %}
+  </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var $menu_dropdown_item = Array.prototype.slice.call(document.querySelectorAll(".api-dropdown-link"), 0);
+    if ($menu_dropdown_item.length > 0) {
+      $menu_dropdown_item.forEach(function ($el) {
+        var $root_menu_item = $el.querySelector(".api-dropdown-root-item");
+        var $button = $el.querySelector(".api-dropdown-root-item > .api-dropdown-expand-btn");
+        var $dropdown_items = $el.querySelector(".api-dropdown-menu");
+        if ($button) {
+          $button.addEventListener("click", function () {
+            $el.classList.toggle("expanded");
+            $dropdown_items.classList.toggle("expanded");
+            $button.classList.toggle("expanded");
+            $root_menu_item.classList.toggle("expanded");
+          });
+        }
+
+      });
+    }
+    //setupTabs('#responses-tab-container');
+    //setupTabs('#example-tab-container');
+  });
+
+  window.onload = function () {
+    console.log("onload");
+    //setupTabs('#responses-tab-container');
+  };
+</script>

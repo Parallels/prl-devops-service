@@ -2351,7 +2351,7 @@ func GetOrchestratorHostCatalogCacheHandler() restapi.ControllerHandler {
 // @Description	This endpoint deletes an orchestrator host cache items
 // @Tags			Orchestrator
 // @Produce		json
-// @Param			id						path	string	true	"Host ID"
+// @Param			id	path	string	true	"Host ID"
 // @Success		202
 // @Failure		400	{object}	models.ApiErrorResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
@@ -2383,8 +2383,8 @@ func DeleteOrchestratorHostCatalogCacheHandler() restapi.ControllerHandler {
 // @Description	This endpoint deletes an orchestrator host cache item and all its children
 // @Tags			Orchestrator
 // @Produce		json
-// @Param			id						path	string	true	"Host ID"
-// @Param			catalog_id				path	string	true	"Catalog ID"
+// @Param			id			path	string	true	"Host ID"
+// @Param			catalog_id	path	string	true	"Catalog ID"
 // @Success		202
 // @Failure		400	{object}	models.ApiErrorResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
@@ -2417,9 +2417,9 @@ func DeleteOrchestratorHostCatalogCacheItemHandler() restapi.ControllerHandler {
 // @Description	This endpoint deletes an orchestrator host cache item and all its children
 // @Tags			Orchestrator
 // @Produce		json
-// @Param			id						path	string	true	"Host ID"
-// @Param			catalog_id				path	string	true	"Catalog ID"
-// @Param			catalog_version			path	string	true	"Catalog Version"
+// @Param			id				path	string	true	"Host ID"
+// @Param			catalog_id		path	string	true	"Catalog ID"
+// @Param			catalog_version	path	string	true	"Catalog Version"
 // @Success		202
 // @Failure		400	{object}	models.ApiErrorResponse
 // @Failure		401	{object}	models.OAuthErrorResponse

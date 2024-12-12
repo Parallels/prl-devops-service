@@ -3,65 +3,92 @@
 {% assign has_left_sidebar = true %}
 {% endif %}
 
-{% if page.show_sidebar and has_left_sidebar  %}
+{% if page.show_sidebar and has_left_sidebar %}
 {% assign content_width = 'is-4' %}
 {% assign content_padding = 'pl-2 pr-2' %}
 {% elsif page.show_sidebar or has_left_sidebar %}
-    {% assign content_width = 'is-9' %}
-    {% unless has_left_sidebar %}
-        {% assign content_width = 'is-9' %}
-    {% endunless %}
+{% assign content_width = 'is-9' %}
+{% unless has_left_sidebar %}
+{% assign content_width = 'is-9' %}
+{% endunless %}
 {% assign content_padding = 'pl-2 pr-2' %}
 {% else %}
 {% assign content_width = 'is-12' %}
-{% assign content_padding = 'pl-3 pr-3' %}
+{% assign content_padding = '' %}
 {% endif %}
 {% assign sideContent = page.side_toc | default: false %}
+<html dir="{{ site.direction | default: 'ltr' }}" lang="{{ site.lang | default: 'en' }}" {% if site.fixed_navbar %}class="has-navbar-fixed-{{ site.fixed_navbar }}" {% endif %}>
+{% include head.html %}
 
-
-<html
- dir="{{ site.direction | default: 'ltr' }}"
- lang="{{ site.lang | default: 'en' }}"
- {% if site.fixed_navbar %}class="has-navbar-fixed-{{ site.fixed_navbar }}"{% endif %}>
-  {% include head.html %}
-  <body>
-    {% include header.html %}
+<body>
+  {% include header.html %}
+  <section class="hero-section{% if page.is_home %} homepage-hero-section{% endif %}{% if page.menubar %} hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
     {% unless page.hide_hero %}
-        {% include hero.html %}
+    {% include hero.html %}
     {% endunless %}
-    {% include callouts.html %}
-    <section class="body-container">
-        <div class="container is-max-desktop">
-            <div class="columns is-multiline">
-                {% if page.menubar_toc %}
-                <div class="column is-4-desktop is-4-tablet {% if sideContent %}has-side-toc{% endif %}">
-                    {% assign contentsTitle = page.toc_title | default: 'Contents' %}
-                    {% include toc.html html=content class='menu-list' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent %}
-                </div>
-                {% elsif page.menubar %}
-                <div class="menu-bar pt-2 pl-3 column is-3-desktop is-3-tablet">
-                    {% include menubar.html %}
-                </div>
-                {% endif %}
-                <div class="{%if page.layout != 'api' %}{{ content_padding}} pt-1{% endif %} column {{ content_width }} {% if sideContent %}has-side-toc{% endif %}">
-                    {% include tabs.html %}
-                    {% include showcase.html %}
-                    {% include sponsors.html %}
-                    {% include gallery.html %}
-                    {{ content }}
-                </div>
-                {% if site.posts and page.show_sidebar %}
-                <div class="pt-3 pr-2 column is-3-desktop is-3-tablet">
-                    {% include latest-post.html %}
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </section>
-    {% unless page.hide_footer %}
-        {% include footer.html %}
-    {% endunless %}
-    <script src="{{ site.baseurl }}/assets/js/app.js" type="text/javascript"></script>
-    {%- include footer-scripts.html -%}
-  </body>
+    {% if page.callouts.size > 0 %}
+    {% assign callouts=site.data[page.callouts] %}
+    <div class="callout-section{% if page.is_home %} homepage-callout-section{% endif %}{% unless page.hide_hero %} has-hero{% endunless %}">
+      {% include callouts.html callouts=callouts show_callout_action=include.show_callout_action full_button=include.callout_full_button %}
+    </div>
+    {% endif %}
+  </section>
+  {% if page.is_home %}
+  <section class="home-page">
+    {{ content }}
+  </section>
+  {% else %}
+  {% if page.menubar %}
+  <aside class="menu-button" data-target="page-menu">
+    <a role="button" class="page-body-menu-btn" aria-label="menu" aria-expanded="false">
+      <span class="menu-button-text">Menu</span>
+      <span class="filler">&nbsp;</span>
+      <span class="menu-button-icon is-small">
+        <i class="fas" data-target="page-menu"></i>
+      </span>
+    </a>
+  </aside>
+  {% endif %}
+  <section class="body-container {% if page.menubar_toc %}with-menu-bar-toc{% endif %}">
+    <div
+      class="columns body-columns flex-justify-center{% if page.menubar %}{% unless page.toc%} with-menu-bar{% endunless %}{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
+      {% if page.menubar_toc %}
+      <div class="column{% if page.menubar %}{% unless page.toc%} with-menu-bar{% endunless %}{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
+        {% assign contentsTitle = page.toc_title | default: 'Contents' %}
+        {% include toc.html html=content class='menu-list1' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent %}
+      </div>
+      {% elsif page.menubar %}
+      <div class="menu-bar">
+        {% include menubar.html html=content %}
+      </div>
+      {% elsif page.toc %}
+      <div class="side-toc-menu">
+        {% assign contentsTitle = page.toc_title | default: 'Contents' %}
+        {% assign sideContent = page.side_toc | default: false %}
+        {% include toc.html html=content class='menu-list' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent item_class="menu-item-level-%level%" submenu_class="level-%level%" %}
+      </div>
+      {% endif %}
+      <div
+        class="page-body{%if page.layout == 'api' %} api-document{% endif %}{% if page.menubar %} with-menu-bar{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
+        {% include tabs.html %}
+        {% include showcase.html %}
+        {% include sponsors.html %}
+        {% include gallery.html %}
+        {{ content }}
+      </div>
+      {% if site.posts and page.show_sidebar %}
+      <div class="column is-3-desktop is-3-tablet">
+        {% include latest-post.html %}
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+  {% unless page.hide_footer %}
+  {% include footer.html %}
+  {% endunless %}
+  <script src="{{ site.baseurl }}/assets/js/app.js" type="text/javascript"></script>
+  {%- include footer-scripts.html -%}
+</body>
+
 </html>

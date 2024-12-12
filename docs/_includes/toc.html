@@ -1,81 +1,150 @@
 {% capture tocWorkspace %}
-    {% comment %}
-        Version 1.0.8
-          https://github.com/allejo/jekyll-toc
-    {% endcomment %}
+{% capture newline %}
+{% endcapture %}
+{% assign newline = newline | rstrip %} <!-- Remove the extra spacing but preserve the newline -->
 
-    {% capture my_toc %}{% endcapture %}
-    {% assign orderedList = include.ordered | default: false %}
-    {% assign minHeader = include.h_min | default: 1 %}
-    {% assign maxHeader = include.h_max | default: 6 %}
-    {% assign nodes = include.html | split: '<h' %}
-    {% assign firstHeader = true %}
+{% capture deprecation_warnings %}{% endcapture %}
 
-    {% capture listModifier %}{% if orderedList %}1.{% else %}-{% endif %}{% endcapture %}
+{% if include.baseurl %}
+{% capture deprecation_warnings %}{{ deprecation_warnings }}<!-- jekyll-toc :: "baseurl" has been deprecated, use "base_url" instead -->{{ newline }}{% endcapture %}
+{% endif %}
 
-    {% for node in nodes %}
-        {% if node == "" %}
-            {% continue %}
-        {% endif %}
+{% if include.skipNoIDs %}
+{% capture deprecation_warnings %}{{ deprecation_warnings }}<!-- jekyll-toc :: "skipNoIDs" has been deprecated, use "skip_no_ids" instead -->{{ newline }}{% endcapture %}
+{% endif %}
 
-        {% assign headerLevel = node | replace: '"', '' | slice: 0, 1 | times: 1 %}
+{% capture jekyll_toc %}{% endcapture %}
+{% assign orderedList = include.ordered | default: false %}
+{% assign flatToc = include.flat_toc | default: false %}
+{% assign baseURL = include.base_url | default: include.baseurl | default: '' %}
+{% assign skipNoIDs = include.skip_no_ids | default: include.skipNoIDs | default: false %}
+{% assign minHeader = include.h_min | default: 1 %}
+{% assign maxHeader = include.h_max | default: 6 %}
+{% assign nodes = include.html | strip | split: '<h' %} {% assign firstHeader=true %} {% assign currLevel=0 %} {% assign lastLevel=0 %} {% capture listModifier %}{% if orderedList %}ol{% else %}ul{%
+  endif %}{% endcapture %} {% for node in nodes %} {% if node=="" %} {% continue %} {% endif %} {% assign currLevel=node | replace: '"' , '' | slice: 0, 1 | times: 1 %} {% if currLevel < minHeader or
+  currLevel> maxHeader %}
+  {% continue %}
+  {% endif %}
 
-        {% if headerLevel < minHeader or headerLevel > maxHeader %}
-            {% continue %}
-        {% endif %}
+  {% assign _workspace = node | split: '</h' %} {% assign _idWorkspace=_workspace[0] | split: 'id="' %} {% assign _idWorkspace=_idWorkspace[1] | split: '"' %} {% assign htmlID=_idWorkspace[0] %} {%
+  assign _classWorkspace=_workspace[0] | split: 'class="' %} {% assign _classWorkspace=_classWorkspace[1] | split: '"' %} {% assign htmlClass=_classWorkspace[0] %} {% if htmlClass contains "no_toc" %}
+  {% continue %} {% endif %} {% if firstHeader %} {% assign minHeader=currLevel %} {% endif %} {% capture _hAttrToStrip %}{{ _workspace[0] | split: '>' | first }}>{% endcapture %}
+{% assign header = _workspace[0] | replace: _hAttrToStrip, '' %}
 
-        {% if firstHeader %}
-            {% assign firstHeader = false %}
-            {% assign minHeader = headerLevel %}
-        {% endif %}
+{% if include.item_class and include.item_class != blank %}
+{% capture listItemClass %} class="menu-item {{ include.item_class | replace: '%level%', currLevel | split: '.' | join: ' ' }}"{% endcapture %}
+{% endif %}
 
-        {% assign indentAmount = headerLevel | minus: minHeader %}
-        {% assign _workspace = node | split: '</h' %}
+{% if include.submenu_class and include.submenu_class != blank %}
+{% assign subMenuLevel = currLevel | minus: 1 %}
+{% capture subMenuClass %} class="{{ include.submenu_class | replace: '%level%', subMenuLevel | split: '.' | join: ' ' }}"{% endcapture %}
+{% endif %}
 
-        {% assign _idWorkspace = _workspace[0] | split: 'id="' %}
-        {% assign _idWorkspace = _idWorkspace[1] | split: '"' %}
-        {% assign html_id = _idWorkspace[0] %}
+{% capture anchorBody %}{% if include.sanitize %}{{ header | strip_html }}{% else %}{{ header }}{% endif %}{% endcapture %}
 
-        {% assign _classWorkspace = _workspace[0] | split: 'class="' %}
-        {% assign _classWorkspace = _classWorkspace[1] | split: '"' %}
-        {% assign html_class = _classWorkspace[0] %}
+{% if htmlID %}
+{% capture anchorAttributes %} href="{% if baseURL %}{{ baseURL }}{% endif %}#{{ htmlID }}"{% endcapture %}
 
-        {% if html_class contains "no_toc" %}
-            {% continue %}
-        {% endif %}
+{% if include.anchor_class %}
+{% capture anchorAttributes %}{{ anchorAttributes }} class="{{ include.anchor_class | split: '.' | join: ' ' }}"{% endcapture %}
+{% endif %}
 
-        {% capture _hAttrToStrip %}{{ _workspace[0] | split: '>' | first }}>{% endcapture %}
-        {% assign header = _workspace[0] | replace: _hAttrToStrip, '' %}
+{% capture listItem %}<a{{ anchorAttributes }}>{{ anchorBody }}</a>{% endcapture %}
+  {% elsif skipNoIDs == true %}
+  {% continue %}
+  {% else %}
+  {% capture listItem %}{{ anchorBody }}{% endcapture %}
+  {% endif %}
 
-        {% assign space = '' %}
-        {% for i in (1..indentAmount) %}
-            {% assign space = space | prepend: '    ' %}
-        {% endfor %}
+  {% if currLevel > lastLevel and flatToc == false %}
+  {% capture jekyll_toc %}{{ jekyll_toc }}<{{ listModifier }}{{ subMenuClass }}>{% endcapture %}
+    {% elsif currLevel < lastLevel and flatToc==false %} {% assign repeatCount=lastLevel | minus: currLevel %} {% for i in (1..repeatCount) %} {% capture jekyll_toc %}{{ jekyll_toc }}</li>
+  </{{ listModifier }}>{% endcapture %}
+  {% endfor %}
 
-        {% unless include.item_class == blank %}
-            {% capture listItemClass %}{:.{{ include.item_class | replace: '%level%', headerLevel }}}{% endcapture %}
-        {% endunless %}
+  {% capture jekyll_toc %}{{ jekyll_toc }}</li>{% endcapture %}
+  {% else %}
+  {% capture jekyll_toc %}{{ jekyll_toc }}</li>{% endcapture %}
+  {% endif %}
 
-        {% capture heading_body %}{% if include.sanitize %}{{ header | strip_html }}{% else %}{{ header }}{% endif %}{% endcapture %}
-        {% capture my_toc %}{{ my_toc }}
-{{ space }}{{ listModifier }} {{ listItemClass }} [{{ heading_body | replace: "|", "\|" }}]({% if include.baseurl %}{{ include.baseurl }}{% endif %}#{{ html_id }}){% if include.anchor_class %}{:.{{ include.anchor_class }}}{% endif %}{% endcapture %}
+  {% capture jekyll_toc %}{{ jekyll_toc }}<li{{ listItemClass }}>{{ listItem }}{% endcapture %}
+
+    {% assign lastLevel = currLevel %}
+    {% assign firstHeader = false %}
     {% endfor %}
 
-    {% if include.class %}
-        {% capture my_toc %}{:.{{ include.class }}}
-{{ my_toc | lstrip }}{% endcapture %}
+    {% if flatToc == true %}
+    {% assign repeatCount = 1 %}
+    {% else %}
+    {% assign repeatCount = minHeader | minus: 1 %}
+    {% assign repeatCount = lastLevel | minus: repeatCount %}
     {% endif %}
 
-    {% if include.id %}
-        {% capture my_toc %}{: #{{ include.id }}}
-{{ my_toc | lstrip }}{% endcapture %}
+    {% for i in (1..repeatCount) %}
+    {% capture jekyll_toc %}{{ jekyll_toc }}</li>
+    </{{ listModifier }}>{% endcapture %}
+    {% endfor %}
+
+    {% if jekyll_toc != '' %}
+    {% assign rootAttributes = '' %}
+    {% if include.class and include.class != blank %}
+    {% capture rootAttributes %} class="menu-root-item {{ include.class | split: '.' | join: ' ' }}"{% endcapture %}
+    {% else %}
+    {% capture rootAttributes %} class="menu-root-item "{% endcapture %}
     {% endif %}
-{% endcapture %}{% assign tocWorkspace = '' %}
 
-<div class="contents {% if include.side_toc %}column is-4 side-toc {% else %}mt-3{% endif %}">
-    <div class="menu">
-        <p class="menu-label">{{ include.contents_title }}</p>
-        {{ my_toc | markdownify | strip }}
-    </div>
-</div>
+    {% if include.id and include.id != blank %}
+    {% capture rootAttributes %}{{ rootAttributes }} id="{{ include.id }}"{% endcapture %}
+    {% endif %}
 
+    {% if rootAttributes %}
+    {% assign nodes = jekyll_toc | split: '>' %}
+    {% capture jekyll_toc %}<{{ listModifier }}{{ rootAttributes }}>{{ nodes | shift | join: '>' }}>{% endcapture %}
+      {% endif %}
+      {% endif %}
+      {% endcapture %}{% assign tocWorkspace = '' %}
+
+      <div class="page-toc">
+        <div class="menu">
+          <p class="content-label">{{ include.contents_title }}</p>
+          {{ jekyll_toc | markdownify | strip }}
+        </div>
+      </div>
+
+      <!-- <script>
+        document.addEventListener("DOMContentLoaded", () => {
+          const menuItems = document.querySelectorAll(".menu-item a");
+          const sections = document.querySelectorAll(".page-body .content div");
+          console.log(sections)
+          const activeClass = "active"; // Class to add to active menu item
+
+          // Function to determine which section is in view
+          const highlightMenuOnScroll = () => {
+            let currentSection = null;
+
+            sections.forEach((section) => {
+              const rect = section.getBoundingClientRect();
+              if (rect.top >= 0 && rect.top <= window.innerHeight / 2) {
+                console.log('here')
+                currentSection = section;
+              }
+            });
+
+            if (currentSection) {
+              const currentId = currentSection.getAttribute("id");
+
+              // Update menu items
+              menuItems.forEach((menuItem) => {
+                if (menuItem.getAttribute("href") === `#${currentId}`) {
+                  menuItem.classList.add(activeClass);
+                } else {
+                  menuItem.classList.remove(activeClass);
+                }
+              });
+            }
+          };
+
+          // Attach scroll event listener
+          window.addEventListener("scroll", highlightMenuOnScroll);
+        });
+      </script> -->

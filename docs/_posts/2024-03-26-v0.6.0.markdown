@@ -2,7 +2,7 @@
 layout: post
 title:  "Release 0.6.0"
 date:   2024-03-26 00:00:00 +0000
-categories: release notes
+categories: Changelog
 ---
 
 # Whats New
@@ -36,5 +36,3 @@ categories: release notes
 - Packer Templates and Vagrant box endpoints are now disabled by default due to security
   concerns on remote execution of code, you can enable them by setting the environment
   variable `ENABLE_PACKER_PLUGIN` and `ENABLE_VAGRANT_PLUGIN` to `true`
-
-

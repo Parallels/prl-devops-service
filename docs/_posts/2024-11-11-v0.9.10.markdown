@@ -2,7 +2,7 @@
 layout: post
 title:  "Release 0.9.10"
 date:   2024-11-11 00:00:00 +0000
-categories: release notes
+categories: Changelog
 ---
 
 # Whats New
@@ -13,8 +13,8 @@ categories: release notes
 - added missing timeout in some of the orchestrator api calls
 - Adds the support for an orchestrator to query the hardware endpoint of a host returning the raw data to use with terraform
 - Fixed a bug on the execute endpoint where it would give an error if the command was present but the script was not
-- Fixed an issue where the orchestrator would not take into account the 2 vms limitation when gathering the necessary space 
-- fixes #229 
+- Fixed an issue where the orchestrator would not take into account the 2 vms limitation when gathering the necessary space
+- fixes #229
 - Added the new reverse proxy to allow advanced port forwarding to the target vm
 - Added the same endpoints to be controlled by the orchestrator
 - Added better hardware info where we added more information about the system
@@ -27,6 +27,4 @@ categories: release notes
 - Added the OS name to the config hardware endpoint
 - Added the OS version if available to the config hardware endpoint
 - Added the new hardware fields to the orchestrator hosts endpointFixes # (issue)
-- resolves #224 
-
-
+- resolves #224

@@ -1,44 +1,87 @@
-<nav class="navbar sticky is-primary {% if site.fixed_navbar %} is-fixed-{{ site.fixed_navbar }} {% endif %}" x-data="{ openNav: false }">
-  <div class="container">
-    <div class="navbar-brand">
-      <a href="{% if site.brand_url %} {{ site.brand_url }}{% else %} {{ site.baseurl }} {% endif %}/" class="navbar-item" target="_blank">
+<div class="navigation">
+  <header class="navigation-header">
+    <div class="navigation-logo">
+      <a href="{{ site.baseurl }}/" class="prl-header-link">
         {% if site.brand_img %}
         <img alt="logo" src="{{ site.baseurl }}/assets/img/{{ site.brand_img}}" />
         {% else %}
         {{ site.brand }}
         {% endif %}
       </a>
-      <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navMenu" :class="{ 'is-active': openNav }" x-on:click="openNav = !openNav">
-        <span aria-hidden="true"></span>
-        <span aria-hidden="true"></span>
-        <span aria-hidden="true"></span>
-      </a>
     </div>
-    <div class="navbar-menu" id="navMenu" :class="{ 'is-active': openNav }">
-      <div class="navbar-start">
-        <a href="{{ site.baseurl }}/" class="navbar-item {% if page.url == " /" %}is-active{% endif %}">Home</a>
+    <nav class="navigation-menu">
+      <div class="navigation-menu-container">
         {% if site.data.navigation %}
         {% for item in site.data.navigation %}
-            {% assign hidden = item.hidden | default: false %}
-            {% if hidden == false %}
-                {% if item.dropdown %}
-                <div class="navbar-item has-dropdown is-hoverable {% if site.fixed_navbar == 'bottom' %} has-dropdown-up {% endif %}">
-                <a href="{{ item.link | relative_url }}" class="navbar-link {% if page.url contains item.link %}is-active{% endif %}">{{ item.name }}</a>
-                <div class="navbar-dropdown">
-                    {% for subitem in item.dropdown %}
-                    <a href="{{ subitem.link | relative_url }}" class="navbar-item {% if subitem.link == page.url %}is-active{% endif %}">{{ subitem.name }}</a>
-                    {% endfor %}
+        {% assign hidden = item.hidden | default: false %}
+        {% assign hasDropdown = false %}
+        {% assign showCount = 0 %}
+        {% if item.dropdown %}
+        {% for subitem in item.dropdown %}
+        {% unless subitem.hidden %}
+        {% assign hasDropdown = true %}
+        {% assign showCount = showCount | plus: 1 %}
+        {% endunless %}
+        {% endfor %}
+        {% endif %}
+        {% if hidden == false %}
+        {% if hasDropdown %}
+        {% if showCount > 1 %}
+        <div class="navigation-menu-item is-dropdown">
+          <div class="dropdown-link">
+            <span class="text">{{ item.name }}</span>
+            <svg class="svg-button" focusable="false" viewBox="0 0 20 20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="fill: none;">
+              <path d="M18 7L10 15L2 7" stroke-width="2" stroke-miterlimit="10"></path>
+            </svg>
+          </div>
+          <div class="navigation-dropdown-menu">
+            <div class="navigation-dropdown-menu-content">
+              {% for subitem in item.dropdown %}
+              {% unless subitem.hidden %}
+              <a href="{{ subitem.link | relative_url }}" {% if subitem.link contains 'https' %} target="_blank" {% endif %}
+                class="navigation-dropdown-menu-item {% if subitem.link == page.url %}is-selected{% endif %}">
+                <div class="texts">
+                  <div class="title">{{ subitem.name }}</div>
+                  {% if subitem.description %}
+                  <div class="description">{{ subitem.description }}</div>
+                  {% endif %}
                 </div>
-                </div>
-                {% else %}
-                <a href="{{ item.link | relative_url }}" class="navbar-item {% if item.link == page.url %}is-active{% endif %}">{{ item.name }}</a>
-                {% endif %}
-            {% endif %}
+              </a>
+              {% endunless %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% else %}
+        {% for subitem in item.dropdown %}
+        {% unless subitem.hidden %}
+        <a href="{{ subitem.link | relative_url }}" class="navigation-menu-item">{{ item.name }}</a>
+        {% endunless %}
+        {%endfor %}
+        {% endif %}
+        {% else %}
+        <a href="{{ item.link | relative_url }}" class="navigation-menu-item">{{ item.name }}</a>
+        {% endif %}
+        {% endif %}
         {% endfor %}
         {% endif %}
       </div>
-
-      <div class="navbar-end">
+    </nav>
+    <div class="navigation-end-container">
+      <button type="button" aria-label="Menu Button" class="navigation-menu-button">
+        <svg class="svg-button" focusable="false" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
+        </svg>
+      </button>
+      {% unless page.show_github %}
+      <div class="navigation-getting-started">
+        <a href="{{ site.baseurl }}/quick-start" class="button get-started">
+          <span>Get Started</span>
+        </a>
+      </div>
+      {% endunless %}
+      {% if page.show_github %}
+      <div class="github-container">
         <div class="github_source_header">
           <a href="https://github.com/Parallels/prl-devops-service/" title="Go to repository" class="md-source" data-md-component="source">
             <div class="github_source">
@@ -63,6 +106,93 @@
         </a>
         {% endif %}
       </div>
+      {% endif %}
     </div>
-  </div>
-</nav>
+  </header>
+</div>
+
+<script>
+  document.addEventListener("scroll", function () {
+    var navbar = document.querySelector(".navigation");
+    if (navbar) {
+      if (window.scrollY > 0) {
+        navbar.classList.add("is-scrolled");
+      } else {
+        navbar.classList.remove("is-scrolled");
+      }
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var $small_menu_button = document.querySelector("[aria-label='Menu Button']");
+    var burger_svg = `<svg class="svg-button" focusable="false" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
+    </svg>`;
+    var close_svg = `<svg class="svg-button " focusable="false" viewBox="0 0 20 20" aria-hidden="true" width="20" height="20">
+      <rect x="5.75735" y="4.34315" width="14" height="2" transform="rotate(45 5.75735 4.34315)"></rect>
+      <rect x="15.6569" y="5.75737" width="14" height="2" transform="rotate(135 15.6569 5.75737)"></rect>
+    </svg>`
+    if ($small_menu_button) {
+      $small_menu_button.addEventListener("click", function () {
+        var $navbar = document.querySelector(".navigation-menu");
+        if ($navbar) {
+          $navbar.classList.toggle("open");
+          if ($navbar.classList.contains("open")) {
+            $small_menu_button.innerHTML = close_svg;
+          } else {
+            $small_menu_button.innerHTML = burger_svg;
+          }
+        }
+      });
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    var $navbarItems = Array.prototype.slice.call(document.querySelectorAll(".navigation-menu-item"), 0);
+    if ($navbarItems.length > 0) {
+      $navbarItems.forEach(function ($el) {
+        var $dropdown = $el.querySelector(".navigation-dropdown-menu");
+        if ($el.classList.contains("is-dropdown")) {
+          $el.addEventListener("mouseenter", function () {
+            $el.classList.add("active");
+            if ($dropdown) {
+              $dropdown.classList.add("active");
+            }
+          });
+          $el.addEventListener("mouseleave", function () {
+            $el.classList.remove("active");
+            if ($dropdown) {
+              $dropdown.classList.remove("active");
+            }
+          });
+
+
+          if ($dropdown) {
+            $dropdown.addEventListener("click", function (e) {
+              e.stopPropagation();
+            });
+          }
+          var $dropdown_items = Array.prototype.slice.call($el.querySelectorAll(".navigation-dropdown-menu-item"), 0);
+          if ($dropdown_items.length > 0) {
+            $dropdown_items.forEach(function ($dropdown_item) {
+              $dropdown_item.addEventListener("mouseenter", function () {
+                $dropdown_item.classList.add("active");
+              });
+              $dropdown_item.addEventListener("mouseleave", function () {
+                $dropdown_item.classList.remove("active");
+              });
+              $el.addEventListener("click", function () {
+                $el.classList.add("enabled");
+                $dropdown_items.forEach(function ($el) {
+                  if ($el !== this) {
+                    $el.classList.remove("enabled");
+                  }
+                }, this);
+              });
+            });
+          }
+        }
+      });
+    }
+  });
+</script>

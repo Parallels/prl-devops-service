@@ -2,7 +2,7 @@
 layout: post
 title:  "Release 0.4.5"
 date:   2024-01-16 00:00:00 +0000
-categories: release notes
+categories: Changelog
 ---
 
 # Whats New
@@ -33,5 +33,3 @@ categories: release notes
   of precedence is the following, command line flag, environment variable, config
   file
 - updated documentation to reflect the changes in the configuration
-
-

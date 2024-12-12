@@ -1,0 +1,29 @@
+{% assign release_count = 0 %}
+{% for post in site.posts %}
+{% if post.categories contains "Changelog" %}
+{% if release_count < 2 %} <div class="whats-new-item">
+  <h2>{{ post.title}}</h2>
+  <div class="index_release">
+    {% assign whats_new_section = post.content | newline_to_br | split: '<br />' %}
+    <div>
+      <ul class="whats-new">
+        {% for line in whats_new_section %}
+        {% assign text_line = line | strip %}
+        {% if text_line != "" %}
+        {% if text_line contains "Whats New" %}
+        {% assign whats_new_started = true %}
+        {% continue %}
+        {% endif %}
+        {% if whats_new_started and text_line != "" and text_line contains "<li>" %}
+          {{ text_line | append: "</p>" | strip }}
+          {% endif %}
+          {% endif %}
+          {% endfor %}
+      </ul>
+    </div>
+  </div>
+  </div>
+  {% assign release_count = release_count | plus: 1 %}
+  {% endif %}
+  {% endif %}
+  {% endfor %}
