@@ -13,18 +13,15 @@ $dark: #363636;
 @import "../node_modules/bulma/bulma.sass";
 $hero-darken: $dark !default;
 
-$max-breakpoint: 1200px;
-$medium-breakpoint: 900px;
-$small-breakpoint: 600px;
-$tiny-breakpoint: 374px;
+
 
 @import "../node_modules/bulma-block-list/src/block-list.scss";
 @import "_variables";
 @import "layout";
-@import "hero";
-@import "syntax";
+@import "_hero";
+@import "_syntax";
 @import "showcase";
-@import "api";
+@import "_api";
 @import "tabs";
 @import "buttons";
 @import "notifications";
@@ -33,15 +30,9 @@ $tiny-breakpoint: 374px;
 @import "navbar";
 @import "footer";
 @import "blogs";
-@import "homepage";
-@import "callout";
-
-
-.gh-sponsor {
-  color: #ea4aaa;
-}
-
-
+@import "_homepage";
+@import "_callout";
+@import "_header";
 
 
 

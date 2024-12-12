@@ -57,11 +57,9 @@ Let's look at how you can use the Parallels Desktop DevOps Service to create a G
 
 {% include notification.html message="You can try it for free before purchasing by clicking this [link](https://www.parallels.com/products/desktop/trial/){:target=\"_blank\"} and downloading our trial version" status="is-success" icon="comments-dollar" %}
 
-
-{% assign installationContent = site.pages | where:"url", "/docs/getting-started/installation/" | first %}
+{% assign installationContent = site.pages | where:"url", "/docs/devops/getting-started/installation/" | first %}
 
 {{ installationContent.content }}
-
 
 ### Install Parallels Desktop for Mac
 
@@ -94,6 +92,7 @@ After downloading the ISO, you can create a new virtual machine using either **P
 To enable certain features in this example, the Parallels Tools must be installed. You can do this by following the instructions that appear on the screen. Unfortunately, until the tools are installed, you won't be able to use the copy and paste function. In order to proceed, please go to the machine, login with the user you created, and enter the following commands:
 
 Let's start by unmounting any currently mounted cdroms and creating a new mount point for the `cdrom0` device.
+
 ```sh
 for dev in /dev/sr0 /dev/cdrom /dev/dvd; do sudo eject $dev; done 2>/dev/null
 sudo mkdir /media/cdrom0
@@ -105,7 +104,7 @@ Now lets add the `Parallels Desktop Tools` iso using the ui
   <img src="{{ site.url }}{{ site.baseurl }}/img/examples/install_tools_step03.gif" alt="Install Parallels Tools step 3"/>
 </div>
 
-To install the tools, run the command given below: 
+To install the tools, run the command given below:
 
 ```sh
 sudo mount -o exec /dev/sr0 /media/cdrom0
@@ -133,7 +132,7 @@ To start, we need to access the machine through the terminal using the command l
 prlctl enter "test-vm"
 ```
 
-Once inside, we can proceed with installing the necessary software stack by running the following commands: 
+Once inside, we can proceed with installing the necessary software stack by running the following commands:
 
 ```sh
 sudo apt update && sudo apt upgrade -y
@@ -152,7 +151,7 @@ The DevOps Remote Catalog is a service designed to facilitate the sharing of VMs
 
 ### Configuring the DevOps Remote Catalog
 
-To set up the service, we will need to create or edit a [configuration file]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration/){:target="_blank"}. 
+To set up the service, we will need to create or edit a [configuration file]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration/){:target="_blank"}.
 
 1. Run the command below to create the config file:  
    *If you have previously created a configuration file, you can skip this step*
@@ -162,12 +161,13 @@ To set up the service, we will need to create or edit a [configuration file]({{ 
     ```
 
 3. Open the file
-4. 
+4.
+
     ```powershell
     open -a TextEdit /usr/local/bin/config.yaml
     ```
 
-5.  Add the following content:
+5. Add the following content:
 
     ```yaml
     environment:
@@ -205,7 +205,7 @@ prldevops update-root-password --password=VeryStr0ngP@ssw0rd
 
 ## Pushing the Golden Master Image to the Remote Catalog
 
-We now have our` DevOps Remote Catalog` service up and running, which means we can proceed to push the Golden Master image to the service. But before we start, we need to take care of a few requirements. 
+We now have our`DevOps Remote Catalog` service up and running, which means we can proceed to push the Golden Master image to the service. But before we start, we need to take care of a few requirements.
 The `DevOps Remote Catalog` works by storing only the metadata of the Golden Master image. This implies that the actual image will be stored in a remote location. In this example, we will be using an **S3 bucket** to store the image. However, you can use any other compatible storage service like **Azure Blob Storage** or **jfrog artifactory**. Most of these providers offer a free tier that you can use to test this feature. For more information about the architecture, you can refer to this link [here]({{ site.url }}{{ site.baseurl }}/docs/catalog/overview/#architecture){:target="_blank"}.
 
 ### Creating the PDFile
@@ -268,7 +268,6 @@ Where:
 
 - `<user>`: will be the user name for your system
 - `</path/to/the/test-vm.pvm>`: is the path to the VM image you want to push to the catalog
-
 
 This will push the VM from the *LOCAL_PATH* to the localhost *remote catalog* with everyone having access to it. However, we can restrict access to specific claims and roles for each catalog entry. To achieve this, you can add the `ROLE` and/or `CLAIM` into the pdfile and using our RBAC system, you can restrict access to the catalog entry.  
 
@@ -353,13 +352,13 @@ To pull the image from the catalog, the user will need to authenticate with the 
 prldevops pull ~/pull-ubuntu-builder.pdfile --username=root --password=VeryStr0ngP@ssw0rd
 ```
 
-After the image is pulled, the user will have a new virtual machine with the same software stack as the Golden Master image, ready to be used. 
+After the image is pulled, the user will have a new virtual machine with the same software stack as the Golden Master image, ready to be used.
 
 {% include notification.html message="It is important to note that this process may take some time, depending on the size of the virtual machine and the user's internet connection." status="is-warning" %}
 
 ## Conclusion
 
-In this example, we have demonstrated how the Parallels Desktop DevOps Service can be used to create a Golden Master image. This image can then be shared with your team through the Parallels Desktop DevOps Service and its Remote Catalog feature. 
+In this example, we have demonstrated how the Parallels Desktop DevOps Service can be used to create a Golden Master image. This image can then be shared with your team through the Parallels Desktop DevOps Service and its Remote Catalog feature.
 
 We have also highlighted how the Parallels Desktop DevOps Service can be utilized to retrieve the Golden Master image from the catalog and generate a new virtual machine with the same software stack as the Golden Master image.
 

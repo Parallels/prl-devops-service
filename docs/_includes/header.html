@@ -1,7 +1,7 @@
 <div class="navigation">
   <header class="navigation-header">
     <div class="navigation-logo">
-      <a href="{{ site.baseurl }}/" class="prl-header-link" target="_blank">
+      <a href="{{ site.baseurl }}/" class="prl-header-link">
         {% if site.brand_img %}
         <img alt="logo" src="{{ site.baseurl }}/assets/img/{{ site.brand_img}}" />
         {% else %}
@@ -11,12 +11,22 @@
     </div>
     <nav class="navigation-menu">
       <div class="navigation-menu-container">
-        <a href="{{ site.baseurl }}/" class="navigation-menu-item">Home</a>
         {% if site.data.navigation %}
         {% for item in site.data.navigation %}
         {% assign hidden = item.hidden | default: false %}
-        {% if hidden == false %}
+        {% assign hasDropdown = false %}
+        {% assign showCount = 0 %}
         {% if item.dropdown %}
+        {% for subitem in item.dropdown %}
+        {% unless subitem.hidden %}
+        {% assign hasDropdown = true %}
+        {% assign showCount = showCount | plus: 1 %}
+        {% endunless %}
+        {% endfor %}
+        {% endif %}
+        {% if hidden == false %}
+        {% if hasDropdown %}
+        {% if showCount > 1 %}
         <div class="navigation-menu-item is-dropdown">
           <div class="dropdown-link">
             <span class="text">{{ item.name }}</span>
@@ -27,6 +37,7 @@
           <div class="navigation-dropdown-menu">
             <div class="navigation-dropdown-menu-content">
               {% for subitem in item.dropdown %}
+              {% unless subitem.hidden %}
               <a href="{{ subitem.link | relative_url }}" {% if subitem.link contains 'https' %} target="_blank" {% endif %}
                 class="navigation-dropdown-menu-item {% if subitem.link == page.url %}is-selected{% endif %}">
                 <div class="texts">
@@ -36,10 +47,18 @@
                   {% endif %}
                 </div>
               </a>
+              {% endunless %}
               {% endfor %}
             </div>
           </div>
         </div>
+        {% else %}
+        {% for subitem in item.dropdown %}
+        {% unless subitem.hidden %}
+        <a href="{{ subitem.link | relative_url }}" class="navigation-menu-item">{{ item.name }}</a>
+        {% endunless %}
+        {%endfor %}
+        {% endif %}
         {% else %}
         <a href="{{ item.link | relative_url }}" class="navigation-menu-item">{{ item.name }}</a>
         {% endif %}
@@ -54,6 +73,14 @@
           <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
         </svg>
       </button>
+      {% unless page.show_github %}
+      <div class="navigation-getting-started">
+        <a href="{{ site.baseurl }}/quick-start" class="button get-started">
+          <span>Get Started</span>
+        </a>
+      </div>
+      {% endunless %}
+      {% if page.show_github %}
       <div class="github-container">
         <div class="github_source_header">
           <a href="https://github.com/Parallels/prl-devops-service/" title="Go to repository" class="md-source" data-md-component="source">
@@ -79,6 +106,7 @@
         </a>
         {% endif %}
       </div>
+      {% endif %}
     </div>
   </header>
 </div>

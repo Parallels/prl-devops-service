@@ -12,9 +12,9 @@ layout: default
       </div>
       {% for category in page.categories %}
       {% if category.endpoints.size > 0 %}
-      <div class="api-dropdown-link" target="dropdown-{{ category.path }}">
-        <div class="api-dropdown-root-item{% if page_name == category.path %} active{% endif %}">
-          <a class="api-dropdown-expand-btn" type="button" title="dropdown-{{ page_name }}" target="dropdown-{{ category.path }}">
+      <div class="api-dropdown-link{% if page_name == category.path %} expanded{% endif %}" target="dropdown-{{ category.path }}">
+        <div class="api-dropdown-root-item{% if page_name == category.path %} active{% endif %}{% if page_name == category.path %} expanded{% endif %}">
+          <a class="api-dropdown-expand-btn{% if page_name == category.path %} expanded{% endif %}" type="button" title="dropdown-{{ page_name }}" target="dropdown-{{ category.path }}">
             <svg class="svg-button" focusable="false" viewBox="0 0 20 20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="fill: none;">
               <path d="M18 7L10 15L2 7" stroke-width="2" stroke-miterlimit="10"></path>
             </svg>
@@ -25,7 +25,7 @@ layout: default
             </div>
           </a>
         </div>
-        <div class="api-dropdown-menu" target="dropdown-{{ category.path }}">
+        <div class="api-dropdown-menu{% if page_name == category.path %} expanded{% endif %}" target="dropdown-{{ category.path }}">
           <ul>
             {% for endpoint in category.endpoints %}
             <li class="api-dropdown-menu-item">
@@ -47,12 +47,7 @@ layout: default
     </div>
   </div>
   {% endif %}
-  <div class="main">
-    {% if page.is_category_document %}
-    <div class="back-button">
-      <a href="{{ site.baseurl }}/rest-api" class="button is-info is-light">Back</a>
-    </div>
-    {% endif %}
+  <div class="api-page-body">
     {% if page.content %}
     <section class="doc-content header">
       <section class="left-docs header">
@@ -66,8 +61,8 @@ layout: default
     {% for endpoint in endpoints %}
     {% assign path = page.api_prefix | append: endpoint.path %}
     {% assign id = site.api_prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
-    <section class="doc-content">
-      <section class="left-docs">
+    <section class="api-main-content">
+      <section class="api-main-body">
         {% if endpoint.title %}
         <h6 class="endpoint-title">
           {{ endpoint.title }}:
@@ -181,45 +176,15 @@ layout: default
           {% endfor %}
         </div>
         {% endif %}
-
-        {% if endpoint.response_blocks %}
+      </section>
+      <section class="api-code-blocks">
+        {% if endpoint.example_blocks and endpoint.example_blocks[0].code_block %}
+        {% include api-code-block-examples.html endpoint=endpoint title="Request examples" %}
+        {% endif %}
         {% if endpoint.response_blocks.size > 1 %}
-        <h6>Responses</h6>
-        <div id="responses-tab-container" class="tab-container" data-type="tabs" data-default="_200_ok">
-          <div class="tabs is-boxed">
-            <ul>
-              {% for response in endpoint.response_blocks %}
-              {% assign code = response.code | plus: 0 %}
-              <li class="tab">
-                <a href="#" data-target="_{{ response.code }}_{{ response.code_description | slugify}}">
-                  <span
-                    class="code-title{% if code >= 200 and code < 300 %} good{% endif %}{% if code >= 400 and code < 500 %} bad{% endif %}{% if code >= 500 and code < 600 %} error{% endif %}">{{ response.code }}</span>
-                  <span class="code-description">{{ response.code_description }}</span>
-                </a>
-              </li>
-              {% endfor %}
-            </ul>
-          </div>
-          <div class="tab-blocks">
-            {% for response in endpoint.response_blocks %}
-            <div class="tab-block" id="_{{ response.code }}_{{ response.code_description | slugify}}">
-              {% include api-code-block.html content=response.code_block language='json' %}
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-        {% else %}
-        <h6>Response</h6>
-        {% endif %}
+        {% include api-code-block-responses.html endpoint=endpoint title="Responses" %}
         {% endif %}
       </section>
-      {% if endpoint.example_blocks and endpoint.example_blocks[0].code_block %}
-      <section class="right-code">
-        {% for block in endpoint.example_blocks %}
-        {% include api-code.html block=block %}
-        {% endfor %}
-      </section>
-      {% endif %}
     </section>
     {% endfor %}
   </div>
@@ -245,6 +210,7 @@ layout: default
       });
     }
     //setupTabs('#responses-tab-container');
+    //setupTabs('#example-tab-container');
   });
 
   window.onload = function () {

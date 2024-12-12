@@ -18,7 +18,7 @@ import (
 
 func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 	provider := serviceprovider.Get()
-
+	test := &http.Client{}
 	ctx.LogInfof("Registering version %s config handlers", version)
 	if provider.System.GetOperatingSystem() == "macos" {
 		restapi.NewController().

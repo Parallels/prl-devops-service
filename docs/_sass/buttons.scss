@@ -27,3 +27,29 @@ a {
     color: #3d73d8;
   }
 }
+
+a.get-started {
+  display: flex;
+  align-items: center;
+  font-family: 'Open Sans';
+  font-size: 16px;
+  font-weight: 600;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  color: $white;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 4px;
+  background-color: $light-blue;
+  text-align: center;
+  text-decoration: none;
+  border-color: unset;
+  border-width: unset;
+
+  &:hover {
+    background-color: $light-blue-hover;
+    color: $white;
+  }
+}

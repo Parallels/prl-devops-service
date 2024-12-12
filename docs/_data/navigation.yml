@@ -7,9 +7,11 @@
       description: The documentation for Parallels Desktop DevOps Service. you can find all the information you need to get started.
       link: /docs/devops
     - name: Parallels Visual Studio Code Extension
+      hidden: true
       description: The official documentation for the Parallels Visual Studio Code Extension, our new integration for developers.
       link: /docs//vscode-extension/
     - name: Terraform Provider
+      hidden: true
       description: Find some examples on how to use the Terraform Provider for Parallels Desktop DevOps Service in different scenarios.
       link: /docs//terraform-provider/
     - name: Github Actions
@@ -20,6 +22,7 @@
   link: /features/
   hidden: true
 - name: Resources
+  hidden: true
   link: /#
   dropdown:
     - name: Blog

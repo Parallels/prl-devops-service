@@ -1,15 +1,13 @@
 .navigation {
   top: 0;
-  height: 100px;
+  height: 120px;
   display: flex;
-  z-index: 100 !important;
-  position: fixed;
+  z-index: 999 !important;
+  position: sticky !important;
   transition: 250ms ease all;
   align-items: center;
-  padding-top: 16px;
   border-bottom: 2px solid rgba(255, 255, 255, 0.17);
-  padding-bottom: 16px;
-  background-color: #FFFFFF;
+  background-color: $white;
   width: 100vw;
 
   &.dark {
@@ -23,20 +21,14 @@
 
 .navigation-header {
   margin: auto;
-  max-width: 1200px;
   min-height: 100px;
-  padding-left: 24px;
-  padding-right: 24px;
+  padding-left: 36px;
+  padding-right: 36px;
   color: #FFFFFF;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  @media (max-width: 1139.95px) {
-    width: 100%;
-    max-width: 100%;
-  }
 }
 
 .navigation-menu {
@@ -306,4 +298,10 @@
   -webkit-user-select: none;
   height: 28px;
   width: 28px;
+}
+
+.navigation-getting-started {
+  @media screen and (max-width: $s-breakpoint) {
+    display: none;
+  }
 }

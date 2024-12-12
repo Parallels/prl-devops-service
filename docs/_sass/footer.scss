@@ -14,59 +14,8 @@
     font-style: normal;
     line-height: 1.5;
     letter-spacing: normal;
-    max-width: 336;
     width: 100%;
-
-    @media screen and (min-width: $small-breakpoint) {
-      max-width: 560px;
-      min-width: 560px;
-    }
-
-    @media screen and (min-width: $medium-breakpoint) {
-      max-width: 632px;
-      min-width: 632px;
-    }
-
-    @media screen and (min-width: $max-breakpoint) {
-      max-width: 760px;
-      min-width: 760px;
-    }
-
-    &.homepage {
-      @media screen and (min-width: $tiny-breakpoint) {
-        max-width: unset;
-        min-width: none;
-        width: 100%;
-      }
-
-      @media screen and (min-width: $max-breakpoint) {
-        max-width: 1200px;
-      }
-    }
-
-    &.with-menu-bar {
-      @media screen and (min-width: $medium-breakpoint) {
-        max-width: calc(560px + 200px + 16px);
-        min-width: calc(560px + 200px + 16px);
-      }
-
-      @media screen and (min-width: $max-breakpoint) {
-        max-width: calc(760px + 232px + 32px);
-        min-width: calc(760px + 232px + 32px);
-      }
-    }
-
-    &.with-side-toc {
-      @media screen and (min-width: $medium-breakpoint) {
-        max-width: calc(560px + 200px + 16px);
-        min-width: calc(560px + 200px + 16px);
-      }
-
-      @media screen and (min-width: $max-breakpoint) {
-        max-width: calc(760px + 232px + 32px);
-        min-width: calc(760px + 232px + 32px);
-      }
-    }
+    justify-content: space-between;
 
 
     .prl-spacer {

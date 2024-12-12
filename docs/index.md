@@ -1,10 +1,18 @@
 ---
 title: Parallels Desktop DevOps Service
 subtitle: Put your virtual machines to work on your CI/CD pipeline
-description: Parallels Desktop DevOps Service is a service that will allow you to manage and orchestrate multiple Parallels Desktop hosts and virtual machines. It will allow you to create, start, stop and delete virtual machines and will also allow you to manage the hosts that are running the virtual machines.
+description: |
+  Manage and orchestrate multiple Parallels Desktop hosts and virtual machines. Create, start, stop and delete virtual machines and will also allow you to manage the hosts that are running the virtual machines.
 layout: homepage
 callouts: homepage_callouts
 is_home: true
+show_getting_started: true
+show_version: true
+hero_actions:
+  - title: Get Started
+    url: /quick-start/
+  - title: Learn More
+    fa_icon: fa-arrow-down
 about: |
   [![License: Fair Source](https://img.shields.io/badge/license-fair-source.svg)](https://fair.io/)
   [![Build](https://github.com/Parallels/prl-devops-service/actions/workflows/pr.yml/badge.svg)](https://github.com/Parallels/prl-devops-service/actions/workflows/pr.yml)

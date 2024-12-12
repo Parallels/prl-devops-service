@@ -22,20 +22,22 @@
 
 <body>
   {% include header.html %}
+  <section class="hero-section{% if page.is_home %} homepage-hero-section{% endif %}{% if page.menubar %} hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
+    {% unless page.hide_hero %}
+    {% include hero.html %}
+    {% endunless %}
+    {% if page.callouts.size > 0 %}
+    {% assign callouts=site.data[page.callouts] %}
+    <div class="callout-section{% if page.is_home %} homepage-callout-section{% endif %}{% unless page.hide_hero %} has-hero{% endunless %}">
+      {% include callouts.html callouts=callouts show_callout_action=include.show_callout_action full_button=include.callout_full_button %}
+    </div>
+    {% endif %}
+  </section>
   {% if page.is_home %}
-  {% include home-hero.html %}
   <section class="home-page">
     {{ content }}
   </section>
   {% else %}
-  <section class="hero-section{% if page.is_home %} hero-home-section{% endif %}{% if page.menubar %} hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
-    <div class="hero-container{% if page.is_home %} hero-home-section{% endif %}{% if page.menubar %} with-menu-bar{% endif %}{% if sideContent %} with-side-toc{% endif %}">
-      {% unless page.hide_hero %}
-      {% include hero.html %}
-      {% endunless %}
-      {% include callouts.html %}
-    </div>
-  </section>
   {% if page.menubar %}
   <aside class="menu-button" data-target="page-menu">
     <a role="button" class="page-body-menu-btn" aria-label="menu" aria-expanded="false">
@@ -49,7 +51,7 @@
   {% endif %}
   <section class="body-container {% if page.menubar_toc %}with-menu-bar-toc{% endif %}">
     <div
-      class="columns body-columns is-multiline flex-justify-center{% if page.menubar %}{% unless page.toc%} with-menu-bar{% endunless %}{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
+      class="columns body-columns flex-justify-center{% if page.menubar %}{% unless page.toc%} with-menu-bar{% endunless %}{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
       {% if page.menubar_toc %}
       <div class="column{% if page.menubar %}{% unless page.toc%} with-menu-bar{% endunless %}{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
         {% assign contentsTitle = page.toc_title | default: 'Contents' %}
@@ -63,11 +65,11 @@
       <div class="side-toc-menu">
         {% assign contentsTitle = page.toc_title | default: 'Contents' %}
         {% assign sideContent = page.side_toc | default: false %}
-        {% include toc.html html=content class='menu-list' h_min=2 h_max=3 contents_title=contentsTitle side_toc=sideContent item_class="menu-item-level-%level%" submenu_class="level-%level%" %}
+        {% include toc.html html=content class='menu-list' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent item_class="menu-item-level-%level%" submenu_class="level-%level%" %}
       </div>
       {% endif %}
       <div
-        class="page-body{%if page.layout == 'api' %} api-document{% endif %} column{% if page.menubar %} with-menu-bar{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
+        class="page-body{%if page.layout == 'api' %} api-document{% endif %}{% if page.menubar %} with-menu-bar{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
         {% include tabs.html %}
         {% include showcase.html %}
         {% include sponsors.html %}

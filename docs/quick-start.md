@@ -6,7 +6,7 @@ show_sidebar: false
 version: 0.5.4
 ---
 
-{% assign installationContent = site.pages | where:"url", "/docs/getting-started/installation/" | first %}
+{% assign installationContent = site.pages | where:"url", "/docs/devops/getting-started/installation/" | first %}
 
 {{ installationContent.content }}
 

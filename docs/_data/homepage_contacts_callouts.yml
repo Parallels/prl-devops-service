@@ -5,17 +5,20 @@ items:
       Join our Discord Server to ask questions, share your experience, and get help from the community.
     img_icon: discord.svg
     icon_class: callout-contacts-icon
-    call_to_action_name: Join Discord Server
-    call_to_action_link: https://discord.gg/pEwZ254C3d
+    actions:
+      - name: Join Discord Server
+        url: https://discord.gg/pEwZ254C3d
   - title: Schedule a Demo
     description: If you want to schedule a demo, please schedule a meeting with our Solutions Architect. We will go through the service and answer any questions you may have.
-    call_to_action_name: Schedule Date
-    call_to_action_link: https://outlook.office.com/bookwithme/user/d6b4c940ec9d44079ed872ba1fcaaf68@alludo.com/meetingtype/you-CpOV8UyS0sFl9KjSWw2?anonymous&ep=mlink
     img_icon: calendar.svg
     icon_class: callout-contacts-icon
+    actions:
+      - name: Schedule Date
+        url: https://outlook.office.com/bookwithme/user/d6b4c940ec9d44079ed872ba1fcaaf68@alludo.com/meetingtype/you-CpOV8UyS0sFl9KjSWw2?anonymous&ep=mlink
   - title: leave Feedback
     description: We strive to enhance our services. We kindly invite your to share your feedback regarding your experience.
     img_icon: feedback.svg
     icon_class: callout-contacts-icon
-    call_to_action_name: Leave Feedback
-    call_to_action_link: /examples/github-actions
+    actions:
+      - name: Leave Feedback
+        url: https://outlook.office.com/bookwithme/user/d6b4c940ec9d44079ed872ba1fcaaf68@alludo.com/meetingtype/you-CpOV8UyS0sFl9KjSWw2?anonymous&ep=mlink

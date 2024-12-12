@@ -7,21 +7,20 @@
   flex-shrink: 0;
   transition: min-width 0.3s ease;
 
-  @media screen and (min-width: $medium-breakpoint) {
+  @media screen and (min-width: $l-breakpoint) {
     display: flex;
-    padding-top: 36px;
-    width: 200px;
+    width: $side-menu-l-width;
   }
 
-  @media screen and (min-width: $max-breakpoint) {
-    width: 232px;
+  @media screen and (min-width: $xl-breakpoint) {
+    width: $side-menu-xl-width;
   }
 
   .menu {
     width: 100%;
     display: none;
 
-    @media screen and (min-width: $medium-breakpoint) {
+    @media screen and (min-width: $l-breakpoint) {
       display: block;
     }
 
@@ -43,23 +42,10 @@
     font-style: normal;
     line-height: 2;
     letter-spacing: 1px;
-    color: #303236;
-    // padding-left: 110px;
+    color: $font-base-color;
     transition: padding-left 0.3s ease;
-
-    // @media screen and (max-width: $max-breakpoint) {
-    //   width: 100%;
-    //   margin-right: unset;
-    //   margin-bottom: 20px;
-    //   // padding-left: 60px;
-    // }
-
-    // @media screen and (max-width: $medium-breakpoint) {
-    //   width: 100%;
-    //   margin-right: unset;
-    //   margin-bottom: 20px;
-    //   // padding-left: 35px;
-    // }
+    user-select: none;
+    -webkit-user-select: none;
 
     &.menu-label:not(:last-child) {
       margin-bottom: 0;
@@ -67,41 +53,47 @@
   }
 
   .menu-item {
-    // margin-left: 118px;
     transition: margin-left 0.3s ease;
-    padding: unset;
+    padding: 1px 0;
     min-height: 32px;
     display: flex;
     align-items: center;
+    width: 100%;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
 
-    @media screen and (max-width: $max-breakpoint) {
-      // margin-left: 68px;
-    }
-
-    @media screen and (max-width: $medium-breakpoint) {
+    @media screen and (max-width: $l-breakpoint) {
       margin-left: unset;
       padding-left: 20px;
     }
 
-    &:hover {
-      background-color: #f7f7f7;
-      color: #303236;
-      border-radius: 6px;
-    }
-
     a {
+      width: 100%;
+
       &:hover {
-        color: inherit;
-        background-color: inherit;
-        border-radius: unset;
+        background-color: $light-hover-color;
+        color: $font-base-color;
+        border-radius: $hover-border-radius;
       }
     }
 
     &.is-active {
-      border-radius: 6px;
-      background-color: #f7f7f7;
-      color: #303236;
-      display: grid;
+      @media screen and (max-width: $l-breakpoint) {
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        border-radius: $hover-border-radius;
+        background-color: $light-hover-color;
+        color: $font-base-color;
+      }
+
+      a {
+        border-radius: $hover-border-radius;
+        background-color: $light-hover-color;
+        color: $font-base-color;
+        display: grid;
+      }
     }
 
   }
@@ -109,9 +101,9 @@
   .menu-list {
     .item {
       &.is-active {
-        border-radius: 6px;
-        background-color: #f7f7f7;
-        color: #303236;
+        border-radius: $hover-border-radius;
+        background-color: $light-hover-color;
+        color: $font-base-color;
       }
 
       .is-active {
@@ -163,7 +155,7 @@
       font-style: normal;
       line-height: 1.5;
       letter-spacing: normal;
-      color: #303236;
+      color: $font-base-color;
       cursor: pointer;
       padding: 8px 8px 8px;
     }
@@ -176,7 +168,7 @@
         display: block;
       }
 
-      @media screen and (min-width: $medium-breakpoint) {
+      @media screen and (min-width: $l-breakpoint) {
         display: none;
       }
 
@@ -233,7 +225,7 @@
 
 aside {
   &.menu {
-    @media screen and (max-width: $medium-breakpoint) {
+    @media screen and (max-width: $l-breakpoint) {
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.3s ease;
@@ -250,18 +242,19 @@ aside {
   }
 
   &.menu-button {
-    display: none;
+
     height: 42px;
     border-bottom: 1px solid #dedede;
+    width: 100%;
+    height: 40px;
+    display: flex;
+    padding-left: 20px;
+    padding-right: 20px;
+    margin-top: 12px;
 
 
-    @media screen and (max-width: $medium-breakpoint) {
-      width: 100%;
-      height: 40px;
-      display: flex;
-      padding-left: 20px;
-      padding-right: 20px;
-      margin-top: 12px;
+    @media screen and (min-width: $l-breakpoint) {
+      display: none;
     }
 
     .show {

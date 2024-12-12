@@ -91,6 +91,7 @@ window.onload = function () {
 document.addEventListener("DOMContentLoaded", function () {
   const tabContainers = document.querySelectorAll('[data-type="tabs"]');
   for (let i = 0; i < tabContainers.length; i++) {
+    
     const tabContainer = tabContainers[i];
     const defaultTab = tabContainer.getAttribute('data-default');
     setupTabs(tabContainer, defaultTab);
@@ -106,7 +107,7 @@ function setupTabs(tabContainerSelector, defaultTabTarget) {
   }
 
   const tabs = tabContainer.querySelectorAll('[data-target]');
-  const tabBlocks = tabContainer.querySelectorAll('.tab-block');
+  const tabBlocks = tabContainer.querySelectorAll('[data-type="tab-block"]');
 
   // showing the first tab as default unless default is set
   if (tabs.length > 0) {
@@ -114,7 +115,6 @@ function setupTabs(tabContainerSelector, defaultTabTarget) {
     if (defaultTabTarget) {
       for (let i = 0; i < tabs.length; i++) {
         if (tabs[i].getAttribute('data-target') === defaultTabTarget) {
-          console.log("foundit")
           tab = tabs[i];
           break;
         }
@@ -143,7 +143,9 @@ function setupTabs(tabContainerSelector, defaultTabTarget) {
       event.preventDefault();
 
       // Hide all tab blocks
-      tabBlocks.forEach(block => block.classList.remove('is-selected'));
+      tabBlocks.forEach(block => {
+        block.classList.remove('is-selected')
+      });
 
       // Remove active class from all tabs
       tabs.forEach(tab => {

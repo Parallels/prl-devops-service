@@ -1,1 +1,61 @@
+// breakpoints
+$xl-breakpoint: 1200px;
+$l-breakpoint: 900px;
+$m-breakpoint: 600px;
+$s-breakpoint: 374px;
+
 $button-border-radius: 10px;
+$border-color: #e2e2e2;
+$api-code-block-border-color: #f0f0f0;
+$hover-border-radius: 6px;
+
+// Colors
+$light-blue: #3d73d8;
+$light-blue-hover: #2b5aa5;
+$white: #fff;
+$neutral-base: #fafafa;
+$grey-background: #f6f6f6;
+$font-base-color: #303236;
+$font-lighter-color: #7b7d85;
+$light-hover-color: #f0f0f0;
+
+// Body Sizes
+$body-s-max-width: 336px;
+$body-s-min-width: 336px;
+$body-m-max-width: 560px;
+$body-m-min-width: 560px;
+$body-l-max-width: 632px;
+$body-l-min-width: 632px;
+$body-xl-max-width: 760px;
+$body-xl-min-width: 760px;
+
+$body-page-s-top-margin: 16px;
+$body-page-m-top-margin: 16px;
+$body-page-l-top-margin: 32px;
+$body-page-xl-top-margin: 32px;
+
+$side-menu-l-width: 200px;
+$side-menu-l-left-margin: 16px;
+$side-menu-xl-width: 232px;
+$side-menu-xl-left-margin: 32px;
+
+$page-s-width: 336px;
+$page-m-width: 560px;
+$page-l-width: 632px;
+$page-xl-width: 760px;
+$page-margin-left-right: 20px;
+
+$api-side-menu-l-width: 200px;
+$api-side-menu-l-left-margin: 16px;
+$api-side-menu-xl-width: 232px;
+$api-side-menu-xl-left-margin: 32px;
+
+$api-main-content-l-width: 632px;
+$api-main-content-l-left-margin: 16px;
+$api-main-content-xl-width: 408px;
+$api-main-content-xl-left-margin: 32px;
+
+$api-code-block-l-width: 632px;
+$api-code-block-l-left-margin: 16px;
+$api-code-block-xl-width: 408px;
+$api-code-block-xl-left-margin: 32px;

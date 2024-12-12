@@ -762,6 +762,11 @@ endpoints:
           type: header
           value_type: string
           description: Filter entities
+        - name: x-sort
+          required: true
+          type: header
+          value_type: string
+          description: Sorts entities
       parameters:
         - name: apiKey
           required: false
@@ -778,6 +783,11 @@ endpoints:
               "secret": "string",
               "updated_at": "string"
             }
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Api Key ID
       default_required_roles:
         - SUPER_USER
       default_required_claims:

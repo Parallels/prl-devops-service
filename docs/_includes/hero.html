@@ -1,29 +1,74 @@
-<div class="hero-column">
-  <div class="hero-title {% if page.is_home %}hero-home-section{% endif %}">
-    <div class="hero-text-container {% if page.is_home %}hero-home-section{% endif %} {% if page.menubar %}hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
+<div class="hero-container{% if page.is_home %} homepage-hero-container{% endif %}{% if page.menubar %} with-menu-bar{% endif %}{% if sideContent %} with-side-toc{% endif %}">
+  <div class="hero-text-container">
+    <div class="hero-title">
       {% if page.is_home %}
-      {% else %}
-      <p class="hero-title {% if page.is_home %}home-title{% endif %} {% if page.menubar %}hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
-        {{ page.title }}
-      </p>
+      {% if page.title %}
+      <div class="hero-title-text">
+        {{ page.subtitle | markdownify }}
+      </div>
       {% endif %}
-      <p class="hero-subtitle {% if page.is_home %}home-subtitle{% endif %} {% if page.menubar %}hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
-        {{ page.subtitle }}
-      </p>
+      {% else %}
+      {% if page.title %}
+      <div class="hero-title-text">
+        {{ page.title | markdownify }}
+      </div>
+      {% endif %}
+      {% if page.subtitle %}
+      <div class="hero-subtitle-text">
+        {{ page.subtitle | markdownify }}
+      </div>
+      {% endif %}
+      {% endif %}
+      {% if page.description %}
+      <div class="hero-description">
+        {{ page.description | markdownify }}
+      </div>
+      {% endif %}
     </div>
+    {% if page.show_version or page.hero_actions.size > 0 or page.badges.size > 0 %}
+    <div class="hero-details">
+      {% if page.show_version %}
+      <section class="version">
+        <span class="version-label">Latest release: {{site.version}}</span>
+      </section>
+      {% endif %}
+      {% if page.hero_actions.size > 0 %}
+      <section class="hero-action-links">
+        <div class="hero-action-links-container">
+          {% for action in page.hero_actions %}
+          {% if action.url %}
+          <a href="{{ action.url | relative_url }}" class="text-button is-primary">
+            <span>Get Started</span>
+            {% if action.fa_icon %}
+            <i class="fas {{ action.fa_icon}}"></i>
+            {% endif %}
+            {% if action.icon %}
+            <img src="{{ site.baseurl }}/assets/img/{{ action.icon}}" alt="icon">
+            {% endif %}
+          </a>
+          {% else %}
+          <div class="text-button is-primary">
+            <span>Learn More</span>
+            {% if action.fa_icon %}
+            <i class="fas {{ action.fa_icon}}"></i>
+            {% endif %}
+            {% if action.icon %}
+            <img src="{{ site.baseurl }}/assets/img/{{ action.icon}}" alt="icon">
+            {% endif %}
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+      <section class="hero-badges">
+        {% for badge in page.badges %}
+        {% unless badge.hidden %}
+        <span class="hero-badge">{{ badge.badge | markdownify }}</span>
+        {% endunless %}
+        {% endfor %}
+      </section>
+    </div>
+    {% endif %}
   </div>
-  {% if page.hero_link %}
-  <div class="hero-link {% if page.is_home %}home-section{% endif %}">
-    <a href="{{ page.hero_link | relative_url }}" class="text-button is-info is-large">
-      {{- page.hero_link_text -}}<i class="fas fa-arrow-right"></i>
-    </a>
-  </div>
-  {% endif %}
-  {% if page.badges %}
-  <div class="hero-badges">
-    {% for badge in page.badges %}
-    <span class="tag is-rounded is-info">{{ badge | markdownify }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
 </div>

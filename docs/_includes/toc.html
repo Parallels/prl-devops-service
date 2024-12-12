@@ -110,3 +110,41 @@
           {{ jekyll_toc | markdownify | strip }}
         </div>
       </div>
+
+      <!-- <script>
+        document.addEventListener("DOMContentLoaded", () => {
+          const menuItems = document.querySelectorAll(".menu-item a");
+          const sections = document.querySelectorAll(".page-body .content div");
+          console.log(sections)
+          const activeClass = "active"; // Class to add to active menu item
+
+          // Function to determine which section is in view
+          const highlightMenuOnScroll = () => {
+            let currentSection = null;
+
+            sections.forEach((section) => {
+              const rect = section.getBoundingClientRect();
+              if (rect.top >= 0 && rect.top <= window.innerHeight / 2) {
+                console.log('here')
+                currentSection = section;
+              }
+            });
+
+            if (currentSection) {
+              const currentId = currentSection.getAttribute("id");
+
+              // Update menu items
+              menuItems.forEach((menuItem) => {
+                if (menuItem.getAttribute("href") === `#${currentId}`) {
+                  menuItem.classList.add(activeClass);
+                } else {
+                  menuItem.classList.remove(activeClass);
+                }
+              });
+            }
+          };
+
+          // Attach scroll event listener
+          window.addEventListener("scroll", highlightMenuOnScroll);
+        });
+      </script> -->

@@ -1,27 +1,32 @@
 .side-toc-menu {
   width: 100%;
   display: none;
-  padding-top: 36px;
 
-  @media screen and (min-width: $medium-breakpoint) {
+  @media screen and (min-width: $l-breakpoint) {
     display: flex;
-    width: 200px;
-    max-width: 200px;
+    max-width: $side-menu-l-width;
   }
 
-  @media screen and (min-width: $max-breakpoint) {
-    display: flex;
-    width: 232px;
-    max-width: 232px;
+  @media screen and (min-width: $xl-breakpoint) {
+    max-width: $side-menu-xl-width;
   }
 
   .page-toc {
+    padding: unset;
     background-color: unset !important;
     border: unset !important;
+
+    @media screen and (min-width: $l-breakpoint) {
+      display: block;
+    }
   }
 
   .level-2 {
-    margin: 5px 0 0 5px;
+    margin: 0px 0 0 5px;
+  }
+
+  .level-3 {
+    margin: 0px 0 0 5px;
   }
 
   a {
@@ -33,11 +38,11 @@
 .page-toc {
   padding: 16px 10px 5px 20px;
   border-radius: 6px;
-  border: solid 1px #b6b6b6;
+  border: solid 1px $border-color;
   background-color: #f7f7f7;
   margin-bottom: 32px;
 
-  @media screen and (max-width: $medium-breakpoint) {
+  @media screen and (max-width: $l-breakpoint) {
     display: none;
   }
 
@@ -62,11 +67,7 @@
     font-style: normal;
     line-height: 1.5;
     letter-spacing: normal;
-    color: #303236;
-  }
-
-  li {
-    padding-bottom: 10px;
+    color: $font-base-color;
   }
 
   ul {
@@ -75,15 +76,29 @@
         border-left: unset;
       }
     }
+
+    li {
+      &:not(:first-child) {
+        margin-top: 5px;
+      }
+    }
   }
+
 
   .menu-list {
     a {
-      padding: unset;
+
+
+      padding: 5px;
+
+      &:hover {
+        background-color: $light-hover-color;
+        border-radius: $hover-border-radius;
+      }
     }
 
     li {
-      border-left: 1px solid #b6b6b6;
+      border-left: 1px solid $border-color;
     }
   }
 }

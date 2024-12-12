@@ -4,8 +4,8 @@ layout: default
 {% if page.about %}
 <section class="about-section">
   <div class="about-container">
-    <h1>About</h1>
-    <div class="about-content">
+    <span class="container-title">About</span>
+    <div class="container-content">
       {{ page.about | markdownify }}
     </div>
   </div>
@@ -20,8 +20,10 @@ layout: default
 {% if page.licensing %}
 <section class="licensing-section">
   <div class="licensing-container">
-    <h1>Licensing</h1>
-    {{ page.licensing | markdownify }}
+    <span class="container-title">Licensing</span>
+    <div class="container-content">
+      {{ page.licensing | markdownify }}
+    </div>
   </div>
 </section>
 {% endif %}
@@ -30,7 +32,9 @@ layout: default
 </section>
 <section class="whats-new-section">
   <div class="whats-new-container">
-    <h1>What's New</h1>
-    {% include whats_new.html %}
+    <span class="container-title">What's New</span>
+    <div class="container-content">
+      {% include whats_new.html %}
+    </div>
   </div>
 </section>
