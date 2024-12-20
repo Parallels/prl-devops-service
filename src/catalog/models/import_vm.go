@@ -15,6 +15,7 @@ type ImportVmRequest struct {
 	Description       string            `json:"description,omitempty"`
 	IsCompressed      bool              `json:"is_compressed,omitempty"`
 	Type              string            `json:"type,omitempty"`
+	Size              int64             `json:"size,omitempty"`
 	Force             bool              `json:"force,omitempty"`
 	MachineRemotePath string            `json:"machine_remote_path,omitempty"`
 	Tags              []string          `json:"tags,omitempty"`
@@ -42,6 +43,9 @@ func (r *ImportVmRequest) Validate() error {
 	if r.MachineRemotePath == "" {
 		return ErrMissingMachineRemotePath
 	}
+	if r.Size == 0 {
+		return ErrMissingSize
+	}
 
 	return nil
 }
@@ -55,13 +59,13 @@ type ImportVmResponse struct {
 	LocalPath      string                         `json:"local_path"`
 	MachineName    string                         `json:"machine_name"`
 	Manifest       *VirtualMachineCatalogManifest `json:"manifest"`
-	CleanupRequest *cleanupservice.CleanupRequest `json:"-"`
+	CleanupRequest *cleanupservice.CleanupService `json:"-"`
 	Errors         []error                        `json:"-"`
 }
 
 func NewImportVmRequestResponse() *ImportVmResponse {
 	return &ImportVmResponse{
-		CleanupRequest: cleanupservice.NewCleanupRequest(),
+		CleanupRequest: cleanupservice.NewCleanupService(),
 	}
 }
 

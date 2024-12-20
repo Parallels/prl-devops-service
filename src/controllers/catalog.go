@@ -9,6 +9,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog"
+	"github.com/Parallels/prl-devops-service/catalog/cacheservice"
 	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/constants"
@@ -243,16 +244,16 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 }
 
-//	@Summary		Gets all the remote catalogs
-//	@Description	This endpoint returns all the remote catalogs
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Success		200	{object}	[]map[string][]models.CatalogManifest
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog [get]
+// @Summary		Gets all the remote catalogs
+// @Description	This endpoint returns all the remote catalogs
+// @Tags			Catalogs
+// @Produce		json
+// @Success		200	{object}	[]map[string][]models.CatalogManifest
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog [get]
 func GetCatalogManifestsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -308,17 +309,17 @@ func GetCatalogManifestsHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets all the remote catalogs
-//	@Description	This endpoint returns all the remote catalogs
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId	path		string	true	"Catalog ID"
-//	@Success		200			{object}	[]models.CatalogManifest
-//	@Failure		400			{object}	models.ApiErrorResponse
-//	@Failure		401			{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId} [get]
+// @Summary		Gets all the remote catalogs
+// @Description	This endpoint returns all the remote catalogs
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId	path		string	true	"Catalog ID"
+// @Success		200			{object}	[]models.CatalogManifest
+// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		401			{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId} [get]
 func GetCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -355,18 +356,18 @@ func GetCatalogManifestHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets a catalog manifest version
-//	@Description	This endpoint returns a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId	path		string	true	"Catalog ID"
-//	@Param			version		path		string	true	"Version"
-//	@Success		200			{object}	models.CatalogManifest
-//	@Failure		400			{object}	models.ApiErrorResponse
-//	@Failure		401			{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version} [get]
+// @Summary		Gets a catalog manifest version
+// @Description	This endpoint returns a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId	path		string	true	"Catalog ID"
+// @Param			version		path		string	true	"Version"
+// @Success		200			{object}	models.CatalogManifest
+// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		401			{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version} [get]
 func GetCatalogManifestVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -396,19 +397,19 @@ func GetCatalogManifestVersionHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets a catalog manifest version architecture
-//	@Description	This endpoint returns a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId		path		string	true	"Catalog ID"
-//	@Param			version			path		string	true	"Version"
-//	@Param			architecture	path		string	true	"Architecture"
-//	@Success		200				{object}	models.CatalogManifest
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture} [get]
+// @Summary		Gets a catalog manifest version architecture
+// @Description	This endpoint returns a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string	true	"Catalog ID"
+// @Param			version			path		string	true	"Version"
+// @Param			architecture	path		string	true	"Architecture"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture} [get]
 func GetCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -439,19 +440,19 @@ func GetCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Downloads a catalog manifest version
-//	@Description	This endpoint downloads a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId		path		string	true	"Catalog ID"
-//	@Param			version			path		string	true	"Version"
-//	@Param			architecture	path		string	true	"Architecture"
-//	@Success		200				{object}	models.CatalogManifest
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture}/download [get]
+// @Summary		Downloads a catalog manifest version
+// @Description	This endpoint downloads a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string	true	"Catalog ID"
+// @Param			version			path		string	true	"Version"
+// @Param			architecture	path		string	true	"Architecture"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/download [get]
 func DownloadCatalogManifestVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -503,19 +504,19 @@ func DownloadCatalogManifestVersionHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Taints a catalog manifest version
-//	@Description	This endpoint Taints a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId		path		string	true	"Catalog ID"
-//	@Param			version			path		string	true	"Version"
-//	@Param			architecture	path		string	true	"Architecture"
-//	@Success		200				{object}	models.CatalogManifest
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture}/taint [patch]
+// @Summary		Taints a catalog manifest version
+// @Description	This endpoint Taints a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string	true	"Catalog ID"
+// @Param			version			path		string	true	"Version"
+// @Param			architecture	path		string	true	"Architecture"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/taint [patch]
 func TaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -568,19 +569,19 @@ func TaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		UnTaints a catalog manifest version
-//	@Description	This endpoint UnTaints a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId		path		string	true	"Catalog ID"
-//	@Param			version			path		string	true	"Version"
-//	@Param			architecture	path		string	true	"Architecture"
-//	@Success		200				{object}	models.CatalogManifest
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture}/untaint [patch]
+// @Summary		UnTaints a catalog manifest version
+// @Description	This endpoint UnTaints a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string	true	"Catalog ID"
+// @Param			version			path		string	true	"Version"
+// @Param			architecture	path		string	true	"Architecture"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/untaint [patch]
 func UnTaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -633,19 +634,19 @@ func UnTaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		UnTaints a catalog manifest version
-//	@Description	This endpoint UnTaints a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId		path		string	true	"Catalog ID"
-//	@Param			version			path		string	true	"Version"
-//	@Param			architecture	path		string	true	"Architecture"
-//	@Success		200				{object}	models.CatalogManifest
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture}/revoke [patch]
+// @Summary		UnTaints a catalog manifest version
+// @Description	This endpoint UnTaints a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string	true	"Catalog ID"
+// @Param			version			path		string	true	"Version"
+// @Param			architecture	path		string	true	"Architecture"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/revoke [patch]
 func RevokeCatalogManifestVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -690,20 +691,20 @@ func RevokeCatalogManifestVersionHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Adds claims to a catalog manifest version
-//	@Description	This endpoint adds claims to a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId		path		string										true	"Catalog ID"
-//	@Param			version			path		string										true	"Version"
-//	@Param			architecture	path		string										true	"Architecture"
-//	@Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
-//	@Success		200				{object}	models.CatalogManifest
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture}/claims [patch]
+// @Summary		Adds claims to a catalog manifest version
+// @Description	This endpoint adds claims to a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string										true	"Catalog ID"
+// @Param			version			path		string										true	"Version"
+// @Param			architecture	path		string										true	"Architecture"
+// @Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/claims [patch]
 func AddClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -764,10 +765,10 @@ func AddClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 
 		catalogSvc := catalog.NewManifestService(ctx)
 		catalogRequest := mappers.DtoCatalogManifestToBase(*newManifest)
-		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupService()
 		catalogRequest.Errors = []error{}
 
-		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		resultOp := catalogSvc.PushMetadata(&catalogRequest)
 		if resultOp.HasErrors() {
 			errorMessage := "Error pushing manifest: \n"
 			for _, err := range resultOp.Errors {
@@ -785,20 +786,20 @@ func AddClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Removes claims from a catalog manifest version
-//	@Description	This endpoint removes claims from a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId		path		string										true	"Catalog ID"
-//	@Param			version			path		string										true	"Version"
-//	@Param			architecture	path		string										true	"Architecture"
-//	@Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
-//	@Success		200				{object}	models.CatalogManifest
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture}/claims [delete]
+// @Summary		Removes claims from a catalog manifest version
+// @Description	This endpoint removes claims from a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string										true	"Catalog ID"
+// @Param			version			path		string										true	"Version"
+// @Param			architecture	path		string										true	"Architecture"
+// @Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/claims [delete]
 func RemoveClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -859,10 +860,10 @@ func RemoveClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 
 		catalogSvc := catalog.NewManifestService(ctx)
 		catalogRequest := mappers.DtoCatalogManifestToBase(*newManifest)
-		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupService()
 		catalogRequest.Errors = []error{}
 
-		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		resultOp := catalogSvc.PushMetadata(&catalogRequest)
 		if resultOp.HasErrors() {
 			errorMessage := "Error pushing manifest: \n"
 			for _, err := range resultOp.Errors {
@@ -880,20 +881,20 @@ func RemoveClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Adds roles to a catalog manifest version
-//	@Description	This endpoint adds roles to a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId		path		string										true	"Catalog ID"
-//	@Param			version			path		string										true	"Version"
-//	@Param			architecture	path		string										true	"Architecture"
-//	@Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
-//	@Success		200				{object}	models.CatalogManifest
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture}/roles [patch]
+// @Summary		Adds roles to a catalog manifest version
+// @Description	This endpoint adds roles to a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string										true	"Catalog ID"
+// @Param			version			path		string										true	"Version"
+// @Param			architecture	path		string										true	"Architecture"
+// @Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/roles [patch]
 func AddRolesToCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -954,10 +955,10 @@ func AddRolesToCatalogManifestHandler() restapi.ControllerHandler {
 
 		catalogSvc := catalog.NewManifestService(ctx)
 		catalogRequest := mappers.DtoCatalogManifestToBase(*newManifest)
-		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupService()
 		catalogRequest.Errors = []error{}
 
-		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		resultOp := catalogSvc.PushMetadata(&catalogRequest)
 		if resultOp.HasErrors() {
 			errorMessage := "Error pushing manifest: \n"
 			for _, err := range resultOp.Errors {
@@ -975,20 +976,20 @@ func AddRolesToCatalogManifestHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Removes roles from a catalog manifest version
-//	@Description	This endpoint removes roles from a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId		path		string										true	"Catalog ID"
-//	@Param			version			path		string										true	"Version"
-//	@Param			architecture	path		string										true	"Architecture"
-//	@Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
-//	@Success		200				{object}	models.CatalogManifest
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture}/roles [delete]
+// @Summary		Removes roles from a catalog manifest version
+// @Description	This endpoint removes roles from a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string										true	"Catalog ID"
+// @Param			version			path		string										true	"Version"
+// @Param			architecture	path		string										true	"Architecture"
+// @Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/roles [delete]
 func RemoveRolesToCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1049,10 +1050,10 @@ func RemoveRolesToCatalogManifestHandler() restapi.ControllerHandler {
 
 		catalogSvc := catalog.NewManifestService(ctx)
 		catalogRequest := mappers.DtoCatalogManifestToBase(*newManifest)
-		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupService()
 		catalogRequest.Errors = []error{}
 
-		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		resultOp := catalogSvc.PushMetadata(&catalogRequest)
 		if resultOp.HasErrors() {
 			errorMessage := "Error pushing manifest: \n"
 			for _, err := range resultOp.Errors {
@@ -1070,20 +1071,20 @@ func RemoveRolesToCatalogManifestHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Adds tags to a catalog manifest version
-//	@Description	This endpoint adds tags to a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId		path		string										true	"Catalog ID"
-//	@Param			version			path		string										true	"Version"
-//	@Param			architecture	path		string										true	"Architecture"
-//	@Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
-//	@Success		200				{object}	models.CatalogManifest
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture}/tags [patch]
+// @Summary		Adds tags to a catalog manifest version
+// @Description	This endpoint adds tags to a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string										true	"Catalog ID"
+// @Param			version			path		string										true	"Version"
+// @Param			architecture	path		string										true	"Architecture"
+// @Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/tags [patch]
 func AddTagsToCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1144,10 +1145,10 @@ func AddTagsToCatalogManifestHandler() restapi.ControllerHandler {
 
 		catalogSvc := catalog.NewManifestService(ctx)
 		catalogRequest := mappers.DtoCatalogManifestToBase(*newManifest)
-		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupService()
 		catalogRequest.Errors = []error{}
 
-		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		resultOp := catalogSvc.PushMetadata(&catalogRequest)
 		if resultOp.HasErrors() {
 			errorMessage := "Error pushing manifest: \n"
 			for _, err := range resultOp.Errors {
@@ -1165,20 +1166,20 @@ func AddTagsToCatalogManifestHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Removes tags from a catalog manifest version
-//	@Description	This endpoint removes tags from a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId		path		string										true	"Catalog ID"
-//	@Param			version			path		string										true	"Version"
-//	@Param			architecture	path		string										true	"Architecture"
-//	@Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
-//	@Success		200				{object}	models.CatalogManifest
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture}/tags [delete]
+// @Summary		Removes tags from a catalog manifest version
+// @Description	This endpoint removes tags from a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path		string										true	"Catalog ID"
+// @Param			version			path		string										true	"Version"
+// @Param			architecture	path		string										true	"Architecture"
+// @Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/tags [delete]
 func RemoveTagsToCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1239,10 +1240,10 @@ func RemoveTagsToCatalogManifestHandler() restapi.ControllerHandler {
 
 		catalogSvc := catalog.NewManifestService(ctx)
 		catalogRequest := mappers.DtoCatalogManifestToBase(*newManifest)
-		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupService()
 		catalogRequest.Errors = []error{}
 
-		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		resultOp := catalogSvc.PushMetadata(&catalogRequest)
 		if resultOp.HasErrors() {
 			errorMessage := "Error pushing manifest: \n"
 			for _, err := range resultOp.Errors {
@@ -1303,17 +1304,17 @@ func CreateCatalogManifestHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Deletes a catalog manifest and all its versions
-//	@Description	This endpoint deletes a catalog manifest and all its versions
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId	path	string	true	"Catalog ID"
-//	@Success		200
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId} [delete]
+// @Summary		Deletes a catalog manifest and all its versions
+// @Description	This endpoint deletes a catalog manifest and all its versions
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId	path	string	true	"Catalog ID"
+// @Success		200
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId} [delete]
 func DeleteCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1339,7 +1340,7 @@ func DeleteCatalogManifestHandler() restapi.ControllerHandler {
 		manifest := catalog.NewManifestService(ctx)
 		if cleanRemote == "true" {
 			ctx.LogInfof("Deleting remote manifest %v", catalogId)
-			err = manifest.Delete(ctx, catalogId, "", "")
+			err = manifest.Delete(catalogId, "", "")
 			if err != nil {
 				errorDeletingRemote = err
 			}
@@ -1370,18 +1371,18 @@ func DeleteCatalogManifestHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Deletes a catalog manifest version
-//	@Description	This endpoint deletes a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId	path	string	true	"Catalog ID"
-//	@Param			version		path	string	true	"Version"
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version} [delete]
+// @Summary		Deletes a catalog manifest version
+// @Description	This endpoint deletes a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId	path	string	true	"Catalog ID"
+// @Param			version		path	string	true	"Version"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version} [delete]
 func DeleteCatalogManifestVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1408,7 +1409,7 @@ func DeleteCatalogManifestVersionHandler() restapi.ControllerHandler {
 		manifest := catalog.NewManifestService(ctx)
 		if cleanRemote == "true" {
 			ctx.LogInfof("Deleting remote manifest %v", catalogId)
-			err = manifest.Delete(ctx, catalogId, version, "")
+			err = manifest.Delete(catalogId, version, "")
 			if err != nil {
 				errorDeletingRemote = err
 			}
@@ -1439,19 +1440,19 @@ func DeleteCatalogManifestVersionHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Deletes a catalog manifest version architecture
-//	@Description	This endpoint deletes a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId		path	string	true	"Catalog ID"
-//	@Param			version			path	string	true	"Version"
-//	@Param			architecture	path	string	true	"Architecture"
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture} [delete]
+// @Summary		Deletes a catalog manifest version architecture
+// @Description	This endpoint deletes a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId		path	string	true	"Catalog ID"
+// @Param			version			path	string	true	"Version"
+// @Param			architecture	path	string	true	"Architecture"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture} [delete]
 func DeleteCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1479,7 +1480,7 @@ func DeleteCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler
 		manifest := catalog.NewManifestService(ctx)
 		if cleanRemote == "true" {
 			ctx.LogInfof("Deleting remote manifest %v", catalogId)
-			err = manifest.Delete(ctx, catalogId, version, architecture)
+			err = manifest.Delete(catalogId, version, architecture)
 			if err != nil {
 				errorDeletingRemote = err
 			}
@@ -1510,17 +1511,17 @@ func DeleteCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler
 	}
 }
 
-//	@Summary		Pushes a catalog manifest to the catalog inventory
-//	@Description	This endpoint pushes a catalog manifest to the catalog inventory
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			pushRequest	body		catalog_models.PushCatalogManifestRequest	true	"Push request"
-//	@Success		200			{object}	models.CatalogManifest
-//	@Failure		400			{object}	models.ApiErrorResponse
-//	@Failure		401			{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/push [post]
+// @Summary		Pushes a catalog manifest to the catalog inventory
+// @Description	This endpoint pushes a catalog manifest to the catalog inventory
+// @Tags			Catalogs
+// @Produce		json
+// @Param			pushRequest	body		catalog_models.PushCatalogManifestRequest	true	"Push request"
+// @Success		200			{object}	models.CatalogManifest
+// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		401			{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/push [post]
 func PushCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1543,7 +1544,7 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		manifest := catalog.NewManifestService(ctx)
-		resultManifest := manifest.Push(ctx, &request)
+		resultManifest := manifest.Push(&request)
 		if resultManifest.HasErrors() {
 			errorMessage := "Error pushing manifest: \n"
 			for _, err := range resultManifest.Errors {
@@ -1565,17 +1566,17 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Pull a remote catalog manifest
-//	@Description	This endpoint pulls a remote catalog manifest
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			pullRequest	body		catalog_models.PullCatalogManifestRequest	true	"Pull request"
-//	@Success		200			{object}	models.PullCatalogManifestResponse
-//	@Failure		400			{object}	models.ApiErrorResponse
-//	@Failure		401			{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/pull [put]
+// @Summary		Pull a remote catalog manifest
+// @Description	This endpoint pulls a remote catalog manifest
+// @Tags			Catalogs
+// @Produce		json
+// @Param			pullRequest	body		catalog_models.PullCatalogManifestRequest	true	"Pull request"
+// @Success		200			{object}	models.PullCatalogManifestResponse
+// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		401			{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/pull [put]
 func PullCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1627,7 +1628,7 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		manifest := catalog.NewManifestService(ctx)
-		resultManifest := manifest.Pull(ctx, &request)
+		resultManifest := manifest.Pull(&request)
 
 		if resultManifest.HasErrors() {
 			if sendTelemetry && amplitudeEvent.EventProperties != nil {
@@ -1660,17 +1661,17 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Imports a remote catalog manifest metadata into the catalog inventory
-//	@Description	This endpoint imports a remote catalog manifest metadata into the catalog inventory
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			importRequest	body		catalog_models.ImportCatalogManifestRequest	true	"Pull request"
-//	@Success		200				{object}	models.ImportCatalogManifestResponse
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/import [put]
+// @Summary		Imports a remote catalog manifest metadata into the catalog inventory
+// @Description	This endpoint imports a remote catalog manifest metadata into the catalog inventory
+// @Tags			Catalogs
+// @Produce		json
+// @Param			importRequest	body		catalog_models.ImportCatalogManifestRequest	true	"Pull request"
+// @Success		200				{object}	models.ImportCatalogManifestResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/import [put]
 func ImportCatalogManifestHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1693,7 +1694,7 @@ func ImportCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		manifest := catalog.NewManifestService(ctx)
-		resultManifest := manifest.Import(ctx, &request)
+		resultManifest := manifest.Import(&request)
 		if resultManifest.HasErrors() {
 			errorMessage := "Error importing manifest: \n"
 			for _, err := range resultManifest.Errors {
@@ -1714,17 +1715,17 @@ func ImportCatalogManifestHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Imports a vm into the catalog inventory generating the metadata for it
-//	@Description	This endpoint imports a virtual machine in pvm or macvm format into the catalog inventory generating the metadata for it
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			importRequest	body		catalog_models.ImportVmRequest	true	"Vm Impoty request"
-//	@Success		200				{object}	models.ImportVmResponse
-//	@Failure		400				{object}	models.ApiErrorResponse
-//	@Failure		401				{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/import-vm [put]
+// @Summary		Imports a vm into the catalog inventory generating the metadata for it
+// @Description	This endpoint imports a virtual machine in pvm or macvm format into the catalog inventory generating the metadata for it
+// @Tags			Catalogs
+// @Produce		json
+// @Param			importRequest	body		catalog_models.ImportVmRequest	true	"Vm Impoty request"
+// @Success		200				{object}	models.ImportVmResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/import-vm [put]
 func ImportVmHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1747,7 +1748,7 @@ func ImportVmHandler() restapi.ControllerHandler {
 		}
 
 		manifest := catalog.NewManifestService(ctx)
-		resultManifest := manifest.ImportVm(ctx, &request)
+		resultManifest := manifest.ImportVm(&request)
 		if resultManifest.HasErrors() {
 			errorMessage := "Error importing vm: \n"
 			for _, err := range resultManifest.Errors {
@@ -1768,18 +1769,18 @@ func ImportVmHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Updates a catalog
-//	@Description	This endpoint adds claims to a catalog manifest version
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId	path		string										true	"Catalog ID"
-//	@Param			request		body		models.VirtualMachineCatalogManifestPatch	true	"Body"
-//	@Success		200			{object}	models.CatalogManifest
-//	@Failure		400			{object}	models.ApiErrorResponse
-//	@Failure		401			{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/{catalogId}/{version}/{architecture}/claims [patch]
+// @Summary		Updates a catalog
+// @Description	This endpoint adds claims to a catalog manifest version
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId	path		string										true	"Catalog ID"
+// @Param			request		body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200			{object}	models.CatalogManifest
+// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		401			{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/claims [patch]
 func UpdateCatalogManifestProviderHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1834,10 +1835,10 @@ func UpdateCatalogManifestProviderHandler() restapi.ControllerHandler {
 
 		catalogSvc := catalog.NewManifestService(ctx)
 		catalogRequest := mappers.DtoCatalogManifestToBase(*manifest)
-		catalogRequest.CleanupRequest = cleanupservice.NewCleanupRequest()
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupService()
 		catalogRequest.Errors = []error{}
 
-		resultOp := catalogSvc.PushMetadata(ctx, &catalogRequest)
+		resultOp := catalogSvc.PushMetadata(&catalogRequest)
 		if resultOp.HasErrors() {
 			errorMessage := "Error pushing manifest: \n"
 			for _, err := range resultOp.Errors {
@@ -1865,24 +1866,27 @@ func UpdateCatalogManifestProviderHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Gets catalog cache
-//	@Description	This endpoint returns all the remote catalog cache if any
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Success		200	{object}	[]models.CatalogManifest
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/cache [get]
+// @Summary		Gets catalog cache
+// @Description	This endpoint returns all the remote catalog cache if any
+// @Tags			Catalogs
+// @Produce		json
+// @Success		200	{object}	[]models.CatalogManifest
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/cache [get]
 func GetCatalogCacheHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
-		catalogSvc := catalog.NewManifestService(ctx)
-		items, err := catalogSvc.GetCacheItems(ctx)
+		catalogCacheSvc, err := cacheservice.NewCacheService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+		}
+		items, err := catalogCacheSvc.GetAllCacheItems()
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1896,25 +1900,29 @@ func GetCatalogCacheHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Deletes all catalog cache
-//	@Description	This endpoint returns all the remote catalog cache if any
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId	path	string	true	"Catalog ID"
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/cache [delete]
+// @Summary		Deletes all catalog cache
+// @Description	This endpoint returns all the remote catalog cache if any
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId	path	string	true	"Catalog ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/cache [delete]
 func DeleteCatalogCacheHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
-		catalogSvc := catalog.NewManifestService(ctx)
-		err := catalogSvc.CleanAllCache(ctx)
+		catalogCacheSvc, err := cacheservice.NewCacheService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+		}
+
+		err = catalogCacheSvc.RemoveAllCacheItems()
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1927,17 +1935,17 @@ func DeleteCatalogCacheHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Deletes catalog cache item and all its versions
-//	@Description	This endpoint returns all the remote catalog cache if any and all its versions
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId	path	string	true	"Catalog ID"
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/cache/{catalogId} [delete]
+// @Summary		Deletes catalog cache item and all its versions
+// @Description	This endpoint returns all the remote catalog cache if any and all its versions
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId	path	string	true	"Catalog ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/cache/{catalogId} [delete]
 func DeleteCatalogCacheItemHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1954,8 +1962,12 @@ func DeleteCatalogCacheItemHandler() restapi.ControllerHandler {
 			return
 		}
 
-		catalogSvc := catalog.NewManifestService(ctx)
-		err := catalogSvc.CleanCacheFile(ctx, catalogId, "")
+		catalogCacheSvc, err := cacheservice.NewCacheService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+		}
+
+		err = catalogCacheSvc.RemoveCacheItem(catalogId, "")
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1968,18 +1980,18 @@ func DeleteCatalogCacheItemHandler() restapi.ControllerHandler {
 	}
 }
 
-//	@Summary		Deletes catalog cache version item
-//	@Description	This endpoint deletes a version of a cache ite,
-//	@Tags			Catalogs
-//	@Produce		json
-//	@Param			catalogId	path	string	true	"Catalog ID"
-//	@Param			version		path	string	true	"Version"
-//	@Success		202
-//	@Failure		400	{object}	models.ApiErrorResponse
-//	@Failure		401	{object}	models.OAuthErrorResponse
-//	@Security		ApiKeyAuth
-//	@Security		BearerAuth
-//	@Router			/v1/catalog/cache/{catalogId}/{version} [delete]
+// @Summary		Deletes catalog cache version item
+// @Description	This endpoint deletes a version of a cache ite,
+// @Tags			Catalogs
+// @Produce		json
+// @Param			catalogId	path	string	true	"Catalog ID"
+// @Param			version		path	string	true	"Version"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/cache/{catalogId}/{version} [delete]
 func DeleteCatalogCacheItemVersionHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -2005,8 +2017,12 @@ func DeleteCatalogCacheItemVersionHandler() restapi.ControllerHandler {
 			return
 		}
 
-		catalogSvc := catalog.NewManifestService(ctx)
-		err := catalogSvc.CleanCacheFile(ctx, catalogId, version)
+		catalogCacheSvc, err := cacheservice.NewCacheService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+		}
+
+		err = catalogCacheSvc.RemoveCacheItem(catalogId, version)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return

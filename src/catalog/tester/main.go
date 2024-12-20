@@ -31,6 +31,33 @@ func NewTestProvider(ctx basecontext.ApiContext, connection string) *TestProvide
 	}
 }
 
+func (s *TestProvider) PushFileToProvider(filepath string, targetPath string, targetFilename string) error {
+	for _, rs := range s.service.GetProviders() {
+		check, checkErr := rs.Check(s.ctx, s.connection)
+		if checkErr != nil {
+			s.ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
+			return checkErr
+		}
+		if !check {
+			continue
+		}
+
+		s.ctx.LogInfof("Testing remote service %v push file capability", rs.Name())
+
+		if exists := helpers.FileExists(filepath); !exists {
+			s.ctx.LogErrorf("File %v does not exist", filepath)
+			return fmt.Errorf("file %v does not exist", filepath)
+		}
+
+		if err := rs.PushFile(s.ctx, filepath, targetPath, targetFilename); err != nil {
+			s.ctx.LogErrorf("Error pushing file to remote service %v: %v", rs.Name(), err)
+			return err
+		}
+		break
+	}
+	return nil
+}
+
 func (s *TestProvider) Test() error {
 	if err := s.Check(); err != nil {
 		s.ctx.LogErrorf("Error checking remote service: %v", err)
@@ -123,7 +150,7 @@ func (s *TestProvider) Clean() error {
 
 func (s *TestProvider) Check() error {
 	found := false
-	for _, rs := range s.service.GetProviders(s.ctx) {
+	for _, rs := range s.service.GetProviders() {
 		check, checkErr := rs.Check(s.ctx, s.connection)
 		if checkErr != nil {
 			s.ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
@@ -144,7 +171,7 @@ func (s *TestProvider) Check() error {
 }
 
 func (s *TestProvider) testCreateFolder() error {
-	for _, rs := range s.service.GetProviders(s.ctx) {
+	for _, rs := range s.service.GetProviders() {
 		check, checkErr := rs.Check(s.ctx, s.connection)
 		if checkErr != nil {
 			s.ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
@@ -163,7 +190,7 @@ func (s *TestProvider) testCreateFolder() error {
 }
 
 func (s *TestProvider) testFolderExists() error {
-	for _, rs := range s.service.GetProviders(s.ctx) {
+	for _, rs := range s.service.GetProviders() {
 		check, checkErr := rs.Check(s.ctx, s.connection)
 		if checkErr != nil {
 			s.ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
@@ -186,7 +213,7 @@ func (s *TestProvider) testFolderExists() error {
 }
 
 func (s *TestProvider) testDeleteFolder() error {
-	for _, rs := range s.service.GetProviders(s.ctx) {
+	for _, rs := range s.service.GetProviders() {
 		check, checkErr := rs.Check(s.ctx, s.connection)
 		if checkErr != nil {
 			s.ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
@@ -205,7 +232,7 @@ func (s *TestProvider) testDeleteFolder() error {
 }
 
 func (s *TestProvider) testPushFile() error {
-	for _, rs := range s.service.GetProviders(s.ctx) {
+	for _, rs := range s.service.GetProviders() {
 		check, checkErr := rs.Check(s.ctx, s.connection)
 		if checkErr != nil {
 			s.ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
@@ -242,7 +269,7 @@ func (s *TestProvider) testPushFile() error {
 }
 
 func (s *TestProvider) testFileChecksum() error {
-	for _, rs := range s.service.GetProviders(s.ctx) {
+	for _, rs := range s.service.GetProviders() {
 		check, checkErr := rs.Check(s.ctx, s.connection)
 		if checkErr != nil {
 			s.ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
@@ -268,7 +295,7 @@ func (s *TestProvider) testFileChecksum() error {
 }
 
 func (s *TestProvider) testPullFile() error {
-	for _, rs := range s.service.GetProviders(s.ctx) {
+	for _, rs := range s.service.GetProviders() {
 		check, checkErr := rs.Check(s.ctx, s.connection)
 		if checkErr != nil {
 			s.ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
@@ -312,7 +339,7 @@ func (s *TestProvider) testPullFile() error {
 }
 
 func (s *TestProvider) testFileExists() error {
-	for _, rs := range s.service.GetProviders(s.ctx) {
+	for _, rs := range s.service.GetProviders() {
 		check, checkErr := rs.Check(s.ctx, s.connection)
 		if checkErr != nil {
 			s.ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
@@ -335,7 +362,7 @@ func (s *TestProvider) testFileExists() error {
 }
 
 func (s *TestProvider) testDeleteFile() error {
-	for _, rs := range s.service.GetProviders(s.ctx) {
+	for _, rs := range s.service.GetProviders() {
 		check, checkErr := rs.Check(s.ctx, s.connection)
 		if checkErr != nil {
 			s.ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)

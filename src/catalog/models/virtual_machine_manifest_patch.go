@@ -10,7 +10,7 @@ type VirtualMachineCatalogManifestPatch struct {
 	Tags           []string                       `json:"tags"`
 	Provider       *CatalogManifestProvider       `json:"-"`
 	Connection     string                         `json:"connection"`
-	CleanupRequest *cleanupservice.CleanupRequest `json:"-"`
+	CleanupRequest *cleanupservice.CleanupService `json:"-"`
 	Errors         []error                        `json:"-"`
 }
 
@@ -20,7 +20,7 @@ func NewVirtualMachineCatalogPatch() *VirtualMachineCatalogManifestPatch {
 		RequiredClaims: []string{},
 		Tags:           []string{},
 		Errors:         []error{},
-		CleanupRequest: cleanupservice.NewCleanupRequest(),
+		CleanupRequest: cleanupservice.NewCleanupService(),
 	}
 }
 

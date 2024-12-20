@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"archive/tar"
-	"bufio"
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
@@ -20,8 +19,10 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/providers/aws_s3_bucket"
 	"github.com/Parallels/prl-devops-service/catalog/providers/azurestorageaccount"
 	"github.com/Parallels/prl-devops-service/catalog/providers/local"
+	"github.com/Parallels/prl-devops-service/compressor"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/notifications"
 
 	"github.com/cjlapao/common-go/helper"
 )
@@ -34,11 +35,17 @@ const (
 )
 
 type CatalogManifestService struct {
+	ns             *notifications.NotificationService
+	ctx            basecontext.ApiContext
 	remoteServices []interfaces.RemoteStorageService
 }
 
 func NewManifestService(ctx basecontext.ApiContext) *CatalogManifestService {
-	manifestService := &CatalogManifestService{}
+	manifestService := &CatalogManifestService{
+		ctx: ctx,
+		ns:  notifications.Get(),
+	}
+	// Adding remote services to the catalog service
 	manifestService.remoteServices = make([]interfaces.RemoteStorageService, 0)
 	manifestService.AddRemoteService(aws_s3_bucket.NewAwsS3Provider())
 	manifestService.AddRemoteService(local.NewLocalProvider())
@@ -47,8 +54,26 @@ func NewManifestService(ctx basecontext.ApiContext) *CatalogManifestService {
 	return manifestService
 }
 
-func (s *CatalogManifestService) GetProviders(ctx basecontext.ApiContext) []interfaces.RemoteStorageService {
+func (s *CatalogManifestService) GetProviders() []interfaces.RemoteStorageService {
 	return s.remoteServices
+}
+
+func (s *CatalogManifestService) GetProviderFromConnection(connectionString string) (interfaces.RemoteStorageService, error) {
+	for _, rs := range s.remoteServices {
+		check, checkErr := rs.Check(s.ctx, connectionString)
+		if checkErr != nil {
+			s.ns.NotifyErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
+			return nil, checkErr
+		}
+
+		if !check {
+			continue
+		}
+
+		return rs, nil
+	}
+
+	return nil, errors.NewWithCode("remote storage service was not found", 404)
 }
 
 func (s *CatalogManifestService) AddRemoteService(service interfaces.RemoteStorageService) {
@@ -67,13 +92,13 @@ func (s *CatalogManifestService) AddRemoteService(service interfaces.RemoteStora
 	s.remoteServices = append(s.remoteServices, service)
 }
 
-func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiContext, r *models.PushCatalogManifestRequest, manifest *models.VirtualMachineCatalogManifest) error {
-	ctx.LogInfof("Generating manifest content for %v", r.CatalogId)
+func (s *CatalogManifestService) GenerateManifestContent(r *models.PushCatalogManifestRequest, manifest *models.VirtualMachineCatalogManifest) error {
+	s.ns.NotifyInfof("Generating manifest content for %v", r.CatalogId)
 	if manifest == nil {
 		manifest = models.NewVirtualMachineCatalogManifest()
 	}
 
-	manifest.CleanupRequest = cleanupservice.NewCleanupRequest()
+	manifest.CleanupRequest = cleanupservice.NewCleanupService()
 	manifest.CreatedAt = helpers.GetUtcCurrentDateTime()
 	manifest.UpdatedAt = helpers.GetUtcCurrentDateTime()
 
@@ -109,15 +134,15 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 		return fmt.Errorf("the path %v is not a directory", r.LocalPath)
 	}
 
-	ctx.LogInfof("Getting manifest files for %v", r.CatalogId)
+	s.ns.NotifyInfof("Getting manifest files for %v", r.CatalogId)
 	files, err := s.getManifestFiles(r.LocalPath, "")
 	if err != nil {
 		return err
 	}
 
-	ctx.LogInfof("Compressing manifest files for %v", r.CatalogId)
+	s.ns.NotifyInfof("Compressing manifest files for %v", r.CatalogId)
 	s.sendPushStepInfo(r, "Compressing manifest files")
-	packFilePath, err := s.compressMachine(ctx, r.LocalPath, manifestPackFileName, "/tmp")
+	packFilePath, err := s.compressMachine(r.LocalPath, manifestPackFileName, "/tmp")
 	if err != nil {
 		return err
 	}
@@ -135,7 +160,7 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 	manifest.Size = fileInfo.Size()
 	manifest.PackSize = fileInfo.Size()
 
-	ctx.LogInfof("Getting manifest package checksum for %v", r.CatalogId)
+	s.ns.NotifyInfof("Getting manifest package checksum for %v", r.CatalogId)
 	checksum, err := helpers.GetFileMD5Checksum(packFilePath)
 	if err != nil {
 		return err
@@ -143,7 +168,7 @@ func (s *CatalogManifestService) GenerateManifestContent(ctx basecontext.ApiCont
 	manifest.CompressedChecksum = checksum
 
 	manifest.VirtualMachineContents = files
-	ctx.LogInfof("Finished generating manifest content for %v", r.CatalogId)
+	s.ns.NotifyInfof("Finished generating manifest content for %v", r.CatalogId)
 	return nil
 }
 
@@ -207,8 +232,12 @@ func (s *CatalogManifestService) readManifestFromFile(path string) (*models.Virt
 		return nil, err
 	}
 
+	return s.readManifestFromBytes(manifestBytes)
+}
+
+func (s *CatalogManifestService) readManifestFromBytes(value []byte) (*models.VirtualMachineCatalogManifest, error) {
 	manifest := &models.VirtualMachineCatalogManifest{}
-	err = json.Unmarshal(manifestBytes, manifest)
+	err := json.Unmarshal(value, manifest)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +267,7 @@ func (s *CatalogManifestService) getPackFilename(name string) string {
 	return name
 }
 
-func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, path string, machineFileName string, destination string) (string, error) {
+func (s *CatalogManifestService) compressMachine(path string, machineFileName string, destination string) (string, error) {
 	startingTime := time.Now()
 	tarFilename := machineFileName
 	tarFilePath := filepath.Join(destination, filepath.Clean(tarFilename))
@@ -268,7 +297,7 @@ func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, pat
 
 	compressed := 1
 	err = filepath.Walk(path, func(machineFilePath string, info os.FileInfo, err error) error {
-		ctx.LogInfof("[%v/%v] Compressing file %v", compressed, countFiles, machineFilePath)
+		s.ns.NotifyInfof("[%v/%v] Compressing file %v", compressed, countFiles, machineFilePath)
 		compressed += 1
 		if err != nil {
 			return err
@@ -303,7 +332,7 @@ func (s *CatalogManifestService) compressMachine(ctx basecontext.ApiContext, pat
 	}
 
 	endingTime := time.Now()
-	ctx.LogInfof("Finished compressing machine from %s to %s in %v", path, tarFilePath, endingTime.Sub(startingTime))
+	s.ns.NotifyInfof("Finished compressing machine from %s to %s in %v", path, tarFilePath, endingTime.Sub(startingTime))
 	return tarFilePath, nil
 }
 
@@ -368,164 +397,7 @@ func (s *CatalogManifestService) detectFileType(filepath string) (string, error)
 }
 
 func (s *CatalogManifestService) Unzip(ctx basecontext.ApiContext, machineFilePath string, destination string) error {
-	return s.decompressMachine(ctx, machineFilePath, destination)
-}
-
-func (s *CatalogManifestService) decompressMachine(ctx basecontext.ApiContext, machineFilePath string, destination string) error {
-	staringTime := time.Now()
-	filePath := filepath.Clean(machineFilePath)
-	compressedFile, err := os.Open(filePath)
-	if err != nil {
-		return err
-	}
-	defer compressedFile.Close()
-
-	fileType, err := s.detectFileType(filePath)
-	if err != nil {
-		return err
-	}
-
-	var fileReader io.Reader
-
-	switch fileType {
-	case "tar":
-		fileReader = compressedFile
-	case "gzip":
-		// Create a gzip reader
-		bufferReader := bufio.NewReader(compressedFile)
-		gzipReader, err := gzip.NewReader(bufferReader)
-		if err != nil {
-			return err
-		}
-		defer gzipReader.Close()
-		fileReader = gzipReader
-	case "tar.gz":
-		// Create a gzip reader
-		bufferReader := bufio.NewReader(compressedFile)
-		gzipReader, err := gzip.NewReader(bufferReader)
-		if err != nil {
-			return err
-		}
-		defer gzipReader.Close()
-		fileReader = gzipReader
-	}
-
-	tarReader := tar.NewReader(fileReader)
-	for {
-		header, err := tarReader.Next()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-
-			return err
-		}
-
-		machineFilePath, err := helpers.SanitizeArchivePath(destination, header.Name)
-		if err != nil {
-			return err
-		}
-
-		// Creating the basedir if it does not exist
-		baseDir := filepath.Dir(machineFilePath)
-		if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-			if err := os.MkdirAll(baseDir, 0o750); err != nil {
-				return err
-			}
-		}
-
-		switch header.Typeflag {
-		case tar.TypeDir:
-			ctx.LogDebugf("Directory type found for file %v (byte %v, rune %v)", machineFilePath, header.Typeflag, string(header.Typeflag))
-			if _, err := os.Stat(machineFilePath); os.IsNotExist(err) {
-				if err := os.MkdirAll(machineFilePath, os.FileMode(header.Mode)); err != nil {
-					return err
-				}
-			}
-		case tar.TypeReg:
-			ctx.LogDebugf("HardFile type found for file %v (byte %v, rune %v): size %v", machineFilePath, header.Typeflag, string(header.Typeflag), header.Size)
-			file, err := os.OpenFile(filepath.Clean(machineFilePath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(header.Mode))
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			if err := helpers.CopyTarChunks(file, tarReader, header.Size); err != nil {
-				return err
-			}
-		case tar.TypeGNUSparse:
-			ctx.LogDebugf("Sparse File type found for file %v (byte %v, rune %v): size %v", machineFilePath, header.Typeflag, string(header.Typeflag), header.Size)
-			file, err := os.OpenFile(filepath.Clean(machineFilePath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(header.Mode))
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			if err := helpers.CopyTarChunks(file, tarReader, header.Size); err != nil {
-				return err
-			}
-		case tar.TypeSymlink:
-			ctx.LogDebugf("Symlink File type found for file %v (byte %v, rune %v)", machineFilePath, header.Typeflag, string(header.Typeflag))
-			os.Symlink(header.Linkname, machineFilePath)
-			realLinkPath, err := filepath.EvalSymlinks(filepath.Join(destination, header.Linkname))
-			if err != nil {
-				ctx.LogWarnf("Error resolving symlink path: %v", header.Linkname)
-				if err := os.Remove(machineFilePath); err != nil {
-					return fmt.Errorf("failed to remove invalid symlink: %v", err)
-				}
-			} else {
-				relLinkPath, err := filepath.Rel(destination, realLinkPath)
-				if err != nil || strings.HasPrefix(filepath.Clean(relLinkPath), "..") {
-					return fmt.Errorf("invalid symlink path: %v", header.Linkname)
-				}
-				os.Symlink(realLinkPath, machineFilePath)
-			}
-		default:
-			ctx.LogWarnf("Unknown type found for file %v, ignoring (byte %v, rune %v)", machineFilePath, header.Typeflag, string(header.Typeflag))
-		}
-	}
-
-	endingTime := time.Now()
-	ctx.LogInfof("Finished decompressing machine from %s to %s, in %v", machineFilePath, destination, endingTime.Sub(staringTime))
-	return nil
-}
-
-func handleSparseFile(header *tar.Header, tarReader *tar.Reader, destDir string) error {
-	outFile, err := os.Create(destDir + "/" + header.Name)
-	if err != nil {
-		return fmt.Errorf("error creating file: %v", err)
-	}
-	defer outFile.Close()
-
-	fmt.Printf("Writing sparse file: %s (%d bytes)\n", header.Name, header.Size)
-
-	// Copy exactly the size of the sparse file
-	if _, err := io.CopyN(outFile, tarReader, header.Size); err != nil && err != io.EOF {
-		return fmt.Errorf("error writing sparse file content: %v", err)
-	}
-	return nil
-}
-
-func handleRegularFile(header *tar.Header, tarReader *tar.Reader, destDir string) error {
-	outFile, err := os.Create(destDir + "/" + header.Name)
-	if err != nil {
-		return fmt.Errorf("error creating file: %v", err)
-	}
-	defer outFile.Close()
-
-	fmt.Printf("Writing regular file: %s (%d bytes)\n", header.Name, header.Size)
-
-	// Copy exactly the size of the regular file
-	if _, err := io.CopyN(outFile, tarReader, header.Size); err != nil && err != io.EOF {
-		return fmt.Errorf("error writing file content: %v", err)
-	}
-	return nil
-}
-
-func (s *CatalogManifestService) sendPullStepInfo(r *models.PullCatalogManifestRequest, msg string) {
-	if r.StepChannel != nil {
-		r.StepChannel <- msg
-	}
+	return compressor.DecompressFile(ctx, machineFilePath, destination)
 }
 
 func (s *CatalogManifestService) sendPushStepInfo(r *models.PushCatalogManifestRequest, msg string) {

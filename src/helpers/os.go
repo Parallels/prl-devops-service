@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"archive/tar"
 	"bytes"
 	"context"
 	"crypto/md5"  // #nosec G501 This is not a cryptographic function, it is used to calculate a file checksum
@@ -307,28 +306,6 @@ func GetFileMD5Checksum(path string) (string, error) {
 	return checksum, nil
 }
 
-func CopyTarChunks(file *os.File, reader *tar.Reader, fileSize int64) error {
-	// extractedSize := int64(0)
-	// lastPrintTime := time.Now()
-	for {
-		_, err := io.CopyN(file, reader, 1024)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
-		}
-		// extractedSize += 1024
-		// percentage := float64(extractedSize) / float64(fileSize) * 100
-		// if time.Since(lastPrintTime) >= 10*time.Second {
-		// 	fmt.Printf("\rExtracted: %.2f%%", percentage)
-		// 	lastPrintTime = time.Now()
-		// }
-	}
-
-	return nil
-}
-
 // FileExists Checks if a file/directory exists
 func FileExists(path string) bool {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -506,4 +483,42 @@ func copyFileContents(src, dst string) (err error) {
 	}
 	err = out.Sync()
 	return
+}
+
+func DirSize(folderPath string) (int64, error) {
+	var folderSize int64
+
+	err := filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			// Add file size to folder size
+			folderSize += info.Size()
+		}
+		return nil
+	})
+	if err != nil {
+		return -1, fmt.Errorf("failed to calculate directory size: %w", err)
+	}
+
+	// Convert size to MB
+	folderSizeInMB := folderSize / (1024 * 1024)
+	return folderSizeInMB, nil
+}
+
+func WaitForFileData(filePath string, minSize int64, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		info, err := os.Stat(filePath)
+		if err == nil {
+			if info.Size() >= minSize {
+				return nil
+			}
+		}
+
+		// Sleep briefly before checking again
+		time.Sleep(100 * time.Millisecond)
+	}
+	return fmt.Errorf("timeout waiting for at least %d bytes in file %s", minSize, filePath)
 }

@@ -80,7 +80,7 @@ func (p *PDFileService) runPush(ctx basecontext.ApiContext) (interface{}, *diagn
 	}()
 
 	manifest := catalog.NewManifestService(ctx)
-	resultManifest := manifest.Push(ctx, &body)
+	resultManifest := manifest.Push(&body)
 	if resultManifest.HasErrors() {
 		errorMessage := "Error pushing manifest:"
 		for _, err := range resultManifest.Errors {

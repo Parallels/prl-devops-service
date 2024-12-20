@@ -125,3 +125,7 @@ func ObfuscateString(value string) string {
 
 	return value[0:2] + "****" + value[len(value)-2:]
 }
+
+func ClearLine() {
+	fmt.Printf("\r\033[K")
+}

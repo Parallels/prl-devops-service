@@ -43,13 +43,13 @@ type ImportCatalogManifestResponse struct {
 	LocalPath      string                         `json:"local_path"`
 	MachineName    string                         `json:"machine_name"`
 	Manifest       *VirtualMachineCatalogManifest `json:"manifest"`
-	CleanupRequest *cleanupservice.CleanupRequest `json:"-"`
+	CleanupRequest *cleanupservice.CleanupService `json:"-"`
 	Errors         []error                        `json:"-"`
 }
 
 func NewImportCatalogManifestResponse() *ImportCatalogManifestResponse {
 	return &ImportCatalogManifestResponse{
-		CleanupRequest: cleanupservice.NewCleanupRequest(),
+		CleanupRequest: cleanupservice.NewCleanupService(),
 	}
 }
 

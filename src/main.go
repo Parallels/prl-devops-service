@@ -39,10 +39,10 @@ var ver = "0.9.12"
 //	@in							header
 //	@name						X-Api-Key
 
-//	@securityDefinitions.apikey	BearerAuth
-//	@description				Type "Bearer" followed by a space and JWT token.
-//	@in							header
-//	@name						Authorization
+// @securityDefinitions.apikey	BearerAuth
+// @description				Type "Bearer" followed by a space and JWT token.
+// @in							header
+// @name						Authorization
 func main() {
 	// catching all of the exceptions
 	defer func() {
@@ -79,6 +79,16 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	ctx := basecontext.NewRootBaseContext()
+	enableLogToFile := os.Getenv(constants.LOG_TO_FILE_ENV_VAR)
+	if enableLogToFile == "true" {
+		logFilename := "prldevops.log"
+		executable, err := os.Executable()
+		if err == nil && !strings.Contains(executable, "__debug") {
+			logFilename = executable + ".log"
+		}
+		ctx.EnableLogFile(logFilename)
+	}
+
 	go func() {
 		<-c
 		cfg := config.Get()

@@ -329,6 +329,7 @@ func DtoCatalogManifestToApi(m data_models.CatalogManifest) models.CatalogManife
 		RevokedAt:          m.RevokedAt,
 		RevokedBy:          m.RevokedBy,
 		PackSize:           m.PackSize,
+		Size:               m.Size,
 		DownloadCount:      m.DownloadCount,
 		IsCompressed:       m.IsCompressed,
 	}
@@ -433,6 +434,10 @@ func ApiCatalogManifestToCatalogManifest(m models.CatalogManifest) catalog_model
 			ApiKey:   m.Provider.ApiKey,
 			Meta:     m.Provider.Meta,
 		}
+
+		if data.Provider.Meta == nil {
+			data.Provider.Meta = make(map[string]string)
+		}
 	}
 
 	if m.PackContents != nil {
@@ -444,9 +449,6 @@ func ApiCatalogManifestToCatalogManifest(m models.CatalogManifest) catalog_model
 				Path:  item.Path,
 			})
 		}
-	}
-	if data.Provider.Meta == nil {
-		data.Provider.Meta = make(map[string]string)
 	}
 
 	return data
@@ -468,7 +470,7 @@ func BaseImportVmResponseToApi(m catalog_models.ImportVmResponse) models.ImportV
 	return data
 }
 
-func BaseVirtualMachineCatalogManifestListToApi(m catalog_models.VirtualMachineCatalogManifestList) models.VirtualMachineCatalogManifestList {
+func BaseVirtualMachineCatalogManifestListToApi(m catalog_models.CachedManifests) models.VirtualMachineCatalogManifestList {
 	data := models.VirtualMachineCatalogManifestList{
 		TotalSize: m.TotalSize,
 		Manifests: BaseVirtualMachineCatalogManifestsToApi(m.Manifests),
@@ -511,7 +513,7 @@ func BaseVirtualMachineCatalogManifestToApi(m catalog_models.VirtualMachineCatal
 		RevokedAt:               m.RevokedAt,
 		RevokedBy:               m.RevokedBy,
 		MinimumSpecRequirements: BaseMinimumSpecRequirementToApi(m.MinimumSpecRequirements),
-		CacheDate:               m.CacheDate,
+		CacheDate:               m.CachedDate,
 		CacheLocalFullPath:      m.CacheLocalFullPath,
 		CacheMetadataName:       m.CacheMetadataName,
 		CacheFileName:           m.CacheFileName,
