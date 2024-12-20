@@ -45,13 +45,15 @@ type VirtualMachineCatalogManifest struct {
 	RevokedAt               string                              `json:"revoked_at"`
 	RevokedBy               string                              `json:"revoked_by"`
 	MinimumSpecRequirements *MinimumSpecRequirement             `json:"minimum_requirements,omitempty"`
-	CacheDate               string                              `json:"cache_date,omitempty"`
+	CachedDate              string                              `json:"cached_date,omitempty"`
+	CacheLastUsed           string                              `json:"cache_last_used,omitempty"`
+	CacheUsedCount          int64                               `json:"cache_used_count,omitempty"`
 	CacheLocalFullPath      string                              `json:"cache_local_path,omitempty"`
 	CacheMetadataName       string                              `json:"cache_metadata_name,omitempty"`
 	CacheFileName           string                              `json:"cache_file_name,omitempty"`
 	CacheType               string                              `json:"cache_type,omitempty"`
 	CacheSize               int64                               `json:"cache_size,omitempty"`
-	CleanupRequest          *cleanupservice.CleanupRequest      `json:"-"`
+	CleanupRequest          *cleanupservice.CleanupService      `json:"-"`
 	Errors                  []error                             `json:"-"`
 }
 
@@ -60,7 +62,7 @@ func NewVirtualMachineCatalogManifest() *VirtualMachineCatalogManifest {
 		Provider:               &CatalogManifestProvider{},
 		VirtualMachineContents: []VirtualMachineManifestContentItem{},
 		Errors:                 []error{},
-		CleanupRequest:         cleanupservice.NewCleanupRequest(),
+		CleanupRequest:         cleanupservice.NewCleanupService(),
 	}
 }
 
@@ -160,9 +162,4 @@ func (t VirtualMachineManifestArchitectureType) MarshalJSON() ([]byte, error) {
 func (t *VirtualMachineManifestArchitectureType) UnmarshalJSON(b []byte) error {
 	*t = VirtualMachineManifestArchitectureType(b)
 	return nil
-}
-
-type VirtualMachineCatalogManifestList struct {
-	TotalSize int64                           `json:"total_size"`
-	Manifests []VirtualMachineCatalogManifest `json:"manifests"`
 }

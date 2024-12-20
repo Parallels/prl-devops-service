@@ -13,6 +13,7 @@ import (
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/constants"
 	api_models "github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/notifications"
 	"github.com/Parallels/prl-devops-service/pdfile/diagnostics"
 	"github.com/Parallels/prl-devops-service/pdfile/models"
 	"github.com/Parallels/prl-devops-service/security"
@@ -25,17 +26,8 @@ import (
 func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagnostics.PDFileDiagnostics) {
 	ctx.DisableLog()
 	serviceprovider.InitServices(ctx)
-
-	progressChannel := make(chan int)
-	fileNameChannel := make(chan string)
-	stepChannel := make(chan string)
-
-	defer close(progressChannel)
-	defer close(fileNameChannel)
-
-	progress := 0
-	currentProgress := 0
-	fileName := ""
+	ns := notifications.Get()
+	ns.EnableSingleLineOutput()
 
 	diag := diagnostics.NewPDFileDiagnostics()
 
@@ -45,18 +37,15 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 	}
 
 	body := catalog_models.PullCatalogManifestRequest{
-		CatalogId:       p.pdfile.CatalogId,
-		Version:         p.pdfile.Version,
-		Architecture:    p.pdfile.Architecture,
-		Owner:           p.pdfile.Owner,
-		MachineName:     p.pdfile.MachineName,
-		Path:            p.pdfile.Destination,
-		Connection:      p.pdfile.GetHostConnection(),
-		StartAfterPull:  p.pdfile.StartAfterPull,
-		AmplitudeEvent:  p.pdfile.Client,
-		ProgressChannel: progressChannel,
-		FileNameChannel: fileNameChannel,
-		StepChannel:     stepChannel,
+		CatalogId:      p.pdfile.CatalogId,
+		Version:        p.pdfile.Version,
+		Architecture:   p.pdfile.Architecture,
+		Owner:          p.pdfile.Owner,
+		MachineName:    p.pdfile.MachineName,
+		Path:           p.pdfile.Destination,
+		Connection:     p.pdfile.GetHostConnection(),
+		StartAfterPull: p.pdfile.StartAfterPull,
+		AmplitudeEvent: p.pdfile.Client,
 	}
 
 	if p.pdfile.Clone {
@@ -99,34 +88,7 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		}
 	}
 
-	go func() {
-		for {
-			fileName = <-fileNameChannel
-		}
-	}()
-
-	// Printing Steps
-	go func() {
-		for {
-			step := <-stepChannel
-			clearLine()
-			fmt.Printf("\r%s", step)
-		}
-	}()
-
-	// Printing Download Progress
-	go func() {
-		for {
-			currentProgress = <-progressChannel
-			if currentProgress > progress {
-				progress = currentProgress
-				clearLine()
-				fmt.Printf("\rDownloading %s: %d%%", fileName, progress)
-			}
-		}
-	}()
-
-	resultManifest := manifest.Pull(ctx, &body)
+	resultManifest := manifest.Pull(&body)
 	if resultManifest.HasErrors() {
 		errorMessage := "Error pulling manifest:"
 		for _, err := range resultManifest.Errors {

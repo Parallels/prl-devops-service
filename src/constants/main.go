@@ -85,6 +85,7 @@ const (
 	ENABLE_REVERSE_PROXY_ENV_VAR                = "ENABLE_REVERSE_PROXY"
 	REVERSE_PROXY_PORT_ENV_VAR                  = "REVERSE_PROXY_PORT"
 	REVERSE_PROXY_HOST_ENV_VAR                  = "REVERSE_PROXY_HOST"
+	LOG_TO_FILE_ENV_VAR                         = "PRL_DEVOPS_LOG_TO_FILE"
 )
 
 const (

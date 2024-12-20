@@ -30,9 +30,26 @@ func processTestProviders(ctx basecontext.ApiContext, cmd string) {
 		}
 		cSrv := catalog.NewManifestService(rootctx)
 		cSrv.Unzip(rootctx, filename, destination)
+	case "push-file":
+		rootctx := basecontext.NewBaseContext()
+		filename := helper.GetFlagValue("file_path", "")
+		targetPath := helper.GetFlagValue("target_path", "")
+		targetFilename := helper.GetFlagValue("target_filename", "")
+		if err := tests.TestCatalogProvidersPushFile(rootctx, filename, targetPath, targetFilename); err != nil {
+			ctx.LogErrorf(err.Error())
+			os.Exit(1)
+		}
+	case "catalog-cache":
+		cacheSubcommand := helper.GetCommandAt(2)
+		switch cacheSubcommand {
+		case "is-cached":
+			if err := tests.TestIsCached(); err != nil {
+				ctx.LogErrorf(err.Error())
+				os.Exit(1)
+			}
+		}
 	default:
 		processHelp(constants.TEST_COMMAND)
-
 	}
 
 	os.Exit(0)

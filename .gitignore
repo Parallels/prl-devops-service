@@ -22,3 +22,5 @@ super-linter.log
 demo/
 _site/
 .vscode/
+*.log.*
+*.log

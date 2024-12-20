@@ -1,8 +1,8 @@
 module github.com/Parallels/prl-devops-service
 
-go 1.21
+go 1.22
 
-toolchain go1.22.1
+toolchain go1.22.0
 
 require (
 	github.com/Azure/azure-storage-blob-go v0.15.0
@@ -11,7 +11,7 @@ require (
 	github.com/briandowns/spinner v1.23.0
 	github.com/cjlapao/common-go v0.0.39
 	github.com/cjlapao/common-go-cryptorand v0.0.6
-	github.com/cjlapao/common-go-logger v0.0.7
+	github.com/cjlapao/common-go-logger v0.0.9
 	github.com/go-jose/go-jose/v4 v4.0.2
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt/v4 v4.5.1
@@ -24,6 +24,7 @@ require (
 	github.com/swaggo/swag v1.16.3
 	golang.org/x/crypto v0.21.0
 	golang.org/x/sys v0.18.0
+	golang.org/x/text v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -84,7 +85,6 @@ require (
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

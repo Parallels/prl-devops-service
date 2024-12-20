@@ -89,13 +89,13 @@ type PullCatalogManifestResponse struct {
 	MachineName    string                         `json:"machine_name,omitempty"`
 	Manifest       *VirtualMachineCatalogManifest `json:"manifest,omitempty"`
 	LocalCachePath string                         `json:"local_cache_path,omitempty"`
-	CleanupRequest *cleanupservice.CleanupRequest `json:"-"`
+	CleanupRequest *cleanupservice.CleanupService `json:"-"`
 	Errors         []error                        `json:"-"`
 }
 
 func NewPullCatalogManifestResponse() *PullCatalogManifestResponse {
 	return &PullCatalogManifestResponse{
-		CleanupRequest: cleanupservice.NewCleanupRequest(),
+		CleanupRequest: cleanupservice.NewCleanupService(),
 		Errors:         []error{},
 	}
 }

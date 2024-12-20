@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/writers"
 )
 
 var globalDownloadService *DownloadService
@@ -36,7 +36,7 @@ func NewDownloadService() *DownloadService {
 	return globalDownloadService
 }
 
-func (s *DownloadService) DownloadFile(url string, headers map[string]string, destination string, progressReporter *helpers.ProgressReporter) error {
+func (s *DownloadService) DownloadFile(url string, headers map[string]string, destination string, progressReporter *writers.ProgressReporter) error {
 	file, err := os.Create(filepath.Clean(destination))
 	if err != nil {
 		return err
@@ -44,7 +44,7 @@ func (s *DownloadService) DownloadFile(url string, headers map[string]string, de
 	defer file.Close()
 	var progressWriter io.Writer
 	if progressReporter != nil {
-		progressWriter = helpers.NewProgressWriter(file, progressReporter.Size, progressReporter.Progress)
+		progressWriter = writers.NewProgressWriter(file, progressReporter.Size)
 	} else {
 		progressWriter = file
 	}
@@ -93,4 +93,56 @@ func (s *DownloadService) DownloadFile(url string, headers map[string]string, de
 	}
 
 	return nil
+}
+
+func (s *DownloadService) DownloadFileToBytes(url string, headers map[string]string, progressReporter *writers.ProgressReporter) ([]byte, error) {
+	var data []byte
+	start := 0
+	for {
+		request, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		for key, value := range headers {
+			request.Header.Add(key, value)
+		}
+		request.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", start, start+s.ChunkSize-1))
+
+		var res *http.Response
+		for i := 0; i < s.Retries; i++ {
+			res, err = http.DefaultClient.Do(request)
+			if err == nil && (res.StatusCode == http.StatusOK || res.StatusCode == http.StatusPartialContent) {
+				break
+			}
+			time.Sleep(time.Second * time.Duration(i*i))
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusPartialContent {
+			return nil, fmt.Errorf("HTTP request failed with status code %d", res.StatusCode)
+		}
+
+		chunk, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		data = append(data, chunk...)
+
+		if err := res.Body.Close(); err != nil {
+			return nil, err
+		}
+
+		if res.ContentLength < int64(s.ChunkSize) {
+			break
+		}
+
+		start += s.ChunkSize
+	}
+
+	return data, nil
 }

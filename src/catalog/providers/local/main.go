@@ -37,6 +37,10 @@ func (s *LocalProvider) Name() string {
 	return providerName
 }
 
+func (s *LocalProvider) CanStream() bool {
+	return false
+}
+
 func (s *LocalProvider) GetProviderMeta(ctx basecontext.ApiContext) map[string]string {
 	result := map[string]string{
 		common.PROVIDER_VAR_NAME: providerName,
@@ -149,6 +153,66 @@ func (s *LocalProvider) PullFile(ctx basecontext.ApiContext, path, filename, des
 	}
 
 	return nil
+}
+
+func (s *LocalProvider) PullFileAndDecompress(ctx basecontext.ApiContext, path, filename, destination string) error {
+	srcPath := filepath.Join(path, filename)
+	destPath := filepath.Join(destination, filename)
+	if !strings.HasPrefix(srcPath, s.Config.Path) {
+		srcPath = filepath.Join(s.Config.Path, srcPath)
+	}
+
+	srcFile, err := os.Open(filepath.Clean(srcPath))
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	destFile, err := os.Create(filepath.Clean(destPath))
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, srcFile)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *LocalProvider) PullFileToMemory(ctx basecontext.ApiContext, path string, filename string) ([]byte, error) {
+	ctx.LogInfof("Pulling file %s", filename)
+	maxFileSize := 0.5 * 1024 * 1024 // 0.5MB
+
+	srcPath := filepath.Join(path, filename)
+	if !strings.HasPrefix(srcPath, s.Config.Path) {
+		srcPath = filepath.Join(s.Config.Path, srcPath)
+	}
+
+	srcFile, err := os.Open(filepath.Clean(srcPath))
+	if err != nil {
+		return nil, err
+	}
+	defer srcFile.Close()
+
+	fileInfo, err := srcFile.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	if fileInfo.Size() > int64(maxFileSize) {
+		return nil, errors.New("file is too large to be read into memory")
+	}
+
+	fileContent := make([]byte, fileInfo.Size())
+	_, err = srcFile.Read(fileContent)
+	if err != nil {
+		return nil, err
+	}
+
+	return fileContent, nil
 }
 
 func (s *LocalProvider) DeleteFile(ctx basecontext.ApiContext, path string, fileName string) error {

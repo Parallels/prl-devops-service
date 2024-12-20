@@ -36,9 +36,11 @@
       "envFile": "${workspaceFolder}/.env",
       "args": [
         "test",
-        "unzip",
-        "--zip-file=/Volumes/local_storage_m2/test.pvm",
-        "--destination=/Volumes/local_storage_m2/test_folder_devops",
+        "catalog-cache",
+        "is-cached",
+        "--file_path=/Users/cjlapao/Downloads",
+        "--target_path=dropbox/test_machine/macos",
+        "--target_filename=21de185744bf519e687cdf12f62b1c741371cdfa5e747b029056710e5b8c57fe-1.pvm"
       ]
     },
     {

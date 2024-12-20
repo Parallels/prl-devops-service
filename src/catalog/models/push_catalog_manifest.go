@@ -15,6 +15,7 @@ var (
 	ErrMissingArchitecture      = errors.NewWithCode("missing architecture", 400)
 	ErrInvalidArchitecture      = errors.NewWithCode("invalid architecture, needs to be either x86_64 or arm64", 400)
 	ErrMissingMachineRemotePath = errors.NewWithCode("missing machine remote path", 400)
+	ErrMissingSize              = errors.NewWithCode("missing size", 400)
 )
 
 type PushCatalogManifestRequest struct {

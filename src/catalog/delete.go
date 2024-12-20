@@ -12,13 +12,16 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
-func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId string, version string, architecture string) error {
+func (s *CatalogManifestService) Delete(catalogId string, version string, architecture string) error {
+	if s.ctx == nil {
+		s.ctx = basecontext.NewRootBaseContext()
+	}
 	executed := false
 	db := serviceprovider.Get().JsonDatabase
 	if db == nil {
 		return errors.New("no database connection")
 	}
-	if err := db.Connect(ctx); err != nil {
+	if err := db.Connect(s.ctx); err != nil {
 		return err
 	}
 
@@ -26,7 +29,7 @@ func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId st
 	cleanItems := make([]models.VirtualMachineCatalogManifest, 0)
 
 	if version == "" {
-		dbManifest, err := db.GetCatalogManifestsByCatalogId(ctx, catalogId)
+		dbManifest, err := db.GetCatalogManifestsByCatalogId(s.ctx, catalogId)
 		if err != nil && err.Error() != "catalog manifest not found" {
 			return err
 		} else {
@@ -35,7 +38,7 @@ func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId st
 			}
 		}
 	} else if version != "" && architecture == "" {
-		dbManifest, err := db.GetCatalogManifestsByCatalogIdAndVersion(ctx, catalogId, version)
+		dbManifest, err := db.GetCatalogManifestsByCatalogIdAndVersion(s.ctx, catalogId, version)
 		if err != nil && err.Error() != "catalog manifest not found" {
 			return err
 		} else {
@@ -44,7 +47,7 @@ func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId st
 			}
 		}
 	} else if version != "" && architecture != "" {
-		dbManifest, err := db.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, catalogId, version, architecture)
+		dbManifest, err := db.GetCatalogManifestsByCatalogIdVersionAndArch(s.ctx, catalogId, version, architecture)
 		if err != nil && err.Error() != "catalog manifest not found" {
 			return err
 		}
@@ -56,10 +59,10 @@ func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId st
 		return errors.Newf("no catalog manifest found for id %s", catalogId)
 	}
 
-	cleanupService := cleanupservice.NewCleanupRequest()
+	cleanupService := cleanupservice.NewCleanupService()
 	var foundCatalogIds []db_models.CatalogManifest = make([]db_models.CatalogManifest, 0)
 
-	allManifestForCatalogId, _ := db.GetCatalogManifestsByCatalogId(ctx, catalogId)
+	allManifestForCatalogId, _ := db.GetCatalogManifestsByCatalogId(s.ctx, catalogId)
 	shouldCleanMainFolder := false
 
 	if len(allManifestForCatalogId) > 0 {
@@ -84,9 +87,9 @@ func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId st
 
 	for _, cleanItem := range cleanItems {
 		for _, rs := range s.remoteServices {
-			check, checkErr := rs.Check(ctx, cleanItem.Provider.String())
+			check, checkErr := rs.Check(s.ctx, cleanItem.Provider.String())
 			if checkErr != nil {
-				ctx.LogErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
+				s.ns.NotifyErrorf("Error checking remote service %v: %v", rs.Name(), checkErr)
 				return checkErr
 			}
 
@@ -108,7 +111,7 @@ func (s *CatalogManifestService) Delete(ctx basecontext.ApiContext, catalogId st
 		return errors.Newf("no remote service found for connection  %s", connectionString)
 	}
 
-	if cleanupErrors := cleanupService.Clean(ctx); len(cleanupErrors) > 0 {
+	if cleanupErrors := cleanupService.Clean(s.ctx); len(cleanupErrors) > 0 {
 		return errors.Newf("error cleaning up files: %v", cleanupErrors)
 	}
 

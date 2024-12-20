@@ -9,6 +9,7 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/notifications"
 	"github.com/Parallels/prl-devops-service/orchestrator"
 	"github.com/Parallels/prl-devops-service/reverse_proxy"
 	bruteforceguard "github.com/Parallels/prl-devops-service/security/brute_force_guard"
@@ -28,6 +29,8 @@ const (
 func Init(ctx basecontext.ApiContext) {
 	cfg := config.New(ctx)
 	cfg.Load()
+
+	_ = notifications.New(ctx)
 
 	password.New(ctx)
 	jwt.New(ctx)

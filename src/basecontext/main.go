@@ -4,13 +4,12 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/models"
 	log "github.com/cjlapao/common-go-logger"
 )
 
-var Logger = log.Get().WithTimestamp()
+var logger = log.Get().WithTimestamp()
 
 type BaseContext struct {
 	shouldLog   bool
@@ -115,7 +114,11 @@ func (c *BaseContext) DisableLog() {
 }
 
 func (c *BaseContext) ToggleLogTimestamps(value bool) {
-	common.Logger.EnableTimestamp(value)
+	logger.EnableTimestamp(value)
+}
+
+func (c *BaseContext) EnableLogFile(filename string) {
+	logger.AddFileLogger(filename)
 }
 
 func (c *BaseContext) LogInfof(format string, a ...interface{}) {
@@ -130,7 +133,7 @@ func (c *BaseContext) LogInfof(format string, a ...interface{}) {
 	}
 
 	msg += format
-	common.Logger.Info(msg, a...)
+	logger.Info(msg, a...)
 }
 
 func (c *BaseContext) LogErrorf(format string, a ...interface{}) {
@@ -144,7 +147,7 @@ func (c *BaseContext) LogErrorf(format string, a ...interface{}) {
 		msg = "[" + c.GetRequestId() + "] "
 	}
 	msg += format
-	common.Logger.Error(msg, a...)
+	logger.Error(msg, a...)
 }
 
 func (c *BaseContext) LogDebugf(format string, a ...interface{}) {
@@ -157,7 +160,7 @@ func (c *BaseContext) LogDebugf(format string, a ...interface{}) {
 		msg = "[" + c.GetRequestId() + "] "
 	}
 	msg += format
-	common.Logger.Debug(msg, a...)
+	logger.Debug(msg, a...)
 }
 
 func (c *BaseContext) LogWarnf(format string, a ...interface{}) {
@@ -171,7 +174,7 @@ func (c *BaseContext) LogWarnf(format string, a ...interface{}) {
 		msg = "[" + c.GetRequestId() + "] "
 	}
 	msg += format
-	common.Logger.Warn(msg, a...)
+	logger.Warn(msg, a...)
 }
 
 func (c *BaseContext) LogTracef(format string, a ...interface{}) {
@@ -185,5 +188,5 @@ func (c *BaseContext) LogTracef(format string, a ...interface{}) {
 		msg = "[" + c.GetRequestId() + "] "
 	}
 	msg += format
-	common.Logger.Trace(msg, a...)
+	logger.Trace(msg, a...)
 }

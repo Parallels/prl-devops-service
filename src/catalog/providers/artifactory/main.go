@@ -9,8 +9,8 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/common"
-	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/serviceprovider/download"
+	"github.com/Parallels/prl-devops-service/writers"
 	"github.com/jfrog/jfrog-client-go/artifactory"
 	"github.com/jfrog/jfrog-client-go/artifactory/auth"
 	"github.com/jfrog/jfrog-client-go/artifactory/services"
@@ -40,6 +40,10 @@ func NewArtifactoryProvider() *ArtifactoryProvider {
 
 func (s *ArtifactoryProvider) Name() string {
 	return providerName
+}
+
+func (s *ArtifactoryProvider) CanStream() bool {
+	return false
 }
 
 func (s *ArtifactoryProvider) GetProviderMeta(ctx basecontext.ApiContext) map[string]string {
@@ -169,13 +173,77 @@ func (s *ArtifactoryProvider) PullFile(ctx basecontext.ApiContext, path string, 
 	if err != nil {
 		return err
 	}
-	progressReporter := helpers.NewProgressReporter(fileSize, s.ProgressChannel)
+	progressReporter := writers.NewProgressReporter(fileSize, s.ProgressChannel)
 	err = downloadSrv.DownloadFile(url, headers, destinationFilePath, progressReporter)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (s *ArtifactoryProvider) PullFileAndDecompress(ctx basecontext.ApiContext, path string, filename string, destination string) error {
+	ctx.LogInfof("[%s] Pulling file %s", s.Name(), filename)
+	destinationFilePath := filepath.Join(destination, filename)
+	remoteFilePath := filepath.Join(s.Repo.RepoName, path, filename)
+	remoteFilePath = strings.TrimPrefix(remoteFilePath, "/")
+	remoteFilePath = strings.TrimSuffix(remoteFilePath, "/")
+
+	host := s.getHost()
+
+	url := fmt.Sprintf("%s/%s", host, remoteFilePath)
+
+	downloadSrv := download.NewDownloadService()
+	headers := make(map[string]string, 0)
+	headers["X-JFrog-Art-Api"] = s.Repo.ApiKey
+	headers["Content-Type"] = "application/json"
+
+	fileSize, err := s.GetFileSize(ctx, path, filename)
+	if err != nil {
+		return err
+	}
+	progressReporter := writers.NewProgressReporter(fileSize, s.ProgressChannel)
+	err = downloadSrv.DownloadFile(url, headers, destinationFilePath, progressReporter)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *ArtifactoryProvider) PullFileToMemory(ctx basecontext.ApiContext, path string, filename string) ([]byte, error) {
+	ctx.LogInfof("[%s] Pulling file %s", s.Name(), filename)
+	maxFileSize := 0.5 * 1024 * 1024 // 0.5MB
+
+	remoteFilePath := filepath.Join(s.Repo.RepoName, path, filename)
+	remoteFilePath = strings.TrimPrefix(remoteFilePath, "/")
+	remoteFilePath = strings.TrimSuffix(remoteFilePath, "/")
+
+	host := s.getHost()
+
+	url := fmt.Sprintf("%s/%s", host, remoteFilePath)
+
+	downloadSrv := download.NewDownloadService()
+	headers := make(map[string]string, 0)
+	headers["X-JFrog-Art-Api"] = s.Repo.ApiKey
+	headers["Content-Type"] = "application/json"
+
+	fileSize, err := s.GetFileSize(ctx, path, filename)
+	if err != nil {
+		return nil, err
+	}
+
+	if fileSize > int64(maxFileSize) {
+		return nil, fmt.Errorf("file size is too large to pull to memory")
+	}
+
+	progressReporter := writers.NewProgressReporter(fileSize, s.ProgressChannel)
+	data, err := downloadSrv.DownloadFileToBytes(url, headers, progressReporter)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 func (s *ArtifactoryProvider) DeleteFile(ctx basecontext.ApiContext, path string, fileName string) error {

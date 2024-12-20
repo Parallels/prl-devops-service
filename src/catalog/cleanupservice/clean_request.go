@@ -5,26 +5,26 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/interfaces"
 )
 
-type CleanupRequest struct {
+type CleanupService struct {
 	RemoteStorageService interfaces.RemoteStorageService `json:"provider"`
 	Operations           []CleanupOperation              `json:"operations"`
 }
 
-func NewCleanupRequest() *CleanupRequest {
-	return &CleanupRequest{
+func NewCleanupService() *CleanupService {
+	return &CleanupService{
 		Operations: []CleanupOperation{},
 	}
 }
 
-func (r *CleanupRequest) NeedsCleanup() bool {
+func (r *CleanupService) NeedsCleanup() bool {
 	return len(r.Operations) > 0
 }
 
-func (r *CleanupRequest) AddCleanupOperation(operation CleanupOperation) {
+func (r *CleanupService) AddCleanupOperation(operation CleanupOperation) {
 	r.Operations = append(r.Operations, operation)
 }
 
-func (r *CleanupRequest) Clean(ctx basecontext.ApiContext) []error {
+func (r *CleanupService) Clean(ctx basecontext.ApiContext) []error {
 	errors := []error{}
 	for _, operation := range r.Operations {
 		_ = operation.Clean(ctx)
@@ -36,7 +36,7 @@ func (r *CleanupRequest) Clean(ctx basecontext.ApiContext) []error {
 	return errors
 }
 
-func (r *CleanupRequest) AddLocalFileCleanupOperation(filePath string, isFolder bool) {
+func (r *CleanupService) AddLocalFileCleanupOperation(filePath string, isFolder bool) {
 	r.Operations = append(r.Operations, CleanupOperation{
 		FilePath:    filePath,
 		IsDirectory: isFolder,
@@ -44,7 +44,15 @@ func (r *CleanupRequest) AddLocalFileCleanupOperation(filePath string, isFolder 
 	})
 }
 
-func (r *CleanupRequest) AddRemoteFileCleanupOperation(filePath string, isFolder bool) {
+func (r *CleanupService) RemoveLocalFileCleanupOperation(filePath string) {
+	for i, operation := range r.Operations {
+		if operation.FilePath == filePath && operation.Type == CleanupOperationTypeLocal {
+			r.Operations = append(r.Operations[:i], r.Operations[i+1:]...)
+		}
+	}
+}
+
+func (r *CleanupService) AddRemoteFileCleanupOperation(filePath string, isFolder bool) {
 	r.Operations = append(r.Operations, CleanupOperation{
 		RemoteStorageService: r.RemoteStorageService,
 		IsDirectory:          isFolder,
@@ -53,7 +61,15 @@ func (r *CleanupRequest) AddRemoteFileCleanupOperation(filePath string, isFolder
 	})
 }
 
-func (r *CleanupRequest) AddRestApiCallCleanupOperation(host string, port string, urlPath string, user string, password string, apiKey string) {
+func (r *CleanupService) RemoveRemoteFileCleanupOperation(filePath string) {
+	for i, operation := range r.Operations {
+		if operation.FilePath == filePath && operation.Type == CleanupOperationTypeRemote {
+			r.Operations = append(r.Operations[:i], r.Operations[i+1:]...)
+		}
+	}
+}
+
+func (r *CleanupService) AddRestApiCallCleanupOperation(host string, port string, urlPath string, user string, password string, apiKey string) {
 	r.Operations = append(r.Operations, CleanupOperation{
 		Type:     CleanupOperationTypeRestApiCall,
 		Host:     host,
@@ -63,4 +79,12 @@ func (r *CleanupRequest) AddRestApiCallCleanupOperation(host string, port string
 		Password: password,
 		ApiKey:   apiKey,
 	})
+}
+
+func (r *CleanupService) RemoveRestApiCallCleanupOperation(host string, port string, urlPath string, user string, password string, apiKey string) {
+	for i, operation := range r.Operations {
+		if operation.Host == host && operation.Port == port && operation.UrlPath == urlPath && operation.User == user && operation.Password == password && operation.ApiKey == apiKey && operation.Type == CleanupOperationTypeRestApiCall {
+			r.Operations = append(r.Operations[:i], r.Operations[i+1:]...)
+		}
+	}
 }
