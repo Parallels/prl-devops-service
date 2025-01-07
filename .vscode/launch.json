@@ -23,7 +23,7 @@
       "envFile": "${workspaceFolder}/.env",
       "args": [
         "pull",
-        "${workspaceFolder}/.local/pdfiles/build-empty-machine.aws.pull.pdfile",
+        "${workspaceFolder}/.local/pdfiles/dropbox-test-vm.aws.pull.pdfile",
       ]
     },
     {

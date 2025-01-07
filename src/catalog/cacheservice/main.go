@@ -678,6 +678,14 @@ func (cs *CacheService) Get() (*models.CacheResponse, error) {
 		if info, err := os.Stat(packCacheFilePath); err == nil && info.IsDir() {
 			cs.baseCtx.LogDebugf("Cache file %v is a directory, treating it as a folder", cs.packCacheFilename())
 			r.Type = models.CatalogCacheTypeFolder
+			// Checking the integrity of the cache file
+			configPath := filepath.Join(packCacheFilePath, "config.pvs")
+			if !helper.FileExists(configPath) {
+				cs.RemoveCacheItem(cs.manifest.CatalogId, cs.manifest.Version)
+				r.IsCached = false
+				cs.cacheData = &r
+				return cs.cacheData, nil
+			}
 		} else {
 			r.Type = models.CatalogCacheTypeFile
 		}
@@ -687,6 +695,14 @@ func (cs *CacheService) Get() (*models.CacheResponse, error) {
 		if info, err := os.Stat(machineCacheFilePath); err == nil && info.IsDir() {
 			cs.baseCtx.LogDebugf("Cache file %v is a directory, treating it as a folder", cs.cacheMachineName())
 			r.Type = models.CatalogCacheTypeFolder
+			// Checking the integrity of the cache file
+			configPath := filepath.Join(machineCacheFilePath, "config.pvs")
+			if !helper.FileExists(configPath) {
+				cs.RemoveCacheItem(cs.manifest.CatalogId, cs.manifest.Version)
+				r.IsCached = false
+				cs.cacheData = &r
+				return cs.cacheData, nil
+			}
 		} else {
 			r.Type = models.CatalogCacheTypeFile
 		}
