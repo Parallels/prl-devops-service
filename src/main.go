@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -82,6 +83,16 @@ func main() {
 	enableLogToFile := os.Getenv(constants.LOG_TO_FILE_ENV_VAR)
 	if enableLogToFile == "true" {
 		logFilename := "prldevops.log"
+		filePath := os.Getenv(constants.LOG_FILE_PATH_ENV_VAR)
+		if filePath != "" {
+			baseFolder := filepath.Dir(filePath)
+			if _, err := os.Stat(baseFolder); os.IsNotExist(err) {
+				ctx.LogErrorf("[Core] Log file path does not exist: %s, using executable path", filePath)
+			} else {
+				logFilename = filepath.Join(filePath, logFilename)
+			}
+		}
+
 		executable, err := os.Executable()
 		if err == nil && !strings.Contains(executable, "__debug") {
 			logFilename = executable + ".log"
