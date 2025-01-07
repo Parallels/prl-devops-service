@@ -258,7 +258,8 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 
 			relLinkPath, err := filepath.Rel(destination, realLinkPath)
 			if err != nil || strings.HasPrefix(filepath.Clean(relLinkPath), "..") {
-				return fmt.Errorf("invalid symlink path: %v", header.Linkname)
+				ctx.LogWarnf("Symlink path is not within the destination directory: %v", realLinkPath)
+				continue
 			}
 			if err := os.Symlink(realLinkPath, destinationFilePath); err != nil {
 				return fmt.Errorf("failed to create symlink: %v", err)
