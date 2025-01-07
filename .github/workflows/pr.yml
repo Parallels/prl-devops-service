@@ -38,9 +38,21 @@ jobs:
         working-directory: ${{ github.workspace }}/src
         run: go build -v ./...
   test:
+    needs: build
     name: Test
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v1
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: ${{ github.workspace }}/src/go.mod
+          cache: true
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
+      - name: Install dependencies
+        working-directory: ${{ github.workspace }}/src
+        run: |
+          go get .
       - name: Test
         working-directory: ${{ github.workspace }}/src
         run: |
