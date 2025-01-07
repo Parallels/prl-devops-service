@@ -7,7 +7,17 @@ on:
 
 jobs:
   build:
+    name: Build and Test
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
+        goos: [linux, windows, darwin]
+        goarch: ["386", amd64, arm64]
+        exclude:
+          - goarch: "386"
+            goos: darwin
     steps:
       - uses: actions/checkout@v1
       - name: Setup Go 1.21.x
@@ -27,7 +37,22 @@ jobs:
       - name: Build
         working-directory: ${{ github.workspace }}/src
         run: go build -v ./...
-
+  test:
+    needs: build
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: ${{ github.workspace }}/src/go.mod
+          cache: true
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
+      - name: Install dependencies
+        working-directory: ${{ github.workspace }}/src
+        run: |
+          go get .
       - name: Test
         working-directory: ${{ github.workspace }}/src
         run: |
