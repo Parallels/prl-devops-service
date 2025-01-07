@@ -533,6 +533,15 @@ func (c *Config) EnableReverseProxy(value bool) bool {
 	return true
 }
 
+func (c *Config) IsRemoteProviderStreamEnabled() bool {
+	streamingDisabled := c.GetKey(constants.DISABLE_CATALOG_PROVIDER_STREAMING_ENV_VAR)
+	if streamingDisabled == "" {
+		return true
+	}
+
+	return !helpers.StringToBool(streamingDisabled)
+}
+
 func (c *Config) GetKey(key string) string {
 	value := helper.GetFlagValue(key, "")
 	exists := false

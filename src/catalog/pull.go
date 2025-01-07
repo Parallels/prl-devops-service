@@ -490,8 +490,9 @@ func (s *CatalogManifestService) pullAndDecompressPackFile(r *models.PullCatalog
 	if rss == nil {
 		return errors.NewWithCode("Remote storage service is nil", 500)
 	}
+	cfg := config.Get()
 	cleanupSvc := cleanupservice.NewCleanupService()
-	if rss.CanStream() {
+	if rss.CanStream() && cfg.IsRemoteProviderStreamEnabled() {
 		if err := s.processFileWithStream(r.LocalMachineFolder, rss, manifest, cleanupSvc); err != nil {
 			return err
 		}

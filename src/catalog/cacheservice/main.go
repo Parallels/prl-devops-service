@@ -192,7 +192,7 @@ func (cs *CacheService) checkNeedCleanup() (*CleanupRequirements, error) {
 
 	manifestUsedSize := cs.manifest.Size * 2
 	// if we can stream then we do no need the double size request
-	if cs.rss.CanStream() {
+	if cs.rss.CanStream() && cs.cfg.IsRemoteProviderStreamEnabled() {
 		manifestUsedSize = cs.manifest.Size
 	}
 

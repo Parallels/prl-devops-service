@@ -129,3 +129,19 @@ func ObfuscateString(value string) string {
 func ClearLine() {
 	fmt.Printf("\r\033[K")
 }
+
+func StringToBool(s string) bool {
+	if s == "true" ||
+		s == "1" ||
+		s == "yes" ||
+		s == "y" ||
+		s == "t" ||
+		s == "on" ||
+		s == "enable" ||
+		s == "enabled" ||
+		s == "active" {
+		return true
+	}
+
+	return false
+}
