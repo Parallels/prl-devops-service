@@ -183,6 +183,7 @@ jobs:
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Add Inbuilt Variables
         run: |
+          echo $PATH
           brew install gnu-sed
 
           gsed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
