@@ -187,7 +187,6 @@ jobs:
 
           gsed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
 
-          cat ./src/main.go
           go install github.com/swaggo/swag/cmd/swag@latest
           cd src
           go mod tidy
@@ -212,7 +211,7 @@ jobs:
       - name: Sign binary
         run: |
           cd src
-          codesign --force --deep --strict --verbose --options=runtime,library --sign "${{ secrets.APPLE_DEVELOPER_IDENTITY }}" --entitlements ../prldevops.entitlements prldevops
+          codesign --force --deep --strict --verbose --options=runtime,library --sign "${{ secrets.APPLE_DEVELOPER_IDENTITY }}" prldevops
           ditto -c -k --sequesterRsrc prldevops prldevops.zip
           xcrun notarytool submit prldevops.zip --keychain-profile "notary-credentials" --wait
       - name: Verify signed binary
