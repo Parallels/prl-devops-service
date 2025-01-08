@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Assign Milestone
         env:
           GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
