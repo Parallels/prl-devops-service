@@ -212,7 +212,7 @@ jobs:
       - name: Sign binary
         run: |
           cd src
-          codesign --force --deep --strict --verbose --options=runtime,library --sign "${{ secrets.APPLE_DEVELOPER_IDENTITY }}" --entitlements prldevops.entitlements prldevops
+          codesign --force --deep --strict --verbose --options=runtime,library --sign "${{ secrets.APPLE_DEVELOPER_IDENTITY }}" --entitlements ../prldevops.entitlements prldevops
           ditto -c -k --sequesterRsrc prldevops prldevops.zip
           xcrun notarytool submit prldevops.zip --keychain-profile "notary-credentials" --wait
       - name: Verify signed binary
