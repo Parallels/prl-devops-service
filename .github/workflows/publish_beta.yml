@@ -258,6 +258,7 @@ jobs:
       - check-version-change
       - beta-release
       - beta-releases-matrix
+      - beta-releases-macos
       - build-containers
     runs-on: ubuntu-latest
     permissions:
