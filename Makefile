@@ -197,6 +197,26 @@ build-helm-chart:
 	@helm package ./helm -d ./docs/charts
 	@helm repo index ./docs/charts --url https://parallels.github.io/prl-devops-service/charts --merge ./docs/charts/index.yaml
 
+sign-macos-app:
+	@echo "Building App App..."
+	@if [ -f ./out/binaries/$(PACKAGE_NAME) ]; then \
+		echo "Removing previous MacOS App..."; \
+		rm ./out/binaries/$(PACKAGE_NAME); \
+	fi
+	@if [ -f ./out/binaries/$(PACKAGE_NAME).zip ]; then \
+		echo "Removing previous MacOS App Bundle..."; \
+		rm ./out/binaries/$(PACKAGE_NAME).zip; \
+	fi
+	@make build
+	@echo "Signing MacOS App..."
+	@codesign --force --deep --strict --verbose --options=runtime,library --sign "Developer ID Application: Carlos Lapao (KXLX56937Q)" --entitlements prldevops.entitlements ./out/binaries/$(PACKAGE_NAME)
+	@echo "MacOS App signed."
+	@echo "Notarizing MacOS App..."
+	@cd ./out/binaries && ditto -c -k --sequesterRsrc $(PACKAGE_NAME) $(PACKAGE_NAME).zip
+	@xcrun notarytool submit ./out/binaries/$(PACKAGE_NAME).zip --keychain-profile "notary-credentials" --wait
+	@echo "Verifying MacOS App..."
+	@codesign --verify --verbose ./out/binaries/$(PACKAGE_NAME)
+	@spctl -t open --context context:primary-signature -a -vvv ./out/binaries/$(PACKAGE_NAME)
 
 $(COBERTURA):
 	@echo "Installing cobertura..."

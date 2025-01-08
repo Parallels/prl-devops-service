@@ -21,10 +21,17 @@ ARG VERSION
 ARG OS=linux
 ARG ARCHITECTURE=amd64
 
-RUN --mount=type=secret,id=amplitude_api_key,env=AMPLITUDE_API_KEY
+# Update version in main.go for swagger documentation
+RUN sed -i "/@version/c\//\t@version\t\t$VERSION" ./main.go
 
-RUN if [ "$BUILD_ENV" = "production" ]; then \
-  CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="-s -w -X main.ver=$VERSION -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o /go/bin/prl-devops-service; \
+# Install swag for swagger documentation
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+RUN go mod tidy && swag fmt && swag init -g main.go
+
+RUN --mount=type=secret,id=amplitude_api_key \
+  export AMPLITUDE_API_KEY=$(cat /run/secrets/amplitude_api_key) && \
+  if [ "$BUILD_ENV" = "production" ]; then \
+  CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="-s -w -X main.ver=$VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o /go/bin/prl-devops-service; \
   else \
   CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="-s -w -X main.ver=$VERSION" -o /go/bin/prl-devops-service; \
   fi
