@@ -50,14 +50,13 @@ jobs:
       - name: Assign Triage Label
         if: ${{ github.event.pull_request.draft == false }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
         run: |
-          ${{ github.event.sender.name  }}
           ${{ github.event.pull_request.author_association }}
           gh pr edit ${{ github.event.number }} --add-label "triage"
   assign-community-pr:
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.author_association  != 'COLLABORATOR' && !startsWith(github.event.pull_request, 'BUMP') && !startsWith(github.event.pull_request, 'Bump') }}
-    name: Assign Triage Label
+    name: Assign Community Label
     env:
       repo: ${{ github.head_ref }}
     runs-on: ubuntu-latest
@@ -67,8 +66,7 @@ jobs:
       - name: Assign Security Label
         if: ${{ github.event.pull_request.draft == false }}
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
         run: |
-          ${{ github.event.sender.name  }}
           ${{ github.event.pull_request.author_association }}
-          gh pr edit ${{ github.event.number }} --add-label "triage"
+          gh pr edit ${{ github.event.number }} --add-label "community"
