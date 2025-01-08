@@ -203,10 +203,14 @@ jobs:
           security unlock-keychain -p "github" temp.keychain
           security set-keychain-settings -lut 3600 temp.keychain
           security list-keychains -s temp.keychain
+          security list-keychains
+          security find-identity -v -p codesigning temp.keychain
+
       - name: Import sign certificate
         run: |
           echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > apple_developer_identity.p12
           security import apple_developer_identity.p12 -k temp.keychain -P ${{ secrets.APPLE_CERT_PASSWORD }} -T /usr/bin/codesign
+          rm apple_developer_identity.p12
       - name: Import notary credentials
         run: |
           echo "${{ secrets.APPLE_API_KEY }}" | base64 --decode > apple_api_key.p8
