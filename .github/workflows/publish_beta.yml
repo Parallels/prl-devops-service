@@ -203,20 +203,15 @@ jobs:
           security unlock-keychain -p "github" temp.keychain
           security set-keychain-settings -lut 3600 temp.keychain
           security list-keychains -s temp.keychain
-          security list-keychains
-          security find-identity -v -p codesigning temp.keychain
+
       - name: Import sign certificate
         run: |
           echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > apple_developer_identity.p12
           security import apple_developer_identity.p12 -k temp.keychain -P ${{ secrets.APPLE_CERT_PASSWORD }} -T /usr/bin/codesign
           rm apple_developer_identity.p12
-      - name: Grant Codesign Access to the Private Key
-        run: |
-          # Find the private key reference
-          KEY_REF=$(security find-key -a -k temp.keychain | grep "Private key" | awk -F'"' '{print $2}')
-
-          # Allow codesign to access the key without prompting
-          security set-key-partition-list -S apple-tool:,apple: -s -k "github" -t private "$KEY_REF" temp.keychain
+          security set-key-partition-list -S apple-tool:,apple: -s -k "github" temp.keychain
+          security list-keychains
+          security find-identity -v -p codesigning temp.keychain
 
       - name: Import notary credentials
         run: |
@@ -246,7 +241,7 @@ jobs:
           asset_name: prldevops-${{ matrix.goos }}-${{ matrix.goarch }}
           asset_content_type: application/octet-stream
       - name: Clean Up Keychain
-        if: false
+        if: always()
         run: |
           security delete-keychain temp.keychain
   build-containers:
