@@ -353,6 +353,22 @@ func (cs *CacheService) updateCacheManifestUsedCount(metadataPath string) (*mode
 	return metadata, nil
 }
 
+func (cs *CacheService) setCacheCompleted(metadataPath string) (*models.VirtualMachineCatalogManifest, error) {
+	metadata, err := cs.loadCacheManifest(metadataPath)
+	if err != nil {
+		return nil, errors.NewFromErrorWithCode(err, 500)
+	}
+
+	metadata.CacheCompleted = true
+
+	cs.CacheManifest = *metadata
+	if err := cs.saveCacheManifest(*metadata, metadataPath); err != nil {
+		return nil, errors.NewFromErrorWithCode(err, 500)
+	}
+
+	return metadata, nil
+}
+
 func (cs *CacheService) getCacheSize(metadata *models.VirtualMachineCatalogManifest) (int64, error) {
 	path := filepath.Join(metadata.CacheLocalFullPath, metadata.CacheFileName)
 	switch metadata.CacheType {
@@ -663,12 +679,11 @@ func (cs *CacheService) Get() (*models.CacheResponse, error) {
 			cs.baseCtx.LogDebugf("Cache file %v is a directory, treating it as a folder", cs.packCacheFilename())
 			r.Type = models.CatalogCacheTypeFolder
 			// Checking the integrity of the cache file
-			configPath := filepath.Join(packCacheFilePath, "config.pvs")
-			if !helper.FileExists(configPath) {
+			if err := cs.checkCacheItemIntegrity(packCacheFilePath); err != nil {
 				cs.RemoveCacheItem(cs.manifest.CatalogId, cs.manifest.Version)
 				r.IsCached = false
 				cs.cacheData = &r
-				return cs.cacheData, nil
+				return cs.cacheData, err
 			}
 		} else {
 			r.Type = models.CatalogCacheTypeFile
@@ -679,13 +694,13 @@ func (cs *CacheService) Get() (*models.CacheResponse, error) {
 		if info, err := os.Stat(machineCacheFilePath); err == nil && info.IsDir() {
 			cs.baseCtx.LogDebugf("Cache file %v is a directory, treating it as a folder", cs.cacheMachineName())
 			r.Type = models.CatalogCacheTypeFolder
+
 			// Checking the integrity of the cache file
-			configPath := filepath.Join(machineCacheFilePath, "config.pvs")
-			if !helper.FileExists(configPath) {
+			if err := cs.checkCacheItemIntegrity(machineCacheFilePath); err != nil {
 				cs.RemoveCacheItem(cs.manifest.CatalogId, cs.manifest.Version)
 				r.IsCached = false
 				cs.cacheData = &r
-				return cs.cacheData, nil
+				return cs.cacheData, err
 			}
 		} else {
 			r.Type = models.CatalogCacheTypeFile
@@ -818,7 +833,14 @@ func (cs *CacheService) Cache() error {
 
 	// we will need to update the cache manifest file first so we can check if indeed we can cache the package
 	cs.notify("Updating cache manifest")
-	manifest, err := cs.updateCacheManifest(cs.cachedMetadataFilePath())
+	_, err := cs.updateCacheManifest(cs.cachedMetadataFilePath())
+	if err != nil {
+		cs.cleanupservice.Clean(cs.baseCtx)
+		return err
+	}
+
+	// Setting the cache item as completed for integrity checks
+	manifest, err := cs.setCacheCompleted(cs.cachedMetadataFilePath())
 	if err != nil {
 		cs.cleanupservice.Clean(cs.baseCtx)
 		return err
@@ -827,6 +849,12 @@ func (cs *CacheService) Cache() error {
 	if manifest == nil {
 		cs.cleanupservice.Clean(cs.baseCtx)
 		return errors.NewWithCode("Error updating cache manifest", 500)
+	}
+
+	cacheItemFolder := filepath.Join(manifest.CacheLocalFullPath, manifest.CacheFileName)
+	if err := cs.checkCacheItemIntegrity(cacheItemFolder); err != nil {
+		cs.cleanupservice.Clean(cs.baseCtx)
+		return err
 	}
 
 	cs.CacheManifest = *manifest

@@ -53,6 +53,7 @@ type VirtualMachineCatalogManifest struct {
 	CacheFileName           string                              `json:"cache_file_name,omitempty"`
 	CacheType               string                              `json:"cache_type,omitempty"`
 	CacheSize               int64                               `json:"cache_size,omitempty"`
+	CacheCompleted          bool                                `json:"cache_completed,omitempty"`
 	CleanupRequest          *cleanupservice.CleanupService      `json:"-"`
 	Errors                  []error                             `json:"-"`
 }
