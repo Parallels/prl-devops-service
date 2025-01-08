@@ -109,17 +109,28 @@ jobs:
       fail-fast: false
       matrix:
         # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
-        goos: [linux, windows, darwin]
+        goos: [linux, windows]
         goarch: ["386", amd64, arm64]
         exclude:
           - goarch: "386"
             goos: darwin
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21.x"
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Add Inbuilt Variables
         run: |
-          sed -i "s/var AmplitudeApiKey = \"\"/var AmplitudeApiKey = \"${{ env.AmplitudeApiKey }}\"/g" ./src/constants/amplitude.go
+          sed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
 
+          go install github.com/swaggo/swag/cmd/swag@latest
+          cd src
+          go mod tidy
+          swag fmt
+          swag init -g main.go
+          cd ..
       - uses: wangyoucao577/go-release-action@v1
         timeout-minutes: 10
         with:
@@ -131,7 +142,113 @@ jobs:
           binary_name: "prldevops"
           release_name: "v${{ env.EXT_VERSION }}"
           ldflags: "-s -w -X main.ver=${{ env.EXT_VERSION }} -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}'"
+  releases-macos-matrix:
+    needs:
+      - release
+    runs-on: macos-latest
+    name: Release Go Binary
+    env:
+      EXT_VERSION: ${{ needs.beta-release.outputs.version }}
+      AMPLITUDE_API_KEY: ${{ secrets.AMPLITUDE_API_KEY }}
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_KEY_ISSUER: ${{ secrets.APPLE_API_KEY_ISSUER }}
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+      APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # build and publish in parallel: darwin/amd64, darwin/arm64
+        goos: [darwin]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21.x"
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
+      - name: Add Inbuilt Variables
+        run: |
+          brew install gnu-sed
 
+          gsed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
+
+          go install github.com/swaggo/swag/cmd/swag@latest
+          cd src
+          go mod tidy
+          swag fmt
+          swag init -g main.go
+          cd ..
+      - name: Build
+        run: |
+          cd src && go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
+      - name: Create and Unlock Temporary Keychain
+        run: |
+          security create-keychain -p "github" temp.keychain
+          security unlock-keychain -p "github" temp.keychain
+          security set-keychain-settings -lut 3600 temp.keychain
+          security list-keychains -s temp.keychain
+
+      - name: Import sign certificate
+        run: |
+          echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > apple_developer_identity.p12
+          security import apple_developer_identity.p12 -k temp.keychain -P ${{ secrets.APPLE_CERT_PASSWORD }} -T /usr/bin/codesign
+          rm apple_developer_identity.p12
+          security set-key-partition-list -S apple-tool:,apple: -s -k "github" temp.keychain
+          security list-keychains
+          security find-identity -v -p codesigning temp.keychain
+
+      - name: Import notary credentials
+        run: |
+          echo "${{ secrets.APPLE_API_KEY }}" | base64 --decode > apple_api_key.p8
+          xcrun notarytool store-credentials "notary-credentials" \
+            --key apple_api_key.p8 \
+            --key-id ${{ secrets.APPLE_API_KEY_ID }} \
+            --issuer ${{ secrets.APPLE_API_KEY_ISSUER }}
+
+      - name: Sign binary
+        run: |
+          cd src
+          codesign --force --deep --strict --verbose --options=runtime,library --sign "${{ secrets.APPLE_DEVELOPER_IDENTITY }}" prldevops
+          ditto -c -k --sequesterRsrc prldevops prldevops.zip
+          xcrun notarytool submit prldevops.zip --keychain-profile "notary-credentials" --wait
+
+      - name: Verify signed binary
+        run: |
+          cd src
+          codesign --verify --verbose prldevops
+          spctl -t open --context context:primary-signature -a -vvv prldevops
+
+      - name: Compress asset to tar.gz
+        run: |
+          cd src
+          tar -czf prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz prldevops
+          md5 prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz | awk '{print $4}' > prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.beta-release.outputs.upload_url }}
+          asset_path: src/prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          asset_content_type: application/octet-stream
+      - name: Upload release asset checksum
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.beta-release.outputs.upload_url }}
+          asset_path: src/prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+          asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+          asset_content_type: application/octet-stream
+      - name: Clean Up Keychain
+        if: always()
+        run: |
+          security delete-keychain temp.keychain
   build-containers:
     needs: release
     env:
