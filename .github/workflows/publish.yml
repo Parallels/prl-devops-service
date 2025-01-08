@@ -21,7 +21,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Check if version has changed
         id: check-version
         uses: actions/github-script@v6
@@ -76,7 +76,7 @@ jobs:
     outputs:
       version: ${{ env.EXT_VERSION }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Parse version from package.json
         run: |
           echo "EXT_VERSION=$(cat ./VERSION)" >> "$GITHUB_ENV"
@@ -115,7 +115,7 @@ jobs:
           - goarch: "386"
             goos: darwin
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Add Inbuilt Variables
         run: |
           sed -i "s/var AmplitudeApiKey = \"\"/var AmplitudeApiKey = \"${{ env.AmplitudeApiKey }}\"/g" ./src/constants/amplitude.go
@@ -130,6 +130,7 @@ jobs:
           project_path: "./src"
           binary_name: "prldevops"
           release_name: "v${{ env.EXT_VERSION }}"
+          ldflags: "-s -w -X main.ver=${{ env.EXT_VERSION }} -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}'"
 
   build-containers:
     needs: release
@@ -139,21 +140,22 @@ jobs:
     name: Build Docker Images
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Add Inbuilt Variables
-        run: |
-          sed -i "s/var AmplitudeApiKey = \"\"/var AmplitudeApiKey = \"${{ env.AmplitudeApiKey }}\"/g" ./src/constants/amplitude.go
-      - uses: docker/setup-buildx-action@v1
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - uses: docker/build-push-action@v2
+      - uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            VERSION=${{ env.EXT_VERSION }}
+          secrets: |
+            amplitude_api_key=${{ secrets.AMPLITUDE_API_KEY }}
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:latest
             ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:${{ env.EXT_VERSION }}

@@ -293,7 +293,7 @@ This will be the job that will be building the iOS project, we will be using the
         - macOS
         - {% raw %} ${{ github.run_id }}_builder{% endraw %}
     steps:
-      - uses: actions/checkout@v2     
+      - uses: actions/checkout@v4 
       - name: Install the Apple certificate and provisioning profile
         env:
           BUILD_CERTIFICATE_BASE64: {% raw %} ${{ secrets.APPLE_BUILD_CERTIFICATE_BASE64 }}{% endraw %}
