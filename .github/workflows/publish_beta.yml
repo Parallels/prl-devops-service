@@ -187,6 +187,7 @@ jobs:
 
           gsed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
 
+          cat ./src/main.go
           go install github.com/swaggo/swag/cmd/swag@latest
           cd src
           go mod tidy
@@ -194,12 +195,13 @@ jobs:
           swag init -g main.go
           cd ..
       - name: Build
-        run: cd src && go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
+        run: |
+          cd src && go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
       - name: Import sign certificate
         run: |
           echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > apple_developer_identity.p12
           security import apple_developer_identity.p12 -k ~/Library/Keychains/login.keychain -P ${{ secrets.APPLE_CERT_PASSWORD }} -T /usr/bin/codesign
-      - name: Sign in with notary
+      - name: Import notary credentials
         run: |
           echo "${{ secrets.APPLE_API_KEY }}" | base64 --decode > apple_api_key.p8
           xcrun notarytool store-credentials "notary-credentials" \
@@ -209,11 +211,13 @@ jobs:
 
       - name: Sign binary
         run: |
+          cd src
           codesign --force --deep --strict --verbose --options=runtime,library --sign "${{ secrets.APPLE_DEVELOPER_IDENTITY }}" --entitlements prldevops.entitlements prldevops
           ditto -c -k --sequesterRsrc prldevops prldevops.zip
           xcrun notarytool submit prldevops.zip --keychain-profile "notary-credentials" --wait
       - name: Verify signed binary
         run: |
+          cd src
           codesign --verify --verbose prldevops
           spctl -t open --context context:primary-signature -a -vvv prldevops
 
