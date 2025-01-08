@@ -242,7 +242,7 @@ jobs:
         run: |
           cd src
           tar -czf prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz prldevops
-            md5sum prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz >prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+          md5 prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz | awk '{print $4}' > prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
 
       - name: Upload release asset
         uses: actions/upload-release-asset@v1.0.1
