@@ -197,10 +197,16 @@ jobs:
       - name: Build
         run: |
           cd src && go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
+      - name: Create and Unlock Temporary Keychain
+        run: |
+          security create-keychain -p "github" temp.keychain
+          security unlock-keychain -p "github" temp.keychain
+          security set-keychain-settings -lut 3600 temp.keychain
+          security list-keychains -s temp.keychain
       - name: Import sign certificate
         run: |
           echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > apple_developer_identity.p12
-          security import apple_developer_identity.p12 -k ~/Library/Keychains/login.keychain -P ${{ secrets.APPLE_CERT_PASSWORD }} -T /usr/bin/codesign
+          security import apple_developer_identity.p12 -k temp.keychain -P ${{ secrets.APPLE_CERT_PASSWORD }} -T /usr/bin/codesign
       - name: Import notary credentials
         run: |
           echo "${{ secrets.APPLE_API_KEY }}" | base64 --decode > apple_api_key.p8
