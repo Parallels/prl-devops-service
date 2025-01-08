@@ -132,6 +132,11 @@ jobs:
             goos: darwin
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21.x"
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Add Inbuilt Variables
         run: |
           sed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
@@ -182,7 +187,6 @@ jobs:
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Add Inbuilt Variables
         run: |
-          echo $PATH
           brew install gnu-sed
 
           gsed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
@@ -245,7 +249,7 @@ jobs:
         with:
           upload_url: ${{ needs.beta-release.outputs.upload_url }}
           asset_path: src/prldevops
-          asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
           asset_content_type: application/octet-stream
       - name: Clean Up Keychain
         if: always()
