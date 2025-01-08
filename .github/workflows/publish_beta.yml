@@ -206,7 +206,6 @@ jobs:
             --key apple_api_key.p8 \
             --key-id ${{ secrets.APPLE_API_KEY_ID }} \
             --issuer ${{ secrets.APPLE_API_KEY_ISSUER }}
-          xcrun notarytool login --keychain-profile "notary-credentials"
 
       - name: Sign binary
         run: |
