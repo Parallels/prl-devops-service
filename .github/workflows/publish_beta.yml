@@ -113,7 +113,6 @@ jobs:
             });
             core.exportVariable('UPLOAD_URL', release.data.upload_url);
   beta-releases-matrix:
-    if: false
     needs:
       - check-version-change
       - beta-release
@@ -158,7 +157,7 @@ jobs:
     needs:
       - check-version-change
       - beta-release
-    runs-on: tester1
+    runs-on: macos-latest
     env:
       EXT_VERSION: ${{ needs.beta-release.outputs.version }}
       AMPLITUDE_API_KEY: ${{ secrets.AMPLITUDE_API_KEY }}
@@ -227,11 +226,17 @@ jobs:
           codesign --force --deep --strict --verbose --options=runtime,library --sign "${{ secrets.APPLE_DEVELOPER_IDENTITY }}" prldevops
           ditto -c -k --sequesterRsrc prldevops prldevops.zip
           xcrun notarytool submit prldevops.zip --keychain-profile "notary-credentials" --wait
+
       - name: Verify signed binary
         run: |
           cd src
           codesign --verify --verbose prldevops
           spctl -t open --context context:primary-signature -a -vvv prldevops
+
+      - name: Compress asset to tar.gz
+        run: |
+          cd src
+          tar -czf prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz prldevops
 
       - name: Upload release asset
         uses: actions/upload-release-asset@v1.0.1
@@ -240,14 +245,13 @@ jobs:
         with:
           upload_url: ${{ needs.beta-release.outputs.upload_url }}
           asset_path: src/prldevops
-          asset_name: prldevops-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}
           asset_content_type: application/octet-stream
       - name: Clean Up Keychain
         if: always()
         run: |
           security delete-keychain temp.keychain
   build-containers:
-    if: false
     needs:
       - check-version-change
       - beta-release
