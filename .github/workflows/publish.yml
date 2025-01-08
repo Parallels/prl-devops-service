@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check if version has changed
         id: check-version
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             // Get the version from the workflow input
@@ -73,8 +73,10 @@ jobs:
       packages: read
     env:
       EXT_VERSION: "" # will be set in the workflow
+      UPLOAD_URL: "" # will be set in the workflow
     outputs:
       version: ${{ env.EXT_VERSION }}
+      UPLOAD_URL: ${{ env.UPLOAD_URL }}
     steps:
       - uses: actions/checkout@v4
       - name: Parse version from package.json
@@ -85,7 +87,7 @@ jobs:
           ./.github/workflow_scripts/get-latest-changelog.sh --output-to-file
           cat release_notes.md
       - name: Create release and upload release asset
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const fs = require("fs");
@@ -98,6 +100,7 @@ jobs:
               draft: false,
               prerelease: false
             });
+            core.exportVariable('UPLOAD_URL', release.data.upload_url);
   releases-matrix:
     needs: release
     name: Release Go Binary
@@ -148,7 +151,7 @@ jobs:
     runs-on: macos-latest
     name: Release Go Binary
     env:
-      EXT_VERSION: ${{ needs.beta-release.outputs.version }}
+      EXT_VERSION: ${{ needs.release.outputs.version }}
       AMPLITUDE_API_KEY: ${{ secrets.AMPLITUDE_API_KEY }}
       APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
       APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
@@ -232,7 +235,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.beta-release.outputs.upload_url }}
+          upload_url: ${{ needs.release.outputs.upload_url }}
           asset_path: src/prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
           asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
           asset_content_type: application/octet-stream
@@ -241,7 +244,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.beta-release.outputs.upload_url }}
+          upload_url: ${{ needs.release.outputs.upload_url }}
           asset_path: src/prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
           asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
           asset_content_type: application/octet-stream
