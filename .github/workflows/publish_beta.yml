@@ -234,7 +234,9 @@ jobs:
           spctl -t open --context context:primary-signature -a -vvv prldevops
 
       - name: Upload release asset
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.beta-release.outputs.upload_url }}
           asset_path: src/prldevops
