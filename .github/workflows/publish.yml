@@ -103,7 +103,7 @@ jobs:
             core.exportVariable('UPLOAD_URL', release.data.upload_url);
   releases-matrix:
     needs: release
-    name: Release Go Binary
+    name: Release Go Binary (Linux/Windows)
     runs-on: ubuntu-latest
     env:
       EXT_VERSION: ${{ needs.release.outputs.version }}
@@ -149,7 +149,7 @@ jobs:
     needs:
       - release
     runs-on: macos-latest
-    name: Release Go Binary
+    name: Release Go Binary (macOS)
     env:
       EXT_VERSION: ${{ needs.release.outputs.version }}
       AMPLITUDE_API_KEY: ${{ secrets.AMPLITUDE_API_KEY }}

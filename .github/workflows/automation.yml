@@ -17,7 +17,7 @@ jobs:
       - name: Assign Security Label
         if: ${{ contains(github.event.issue.title, 'security')}}
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
         run: |
           gh issue edit ${{ github.event.issue.number }} --add-label "security"
   assign-security-pr:
@@ -30,7 +30,7 @@ jobs:
       - name: Assign Security Label
         if: ${{ github.event.pull_request.draft == false && contains(github.event.pull_request.title, 'security')}}
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
         run: |
           gh pr edit ${{ github.event.number }} --add-label "security"
   assign-triage-pr:
