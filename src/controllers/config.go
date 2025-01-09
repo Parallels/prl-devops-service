@@ -1,8 +1,12 @@
 package controllers
 
 import (
+	"bufio"
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
@@ -14,10 +18,12 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
+	"github.com/gorilla/websocket"
 )
 
 func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 	provider := serviceprovider.Get()
+	cfg := config.Get()
 
 	ctx.LogInfof("Registering version %s config handlers", version)
 	if provider.System.GetOperatingSystem() == "macos" {
@@ -66,6 +72,25 @@ func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 		WithPath("/health/system").
 		WithHandler(GetSystemHealth()).
 		Register()
+
+	// If logging to file is enabled, register the logs endpoints
+	if cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) {
+		restapi.NewController().
+			WithMethod(restapi.GET).
+			WithVersion(version).
+			WithPath("/logs/stream").
+			WithRequiredRole(constants.SUPER_USER_ROLE).
+			WithHandler(StreamSystemLogs()).
+			Register()
+
+		restapi.NewController().
+			WithMethod(restapi.GET).
+			WithVersion(version).
+			WithPath("/logs").
+			WithRequiredRole(constants.SUPER_USER_ROLE).
+			WithHandler(GetSystemLogs()).
+			Register()
+	}
 }
 
 // @Summary		Gets Parallels Desktop active license
@@ -381,5 +406,128 @@ func GetSystemHealth() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
+	}
+}
+
+// @Summary		Gets the system logs from the disk
+// @Description	This endpoint returns the system logs from the disk
+// @Tags			Config
+// @Produce		plain
+// @Success		200
+// @Router			/logs [get]
+func GetSystemLogs() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		cfg := config.Get()
+		logPath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
+		logFile := filepath.Join(logPath, "prldevops.log")
+
+		content, err := os.ReadFile(logFile)
+		if err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Failed to read log file: " + err.Error(),
+				Code:    http.StatusInternalServerError,
+			})
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write(content)
+	}
+}
+
+// @Summary		Streams the system logs via WebSocket
+// @Description	This endpoint streams the system logs in real-time via WebSocket
+// @Tags			Config
+// @Produce		json
+// @Success		101	"Switching Protocols to websocket"
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/logs/stream [get]
+func StreamSystemLogs() restapi.ControllerHandler {
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true // You might want to make this more restrictive
+		},
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		// Upgrade HTTP connection to WebSocket
+		ws, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			ctx.LogErrorf("Failed to upgrade connection to WebSocket: %v", err)
+			return
+		}
+		defer ws.Close()
+
+		// Create a done channel to signal when to stop
+		done := make(chan struct{})
+
+		// Start a goroutine to handle client messages and disconnection
+		go func() {
+			defer close(done)
+			for {
+				_, _, err := ws.ReadMessage()
+				if err != nil {
+					if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+						ctx.LogErrorf("WebSocket read error: %v", err)
+					}
+					return
+				}
+			}
+		}()
+
+		// Get log file path
+		cfg := config.Get()
+		logPath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
+		logFile := filepath.Join(logPath, "prldevops.log")
+
+		// Open the file
+		file, err := os.Open(logFile)
+		if err != nil {
+			ws.WriteMessage(websocket.TextMessage, []byte("Error opening log file: "+err.Error()))
+			return
+		}
+		defer file.Close()
+
+		// Seek to the end of the file
+		_, err = file.Seek(0, 2)
+		if err != nil {
+			ws.WriteMessage(websocket.TextMessage, []byte("Error seeking log file: "+err.Error()))
+			return
+		}
+
+		reader := bufio.NewReader(file)
+		for {
+			select {
+			case <-done:
+				return
+			default:
+				line, err := reader.ReadString('\n')
+				if err != nil {
+					if err.Error() == "EOF" {
+						time.Sleep(100 * time.Millisecond)
+						continue
+					}
+					return
+				}
+
+				err = ws.WriteMessage(websocket.TextMessage, []byte(line))
+				if err != nil {
+					ctx.LogErrorf("Error writing to WebSocket: %v", err)
+					return
+				}
+			}
+		}
 	}
 }
