@@ -80,10 +80,12 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	ctx := basecontext.NewRootBaseContext()
-	enableLogToFile := os.Getenv(constants.LOG_TO_FILE_ENV_VAR)
+	cfg := config.Get()
+	cfg.Load()
+	enableLogToFile := cfg.GetKey(constants.LOG_TO_FILE_ENV_VAR)
 	if enableLogToFile == "true" {
 		logFilename := "prldevops.log"
-		filePath := os.Getenv(constants.LOG_FILE_PATH_ENV_VAR)
+		filePath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
 		if filePath != "" {
 			baseFolder := filepath.Dir(filePath)
 			if _, err := os.Stat(baseFolder); os.IsNotExist(err) {
