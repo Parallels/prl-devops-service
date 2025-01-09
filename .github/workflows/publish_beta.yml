@@ -10,7 +10,12 @@ on:
       version:
         description: "Version to release"
         required: true
-
+        default: "1.0.0"
+      remove_old_beta:
+        description: "Remove old beta releases"
+        required: false
+        type: boolean
+        default: true
 jobs:
   check-version-change:
     outputs:
@@ -94,7 +99,7 @@ jobs:
           echo "MAJOR_VERSION=${MAJOR_VERSION}" >> "$GITHUB_ENV"
       - name: Generate release notes
         run: |
-          ./.github/workflow_scripts/get-latest-changelog.sh --output-to-file
+          ./.github/workflow_scripts/get-latest-beta-changelog.sh --repo ${{ github.repository }} --output-to-file --version "${EXT_VERSION}"
           cat release_notes.md
       - name: Create release and upload release asset
         uses: actions/github-script@v7
@@ -296,6 +301,7 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:latest-beta
             ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:${{ env.EXT_VERSION }}-beta
   remove-old-beta-release:
+    if: ${{ github.event.inputs.remove_old_beta == true }}
     name: Remove old beta release
     needs:
       - check-version-change
