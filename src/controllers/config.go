@@ -422,7 +422,7 @@ func GetSystemLogs() restapi.ControllerHandler {
 
 		// If logging to file is enabled, register the logs endpoints
 		if cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) {
-			err := errors.New("Logs to file is not enabled, we cannot read the logs")
+			err := errors.New("logs to file is not enabled, we cannot read the logs")
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Failed to read log file: " + err.Error(),
 				Code:    http.StatusInternalServerError,
@@ -431,6 +431,9 @@ func GetSystemLogs() restapi.ControllerHandler {
 		}
 
 		logPath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
+		if logPath == "" {
+			logPath = "."
+		}
 		logFile := filepath.Join(logPath, "prldevops.log")
 
 		content, err := os.ReadFile(logFile)
@@ -504,6 +507,9 @@ func StreamSystemLogs() restapi.ControllerHandler {
 		}
 
 		logPath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
+		if logPath == "" {
+			logPath = "."
+		}
 		logFile := filepath.Join(logPath, "prldevops.log")
 
 		// Open the file
