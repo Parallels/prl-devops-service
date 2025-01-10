@@ -17,4 +17,5 @@ type ApiServiceConfig struct {
 	Mode                     string `json:"mode,omitempty"`
 	UseOrchestratorResources bool   `json:"use_orchestrator_resources,omitempty"`
 	LogOutput                bool   `json:"log_output,omitempty"`
+	DisableFileLogging       bool   `json:"disable_file_logging,omitempty"`
 }

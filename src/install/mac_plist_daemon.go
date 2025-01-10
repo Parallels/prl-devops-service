@@ -16,6 +16,7 @@ type PlistTemplateData struct {
 	EncryptionRsaKey         string
 	HmacSecret               string
 	LogLevel                 string
+	DisableFileLogging       string
 	EnableTLS                string
 	HostTLSPort              string
 	TlsCertificate           string
@@ -41,6 +42,10 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
   </array>
   <key>EnvironmentVariables</key>
   <dict>
+    {{- if not .DisableFileLogging }}
+    <key>` + constants.LOG_TO_FILE_ENV_VAR + `</key>
+    <string>true</string>
+    {{- end }}
     {{- if .Port }}
     <key>` + constants.API_PORT_ENV_VAR + `</key>
     <string>{{ .Port }}</string>
