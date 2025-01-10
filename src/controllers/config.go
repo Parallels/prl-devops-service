@@ -3,6 +3,7 @@ package controllers
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -23,7 +24,6 @@ import (
 
 func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 	provider := serviceprovider.Get()
-	cfg := config.Get()
 
 	ctx.LogInfof("Registering version %s config handlers", version)
 	if provider.System.GetOperatingSystem() == "macos" {
@@ -73,24 +73,21 @@ func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 		WithHandler(GetSystemHealth()).
 		Register()
 
-	// If logging to file is enabled, register the logs endpoints
-	if cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) {
-		restapi.NewController().
-			WithMethod(restapi.GET).
-			WithVersion(version).
-			WithPath("/logs/stream").
-			WithRequiredRole(constants.SUPER_USER_ROLE).
-			WithHandler(StreamSystemLogs()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/logs/stream").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(StreamSystemLogs()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.GET).
-			WithVersion(version).
-			WithPath("/logs").
-			WithRequiredRole(constants.SUPER_USER_ROLE).
-			WithHandler(GetSystemLogs()).
-			Register()
-	}
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/logs").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(GetSystemLogs()).
+		Register()
 }
 
 // @Summary		Gets Parallels Desktop active license
@@ -422,6 +419,17 @@ func GetSystemLogs() restapi.ControllerHandler {
 		defer Recover(ctx, r, w)
 
 		cfg := config.Get()
+
+		// If logging to file is enabled, register the logs endpoints
+		if cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) {
+			err := errors.New("Logs to file is not enabled, we cannot read the logs")
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Failed to read log file: " + err.Error(),
+				Code:    http.StatusInternalServerError,
+			})
+			return
+		}
+
 		logPath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
 		logFile := filepath.Join(logPath, "prldevops.log")
 
@@ -472,7 +480,6 @@ func StreamSystemLogs() restapi.ControllerHandler {
 
 		// Create a done channel to signal when to stop
 		done := make(chan struct{})
-
 		// Start a goroutine to handle client messages and disconnection
 		go func() {
 			defer close(done)
@@ -489,6 +496,13 @@ func StreamSystemLogs() restapi.ControllerHandler {
 
 		// Get log file path
 		cfg := config.Get()
+
+		if cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) {
+			ws.WriteMessage(websocket.TextMessage, []byte("Logs to file is not enabled, we cannot read the logs"))
+			ws.Close()
+			return
+		}
+
 		logPath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
 		logFile := filepath.Join(logPath, "prldevops.log")
 
