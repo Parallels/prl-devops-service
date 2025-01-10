@@ -79,8 +79,10 @@ func main() {
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
 	ctx := basecontext.NewRootBaseContext()
-	cfg := config.Get()
+	ctx.DisableLog()
+	cfg := config.New(ctx)
 	cfg.Load()
 	enableLogToFile := cfg.GetKey(constants.LOG_TO_FILE_ENV_VAR)
 	if enableLogToFile == "true" {
