@@ -420,12 +420,12 @@ func GetSystemLogs() restapi.ControllerHandler {
 
 		cfg := config.Get()
 
-		// If logging to file is enabled, register the logs endpoints
-		if cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) {
+		// Checking if we have the logs to file enabled so we can read the logs
+		if !cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) {
 			err := errors.New("logs to file is not enabled, we cannot read the logs")
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Failed to read log file: " + err.Error(),
-				Code:    http.StatusInternalServerError,
+				Code:    http.StatusBadRequest,
 			})
 			return
 		}
@@ -440,7 +440,7 @@ func GetSystemLogs() restapi.ControllerHandler {
 		if err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Failed to read log file: " + err.Error(),
-				Code:    http.StatusInternalServerError,
+				Code:    http.StatusBadRequest,
 			})
 			return
 		}
@@ -500,7 +500,8 @@ func StreamSystemLogs() restapi.ControllerHandler {
 		// Get log file path
 		cfg := config.Get()
 
-		if cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) {
+		// Checking if we have the logs to file enabled so we can read the logs
+		if !cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) {
 			ws.WriteMessage(websocket.TextMessage, []byte("Logs to file is not enabled, we cannot read the logs"))
 			ws.Close()
 			return
