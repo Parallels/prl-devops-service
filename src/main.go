@@ -68,13 +68,20 @@ func main() {
 	versionSvc.Author = "Carlos Lapao"
 	versionSvc.Name = constants.Name
 	versionSvc.License = "Fair Source (https://fair.io)"
+
 	// Reading the version from a string
 	strVer, err := version.FromString(ver)
+
 	if err == nil {
 		versionSvc.Major = strVer.Major
 		versionSvc.Minor = strVer.Minor
 		versionSvc.Build = strVer.Build
 		versionSvc.Rev = strVer.Rev
+	}
+
+	// setting a build id for debug builds
+	if strings.Contains(os.Args[0], "__debug") {
+		versionSvc.Build = int(time.Now().Unix())
 	}
 
 	c := make(chan os.Signal, 1)

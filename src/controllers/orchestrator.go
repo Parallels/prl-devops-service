@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 )
 
 func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version string) {
@@ -401,6 +403,24 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithPath("/orchestrator/hosts/{id}/reverse-proxy/disable").
 		WithRequiredClaim(constants.CONFIGURE_REVERSE_PROXY_CLAIM).
 		WithHandler(DisableOrchestratorHostReverseProxyHandler()).
+		Register()
+	// endregion
+
+	// region Logs
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/orchestrator/hosts/{id}/logs/stream").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(StreamOrchestratorHostSystemLogs()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/orchestrator/hosts/{id}/logs").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(GetOrchestratorHostSystemLogs()).
 		Register()
 	// endregion
 }
@@ -2446,6 +2466,138 @@ func DeleteOrchestratorHostCatalogCacheItemVersionHandler() restapi.ControllerHa
 
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("Successfully deleted the orchestrator host %s catalog cache item %v and version", id, catalogId, catalogVersion)
+	}
+}
+
+// endregion
+
+// region Logs
+
+// @Summary		Gets the orchestrator host system logs from the disk
+// @Description	This endpoint returns the orchestrator host system logs from the disk
+// @Tags			Config
+// @Produce		plain
+// @Param			id	path	string	true	"Host ID"
+// @Success		200
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Router			/v1/orchestrator/hosts/{id}/logs [get]
+func GetOrchestratorHostSystemLogs() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+		logs, err := orchestratorSvc.GetHostLogs(ctx, id)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(logs))
+		ctx.LogInfof("Successfully got host %s cached Items", id)
+	}
+}
+
+// @Summary		Streams the system logs via WebSocket
+// @Description	This endpoint streams the system logs in real-time via WebSocket
+// @Tags			Config
+// @Produce		json
+// @Success		101	"Switching Protocols to websocket"
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/logs/stream [get]
+func StreamOrchestratorHostSystemLogs() restapi.ControllerHandler {
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+		targetHostWebsocketUrl, err := orchestratorSvc.GetHostWebsocketBaseUrl(ctx, id)
+		if err != nil || targetHostWebsocketUrl == "" {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+		targetWebsocketUrl := fmt.Sprintf("%s/logs/stream", targetHostWebsocketUrl)
+		authKey, authToken, err := orchestratorSvc.GetHostToken(ctx, id)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		// Upgrade the client connection to WebSocket
+		wsConn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			ctx.LogErrorf("Failed to upgrade connection: %v", err)
+			return
+		}
+		defer wsConn.Close()
+
+		// Connect to the target WebSocket server
+		dialer := websocket.Dialer{}
+		remoteWs, _, err := dialer.Dial(targetWebsocketUrl, http.Header{
+			authKey: {authToken},
+		})
+		if err != nil {
+			ctx.LogErrorf("Failed to connect to remote WebSocket: %v", err)
+			return
+		}
+		defer remoteWs.Close()
+
+		// Channel to signal when either connection closes
+		done := make(chan struct{})
+
+		// Goroutine to copy messages from client WebSocket to remote WebSocket
+		go func() {
+			defer func() {
+				close(done) // Signal the main routine to stop
+			}()
+			for {
+				messageType, message, err := wsConn.ReadMessage()
+				if err != nil {
+					ctx.LogErrorf("Error reading from client WebSocket: %v", err)
+					return
+				}
+				if err := remoteWs.WriteMessage(messageType, message); err != nil {
+					ctx.LogErrorf("Error writing to remote WebSocket: %v", err)
+					return
+				}
+			}
+		}()
+
+		// Main routine to copy messages from remote WebSocket to client WebSocket
+		for {
+			messageType, message, err := remoteWs.ReadMessage()
+			if err != nil {
+				ctx.LogErrorf("Error reading from remote WebSocket: %v", err)
+				break
+			}
+			if err := wsConn.WriteMessage(messageType, message); err != nil {
+				ctx.LogErrorf("Error writing to client WebSocket: %v", err)
+				break
+			}
+		}
+
+		// Wait for the other goroutine to finish before returning
+		<-done
 	}
 }
 

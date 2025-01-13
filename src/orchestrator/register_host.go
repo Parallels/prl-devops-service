@@ -24,5 +24,6 @@ func (s *OrchestratorService) RegisterHost(ctx basecontext.ApiContext, host *mod
 	}
 
 	s.Refresh()
+	dbService.SaveNow(ctx)
 	return dbHost, nil
 }

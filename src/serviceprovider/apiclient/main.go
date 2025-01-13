@@ -281,10 +281,18 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 			return &apiResponse, fmt.Errorf("error reading response body from %s, err: %v", url, err)
 		}
 		if destination != nil {
-
-			err = json.Unmarshal(body, destination)
-			if err != nil {
-				return &apiResponse, fmt.Errorf("error unmarshalling body from %s, err: %v ", url, err)
+			if response.Header.Get("Content-Type") == "application/json" {
+				err = json.Unmarshal(body, destination)
+				if err != nil {
+					return &apiResponse, fmt.Errorf("error unmarshalling body from %s, err: %v ", url, err)
+				}
+			} else {
+				if strPtr, ok := destination.(*string); ok {
+					*strPtr = string(body)
+					destination = strPtr
+				} else {
+					return &apiResponse, fmt.Errorf("destination must be a string pointer for non-JSON responses")
+				}
 			}
 
 			c.ctx.LogTracef("[Api Client] Response body: \n%s", string(body))
@@ -295,10 +303,18 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 			}
 
 			var bodyData map[string]interface{}
-
-			err = json.Unmarshal(body, &bodyData)
-			if err != nil {
-				return &apiResponse, fmt.Errorf("error unmarshalling body from %s, err: %v ", url, err)
+			if response.Header.Get("Content-Type") == "application/json" {
+				err = json.Unmarshal(body, &bodyData)
+				if err != nil {
+					return &apiResponse, fmt.Errorf("error unmarshalling body from %s, err: %v ", url, err)
+				}
+			} else {
+				if strPtr, ok := destination.(*string); ok {
+					*strPtr = string(body)
+					destination = strPtr
+				} else {
+					return &apiResponse, fmt.Errorf("destination must be a string pointer for non-JSON responses")
+				}
 			}
 
 			apiResponse.Data = bodyData
@@ -334,6 +350,31 @@ func (c *HttpClientService) GetFileFromUrl(fileUrl string, destinationPath strin
 	}
 
 	return nil
+}
+
+func (c *HttpClientService) Authorize(ctx basecontext.ApiContext, url string) (*HttpClientServiceAuthorizer, error) {
+	if c.authorization != nil {
+		c.authorizer = nil
+		if c.authorization.ApiKey != "" {
+			c.authorizer = &HttpClientServiceAuthorizer{
+				ApiKey: c.authorization.ApiKey,
+			}
+		}
+		if c.authorization.Username != "" && c.authorization.Password != "" {
+			c.ctx.LogDebugf("[Api Client] Getting Client Authorization with username %s ", c.authorization.Username)
+			token, err := getJwtToken(c.ctx, c.timeout, url, c.authorization.Username, c.authorization.Password)
+			if err != nil {
+				return nil, err
+			}
+			c.authorizer = &HttpClientServiceAuthorizer{
+				BearerToken: token,
+			}
+		}
+
+		return c.authorizer, nil
+	}
+
+	return c.authorizer, errors.New("error authorizing, no authorization method set")
 }
 
 func getJwtToken(ctx basecontext.ApiContext, timeout time.Duration, baseUrl, username, password string) (string, error) {

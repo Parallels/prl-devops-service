@@ -412,6 +412,10 @@ func GetSystemHealth() restapi.ControllerHandler {
 // @Tags			Config
 // @Produce		plain
 // @Success		200
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
 // @Router			/logs [get]
 func GetSystemLogs() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -458,6 +462,7 @@ func GetSystemLogs() restapi.ControllerHandler {
 // @Produce		json
 // @Success		101	"Switching Protocols to websocket"
 // @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/logs/stream [get]
