@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -2553,6 +2555,11 @@ func StreamOrchestratorHostSystemLogs() restapi.ControllerHandler {
 
 		// Connect to the target WebSocket server
 		dialer := websocket.Dialer{}
+		// Disable TLS validation if configured
+		cfg := config.Get()
+		if cfg.DisableTlsValidation() {
+			dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		}
 		remoteWs, _, err := dialer.Dial(targetWebsocketUrl, http.Header{
 			authKey: {authToken},
 		})
