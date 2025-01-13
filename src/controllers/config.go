@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -432,14 +433,14 @@ func GetSystemLogs() restapi.ControllerHandler {
 
 		logPath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
 		if logPath == "" {
-			logPath = "."
+			logPath = filepath.Dir(os.Args[0])
 		}
 		logFile := filepath.Join(logPath, "prldevops.log")
 
 		content, err := os.ReadFile(logFile)
 		if err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Failed to read log file: " + err.Error(),
+				Message: fmt.Sprintf("Failed to read log file %s: %v", logFile, err.Error()),
 				Code:    http.StatusBadRequest,
 			})
 			return
@@ -465,7 +466,7 @@ func StreamSystemLogs() restapi.ControllerHandler {
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		CheckOrigin: func(r *http.Request) bool {
-			return true // You might want to make this more restrictive
+			return true
 		},
 	}
 
@@ -509,14 +510,15 @@ func StreamSystemLogs() restapi.ControllerHandler {
 
 		logPath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
 		if logPath == "" {
-			logPath = "."
+			logPath = filepath.Dir(os.Args[0])
 		}
+
 		logFile := filepath.Join(logPath, "prldevops.log")
 
 		// Open the file
 		file, err := os.Open(logFile)
 		if err != nil {
-			ws.WriteMessage(websocket.TextMessage, []byte("Error opening log file: "+err.Error()))
+			ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Failed to open log file %s: %v", logFile, err.Error())))
 			return
 		}
 		defer file.Close()
