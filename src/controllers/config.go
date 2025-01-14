@@ -1,14 +1,12 @@
 package controllers
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
@@ -19,6 +17,7 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 
+	log "github.com/cjlapao/common-go-logger"
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/websocket"
 )
@@ -319,6 +318,9 @@ func GetHardwareInfo() restapi.ControllerHandler {
 		} else {
 			hardwareInfo.IsReverseProxyEnabled = false
 		}
+		if hardwareInfo.OsName == "macOS" {
+			hardwareInfo.IsLogStreamingEnabled = true
+		}
 
 		if err != nil || hardwareInfo == nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
@@ -437,6 +439,7 @@ func GetSystemLogs() restapi.ControllerHandler {
 
 		logPath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
 		if logPath == "" {
+			ctx.LogDebugf("Log path not found, using default path")
 			logPath = filepath.Dir(os.Args[0])
 		}
 		logFile := filepath.Join(logPath, "prldevops.log")
@@ -503,59 +506,20 @@ func StreamSystemLogs() restapi.ControllerHandler {
 			}
 		}()
 
-		// Get log file path
-		cfg := config.Get()
-
-		// Checking if we have the logs to file enabled so we can read the logs
-		if !cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) {
-			ws.WriteMessage(websocket.TextMessage, []byte("Logs to file is not enabled, we cannot read the logs"))
-			ws.Close()
-			return
-		}
-
-		logPath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
-		if logPath == "" {
-			logPath = filepath.Dir(os.Args[0])
-		}
-
-		logFile := filepath.Join(logPath, "prldevops.log")
-
-		// Open the file
-		file, err := os.Open(logFile)
-		if err != nil {
-			ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Failed to open log file %s: %v", logFile, err.Error())))
-			return
-		}
-		defer file.Close()
-
-		// Seek to the end of the file
-		_, err = file.Seek(0, 2)
-		if err != nil {
-			ws.WriteMessage(websocket.TextMessage, []byte("Error seeking log file: "+err.Error()))
-			return
-		}
-
-		reader := bufio.NewReader(file)
-		for {
-			select {
-			case <-done:
+		subscriptionId := "logsub"
+		onMessage := func(msg log.LogMessage) {
+			err = ws.WriteMessage(websocket.TextMessage, []byte(msg.Message))
+			if err != nil {
+				ctx.LogErrorf("Error writing to WebSocket: %v", err)
 				return
-			default:
-				line, err := reader.ReadString('\n')
-				if err != nil {
-					if err.Error() == "EOF" {
-						time.Sleep(100 * time.Millisecond)
-						continue
-					}
-					return
-				}
-
-				err = ws.WriteMessage(websocket.TextMessage, []byte(line))
-				if err != nil {
-					ctx.LogErrorf("Error writing to WebSocket: %v", err)
-					return
-				}
 			}
+		}
+		subscriptionId = ctx.Logger().OnMessage(subscriptionId, onMessage)
+
+		for range done {
+			// ctx.Logger().RemoveSubscriber(onMessage)
+			ctx.Logger().RemoveMessageHandler(subscriptionId)
+			return
 		}
 	}
 }

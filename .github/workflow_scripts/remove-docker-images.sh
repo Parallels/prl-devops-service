@@ -58,9 +58,16 @@ function remove() {
   fi
 
   lines=$(list)
+  if [ -z "$lines" ]; then
+    echo "No images found matching pattern: $PATTERN"
+    exit 0
+  fi
+
   echo "$lines" | while IFS= read -r line; do
-    echo "Deleting image $line"
-    hub-tool tag rm "$line" -f
+    if [ -n "$line" ]; then
+      echo "Deleting image $line"
+      hub-tool tag rm "$line" -f
+    fi
   done
 }
 

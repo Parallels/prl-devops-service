@@ -80,6 +80,10 @@ func (c *BaseContext) Context() context.Context {
 	return c.ctx
 }
 
+func (c *BaseContext) Logger() *log.LoggerService {
+	return logger
+}
+
 func (c *BaseContext) GetRequestId() string {
 	if c.ctx == nil {
 		return ""

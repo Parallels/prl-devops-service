@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Parallels/prl-devops-service/models"
+	log "github.com/cjlapao/common-go-logger"
 )
 
 type ApiContext interface {
@@ -15,6 +16,7 @@ type ApiContext interface {
 	EnableLog()
 	DisableLog()
 	ToggleLogTimestamps(value bool)
+	Logger() *log.LoggerService
 	LogInfof(format string, a ...interface{})
 	LogErrorf(format string, a ...interface{})
 	LogDebugf(format string, a ...interface{})

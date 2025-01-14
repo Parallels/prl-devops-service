@@ -128,7 +128,7 @@ push-alpha-container:
 .PHONY: clean-alpha
 clean-alpha-container:
 	@echo "Removing all alpha versions from Docker Hub..."
-	@./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*alpha.*$' 
+	@./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*alpha.*$$' 
 	@echo "All alpha versions removed."
 
 .PHONY: push-beta-container
@@ -147,6 +147,12 @@ push-beta-container:
 	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):unstable tag..."
 	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):unstable
 	@echo "Build finished. Pushed to cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_beta and cjlapao/$(DOCKER_PACKAGE_NAME):unstable."
+
+.PHONY: clean-beta
+clean-beta-container:
+	@echo "Removing all beta versions from Docker Hub..."
+	@./.github/workflow_scripts/remove-docker-images.sh rm --filter ".*beta.*$$" 
+	@echo "All alpha versions removed."
 
 .PHONY: clean
 clean:
