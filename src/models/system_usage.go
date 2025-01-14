@@ -10,6 +10,7 @@ type SystemUsageResponse struct {
 	ParallelsDesktopLicensed bool                `json:"parallels_desktop_licensed,omitempty"`
 	ExternalIpAddress        string              `json:"external_ip_address,omitempty"`
 	IsReverseProxyEnabled    bool                `json:"is_reverse_proxy_enabled"`
+	IsLogStreamingEnabled    bool                `json:"is_log_streaming_enabled"`
 	ReverseProxy             *SystemReverseProxy `json:"reverse_proxy,omitempty"`
 	SystemReserved           *SystemUsageItem    `json:"system_reserved,omitempty"`
 	Total                    *SystemUsageItem    `json:"total,omitempty"`

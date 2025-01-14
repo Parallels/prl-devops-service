@@ -102,6 +102,9 @@ func main() {
 			} else {
 				logFilename = filepath.Join(filePath, logFilename)
 			}
+		} else {
+			logPath := filepath.Dir(os.Args[0])
+			logFilename = filepath.Join(logPath, logFilename)
 		}
 
 		executable, err := os.Executable()

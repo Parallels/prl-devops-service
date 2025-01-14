@@ -11,13 +11,14 @@ require (
 	github.com/briandowns/spinner v1.23.0
 	github.com/cjlapao/common-go v0.0.39
 	github.com/cjlapao/common-go-cryptorand v0.0.6
-	github.com/cjlapao/common-go-logger v0.0.9
+	github.com/cjlapao/common-go-logger v0.0.10
 	github.com/go-jose/go-jose/v4 v4.0.2
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/jfrog/jfrog-client-go v1.36.1
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/files/v2 v2.0.0
@@ -55,7 +56,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gookit/color v1.5.4 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jfrog/archiver/v3 v3.6.0 // indirect
 	github.com/jfrog/build-info-go v1.9.21 // indirect

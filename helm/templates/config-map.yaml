@@ -16,6 +16,10 @@ data:
   {{- else }}
   MODE: "api"
   {{- end }}
+  {{- if .Values.logs.toFile }}
+  PRL_DEVOPS_LOG_TO_FILE: "true"
+  PRL_DEVOPS_LOG_FILE_PATH: {{ .Values.logs.folder }}
+  {{- end }}
   JWT_DURATION: {{ .Values.security.jwt.duration | quote }}
   JWT_SIGN_ALGORITHM: {{ .Values.security.jwt.signing_method | quote }}
   SECURITY_PASSWORD_MIN_PASSWORD_LENGTH: {{ .Values.security.password.min_password_length | quote }}

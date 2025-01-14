@@ -78,6 +78,10 @@ config:
   mode: "api"
   disableCatalogCaching: false
 
+logs:
+  toFile: true
+  folder: ""
+
 ingress:
   enabled: false
   istio:

@@ -7,7 +7,10 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/models"
+	log "github.com/cjlapao/common-go-logger"
 )
+
+var mock_logger = log.Get().WithTimestamp()
 
 type MockBaseContext struct {
 	shouldLog                bool
@@ -22,6 +25,10 @@ func NewMockBaseContext() *MockBaseContext {
 	return &MockBaseContext{
 		callbackFunctions: make(map[string]func(args ...interface{})),
 	}
+}
+
+func (c *MockBaseContext) Logger() *log.LoggerService {
+	return mock_logger
 }
 
 func (c *MockBaseContext) On(functionName string, callback func(args ...interface{})) {
