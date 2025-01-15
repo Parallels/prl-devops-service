@@ -39,6 +39,7 @@ type Config struct {
 	includeOwnResources bool
 	fileFormat          string
 	filename            string
+	isLoaded            bool
 	config              ConfigFile
 }
 
@@ -65,12 +66,17 @@ func Get() *Config {
 }
 
 func (c *Config) Load() bool {
+	if c.isLoaded {
+		return true
+	}
+
 	fileName := ""
 	configFileName := helper.GetFlagValue(constants.CONFIG_FILE_FLAG, "")
 
 	execPath, err := os.Executable()
 	if err != nil {
 		c.ctx.LogErrorf("Error getting executable path: %s", err.Error())
+		c.isLoaded = false
 		return false
 	}
 	if configFileName != "" {
@@ -98,6 +104,7 @@ func (c *Config) Load() bool {
 
 	if fileName == "" {
 		c.ctx.LogInfof("No configuration file found")
+		c.isLoaded = false
 		return false
 	}
 
@@ -105,11 +112,13 @@ func (c *Config) Load() bool {
 	content, err := helper.ReadFromFile(fileName)
 	if err != nil {
 		c.ctx.LogErrorf("Error reading configuration file: %s", err.Error())
+		c.isLoaded = false
 		return false
 	}
 
 	if content == nil {
-		c.ctx.LogErrorf("Error reading configuration file: %s", err.Error())
+		c.ctx.LogErrorf("Error reading configuration file: content is nil")
+		c.isLoaded = false
 		return false
 	}
 
@@ -117,6 +126,7 @@ func (c *Config) Load() bool {
 		err = json.Unmarshal(content, &c.config)
 		if err != nil {
 			c.ctx.LogErrorf("Error reading configuration file: %s", err.Error())
+			c.isLoaded = false
 			return false
 		}
 		c.fileFormat = "json"
@@ -124,6 +134,7 @@ func (c *Config) Load() bool {
 		err = yaml.Unmarshal(content, &c.config)
 		if err != nil {
 			c.ctx.LogErrorf("Error reading configuration file: %s", err.Error())
+			c.isLoaded = false
 			return false
 		}
 		c.fileFormat = "yaml"
@@ -131,6 +142,7 @@ func (c *Config) Load() bool {
 
 	c.LogLevel(false)
 	c.filename = fileName
+	c.isLoaded = true
 	return true
 }
 
@@ -161,6 +173,11 @@ func (c *Config) Save() bool {
 	}
 
 	return true
+}
+
+func (c *Config) Refresh() bool {
+	c.isLoaded = false
+	return c.Load()
 }
 
 func (c *Config) CleanReverseProxyDataFromConfig() error {

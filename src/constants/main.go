@@ -45,6 +45,8 @@ const (
 	CLI_MODE          = "cli"
 	ORCHESTRATOR_MODE = "orchestrator"
 	CATALOG_MODE      = "catalog"
+
+	DEFAULT_LOG_FILE_NAME = "prldevops.log"
 )
 
 const (

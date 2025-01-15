@@ -16,6 +16,7 @@ type BaseContext struct {
 	ctx         context.Context
 	authContext *AuthorizationContext
 	User        models.ApiUser
+	logFilePath string
 }
 
 func NewBaseContext() *BaseContext {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -48,7 +47,6 @@ func main() {
 	// catching all of the exceptions
 	defer func() {
 		// Saving the database before exiting
-
 		if err := recover(); err != nil {
 			sp := serviceprovider.Get()
 			if sp != nil {
@@ -88,31 +86,6 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	ctx := basecontext.NewRootBaseContext()
-	ctx.DisableLog()
-	cfg := config.New(ctx)
-	cfg.Load()
-	enableLogToFile := cfg.GetKey(constants.LOG_TO_FILE_ENV_VAR)
-	if enableLogToFile == "true" {
-		logFilename := "prldevops.log"
-		filePath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
-		if filePath != "" {
-			baseFolder := filepath.Dir(filePath)
-			if _, err := os.Stat(baseFolder); os.IsNotExist(err) {
-				ctx.LogErrorf("[Core] Log file path does not exist: %s, using executable path", filePath)
-			} else {
-				logFilename = filepath.Join(filePath, logFilename)
-			}
-		} else {
-			logPath := filepath.Dir(os.Args[0])
-			logFilename = filepath.Join(logPath, logFilename)
-		}
-
-		executable, err := os.Executable()
-		if err == nil && !strings.Contains(executable, "__debug") {
-			logFilename = executable + ".log"
-		}
-		ctx.EnableLogFile(logFilename)
-	}
 
 	go func() {
 		<-c
