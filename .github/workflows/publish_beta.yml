@@ -248,8 +248,8 @@ jobs:
       - name: Compress asset to tar.gz
         run: |
           cd src
-          tar -czf prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz prldevops
-          md5 prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz | awk '{print $4}' > prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+          tar -czf prldevops-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz prldevops
+          md5 prldevops-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz | awk '{print $4}' > prldevops-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
 
       - name: Upload release asset
         uses: actions/upload-release-asset@v1.0.1
@@ -257,8 +257,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.beta-release.outputs.upload_url }}
-          asset_path: src/prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-          asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          asset_path: src/prldevops-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          asset_name: prldevops-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
           asset_content_type: application/octet-stream
       - name: Upload release asset checksum
         uses: actions/upload-release-asset@v1.0.1
@@ -266,8 +266,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.beta-release.outputs.upload_url }}
-          asset_path: src/prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
-          asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+          asset_path: src/prldevops-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+          asset_name: prldevops-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
           asset_content_type: application/octet-stream
       - name: Clean Up Keychain
         if: always()

@@ -75,7 +75,7 @@ jobs:
           # Generate Helm Chart
           make build-helm-chart
 
-          git add VERSION CHANGELOG.md ./docs/charts/* ./docs/_posts/* ./src/* ./helm/Chart.yaml ./badges/* 
+          git add VERSION CHANGELOG.md ./docs/charts/* ./docs/_posts/* ./src/* ./helm/Chart.yaml ./badges/*
           git commit -m "Release extension version $NEW_VERSION"
 
           git push --set-upstream origin release/$NEW_VERSION
@@ -84,7 +84,7 @@ jobs:
 
       - name: Create PR
         run: |
-          ./.github/workflow_scripts/generate-changelog.sh --mode RELEASE --repo ${{ github.repository }} --version ${{ env.new_version }} --output-to-file 
+          ./.github/workflow_scripts/generate-changelog.sh --mode RELEASE --repo ${{ github.repository }} --version ${{ env.new_version }} --output-to-file
           gh pr create \
             --title "Release version ${{ env.new_version }}" \
             --body-file release_notes.md \

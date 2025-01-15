@@ -7,10 +7,10 @@ items:
     icon_brand: true
     content: |-
       <div class="mt-2 flex flex-column">
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-arm64.tar.gz" class="text-button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops-darwin-arm64.tar.gz" class="text-button is-primary">
           Parallels Desktop DevOps Service for Mac with Apple Silicon
         </a>
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-amd64.tar.gz" class="text-button  is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops-darwin-amd64.tar.gz" class="text-button  is-primary">
           Parallels Desktop DevOps Service for Mac with Intel chip
         </a>
       </div>
@@ -47,13 +47,13 @@ items:
         </article>
       </div>
       <div class="flex flex-column">
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--linux-x86.tar.gz" class="text-button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops-linux-x86.tar.gz" class="text-button is-primary">
           Parallels Desktop DevOps Service x64
         </a>
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--linux-amd64.tar.gz" class="text-button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops-linux-amd64.tar.gz" class="text-button is-primary">
           Parallels Desktop DevOps Service x64
         </a>
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--darwin-arm64.tar.gz" class="text-button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops-darwin-arm64.tar.gz" class="text-button is-primary">
           Parallels Desktop DevOps Service amr64
         </a>
       </div>
@@ -89,13 +89,13 @@ items:
         </article>
       </div>
       <div class="flex flex-column">
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--windows-amd64.tar.gz" class="text-button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops-windows-amd64.tar.gz" class="text-button is-primary">
           Parallels Desktop DevOps Service x64
         </a>
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--windows-x86.tar.gz" class="text-button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops-windows-x86.tar.gz" class="text-button is-primary">
           Parallels Desktop DevOps Service x86
         </a>
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops--windows-arm64.tar.gz" class="text-button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/release-v##page.version/prldevops-windows-arm64.tar.gz" class="text-button is-primary">
           Parallels Desktop DevOps Service arm64
         </a>
       </div>
