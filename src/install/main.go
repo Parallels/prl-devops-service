@@ -6,12 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/logs"
 	"github.com/cjlapao/common-go/helper"
 )
 
@@ -22,6 +24,7 @@ const (
 
 func InstallService(ctx basecontext.ApiContext, configFilePath string) error {
 	ctx.LogInfof("Installing service...")
+	logs.SetupFileLogger(fmt.Sprintf("install_%v.log", time.Now().Unix()), ctx)
 	var config ApiServiceConfig
 	var err error
 	if configFilePath != "" {
@@ -48,6 +51,7 @@ func InstallService(ctx basecontext.ApiContext, configFilePath string) error {
 }
 
 func UninstallService(ctx basecontext.ApiContext, removeDatabase bool) error {
+	logs.SetupFileLogger(fmt.Sprintf("uninstall_%v.log", time.Now().Unix()), ctx)
 	switch os := runtime.GOOS; os {
 	case "darwin":
 		return uninstallServiceOnMac(ctx, removeDatabase)

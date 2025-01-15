@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/logs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -437,12 +437,14 @@ func GetSystemLogs() restapi.ControllerHandler {
 			return
 		}
 
-		logPath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
-		if logPath == "" {
-			ctx.LogDebugf("Log path not found, using default path")
-			logPath = filepath.Dir(os.Args[0])
+		logFile := logs.GetLogFilePath(ctx)
+		if logFile == "" {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Failed to read log file: log file path is empty",
+				Code:    http.StatusBadRequest,
+			})
+			return
 		}
-		logFile := filepath.Join(logPath, "prldevops.log")
 
 		content, err := os.ReadFile(logFile)
 		if err != nil {
