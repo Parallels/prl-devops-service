@@ -501,7 +501,9 @@ func StreamSystemLogs() restapi.ControllerHandler {
 				_, _, err := ws.ReadMessage()
 				if err != nil {
 					if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-						ctx.LogErrorf("WebSocket read error: %v", err)
+						if err.Error() != "websocket: close 1000 (normal)" {
+							ctx.LogErrorf("WebSocket read error: %v", err)
+						}
 					}
 					return
 				}
@@ -512,16 +514,15 @@ func StreamSystemLogs() restapi.ControllerHandler {
 		onMessage := func(msg log.LogMessage) {
 			err = ws.WriteMessage(websocket.TextMessage, []byte(msg.Message))
 			if err != nil {
-				ctx.LogErrorf("Error writing to WebSocket: %v", err)
+				if err.Error() != "websocket: close sent" {
+					ctx.LogErrorf("Error writing to WebSocket: %v", err)
+				}
 				return
 			}
 		}
 		subscriptionId = ctx.Logger().OnMessage(subscriptionId, onMessage)
 
-		for range done {
-			// ctx.Logger().RemoveSubscriber(onMessage)
-			ctx.Logger().RemoveMessageHandler(subscriptionId)
-			return
-		}
+		<-done
+		ctx.Logger().RemoveMessageHandler(subscriptionId)
 	}
 }

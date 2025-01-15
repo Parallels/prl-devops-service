@@ -67,7 +67,7 @@ func SetupFileLogger(logFilename string, ctx basecontext.ApiContext) {
 		executable, err := os.Executable()
 		if err == nil && strings.Contains(executable, "__debug") {
 			// Remove any debug log files
-			files, err := filepath.Glob(filepath.Join(executableFilePath, "*__debug_bin*.log"))
+			files, err := filepath.Glob(filepath.Join(executableFilePath, "*__debug_bin*.log*"))
 			if err == nil {
 				for _, file := range files {
 					os.Remove(file)
