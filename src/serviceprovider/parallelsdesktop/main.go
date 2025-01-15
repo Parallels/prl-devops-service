@@ -343,7 +343,7 @@ func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string
 		}
 	}
 
-	ctx.LogInfof("User %s has %s VMs", username, len(userMachines))
+	ctx.LogInfof("User %s has %v VMs", username, len(userMachines))
 	return userMachines, nil
 }
 
