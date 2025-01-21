@@ -148,8 +148,11 @@ jobs:
           swag init -g main.go
           cd ..
       - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
         run: |
-          cd src && go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
+          cd src && CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
       - name: Create and Unlock Temporary Keychain
         run: |
           security create-keychain -p "github" temp.keychain
