@@ -317,7 +317,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      VERSION: ""
+      VERSION: ${{ needs.beta-release.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - name: Get version
