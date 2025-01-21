@@ -1,0 +1,95 @@
+name: Create release PR
+
+run-name: Create release PR for new ${{ github.event.inputs.version }} version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        type: choice
+        description: "What type of release is this"
+        options:
+          - "major"
+          - "minor"
+          - "patch"
+
+jobs:
+  create-release-pr:
+    name: Create release PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      new_version: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21.x"
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
+      - name: Check for Changes to the Changelog
+        id: diff
+        if: false
+        run: |
+          NEW_VERSION=$(./.github/workflow_scripts/increment-version.sh -t ${{ inputs.version }} -f VERSION)
+          LAST_CHANGELOG_VERSION=$(./.github/workflow_scripts/get-latest-changelog-version.sh)
+          if [ "$NEW_VERSION" != "$LAST_CHANGELOG_VERSION" ]; then
+            echo "Changelog not updated for version $NEW_VERSION lastest version is $LAST_CHANGELOG_VERSION"
+            exit 1
+          fi
+      - name: Bump version and push
+        env:
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+        run: |
+          git config --global user.email "cjlapao@gmail.com"
+          git config --global user.name "cjlapao"
+
+          NEW_VERSION=$(./.github/workflow_scripts/increment-version.sh -t ${{ inputs.version }} -f VERSION)
+          echo "$NEW_VERSION" > ./VERSION
+          sed -i "/^version:/c\version: \"$NEW_VERSION\"" ./helm/Chart.yaml
+          sed -i "/^appVersion:/c\appVersion: \"$NEW_VERSION\"" ./helm/Chart.yaml
+          sed -i "/^var ver =/c\\var ver = \"$NEW_VERSION\"" ./src/main.go
+          sed -i "/^\/\/	@version/c\\//	@version $NEW_VERSION" ./src/main.go
+
+          git checkout -b release/"$NEW_VERSION"
+
+          go install github.com/swaggo/swag/cmd/swag@latest
+          cd src
+          go mod tidy
+          swag fmt
+          swag init -g main.go
+          cd ..
+
+          # Generate changelog for the new version
+          ./.github/workflow_scripts/generate-changelog.sh --repo ${{ github.repository }} --version $NEW_VERSION
+
+          # Generate blog records for the new version
+          ./.github/workflow_scripts/generate-blog-records.sh
+
+          # Generate Helm Chart
+          make build-helm-chart
+
+          git add VERSION CHANGELOG.md ./docs/charts/* ./docs/_posts/* ./src/* ./helm/Chart.yaml ./badges/* 
+          git commit -m "Release extension version $NEW_VERSION"
+
+          git push --set-upstream origin release/$NEW_VERSION
+
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_ENV"
+
+      - name: Create PR
+        run: |
+          ./.github/workflow_scripts/generate-changelog.sh --mode RELEASE --repo ${{ github.repository }} --version ${{ env.new_version }} --output-to-file 
+          gh pr create \
+            --title "Release version ${{ env.new_version }}" \
+            --body-file release_notes.md \
+            --base main \
+            --head release/${{ env.new_version }}
+          gh pr edit --add-label release-request
+        env:
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}

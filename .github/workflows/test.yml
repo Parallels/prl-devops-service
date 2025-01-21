@@ -1,0 +1,41 @@
+name: Test Script
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    name: Release Service
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    env:
+      VERSION: "" # will be set in the workflow
+      UPLOAD_URL: "" # will be set in the workflow
+    outputs:
+      version: ${{ env.VERSION }}
+      UPLOAD_URL: ${{ env.UPLOAD_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse version from package.json
+        run: |
+          echo "VERSION=$(cat ./VERSION)" >> "$GITHUB_ENV"
+      - name: Generate release notes
+        run: |
+          ./.github/workflow_scripts/get-latest-changelog.sh --output-to-file
+          cat release_notes.md
+      - name: Create release and upload release asset
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const release = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: 'v' + process.env.VERSION
+            });
+            core.exportVariable('UPLOAD_URL', release.data.upload_url);
+      - name: Test
+        working-directory: ${{ github.workspace }}/src
+        run: echo ${{ env.UPLOAD_URL }}
