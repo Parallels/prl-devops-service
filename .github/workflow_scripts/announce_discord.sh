@@ -78,6 +78,6 @@ curl -H "Content-Type: application/json" \
 if [ $? -eq 0 ]; then
   echo "Successfully posted changelog to Discord"
 else
-  echo "Failed to post changelog to Discord"
+  echo "Failed to post changelog to Discord webhook"
   exit 1
 fi
