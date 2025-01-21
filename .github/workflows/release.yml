@@ -218,6 +218,112 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:latest
             ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:${{ env.EXT_VERSION }}
+  remove-old-beta-release:
+    name: Remove old beta release
+    needs:
+      - release
+      - build-containers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    env:
+      VERSION: ${{ needs.release.outputs.version }}
+    steps:
+      - name: Remove old beta release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            let version ='${{ env.VERSION }}'.trim().split('.').slice(0, 2).join('.');
+            let currentVersion = `${version}.${{github.run_id}}-beta`;
+            console.log(`Current Version: ${currentVersion}`);
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+
+            for(const idx in releases.data) {
+              const release = releases.data[idx];
+              if (release.tag_name.includes("-beta") && release.tag_name !== `v${currentVersion}`) {
+                for(const assetIdx in release.assets) {
+                  const asset = release.assets[assetIdx];
+                  console.log(`Deleting asset: ${asset.name}`);
+                  await github.rest.repos.deleteReleaseAsset({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    asset_id: asset.id
+                  });
+                }
+
+                console.log(`Deleting release: ${release.tag_name}`);
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.id
+                });
+
+                console.log(`Deleting tag: tags/${release.tag_name}`);
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${release.tag_name}`
+                });
+              }
+            }
+  remove-old-alpha-release:
+    name: Remove old beta release
+    needs:
+      - release
+      - build-containers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    env:
+      VERSION: ${{ needs.release.outputs.version }}
+    steps:
+      - name: Remove old beta release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            let version ='${{ env.VERSION }}'.trim().split('.').slice(0, 2).join('.');
+            let currentVersion = `${version}.${{github.run_id}}-beta`;
+            console.log(`Current Version: ${currentVersion}`);
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+
+            for(const idx in releases.data) {
+              const release = releases.data[idx];
+              if (release.tag_name.includes("-alpha") && release.tag_name !== `v${currentVersion}`) {
+                for(const assetIdx in release.assets) {
+                  const asset = release.assets[assetIdx];
+                  console.log(`Deleting asset: ${asset.name}`);
+                  await github.rest.repos.deleteReleaseAsset({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    asset_id: asset.id
+                  });
+                }
+
+                console.log(`Deleting release: ${release.tag_name}`);
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.id
+                });
+
+                console.log(`Deleting tag: tags/${release.tag_name}`);
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${release.tag_name}`
+                });
+              }
+            }
   discord-announce:
     needs:
       - build-containers
