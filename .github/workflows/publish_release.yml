@@ -1,0 +1,102 @@
+name: Publish New Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "VERSION"
+      - "CHANGELOG.md"
+
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release"
+        required: true
+
+jobs:
+  check-version-change:
+    outputs:
+      changed: ${{ steps.check-version.outputs.result }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check if version has changed
+        id: check-version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get the version from the workflow input
+            let version = '${{ github.event.inputs.version }}';
+            if (!version) {
+              fs = require('fs');
+              let v = '';
+              try {
+                v = fs.readFileSync('./VERSION', 'utf8');
+                console.log(`Version found: ${v}`);
+              }
+              catch (err) {
+                return false;
+              }
+
+              if (!v) {
+                return false;
+              } else {
+                version = v;
+              }
+            }
+
+            // Find a release for that version
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: `v${version}`,
+            }).catch(() => null);
+
+            // If the release exists, the version has not changed
+            if (release) {
+              console.log(`Version ${version} has an existing release`);
+              console.log(release.data.html_url);
+              core.summary.addLink(`Release v${version}`, release.data.html_url);
+              await core.summary.write();
+              return "false";
+            }
+            console.log(`Version ${version} does not have a release`);
+            return true;
+  release:
+    needs: check-version-change
+    if: ${{ needs.check-version-change.outputs.changed == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    env:
+      VERSION: "" # will be set in the workflow
+    outputs:
+      version: ${{ env.VERSION }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse version from package.json
+        run: |
+          echo "EXT_VERSION=$(cat ./VERSION)" >> "$GITHUB_ENV"
+      - name: Generate release notes
+        run: |
+          ./.github/workflow_scripts/get-latest-changelog.sh --output-to-file
+          cat release_notes.md
+      - name: Create release and upload release asset
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: fs.readFileSync("release_notes.md", "utf8"),
+              tag_name: "v${{ env.VERSION }}",
+              name: "v${{ env.VERSION }}",
+              draft: true,
+              prerelease: false
+            });
+            core.exportVariable('UPLOAD_URL', release.data.upload_url);

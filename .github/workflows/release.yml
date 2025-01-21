@@ -1,63 +1,67 @@
-name: Create release PR
-
-run-name: Create release PR for new ${{ github.event.inputs.version }} version
+name: Release Service
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        required: true
-        type: choice
-        description: "What type of release is this"
-        options:
-          - "major"
-          - "minor"
-          - "patch"
+  release:
+    types: [published]
 
 jobs:
-  create-release-pr:
-    name: Create release PR
+  release:
+    name: Release Service
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
+      packages: read
     env:
-      new_version: ""
+      VERSION: "" # will be set in the workflow
+      UPLOAD_URL: "" # will be set in the workflow
+    outputs:
+      version: ${{ env.VERSION }}
+      UPLOAD_URL: ${{ env.UPLOAD_URL }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - name: Parse version from package.json
+        run: |
+          echo "VERSION=$(cat ./VERSION)" >> "$GITHUB_ENV"
+      - name: Generate release notes
+        run: |
+          ./.github/workflow_scripts/get-latest-changelog.sh --output-to-file
+          cat release_notes.md
+      - name: Create release and upload release asset
+        uses: actions/github-script@v7
         with:
-          node-version: "16"
+          script: |
+            const release = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: 'v' + process.env.VERSION
+            });
+            core.exportVariable('UPLOAD_URL', release.data.upload_url);
+  releases-matrix:
+    needs: release
+    name: Release Go Binary (Linux/Windows)
+    runs-on: ubuntu-latest
+    env:
+      EXT_VERSION: ${{ needs.release.outputs.version }}
+      AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
+        goos: [linux, windows]
+        goarch: ["386", amd64, arm64]
+        exclude:
+          - goarch: "386"
+            goos: darwin
+    steps:
+      - uses: actions/checkout@v4
       - name: Setup Go 1.21.x
         uses: actions/setup-go@v4
         with:
           go-version: "1.21.x"
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
-      - name: Check for Changes to the Changelog
-        id: diff
-        if: false
+      - name: Add Inbuilt Variables
         run: |
-          NEW_VERSION=$(./.github/workflow_scripts/increment-version.sh -t ${{ inputs.version }} -f VERSION)
-          LAST_CHANGELOG_VERSION=$(./.github/workflow_scripts/get-latest-changelog-version.sh)
-          if [ "$NEW_VERSION" != "$LAST_CHANGELOG_VERSION" ]; then
-            echo "Changelog not updated for version $NEW_VERSION lastest version is $LAST_CHANGELOG_VERSION"
-            exit 1
-          fi
-      - name: Bump version and push
-        env:
-          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
-        run: |
-          git config --global user.email "cjlapao@gmail.com"
-          git config --global user.name "cjlapao"
-
-          NEW_VERSION=$(./.github/workflow_scripts/increment-version.sh -t ${{ inputs.version }} -f VERSION)
-          echo "$NEW_VERSION" > ./VERSION
-          sed -i "/^version:/c\version: \"$NEW_VERSION\"" ./helm/Chart.yaml
-          sed -i "/^appVersion:/c\appVersion: \"$NEW_VERSION\"" ./helm/Chart.yaml
-          sed -i "/^var ver =/c\\var ver = \"$NEW_VERSION\"" ./src/main.go
-          sed -i "/^\/\/	@version/c\\//	@version $NEW_VERSION" ./src/main.go
-
-          git checkout -b release/"$NEW_VERSION"
+          sed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
 
           go install github.com/swaggo/swag/cmd/swag@latest
           cd src
@@ -65,31 +69,169 @@ jobs:
           swag fmt
           swag init -g main.go
           cd ..
-
-          # Generate changelog for the new version
-          ./.github/workflow_scripts/generate-changelog.sh --repo ${{ github.repository }} --version $NEW_VERSION
-
-          # Generate blog records for the new version
-          ./.github/workflow_scripts/generate-blog-records.sh
-
-          # Generate Helm Chart
-          make build-helm-chart
-
-          git add VERSION CHANGELOG.md ./docs/charts/* ./docs/_posts/* ./src/* ./helm/Chart.yaml ./badges/* 
-          git commit -m "Release extension version $NEW_VERSION"
-
-          git push --set-upstream origin release/$NEW_VERSION
-
-          echo "new_version=$NEW_VERSION" >> "$GITHUB_ENV"
-
-      - name: Create PR
+      - uses: wangyoucao577/go-release-action@v1
+        timeout-minutes: 10
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          goversion: "https://dl.google.com/go/go1.21.1.linux-amd64.tar.gz"
+          project_path: "./src"
+          binary_name: "prldevops"
+          release_name: "v${{ env.EXT_VERSION }}"
+          ldflags: "-s -w -X main.ver=${{ env.EXT_VERSION }} -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}'"
+  releases-macos-matrix:
+    needs:
+      - release
+    runs-on: macos-latest
+    name: Release Go Binary (macOS)
+    env:
+      EXT_VERSION: ${{ needs.release.outputs.version }}
+      AMPLITUDE_API_KEY: ${{ secrets.AMPLITUDE_API_KEY }}
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_KEY_ISSUER: ${{ secrets.APPLE_API_KEY_ISSUER }}
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+      APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # build and publish in parallel: darwin/amd64, darwin/arm64
+        goos: [darwin]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21.x"
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
+      - name: Add Inbuilt Variables
         run: |
-          ./.github/workflow_scripts/generate-changelog.sh --mode RELEASE --repo ${{ github.repository }} --version ${{ env.new_version }} --output-to-file 
-          gh pr create \
-            --title "Release version ${{ env.new_version }}" \
-            --body-file release_notes.md \
-            --base main \
-            --head release/${{ env.new_version }}
-          gh pr edit --add-label release-request
+          brew install gnu-sed
+
+          gsed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
+
+          go install github.com/swaggo/swag/cmd/swag@latest
+          cd src
+          go mod tidy
+          swag fmt
+          swag init -g main.go
+          cd ..
+      - name: Build
+        run: |
+          cd src && go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
+      - name: Create and Unlock Temporary Keychain
+        run: |
+          security create-keychain -p "github" temp.keychain
+          security unlock-keychain -p "github" temp.keychain
+          security set-keychain-settings -lut 3600 temp.keychain
+          security list-keychains -s temp.keychain
+
+      - name: Import sign certificate
+        run: |
+          echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > apple_developer_identity.p12
+          security import apple_developer_identity.p12 -k temp.keychain -P ${{ secrets.APPLE_CERT_PASSWORD }} -T /usr/bin/codesign
+          rm apple_developer_identity.p12
+          security set-key-partition-list -S apple-tool:,apple: -s -k "github" temp.keychain
+          security list-keychains
+          security find-identity -v -p codesigning temp.keychain
+
+      - name: Import notary credentials
+        run: |
+          echo "${{ secrets.APPLE_API_KEY }}" | base64 --decode > apple_api_key.p8
+          xcrun notarytool store-credentials "notary-credentials" \
+            --key apple_api_key.p8 \
+            --key-id ${{ secrets.APPLE_API_KEY_ID }} \
+            --issuer ${{ secrets.APPLE_API_KEY_ISSUER }}
+
+      - name: Sign binary
+        run: |
+          cd src
+          codesign --force --deep --strict --verbose --options=runtime,library --sign "${{ secrets.APPLE_DEVELOPER_IDENTITY }}" prldevops
+          ditto -c -k --sequesterRsrc prldevops prldevops.zip
+          xcrun notarytool submit prldevops.zip --keychain-profile "notary-credentials" --wait
+
+      - name: Verify signed binary
+        run: |
+          cd src
+          codesign --verify --verbose prldevops
+          spctl -t open --context context:primary-signature -a -vvv prldevops
+
+      - name: Compress asset to tar.gz
+        run: |
+          cd src
+          tar -czf prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz prldevops
+          md5 prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz | awk '{print $4}' > prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1.0.1
         env:
-          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: src/prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          asset_content_type: application/octet-stream
+      - name: Upload release asset checksum
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: src/prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+          asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+          asset_content_type: application/octet-stream
+      - name: Clean Up Keychain
+        if: always()
+        run: |
+          security delete-keychain temp.keychain
+  build-containers:
+    needs: release
+    env:
+      EXT_VERSION: ${{ needs.release.outputs.version }}
+      AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            VERSION=${{ env.EXT_VERSION }}
+          secrets: |
+            amplitude_api_key=${{ secrets.AMPLITUDE_API_KEY }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:latest
+            ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:${{ env.EXT_VERSION }}
+  discord-announce:
+    needs:
+      - build-containers
+    name: Announce on Discord
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      VERSION: ""
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+      - name: Announce on discord
+        id: announce_discord
+        run: |
+          ./.github/workflow_scripts/announce_discord.sh --webhook-url $DISCORD_WEBHOOK --version $VERSION
+        env:
+          SLACK_WEBHOOKS: ${{ env.DISCORD_WEBHOOK }}

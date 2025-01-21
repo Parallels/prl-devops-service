@@ -1,9 +1,9 @@
-name: Publish Beta Release
+name: Release Beta Service
 
 on:
   push:
     tags:
-      - "*_beta"
+      - "*-beta"
 
   workflow_dispatch:
     inputs:
@@ -17,64 +17,8 @@ on:
         type: boolean
         default: true
 jobs:
-  check-version-change:
-    outputs:
-      changed: ${{ steps.check-version.outputs.result }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check if version has changed
-        id: check-version
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // Get the version from the workflow input
-            let version = '${{ github.event.inputs.version }}';
-            if (!version) {
-              fs = require('fs');
-              let v = '';
-              try {
-                v = fs.readFileSync('./VERSION', 'utf8');
-                console.log(`Version found: ${v}`);
-              }
-              catch (err) {
-                return false;
-              }
-
-              if (!v) {
-                return false;
-              } else {
-                version = v;
-              }
-            }
-            let majorMinorVersion = version.split('.').slice(0, 2).join('.');
-            version = `${majorMinorVersion}.${{github.run_id}}`;
-            console.log(`Version: ${version}`)
-
-            // Find a release for that version
-            const release = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: `v${version}-beta`,
-            }).catch(() => null);
-
-            // If the release exists, the version has not changed
-            if (release) {
-              console.log(`Version ${version} has an existing release`);
-              console.log(release.data.html_url);
-              core.summary.addLink(`Release v${version}`, release.data.html_url);
-              await core.summary.write();
-              return "false";
-            }
-            console.log(`Version ${version} does not have a release`);
-            return true;
   beta-release:
     name: Release Beta version
-    needs:
-      - check-version-change
-    if: ${{ needs.check-version-change.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -121,7 +65,6 @@ jobs:
             core.exportVariable('UPLOAD_URL', release.data.upload_url);
   beta-releases-matrix:
     needs:
-      - check-version-change
       - beta-release
     name: Release Go Binary (Windows, Linux)
     runs-on: ubuntu-latest
@@ -167,7 +110,6 @@ jobs:
           ldflags: "-s -w -X main.ver=${{ env.EXT_VERSION }} -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}'"
   beta-releases-macos:
     needs:
-      - check-version-change
       - beta-release
     runs-on: macos-latest
     name: Release Go Binary (macOS)
@@ -275,7 +217,6 @@ jobs:
           security delete-keychain temp.keychain
   build-containers:
     needs:
-      - check-version-change
       - beta-release
     env:
       EXT_VERSION: ${{ needs.beta-release.outputs.version }}
@@ -310,7 +251,6 @@ jobs:
     if: ${{ github.event.inputs.remove_old_beta == true }}
     name: Remove old beta release
     needs:
-      - check-version-change
       - beta-release
       - beta-releases-matrix
       - beta-releases-macos
@@ -364,3 +304,27 @@ jobs:
                 });
               }
             }
+  discord-announce:
+    needs:
+      - beta-release
+      - beta-releases-matrix
+      - beta-releases-macos
+      - build-containers
+    name: Announce on Discord
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      VERSION: ""
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+      - name: Announce on discord
+        id: announce_discord
+        run: |
+          ./.github/workflow_scripts/announce_discord.sh --webhook-url $DISCORD_WEBHOOK --version $VERSION
+        env:
+          SLACK_WEBHOOKS: ${{ env.DISCORD_WEBHOOK }}
