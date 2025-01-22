@@ -559,6 +559,11 @@ func (c *Config) IsRemoteProviderStreamEnabled() bool {
 	return !helpers.StringToBool(streamingDisabled)
 }
 
+func (c *Config) IsCanaryEnabled() bool {
+	enableCanary := c.GetBoolKey(constants.ENABLE_CANARY_ENV_VAR)
+	return enableCanary
+}
+
 func (c *Config) GetKey(key string) string {
 	value := helper.GetFlagValue(key, "")
 	exists := false

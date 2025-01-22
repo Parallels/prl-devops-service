@@ -2,6 +2,7 @@ package notifications
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 )
@@ -15,7 +16,7 @@ type NotificationService struct {
 	clearProgressOnUpdate bool
 	Channel               chan NotificationMessage
 	stopChan              chan bool
-	progressCounters      map[string]int
+	progressCounters      map[string]float64
 	previousMessage       NotificationMessage
 	CurrentMessage        NotificationMessage
 }
@@ -25,7 +26,7 @@ func New(ctx basecontext.ApiContext) *NotificationService {
 		ctx:               ctx,
 		Channel:           make(chan NotificationMessage),
 		clearLineOnUpdate: false,
-		progressCounters:  make(map[string]int),
+		progressCounters:  make(map[string]float64),
 	}
 
 	_globalNotificationService.Start()
@@ -97,7 +98,7 @@ func (p *NotificationService) NotifyDebugf(format string, args ...interface{}) {
 	p.Notify(NewNotificationMessage(msg, NotificationMessageLevelDebug))
 }
 
-func (p *NotificationService) NotifyProgress(correlationId string, prefix string, progress int) {
+func (p *NotificationService) NotifyProgress(correlationId string, prefix string, progress float64) {
 	p.Notify(NewProgressNotificationMessage(correlationId, prefix, progress))
 }
 
@@ -119,7 +120,7 @@ func (p *NotificationService) Start() {
 			case <-p.stopChan:
 				return
 			case p.CurrentMessage = <-p.Channel:
-				progress := 0
+				progress := 0.0
 				shouldLog := false
 				if p.CurrentMessage.IsProgress {
 					if val, ok := p.progressCounters[p.CurrentMessage.CorrelationId()]; ok {
@@ -129,7 +130,9 @@ func (p *NotificationService) Start() {
 						p.progressCounters[p.CurrentMessage.CorrelationId()] = progress
 					}
 
-					if p.CurrentMessage.CurrentProgress > progress {
+					currentProgressStr, _ := strconv.ParseFloat(fmt.Sprintf("%.1f", p.CurrentMessage.CurrentProgress), 64)
+					progressStr, _ := strconv.ParseFloat(fmt.Sprintf("%.1f", progress), 64)
+					if currentProgressStr > progressStr {
 						p.progressCounters[p.CurrentMessage.CorrelationId()] = p.CurrentMessage.CurrentProgress
 						shouldLog = true
 					}
@@ -161,7 +164,8 @@ func (p *NotificationService) Start() {
 					}
 					printMsg += p.CurrentMessage.Message
 					if p.CurrentMessage.IsProgress {
-						printMsg += fmt.Sprintf(" (%d%%)", p.CurrentMessage.CurrentProgress)
+						printMsg += fmt.Sprintf(" (%.1f%%)", p.CurrentMessage.CurrentProgress)
+						eta := ""
 						if p.CurrentMessage.TotalSize() > 0 && p.CurrentMessage.CurrentSize() > 0 {
 							currentSizeUnit := "b"
 							totalSizeUnit := "b"
@@ -192,7 +196,11 @@ func (p *NotificationService) Start() {
 								totalSizeUnit = "gb"
 								totalSize = totalSize / 1024
 							}
-							printMsg += fmt.Sprintf(" [%.2f %v/%.2f %v]", currentSize, currentSizeUnit, totalSize, totalSizeUnit)
+							if !p.CurrentMessage.startingTime.IsZero() {
+								eta = fmt.Sprintf(" ETA: %s", calculateETA(p.CurrentMessage.startingTime, p.CurrentMessage.CurrentSize(), p.CurrentMessage.TotalSize()))
+							}
+
+							printMsg += fmt.Sprintf(" [%.2f %v/%.2f %v]%s", currentSize, currentSizeUnit, totalSize, totalSizeUnit, eta)
 						}
 					}
 

@@ -67,7 +67,7 @@ func (pw *ProgressWriter) WriteAt(p []byte, off int64) (n int, err error) {
 	n, err = pw.writer.(io.WriterAt).WriteAt(p, off)
 	if err == nil {
 		if pw.size > 0 {
-			percentage := int(float32(off*100) / float32(pw.size))
+			percentage := float64(off*100) / float64(pw.size)
 			if pw.ns != nil {
 				prefix := pw.prefix
 				if prefix == "" {
@@ -94,7 +94,7 @@ func (pw *ProgressWriter) Write(p []byte) (int, error) {
 	pw.totalProcessed += int64(len(p))
 	if err == nil {
 		if pw.size > 0 {
-			percentage := int(float32(pw.totalProcessed*100) / float32(pw.size))
+			percentage := float64(pw.totalProcessed*100) / float64(pw.size)
 			if pw.ns != nil {
 				prefix := pw.prefix
 				if prefix == "" {

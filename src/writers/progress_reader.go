@@ -61,7 +61,7 @@ func (pr *ProgressReader) Read(p []byte) (int, error) {
 	if n > 0 {
 		newRead := atomic.AddInt64(&pr.read, int64(n))
 		if pr.size > 0 {
-			percentage := int(float64(newRead) * 100 / float64(pr.size))
+			percentage := float64(newRead) * 100 / float64(pr.size)
 			if pr.ns != nil {
 				prefix := pr.prefix
 				if prefix == "" {
@@ -97,7 +97,7 @@ func (pr *ProgressReader) ReadAt(p []byte, off int64) (int, error) {
 			if newRead > pr.size {
 				newRead = pr.size
 			}
-			percentage := int(float64(newRead) * 100 / float64(pr.size))
+			percentage := float64(newRead) * 100 / float64(pr.size)
 			if pr.ns != nil {
 				prefix := pr.prefix
 				if prefix == "" {

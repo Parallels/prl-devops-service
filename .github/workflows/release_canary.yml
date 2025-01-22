@@ -1,0 +1,327 @@
+name: Release Canary Service
+
+on:
+  push:
+    tags:
+      - "*-canary"
+
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release"
+        required: true
+        default: "1.0.0"
+      remove_old_canary:
+        description: "Remove old canary releases"
+        required: false
+        type: boolean
+        default: true
+jobs:
+  canary-release:
+    name: Release Canary version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    env:
+      EXT_VERSION: "" # will be set in the workflow
+      MAJOR_VERSION: "" # will be set in the workflow
+      UPLOAD_URL: "" # will be set in the workflow
+    outputs:
+      version: ${{ env.EXT_VERSION }}
+      majorVersion: ${{ env.MAJOR_VERSION }}
+      upload_url: ${{ env.UPLOAD_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set new version
+        run: |
+          VERSION=${{ github.event.inputs.version }}
+          MAJOR_VERSION=${VERSION%.*}
+          NEW_VERSION=${VERSION%.*}.${{ github.run_id }}
+          echo "Canary Version: $NEW_VERSION"
+          echo "EXT_VERSION=${NEW_VERSION}" >> "$GITHUB_ENV"
+          echo "MAJOR_VERSION=${MAJOR_VERSION}" >> "$GITHUB_ENV"
+      - name: Generate release notes
+        env:
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+        run: |
+          ./.github/workflow_scripts/get-latest-beta-changelog.sh --repo ${{ github.repository }} --output-to-file --version "${EXT_VERSION}"
+          cat release_notes.md
+      - name: Create release and upload release asset
+        uses: actions/github-script@v7
+        id: create_release
+        with:
+          script: |
+            const fs = require("fs");
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: fs.readFileSync("release_notes.md", "utf8"),
+              tag_name: "v${{ env.EXT_VERSION }}-canary",
+              name: "v${{ env.EXT_VERSION }}-canary",
+              draft: false,
+              prerelease: true
+            });
+            core.exportVariable('UPLOAD_URL', release.data.upload_url);
+  canary-releases-matrix:
+    needs:
+      - canary-release
+    name: Release Go Binary (Windows, Linux)
+    runs-on: ubuntu-latest
+    env:
+      EXT_VERSION: ${{ needs.canary-release.outputs.version }}
+      AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
+        goos: [linux, windows]
+        goarch: ["386", amd64, arm64]
+        exclude:
+          - goarch: "386"
+            goos: darwin
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21.x"
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
+      - name: Add Inbuilt Variables
+        run: |
+          sed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
+
+          go install github.com/swaggo/swag/cmd/swag@latest
+          cd src
+          go mod tidy
+          swag fmt
+          swag init -g main.go
+          cd ..
+      - uses: wangyoucao577/go-release-action@v1
+        timeout-minutes: 10
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          goversion: "https://dl.google.com/go/go1.21.1.linux-amd64.tar.gz"
+          project_path: "./src"
+          binary_name: "prldevops"
+          release_name: "v${{ env.EXT_VERSION }}-canary"
+          ldflags: "-s -w -X main.ver=${{ env.EXT_VERSION }} -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}'"
+  canary-releases-macos:
+    needs:
+      - canary-release
+    runs-on: macos-latest
+    name: Release Go Binary (macOS)
+    env:
+      EXT_VERSION: ${{ needs.canary-release.outputs.version }}
+      AMPLITUDE_API_KEY: ${{ secrets.AMPLITUDE_API_KEY }}
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_KEY_ISSUER: ${{ secrets.APPLE_API_KEY_ISSUER }}
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+      APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # build and publish in parallel: darwin/amd64, darwin/arm64
+        goos: [darwin]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21.x"
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
+      - name: Add Inbuilt Variables
+        run: |
+          brew install gnu-sed
+
+          gsed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
+
+          go install github.com/swaggo/swag/cmd/swag@latest
+          cd src
+          go mod tidy
+          swag fmt
+          swag init -g main.go
+          cd ..
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          cd src && CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
+      - name: Create and Unlock Temporary Keychain
+        run: |
+          security create-keychain -p "github" temp.keychain
+          security unlock-keychain -p "github" temp.keychain
+          security set-keychain-settings -lut 3600 temp.keychain
+          security list-keychains -s temp.keychain
+
+      - name: Import sign certificate
+        run: |
+          echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > apple_developer_identity.p12
+          security import apple_developer_identity.p12 -k temp.keychain -P ${{ secrets.APPLE_CERT_PASSWORD }} -T /usr/bin/codesign
+          rm apple_developer_identity.p12
+          security set-key-partition-list -S apple-tool:,apple: -s -k "github" temp.keychain
+          security list-keychains
+          security find-identity -v -p codesigning temp.keychain
+
+      - name: Import notary credentials
+        run: |
+          echo "${{ secrets.APPLE_API_KEY }}" | base64 --decode > apple_api_key.p8
+          xcrun notarytool store-credentials "notary-credentials" \
+            --key apple_api_key.p8 \
+            --key-id ${{ secrets.APPLE_API_KEY_ID }} \
+            --issuer ${{ secrets.APPLE_API_KEY_ISSUER }}
+
+      - name: Sign binary
+        run: |
+          cd src
+          codesign --force --deep --strict --verbose --options=runtime,library --sign "${{ secrets.APPLE_DEVELOPER_IDENTITY }}" prldevops
+          ditto -c -k --sequesterRsrc prldevops prldevops.zip
+          xcrun notarytool submit prldevops.zip --keychain-profile "notary-credentials" --wait
+
+      - name: Verify signed binary
+        run: |
+          cd src
+          codesign --verify --verbose prldevops
+          spctl -t open --context context:primary-signature -a -vvv prldevops
+
+      - name: Compress asset to tar.gz
+        run: |
+          cd src
+          tar -czf prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz prldevops
+          md5 prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz | awk '{print $4}' > prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.canary-release.outputs.upload_url }}
+          asset_path: src/prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          asset_content_type: application/octet-stream
+      - name: Upload release asset checksum
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.canary-release.outputs.upload_url }}
+          asset_path: src/prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+          asset_name: prldevops--${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.md5
+          asset_content_type: application/octet-stream
+      - name: Clean Up Keychain
+        if: always()
+        run: |
+          security delete-keychain temp.keychain
+  build-containers:
+    needs:
+      - canary-release
+    env:
+      EXT_VERSION: ${{ needs.canary-release.outputs.version }}
+      AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Clean old canary images
+        if: ${{ inputs.remove_old_canary == true }}
+        run: |
+          ./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*canary.*$'
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            VERSION=${{ env.EXT_VERSION }}
+          secrets: |
+            amplitude_api_key=${{ secrets.AMPLITUDE_API_KEY }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:latest-canary
+            ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:${{ env.EXT_VERSION }}-canary
+  remove-old-canary-release:
+    if: ${{ inputs.remove_old_canary == true }}
+    name: Remove old canary release
+    needs:
+      - canary-release
+      - canary-releases-matrix
+      - canary-releases-macos
+      - build-containers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    env:
+      EXT_VERSION: ${{ needs.canary-release.outputs.version }}
+      MAJOR_VERSION: ${{ needs.canary-release.outputs.version }}
+    steps:
+      - name: Remove old canary release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            let version ='${{ github.event.inputs.version }}'.trim().split('.').slice(0, 2).join('.');
+            let currentVersion = `${version}.${{github.run_id}}-canary`;
+            console.log(`Current Version: ${currentVersion}`);
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+
+            for(const idx in releases.data) {
+              const release = releases.data[idx];
+              if (release.tag_name.includes("-canary") && release.tag_name !== `v${currentVersion}`) {
+                for(const assetIdx in release.assets) {
+                  const asset = release.assets[assetIdx];
+                  console.log(`Deleting asset: ${asset.name}`);
+                  await github.rest.repos.deleteReleaseAsset({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    asset_id: asset.id
+                  });
+                }
+
+                console.log(`Deleting release: ${release.tag_name}`);
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.id
+                });
+
+                console.log(`Deleting tag: tags/${release.tag_name}`);
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${release.tag_name}`
+                });
+              }
+            }
+  discord-announce:
+    needs:
+      - canary-release
+      - canary-releases-matrix
+      - canary-releases-macos
+      - build-containers
+    name: Announce on Discord
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      VERSION: ${{ needs.canary-release.outputs.version }}
+    steps:
+      - name: Announce on discord
+        id: announce_discord
+        run: |
+          ./.github/workflow_scripts/announce_discord.sh --webhook-url $DISCORD_WEBHOOK --version $VERSION --beta
+        env:
+          SLACK_WEBHOOKS: ${{ env.DISCORD_WEBHOOK }}

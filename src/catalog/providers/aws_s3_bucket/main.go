@@ -10,12 +10,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/common"
 	"github.com/Parallels/prl-devops-service/compressor"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/notifications"
 	"github.com/Parallels/prl-devops-service/writers"
@@ -238,451 +240,13 @@ func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 }
 
 func (s *AwsS3BucketProvider) PullFileAndDecompress(ctx basecontext.ApiContext, path, filename, destination string) error {
-	ctx.LogInfof("Pulling file %s", filename)
-	startTime := time.Now()
-	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
-
-	// Notification bits
-	ns := notifications.Get()
-	cid := helpers.GenerateId()
-	msgPrefix := fmt.Sprintf("Pulling %s", filename)
-
-	session, err := s.createNewSession()
-	if err != nil {
-		return err
+	cfg := config.Get()
+	ctx.LogInfof("Using Canary version og pullFileAndDecompress\n")
+	if cfg.IsCanaryEnabled() {
+		ctx.LogInfof("Using Canary version og pullFileAndDecompress")
+		return s.pullFileAndDecompressUnstable(ctx, path, filename, destination)
 	}
-	svc := s3.New(session)
-
-	// Determine total size
-	headResp, err := svc.HeadObjectWithContext(context.Background(), &s3.HeadObjectInput{
-		Bucket: aws.String(s.Bucket.Name),
-		Key:    aws.String(remoteFilePath),
-	})
-	if err != nil {
-		return fmt.Errorf("failed HeadObject: %w", err)
-	}
-	totalSize := *headResp.ContentLength
-
-	const chunkSize int64 = 500 * 1024 * 1024 // e.g. 500 MiB
-	var offset int64 = 0
-	index := 0
-
-	// Identify each chunk’s start and end
-	var chunks []struct {
-		index int
-		start int64
-		end   int64
-	}
-	for offset < totalSize {
-		end := offset + chunkSize - 1
-		if end >= totalSize {
-			end = totalSize - 1
-		}
-		chunks = append(chunks, struct {
-			index int
-			start int64
-			end   int64
-		}{
-			index: index,
-			start: offset,
-			end:   end,
-		})
-		offset = end + 1
-		index++
-	}
-
-	// Prepare to stream data to the decompressor
-	r, w := io.Pipe()
-
-	// For concurrency
-	const maxWorkers = 4
-	chunkTasks := make(chan struct {
-		index int
-		start int64
-		end   int64
-	})
-	chunkResults := make(chan struct {
-		index       int
-		tmpFilePath string
-	})
-
-	// Track progress with an atomic
-	var totalDownloaded int64
-
-	// Build an errgroup and context
-	ctxBck := context.Background()
-	ctxChunk, cancel := context.WithTimeout(ctxBck, 5*time.Hour)
-	group, groupCtx := errgroup.WithContext(ctxChunk)
-	defer cancel()
-
-	// Worker goroutines to fetch chunks concurrently
-	for wkr := 0; wkr < maxWorkers; wkr++ {
-		group.Go(func() error {
-			buf := make([]byte, 2*1024*1024) // 2 MiB buffer
-			for task := range chunkTasks {
-				// Honour cancellations
-				select {
-				case <-groupCtx.Done():
-					return groupCtx.Err()
-				default:
-				}
-
-				rangeHeader := fmt.Sprintf("bytes=%d-%d", task.start, task.end)
-				getObjResp, err := svc.GetObjectWithContext(groupCtx, &s3.GetObjectInput{
-					Bucket: aws.String(s.Bucket.Name),
-					Key:    aws.String(remoteFilePath),
-					Range:  aws.String(rangeHeader),
-				})
-				if err != nil {
-					return fmt.Errorf("failed to fetch S3 range %s: %w", rangeHeader, err)
-				}
-
-				// Create a temporary file for this chunk
-				tmpFile, err := os.CreateTemp("", "s3_chunk_")
-				if err != nil {
-					getObjResp.Body.Close()
-					return fmt.Errorf("failed to create temp file: %w", err)
-				}
-
-				// Copy chunk data
-				var chunkDownloaded int64
-				for {
-					n, readErr := getObjResp.Body.Read(buf)
-					if n > 0 {
-						if _, writeErr := tmpFile.Write(buf[:n]); writeErr != nil {
-							tmpFile.Close()
-							os.Remove(tmpFile.Name())
-							getObjResp.Body.Close()
-							return fmt.Errorf("failed writing chunk to temp file: %w", writeErr)
-						}
-						atomic.AddInt64(&totalDownloaded, int64(n))
-						chunkDownloaded += int64(n)
-
-						// Progress update
-						if ns != nil && totalSize > 0 {
-							percent := int(float64(atomic.LoadInt64(&totalDownloaded)) / float64(totalSize) * 100)
-							msg := notifications.NewProgressNotificationMessage(cid, msgPrefix, percent).
-								SetCurrentSize(atomic.LoadInt64(&totalDownloaded)).
-								SetTotalSize(totalSize)
-							ns.Notify(msg)
-						}
-					}
-					if readErr != nil {
-						getObjResp.Body.Close()
-						if readErr != io.EOF {
-							tmpFile.Close()
-							os.Remove(tmpFile.Name())
-							return fmt.Errorf("failed reading from S3 chunk: %w", readErr)
-						}
-						// EOF => done with this chunk
-						break
-					}
-				}
-
-				if _, err := tmpFile.Seek(0, io.SeekStart); err != nil {
-					tmpFile.Close()
-					os.Remove(tmpFile.Name())
-					return fmt.Errorf("failed to seek in temp file: %w", err)
-				}
-				getObjResp.Body.Close()
-				tmpName := tmpFile.Name()
-				tmpFile.Close()
-
-				// Send result
-				chunkResults <- struct {
-					index       int
-					tmpFilePath string
-				}{
-					index:       task.index,
-					tmpFilePath: tmpName,
-				}
-			}
-			return nil
-		})
-	}
-
-	// Feeder goroutine: queue up all chunks to be fetched
-	group.Go(func() error {
-		defer close(chunkTasks)
-		for _, c := range chunks {
-			select {
-			case <-groupCtx.Done():
-				return groupCtx.Err()
-			case chunkTasks <- c:
-			}
-		}
-		return nil
-	})
-
-	// Streamer goroutine: receive chunk results in *any* order, but write them
-	// to the pipe in ascending order as soon as the next chunk is available.
-	group.Go(func() error {
-		defer w.Close()
-
-		results := make([]*struct {
-			index       int
-			tmpFilePath string
-		}, len(chunks))
-
-		nextToWrite := 0
-		receivedCount := 0
-		totalChunks := len(chunks)
-
-	outer:
-		for {
-			// If we've written all chunks, we're finished
-			if nextToWrite >= totalChunks {
-				break outer
-			}
-
-			select {
-			case <-groupCtx.Done():
-				return groupCtx.Err()
-
-			case res, ok := <-chunkResults:
-				if !ok {
-					// If channel closed unexpectedly and we still have chunks to write, it’s an error
-					if nextToWrite < totalChunks {
-						return fmt.Errorf("chunkResults channel closed too soon")
-					}
-					break outer
-				}
-				// Store the result
-				results[res.index] = &res
-				receivedCount++
-
-				// Now see if we can write any newly-available chunks in sequence
-				for nextToWrite < totalChunks && results[nextToWrite] != nil {
-					rres := results[nextToWrite]
-
-					// Stream this chunk to the decompressor pipe
-					f, err := os.Open(rres.tmpFilePath)
-					if err != nil {
-						return fmt.Errorf("failed to open temp file: %w", err)
-					}
-					if _, copyErr := io.Copy(w, f); copyErr != nil {
-						f.Close()
-						os.Remove(rres.tmpFilePath)
-						return fmt.Errorf("failed to copy chunk to pipe: %w", copyErr)
-					}
-					f.Close()
-					os.Remove(rres.tmpFilePath)
-
-					nextToWrite++
-				}
-			}
-		}
-		return nil
-	})
-
-	// Decompressor goroutine: decompress from the pipe as soon as data becomes available
-	group.Go(func() error {
-		if err := compressor.DecompressFromReader(ctx, r, destination); err != nil {
-			// If decompression fails, close the pipe
-			_ = w.CloseWithError(err)
-			return fmt.Errorf("decompression failed: %w", err)
-		}
-		return nil
-	})
-
-	// Wait for everything to complete
-	if err := group.Wait(); err != nil {
-		return err
-	}
-
-	// Final notification
-	finalMsg := fmt.Sprintf("Pulling %s", filename)
-	ns.NotifyProgress(cid, finalMsg, 100)
-	ns.NotifyInfo(fmt.Sprintf("Finished pulling and decompressing file %s, took %v",
-		filename, time.Since(startTime)))
-
-	return nil
-}
-
-func (s *AwsS3BucketProvider) PullFileAndDecompress1(ctx basecontext.ApiContext, path, filename, destination string) error {
-	ctx.LogInfof("Pulling file %s", filename)
-	startTime := time.Now()
-	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
-	ns := notifications.Get()
-
-	session, err := s.createNewSession()
-	if err != nil {
-		return err
-	}
-	svc := s3.New(session)
-
-	// Getting the total size (for progress notifications)
-	headObjectOutput, err := svc.HeadObject(&s3.HeadObjectInput{
-		Bucket: aws.String(s.Bucket.Name),
-		Key:    aws.String(remoteFilePath),
-	})
-	if err != nil {
-		return fmt.Errorf("failed HeadObject: %w", err)
-	}
-	totalSize := *headObjectOutput.ContentLength
-
-	// Setting up the chunked download and decompression
-	const chunkSize int64 = 500 * 1024 * 1024 // 500MB chunk size
-	var start int64 = 0
-	var totalDownloaded int64 = 0
-	msgPrefix := fmt.Sprintf("Pulling %s", filename)
-	cid := helpers.GenerateId()
-
-	r, w := io.Pipe()
-	chunkFilesChan := make(chan string, 1)
-
-	// Setting up an errgroup to run all goroutines and capture errors
-	ctxBck := context.Background()
-	ctxChunk, cancel := context.WithTimeout(ctxBck, 5*time.Hour)
-	group, groupCtx := errgroup.WithContext(ctxChunk)
-	defer cancel()
-
-	// Download goroutine: download chunks into temp files and send their paths over channel
-	group.Go(func() error {
-		defer close(chunkFilesChan) // Signal no more chunks
-
-		buf := make([]byte, 50*1024*1024) // 2MB buffer for reading from S3
-
-		for start < totalSize {
-			// Honor cancellations
-			select {
-			case <-groupCtx.Done():
-				return groupCtx.Err()
-			default:
-			}
-
-			end := start + chunkSize - 1
-			if end >= totalSize {
-				end = totalSize - 1
-			}
-			rangeHeader := fmt.Sprintf("bytes=%d-%d", start, end)
-
-			// Get one chunk from S3
-			resp, err := svc.GetObjectWithContext(groupCtx, &s3.GetObjectInput{
-				Bucket: aws.String(s.Bucket.Name),
-				Key:    aws.String(remoteFilePath),
-				Range:  aws.String(rangeHeader),
-			})
-			if err != nil {
-				return fmt.Errorf("failed to get S3 range %s: %w", rangeHeader, err)
-			}
-
-			// Create a temporary file for this chunk
-			tmpFile, err := os.CreateTemp("", "s3_chunk_")
-			if err != nil {
-				resp.Body.Close()
-				return fmt.Errorf("failed to create temp file: %w", err)
-			}
-
-			// Copy the chunk from S3 response to the temp file
-			var chunkDownloaded int64
-			for {
-				n, readErr := resp.Body.Read(buf)
-				if n > 0 {
-					if _, writeErr := tmpFile.Write(buf[:n]); writeErr != nil {
-						tmpFile.Close()
-						os.Remove(tmpFile.Name())
-						resp.Body.Close()
-						return fmt.Errorf("failed to write chunk to temp file: %w", writeErr)
-					}
-					chunkDownloaded += int64(n)
-					atomic.AddInt64(&totalDownloaded, int64(n))
-
-					// Send a progress notification
-					if ns != nil && totalSize > 0 {
-						percent := int((float64(totalDownloaded) / float64(totalSize)) * 100)
-						msg := notifications.
-							NewProgressNotificationMessage(cid, msgPrefix, percent).
-							SetCurrentSize(totalDownloaded).
-							SetTotalSize(totalSize)
-						ns.Notify(msg)
-					}
-				}
-				if readErr != nil {
-					resp.Body.Close()
-					if readErr != io.EOF {
-						// Real error
-						tmpFile.Close()
-						os.Remove(tmpFile.Name())
-						return fmt.Errorf("failed reading from S3 chunk: %w", readErr)
-					}
-					// readErr == io.EOF => done with this chunk
-					break
-				}
-			}
-
-			// Reset temp file offset to the beginning, close the S3 response
-			if _, err := tmpFile.Seek(0, io.SeekStart); err != nil {
-				tmpFile.Close()
-				os.Remove(tmpFile.Name())
-				return fmt.Errorf("failed to seek in temp file: %w", err)
-			}
-			resp.Body.Close()
-
-			// Send temp file name to the streamer
-			tmpFileName := tmpFile.Name()
-			tmpFile.Close() // Let streamer reopen it
-			chunkFilesChan <- tmpFileName
-
-			// Move to the next chunk
-			start = end + 1
-		}
-		return nil // done successfully
-	})
-
-	// Streamer goroutine: read chunk file paths, stream them to the decompressor, and clean up
-	group.Go(func() error {
-		defer w.Close() // signal EOF to the decompressor
-
-		for chunkFileName := range chunkFilesChan {
-			// Honor cancellations
-			select {
-			case <-groupCtx.Done():
-				return groupCtx.Err()
-			default:
-			}
-
-			chunkFile, err := os.Open(chunkFileName)
-			if err != nil {
-				return fmt.Errorf("failed to open temp chunk file: %w", err)
-			}
-
-			// Stream the chunk into the decompressor pipe
-			if _, copyErr := io.Copy(w, chunkFile); copyErr != nil {
-				chunkFile.Close()
-				os.Remove(chunkFileName)
-				return fmt.Errorf("failed to copy chunk to pipe: %w", copyErr)
-			}
-			chunkFile.Close()
-			os.Remove(chunkFileName) // clean up
-		}
-		return nil
-	})
-
-	// Decompressor goroutine: decompress from the pipe to the destination
-	group.Go(func() error {
-		// Decompress from the read-end of the pipe
-		decompressErr := compressor.DecompressFromReader(ctx, r, destination)
-		if decompressErr != nil {
-			// If decompression fails, close the pipe with error (so streamer sees it)
-			_ = w.CloseWithError(decompressErr)
-			return fmt.Errorf("decompression failed: %w", decompressErr)
-		}
-		return nil
-	})
-
-	// Wait for all goroutines to finish and check for errors
-	if err := group.Wait(); err != nil {
-		return err
-	}
-
-	// Everything finished successfully send a final progress notification
-	finalMsg := fmt.Sprintf("Pulling %s", filename)
-	ns.NotifyProgress(cid, finalMsg, 100)
-	ns.NotifyInfo(fmt.Sprintf("Finished pulling and decompressing file %s, took %v",
-		filename, time.Since(startTime)))
-
-	return nil
+	return s.pullFileAndDecompressStable(ctx, path, filename, destination)
 }
 
 func (s *AwsS3BucketProvider) PullFileToMemory(ctx basecontext.ApiContext, path string, filename string) ([]byte, error) {
@@ -976,4 +540,1053 @@ func (s *AwsS3BucketProvider) generateNewCfg() *aws.Config {
 	})
 
 	return cfg
+}
+
+func (s *AwsS3BucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiContext, path, filename, destination string) error {
+	ctx.LogInfof("Pulling file %s", filename)
+	startTime := time.Now()
+	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
+	ns := notifications.Get()
+
+	session, err := s.createNewSession()
+	if err != nil {
+		return err
+	}
+	svc := s3.New(session)
+
+	// Getting the total size (for progress notifications)
+	headObjectOutput, err := svc.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(s.Bucket.Name),
+		Key:    aws.String(remoteFilePath),
+	})
+	if err != nil {
+		return fmt.Errorf("failed HeadObject: %w", err)
+	}
+	totalSize := *headObjectOutput.ContentLength
+
+	// Setting up the chunked download and decompression
+	const chunkSize int64 = 100 * 1024 * 1024 // 500MB chunk size
+	var start int64 = 0
+	var totalDownloaded int64 = 0
+	msgPrefix := fmt.Sprintf("Pulling %s", filename)
+	cid := helpers.GenerateId()
+
+	r, w := io.Pipe()
+	chunkFilesChan := make(chan string, 4)
+
+	// Setting up an errgroup to run all goroutines and capture errors
+	ctxBck := context.Background()
+	ctxChunk, cancel := context.WithTimeout(ctxBck, 5*time.Hour)
+	group, groupCtx := errgroup.WithContext(ctxChunk)
+	defer cancel()
+
+	// Download goroutine: download chunks into temp files and send their paths over channel
+	group.Go(func() error {
+		defer close(chunkFilesChan) // Signal no more chunks
+
+		buf := make([]byte, 8*1024*1024) // 2MB buffer for reading from S3
+
+		for start < totalSize {
+			// Honor cancellations
+			select {
+			case <-groupCtx.Done():
+				return groupCtx.Err()
+			default:
+			}
+
+			end := start + chunkSize - 1
+			if end >= totalSize {
+				end = totalSize - 1
+			}
+			rangeHeader := fmt.Sprintf("bytes=%d-%d", start, end)
+
+			// Get one chunk from S3
+			resp, err := svc.GetObjectWithContext(groupCtx, &s3.GetObjectInput{
+				Bucket: aws.String(s.Bucket.Name),
+				Key:    aws.String(remoteFilePath),
+				Range:  aws.String(rangeHeader),
+			})
+			if err != nil {
+				return fmt.Errorf("failed to get S3 range %s: %w", rangeHeader, err)
+			}
+
+			// Create a temporary file for this chunk
+			tmpFile, err := os.CreateTemp("", "s3_chunk_")
+			if err != nil {
+				resp.Body.Close()
+				return fmt.Errorf("failed to create temp file: %w", err)
+			}
+
+			// Copy the chunk from S3 response to the temp file
+			var chunkDownloaded int64
+			for {
+				n, readErr := resp.Body.Read(buf)
+				if n > 0 {
+					if _, writeErr := tmpFile.Write(buf[:n]); writeErr != nil {
+						tmpFile.Close()
+						os.Remove(tmpFile.Name())
+						resp.Body.Close()
+						return fmt.Errorf("failed to write chunk to temp file: %w", writeErr)
+					}
+					chunkDownloaded += int64(n)
+					atomic.AddInt64(&totalDownloaded, int64(n))
+
+					// Send a progress notification
+					if ns != nil && totalSize > 0 {
+						percent := float64(float64(totalDownloaded)/float64(totalSize)) * 100 * 10
+						msg := notifications.
+							NewProgressNotificationMessage(cid, msgPrefix, percent).
+							SetCurrentSize(totalDownloaded).
+							SetTotalSize(totalSize).
+							SetStartingTime(startTime)
+						ns.Notify(msg)
+					}
+				}
+				if readErr != nil {
+					resp.Body.Close()
+					if readErr != io.EOF {
+						// Real error
+						tmpFile.Close()
+						os.Remove(tmpFile.Name())
+						return fmt.Errorf("failed reading from S3 chunk: %w", readErr)
+					}
+					// readErr == io.EOF => done with this chunk
+					break
+				}
+			}
+
+			// Reset temp file offset to the beginning, close the S3 response
+			if _, err := tmpFile.Seek(0, io.SeekStart); err != nil {
+				tmpFile.Close()
+				os.Remove(tmpFile.Name())
+				return fmt.Errorf("failed to seek in temp file: %w", err)
+			}
+			resp.Body.Close()
+
+			// Send temp file name to the streamer
+			tmpFileName := tmpFile.Name()
+			tmpFile.Close() // Let streamer reopen it
+			chunkFilesChan <- tmpFileName
+
+			// Move to the next chunk
+			start = end + 1
+		}
+		return nil // done successfully
+	})
+
+	// Streamer goroutine: read chunk file paths, stream them to the decompressor, and clean up
+	group.Go(func() error {
+		defer w.Close() // signal EOF to the decompressor
+
+		for chunkFileName := range chunkFilesChan {
+			// Honor cancellations
+			select {
+			case <-groupCtx.Done():
+				return groupCtx.Err()
+			default:
+			}
+
+			chunkFile, err := os.Open(chunkFileName)
+			if err != nil {
+				return fmt.Errorf("failed to open temp chunk file: %w", err)
+			}
+
+			// Stream the chunk into the decompressor pipe
+			if _, copyErr := io.Copy(w, chunkFile); copyErr != nil {
+				chunkFile.Close()
+				os.Remove(chunkFileName)
+				return fmt.Errorf("failed to copy chunk to pipe: %w", copyErr)
+			}
+			chunkFile.Close()
+			os.Remove(chunkFileName) // clean up
+		}
+		return nil
+	})
+
+	// Decompressor goroutine: decompress from the pipe to the destination
+	group.Go(func() error {
+		// Decompress from the read-end of the pipe
+		decompressErr := compressor.DecompressFromReader(ctx, r, destination)
+		if decompressErr != nil {
+			// If decompression fails, close the pipe with error (so streamer sees it)
+			_ = w.CloseWithError(decompressErr)
+			return fmt.Errorf("decompression failed: %w", decompressErr)
+		}
+		return nil
+	})
+
+	// Wait for all goroutines to finish and check for errors
+	if err := group.Wait(); err != nil {
+		return err
+	}
+
+	// Everything finished successfully send a final progress notification
+	finalMsg := fmt.Sprintf("Pulling %s", filename)
+	ns.NotifyProgress(cid, finalMsg, 100)
+	ns.NotifyInfo(fmt.Sprintf("Finished pulling and decompressing file %s, took %v",
+		filename, time.Since(startTime)))
+
+	return nil
+}
+
+func (s *AwsS3BucketProvider) pullFileAndDecompressUnstable1(ctx basecontext.ApiContext, path, filename, destination string) error {
+	ctx.LogInfof("Pulling file %s", filename)
+	startTime := time.Now()
+	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
+
+	// Notification bits
+	ns := notifications.Get()
+	cid := helpers.GenerateId()
+	msgPrefix := fmt.Sprintf("Pulling %s", filename)
+
+	session, err := s.createNewSession()
+	if err != nil {
+		return err
+	}
+	svc := s3.New(session)
+
+	// Determine total size
+	headResp, err := svc.HeadObjectWithContext(context.Background(), &s3.HeadObjectInput{
+		Bucket: aws.String(s.Bucket.Name),
+		Key:    aws.String(remoteFilePath),
+	})
+	if err != nil {
+		return fmt.Errorf("failed HeadObject: %w", err)
+	}
+	totalSize := *headResp.ContentLength
+
+	const chunkSize int64 = 500 * 1024 * 1024 // e.g. 500 MiB
+	var offset int64 = 0
+	index := 0
+
+	// Identify each chunk’s start and end
+	var chunks []struct {
+		index int
+		start int64
+		end   int64
+	}
+	for offset < totalSize {
+		end := offset + chunkSize - 1
+		if end >= totalSize {
+			end = totalSize - 1
+		}
+		chunks = append(chunks, struct {
+			index int
+			start int64
+			end   int64
+		}{
+			index: index,
+			start: offset,
+			end:   end,
+		})
+		offset = end + 1
+		index++
+	}
+
+	// Prepare to stream data to the decompressor
+	r, w := io.Pipe()
+
+	// For concurrency
+	const maxWorkers = 5
+	chunkTasks := make(chan struct {
+		index int
+		start int64
+		end   int64
+	})
+	chunkResults := make(chan struct {
+		index       int
+		tmpFilePath string
+	})
+
+	// Track progress with an atomic
+	var totalDownloaded int64
+
+	// Build an errgroup and context
+	ctxBck := context.Background()
+	ctxChunk, cancel := context.WithTimeout(ctxBck, 5*time.Hour)
+	group, groupCtx := errgroup.WithContext(ctxChunk)
+	defer cancel()
+
+	// Worker goroutines to fetch chunks concurrently
+	for wkr := 0; wkr < maxWorkers; wkr++ {
+		group.Go(func() error {
+			buf := make([]byte, 2*1024*1024) // 2 MiB buffer
+			for task := range chunkTasks {
+				// Honour cancellations
+				select {
+				case <-groupCtx.Done():
+					return groupCtx.Err()
+				default:
+				}
+
+				rangeHeader := fmt.Sprintf("bytes=%d-%d", task.start, task.end)
+				getObjResp, err := svc.GetObjectWithContext(groupCtx, &s3.GetObjectInput{
+					Bucket: aws.String(s.Bucket.Name),
+					Key:    aws.String(remoteFilePath),
+					Range:  aws.String(rangeHeader),
+				})
+				if err != nil {
+					return fmt.Errorf("failed to fetch S3 range %s: %w", rangeHeader, err)
+				}
+
+				// Create a temporary file for this chunk
+				tmpFile, err := os.CreateTemp("", "s3_chunk_")
+				if err != nil {
+					getObjResp.Body.Close()
+					return fmt.Errorf("failed to create temp file: %w", err)
+				}
+
+				// Copy chunk data
+				var chunkDownloaded int64
+				for {
+					n, readErr := getObjResp.Body.Read(buf)
+					if n > 0 {
+						if _, writeErr := tmpFile.Write(buf[:n]); writeErr != nil {
+							tmpFile.Close()
+							os.Remove(tmpFile.Name())
+							getObjResp.Body.Close()
+							return fmt.Errorf("failed writing chunk to temp file: %w", writeErr)
+						}
+						atomic.AddInt64(&totalDownloaded, int64(n))
+						chunkDownloaded += int64(n)
+
+						// Progress update
+						if ns != nil && totalSize > 0 {
+							percent := float64(float64(atomic.LoadInt64(&totalDownloaded)) / float64(totalSize) * 100)
+							msg := notifications.NewProgressNotificationMessage(cid, msgPrefix, percent).
+								SetCurrentSize(atomic.LoadInt64(&totalDownloaded)).
+								SetTotalSize(totalSize)
+							ns.Notify(msg)
+						}
+					}
+					if readErr != nil {
+						getObjResp.Body.Close()
+						if readErr != io.EOF {
+							tmpFile.Close()
+							os.Remove(tmpFile.Name())
+							return fmt.Errorf("failed reading from S3 chunk: %w", readErr)
+						}
+						// EOF => done with this chunk
+						break
+					}
+				}
+
+				if _, err := tmpFile.Seek(0, io.SeekStart); err != nil {
+					tmpFile.Close()
+					os.Remove(tmpFile.Name())
+					return fmt.Errorf("failed to seek in temp file: %w", err)
+				}
+				getObjResp.Body.Close()
+				tmpName := tmpFile.Name()
+				tmpFile.Close()
+
+				// Send result
+				chunkResults <- struct {
+					index       int
+					tmpFilePath string
+				}{
+					index:       task.index,
+					tmpFilePath: tmpName,
+				}
+			}
+			return nil
+		})
+	}
+
+	// Feeder goroutine: queue up all chunks to be fetched
+	group.Go(func() error {
+		defer close(chunkTasks)
+		for _, c := range chunks {
+			select {
+			case <-groupCtx.Done():
+				return groupCtx.Err()
+			case chunkTasks <- c:
+			}
+		}
+		return nil
+	})
+
+	// Streamer goroutine: receive chunk results in *any* order, but write them
+	// to the pipe in ascending order as soon as the next chunk is available.
+	group.Go(func() error {
+		defer w.Close()
+
+		results := make([]*struct {
+			index       int
+			tmpFilePath string
+		}, len(chunks))
+
+		nextToWrite := 0
+		receivedCount := 0
+		totalChunks := len(chunks)
+
+	outer:
+		for {
+			// If we've written all chunks, we're finished
+			if nextToWrite >= totalChunks {
+				break outer
+			}
+
+			select {
+			case <-groupCtx.Done():
+				return groupCtx.Err()
+
+			case res, ok := <-chunkResults:
+				if !ok {
+					// If channel closed unexpectedly and we still have chunks to write, it’s an error
+					if nextToWrite < totalChunks {
+						return fmt.Errorf("chunkResults channel closed too soon")
+					}
+					break outer
+				}
+				// Store the result
+				results[res.index] = &res
+				receivedCount++
+
+				// Now see if we can write any newly-available chunks in sequence
+				for nextToWrite < totalChunks && results[nextToWrite] != nil {
+					rres := results[nextToWrite]
+
+					// Stream this chunk to the decompressor pipe
+					f, err := os.Open(rres.tmpFilePath)
+					if err != nil {
+						return fmt.Errorf("failed to open temp file: %w", err)
+					}
+					if _, copyErr := io.Copy(w, f); copyErr != nil {
+						f.Close()
+						os.Remove(rres.tmpFilePath)
+						return fmt.Errorf("failed to copy chunk to pipe: %w", copyErr)
+					}
+					f.Close()
+					os.Remove(rres.tmpFilePath)
+
+					nextToWrite++
+				}
+			}
+		}
+		return nil
+	})
+
+	// Decompressor goroutine: decompress from the pipe as soon as data becomes available
+	group.Go(func() error {
+		if err := compressor.DecompressFromReader(ctx, r, destination); err != nil {
+			// If decompression fails, close the pipe
+			_ = w.CloseWithError(err)
+			return fmt.Errorf("decompression failed: %w", err)
+		}
+		return nil
+	})
+
+	// Wait for everything to complete
+	if err := group.Wait(); err != nil {
+		return err
+	}
+
+	// Final notification
+	finalMsg := fmt.Sprintf("Pulling %s", filename)
+	ns.NotifyProgress(cid, finalMsg, 100)
+	ns.NotifyInfo(fmt.Sprintf("Finished pulling and decompressing file %s, took %v",
+		filename, time.Since(startTime)))
+
+	return nil
+}
+
+func (s *AwsS3BucketProvider) pullFileAndDecompressUnstable2(ctx basecontext.ApiContext, path, filename, destination string) error {
+	ctx.LogInfof("START pullFileAndDecompressStable for %s", filename)
+	startTime := time.Now()
+	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
+	ns := notifications.Get()
+
+	// Create S3 session
+	session, err := s.createNewSession()
+	if err != nil {
+		return err
+	}
+	svc := s3.New(session)
+
+	// Head request to get total size
+	headObjectOutput, err := svc.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(s.Bucket.Name),
+		Key:    aws.String(remoteFilePath),
+	})
+	if err != nil {
+		return fmt.Errorf("failed HeadObject: %w", err)
+	}
+	totalSize := *headObjectOutput.ContentLength
+	ctx.LogInfof("Total size for %s is %d bytes", filename, totalSize)
+
+	// Settings
+	const chunkSize int64 = 500 * 1024 * 1024
+	var totalDownloaded int64
+	msgPrefix := fmt.Sprintf("Pulling %s", filename)
+	cid := helpers.GenerateId()
+
+	// Pipe to stream data into decompressor
+	r, w := io.Pipe()
+
+	// Channels
+	chunkRangesChan := make(chan [2]int64, 8)
+	chunkFilesChan := make(chan string, 4)
+
+	// ErrGroup context to manage cancellations & timeouts
+	rootCtx := context.Background()
+	ctxChunk, cancel := context.WithTimeout(rootCtx, 5*time.Hour)
+	group, groupCtx := errgroup.WithContext(ctxChunk)
+	defer cancel()
+
+	// 1) Produce chunk ranges
+	group.Go(func() error {
+		defer close(chunkRangesChan)
+		ctx.LogInfof("Chunk range producer started")
+
+		var start int64 = 0
+		for start < totalSize {
+			end := start + chunkSize - 1
+			if end >= totalSize {
+				end = totalSize - 1
+			}
+			ctx.LogInfof("Producing chunk range: %d-%d", start, end)
+			chunkRangesChan <- [2]int64{start, end}
+			start = end + 1
+		}
+
+		ctx.LogInfof("Chunk range producer done")
+		return nil
+	})
+
+	// 2) Parallel worker pool to download chunks
+	workerCount := 4
+	var wg sync.WaitGroup
+	wg.Add(workerCount)
+
+	for i := 0; i < workerCount; i++ {
+		idx := i
+		group.Go(func() error {
+			defer wg.Done()
+			buf := make([]byte, 2*1024*1024) // 2MB read buffer
+
+			ctx.LogInfof("Worker #%d started", idx)
+			for {
+				select {
+				case <-groupCtx.Done():
+					ctx.LogInfof("Worker #%d sees groupCtx.Done()", idx)
+					return groupCtx.Err()
+
+				case rng, ok := <-chunkRangesChan:
+					if !ok {
+						ctx.LogInfof("Worker #%d: no more chunks to download", idx)
+						return nil
+					}
+					start, end := rng[0], rng[1]
+					rangeHeader := fmt.Sprintf("bytes=%d-%d", start, end)
+					ctx.LogInfof("Worker #%d downloading range: %s", idx, rangeHeader)
+
+					resp, err := svc.GetObjectWithContext(groupCtx, &s3.GetObjectInput{
+						Bucket: aws.String(s.Bucket.Name),
+						Key:    aws.String(remoteFilePath),
+						Range:  aws.String(rangeHeader),
+					})
+					if err != nil {
+						ctx.LogInfof("Worker #%d fails GetObject: %v", idx, err)
+						return fmt.Errorf("failed to get S3 range %s: %w", rangeHeader, err)
+					}
+
+					// Create temp file for chunk
+					tmpFile, err := os.CreateTemp("", "s3_chunk_")
+					if err != nil {
+						resp.Body.Close()
+						ctx.LogInfof("Worker #%d fails CreateTemp: %v", idx, err)
+						return fmt.Errorf("failed to create temp file: %w", err)
+					}
+
+					var chunkDownloaded int64
+					for {
+						n, readErr := resp.Body.Read(buf)
+						if n > 0 {
+							if _, writeErr := tmpFile.Write(buf[:n]); writeErr != nil {
+								tmpFile.Close()
+								os.Remove(tmpFile.Name())
+								resp.Body.Close()
+								ctx.LogInfof("Worker #%d fails writing chunk: %v", idx, writeErr)
+								return fmt.Errorf("failed to write chunk: %w", writeErr)
+							}
+
+							chunkDownloaded += int64(n)
+							atomic.AddInt64(&totalDownloaded, int64(n))
+
+							// Progress notifications
+							if ns != nil && totalSize > 0 {
+								percent := float64(totalDownloaded) / float64(totalSize) * 100
+								msg := notifications.
+									NewProgressNotificationMessage(cid, msgPrefix, percent).
+									SetCurrentSize(totalDownloaded).
+									SetTotalSize(totalSize)
+								ns.Notify(msg)
+							}
+						}
+
+						if readErr != nil {
+							resp.Body.Close()
+							if readErr != io.EOF {
+								tmpFile.Close()
+								os.Remove(tmpFile.Name())
+								ctx.LogInfof("Worker #%d read error: %v", idx, readErr)
+								return fmt.Errorf("failed reading from S3: %w", readErr)
+							}
+							// if readErr == io.EOF => chunk done
+							break
+						}
+					}
+
+					// Close the file and response
+					if err := tmpFile.Close(); err != nil {
+						os.Remove(tmpFile.Name())
+						return fmt.Errorf("worker #%d: closing tmpFile: %w", idx, err)
+					}
+					tmpFileName := tmpFile.Name()
+
+					// Immediately close resp.Body so we don't hold it open
+					resp.Body.Close()
+
+					// Seek back to start for the next consumer
+					f, err := os.OpenFile(tmpFileName, os.O_RDWR, 0)
+					if err != nil {
+						os.Remove(tmpFileName)
+						ctx.LogInfof("Worker #%d fails re-open temp file: %v", idx, err)
+						return fmt.Errorf("failed to open temp file: %w", err)
+					}
+					if _, err := f.Seek(0, io.SeekStart); err != nil {
+						f.Close()
+						os.Remove(tmpFileName)
+						ctx.LogInfof("Worker #%d fails Seek in temp file: %v", idx, err)
+						return fmt.Errorf("failed to seek in temp file: %w", err)
+					}
+					f.Close()
+
+					// Pass it along
+					ctx.LogInfof("Worker #%d finished chunk, sending file %s to chunkFilesChan", idx, tmpFileName)
+					chunkFilesChan <- tmpFileName
+				}
+			}
+		})
+	}
+
+	// 3) Close chunkFilesChan after all workers done
+	group.Go(func() error {
+		wg.Wait()
+		ctx.LogInfof("All workers done, closing chunkFilesChan")
+		close(chunkFilesChan)
+		return nil
+	})
+
+	// 4) Streamer goroutine
+	group.Go(func() error {
+		defer func() {
+			ctx.LogInfof("Streamer goroutine done, closing pipe writer")
+			_ = w.Close()
+		}()
+
+		for filePath := range chunkFilesChan {
+			select {
+			case <-groupCtx.Done():
+				ctx.LogInfof("Streamer sees groupCtx.Done()")
+				return groupCtx.Err()
+			default:
+			}
+
+			ctx.LogInfof("Streamer received chunk file: %s", filePath)
+			chunkFile, err := os.Open(filePath)
+			if err != nil {
+				ctx.LogInfof("Streamer fails to open file: %v", err)
+				return fmt.Errorf("failed to open temp chunk file: %w", err)
+			}
+
+			// Copy data into the pipe
+			if _, copyErr := io.Copy(w, chunkFile); copyErr != nil {
+				chunkFile.Close()
+				os.Remove(filePath)
+				ctx.LogInfof("Streamer fails copying chunk to pipe: %v", copyErr)
+				return fmt.Errorf("failed to copy chunk to pipe: %w", copyErr)
+			}
+
+			chunkFile.Close()
+			os.Remove(filePath)
+			ctx.LogInfof("Streamer finished chunk file: %s", filePath)
+		}
+
+		// All chunk files have been processed
+		ctx.LogInfof("Streamer goroutine: no more files in chunkFilesChan")
+		return nil
+	})
+
+	// 5) Decompressor goroutine
+	group.Go(func() error {
+		ctx.LogInfof("Decompressor goroutine started")
+		decompressErr := compressor.DecompressFromReader(ctx, r, destination)
+		if decompressErr != nil {
+			// Close the writer with error so streamer sees it
+			_ = w.CloseWithError(decompressErr)
+			ctx.LogInfof("Decompressor fails: %v", decompressErr)
+			return fmt.Errorf("decompression failed: %w", decompressErr)
+		}
+		ctx.LogInfof("Decompressor goroutine finished successfully")
+		return nil
+	})
+
+	// Wait for all goroutines
+	if err := group.Wait(); err != nil {
+		ctx.LogInfof("pullFileAndDecompressStable error: %v", err)
+		return err
+	}
+
+	// Final notification
+	finalMsg := fmt.Sprintf("Pulling %s", filename)
+	ns.NotifyProgress(cid, finalMsg, 100)
+	ns.NotifyInfo(fmt.Sprintf("Finished pulling and decompressing file %s, took %v",
+		filename, time.Since(startTime)))
+
+	ctx.LogInfof("END pullFileAndDecompressStable for %s", filename)
+	return nil
+}
+
+// We have a small shared state, protected by a mutex + condition variable
+type chunkInfo struct {
+	filePath string
+	err      error
+}
+
+type sharedState struct {
+	chunkFiles  map[int]chunkInfo // chunk index -> info
+	onDisk      int               // how many chunk files are currently on disk
+	nextToWrite int               // next chunk index streamer must write to the pipe
+	globalErr   error             // record a single global error
+	errOnce     sync.Once         // ensure we set globalErr only once
+}
+
+func (s *AwsS3BucketProvider) pullFileAndDecompressUnstable(ctx basecontext.ApiContext, path, filename, destination string) error {
+	ctx.LogInfof("Starting pullFileAndDecompressOrdered for %s", filename)
+	startTime := time.Now()
+	chunkSize := int64(100 * 1024 * 1024)
+	workerCount := 6
+	keepChunkOnDiskCount := 20
+	var totalDownloaded int64
+	ns := notifications.Get()
+	msgPrefix := fmt.Sprintf("Pulling %s", filename)
+	cid := helpers.GenerateId()
+
+	// 1) Create S3 session
+	session, err := s.createNewSession()
+	if err != nil {
+		return fmt.Errorf("failed to create S3 session: %w", err)
+	}
+	svc := s3.New(session)
+
+	// 2) Get file size to calculate chunk count
+	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
+	headObjectOutput, err := svc.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(s.Bucket.Name),
+		Key:    aws.String(remoteFilePath),
+	})
+	if err != nil {
+		return fmt.Errorf("failed HeadObject: %w", err)
+	}
+	totalSize := *headObjectOutput.ContentLength
+	ctx.LogInfof("Remote file %s size: %d bytes", filename, totalSize)
+
+	// 3) Compute total number of chunks
+	totalChunks := (totalSize + chunkSize - 1) / chunkSize
+	ctx.LogInfof("Will download %d chunks, chunkSize=%d, workerCount=%d",
+		totalChunks, chunkSize, workerCount)
+
+	// 4) Prepare an io.Pipe for streaming to the decompressor
+	r, w := io.Pipe()
+
+	// We'll use an errgroup to manage concurrency and a context to cancel on error
+	rootCtx := context.Background()
+	ctxChunk, cancel := context.WithCancel(rootCtx)
+	group, groupCtx := errgroup.WithContext(ctxChunk)
+
+	st := &sharedState{
+		chunkFiles:  make(map[int]chunkInfo),
+		onDisk:      0,
+		nextToWrite: 0,
+	}
+
+	mu := sync.Mutex{}
+	cond := sync.NewCond(&mu)
+
+	// Helper to set a global error once, then cancel
+	setGlobalError := func(e error) {
+		st.errOnce.Do(func() {
+			st.globalErr = e
+			cancel()
+		})
+	}
+
+	// Clean up leftover chunks if something fails
+	cleanupChunks := func() {
+		for _, ci := range st.chunkFiles {
+			if ci.filePath != "" {
+				_ = os.Remove(ci.filePath)
+			}
+		}
+	}
+
+	// 5) Manager goroutine — schedules chunks for download (0..totalChunks-1)
+	group.Go(func() error {
+		defer ctx.LogInfof("Manager goroutine exited")
+
+		for idx := 0; idx < int(totalChunks); idx++ {
+			mu.Lock()
+			// Wait if we already have 'workerCount' files on disk
+			for st.onDisk >= keepChunkOnDiskCount && st.globalErr == nil {
+				cond.Wait()
+			}
+			if st.globalErr != nil || groupCtx.Err() != nil {
+				// If there's a global error or the group context is cancelled, bail out
+				mu.Unlock()
+				return st.globalErr
+			}
+
+			// We have space to download chunk idx
+			st.onDisk++ // We expect to produce one more chunk on disk
+			mu.Unlock()
+
+			// Start a goroutine to download chunk idx
+			go func(chunkIndex int) {
+				if e := s.downloadChunkFile(groupCtx,
+					svc,
+					ns,
+					startTime,
+					remoteFilePath,
+					chunkIndex,
+					int(totalChunks),
+					totalSize,
+					&totalDownloaded,
+					chunkSize,
+					msgPrefix,
+					cid,
+					st,
+					&mu,
+					cond); e != nil {
+					setGlobalError(e)
+				}
+			}(idx)
+		}
+		return nil
+	})
+
+	// 6) Streamer goroutine
+	// Reads chunks in ascending order [0..totalChunks-1] from local temp files,
+	// writes them into the pipe 'w' for decompression.
+	group.Go(func() error {
+		defer func() {
+			ctx.LogInfof("Streamer goroutine done, closing pipe writer")
+			_ = w.Close()
+		}()
+
+		for i := 0; i < int(totalChunks); i++ {
+			mu.Lock()
+			for {
+				// Wait until chunk i is in chunkFiles OR an error occurs
+				if st.globalErr != nil {
+					mu.Unlock()
+					return st.globalErr
+				}
+				ci, found := st.chunkFiles[i]
+				if found && ci.filePath != "" {
+					// chunk i is ready
+					break
+				}
+				cond.Wait() // wait for signal from a worker
+			}
+			ci := st.chunkFiles[i]
+			mu.Unlock()
+
+			// If the worker had an error for chunk i
+			if ci.err != nil {
+				setGlobalError(ci.err)
+				return ci.err
+			}
+
+			// Open the chunk file to stream it
+			chunkFile, err := os.Open(ci.filePath)
+			if err != nil {
+				setGlobalError(err)
+				return fmt.Errorf("streamer failed opening chunk %d: %w", i, err)
+			}
+
+			// Write this chunk data into the pipe => decompressor can start right away
+			_, copyErr := io.Copy(w, chunkFile)
+			chunkFile.Close()
+			if copyErr != nil {
+				setGlobalError(copyErr)
+				return fmt.Errorf("streamer failed copying chunk %d to pipe: %w", i, copyErr)
+			}
+
+			// Remove chunk file from disk
+			if rmErr := os.Remove(ci.filePath); rmErr != nil {
+				ctx.LogInfof("failed to remove chunk file %s: %v", ci.filePath, rmErr)
+			}
+
+			// Freed one slot on disk
+			mu.Lock()
+			delete(st.chunkFiles, i)
+			st.onDisk--
+			cond.Broadcast() // manager can schedule the next chunk
+			mu.Unlock()
+		}
+		return nil
+	})
+
+	// 7) Decompressor goroutine
+	// Reads from 'r' as soon as the streamer writes chunk 0 data
+	group.Go(func() error {
+		defer ctx.LogInfof("Decompressor goroutine exited")
+
+		decompressErr := compressor.DecompressFromReader(ctx, r, destination)
+		if decompressErr != nil {
+			// if decompression fails, close the writer with error
+			_ = w.CloseWithError(decompressErr)
+			return fmt.Errorf("decompression failed: %w", decompressErr)
+		}
+		return nil
+	})
+
+	// 8) Wait for all goroutines
+	if err := group.Wait(); err != nil {
+		// Something failed
+		ctx.LogInfof("pullFileAndDecompressOrdered: error from goroutines: %v", err)
+		cleanupChunks()
+		return err
+	}
+	// If manager or workers set a globalErr, handle it
+	if st.globalErr != nil {
+		ctx.LogInfof("pullFileAndDecompressOrdered: global error set: %v", st.globalErr)
+		cleanupChunks()
+		return st.globalErr
+	}
+
+	ctx.LogInfof("Finished pulling %s in %v", filename, time.Since(startTime))
+	return nil
+}
+
+func (s *AwsS3BucketProvider) downloadChunkFile(
+	ctx context.Context,
+	svc *s3.S3,
+	ns *notifications.NotificationService,
+	startingTime time.Time,
+	remoteFilePath string,
+	chunkIndex int,
+	totalChunks int,
+	totalSize int64,
+	totalDownloaded *int64,
+	chunkSize int64,
+	msgPrefix string,
+	cid string,
+	st *sharedState,
+	mu *sync.Mutex,
+	cond *sync.Cond,
+) error {
+	// Calculate [start..end]
+	start := int64(chunkIndex) * chunkSize
+	end := start + chunkSize - 1
+	rangeHeader := fmt.Sprintf("bytes=%d-%d", start, end)
+
+	// Fetch object chunk
+	resp, err := svc.GetObjectWithContext(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.Bucket.Name),
+		Key:    aws.String(remoteFilePath),
+		Range:  aws.String(rangeHeader),
+	})
+	if err != nil {
+		mu.Lock()
+		st.chunkFiles[chunkIndex] = chunkInfo{filePath: "", err: err}
+		cond.Broadcast()
+		mu.Unlock()
+		return fmt.Errorf("worker failed chunk %d range=%s: %w", chunkIndex, rangeHeader, err)
+	}
+	defer resp.Body.Close()
+
+	// Create temp file
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("chunk_%d_", chunkIndex))
+	if err != nil {
+		mu.Lock()
+		st.chunkFiles[chunkIndex] = chunkInfo{filePath: "", err: err}
+		cond.Broadcast()
+		mu.Unlock()
+		return fmt.Errorf("cannot create temp file for chunk %d: %w", chunkIndex, err)
+	}
+
+	// Copy from S3 to temp file
+	buf := make([]byte, 2*1024*1024) // 2MB buffer
+	var chunkDownloaded int64
+	for {
+		n, readErr := resp.Body.Read(buf)
+		if n > 0 {
+			if _, writeErr := tmpFile.Write(buf[:n]); writeErr != nil {
+				tmpFile.Close()
+				mu.Lock()
+				st.chunkFiles[chunkIndex] = chunkInfo{filePath: "", err: writeErr}
+				cond.Broadcast()
+				mu.Unlock()
+				return fmt.Errorf("write error chunk %d: %w", chunkIndex, writeErr)
+			}
+
+			chunkDownloaded += int64(n)
+			atomic.AddInt64(totalDownloaded, int64(n))
+
+			// Progress notifications
+			if ns != nil && totalSize > 0 {
+				percent := float64(*totalDownloaded) / float64(totalSize) * 100
+				msg := notifications.
+					NewProgressNotificationMessage(cid, msgPrefix, percent).
+					SetCurrentSize(*totalDownloaded).
+					SetTotalSize(totalSize).
+					SetStartingTime(startingTime)
+				ns.Notify(msg)
+			}
+		}
+		if readErr == io.EOF {
+			break
+		}
+		if readErr != nil {
+			tmpFile.Close()
+			mu.Lock()
+			st.chunkFiles[chunkIndex] = chunkInfo{filePath: "", err: readErr}
+			cond.Broadcast()
+			mu.Unlock()
+			return fmt.Errorf("read error chunk %d: %w", chunkIndex, readErr)
+		}
+	}
+
+	// Seek back to start (not strictly necessary since the streamer is copying from the file anyway,
+	// but done in case the streamer logic starts reading it from the beginning).
+	if _, err := tmpFile.Seek(0, io.SeekStart); err != nil {
+		tmpFile.Close()
+		mu.Lock()
+		st.chunkFiles[chunkIndex] = chunkInfo{filePath: "", err: err}
+		cond.Broadcast()
+		mu.Unlock()
+		return fmt.Errorf("failed to seek in chunk %d: %w", chunkIndex, err)
+	}
+
+	filePath := tmpFile.Name()
+	_ = tmpFile.Close()
+
+	// Store the chunk file location in shared map
+	mu.Lock()
+	st.chunkFiles[chunkIndex] = chunkInfo{filePath: filePath, err: nil}
+	cond.Broadcast() // let the streamer know chunk is ready
+	mu.Unlock()
+
+	return nil
+}
+
+func cleanupAllChunks(m map[int]chunkInfo) {
+	for _, ci := range m {
+		if ci.filePath != "" {
+			_ = os.Remove(ci.filePath)
+		}
+	}
 }
