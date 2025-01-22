@@ -16,6 +16,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/klauspost/pgzip"
 )
 
 // func DecompressFromReader(ctx basecontext.ApiContext, reader io.Reader, destination string) error {
@@ -98,22 +99,15 @@ func DecompressFromReader(ctx basecontext.ApiContext, reader io.Reader, destinat
 	switch fileType {
 	case "tar":
 		fileReader = reader
-	case "tar.gz":
-		gzReader, err := gzip.NewReader(reader)
+	case "tar.gz", "gzip":
+		// Use pgzip instead of the standard library's gzip
+		pgzReader, err := pgzip.NewReader(reader)
 		if err != nil {
 			return err
 		}
-		defer gzReader.Close()
-		fileReader = gzReader
-	case "gzip":
-		// If you ever have pure gzip (non-tar), handle that here.
-		gzReader, err := gzip.NewReader(reader)
-		if err != nil {
-			return err
-		}
-		defer gzReader.Close()
-		fileReader = gzReader
-		// If it's pure gzip (not tar), you'd handle differently, but let's assume tar.gz is primary.
+
+		defer pgzReader.Close()
+		fileReader = pgzReader
 	default:
 		return fmt.Errorf("unsupported file type: %s", fileType)
 	}
@@ -276,8 +270,9 @@ func copyTarChunks(file *os.File, reader *tar.Reader, fileSize int64) error {
 	extractedSize := int64(0)
 	lastPrintTime := time.Now()
 	ns := notifications.Get()
+	bufferSize := int64(64 * 1024) // 128KB
 	for {
-		_, err := io.CopyN(file, reader, 1024)
+		_, err := io.CopyN(file, reader, bufferSize)
 		if err != nil {
 			if err == io.EOF {
 				msg := fmt.Sprintf("Decompressing file %s", file.Name())
@@ -287,11 +282,11 @@ func copyTarChunks(file *os.File, reader *tar.Reader, fileSize int64) error {
 			return err
 		}
 		if ns != nil {
-			extractedSize += 1024
+			extractedSize += bufferSize
 			percentage := float64(extractedSize) / float64(fileSize) * 100
 			if time.Since(lastPrintTime) >= 1*time.Second {
 				msg := fmt.Sprintf("Decompressing file %s", file.Name())
-				ns.NotifyProgress(file.Name(), msg, int(percentage))
+				ns.NotifyProgress(file.Name(), msg, percentage)
 				lastPrintTime = time.Now()
 			}
 		}

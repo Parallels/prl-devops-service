@@ -24,3 +24,4 @@ _site/
 .vscode/
 *.log.*
 *.log
+commit.msg

@@ -75,7 +75,7 @@ func Compress(ctx basecontext.ApiContext, path string, compressedFilename string
 		}
 		if info.Size() > 0 {
 			ns := notifications.Get()
-			percentage := int(float64(n) * 100 / float64(info.Size()))
+			percentage := float64(n) * 100 / float64(info.Size())
 			if ns != nil {
 				prefix := "Compressing file " + machineFilePath
 				msg := notifications.NewProgressNotificationMessage(compressedFilename, prefix, percentage)
