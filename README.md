@@ -1,8 +1,8 @@
 # Parallels Desktop DevOps Service
 
 [![License: Fair Source](https://img.shields.io/badge/license-fair-source.svg)](https://fair.io/)
-[![Build](https://github.com/Parallels/prl-devops-service/actions/workflows/pr.yml/badge.svg)](https://github.com/Parallels/prl-devops-service/actions/workflows/pr.yml)
-[![Publish](https://github.com/Parallels/prl-devops-service/actions/workflows/publish.yml/badge.svg)](https://github.com/Parallels/prl-devops-service/actions/workflows/publish.yml)
+[![Builds](https://github.com/Parallels/prl-devops-service/actions/workflows/pull_request.yml/badge.svg)](https://github.com/Parallels/prl-devops-service/actions/workflows/pull_request.yml)
+[![Release](https://github.com/Parallels/prl-devops-service/actions/workflows/release.yml/badge.svg)](https://github.com/Parallels/prl-devops-service/actions/workflows/release.yml)
 [![discord](https://dcbadge.vercel.app/api/server/pEwZ254C3d?style=flat&theme=default)](https://discord.gg/pEwZ254C3d)
 
 ## Description
