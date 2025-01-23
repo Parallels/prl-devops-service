@@ -2,6 +2,7 @@
 
 MODE="UNKNOWN"
 PATTERN=""
+NO_CONFIRM="false"
 while [[ $# -gt 0 ]]; do
   case $1 in
   rm)
@@ -20,6 +21,10 @@ while [[ $# -gt 0 ]]; do
   --filter)
     PATTERN=$2
     shift
+    shift
+    ;;
+  --no-confirm)
+    NO_CONFIRM="true"
     shift
     ;;
   *)
@@ -49,12 +54,14 @@ function list() {
 }
 
 function remove() {
-  echo "WARNING: You are about to permanently delete images that match the pattern: $PATTERN"
-  echo "         This action is irreversible"
-  read -r -p "Are you sure you want to continue? (yes/no): " confirm
-  if [ "$confirm" != "yes" ]; then
-    echo "Operation aborted."
-    exit 1
+  if [ "$NO_CONFIRM" == "true" ]; then
+    echo "WARNING: You are about to permanently delete images that match the pattern: $PATTERN"
+    echo "         This action is irreversible"
+    read -r -p "Are you sure you want to continue? (yes/no): " confirm
+    if [ "$confirm" != "yes" ]; then
+      echo "Operation aborted."
+      exit 1
+    fi
   fi
 
   lines=$(list)

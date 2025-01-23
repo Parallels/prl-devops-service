@@ -201,6 +201,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
+      - name: Clean old canary images
+        run: |
+          ./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*canary.*$' --no-confirm
+      - name: Clean old beta images
+        run: |
+          ./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*beta.*$' --no-confirm
       - uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -271,7 +277,7 @@ jobs:
                 });
               }
             }
-  remove-old-alpha-release:
+  remove-old-canary-release:
     name: Remove old beta release
     needs:
       - release
@@ -298,7 +304,7 @@ jobs:
 
             for(const idx in releases.data) {
               const release = releases.data[idx];
-              if (release.tag_name.includes("-alpha") && release.tag_name !== `v${currentVersion}`) {
+              if (release.tag_name.includes("-canary") && release.tag_name !== `v${currentVersion}`) {
                 for(const assetIdx in release.assets) {
                   const asset = release.assets[assetIdx];
                   console.log(`Deleting asset: ${asset.name}`);

@@ -232,7 +232,7 @@ jobs:
       - name: Clean old canary images
         if: ${{ inputs.remove_old_canary == true }}
         run: |
-          ./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*canary.*$'
+          ./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*canary.*$' --no-confirm
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}

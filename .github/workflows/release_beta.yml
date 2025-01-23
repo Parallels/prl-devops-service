@@ -232,7 +232,7 @@ jobs:
       - name: Clean old beta images
         if: ${{ inputs.remove_old_beta == true }}
         run: |
-          ./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*beta.*$'
+          ./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*beta.*$' --no-confirm
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
