@@ -73,8 +73,15 @@ function generate_release_notes() {
   CONTENT=$(echo "$CHANGELIST" | jq -r '.[].body')
   echo "$CONTENT" | while read -r line; do
     if [[ $line != -* ]]; then
+      if [[ -z "$line" ]]; then
+        continue
+      fi
+      if [[ $line =~ ^[[:space:]]*$ ]]; then
+        continue
+      fi
       echo "- $line" >>"$temp_file"
     else
+
       echo "$line" >>"$temp_file"
     fi
   done
