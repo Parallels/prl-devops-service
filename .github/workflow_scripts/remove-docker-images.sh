@@ -54,7 +54,7 @@ function list() {
 }
 
 function remove() {
-  if [ "$NO_CONFIRM" == "true" ]; then
+  if [ "$NO_CONFIRM" == "false" ]; then
     echo "WARNING: You are about to permanently delete images that match the pattern: $PATTERN"
     echo "         This action is irreversible"
     read -r -p "Are you sure you want to continue? (yes/no): " confirm
