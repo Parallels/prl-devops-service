@@ -26,20 +26,21 @@ const (
 )
 
 const (
-	DEFAULT_API_PREFIX                      = "/api"
-	DEFAULT_API_PORT                        = "80"
-	DEFAULT_API_TLS_PORT                    = "443"
-	CURRENT_USER_ENV_VAR                    = "PD_CURRENT_USER"
-	DEFAULT_TOKEN_DURATION_MINUTES          = 60
-	DEFAULT_CATALOG_CACHE_FOLDER            = "./catalog_cache"
-	DEFAULT_ORCHESTRATOR_PULL_FREQUENCY_SEC = 30
-	SOURCE_ENV_VAR                          = "DEVOPS_SOURCE"
-	LOCAL_ORCHESTRATOR_DESCRIPTION          = "Local Orchestrator"
-	DEFAULT_SYSTEM_RESERVED_CPU             = 1
-	DEFAULT_SYSTEM_RESERVED_MEMORY          = 2048
-	DEFAULT_SYSTEM_RESERVED_DISK            = 20000
-	DEFAULT_REVERSE_PROXY_PORT              = "5080"
-	DEFAULT_REVERSE_PROXY_HOST              = "0.0.0.0"
+	DEFAULT_API_PREFIX                           = "/api"
+	DEFAULT_API_PORT                             = "80"
+	DEFAULT_API_TLS_PORT                         = "443"
+	CURRENT_USER_ENV_VAR                         = "PD_CURRENT_USER"
+	DEFAULT_TOKEN_DURATION_MINUTES               = 60
+	DEFAULT_CATALOG_CACHE_FOLDER                 = "./catalog_cache"
+	DEFAULT_ORCHESTRATOR_PULL_FREQUENCY_SEC      = 30
+	SOURCE_ENV_VAR                               = "DEVOPS_SOURCE"
+	LOCAL_ORCHESTRATOR_DESCRIPTION               = "Local Orchestrator"
+	DEFAULT_SYSTEM_RESERVED_CPU                  = 1
+	DEFAULT_SYSTEM_RESERVED_MEMORY               = 2048
+	DEFAULT_SYSTEM_RESERVED_DISK                 = 20000
+	DEFAULT_REVERSE_PROXY_PORT                   = "5080"
+	DEFAULT_REVERSE_PROXY_HOST                   = "0.0.0.0"
+	DEFAULT_NOTIFICATION_REFRESH_INTERVAL_IN_SEC = 5
 
 	API_MODE          = "api"
 	CLI_MODE          = "cli"
