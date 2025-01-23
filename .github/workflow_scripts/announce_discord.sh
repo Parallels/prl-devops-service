@@ -2,6 +2,7 @@
 WEBHOOK_URL=""
 VERSION=""
 BETA="FALSE"
+CANARY="FALSE"
 while [[ $# -gt 0 ]]; do
   case $1 in
   --webhook-url)
@@ -16,6 +17,10 @@ while [[ $# -gt 0 ]]; do
     ;;
   --beta)
     BETA="TRUE"
+    shift
+    ;;
+  --canary)
+    CANARY="TRUE"
     shift
     ;;
   *)
@@ -54,6 +59,9 @@ fi
 TITLE="📢 New Release v${VERSION}"
 if [ "$BETA" = "TRUE" ]; then
   TITLE="🧪 New Beta Release v${VERSION}"
+fi
+if [ "$CANARY" = "TRUE" ]; then
+  TITLE="🐤 New Canary Release v${VERSION}"
 fi
 
 # Create the JSON payload
