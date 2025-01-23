@@ -323,6 +323,6 @@ jobs:
       - name: Announce on discord
         id: announce_discord
         run: |
-          ./.github/workflow_scripts/announce_discord.sh --webhook-url $DISCORD_WEBHOOK --version $VERSION --canary
+          ./.github/workflow_scripts/announce_discord.sh --repo ${{ github.repository }}  --webhook-url $DISCORD_WEBHOOK --version $VERSION --canary
         env:
           SLACK_WEBHOOKS: ${{ env.DISCORD_WEBHOOK }}
