@@ -71,64 +71,10 @@ import (
 // 		return err
 // 	}
 
-// 	endingTime := time.Now()
-// 	ctx.LogInfof("Finished decompressing machine from stream to %s, in %v", destination, endingTime.Sub(staringTime))
-// 	return nil
-// }
-
-func DecompressFromReader(ctx basecontext.ApiContext, reader io.Reader, destination string) error {
-	startingTime := time.Now()
-
-	// Read initial 512 bytes to determine file type
-	headerBuf := make([]byte, 512)
-	n, err := io.ReadFull(reader, headerBuf)
-	if err != nil && err != io.EOF && n == 0 {
-		return fmt.Errorf("failed to read header: %w", err)
-	}
-	// If file is smaller than 512 bytes, n < 512 is fine.
-
-	fileType, err := detectFileType(headerBuf[:n])
-	if err != nil {
-		return err
-	}
-
-	// Put the initial bytes back into the reader stream
-	reader = io.MultiReader(bytes.NewReader(headerBuf[:n]), reader)
-
-	var fileReader io.Reader
-	switch fileType {
-	case "tar":
-		fileReader = reader
-	case "tar.gz", "gzip":
-		// Use pgzip instead of the standard library's gzip
-		pgzReader, err := pgzip.NewReader(reader)
-		if err != nil {
-			return err
-		}
-
-		defer pgzReader.Close()
-		fileReader = pgzReader
-	default:
-		return fmt.Errorf("unsupported file type: %s", fileType)
-	}
-
-	// Ensure the destination directory exists
-	if _, err := os.Stat(destination); os.IsNotExist(err) {
-		if err := os.MkdirAll(destination, 0o750); err != nil {
-			return err
-		}
-	}
-
-	tarReader := tar.NewReader(fileReader)
-	if err := processTarFile(ctx, tarReader, destination); err != nil {
-		return err
-	}
-
-	endingTime := time.Now()
-	ctx.LogInfof("Finished decompressing from stream to %s in %v", destination, endingTime.Sub(startingTime))
-	return nil
-}
-
+//		endingTime := time.Now()
+//		ctx.LogInfof("Finished decompressing machine from stream to %s, in %v", destination, endingTime.Sub(staringTime))
+//		return nil
+//	}
 func DecompressFile(ctx basecontext.ApiContext, filePath string, destination string) error {
 	staringTime := time.Now()
 	cleanFilePath := filepath.Clean(filePath)
@@ -180,6 +126,59 @@ func DecompressFile(ctx basecontext.ApiContext, filePath string, destination str
 
 	endingTime := time.Now()
 	ctx.LogInfof("Finished decompressing machine from %s to %s, in %v", filePath, destination, endingTime.Sub(staringTime))
+	return nil
+}
+
+func DecompressFromReader(ctx basecontext.ApiContext, reader io.Reader, destination string) error {
+	startingTime := time.Now()
+
+	// Read initial 512 bytes to determine file type
+	headerBuf := make([]byte, 512)
+	n, err := io.ReadFull(reader, headerBuf)
+	if err != nil && err != io.EOF && n == 0 {
+		return fmt.Errorf("failed to read header: %w", err)
+	}
+	// If file is smaller than 512 bytes, n < 512 is fine.
+
+	fileType, err := detectFileType(headerBuf[:n])
+	if err != nil {
+		return err
+	}
+
+	// Put the initial bytes back into the reader stream
+	reader = io.MultiReader(bytes.NewReader(headerBuf[:n]), reader)
+
+	var fileReader io.Reader
+	switch fileType {
+	case "tar":
+		fileReader = reader
+	case "tar.gz", "gzip":
+		// Use pgzip instead of the standard library's gzip
+		pgzReader, err := pgzip.NewReader(reader)
+		if err != nil {
+			return err
+		}
+
+		defer pgzReader.Close()
+		fileReader = pgzReader
+	default:
+		return fmt.Errorf("unsupported file type: %s", fileType)
+	}
+
+	// Ensure the destination directory exists
+	if _, err := os.Stat(destination); os.IsNotExist(err) {
+		if err := os.MkdirAll(destination, 0o750); err != nil {
+			return err
+		}
+	}
+
+	tarReader := tar.NewReader(fileReader)
+	if err := processTarFile(ctx, tarReader, destination); err != nil {
+		return err
+	}
+
+	endingTime := time.Now()
+	ctx.LogInfof("Finished decompressing from stream to %s in %v", destination, endingTime.Sub(startingTime))
 	return nil
 }
 
@@ -270,19 +269,32 @@ func copyTarChunks(file *os.File, reader *tar.Reader, fileSize int64) error {
 	extractedSize := int64(0)
 	lastPrintTime := time.Now()
 	ns := notifications.Get()
-	bufferSize := int64(64 * 1024) // 128KB
+	bufferSize := int64(40480 * 1024) // 10MB
+	buf := make([]byte, bufferSize)
 	for {
-		_, err := io.CopyN(file, reader, bufferSize)
-		if err != nil {
-			if err == io.EOF {
-				msg := fmt.Sprintf("Decompressing file %s", file.Name())
-				ns.NotifyProgress(file.Name(), msg, 100)
-				break
+		// 2) Read directly from the tar stream.
+		n, err := reader.Read(buf)
+		if n > 0 {
+			// Write what was read to the destination file.
+			_, writeErr := file.Write(buf[:n])
+			if writeErr != nil {
+				return writeErr
 			}
+			extractedSize += int64(n)
+		}
+
+		// If we hit EOF, we’re done with this file.
+		if err == io.EOF {
+			if ns != nil {
+				ns.NotifyProgress(file.Name(), "Decompressing file "+file.Name(), 100)
+			}
+			break
+		}
+		// If any other read error occurred, propagate it.
+		if err != nil {
 			return err
 		}
 		if ns != nil {
-			extractedSize += bufferSize
 			percentage := float64(extractedSize) / float64(fileSize) * 100
 			if time.Since(lastPrintTime) >= 1*time.Second {
 				msg := fmt.Sprintf("Decompressing file %s", file.Name())

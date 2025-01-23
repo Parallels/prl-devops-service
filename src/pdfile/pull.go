@@ -28,6 +28,7 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 	serviceprovider.InitServices(ctx)
 	ns := notifications.Get()
 	ns.EnableSingleLineOutput()
+	startTime := time.Now()
 
 	diag := diagnostics.NewPDFileDiagnostics()
 
@@ -232,7 +233,9 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 		}
 	}
 
-	fmt.Printf("\rFinished pulling manifest\n")
+	tookTime := time.Since(startTime)
+	tookTimeStr := fmt.Sprintf("%v", tookTime)
+	fmt.Printf("\rFinished pulling manifest " + tookTimeStr + "\n")
 	response := models.PullResponse{
 		MachineId:      resultManifest.ID,
 		MachineName:    resultManifest.MachineName,

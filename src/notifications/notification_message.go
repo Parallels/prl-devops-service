@@ -7,16 +7,17 @@ import (
 )
 
 type NotificationMessage struct {
-	correlationId   string
-	Message         string
-	CurrentProgress float64
-	totalSize       int64
-	currentSize     int64
-	IsProgress      bool
-	prefix          string
-	closed          bool
-	startingTime    time.Time
-	Level           NotificationMessageLevel
+	correlationId        string
+	Message              string
+	CurrentProgress      float64
+	totalSize            int64
+	currentSize          int64
+	IsProgress           bool
+	prefix               string
+	closed               bool
+	startingTime         time.Time
+	lastNotificationTime time.Time
+	Level                NotificationMessageLevel
 }
 
 func NewNotificationMessage(message string, level NotificationMessageLevel) *NotificationMessage {
@@ -29,10 +30,11 @@ func NewNotificationMessage(message string, level NotificationMessageLevel) *Not
 func NewProgressNotificationMessage(correlationId string, message string, progress float64) *NotificationMessage {
 	cid := base64.StdEncoding.EncodeToString([]byte(correlationId))
 	return &NotificationMessage{
-		correlationId:   cid,
-		Message:         message,
-		CurrentProgress: progress,
-		IsProgress:      true,
+		correlationId:        cid,
+		Message:              message,
+		CurrentProgress:      progress,
+		lastNotificationTime: time.Now(),
+		IsProgress:           true,
 	}
 }
 

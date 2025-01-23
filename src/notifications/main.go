@@ -3,6 +3,7 @@ package notifications
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 )
@@ -164,6 +165,7 @@ func (p *NotificationService) Start() {
 					}
 					printMsg += p.CurrentMessage.Message
 					if p.CurrentMessage.IsProgress {
+						p.CurrentMessage.lastNotificationTime = time.Now()
 						printMsg += fmt.Sprintf(" (%.1f%%)", p.CurrentMessage.CurrentProgress)
 						eta := ""
 						if p.CurrentMessage.TotalSize() > 0 && p.CurrentMessage.CurrentSize() > 0 {
