@@ -8,5 +8,6 @@
     ],
     "markdownlint.ignore": [
         "docs/**/*.md",
-    ]
+    ],
+    "makefile.configureOnOpen": false
 }

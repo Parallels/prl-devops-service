@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
@@ -135,6 +136,7 @@ func (s *OrchestratorService) CreateHosVirtualMachine(ctx basecontext.ApiContext
 
 func (s *OrchestratorService) CallCreateHostVirtualMachine(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
 	httpClient := s.getApiClient(host)
+	httpClient.WithTimeout(5 * time.Hour)
 	path := "/machines"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {
