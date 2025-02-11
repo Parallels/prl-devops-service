@@ -165,8 +165,8 @@ jobs:
 
       - name: Import sign certificate
         run: |
-          echo "${{ secrets.APPLE_CERTIFICATE }}" | base64 --decode > apple_developer_identity.p12
-          security import apple_developer_identity.p12 -k temp.keychain -P ${{ secrets.APPLE_CERT_PASSWORD }} -T /usr/bin/codesign
+          echo "${{ secrets.APPLE_CERTIFICATE_NEW }}" | base64 --decode > apple_developer_identity.p12
+          security import apple_developer_identity.p12 -k temp.keychain -P ${{ secrets.APPLE_CERT_PASSWORD_NEW }} -T /usr/bin/codesign
           rm apple_developer_identity.p12
           security set-key-partition-list -S apple-tool:,apple: -s -k "github" temp.keychain
           security list-keychains
@@ -174,16 +174,16 @@ jobs:
 
       - name: Import notary credentials
         run: |
-          echo "${{ secrets.APPLE_API_KEY }}" | base64 --decode > apple_api_key.p8
+          echo "${{ secrets.APPLE_API_KEY_NEW }}" | base64 --decode > apple_api_key.p8
           xcrun notarytool store-credentials "notary-credentials" \
             --key apple_api_key.p8 \
-            --key-id ${{ secrets.APPLE_API_KEY_ID }} \
-            --issuer ${{ secrets.APPLE_API_KEY_ISSUER }}
+            --key-id ${{ secrets.APPLE_API_KEY_ID_NEW }} \
+            --issuer ${{ secrets.APPLE_API_KEY_ISSUER_NEW }}
 
       - name: Sign binary
         run: |
           cd src
-          codesign --force --deep --strict --verbose --options=runtime,library --sign "${{ secrets.APPLE_DEVELOPER_IDENTITY }}" prldevops
+          codesign --force --deep --strict --verbose --options=runtime,library --sign "${{ secrets.APPLE_DEVELOPER_IDENTITY_NEW }}" prldevops
           ditto -c -k --sequesterRsrc prldevops prldevops.zip
           xcrun notarytool submit prldevops.zip --keychain-profile "notary-credentials" --wait
 
