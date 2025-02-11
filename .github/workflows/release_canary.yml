@@ -277,7 +277,7 @@ jobs:
           script: |
             const fs = require("fs");
             let version ='${{ github.event.inputs.version }}'.trim().split('.').slice(0, 2).join('.');
-            let currentVersion = `${version}.${{github.run_id}}-canary`;
+            let currentVersion = `${{ env.EXT_VERSION }}`;
             console.log(`Current Version: ${currentVersion}`);
             const releases = await github.rest.repos.listReleases({
               owner: context.repo.owner,
