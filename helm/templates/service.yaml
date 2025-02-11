@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: {{ include "helm.fullname" . }}
   namespace: {{ include "helm.namespace" . }}
-  labels: {{ - include "helm.labels" . | nindent 4 }}
+  labels: {{- include "helm.labels" . | nindent 4 }}
   annotations:
     sidecar.istio.io/proxyConfig: |
       proxyMetadata:
@@ -15,4 +15,4 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
-  selector: {{ - include "helm.selectorLabels" . | nindent 4 }}
+  selector: {{- include "helm.selectorLabels" . | nindent 4 }}

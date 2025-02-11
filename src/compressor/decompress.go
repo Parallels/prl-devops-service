@@ -131,6 +131,7 @@ func DecompressFile(ctx basecontext.ApiContext, filePath string, destination str
 
 func DecompressFromReader(ctx basecontext.ApiContext, reader io.Reader, destination string) error {
 	startingTime := time.Now()
+	ctx.LogInfof("Starting decompression to %s", destination)
 
 	// Read initial 512 bytes to determine file type
 	headerBuf := make([]byte, 512)
@@ -186,22 +187,25 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 	ns := notifications.Get()
 	for {
 		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
-			if err == io.EOF {
-				break
-			}
-
 			return err
 		}
+
+		ctx.LogDebugf("Decompressing file: %s", header.Name)
 
 		destinationFilePath, err := helpers.SanitizeArchivePath(destination, header.Name)
 		if err != nil {
 			return err
 		}
 
+		// Use the file path as correlation ID for notifications
+		correlationId := destinationFilePath
 		if ns != nil {
-			msg := fmt.Sprintf("Decompressing file %s", destinationFilePath)
-			ns.NotifyProgress(destinationFilePath, msg, 0)
+			msg := fmt.Sprintf("Decompressing file %s", header.Name)
+			ns.NotifyProgress(correlationId, msg, 0)
 		}
 
 		// Creating the basedir if it does not exist
@@ -260,6 +264,11 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 		default:
 			ctx.LogWarnf("Unknown type found for file %v, ignoring (byte %v, rune %v)", destinationFilePath, header.Typeflag, string(header.Typeflag))
 		}
+
+		// Clean up notifications for this file when done
+		if ns != nil {
+			ns.CleanupNotifications(correlationId)
+		}
 	}
 
 	return nil
@@ -283,7 +292,7 @@ func copyTarChunks(file *os.File, reader *tar.Reader, fileSize int64) error {
 			extractedSize += int64(n)
 		}
 
-		// If we hit EOF, we’re done with this file.
+		// If we hit EOF, we're done with this file.
 		if err == io.EOF {
 			if ns != nil {
 				ns.NotifyProgress(file.Name(), "Decompressing file "+file.Name(), 100)

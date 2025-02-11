@@ -235,3 +235,25 @@ func (p *NotificationService) Restart() {
 func ClearLine() {
 	fmt.Printf("\r\033[K")
 }
+
+// CleanupNotifications removes all progress tracking for a specific correlation ID
+func (p *NotificationService) CleanupNotifications(correlationId string) {
+	if correlationId == "" {
+		return
+	}
+
+	// Reset progress counter
+	delete(p.progressCounters, correlationId)
+
+	// Reset previous message if it was for this correlation ID
+	if p.previousMessage.correlationId == correlationId {
+		p.previousMessage = NotificationMessage{}
+	}
+
+	// Reset current message if it was for this correlation ID
+	if p.CurrentMessage.correlationId == correlationId {
+		p.CurrentMessage = NotificationMessage{}
+	}
+
+	p.ctx.LogDebugf("Cleaned up notifications for correlation ID: %s", correlationId)
+}

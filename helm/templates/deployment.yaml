@@ -5,6 +5,14 @@ metadata:
   namespace: {{ include "helm.namespace" . }}
   labels:
     {{- include "helm.labels" . | nindent 4 }}
+  annotations:
+    proxy.istio.io/config: |
+      proxyMetadata:
+        ISTIO_META_HTTP_TIMEOUT: "86400s"
+        ISTIO_META_IDLE_TIMEOUT: "86400s"
+    sidecar.istio.io/proxyCPU: "1000m"
+    sidecar.istio.io/proxyMemory: "1Gi"
+    sidecar.istio.io/inject: "false"  # Only use this for testing
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -17,6 +25,12 @@ spec:
       {{- with .Values.podAnnotations }}
       annotations:
         timestamp: {{ now | quote }}
+        proxy.istio.io/config: |
+          proxyMetadata:
+            ISTIO_META_HTTP_TIMEOUT: "86400s"
+            ISTIO_META_IDLE_TIMEOUT: "86400s"
+        sidecar.istio.io/proxyCPU: "1000m"
+        sidecar.istio.io/proxyMemory: "1Gi"
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:

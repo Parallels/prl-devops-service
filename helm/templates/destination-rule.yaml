@@ -2,14 +2,15 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: {{ include "prl-devops-service.fullname" . }}
+  name: {{ include "helm.fullname" . }}
+  namespace: {{ include "helm.namespace" . }}
+  labels: {{- include "helm.labels" . | nindent 4 }}
 spec:
-  host: {{ include "prl-devops-service.fullname" . }}
+  host: {{ .Values.ingress.host }}
   trafficPolicy:
     connectionPool:
       http:
-        maxRequestsPerConnection: 1
-        http1MaxPendingRequests: 1
+        maxRequestsPerConnection: 20
+        http1MaxPendingRequests: 20
         idleTimeout: 24h
-        h2MaxRequests: 1
 {{- end }}

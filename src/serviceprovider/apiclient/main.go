@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -164,20 +165,22 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 	}
 	c.ctx.LogDebugf("[Api Client] Using connection timeout %v for request to %s", connTimeout, url)
 
+	// Use appropriate timeouts for the transport
 	transport := &http.Transport{
-		TLSHandshakeTimeout: connTimeout,
-		IdleConnTimeout:     connTimeout,
-		Dial: (&net.Dialer{
-			Timeout:   connTimeout,
-			KeepAlive: c.timeout,
-		}).Dial,
+		TLSHandshakeTimeout:   30 * time.Second,
+		ResponseHeaderTimeout: c.timeout,
+		ExpectContinueTimeout: 30 * time.Second,
+		IdleConnTimeout:       c.timeout,
+		DisableKeepAlives:     false,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   10,
 		DialContext: (&net.Dialer{
-			Timeout:   connTimeout,
+			Timeout:   30 * time.Second,
 			KeepAlive: c.timeout,
 		}).DialContext,
-		ResponseHeaderTimeout: connTimeout,
-		ExpectContinueTimeout: connTimeout,
-		TLSClientConfig:       &tls.Config{InsecureSkipVerify: c.disableTlsValidation},
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: c.disableTlsValidation,
+		},
 	}
 
 	client := &http.Client{
@@ -257,18 +260,29 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 		}
 	}
 
-	// Add debug headers
+	// Add correlation ID for tracing
+	correlationId := helpers.GenerateId()
+	c.ctx.LogInfof("[Api Client][%s] Starting request: %s %s (timeout: %v)", correlationId, verb, url, c.timeout)
+
+	// Add Istio trace headers
 	req.Header.Set("x-b3-sampled", "1")
-	req.Header.Set("x-request-id", helpers.GenerateId())
+	req.Header.Set("x-request-id", correlationId)
+	req.Header.Set("x-envoy-upstream-rq-timeout-ms", fmt.Sprintf("%d", c.timeout.Milliseconds()))
+	req.Header.Set("x-envoy-expected-rq-timeout-ms", fmt.Sprintf("%d", c.timeout.Milliseconds()))
+
+	if strings.Contains(url, "/machines") {
+		req.Header.Set("x-long-running-op", "true")
+	}
 
 	response, err := client.Do(req)
 	if err != nil {
 		if os.IsTimeout(err) {
-			c.ctx.LogErrorf("[Api Client] Timeout occurred during request to %s: %v", url, err)
+			c.ctx.LogErrorf("[Api Client][%s] Timeout occurred during request to %s: %v", correlationId, url, err)
 		} else if netErr, ok := err.(net.Error); ok {
-			c.ctx.LogErrorf("[Api Client] Network error during request to %s: %v (timeout: %v)", url, err, netErr.Timeout())
+			c.ctx.LogErrorf("[Api Client][%s] Network error during request to %s: %v (timeout: %v)", correlationId, url, err, netErr.Timeout())
+			c.ctx.LogErrorf("[Api Client][%s] Network error type: %T", correlationId, netErr)
 		} else {
-			c.ctx.LogErrorf("[Api Client] Error during request to %s: %v", url, err)
+			c.ctx.LogErrorf("[Api Client][%s] Error during request to %s: %v (type: %T)", correlationId, url, err, err)
 		}
 		return &apiResponse, fmt.Errorf("error %s data on %s, err: %v", verb, url, err)
 	}

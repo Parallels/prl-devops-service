@@ -21,7 +21,7 @@ type ChunkManagerService struct {
 	downloader      ChunkDownloader
 	workerCount     int
 	maxChunksOnDisk int
-	totalDownloaded int64 // Add this field to track total bytes downloaded
+	totalDownloaded int64
 }
 
 // NewChunkManagerService creates a new instance of ChunkManagerService
@@ -42,9 +42,11 @@ func NewChunkManagerService(downloader ChunkDownloader, workerCount, maxChunksOn
 
 // DownloadAndDecompress downloads a file in chunks and decompresses it
 func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, request DownloadRequest) error {
-	ctx.LogInfof("Starting download for %s", request.Filename)
+	// Reset the download counter at the start of each download
+	atomic.StoreInt64(&s.totalDownloaded, 0)
+
 	startTime := time.Now()
-	s.totalDownloaded = 0 // Reset the download counter
+	ctx.LogInfof("Starting download for %s", request.Filename)
 
 	// Use ctx.Context() for the provider calls
 	totalSize, err := s.downloader.GetFileSize(ctx.Context(), filepath.Join(request.Path, request.Filename))
@@ -62,13 +64,20 @@ func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, 
 	ctx.LogInfof("Will download %d chunks, chunkSize=%d, workerCount=%d",
 		totalChunks, chunkSize, s.workerCount)
 
-	// Prepare pipe for streaming to decompressor
-	r, w := io.Pipe()
+	// Create new channels for each download
+	chunkFilesChan := make(chan string, s.maxChunksOnDisk)
+	defer close(chunkFilesChan)
 
-	// Setup context and error group
+	// Create new error group for each download
 	rootCtx := context.Background()
 	ctxChunk, cancel := context.WithCancel(rootCtx)
+	defer cancel()
 	group, groupCtx := errgroup.WithContext(ctxChunk)
+
+	// Create new pipe for each download
+	r, w := io.Pipe()
+	defer r.Close()
+	defer w.Close()
 
 	// Initialize shared state
 	st := &sharedState{
@@ -121,19 +130,23 @@ func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, 
 		return st.globalErr
 	}
 
+	// Send final notification and cleanup
 	if request.NotificationService != nil {
-		msg := notifications.NewProgressNotificationMessage(
+		finalMsg := notifications.NewProgressNotificationMessage(
 			request.CorrelationID,
 			request.MessagePrefix,
 			100,
 		).
-			SetCurrentSize(totalSize).
+			SetCurrentSize(s.totalDownloaded).
 			SetTotalSize(totalSize).
 			SetStartingTime(startTime)
-		request.NotificationService.Notify(msg)
+		request.NotificationService.Notify(finalMsg)
+
+		// Clean up notifications after we're done
+		request.NotificationService.CleanupNotifications(request.CorrelationID)
 	}
 
-	ctx.LogInfof("Finished pulling %s in %v", request.Filename, time.Since(startTime))
+	ctx.LogInfof("Successfully downloaded and decompressed %s in %v", request.Filename, time.Since(startTime))
 	return nil
 }
 
@@ -364,10 +377,12 @@ func (s *ChunkManagerService) runDecompressorGoroutine(
 		defer ctx.LogInfof("Decompressor goroutine exited")
 		defer r.Close()
 
+		ctx.LogInfof("Starting decompression process")
 		if err := compressor.DecompressFromReader(ctx, r, destination); err != nil {
 			setGlobalError(err)
 			return fmt.Errorf("decompression failed: %w", err)
 		}
+		ctx.LogInfof("Decompression completed successfully")
 		return nil
 	})
 }
