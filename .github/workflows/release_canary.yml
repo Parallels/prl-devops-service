@@ -166,6 +166,7 @@ jobs:
       - name: Import sign certificate
         run: |
           echo "${{ secrets.APPLE_CERTIFICATE_NEW }}" | base64 --decode > apple_developer_identity.p12
+          cat apple_developer_identity.p12
           security import apple_developer_identity.p12 -k temp.keychain -P ${{ secrets.APPLE_CERT_PASSWORD_NEW }} -T /usr/bin/codesign
           rm apple_developer_identity.p12
           security set-key-partition-list -S apple-tool:,apple: -s -k "github" temp.keychain
