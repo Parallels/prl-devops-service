@@ -23,16 +23,18 @@ import (
 
 var globalConfig *Config
 
-var canaryBuildFlag = "false"
-
-var extensions = []string{
-	".local.yaml",
-	".local.yml",
-	".local.json",
-	".yaml",
-	".yml",
-	".json",
-}
+var (
+	canaryBuildFlag = "false"
+	betaBuildFlag   = "false"
+	extensions      = []string{
+		".local.yaml",
+		".local.yml",
+		".local.json",
+		".yaml",
+		".yml",
+		".json",
+	}
+)
 
 type Config struct {
 	ctx                 basecontext.ApiContext
@@ -568,6 +570,15 @@ func (c *Config) IsCanaryEnabled() bool {
 
 	enableCanary := c.GetBoolKey(constants.ENABLE_CANARY_ENV_VAR)
 	return enableCanary
+}
+
+func (c *Config) IsBetaEnabled() bool {
+	if betaBuildFlag == "true" {
+		return true
+	}
+
+	enableBeta := c.GetBoolKey(constants.ENABLE_BETA_ENV_VAR)
+	return enableBeta
 }
 
 func (c *Config) GetKey(key string) string {

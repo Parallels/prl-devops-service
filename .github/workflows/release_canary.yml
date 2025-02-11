@@ -110,7 +110,7 @@ jobs:
           project_path: "./src"
           binary_name: "prldevops"
           release_name: "v${{ env.EXT_VERSION }}-canary"
-          ldflags: "-s -w -X main.ver=${{ env.EXT_VERSION }} -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}'"
+          ldflags: "-s -w -X main.ver=${{ env.EXT_VERSION }} -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}' -X 'github.com/Parallels/prl-devops-service/config.canaryBuildFlag=true' -X 'github.com/Parallels/prl-devops-service/config.betaBuildFlag=false'"
   canary-releases-macos:
     needs:
       - canary-release
@@ -155,7 +155,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
-          cd src && CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
+          cd src && CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY' -X 'github.com/Parallels/prl-devops-service/config.canaryBuildFlag=true' -X 'github.com/Parallels/prl-devops-service/config.betaBuildFlag=false'" -o prldevops
       - name: Create and Unlock Temporary Keychain
         run: |
           security create-keychain -p "github" temp.keychain
@@ -277,7 +277,7 @@ jobs:
           script: |
             const fs = require("fs");
             let version ='${{ github.event.inputs.version }}'.trim().split('.').slice(0, 2).join('.');
-            let currentVersion = `${{ env.EXT_VERSION }}`;
+            let currentVersion = `${{ env.EXT_VERSION }}-canary`;
             console.log(`Current Version: ${currentVersion}`);
             const releases = await github.rest.repos.listReleases({
               owner: context.repo.owner,
