@@ -121,6 +121,18 @@ func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, 
 		return st.globalErr
 	}
 
+	if request.NotificationService != nil {
+		msg := notifications.NewProgressNotificationMessage(
+			request.CorrelationID,
+			request.MessagePrefix,
+			100,
+		).
+			SetCurrentSize(totalSize).
+			SetTotalSize(totalSize).
+			SetStartingTime(startTime)
+		request.NotificationService.Notify(msg)
+	}
+
 	ctx.LogInfof("Finished pulling %s in %v", request.Filename, time.Since(startTime))
 	return nil
 }
@@ -301,6 +313,9 @@ func (s *ChunkManagerService) downloadChunk(
 			downloaded := atomic.AddInt64(&s.totalDownloaded, int64(n))
 			if request.NotificationService != nil && totalSize > 0 {
 				percent := float64(downloaded) / float64(totalSize) * 100
+				if percent > 100 {
+					percent = 100 // Cap at 100%
+				}
 				msg := notifications.NewProgressNotificationMessage(
 					request.CorrelationID,
 					request.MessagePrefix,

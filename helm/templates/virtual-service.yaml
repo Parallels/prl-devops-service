@@ -29,6 +29,7 @@ spec:
             host: {{ include "helm.fullname" . }}
             port:
               number: {{ .Values.service.port }}
+      timeout: 24h # Set a very long timeout for long-running operations
     - match:
         - ignoreUriCase: true
           uri:
@@ -38,4 +39,5 @@ spec:
             host: {{ include "helm.fullname" . }}
             port:
               number: {{ .Values.service.port }}
+      timeout: 24h # Set a very long timeout for long-running operations
 {{- end }}

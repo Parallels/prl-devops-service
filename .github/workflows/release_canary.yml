@@ -248,6 +248,8 @@ jobs:
           push: true
           build-args: |
             VERSION=${{ env.EXT_VERSION }}
+            AMPLITUDE_API_KEY=${{ env.AmplitudeApiKey }}
+            BUILD_ENV=canary
           secrets: |
             amplitude_api_key=${{ secrets.AMPLITUDE_API_KEY }}
           tags: |

@@ -753,7 +753,7 @@ func (s *AwsS3BucketProvider) pullFileAndDecompressUnstable(ctx basecontext.ApiC
 		Destination:         destination,
 		ChunkSize:           100 * 1024 * 1024, // 100MB chunks
 		NotificationService: notifications.Get(),
-		MessagePrefix:       fmt.Sprintf("Pulling %s", filename),
+		MessagePrefix:       fmt.Sprintf("[Unstable] Pulling %s", filename),
 		CorrelationID:       helpers.GenerateId(),
 	}
 

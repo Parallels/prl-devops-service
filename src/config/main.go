@@ -23,6 +23,8 @@ import (
 
 var globalConfig *Config
 
+var canaryBuildFlag = "false"
+
 var extensions = []string{
 	".local.yaml",
 	".local.yml",
@@ -560,6 +562,10 @@ func (c *Config) IsRemoteProviderStreamEnabled() bool {
 }
 
 func (c *Config) IsCanaryEnabled() bool {
+	if canaryBuildFlag == "true" {
+		return true
+	}
+
 	enableCanary := c.GetBoolKey(constants.ENABLE_CANARY_ENV_VAR)
 	return enableCanary
 }

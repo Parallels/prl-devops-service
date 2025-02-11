@@ -115,7 +115,7 @@ push-alpha-container:
 		-t cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-alpha \
 		-t cjlapao/$(DOCKER_PACKAGE_NAME):latest_alpha \
 		--build-arg VERSION=$(BUILD_VERSION) \
-		--build-arg BUILD_ENV=debug \
+		--build-arg BUILD_ENV=canary \
 		--build-arg OS=linux \
 		--build-arg ARCHITECTURE=amd64 \
 		-f Dockerfile .
@@ -139,7 +139,7 @@ push-beta-container:
 		-t cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-beta \
 		-t cjlapao/$(DOCKER_PACKAGE_NAME):unstable \
 		--build-arg VERSION=$(BUILD_VERSION) \
-		--build-arg BUILD_ENV=debug \
+		--build-arg BUILD_ENV=canary \
 		--build-arg OS=linux \
 		--build-arg ARCHITECTURE=amd64 \
 		-f Dockerfile .

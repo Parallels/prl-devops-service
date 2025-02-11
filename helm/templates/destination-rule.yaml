@@ -1,0 +1,15 @@
+{{- if and .Values.ingress.enabled  .Values.ingress.istio.enabled }}
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: {{ include "prl-devops-service.fullname" . }}
+spec:
+  host: {{ include "prl-devops-service.fullname" . }}
+  trafficPolicy:
+    connectionPool:
+      http:
+        maxRequestsPerConnection: 1
+        http1MaxPendingRequests: 1
+        idleTimeout: 24h
+        h2MaxRequests: 1
+{{- end }}
