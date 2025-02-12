@@ -113,7 +113,7 @@ push-alpha-container:
 	@echo "Building $(BUILD_VERSION) Alpha Container..."
 	@docker build --platform linux/amd64,linux/arm64 \
 		-t cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-alpha \
-		-t cjlapao/$(DOCKER_PACKAGE_NAME):latest_alpha \
+		-t cjlapao/$(DOCKER_PACKAGE_NAME):latest-alpha \
 		--build-arg VERSION=$(BUILD_VERSION) \
 		--build-arg BUILD_ENV=canary \
 		--build-arg OS=linux \
