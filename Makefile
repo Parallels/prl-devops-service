@@ -75,6 +75,28 @@ endif
 	@cd src && go build -o ../out/binaries/$(PACKAGE_NAME)
 	@echo "Build finished."
 
+.PHONY: build-canary
+build-canary:
+	@echo "Building Canary..."
+ifeq ($(wildcard ./out/.*),)
+	@echo "Creating out directory..."
+	@mkdir out
+	@mkdir out/binaries
+endif
+	@cd src && go build -o ../out/binaries/$(PACKAGE_NAME) -ldflags="-X 'github.com/Parallels/prl-devops-service/config.canaryBuildFlag=true'"
+	@echo "Build finished."
+
+.PHONY: build-beta
+build-beta:
+	@echo "Building Beta..."
+ifeq ($(wildcard ./out/.*),)
+	@echo "Creating out directory..."
+	@mkdir out
+	@mkdir out/binaries
+endif
+	@cd src && go build -o ../out/binaries/$(PACKAGE_NAME) -ldflags="-X 'github.com/Parallels/prl-devops-service/config.betaBuildFlag=true'"
+	@echo "Build finished."
+
 .PHONY: build-linux-amd64
 build-linux-amd64:
 	@echo "Building..."
