@@ -276,7 +276,8 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 
 func copyTarChunks(file *os.File, reader *tar.Reader, fileSize int64) error {
 	extractedSize := int64(0)
-	lastPrintTime := time.Now()
+	startTime := time.Now()
+	// lastPrintTime := time.Now()
 	ns := notifications.Get()
 	bufferSize := int64(40480 * 1024) // 10MB
 	buf := make([]byte, bufferSize)
@@ -305,11 +306,15 @@ func copyTarChunks(file *os.File, reader *tar.Reader, fileSize int64) error {
 		}
 		if ns != nil {
 			percentage := float64(extractedSize) / float64(fileSize) * 100
-			if time.Since(lastPrintTime) >= 1*time.Second {
-				msg := fmt.Sprintf("Decompressing file %s", file.Name())
-				ns.NotifyProgress(file.Name(), msg, percentage)
-				lastPrintTime = time.Now()
-			}
+			msg := notifications.NewProgressNotificationMessage(
+				file.Name(),
+				"Decompressing file "+file.Name(),
+				percentage,
+			).
+				SetCurrentSize(extractedSize).
+				SetTotalSize(fileSize).
+				SetStartingTime(startTime)
+			ns.Notify(msg)
 		}
 	}
 
