@@ -245,7 +245,7 @@ func (s *AwsS3BucketProvider) PullFileAndDecompress(ctx basecontext.ApiContext, 
 		ctx.LogInfof("\rUsing Canary version of pullFileAndDecompress")
 		return s.pullFileAndDecompressUnstable(ctx, path, filename, destination)
 	}
-	return s.pullFileAndDecompressStable(ctx, path, filename, destination)
+	return s.pullFileAndDecompressUnstable(ctx, path, filename, destination)
 }
 
 func (s *AwsS3BucketProvider) PullFileToMemory(ctx basecontext.ApiContext, path string, filename string) ([]byte, error) {
