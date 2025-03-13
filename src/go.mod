@@ -12,7 +12,7 @@ require (
 	github.com/cjlapao/common-go v0.0.39
 	github.com/cjlapao/common-go-cryptorand v0.0.6
 	github.com/cjlapao/common-go-logger v0.0.10
-	github.com/go-jose/go-jose/v4 v4.0.2
+	github.com/go-jose/go-jose/v4 v4.0.5
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/google/uuid v1.6.0
@@ -20,12 +20,13 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/jfrog/jfrog-client-go v1.36.1
+	github.com/klauspost/pgzip v1.2.6
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/files/v2 v2.0.0
 	github.com/swaggo/swag v1.16.3
-	golang.org/x/crypto v0.31.0
+	golang.org/x/crypto v0.32.0
 	golang.org/x/sync v0.10.0
-	golang.org/x/sys v0.28.0
+	golang.org/x/sys v0.29.0
 	golang.org/x/text v0.21.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -65,7 +66,6 @@ require (
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
-	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-ieproxy v0.0.1 // indirect
@@ -86,7 +86,7 @@ require (
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/term v0.28.0 // indirect
 	golang.org/x/tools v0.23.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
