@@ -1,10 +1,13 @@
 package parallelsdesktop
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -1597,27 +1600,103 @@ func (s *ParallelsService) LocalUploadToVm(ctx basecontext.ApiContext, id string
 		return &response, err
 	}
 
-	if r.RemotePath == "" {
-		r.RemotePath = "/tmp"
-	}
-	response.LocalPath = r.RemotePath
-	cmd := helpers.Command{
-		Command: "tar",
-		Args:    make([]string, 0),
-	}
+	prlcopySupportedVersion := helpers.NewVersion("20.2.0")
+	currentVersion := helpers.NewVersion(s.Version())
 
-	cmd.Args = append(cmd.Args, "cz", "--no-mac-metadata", "-f", "-", r.LocalPath, "|", "sudo")
+	if currentVersion.LessThan(prlcopySupportedVersion) {
+		if r.RemotePath == "" {
+			r.RemotePath = "/tmp"
+		}
 
-	if vm.User != "root" {
-		cmd.Args = append(cmd.Args, "-u", vm.User)
-	}
+		response.LocalPath = r.RemotePath
 
-	cmd.Args = append(cmd.Args, "-u", vm.User, s.executable, "exec", vm.ID, "tar", "xzf", "-", "-C", r.RemotePath)
-	ctx.LogInfof("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
-	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
-	if err != nil {
-		response.Error = err.Error()
-		return &response, err
+		// First command to compress the file / folder
+		cmd := helpers.Command{
+			Command: "tar",
+			Args:    make([]string, 0),
+		}
+
+		cmd.Args = append(cmd.Args, "czf", "-", "--no-mac-metadata", "--no-xattrs", "--no-fflags")
+		cmd.Args = append(cmd.Args, "-C", filepath.Dir(r.LocalPath), filepath.Base(r.LocalPath))
+
+		ctx.LogInfof("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
+		cmd1 := exec.Command(cmd.Command, cmd.Args...)
+		outPipe, _ := cmd1.StdoutPipe()
+
+		// stderr1 is to capture the error message from the command
+		stderr1 := &bytes.Buffer{}
+		cmd1.Stderr = stderr1
+
+		// Constructing second command, to copy the file / folder to the VM
+		if vm.User != "root" {
+			cmd.Args = append(cmd.Args, "-u", vm.User)
+		}
+
+		cmd = helpers.Command{
+			Command: s.executable,
+			Args:    make([]string, 0),
+		}
+
+		cmd.Args = append(cmd.Args, "exec", vm.ID, "--current-user", "tar", "xzf", "-", "-C", r.RemotePath)
+
+		ctx.LogInfof("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
+		cmd2 := exec.Command(cmd.Command, cmd.Args...)
+		inPipe, _ := cmd2.StdinPipe()
+		cmd2.Stdout = os.Stdout // Output to terminal
+
+		stderr2 := &bytes.Buffer{}
+		cmd2.Stderr = stderr2
+
+		// Start first command
+		if err := cmd1.Start(); err != nil {
+			response.Error = err.Error()
+			return &response, err
+		}
+
+		// Pipe data from cmd1 to cmd2
+		go func() {
+			io.Copy(inPipe, outPipe)
+			inPipe.Close()
+		}()
+
+		// Start second command
+		if err := cmd2.Start(); err != nil {
+			response.Error = "q" + err.Error()
+			return &response, err
+		}
+
+		// Wait for first command to finish
+		if err := cmd1.Wait(); err != nil {
+			ctx.LogInfof("Compressing the file/dir failed: %s Error : %s", err.Error(), stderr1.String())
+			response.Error = err.Error()
+			return &response, err
+		}
+
+		// Wait for second command to finish
+		if err := cmd2.Wait(); err != nil {
+			ctx.LogInfof("Copy file to VM failed: %s Error : %s", err.Error(), stderr2.String())
+			response.Error = err.Error()
+			return &response, err
+		}
+
+	} else {
+		cmd := helpers.Command{
+			Command: "/usr/local/bin/prlcopy",
+			Args:    make([]string, 0),
+		}
+
+		cmd.Args = append(cmd.Args, "--vm", vm.ID, r.LocalPath)
+
+		if r.RemotePath != "" {
+			cmd.Args = append(cmd.Args, r.RemotePath)
+		}
+
+		ctx.LogInfof("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
+		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+		if err != nil {
+			response.Error = err.Error()
+			return &response, err
+		}
 	}
 
 	return &response, nil
