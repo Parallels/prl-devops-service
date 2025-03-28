@@ -1,0 +1,28 @@
+{{- if and .Values.ingress.enabled  .Values.ingress.istio.enabled }}
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: {{ include "helm.fullname" . }}-timeouts
+  namespace: istio-system
+spec:
+  configPatches:
+    - applyTo: NETWORK_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+      patch:
+        operation: MERGE
+        value:
+          typed_config:
+            "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager"
+            stream_idle_timeout: "24h"
+            request_timeout: "24h"
+            drain_timeout: "24h"
+            common_http_protocol_options:
+              idle_timeout: "24h"
+            max_stream_duration:
+              max_stream_duration: "24h"
+{{- end }} 

@@ -280,12 +280,18 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 			Addr:              ":" + l.Options.HttpPort,
 			Handler:           handlers.CORS(originsOk, headersOk, methodsOk)(l.Router),
 			ReadHeaderTimeout: time.Duration(30) * time.Second,
+			ReadTimeout:       time.Duration(5) * time.Hour,
+			WriteTimeout:      time.Duration(5) * time.Hour,
+			IdleTimeout:       time.Duration(60) * time.Second,
 		}
 	} else {
 		srv = &http.Server{
 			Addr:              ":" + l.Options.HttpPort,
 			Handler:           l.Router,
 			ReadHeaderTimeout: time.Duration(30) * time.Second,
+			ReadTimeout:       time.Duration(5) * time.Hour,
+			WriteTimeout:      time.Duration(5) * time.Hour,
+			IdleTimeout:       time.Duration(60) * time.Second,
 		}
 	}
 
@@ -339,6 +345,9 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 					TLSConfig:         tlsConfig,
 					Handler:           handlers.CORS(originsOk, headersOk, methodsOk)(l.Router),
 					ReadHeaderTimeout: time.Duration(30) * time.Second,
+					ReadTimeout:       time.Duration(5) * time.Hour,
+					WriteTimeout:      time.Duration(5) * time.Hour,
+					IdleTimeout:       time.Duration(60) * time.Second,
 				}
 			} else {
 				sslSrv = &http.Server{
@@ -346,6 +355,9 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 					TLSConfig:         tlsConfig,
 					Handler:           l.Router,
 					ReadHeaderTimeout: time.Duration(30) * time.Second,
+					ReadTimeout:       time.Duration(5) * time.Hour,
+					WriteTimeout:      time.Duration(5) * time.Hour,
+					IdleTimeout:       time.Duration(60) * time.Second,
 				}
 			}
 

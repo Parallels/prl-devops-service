@@ -32,6 +32,8 @@ RUN --mount=type=secret,id=amplitude_api_key \
   export AMPLITUDE_API_KEY=$(cat /run/secrets/amplitude_api_key) && \
   if [ "$BUILD_ENV" = "production" ]; then \
   CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="-s -w -X main.ver=$VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o /go/bin/prl-devops-service; \
+  elif [ "$BUILD_ENV" = "canary" ]; then \
+  CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="-s -w -X main.ver=$VERSION -X 'github.com/Parallels/prl-devops-service/config.canaryBuildFlag=true'" -o /go/bin/prl-devops-service; \
   else \
   CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="-s -w -X main.ver=$VERSION" -o /go/bin/prl-devops-service; \
   fi
