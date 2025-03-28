@@ -2,7 +2,7 @@ module github.com/Parallels/prl-devops-service
 
 go 1.23.0
 
-toolchain go1.23.5
+toolchain go1.24.1
 
 require (
 	github.com/Azure/azure-storage-blob-go v0.15.0
@@ -14,7 +14,7 @@ require (
 	github.com/cjlapao/common-go-logger v0.0.10
 	github.com/go-jose/go-jose/v4 v4.0.5
 	github.com/go-sql-driver/mysql v1.7.1
-	github.com/golang-jwt/jwt/v4 v4.5.1
+	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
