@@ -16,6 +16,7 @@ func (s *OrchestratorService) UnregisterHost(ctx basecontext.ApiContext, hostId 
 		return err
 	}
 
+	_ = dbService.SaveNow(ctx)
 	s.Refresh()
 	return nil
 }
