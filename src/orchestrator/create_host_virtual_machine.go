@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
@@ -111,6 +112,7 @@ func (s *OrchestratorService) CreateHosVirtualMachine(ctx basecontext.ApiContext
 	}
 
 	if isOk {
+		ctx.LogInfof("Creating virtual machine on host %s", host.Host)
 		resp, err := s.CallCreateHostVirtualMachine(*host, request)
 		if err != nil {
 			e := models.NewFromError(err)
@@ -135,19 +137,26 @@ func (s *OrchestratorService) CreateHosVirtualMachine(ctx basecontext.ApiContext
 
 func (s *OrchestratorService) CallCreateHostVirtualMachine(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
 	httpClient := s.getApiClient(host)
+	timeout := 5 * time.Hour
+	s.ctx.LogInfof("[Orchestrator] Setting timeout of %v for VM creation request to host %s", timeout, host.Host)
+	httpClient.WithTimeout(timeout)
+
 	path := "/machines"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {
 		return nil, err
 	}
 
+	s.ctx.LogInfof("[Orchestrator] Starting VM creation request to %s", url)
 	var response models.CreateVirtualMachineResponse
-	_, err = httpClient.Post(url.String(), request, &response)
+	apiResponse, err := httpClient.Post(url.String(), request, &response)
 	if err != nil {
+		s.ctx.LogErrorf("[Orchestrator] VM creation request failed: %v (Status: %d)", err, apiResponse.StatusCode)
 		return nil, err
 	}
 
 	response.Host = host.GetHost()
+	s.ctx.LogInfof("[Orchestrator] Successfully created VM on host %s", host.Host)
 
 	s.Refresh()
 	return &response, nil

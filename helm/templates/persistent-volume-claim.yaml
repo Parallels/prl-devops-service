@@ -4,6 +4,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ include "helm.fullname" . }}
   namespace:  {{ include "helm.namespace" . }}
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
 spec:
   accessModes:
   - {{ .Values.storage.access_mode }}

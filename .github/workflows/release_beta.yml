@@ -110,7 +110,7 @@ jobs:
           project_path: "./src"
           binary_name: "prldevops"
           release_name: "v${{ env.EXT_VERSION }}-beta"
-          ldflags: "-s -w -X main.ver=${{ env.EXT_VERSION }} -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}'"
+          ldflags: "-s -w -X main.ver=${{ env.EXT_VERSION }} -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}' -X 'github.com/Parallels/prl-devops-service/config.canaryBuildFlag=false' -X 'github.com/Parallels/prl-devops-service/config.betaBuildFlag=true'"
   beta-releases-macos:
     needs:
       - beta-release
@@ -155,7 +155,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
-          cd src && CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
+          cd src && CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY' -X 'github.com/Parallels/prl-devops-service/config.canaryBuildFlag=false' -X 'github.com/Parallels/prl-devops-service/config.betaBuildFlag=true'" -o prldevops
       - name: Create and Unlock Temporary Keychain
         run: |
           security create-keychain -p "github" temp.keychain
@@ -248,6 +248,8 @@ jobs:
           push: true
           build-args: |
             VERSION=${{ env.EXT_VERSION }}
+            AMPLITUDE_API_KEY=${{ env.AmplitudeApiKey }}
+            BUILD_ENV=beta
           secrets: |
             amplitude_api_key=${{ secrets.AMPLITUDE_API_KEY }}
           tags: |
@@ -275,7 +277,7 @@ jobs:
           script: |
             const fs = require("fs");
             let version ='${{ github.event.inputs.version }}'.trim().split('.').slice(0, 2).join('.');
-            let currentVersion = `${version}.${{github.run_id}}-beta`;
+            let currentVersion = `${{ env.EXT_VERSION }}-beta`;
             console.log(`Current Version: ${currentVersion}`);
             const releases = await github.rest.repos.listReleases({
               owner: context.repo.owner,

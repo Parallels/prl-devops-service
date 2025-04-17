@@ -13,7 +13,6 @@ import (
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/constants"
 	api_models "github.com/Parallels/prl-devops-service/models"
-	"github.com/Parallels/prl-devops-service/notifications"
 	"github.com/Parallels/prl-devops-service/pdfile/diagnostics"
 	"github.com/Parallels/prl-devops-service/pdfile/models"
 	"github.com/Parallels/prl-devops-service/security"
@@ -26,8 +25,8 @@ import (
 func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagnostics.PDFileDiagnostics) {
 	ctx.DisableLog()
 	serviceprovider.InitServices(ctx)
-	ns := notifications.Get()
-	ns.EnableSingleLineOutput()
+	// ns := notifications.Get()
+	// ns.EnableSingleLineOutput()
 	startTime := time.Now()
 
 	diag := diagnostics.NewPDFileDiagnostics()
