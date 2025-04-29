@@ -36,3 +36,5 @@ categories: Changelog
 - Packer Templates and Vagrant box endpoints are now disabled by default due to security
   concerns on remote execution of code, you can enable them by setting the environment
   variable `ENABLE_PACKER_PLUGIN` and `ENABLE_VAGRANT_PLUGIN` to `true`
+
+

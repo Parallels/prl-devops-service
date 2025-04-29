@@ -11,3 +11,5 @@ categories: Changelog
 - Added more information to the orchestrator hosts endpoint
 - Added a fix for the push copy file
 - Added a fix in the uninstall of the root service to also clear the database file
+
+

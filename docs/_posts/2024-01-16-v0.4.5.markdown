@@ -33,3 +33,5 @@ categories: Changelog
   of precedence is the following, command line flag, environment variable, config
   file
 - updated documentation to reflect the changes in the configuration
+
+

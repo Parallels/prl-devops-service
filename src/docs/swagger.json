@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.9.12"
+        "version": "0.9.13"
     },
     "basePath": "/api",
     "paths": {
@@ -83,6 +83,74 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.ServiceHealthCheck"
+                        }
+                    }
+                }
+            }
+        },
+        "/logs": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns the system logs from the disk",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Gets the system logs from the disk",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/logs/stream": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint streams the system logs in real-time via WebSocket",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Streams the system logs via WebSocket",
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols to websocket"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
                         }
                     }
                 }
@@ -4488,6 +4556,44 @@
                 }
             }
         },
+        "/v1/orchestrator/hosts/{id}/logs": {
+            "get": {
+                "description": "This endpoint returns the orchestrator host system logs from the disk",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Gets the orchestrator host system logs from the disk",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/orchestrator/hosts/{id}/machines": {
             "get": {
                 "security": [
@@ -5145,6 +5251,55 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{id}/reverse-proxy": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns orchestrator host reverse proxy configuration",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Gets orchestrator host reverse proxy configuration",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxy"
                         }
                     },
                     "400": {
@@ -8215,7 +8370,7 @@
                 "description": {
                     "type": "string"
                 },
-                "message": {
+                "error": {
                     "type": "string"
                 },
                 "path": {
@@ -8657,6 +8812,9 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "size": {
+                    "type": "integer"
                 },
                 "tags": {
                     "type": "array",
@@ -9448,6 +9606,9 @@
                 },
                 "external_ip_address": {
                     "type": "string"
+                },
+                "is_log_streaming_enabled": {
+                    "type": "boolean"
                 },
                 "is_reverse_proxy_enabled": {
                     "type": "boolean"

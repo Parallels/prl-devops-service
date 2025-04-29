@@ -731,7 +731,7 @@ definitions:
         type: integer
       description:
         type: string
-      message:
+      error:
         type: string
       path:
         type: string
@@ -1021,6 +1021,8 @@ definitions:
         items:
           type: string
         type: array
+      size:
+        type: integer
       tags:
         items:
           type: string
@@ -1546,6 +1548,8 @@ definitions:
         type: string
       external_ip_address:
         type: string
+      is_log_streaming_enabled:
+        type: boolean
       is_reverse_proxy_enabled:
         type: boolean
       os_name:
@@ -1796,7 +1800,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.9.12
+  version: 0.9.13
 paths:
   /health/probe:
     get:
@@ -1840,6 +1844,46 @@ paths:
           schema:
             $ref: '#/definitions/models.ServiceHealthCheck'
       summary: Gets the API System Health
+      tags:
+      - Config
+  /logs:
+    get:
+      description: This endpoint returns the system logs from the disk
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets the system logs from the disk
+      tags:
+      - Config
+  /logs/stream:
+    get:
+      description: This endpoint streams the system logs in real-time via WebSocket
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: Switching Protocols to websocket
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Streams the system logs via WebSocket
       tags:
       - Config
   /v1/auth/api_keys:
@@ -4569,6 +4613,32 @@ paths:
       summary: Gets a host hardware info from the orchestrator
       tags:
       - Orchestrator
+  /v1/orchestrator/hosts/{id}/logs:
+    get:
+      description: This endpoint returns the orchestrator host system logs from the
+        disk
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      summary: Gets the orchestrator host system logs from the disk
+      tags:
+      - Config
   /v1/orchestrator/hosts/{id}/machines:
     get:
       description: This endpoint returns orchestrator host virtual machines
@@ -4989,6 +5059,36 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Register a virtual machine in a orchestrator host
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/reverse-proxy:
+    get:
+      description: This endpoint returns orchestrator host reverse proxy configuration
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxy'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets orchestrator host reverse proxy configuration
       tags:
       - Orchestrator
   /v1/orchestrator/hosts/{id}/reverse-proxy/disable:

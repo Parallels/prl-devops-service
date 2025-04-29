@@ -18,3 +18,5 @@ categories: Changelog
   string correctly
 - Fixed an issue with concurrency configuration saving that could lead to old
   results being saved
+
+

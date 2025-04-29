@@ -38,3 +38,5 @@ categories: Changelog
 
 - fixed an issue where the token validation endpoint was not working and only accepted
   GET requests, it now accepts only POST requests as expected and documented
+
+

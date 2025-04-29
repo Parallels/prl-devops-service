@@ -12,3 +12,5 @@ categories: Changelog
 - Fixed some issue with the pipeline
 - Bumps the bundler group with 1 update in the /docs directory: [rexml](https://github.com/ruby/rexml).
 - Fixed an issue where the name of the catalog would be wrong when importing vms
+
+
