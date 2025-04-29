@@ -10,3 +10,5 @@ categories: Changelog
 ### Fixed
 
 - Issue where the hardware info would crash if only one VM was present
+
+

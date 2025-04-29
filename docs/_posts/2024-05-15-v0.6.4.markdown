@@ -21,3 +21,5 @@ categories: Changelog
 - Fixed an issue were we could not add two hosts with the same url and different
   ports
 - Improved our helm chart
+
+

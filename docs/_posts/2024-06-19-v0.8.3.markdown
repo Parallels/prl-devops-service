@@ -10,3 +10,5 @@ categories: Changelog
 ### Fixed
 
 - Issue that caused a crash when the user was querying the hardware endpoint
+
+

@@ -27,3 +27,5 @@ categories: Changelog
 ### Changed
 
 - improved user_id to fix issue with sending telemetry
+
+

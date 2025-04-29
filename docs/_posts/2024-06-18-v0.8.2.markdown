@@ -18,3 +18,5 @@ categories: Changelog
 
 - Added version to all telemetry events
 - Added more information to the hardware endpoint
+
+

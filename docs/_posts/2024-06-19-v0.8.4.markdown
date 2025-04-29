@@ -10,3 +10,5 @@ categories: Changelog
 ### Fixed
 
 - Issue with the workflow that would not change the internal version
+
+

@@ -11,3 +11,5 @@ categories: Changelog
 
 - Updated the helm chart to allow users to add nginx ingress
 - Updated the helm chart to allow multiple storage
+
+

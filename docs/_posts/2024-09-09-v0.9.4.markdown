@@ -10,3 +10,5 @@ categories: Changelog
 ### Fixed
 
 - Fixed an issue where some pushes would not update the manifest in the catalog
+
+

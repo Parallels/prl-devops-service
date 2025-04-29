@@ -12,3 +12,5 @@ categories: Changelog
 - Fixed an issue where the telemetry could generate a nil pointer issue
 - Fixed an issue where the pull file would still need the provider even if not needed
 - Fixed an issue where the db was being saved more often that needed
+
+

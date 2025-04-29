@@ -10,3 +10,5 @@ categories: Changelog
 ### Fixed
 
 - Fixed an issue with telemetry where the user_id was not being sent correctly
+
+

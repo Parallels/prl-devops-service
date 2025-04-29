@@ -3,6 +3,57 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.13] - 2025-04-29
+
+- Promoted some unstable code to stable
+- Added a chunk manager for faster downloads
+- Added the new prlcopy script if PD 20.2.0 or above, system will use 'prlcopy' binary else, system will try to compress and upload the file using exec command, Fixes #227 
+- Added a better way to manage the blocks
+- Incremented the bufferSize for decompression to 40mb
+- Fixed a documentation issue
+- Added new canary release
+- Fixed some extra bugs
+- Added a new method for the streaming for testing
+- Added an unstable stream for was to test speed on aws
+- Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. List any dependencies that are required for this change.
+- Fixes # (issue)
+- Fixed some bugs with log streaming
+- Fixed an issue where we would not be able to  get the version after deploy
+- Fixed an issue where we would get the logs wrong in the container
+- Added a new function to create log files
+- Updated the helm chart with the logs variables
+- implemented the new log channel streamer for the WebSocket to avoid opening the file
+- Added a clean option to the beta deployment
+- Allow the ability to disable the tls certificate if the environment variable is set
+- Added the host logs endpoint to the orchestrator
+- Added the host stream logs endpoint to the orchestrator
+- Added a way to use a debug version when  running debugger
+- Fixed the detection for the default log location
+- Fixed an issue where we would not be able to detect the file location for the logs and therefor not stream it
+- added an error message if file logger is disabled
+- enabled file logger by default
+- Added an endpoint to return the log file
+- Added an endpoint to stream the logs using websockets
+- Fixed an issue where if we would set the log to file from the config.yaml it would not read it at startup
+- Added a new script to add the correct changelog to the beta versions
+- Added an option to keep old beta versions if needed
+- Added a default version to the beta pipeline
+- Added a caching integrity check for all cache catalog
+- Added the new sign method for the pipeline
+- Added the ability to sign the files locally
+- Fixed an issue where containers images were not providing telemetry
+- Updated some of the steps to build 
+- Fixed the issue with the windows build
+- Added a strategy to test all build targets during PR
+- Fixed an issue where the decompressor would failed to deal with symlink that did not exist
+- Fixed an issue where the stream process would not catch all of the errors from the decompressor
+- Moved unused code to another file until we release the version
+- Added an environment variable to set the path for the log file `PRL_DEVOPS_LOG_FILE_PATH`
+- Added an environment variable to disable the streaming process for the remote storage provider `DISABLE_CATALOG_PROVIDER_STREAMING`
+- added a new caching system for auto management
+- Added the ability to log to files
+- Added the initial work for the streaming of files to caching
+
 ## [0.9.12] - 2024-11-13
 
 - Fix timeout for the apis and set the default to 5 hours

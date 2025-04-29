@@ -10,3 +10,5 @@ categories: Changelog
 ### Fixed
 
 - Added a progress message to show how much did we download/upload when using the command line
+
+

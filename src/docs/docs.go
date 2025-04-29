@@ -95,6 +95,74 @@ const docTemplate = `{
                 }
             }
         },
+        "/logs": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns the system logs from the disk",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Gets the system logs from the disk",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/logs/stream": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint streams the system logs in real-time via WebSocket",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Streams the system logs via WebSocket",
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols to websocket"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/auth/api_keys": {
             "get": {
                 "security": [
@@ -4495,6 +4563,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/orchestrator/hosts/{id}/logs": {
+            "get": {
+                "description": "This endpoint returns the orchestrator host system logs from the disk",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Gets the orchestrator host system logs from the disk",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/orchestrator/hosts/{id}/machines": {
             "get": {
                 "security": [
@@ -5152,6 +5258,55 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ParallelsVM"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/{id}/reverse-proxy": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns orchestrator host reverse proxy configuration",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Gets orchestrator host reverse proxy configuration",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxy"
                         }
                     },
                     "400": {
@@ -8222,7 +8377,7 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
-                "message": {
+                "error": {
                     "type": "string"
                 },
                 "path": {
@@ -8664,6 +8819,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "size": {
+                    "type": "integer"
                 },
                 "tags": {
                     "type": "array",
@@ -9456,6 +9614,9 @@ const docTemplate = `{
                 "external_ip_address": {
                     "type": "string"
                 },
+                "is_log_streaming_enabled": {
+                    "type": "boolean"
+                },
                 "is_reverse_proxy_enabled": {
                     "type": "boolean"
                 },
@@ -9844,7 +10005,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.9.12",
+	Version:          "0.9.13",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},

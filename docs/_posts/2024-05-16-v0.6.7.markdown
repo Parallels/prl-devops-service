@@ -10,3 +10,5 @@ categories: Changelog
 ### Fixed
 
 - Fixed a issue with the orchestrator where it didn't start the auto refresh
+
+

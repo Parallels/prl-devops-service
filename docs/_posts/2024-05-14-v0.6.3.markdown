@@ -17,3 +17,5 @@ categories: Changelog
 - Fixed an issue were the orchestrator did not allow execute commands from container
 - Fixed an issue with the Docker file where it was building for the wrong platform
 - Fixed some typos in the documentation
+
+

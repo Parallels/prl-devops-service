@@ -10,3 +10,5 @@ categories: Changelog
 ### Added
 
 - Adding telemetry fix and encryption of PII
+
+

@@ -10,3 +10,5 @@ categories: Changelog
 ### Fixed
 
 - Fixed wrong images being displayed in the documentations
+
+

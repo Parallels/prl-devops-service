@@ -21,3 +21,4 @@ categories: Changelog
 ### Added
 
 - Initial project setup
+

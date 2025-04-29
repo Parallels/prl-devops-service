@@ -22,3 +22,5 @@ categories: Changelog
 ### Changed
 
 - Improved caching methodology to reduce waiting time
+
+

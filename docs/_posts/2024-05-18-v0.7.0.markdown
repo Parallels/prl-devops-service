@@ -13,3 +13,5 @@ categories: Changelog
   flag was set to true
 - Fixed an issue where the user was not being able to be updated
 - Fixed an issue with the service plist
+
+
