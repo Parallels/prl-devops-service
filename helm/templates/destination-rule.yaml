@@ -1,0 +1,16 @@
+{{- if and .Values.ingress.enabled  .Values.ingress.istio.enabled }}
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: {{ include "helm.fullname" . }}
+  namespace: {{ include "helm.namespace" . }}
+  labels: {{- include "helm.labels" . | nindent 4 }}
+spec:
+  host: {{ .Values.ingress.host }}
+  trafficPolicy:
+    connectionPool:
+      http:
+        maxRequestsPerConnection: 20
+        http1MaxPendingRequests: 20
+        idleTimeout: 24h
+{{- end }}

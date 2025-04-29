@@ -10,7 +10,7 @@ spec:
   hosts:
     - {{ .Values.ingress.host }}
   gateways:
-{{- if .Values.ingress.create_gateway }}
+{{- if .Values.ingress.istio.create_gateway }}
     - {{ include "helm.fullname" . }}
 {{- else }}
     - {{ .Values.ingress.gateway }}
@@ -29,6 +29,28 @@ spec:
             host: {{ include "helm.fullname" . }}
             port:
               number: {{ .Values.service.port }}
+      timeout: 24h
+      retries:
+        attempts: 3
+        perTryTimeout: 24h
+        retryOn: connect-failure,refused-stream,unavailable,cancelled,resource-exhausted,5xx,gateway-error
+      corsPolicy:
+        allowOrigins:
+          - regex: ".*"
+        allowMethods:
+          - POST
+          - GET
+          - PUT
+          - DELETE
+        allowHeaders:
+          - "*"
+        maxAge: "24h"
+      connectionPool:
+        http:
+          maxRequestsPerConnection: 1
+          http1MaxPendingRequests: 1
+          maxRetries: 5
+          idleTimeout: 24h
     - match:
         - ignoreUriCase: true
           uri:
@@ -38,4 +60,5 @@ spec:
             host: {{ include "helm.fullname" . }}
             port:
               number: {{ .Values.service.port }}
+      timeout: 24h # Set a very long timeout for long-running operations
 {{- end }}

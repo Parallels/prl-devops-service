@@ -90,6 +90,12 @@ func main() {
 	go func() {
 		<-c
 		cfg := config.Get()
+		if cfg.IsBetaEnabled() {
+			ctx.LogInfof("[Core] Beta Feature Enabled")
+		}
+		if cfg.IsCanaryEnabled() {
+			ctx.LogInfof("[Core] Canary Feature Enabled")
+		}
 		if cfg.GetRunningCommand() == constants.API_COMMAND || cfg.GetRunningCommand() == "" {
 			sp := serviceprovider.Get()
 			if sp != nil {

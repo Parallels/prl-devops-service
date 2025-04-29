@@ -4,6 +4,8 @@ kind: PersistentVolume
 metadata:
   name: {{ include "helm.fullname" . }}
   namespace: {{ include "helm.namespace" . }}
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
 spec:
   capacity:
     storage: 1Gi

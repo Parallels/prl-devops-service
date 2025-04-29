@@ -75,6 +75,28 @@ endif
 	@cd src && go build -o ../out/binaries/$(PACKAGE_NAME)
 	@echo "Build finished."
 
+.PHONY: build-canary
+build-canary:
+	@echo "Building Canary..."
+ifeq ($(wildcard ./out/.*),)
+	@echo "Creating out directory..."
+	@mkdir out
+	@mkdir out/binaries
+endif
+	@cd src && go build -o ../out/binaries/$(PACKAGE_NAME) -ldflags="-X 'github.com/Parallels/prl-devops-service/config.canaryBuildFlag=true'"
+	@echo "Build finished."
+
+.PHONY: build-beta
+build-beta:
+	@echo "Building Beta..."
+ifeq ($(wildcard ./out/.*),)
+	@echo "Creating out directory..."
+	@mkdir out
+	@mkdir out/binaries
+endif
+	@cd src && go build -o ../out/binaries/$(PACKAGE_NAME) -ldflags="-X 'github.com/Parallels/prl-devops-service/config.betaBuildFlag=true'"
+	@echo "Build finished."
+
 .PHONY: build-linux-amd64
 build-linux-amd64:
 	@echo "Building..."
@@ -111,18 +133,19 @@ endif
 .PHONY: push-alpha-container
 push-alpha-container:
 	@echo "Building $(BUILD_VERSION) Alpha Container..."
-	@docker build -t cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_alpha \
-		-t cjlapao/$(DOCKER_PACKAGE_NAME):latest_alpha \
+	@docker build --platform linux/amd64,linux/arm64 \
+		-t cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-alpha \
+		-t cjlapao/$(DOCKER_PACKAGE_NAME):latest-alpha \
 		--build-arg VERSION=$(BUILD_VERSION) \
-		--build-arg BUILD_ENV=debug \
+		--build-arg BUILD_ENV=canary \
 		--build-arg OS=linux \
 		--build-arg ARCHITECTURE=amd64 \
 		-f Dockerfile .
 	@echo "Pushing $(BUILD_VERSION) Container..."
-	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_alpha tag..."
-	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_alpha
-	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):latest_alpha tag..."
-	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):latest_alpha
+	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-alpha tag..."
+	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-alpha
+	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):latest-alpha tag..."
+	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):latest-alpha
 	@echo "Build finished. Pushed to cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_alpha and cjlapao/$(DOCKER_PACKAGE_NAME):latest_alpha."
 
 .PHONY: clean-alpha
@@ -134,19 +157,20 @@ clean-alpha-container:
 .PHONY: push-beta-container
 push-beta-container:
 	@echo "Building $(BUILD_VERSION) Beta Container..."
-	@docker build -t cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_beta \
+	@docker build --platform linux/amd64,linux/arm64 \
+		-t cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-beta \
 		-t cjlapao/$(DOCKER_PACKAGE_NAME):unstable \
 		--build-arg VERSION=$(BUILD_VERSION) \
-		--build-arg BUILD_ENV=debug \
+		--build-arg BUILD_ENV=canary \
 		--build-arg OS=linux \
 		--build-arg ARCHITECTURE=amd64 \
 		-f Dockerfile .
 	@echo "Pushing $(BUILD_VERSION) Container..."
-	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_beta tag..."
-	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_beta
+	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-beta tag..."
+	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-beta
 	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):unstable tag..."
 	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):unstable
-	@echo "Build finished. Pushed to cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_beta and cjlapao/$(DOCKER_PACKAGE_NAME):unstable."
+	@echo "Build finished. Pushed to cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-beta and cjlapao/$(DOCKER_PACKAGE_NAME):unstable."
 
 .PHONY: clean-beta
 clean-beta-container:

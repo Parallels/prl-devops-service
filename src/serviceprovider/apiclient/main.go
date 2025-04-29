@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -24,12 +25,13 @@ import (
 
 const (
 	DEFAULT_API_LOGIN_URL = "api/v1/auth/token"
+	defaultTimeout        = 5 * time.Minute
+	defaultConnTimeout    = 5 * time.Minute
 )
-
-var defaultTimeout = 5 * time.Hour
 
 type HttpClientService struct {
 	timeout              time.Duration
+	connTimeout          time.Duration
 	context              context.Context
 	ctx                  basecontext.ApiContext
 	headers              map[string]string
@@ -77,10 +79,13 @@ func (c *HttpClientService) WithHeaders(headers map[string]string) *HttpClientSe
 }
 
 func (c *HttpClientService) WithTimeout(duration time.Duration) *HttpClientService {
+	c.ctx.LogInfof("[Api Client] Setting timeout to %v", duration)
 	context, _ := context.WithTimeout(context.Background(), duration)
 
 	c.context = context
 	c.timeout = duration
+	c.connTimeout = duration // Use the same timeout for connections
+	c.ctx.LogDebugf("[Api Client] Using connection timeout of %v", c.connTimeout)
 	return c
 }
 
@@ -123,8 +128,9 @@ func (c *HttpClientService) Delete(url string, destination interface{}) (*HttpCl
 }
 
 func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, data interface{}, destination interface{}) (*HttpClientServiceResponse, error) {
-	c.ctx.LogInfof("[Api Client] %v data from %s", verb, url)
+	c.ctx.LogInfof("[Api Client] Starting %v request to %s with timeout %v", verb, url, c.timeout)
 	var err error
+	var req *http.Request
 	apiResponse := HttpClientServiceResponse{
 		StatusCode: 0,
 		Data:       nil,
@@ -141,69 +147,72 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 		return &apiResponse, errors.New("url cannot be empty")
 	}
 
-	var client *http.Client
-	var req *http.Request
-	var ctx context.Context
-	var cancel context.CancelFunc
-
-	// Ensure the timeout is set to a reasonable value
+	// Ensure timeout is set
 	if c.timeout == 0 {
 		c.timeout = defaultTimeout
 	}
 
-	c.ctx.LogDebugf("[Api Client] Setting timeout to %v for host %v", c.timeout, url)
-	client = &http.Client{
-		Transport: &http.Transport{
-			TLSHandshakeTimeout: c.timeout,
-			IdleConnTimeout:     c.timeout,
-			Dial: (&net.Dialer{
-				Timeout:   c.timeout,
-				KeepAlive: c.timeout,
-				Deadline:  time.Now().Add(c.timeout),
-			}).Dial,
-			DialContext: (&net.Dialer{
-				Timeout:   c.timeout,
-				KeepAlive: c.timeout,
-				Deadline:  time.Now().Add(c.timeout),
-			}).DialContext,
-			ResponseHeaderTimeout: c.timeout,
-			ExpectContinueTimeout: c.timeout,
-			TLSClientConfig:       &tls.Config{InsecureSkipVerify: c.disableTlsValidation},
-		},
-		Timeout: c.timeout,
+	// Log if using non-default timeout
+	if c.timeout != defaultTimeout {
+		c.ctx.LogInfof("[Api Client] Using custom timeout of %v for request to %s (default is %v)",
+			c.timeout, url, defaultTimeout)
 	}
 
-	ctx, cancel = context.WithTimeout(context.Background(), c.timeout)
+	// Use the same timeout for everything when custom timeout is set
+	connTimeout := defaultConnTimeout
+	if c.connTimeout > 0 {
+		connTimeout = c.connTimeout
+	}
+	c.ctx.LogDebugf("[Api Client] Using connection timeout %v for request to %s", connTimeout, url)
+
+	// Use appropriate timeouts for the transport
+	transport := &http.Transport{
+		TLSHandshakeTimeout:   30 * time.Second,
+		ResponseHeaderTimeout: c.timeout,
+		ExpectContinueTimeout: 30 * time.Second,
+		IdleConnTimeout:       c.timeout,
+		DisableKeepAlives:     false,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   10,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: c.timeout,
+		}).DialContext,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: c.disableTlsValidation,
+		},
+	}
+
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   c.timeout,
+	}
+
+	// Use the passed context if available, otherwise create new one
+	var ctx context.Context
+	var cancel context.CancelFunc
+	if c.context != nil {
+		ctx = c.context
+	} else {
+		ctx, cancel = context.WithTimeout(context.Background(), c.timeout)
+		defer cancel()
+	}
+
 	c.context = ctx
-	defer cancel()
 
 	if data != nil {
 		reqBody, err := json.MarshalIndent(data, "", "  ")
 		if err != nil {
 			return &apiResponse, fmt.Errorf("error marshalling data, err: %v", err)
 		}
-		if c.context != nil {
-			req, err = http.NewRequestWithContext(c.context, verb.String(), url, bytes.NewBuffer(reqBody))
-			if err != nil {
-				return &apiResponse, fmt.Errorf("error creating request, err: %v", err)
-			}
-		} else {
-			req, err = http.NewRequest(verb.String(), url, bytes.NewBuffer(reqBody))
-			if err != nil {
-				return &apiResponse, fmt.Errorf("error creating request, err: %v", err)
-			}
+		req, err = http.NewRequestWithContext(ctx, verb.String(), url, bytes.NewBuffer(reqBody))
+		if err != nil {
+			return &apiResponse, fmt.Errorf("error creating request, err: %v", err)
 		}
 	} else {
-		if c.context != nil {
-			req, err = http.NewRequestWithContext(c.context, verb.String(), url, nil)
-			if err != nil {
-				return &apiResponse, fmt.Errorf("error creating request, err: %v", err)
-			}
-		} else {
-			req, err = http.NewRequest(verb.String(), url, nil)
-			if err != nil {
-				return &apiResponse, fmt.Errorf("error creating request, err: %v", err)
-			}
+		req, err = http.NewRequestWithContext(ctx, verb.String(), url, nil)
+		if err != nil {
+			return &apiResponse, fmt.Errorf("error creating request, err: %v", err)
 		}
 	}
 
@@ -220,7 +229,7 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 		}
 		if c.authorization.Username != "" && c.authorization.Password != "" {
 			c.ctx.LogDebugf("[Api Client] Getting Client Authorization with username %s ", c.authorization.Username)
-			token, err := getJwtToken(c.ctx, c.timeout, url, c.authorization.Username, c.authorization.Password)
+			token, err := getJwtToken(c.ctx, 1*time.Minute, url, c.authorization.Username, c.authorization.Password)
 			if err != nil {
 				apiResponse.StatusCode = 401
 				return &apiResponse, err
@@ -251,8 +260,30 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 		}
 	}
 
+	// Add correlation ID for tracing
+	correlationId := helpers.GenerateId()
+	c.ctx.LogInfof("[Api Client][%s] Starting request: %s %s (timeout: %v)", correlationId, verb, url, c.timeout)
+
+	// Add Istio trace headers
+	req.Header.Set("x-b3-sampled", "1")
+	req.Header.Set("x-request-id", correlationId)
+	req.Header.Set("x-envoy-upstream-rq-timeout-ms", fmt.Sprintf("%d", c.timeout.Milliseconds()))
+	req.Header.Set("x-envoy-expected-rq-timeout-ms", fmt.Sprintf("%d", c.timeout.Milliseconds()))
+
+	if strings.Contains(url, "/machines") {
+		req.Header.Set("x-long-running-op", "true")
+	}
+
 	response, err := client.Do(req)
 	if err != nil {
+		if os.IsTimeout(err) {
+			c.ctx.LogErrorf("[Api Client][%s] Timeout occurred during request to %s: %v", correlationId, url, err)
+		} else if netErr, ok := err.(net.Error); ok {
+			c.ctx.LogErrorf("[Api Client][%s] Network error during request to %s: %v (timeout: %v)", correlationId, url, err, netErr.Timeout())
+			c.ctx.LogErrorf("[Api Client][%s] Network error type: %T", correlationId, netErr)
+		} else {
+			c.ctx.LogErrorf("[Api Client][%s] Error during request to %s: %v (type: %T)", correlationId, url, err, err)
+		}
 		return &apiResponse, fmt.Errorf("error %s data on %s, err: %v", verb, url, err)
 	}
 
@@ -362,7 +393,7 @@ func (c *HttpClientService) Authorize(ctx basecontext.ApiContext, url string) (*
 		}
 		if c.authorization.Username != "" && c.authorization.Password != "" {
 			c.ctx.LogDebugf("[Api Client] Getting Client Authorization with username %s ", c.authorization.Username)
-			token, err := getJwtToken(c.ctx, c.timeout, url, c.authorization.Username, c.authorization.Password)
+			token, err := getJwtToken(c.ctx, 1*time.Minute, url, c.authorization.Username, c.authorization.Password)
 			if err != nil {
 				return nil, err
 			}
