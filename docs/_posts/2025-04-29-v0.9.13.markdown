@@ -52,8 +52,5 @@ categories: Changelog
 - Moved unused code to another file until we release the version
 - Added an environment variable to set the path for the log file `PRL_DEVOPS_LOG_FILE_PATH`
 - Added an environment variable to disable the streaming process for the remote storage provider `DISABLE_CATALOG_PROVIDER_STREAMING`
-- added a new caching system for auto management
-- Added the ability to log to files
-- Added the initial work for the streaming of files to caching
 
 
