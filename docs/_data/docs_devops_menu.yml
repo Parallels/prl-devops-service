@@ -1,5 +1,9 @@
 - label: Getting Started
   items:
+    - name: Architecture
+      link: /docs/devops/getting-started/architecture/
+    - name: Source Code
+      link: /docs/devops/getting-started/source_code/
     - name: Installation
       link: /docs/devops/getting-started/installation/
     - name: Configuration

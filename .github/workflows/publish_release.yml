@@ -80,7 +80,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Parse version from package.json
         run: |
-          echo "EXT_VERSION=$(cat ./VERSION)" >> "$GITHUB_ENV"
+          echo "VERSION=$(cat ./VERSION)" >> "$GITHUB_ENV"
       - name: Generate release notes
         run: |
           ./.github/workflow_scripts/get-latest-changelog.sh --output-to-file
