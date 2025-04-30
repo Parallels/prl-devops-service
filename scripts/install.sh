@@ -66,34 +66,37 @@ fi
 
 function install() {
   if [ -z "$VERSION" ]; then
+    echo "Getting latest version from GitHub"
     # Get latest version from github
     if [ "$PRE_RELEASE" = "true" ]; then
-      # $(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases | jq '[.[] | select(.prerelease == true)] | sort_by(.created_at) | .[0]' | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"')
       VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"' | head -n 1)
     else
       VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases/latest | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"')
     fi
+  fi
+
+  if [[ ! $VERSION == *-beta ]]; then
+    echo "Version1: $VERSION"
+    if [[ ! $VERSION == v* ]]; then
+      VERSION="v$VERSION"
+    fi
+    is_found=$(curl -s -o /dev/null -w "%{http_code}" https://github.com/Parallels/prl-devops-service/releases/download/$VERSION)
+    if [ "$is_found" != "200" ]; then
+      echo "Version not found with new format, attempting old format"
+      VERSION="release-$VERSION"
+      is_found=$(curl -s -o /dev/null -w "%{http_code}" https://github.com/Parallels/prl-devops-service/releases/download/$VERSION)
+      if [ "$is_found" != "200" ]; then
+        echo "Version $VERSION not found in GitHub releases"
+        exit 1
+      fi
+    fi
+    SHORT_VERSION="$(echo $VERSION | cut -d '-' -f 2)"
   else
     if [[ ! $VERSION == v* ]]; then
       VERSION="v$VERSION"
     fi
-
-    echo "Checking if version $VERSION exists in GitHub releases"
-    TARGET_VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases | grep -o "\"tag_name\": \"$VERSION\"")
-    if [ -z "$TARGET_VERSION" ]; then
-      echo "Error: Version $VERSION not found in GitHub releases"
-      exit 1
-    fi
+    SHORT_VERSION=$VERSION
   fi
-
-  if [[ $VERSION == release-v* ]]; then
-    VERSION="v${VERSION#release-v}"
-  fi
-
-  if [[ ! $VERSION == v* ]]; then
-    VERSION="v$VERSION"
-  fi
-  SHORT_VERSION=$VERSION
 
   ARCHITECTURE=$(uname -m)
   if [ "$ARCHITECTURE" = "aarch64" ]; then
@@ -110,8 +113,12 @@ function install() {
   DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
 
   echo "Downloading prldevops release from GitHub Releases"
-  if ! curl -sL "$DOWNLOAD_URL" -o prldevops.tar.gz; then
-    echo "Failed to download prldevops release from GitHub Releases"
+  # Download the file and capture HTTP status code
+  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+
+  # Check if the status code is 200 (OK)
+  if [ "$HTTP_STATUS" != "200" ]; then
+    echo "Failed to download prldevops release from GitHub Releases (HTTP status: $HTTP_STATUS)"
     exit 1
   fi
 
@@ -155,6 +162,7 @@ function install() {
 
 function install_standard() {
   if [ -z "$VERSION" ]; then
+    echo "Getting latest version from GitHub"
     # Get latest version from github
     if [ "$PRE_RELEASE" = "true" ]; then
       VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"' | head -n 1)
@@ -164,8 +172,18 @@ function install_standard() {
   fi
 
   if [[ ! $VERSION == *-beta ]]; then
-    if [[ ! $VERSION == release-v* ]]; then
-      VERSION="release-v$VERSION"
+    if [[ ! $VERSION == v* ]]; then
+      VERSION="v$VERSION"
+    fi
+    is_found=$(curl -s -o /dev/null -w "%{http_code}" https://github.com/Parallels/prl-devops-service/releases/$VERSION)
+    if [ "$is_found" != "200" ]; then
+      echo "Version not found with new format, attempting old format"
+      VERSION="release-$VERSION"
+      is_found=$(curl -s -o /dev/null -w "%{http_code}" https://github.com/Parallels/prl-devops-service/releases/$VERSION)
+      if [ "$is_found" != "200" ]; then
+        echo "Version $VERSION not found in GitHub releases"
+        exit 1
+      fi
     fi
     SHORT_VERSION="$(echo $VERSION | cut -d '-' -f 2)"
   else
@@ -190,10 +208,28 @@ function install_standard() {
   DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
 
   echo "Downloading prldevops release from GitHub Releases"
-  curl -sL "$DOWNLOAD_URL" -o prldevops.tar.gz
+  # Download the file and capture HTTP status code
+  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+
+  # Check if the status code is 200 (OK)
+  if [ "$HTTP_STATUS" != "200" ]; then
+    echo "Failed to download prldevops release from GitHub Releases (HTTP status: $HTTP_STATUS)"
+    exit 1
+  fi
+
+  # Check if the file exists and has content
+  if [ ! -s "prldevops.tar.gz" ]; then
+    echo "Downloaded file is empty or does not exist"
+    exit 1
+  fi
 
   echo "Extracting prldevops"
   tar -xzf prldevops.tar.gz
+
+  if [ $? -ne 0 ]; then
+    echo "Failed to extract prldevops"
+    exit 1
+  fi
 
   if [ ! -d "$DESTINATION" ]; then
     echo "Creating destination directory: $DESTINATION"
