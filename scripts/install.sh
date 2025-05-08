@@ -76,15 +76,14 @@ function install() {
   fi
 
   if [[ ! $VERSION == *-beta ]]; then
-    echo "Version1: $VERSION"
     if [[ ! $VERSION == v* ]]; then
       VERSION="v$VERSION"
     fi
-    is_found=$(curl -s -o /dev/null -w "%{http_code}" https://github.com/Parallels/prl-devops-service/releases/download/$VERSION)
+    is_found=$(curl -s -o /dev/null -w "%{http_code}" https://github.com/Parallels/prl-devops-service/releases/$VERSION)
     if [ "$is_found" != "200" ]; then
       echo "Version not found with new format, attempting old format"
       VERSION="release-$VERSION"
-      is_found=$(curl -s -o /dev/null -w "%{http_code}" https://github.com/Parallels/prl-devops-service/releases/download/$VERSION)
+      is_found=$(curl -s -o /dev/null -w "%{http_code}" https://github.com/Parallels/prl-devops-service/releases/$VERSION)
       if [ "$is_found" != "200" ]; then
         echo "Version $VERSION not found in GitHub releases"
         exit 1
@@ -122,8 +121,19 @@ function install() {
     exit 1
   fi
 
+  # Check if the file exists and has content
+  if [ ! -s "prldevops.tar.gz" ]; then
+    echo "Downloaded file is empty or does not exist"
+    exit 1
+  fi
+
   echo "Extracting prldevops"
   if ! tar -xzf prldevops.tar.gz; then
+    echo "Failed to extract prldevops"
+    exit 1
+  fi
+
+  if [ $? -ne 0 ]; then
     echo "Failed to extract prldevops"
     exit 1
   fi
