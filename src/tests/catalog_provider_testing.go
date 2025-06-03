@@ -46,5 +46,18 @@ func TestCatalogProviders(ctx basecontext.ApiContext) error {
 		}
 	}
 
+	if cfg.GetKey("MINIO_TEST_CONNECTION") != "" {
+		ctx.LogInfof("Testing %v", cfg.GetKey("MINIO_TEST_CONNECTION"))
+		ctx.LogInfof("Testing connection to Minio")
+		test := tester.NewTestProvider(ctx, cfg.GetKey("MINIO_TEST_CONNECTION"))
+		err := test.Test()
+		if err != nil {
+			ctx.LogErrorf(err.Error())
+			return err
+		} else {
+			ctx.LogInfof("Connection to Minio successful")
+		}
+	}
+
 	return nil
 }

@@ -11,6 +11,7 @@
       "envFile": "${workspaceFolder}/.env",
       "args": [
         "${input:debug_command}",
+        "catalog-providers",
       ]
     },
     {
