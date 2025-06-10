@@ -778,7 +778,7 @@ func (s *MinioBucketProvider) pullFileAndDecompressUnstable(ctx basecontext.ApiC
 		Destination:         destination,
 		ChunkSize:           100 * 1024 * 1024, // 100MB chunks
 		NotificationService: notifications.Get(),
-		MessagePrefix:       fmt.Sprintf("[Unstable] Pulling %s", filename),
+		MessagePrefix:       fmt.Sprintf("[Streaming] Pulling %s", filename),
 		CorrelationID:       helpers.GenerateId(),
 	}
 
