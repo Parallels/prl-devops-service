@@ -19,6 +19,7 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/providers/aws_s3_bucket"
 	"github.com/Parallels/prl-devops-service/catalog/providers/azurestorageaccount"
 	"github.com/Parallels/prl-devops-service/catalog/providers/local"
+	"github.com/Parallels/prl-devops-service/catalog/providers/minio"
 	"github.com/Parallels/prl-devops-service/compressor"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -51,6 +52,7 @@ func NewManifestService(ctx basecontext.ApiContext) *CatalogManifestService {
 	manifestService.AddRemoteService(local.NewLocalProvider())
 	manifestService.AddRemoteService(azurestorageaccount.NewAzureStorageAccountProvider())
 	manifestService.AddRemoteService(artifactory.NewArtifactoryProvider())
+	manifestService.AddRemoteService(minio.NewMinioProvider())
 	return manifestService
 }
 
