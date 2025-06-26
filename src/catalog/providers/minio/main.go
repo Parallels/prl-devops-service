@@ -1,14 +1,16 @@
-package aws_s3_bucket
+package minio
 
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -30,58 +32,60 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
-type S3Bucket struct {
+type MinioBucket struct {
+	Endpoint                     string
+	UseSSL                       bool
+	IgnoreCert                   bool
 	Name                         string
-	Region                       string
 	AccessKey                    string
 	SecretKey                    string
-	SessionToken                 string
 	UseEnvironmentAuthentication string
 	ProgressChannel              chan int
 }
 
-const providerName = "aws-s3"
+const providerName = "minio"
 
-type AwsS3BucketProvider struct {
-	Bucket          S3Bucket
+type MinioBucketProvider struct {
+	Bucket          MinioBucket
 	ProgressChannel chan int
 	FileNameChannel chan string
 }
 
-func NewAwsS3Provider() *AwsS3BucketProvider {
-	return &AwsS3BucketProvider{}
+func NewMinioProvider() *MinioBucketProvider {
+	return &MinioBucketProvider{}
 }
 
-func (s *AwsS3BucketProvider) Name() string {
+func (s *MinioBucketProvider) Name() string {
 	return providerName
 }
 
-func (s *AwsS3BucketProvider) GetProviderMeta(ctx basecontext.ApiContext) map[string]string {
+func (s *MinioBucketProvider) GetProviderMeta(ctx basecontext.ApiContext) map[string]string {
 	return map[string]string{
 		common.PROVIDER_VAR_NAME:         providerName,
+		"endpoint":                       s.Bucket.Endpoint,
+		"use_ssl":                        strconv.FormatBool(s.Bucket.UseSSL),
+		"ignore_cert":                    strconv.FormatBool(s.Bucket.IgnoreCert),
 		"bucket":                         s.Bucket.Name,
-		"region":                         s.Bucket.Region,
 		"access_key":                     s.Bucket.AccessKey,
 		"secret_key":                     s.Bucket.SecretKey,
-		"session_token":                  s.Bucket.SessionToken,
 		"use_environment_authentication": s.Bucket.UseEnvironmentAuthentication,
 	}
 }
 
-func (s *AwsS3BucketProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
+func (s *MinioBucketProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
 	return "/"
 }
 
-func (s *AwsS3BucketProvider) CanStream() bool {
+func (s *MinioBucketProvider) CanStream() bool {
 	return true
 }
 
-func (s *AwsS3BucketProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int) {
+func (s *MinioBucketProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int) {
 	s.ProgressChannel = progressChannel
 	s.FileNameChannel = fileNameChannel
 }
 
-func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
+func (s *MinioBucketProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
 	parts := strings.Split(connection, ";")
 	provider := ""
 	for _, part := range parts {
@@ -92,17 +96,20 @@ func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection strin
 		if strings.Contains(strings.ToLower(part), "bucket=") {
 			s.Bucket.Name = strings.ReplaceAll(part, "bucket=", "")
 		}
-		if strings.Contains(strings.ToLower(part), "region=") {
-			s.Bucket.Region = strings.ReplaceAll(part, "region=", "")
+		if strings.Contains(strings.ToLower(part), "endpoint=") {
+			s.Bucket.Endpoint = strings.ReplaceAll(part, "endpoint=", "")
+		}
+		if strings.Contains(strings.ToLower(part), "use_ssl=") {
+			s.Bucket.UseSSL = strings.ReplaceAll(part, "use_ssl=", "") == "true"
+		}
+		if strings.Contains(strings.ToLower(part), "ignore_cert=") {
+			s.Bucket.IgnoreCert = strings.ReplaceAll(part, "ignore_cert=", "") == "true"
 		}
 		if strings.Contains(strings.ToLower(part), "access_key=") {
 			s.Bucket.AccessKey = strings.ReplaceAll(part, "access_key=", "")
 		}
 		if strings.Contains(strings.ToLower(part), "secret_key=") {
 			s.Bucket.SecretKey = strings.ReplaceAll(part, "secret_key=", "")
-		}
-		if strings.Contains(strings.ToLower(part), "session_token=") {
-			s.Bucket.SessionToken = strings.ReplaceAll(part, "session_token=", "")
 		}
 		if strings.Contains(strings.ToLower(part), "use_environment_authentication=") {
 			s.Bucket.UseEnvironmentAuthentication = strings.ReplaceAll(part, "use_environment_authentication=", "")
@@ -116,8 +123,8 @@ func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection strin
 	if s.Bucket.Name == "" {
 		return false, fmt.Errorf("missing bucket name")
 	}
-	if s.Bucket.Region == "" {
-		return false, fmt.Errorf("missing bucket region")
+	if s.Bucket.Endpoint == "" {
+		return false, fmt.Errorf("missing bucket endpoint")
 	}
 	if s.Bucket.AccessKey == "" {
 		return false, fmt.Errorf("missing bucket access key")
@@ -130,7 +137,7 @@ func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection strin
 }
 
 // uploadFile uploads a file to an S3 bucket
-func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath string, path string, filename string) error {
+func (s *MinioBucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath string, path string, filename string) error {
 	ctx.LogInfof("Pushing file %s", filename)
 	localFilePath := filepath.Join(rootLocalPath, filename)
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
@@ -182,7 +189,7 @@ func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 	return nil
 }
 
-func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, filename string, destination string) error {
+func (s *MinioBucketProvider) PullFile(ctx basecontext.ApiContext, path string, filename string, destination string) error {
 	ctx.LogInfof("Pulling file %s", filename)
 	startTime := time.Now()
 	if s.FileNameChannel != nil {
@@ -239,7 +246,7 @@ func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 	return nil
 }
 
-func (s *AwsS3BucketProvider) PullFileAndDecompress(ctx basecontext.ApiContext, path, filename, destination string) error {
+func (s *MinioBucketProvider) PullFileAndDecompress(ctx basecontext.ApiContext, path, filename, destination string) error {
 	cfg := config.Get()
 	if cfg.IsCanaryEnabled() {
 		ctx.LogInfof("\rUsing Canary version of pullFileAndDecompress")
@@ -248,7 +255,7 @@ func (s *AwsS3BucketProvider) PullFileAndDecompress(ctx basecontext.ApiContext, 
 	return s.pullFileAndDecompressUnstable(ctx, path, filename, destination)
 }
 
-func (s *AwsS3BucketProvider) PullFileToMemory(ctx basecontext.ApiContext, path string, filename string) ([]byte, error) {
+func (s *MinioBucketProvider) PullFileToMemory(ctx basecontext.ApiContext, path string, filename string) ([]byte, error) {
 	ctx.LogInfof("Pulling file %s", filename)
 	maxFileSize := 0.5 * 1024 * 1024 // 0.5MB
 
@@ -296,7 +303,7 @@ func (s *AwsS3BucketProvider) PullFileToMemory(ctx basecontext.ApiContext, path 
 	return cw.Bytes(), nil
 }
 
-func (s *AwsS3BucketProvider) DeleteFile(ctx basecontext.ApiContext, path string, fileName string) error {
+func (s *MinioBucketProvider) DeleteFile(ctx basecontext.ApiContext, path string, fileName string) error {
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, fileName), "/")
 
 	// Create a new AWS session
@@ -319,7 +326,7 @@ func (s *AwsS3BucketProvider) DeleteFile(ctx basecontext.ApiContext, path string
 	return nil
 }
 
-func (s *AwsS3BucketProvider) FileChecksum(ctx basecontext.ApiContext, path string, fileName string) (string, error) {
+func (s *MinioBucketProvider) FileChecksum(ctx basecontext.ApiContext, path string, fileName string) (string, error) {
 	// Create a new AWS session
 	session, err := s.createNewSession()
 	if err != nil {
@@ -344,7 +351,7 @@ func (s *AwsS3BucketProvider) FileChecksum(ctx basecontext.ApiContext, path stri
 	return checksum, nil
 }
 
-func (s *AwsS3BucketProvider) FileExists(ctx basecontext.ApiContext, path string, fileName string) (bool, error) {
+func (s *MinioBucketProvider) FileExists(ctx basecontext.ApiContext, path string, fileName string) (bool, error) {
 	fullPath := filepath.Join(path, fileName)
 	// Create a new AWS session
 	session, err := s.createNewSession()
@@ -370,7 +377,7 @@ func (s *AwsS3BucketProvider) FileExists(ctx basecontext.ApiContext, path string
 	return true, nil
 }
 
-func (s *AwsS3BucketProvider) CreateFolder(ctx basecontext.ApiContext, folderPath string, folderName string) error {
+func (s *MinioBucketProvider) CreateFolder(ctx basecontext.ApiContext, folderPath string, folderName string) error {
 	fullPath := filepath.Join(folderPath, folderName)
 	// Create a new session using the default region and credentials.
 	var err error
@@ -409,7 +416,7 @@ func (s *AwsS3BucketProvider) CreateFolder(ctx basecontext.ApiContext, folderPat
 	return nil
 }
 
-func (s *AwsS3BucketProvider) DeleteFolder(ctx basecontext.ApiContext, folderPath string, folderName string) error {
+func (s *MinioBucketProvider) DeleteFolder(ctx basecontext.ApiContext, folderPath string, folderName string) error {
 	fullPath := filepath.Join(folderPath, folderName)
 	fullPath = strings.TrimPrefix(fullPath, "/")
 	// Create a new AWS session
@@ -442,7 +449,7 @@ func (s *AwsS3BucketProvider) DeleteFolder(ctx basecontext.ApiContext, folderPat
 	return nil
 }
 
-func (s *AwsS3BucketProvider) FolderExists(ctx basecontext.ApiContext, folderPath string, folderName string) (bool, error) {
+func (s *MinioBucketProvider) FolderExists(ctx basecontext.ApiContext, folderPath string, folderName string) (bool, error) {
 	fullPath := filepath.Join(folderPath, folderName)
 	fullPath = strings.TrimPrefix(fullPath, "/")
 
@@ -475,7 +482,7 @@ func (s *AwsS3BucketProvider) FolderExists(ctx basecontext.ApiContext, folderPat
 	return false, nil
 }
 
-func (s *AwsS3BucketProvider) FileSize(ctx basecontext.ApiContext, path string, filename string) (int64, error) {
+func (s *MinioBucketProvider) FileSize(ctx basecontext.ApiContext, path string, filename string) (int64, error) {
 	ctx.LogInfof("Checking file %s size", filename)
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 
@@ -498,7 +505,7 @@ func (s *AwsS3BucketProvider) FileSize(ctx basecontext.ApiContext, path string, 
 	return fileSize, nil
 }
 
-func (s *AwsS3BucketProvider) createNewSession() (*session.Session, error) {
+func (s *MinioBucketProvider) createNewSession() (*session.Session, error) {
 	// Create a new session using the default region and credentials.
 	var creds *credentials.Credentials
 	var err error
@@ -506,42 +513,60 @@ func (s *AwsS3BucketProvider) createNewSession() (*session.Session, error) {
 	if s.Bucket.UseEnvironmentAuthentication == "true" {
 		creds = credentials.NewEnvCredentials()
 	} else {
-		creds = credentials.NewStaticCredentials(s.Bucket.AccessKey, s.Bucket.SecretKey, s.Bucket.SessionToken)
+		creds = credentials.NewStaticCredentials(s.Bucket.AccessKey, s.Bucket.SecretKey, "")
 	}
 
 	cfg := s.generateNewCfg()
 	cfg.Credentials = creds
 	cfg.MaxRetries = aws.Int(10)
-	cfg.Region = &s.Bucket.Region
+	cfg.Region = aws.String("us-east-1")
 
 	session := session.Must(session.NewSession(cfg))
 
 	return session, err
 }
 
-func (s *AwsS3BucketProvider) generateNewCfg() *aws.Config {
-	cfg := aws.NewConfig().WithHTTPClient(&http.Client{
-		Timeout: 0,
-		Transport: &http.Transport{
-			IdleConnTimeout:       120 * time.Minute,
-			TLSHandshakeTimeout:   30 * time.Second,
-			ExpectContinueTimeout: 120 * time.Minute,
-			ResponseHeaderTimeout: 120 * time.Minute,
-			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				d := net.Dialer{
-					Timeout:   30 * time.Second,
-					KeepAlive: 30 * time.Second,
-				}
-				conn, err := d.DialContext(ctx, network, addr)
-				return conn, err
+func (s *MinioBucketProvider) generateNewCfg() *aws.Config {
+	endpoint := s.Bucket.Endpoint
+	if strings.HasPrefix(endpoint, "http://") || strings.HasPrefix(endpoint, "https://") {
+		endpoint = strings.TrimPrefix(endpoint, "http://")
+		endpoint = strings.TrimPrefix(endpoint, "https://")
+	}
+	if s.Bucket.UseSSL {
+		endpoint = "https://" + endpoint
+	} else {
+		endpoint = "http://" + endpoint
+	}
+
+	cfg := aws.NewConfig().
+		WithEndpoint(endpoint).
+		WithS3ForcePathStyle(true).
+		WithDisableSSL(s.Bucket.UseSSL).
+		WithHTTPClient(&http.Client{
+			Timeout: 0,
+			Transport: &http.Transport{
+				IdleConnTimeout:       120 * time.Minute,
+				TLSHandshakeTimeout:   30 * time.Second,
+				ExpectContinueTimeout: 120 * time.Minute,
+				ResponseHeaderTimeout: 120 * time.Minute,
+				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+					d := net.Dialer{
+						Timeout:   30 * time.Second,
+						KeepAlive: 30 * time.Second,
+					}
+					conn, err := d.DialContext(ctx, network, addr)
+					return conn, err
+				},
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: s.Bucket.IgnoreCert,
+				},
 			},
-		},
-	})
+		})
 
 	return cfg
 }
 
-func (s *AwsS3BucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiContext, path, filename, destination string) error {
+func (s *MinioBucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiContext, path, filename, destination string) error {
 	ctx.LogInfof("Pulling file %s", filename)
 	startTime := time.Now()
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
@@ -728,7 +753,7 @@ func (s *AwsS3BucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 	return nil
 }
 
-func (s *AwsS3BucketProvider) pullFileAndDecompressUnstable(ctx basecontext.ApiContext, path, filename, destination string) error {
+func (s *MinioBucketProvider) pullFileAndDecompressUnstable(ctx basecontext.ApiContext, path, filename, destination string) error {
 	// Create S3 session
 	session, err := s.createNewSession()
 	if err != nil {
@@ -737,7 +762,7 @@ func (s *AwsS3BucketProvider) pullFileAndDecompressUnstable(ctx basecontext.ApiC
 	svc := s3.New(session)
 
 	// Create the chunk downloader
-	downloader := NewS3ChunkDownloader(s.Bucket.Name, path, svc)
+	downloader := NewMinioChunkDownloader(s.Bucket.Name, path, svc)
 
 	// Create the chunk manager service with default worker and chunk settings
 	chunkManager := chunkmanagerservice.NewChunkManagerService(

@@ -3,6 +3,7 @@ package notifications
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -39,6 +40,7 @@ type NotificationService struct {
 	progressCounters      map[string]float64
 	previousMessage       NotificationMessage
 	CurrentMessage        NotificationMessage
+	mu                    sync.RWMutex // Protects activeProgress map
 }
 
 // ProgressRate contains rate information for a progress notification
@@ -172,6 +174,7 @@ func (p *NotificationService) NotifyProgress(correlationId string, prefix string
 	msg := NewProgressNotificationMessage(correlationId, prefix, progress)
 
 	// Create or update progress tracker
+	p.mu.Lock()
 	tracker, exists := p.activeProgress[correlationId]
 	if !exists {
 		tracker = &ProgressTracker{
@@ -183,6 +186,7 @@ func (p *NotificationService) NotifyProgress(correlationId string, prefix string
 		}
 		p.activeProgress[correlationId] = tracker
 	}
+	p.mu.Unlock()
 
 	p.updateProgressTracker(tracker, progress, msg.currentSize)
 
@@ -195,11 +199,13 @@ func (p *NotificationService) NotifyProgress(correlationId string, prefix string
 }
 
 func (p *NotificationService) FinishProgress(correlationId string, prefix string) {
+	p.mu.Lock()
 	if tracker, exists := p.activeProgress[correlationId]; exists {
 		tracker.CurrentProgress = 100
 		tracker.LastUpdateTime = time.Now()
 		tracker.IsComplete = true
 	}
+	p.mu.Unlock()
 
 	msg := NewProgressNotificationMessage(correlationId, prefix, 100)
 	msg.Close()
@@ -237,6 +243,7 @@ func (p *NotificationService) Start() {
 				shouldLog := false
 
 				if p.CurrentMessage.IsProgress {
+					p.mu.Lock()
 					tracker, exists := p.activeProgress[p.CurrentMessage.CorrelationId()]
 					if !exists {
 						// New progress notification
@@ -263,6 +270,7 @@ func (p *NotificationService) Start() {
 					if p.CurrentMessage.Closed() || p.CurrentMessage.CurrentProgress >= 100 {
 						delete(p.activeProgress, p.CurrentMessage.CorrelationId())
 					}
+					p.mu.Unlock()
 				} else {
 					// Non-progress messages
 					if p.CurrentMessage.Message != "" {
@@ -289,7 +297,10 @@ func (p *NotificationService) Start() {
 
 					if p.CurrentMessage.IsProgress {
 						// Use the new formatting for progress messages
-						if tracker, exists := p.activeProgress[p.CurrentMessage.CorrelationId()]; exists {
+						p.mu.RLock()
+						tracker, exists := p.activeProgress[p.CurrentMessage.CorrelationId()]
+						p.mu.RUnlock()
+						if exists {
 							baseMsg := p.CurrentMessage.Message
 							if baseMsg == "" {
 								baseMsg = tracker.Prefix
@@ -343,7 +354,9 @@ func (p *NotificationService) CleanupNotifications(correlationId string) {
 	}
 
 	// Remove from active progress tracking
+	p.mu.Lock()
 	delete(p.activeProgress, correlationId)
+	p.mu.Unlock()
 
 	// Reset previous message if it was for this correlation ID
 	if p.previousMessage.correlationId == correlationId {
@@ -360,11 +373,15 @@ func (p *NotificationService) CleanupNotifications(correlationId string) {
 
 // GetActiveProgressCount returns the number of active progress notifications
 func (p *NotificationService) GetActiveProgressCount() int {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	return len(p.activeProgress)
 }
 
 // GetActiveProgressIDs returns a slice of correlation IDs for active progress notifications
 func (p *NotificationService) GetActiveProgressIDs() []string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	ids := make([]string, 0, len(p.activeProgress))
 	for id := range p.activeProgress {
 		ids = append(ids, id)
@@ -374,6 +391,8 @@ func (p *NotificationService) GetActiveProgressIDs() []string {
 
 // IsProgressActive checks if a progress notification is active for the given correlation ID
 func (p *NotificationService) IsProgressActive(correlationId string) bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	_, exists := p.activeProgress[correlationId]
 	return exists
 }
@@ -381,6 +400,8 @@ func (p *NotificationService) IsProgressActive(correlationId string) bool {
 // GetProgressStatus returns the current progress status for a given correlation ID
 // Returns progress percentage and whether the progress exists
 func (p *NotificationService) GetProgressStatus(correlationId string) (float64, bool) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	if tracker, exists := p.activeProgress[correlationId]; exists {
 		return tracker.CurrentProgress, true
 	}
@@ -391,17 +412,28 @@ func (p *NotificationService) GetProgressStatus(correlationId string) (float64, 
 // for longer than the specified duration
 func (p *NotificationService) CleanupStaleProgress(staleDuration time.Duration) {
 	now := time.Now()
+	var idsToCleanup []string
+
+	// First, collect IDs that need cleanup while holding read lock
+	p.mu.RLock()
 	for id, tracker := range p.activeProgress {
 		if now.Sub(tracker.LastUpdateTime) > staleDuration {
-			p.ctx.LogDebugf("Cleaning up stale progress for correlation ID: %s (last update: %v)",
-				id, tracker.LastUpdateTime)
-			p.CleanupNotifications(id)
+			idsToCleanup = append(idsToCleanup, id)
 		}
+	}
+	p.mu.RUnlock()
+
+	// Then cleanup each ID (this will acquire write lock)
+	for _, id := range idsToCleanup {
+		p.ctx.LogDebugf("Cleaning up stale progress for correlation ID: %s", id)
+		p.CleanupNotifications(id)
 	}
 }
 
 // GetProgressDuration returns the duration since the progress started
 func (p *NotificationService) GetProgressDuration(correlationId string) (time.Duration, bool) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	if tracker, exists := p.activeProgress[correlationId]; exists {
 		return time.Since(tracker.StartTime), true
 	}
@@ -410,6 +442,8 @@ func (p *NotificationService) GetProgressDuration(correlationId string) (time.Du
 
 // GetProgressRate calculates transfer and progress rates for a given correlation ID
 func (p *NotificationService) GetProgressRate(correlationId string) (*ProgressRate, bool) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	tracker, exists := p.activeProgress[correlationId]
 	if !exists || tracker.TotalSize <= 0 {
 		return nil, false
@@ -431,6 +465,8 @@ func (p *NotificationService) GetProgressRate(correlationId string) (*ProgressRa
 
 // PredictTimeRemaining estimates the time remaining based on recent progress
 func (p *NotificationService) PredictTimeRemaining(correlationId string) (time.Duration, bool) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	tracker, exists := p.activeProgress[correlationId]
 	if !exists || tracker.TotalSize <= 0 {
 		return 0, false
