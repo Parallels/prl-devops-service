@@ -25,9 +25,7 @@ about: |
   also allow you to manage the hosts that are running the virtual machines.
 contact_callouts: homepage_contacts_callouts
 licensing: |
-  You can use the service for free with up to **10 users**, without needing any
-  Parallels Desktop Business license. However, if you want to continue using the
-  service beyond 10 users, you will need to purchase a Parallels Desktop Business
-  license. The good news is that no extra license is required for this service
-  once you have purchased the Parallels Desktop Business license.
+  You can use the Parallels DevOps service for free with up to **10 users**. 
+  If you want to continue using the service beyond 10 users, you will need to have 
+  a Parallels Desktop Business or Enterprise Edition license.
 ---
