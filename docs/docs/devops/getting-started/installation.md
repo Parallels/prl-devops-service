@@ -26,7 +26,7 @@ touch /usr/local/bin/config.yaml
 open -a TextEdit /usr/local/bin/config.yaml
 ```
 
-You can then add the following basic configuration to the file, you can find more information about the configuration file in [here]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration){:target="_blank"}.
+You can then add the following basic configuration to the file, you can find more information about the configuration file in [here]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/configuration){:target="_blank"}.
 
 ```yaml
 environment:
@@ -62,4 +62,4 @@ We also make available a Postman collection that you can import and use to inter
 
 ### Running the service as a container
 
-You can find more about how to run the service as a container in the [Docker documentation]({{ site.url }}{{ site.baseurl }}/docs/getting-started/docker/){:target="_blank"} win the Getting Started section.
+You can find more about how to run the service as a container in the [Docker documentation]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/docker/){:target="_blank"} win the Getting Started section.
