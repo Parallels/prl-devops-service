@@ -8982,6 +8982,7 @@ const docTemplate = `{
         },
         "models.OAuthErrorType": {
             "type": "integer",
+            "format": "int64",
             "enum": [
                 0,
                 1,
@@ -10005,7 +10006,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.9.13",
+	Version:          "0.9.14",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},

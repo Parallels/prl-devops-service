@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.14] - 2025-09-30
+
+- Fix an issue where decompressing could cause a concurrency issue
+- Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. List any dependencies that are required for this change.
+- Fixes # (issue)
+- Fixed the dead clicks in the documentation
+- License update
+- Added a new catalog storage provider for the MinIO an example of a connection string would be (provider=minio;endpoint=http://1localhost:9000;bucket=example;access_key=minioadmin;secret_key=something_secret;use_ssl=false;ignore_cert=true)
+
 ## [0.9.13] - 2025-04-29
 
 - Promoted some unstable code to stable

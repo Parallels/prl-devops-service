@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.9.13"
+        "version": "0.9.14"
     },
     "basePath": "/api",
     "paths": {
@@ -8975,6 +8975,7 @@
         },
         "models.OAuthErrorType": {
             "type": "integer",
+            "format": "int64",
             "enum": [
                 0,
                 1,
