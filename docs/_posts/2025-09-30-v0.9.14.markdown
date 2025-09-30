@@ -1,0 +1,17 @@
+---
+layout: post
+title:  "Release 0.9.14"
+date:   2025-09-30 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- Fix an issue where decompressing could cause a concurrency issue
+- Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. List any dependencies that are required for this change.
+- Fixes # (issue)
+- Fixed the dead clicks in the documentation
+- License update
+- Added a new catalog storage provider for the MinIO an example of a connection string would be (provider=minio;endpoint=http://1localhost:9000;bucket=example;access_key=minioadmin;secret_key=something_secret;use_ssl=false;ignore_cert=true)
+
+

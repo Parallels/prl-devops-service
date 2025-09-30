@@ -1139,6 +1139,7 @@ definitions:
     - 10
     - 11
     - 12
+    format: int64
     type: integer
     x-enum-varnames:
     - OAuthInvalidRequestError
@@ -1800,7 +1801,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.9.13
+  version: 0.9.14
 paths:
   /health/probe:
     get:
