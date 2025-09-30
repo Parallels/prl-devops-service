@@ -5,6 +5,33 @@ import (
 	"time"
 )
 
+func normalizeCorrelationID(id string) string {
+	if id == "" {
+		return ""
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(id)
+	if err == nil && base64.StdEncoding.EncodeToString(decoded) == id {
+		// Already encoded
+		return id
+	}
+
+	return base64.StdEncoding.EncodeToString([]byte(id))
+}
+
+func decodeCorrelationID(id string) (string, error) {
+	if id == "" {
+		return "", nil
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(id)
+	if err != nil {
+		return "", err
+	}
+
+	return string(decoded), nil
+}
+
 type NotificationMessage struct {
 	correlationId        string
 	Message              string
@@ -27,7 +54,7 @@ func NewNotificationMessage(message string, level NotificationMessageLevel) *Not
 }
 
 func NewProgressNotificationMessage(correlationId string, message string, progress float64) *NotificationMessage {
-	cid := base64.StdEncoding.EncodeToString([]byte(correlationId))
+	cid := normalizeCorrelationID(correlationId)
 	return &NotificationMessage{
 		correlationId:        cid,
 		Message:              message,
@@ -42,7 +69,7 @@ func (nm *NotificationMessage) String() string {
 }
 
 func (nm *NotificationMessage) SetCorrelationId(id string) *NotificationMessage {
-	nm.correlationId = id
+	nm.correlationId = normalizeCorrelationID(id)
 	return nm
 }
 
