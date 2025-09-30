@@ -101,7 +101,7 @@ func (p *NotificationService) SetContext(ctx basecontext.ApiContext) *Notificati
 
 func (p *NotificationService) ResetCounters(correlationId string) {
 	if correlationId != "" {
-		delete(p.progressCounters, correlationId)
+		delete(p.progressCounters, normalizeCorrelationID(correlationId))
 	}
 }
 
@@ -172,10 +172,11 @@ func (p *NotificationService) updateProgressTracker(tracker *ProgressTracker, pr
 
 func (p *NotificationService) NotifyProgress(correlationId string, prefix string, progress float64) {
 	msg := NewProgressNotificationMessage(correlationId, prefix, progress)
+	encodedID := msg.CorrelationId()
 
 	// Create or update progress tracker
 	p.mu.Lock()
-	tracker, exists := p.activeProgress[correlationId]
+	tracker, exists := p.activeProgress[encodedID]
 	if !exists {
 		tracker = &ProgressTracker{
 			StartTime:   time.Now(),
@@ -184,23 +185,28 @@ func (p *NotificationService) NotifyProgress(correlationId string, prefix string
 			RateSamples: make([]RateSample, 0, 60),
 			TotalSize:   msg.totalSize, // Make sure we capture the total size
 		}
-		p.activeProgress[correlationId] = tracker
+		p.activeProgress[encodedID] = tracker
 	}
-	p.mu.Unlock()
 
-	p.updateProgressTracker(tracker, progress, msg.currentSize)
+	currentSize := msg.currentSize
+	if currentSize == 0 {
+		currentSize = tracker.CurrentSize
+	}
+	p.updateProgressTracker(tracker, progress, currentSize)
 
 	if progress >= 100 {
 		msg.Close()
 		tracker.IsComplete = true
 	}
+	p.mu.Unlock()
 
 	p.Notify(msg)
 }
 
 func (p *NotificationService) FinishProgress(correlationId string, prefix string) {
+	encodedID := normalizeCorrelationID(correlationId)
 	p.mu.Lock()
-	if tracker, exists := p.activeProgress[correlationId]; exists {
+	if tracker, exists := p.activeProgress[encodedID]; exists {
 		tracker.CurrentProgress = 100
 		tracker.LastUpdateTime = time.Now()
 		tracker.IsComplete = true
@@ -353,22 +359,30 @@ func (p *NotificationService) CleanupNotifications(correlationId string) {
 		return
 	}
 
+	encodedID := normalizeCorrelationID(correlationId)
+	p.cleanupNotificationsByEncodedID(encodedID)
+	p.ctx.LogDebugf("Cleaned up notifications for correlation ID: %s", correlationId)
+}
+
+func (p *NotificationService) cleanupNotificationsByEncodedID(encodedID string) {
+	if encodedID == "" {
+		return
+	}
+
 	// Remove from active progress tracking
 	p.mu.Lock()
-	delete(p.activeProgress, correlationId)
+	delete(p.activeProgress, encodedID)
 	p.mu.Unlock()
 
 	// Reset previous message if it was for this correlation ID
-	if p.previousMessage.correlationId == correlationId {
+	if p.previousMessage.correlationId == encodedID {
 		p.previousMessage = NotificationMessage{}
 	}
 
 	// Reset current message if it was for this correlation ID
-	if p.CurrentMessage.correlationId == correlationId {
+	if p.CurrentMessage.correlationId == encodedID {
 		p.CurrentMessage = NotificationMessage{}
 	}
-
-	p.ctx.LogDebugf("Cleaned up notifications for correlation ID: %s", correlationId)
 }
 
 // GetActiveProgressCount returns the number of active progress notifications
@@ -391,18 +405,20 @@ func (p *NotificationService) GetActiveProgressIDs() []string {
 
 // IsProgressActive checks if a progress notification is active for the given correlation ID
 func (p *NotificationService) IsProgressActive(correlationId string) bool {
+	encodedID := normalizeCorrelationID(correlationId)
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	_, exists := p.activeProgress[correlationId]
+	_, exists := p.activeProgress[encodedID]
 	return exists
 }
 
 // GetProgressStatus returns the current progress status for a given correlation ID
 // Returns progress percentage and whether the progress exists
 func (p *NotificationService) GetProgressStatus(correlationId string) (float64, bool) {
+	encodedID := normalizeCorrelationID(correlationId)
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	if tracker, exists := p.activeProgress[correlationId]; exists {
+	if tracker, exists := p.activeProgress[encodedID]; exists {
 		return tracker.CurrentProgress, true
 	}
 	return 0, false
@@ -425,16 +441,21 @@ func (p *NotificationService) CleanupStaleProgress(staleDuration time.Duration) 
 
 	// Then cleanup each ID (this will acquire write lock)
 	for _, id := range idsToCleanup {
-		p.ctx.LogDebugf("Cleaning up stale progress for correlation ID: %s", id)
-		p.CleanupNotifications(id)
+		decodedID, err := decodeCorrelationID(id)
+		if err != nil || decodedID == "" {
+			decodedID = id
+		}
+		p.ctx.LogDebugf("Cleaning up stale progress for correlation ID: %s", decodedID)
+		p.cleanupNotificationsByEncodedID(id)
 	}
 }
 
 // GetProgressDuration returns the duration since the progress started
 func (p *NotificationService) GetProgressDuration(correlationId string) (time.Duration, bool) {
+	encodedID := normalizeCorrelationID(correlationId)
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	if tracker, exists := p.activeProgress[correlationId]; exists {
+	if tracker, exists := p.activeProgress[encodedID]; exists {
 		return time.Since(tracker.StartTime), true
 	}
 	return 0, false
@@ -442,9 +463,10 @@ func (p *NotificationService) GetProgressDuration(correlationId string) (time.Du
 
 // GetProgressRate calculates transfer and progress rates for a given correlation ID
 func (p *NotificationService) GetProgressRate(correlationId string) (*ProgressRate, bool) {
+	encodedID := normalizeCorrelationID(correlationId)
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	tracker, exists := p.activeProgress[correlationId]
+	tracker, exists := p.activeProgress[encodedID]
 	if !exists || tracker.TotalSize <= 0 {
 		return nil, false
 	}
@@ -465,9 +487,10 @@ func (p *NotificationService) GetProgressRate(correlationId string) (*ProgressRa
 
 // PredictTimeRemaining estimates the time remaining based on recent progress
 func (p *NotificationService) PredictTimeRemaining(correlationId string) (time.Duration, bool) {
+	encodedID := normalizeCorrelationID(correlationId)
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	tracker, exists := p.activeProgress[correlationId]
+	tracker, exists := p.activeProgress[encodedID]
 	if !exists || tracker.TotalSize <= 0 {
 		return 0, false
 	}
