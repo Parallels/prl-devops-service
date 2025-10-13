@@ -57,21 +57,21 @@ func (s *BruteForceGuard) Options() *BruteForceGuardOptions {
 }
 
 func (s *BruteForceGuard) Process(userId string, loginState bool, reason string) *errors.Diagnostics {
-	diag := errors.NewDiagnostics()
+	diag := errors.NewDiagnostics("Brute Force Guard")
 	dbService, err := serviceprovider.GetDatabaseService(s.ctx)
 	if err != nil {
-		diag.AddError(err)
+		diag.AddError("dbServiceNotAvailable", err.Error(), "BruteForceGuard")
 		return diag
 	}
 
 	user, err := dbService.GetUser(s.ctx, userId)
 	if err != nil {
-		diag.AddError(err)
+		diag.AddError("userNotFound", err.Error(), "BruteForceGuard")
 		return diag
 	}
 
 	if user == nil {
-		diag.AddError(errors.ErrNotFound())
+		diag.AddError("userIsNil", errors.ErrNotFound().Error(), "BruteForceGuard")
 		return diag
 	}
 
@@ -82,7 +82,7 @@ func (s *BruteForceGuard) Process(userId string, loginState bool, reason string)
 		user.BlockedReason = ""
 		err := dbService.UpdateUserBlockStatus(s.ctx, *user)
 		if err != nil {
-			diag.AddError(err)
+			diag.AddError("updateUserBlockStatus", err.Error(), "BruteForceGuard")
 		}
 		return diag
 	} else {
@@ -94,7 +94,7 @@ func (s *BruteForceGuard) Process(userId string, loginState bool, reason string)
 			user.BlockedReason = reason
 			err := dbService.UpdateUserBlockStatus(s.ctx, *user)
 			if err != nil {
-				diag.AddError(err)
+				diag.AddError("blockingUserFailed", err.Error(), "BruteForceGuard")
 				return diag
 			}
 			if s.options.IncrementalWait() {
@@ -108,7 +108,7 @@ func (s *BruteForceGuard) Process(userId string, loginState bool, reason string)
 		} else {
 			err := dbService.UpdateUserBlockStatus(s.ctx, *user)
 			if err != nil {
-				diag.AddError(err)
+				diag.AddError("updateUserBlockStatus", err.Error(), "BruteForceGuard")
 				return diag
 			}
 		}

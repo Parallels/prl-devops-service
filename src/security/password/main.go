@@ -3,6 +3,7 @@ package password
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -89,32 +90,32 @@ func (s *PasswordService) Compare(password string, salt string, hashedPwd string
 }
 
 func (s *PasswordService) CheckPasswordComplexity(password string) (bool, *errors.Diagnostics) {
-	diagnostics := errors.NewDiagnostics()
+	diagnostics := errors.NewDiagnostics("Password complexity check")
 
 	if len(password) < s.options.MinLength() {
-		diagnostics.AddError(errors.Newf("Password must be at least %d characters long", s.options.MinLength()))
+		diagnostics.AddError("", fmt.Sprintf("Password must be at least %d characters long", s.options.MinLength()), "PasswordService")
 	}
 	if len(password) > s.options.MaxLength() {
-		diagnostics.AddError(errors.Newf("Password must be no more than %d characters long", s.options.MaxLength()))
+		diagnostics.AddError("", fmt.Sprintf("Password must be no more than %d characters long", s.options.MaxLength()), "PasswordService")
 	}
 	if s.options.RequireLowercase() {
 		if !strings.ContainsAny(password, "abcdefghijklmnopqrstuvwxyz") {
-			diagnostics.AddError(errors.Newf("Password must contain at least one lowercase letter"))
+			diagnostics.AddError("", fmt.Sprintf("Password must contain at least one lowercase letter"), "PasswordService")
 		}
 	}
 	if s.options.RequireUppercase() {
 		if !strings.ContainsAny(password, "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
-			diagnostics.AddError(errors.Newf("Password must contain at least one uppercase letter"))
+			diagnostics.AddError("", fmt.Sprintf("Password must contain at least one uppercase letter"), "PasswordService")
 		}
 	}
 	if s.options.RequireNumbers() {
 		if !strings.ContainsAny(password, "0123456789") {
-			diagnostics.AddError(errors.Newf("Password must contain at least one number"))
+			diagnostics.AddError("", fmt.Sprintf("Password must contain at least one number"), "PasswordService")
 		}
 	}
 	if s.options.RequireSpecialCharacters() {
 		if !strings.ContainsAny(password, SPECIAL_CHARACTERS) {
-			diagnostics.AddError(errors.Newf("Password must contain at least one special character"))
+			diagnostics.AddError("", fmt.Sprintf("Password must contain at least one special character"), "PasswordService")
 		}
 	}
 

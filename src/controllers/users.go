@@ -225,7 +225,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 			passwordSvc := password.Get()
 			if valid, diag := passwordSvc.CheckPasswordComplexity(request.Password); diag.HasErrors() {
 				ReturnApiError(ctx, w, models.ApiErrorResponse{
-					Message: diag.Error(),
+					Message: diag.GetSummary(),
 					Code:    http.StatusBadRequest,
 				})
 				return
