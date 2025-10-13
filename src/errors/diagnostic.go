@@ -12,44 +12,44 @@ import (
 
 // Diagnostics represents a collection of errors, warnings, and execution path
 type Diagnostics struct {
-	Operation string
-	StartTime time.Time
-	EndTime   *time.Time
-	Path      []PathEntry
-	Errors    []Error
-	Warnings  []Warning
-	Metadata  map[string]interface{}
+	Operation string                 `json:"operation"`
+	StartTime time.Time              `json:"start_time"`
+	EndTime   *time.Time             `json:"end_time,omitempty"`
+	Path      []PathEntry            `json:"path"`
+	Errors    []Error                `json:"errors"`
+	Warnings  []Warning              `json:"warnings"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 	mu        sync.RWMutex
 }
 
 // PathEntry represents a step in the execution path
 type PathEntry struct {
-	Operation    string
-	Component    string
-	Timestamp    time.Time
-	Duration     time.Duration
-	Metadata     map[string]interface{}
-	LineNumber   int
-	FileName     string
-	FunctionName string
+	Operation    string                 `json:"operation"`
+	Component    string                 `json:"component"`
+	Timestamp    time.Time              `json:"timestamp"`
+	Duration     time.Duration          `json:"duration"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	LineNumber   int                    `json:"line_number"`
+	FileName     string                 `json:"file_name"`
+	FunctionName string                 `json:"function_name"`
 }
 
 // Error represents an error with context
 type Error struct {
-	Code      string
-	Message   string
-	Timestamp time.Time
-	Component string
-	Metadata  map[string]interface{}
+	Code      string                 `json:"code,omitempty"`
+	Message   string                 `json:"message,omitempty"`
+	Timestamp time.Time              `json:"timestamp"`
+	Component string                 `json:"component,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // Warning represents a warning with context
 type Warning struct {
-	Code      string
-	Message   string
-	Timestamp time.Time
-	Component string
-	Metadata  map[string]interface{}
+	Code      string                 `json:"code,omitempty"`
+	Message   string                 `json:"message,omitempty"`
+	Timestamp time.Time              `json:"timestamp"`
+	Component string                 `json:"component,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // New creates a new Diagnostics instance
@@ -353,6 +353,14 @@ func (d *Diagnostics) GetSummary() string {
 		summary.WriteString("\nWarnings:\n")
 		for i, warning := range d.Warnings {
 			summary.WriteString(fmt.Sprintf("  %d. [%s] %s\n", i+1, warning.Code, warning.Message))
+		}
+	}
+
+	if len(d.Path) > 0 {
+		summary.WriteString("\nExecution Path:\n")
+		for i, entry := range d.Path {
+			summary.WriteString(fmt.Sprintf("  %d. %s (%s) - %s:%d\n",
+				i+1, entry.Operation, entry.Component, entry.FileName, entry.LineNumber))
 		}
 	}
 
