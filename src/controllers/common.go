@@ -37,6 +37,13 @@ func ReturnApiError(ctx basecontext.ApiContext, w http.ResponseWriter, err model
 	_ = json.NewEncoder(w).Encode(err)
 }
 
+func ReturnApiErrorWithDiagnostics(ctx basecontext.ApiContext, w http.ResponseWriter, err models.ApiErrorDiagnosticsResponse) {
+	ctx.LogErrorf("Error: %v", err.Message)
+	w.WriteHeader(err.Code)
+
+	_ = json.NewEncoder(w).Encode(err)
+}
+
 func ReturnApiCommonResponse(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusOK)
 	data := models.ApiCommonResponse{

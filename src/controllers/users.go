@@ -196,7 +196,7 @@ func GetUserHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			body	body		models.UserCreateRequest	true	"User"
 // @Success		201		{object}	models.ApiUser
-// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		400		{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401		{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -224,10 +224,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 		if request.Password != "" {
 			passwordSvc := password.Get()
 			if valid, diag := passwordSvc.CheckPasswordComplexity(request.Password); diag.HasErrors() {
-				ReturnApiError(ctx, w, models.ApiErrorResponse{
-					Message: diag.GetSummary(),
-					Code:    http.StatusBadRequest,
-				})
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, http.StatusBadRequest))
 				return
 			} else {
 				if !valid {
