@@ -1,5 +1,77 @@
 basePath: /api
 definitions:
+  errors.Diagnostics:
+    properties:
+      end_time:
+        type: string
+      errors:
+        items:
+          $ref: '#/definitions/errors.Error'
+        type: array
+      metadata:
+        additionalProperties: true
+        type: object
+      operation:
+        type: string
+      path:
+        items:
+          $ref: '#/definitions/errors.PathEntry'
+        type: array
+      start_time:
+        type: string
+      warnings:
+        items:
+          $ref: '#/definitions/errors.Warning'
+        type: array
+    type: object
+  errors.Error:
+    properties:
+      code:
+        type: string
+      component:
+        type: string
+      message:
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      timestamp:
+        type: string
+    type: object
+  errors.PathEntry:
+    properties:
+      component:
+        type: string
+      duration:
+        type: integer
+      file_name:
+        type: string
+      function_name:
+        type: string
+      line_number:
+        type: integer
+      metadata:
+        additionalProperties: true
+        type: object
+      operation:
+        type: string
+      timestamp:
+        type: string
+    type: object
+  errors.Warning:
+    properties:
+      code:
+        type: string
+      component:
+        type: string
+      message:
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      timestamp:
+        type: string
+    type: object
   github_com_Parallels_prl-devops-service_catalog_models.MinimumSpecRequirement:
     properties:
       cpu:
@@ -713,6 +785,15 @@ definitions:
         type: string
       success:
         type: boolean
+    type: object
+  models.ApiErrorDiagnosticsResponse:
+    properties:
+      code:
+        type: integer
+      diagnostics:
+        $ref: '#/definitions/errors.Diagnostics'
+      message:
+        type: string
     type: object
   models.ApiErrorResponse:
     properties:
@@ -2355,7 +2436,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:

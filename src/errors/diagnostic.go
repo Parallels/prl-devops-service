@@ -27,7 +27,7 @@ type PathEntry struct {
 	Operation    string                 `json:"operation"`
 	Component    string                 `json:"component"`
 	Timestamp    time.Time              `json:"timestamp"`
-	Duration     time.Duration          `json:"duration"`
+	Duration     int64                  `json:"duration"`
 	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 	LineNumber   int                    `json:"line_number"`
 	FileName     string                 `json:"file_name"`
@@ -101,7 +101,7 @@ func (d *Diagnostics) AddPathEntry(operation, component string, metadata ...map[
 
 	// Calculate duration from previous entry
 	if len(d.Path) > 0 {
-		entry.Duration = entry.Timestamp.Sub(d.Path[len(d.Path)-1].Timestamp)
+		entry.Duration = int64(entry.Timestamp.Sub(d.Path[len(d.Path)-1].Timestamp))
 	}
 
 	d.Path = append(d.Path, entry)
