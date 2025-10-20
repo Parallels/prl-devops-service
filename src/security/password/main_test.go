@@ -214,9 +214,9 @@ func TestCheckPasswordComplexity(t *testing.T) {
 			valid, diagnostics := svc.CheckPasswordComplexity(test.password)
 			assert.Equal(t, test.expected, valid)
 			if test.expected {
-				assert.Empty(t, diagnostics.Errors())
+				assert.False(t, diagnostics.HasErrors())
 			} else {
-				assert.NotEmpty(t, diagnostics.Errors())
+				assert.NotEmpty(t, diagnostics.GetErrors())
 			}
 		})
 	}

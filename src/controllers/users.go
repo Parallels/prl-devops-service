@@ -3,9 +3,11 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -196,7 +198,7 @@ func GetUserHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			body	body		models.UserCreateRequest	true	"User"
 // @Success		201		{object}	models.ApiUser
-// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		400		{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401		{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -207,34 +209,27 @@ func CreateUserHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.UserCreateRequest
+		userCreationDiag := errors.NewDiagnostics("create user")
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			userCreationDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, http.StatusBadRequest))
 			return
 		}
 		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			userCreationDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, http.StatusBadRequest))
 			return
 		}
 		if request.Password != "" {
 			passwordSvc := password.Get()
 			if valid, diag := passwordSvc.CheckPasswordComplexity(request.Password); diag.HasErrors() {
-				ReturnApiError(ctx, w, models.ApiErrorResponse{
-					Message: diag.Error(),
-					Code:    http.StatusBadRequest,
-				})
+				userCreationDiag.Append(diag)
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, http.StatusBadRequest))
 				return
 			} else {
 				if !valid {
-					ReturnApiError(ctx, w, models.ApiErrorResponse{
-						Message: "Invalid Password, please check complexity rules",
-						Code:    http.StatusBadRequest,
-					})
+					userCreationDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid Password, please check complexity rules", "")
+					ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, http.StatusBadRequest))
 					return
 				}
 			}
@@ -242,13 +237,17 @@ func CreateUserHandler() restapi.ControllerHandler {
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, rsp.Code))
 			return
 		}
 
 		dtoUser, err := dbService.CreateUser(ctx, mappers.ApiUserCreateRequestToDto(request))
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, rsp.Code))
 			return
 		}
 
@@ -273,7 +272,9 @@ func CreateUserHandler() restapi.ControllerHandler {
 				err = dbService.AddClaimToUser(ctx, dtoUser.ID, claim)
 				if err != nil {
 					_ = dbService.DeleteUser(ctx, dtoUser.ID)
-					ReturnApiError(ctx, w, models.NewFromError(err))
+					rsp := models.NewFromError(err)
+					userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+					ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, rsp.Code))
 					return
 				}
 			}
@@ -292,14 +293,18 @@ func CreateUserHandler() restapi.ControllerHandler {
 				err = dbService.AddRoleToUser(ctx, dtoUser.ID, role)
 				if err != nil {
 					_ = dbService.DeleteUser(ctx, dtoUser.ID)
-					ReturnApiError(ctx, w, models.NewFromError(err))
+					rsp := models.NewFromError(err)
+					userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+					ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, rsp.Code))
 					return
 				}
 			}
 
 			dtoUser, err = dbService.GetUser(ctx, dtoUser.ID)
 			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromError(err))
+				rsp := models.NewFromError(err)
+				userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, rsp.Code))
 				return
 			}
 		}
