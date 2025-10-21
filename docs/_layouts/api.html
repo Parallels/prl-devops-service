@@ -28,9 +28,10 @@ layout: default
         <div class="api-dropdown-menu{% if page_name == category.path %} expanded{% endif %}" target="dropdown-{{ category.path }}">
           <ul>
             {% for endpoint in category.endpoints %}
+            {% assign anchor_id = page.api_prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
             <li class="api-dropdown-menu-item">
               <span class="endpoint {{ endpoint.method | upcase }}"></span>
-              <a href=" {{ site.baseurl }}/rest-api/{{ category.path }}?#{{ endpoint.path }}">{{ endpoint.path }}</a>
+              <a href="{{ site.baseurl }}/rest-api/{{ category.path }}#{{ anchor_id }}">{{ endpoint.path }}</a>
             </li>
             {% endfor %}
           </ul>
@@ -60,7 +61,7 @@ layout: default
     {% assign endpoints = page.endpoints %}
     {% for endpoint in endpoints %}
     {% assign path = page.api_prefix | append: endpoint.path %}
-    {% assign id = site.api_prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
+    {% assign id = page.api_prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
     <section class="api-main-content">
       <section class="api-main-body">
         {% if endpoint.title %}

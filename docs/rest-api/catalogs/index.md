@@ -235,6 +235,26 @@ categories:
           path: /health/system
           description: This endpoint returns the API Health Probe
           title: Gets the API System Health
+        - anchor: /logs-get
+          method: get
+          path: /logs
+          description: This endpoint returns the system logs from the disk
+          title: Gets the system logs from the disk
+        - anchor: /logs/stream-get
+          method: get
+          path: /logs/stream
+          description: This endpoint streams the system logs in real-time via WebSocket
+          title: Streams the system logs via WebSocket
+        - anchor: /v1/orchestrator/hosts/{id}/logs-get
+          method: get
+          path: /v1/orchestrator/hosts/{id}/logs
+          description: This endpoint returns the orchestrator host system logs from the disk
+          title: Gets the orchestrator host system logs from the disk
+        - anchor: /logs/stream-get
+          method: get
+          path: /logs/stream
+          description: This endpoint streams the system logs in real-time via WebSocket
+          title: Streams the system logs via WebSocket
         - anchor: /health/probe-get
           method: get
           path: /health/probe
@@ -501,6 +521,11 @@ categories:
           path: /v1/orchestrator/machines
           description: This endpoint creates a virtual machine in one of the hosts for the orchestrator
           title: Creates a virtual machine in one of the hosts for the orchestrator
+        - anchor: /v1/orchestrator/hosts/{id}/reverse-proxy-get
+          method: get
+          path: /v1/orchestrator/hosts/{id}/reverse-proxy
+          description: This endpoint returns orchestrator host reverse proxy configuration
+          title: Gets orchestrator host reverse proxy configuration
         - anchor: /v1/orchestrator/hosts/{id}/reverse-proxy/hosts-get
           method: get
           path: /v1/orchestrator/hosts/{id}/reverse-proxy/hosts
@@ -829,7 +854,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -985,7 +1010,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1146,7 +1171,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1312,7 +1337,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1478,7 +1503,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1644,7 +1669,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1810,7 +1835,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1976,7 +2001,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2154,7 +2179,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2346,7 +2371,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2538,7 +2563,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2730,7 +2755,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2922,7 +2947,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3114,7 +3139,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3220,7 +3245,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3317,7 +3342,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3419,7 +3444,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3506,6 +3531,7 @@ endpoints:
             {
               "architecture": "string",
               "catalog_id": "string",
+              "compress_pack": "bool",
               "connection": "string",
               "description": "string",
               "local_path": "string",
@@ -3594,7 +3620,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3614,7 +3640,7 @@ endpoints:
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/push' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"local_path\": \"string\",\n  \"minimum_requirements\": {\n    \"cpu\": \"int\",\n    \"disk\": \"int\",\n    \"memory\": \"int\"\n  },\n  \"pack_size\": \"int64\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\",\n  \"uuid\": \"string\",\n  \"version\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/push' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"compress_pack\": \"bool\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"local_path\": \"string\",\n  \"minimum_requirements\": {\n    \"cpu\": \"int\",\n    \"disk\": \"int\",\n    \"memory\": \"int\"\n  },\n  \"pack_size\": \"int64\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\",\n  \"uuid\": \"string\",\n  \"version\": \"string\"\n}'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -3626,6 +3652,7 @@ endpoints:
             request.Content = new StringContent("{
               "architecture": "string",
               "catalog_id": "string",
+              "compress_pack": "bool",
               "connection": "string",
               "description": "string",
               "local_path": "string",
@@ -3663,6 +3690,7 @@ endpoints:
               payload := strings.NewReader(`{
               "architecture": "string",
               "catalog_id": "string",
+              "compress_pack": "bool",
               "connection": "string",
               "description": "string",
               "local_path": "string",
@@ -3753,7 +3781,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3890,7 +3918,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4001,6 +4029,7 @@ endpoints:
               "provider_metadata": "map[string]string",
               "required_claims": "[]string",
               "required_roles": "[]string",
+              "size": "int64",
               "tags": "[]string",
               "type": "string",
               "version": "string"
@@ -4025,7 +4054,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4045,7 +4074,7 @@ endpoints:
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/import-vm' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"force\": \"bool\",\n  \"is_compressed\": \"bool\",\n  \"machine_remote_path\": \"string\",\n  \"provider_metadata\": \"map[string]string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\",\n  \"type\": \"string\",\n  \"version\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/import-vm' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"force\": \"bool\",\n  \"is_compressed\": \"bool\",\n  \"machine_remote_path\": \"string\",\n  \"provider_metadata\": \"map[string]string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"size\": \"int64\",\n  \"tags\": \"[]string\",\n  \"type\": \"string\",\n  \"version\": \"string\"\n}'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -4065,6 +4094,7 @@ endpoints:
               "provider_metadata": "map[string]string",
               "required_claims": "[]string",
               "required_roles": "[]string",
+              "size": "int64",
               "tags": "[]string",
               "type": "string",
               "version": "string"
@@ -4099,6 +4129,7 @@ endpoints:
               "provider_metadata": "map[string]string",
               "required_claims": "[]string",
               "required_roles": "[]string",
+              "size": "int64",
               "tags": "[]string",
               "type": "string",
               "version": "string"
@@ -4225,7 +4256,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4389,7 +4420,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4481,7 +4512,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4573,7 +4604,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4670,7 +4701,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]

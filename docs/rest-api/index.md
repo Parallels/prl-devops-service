@@ -234,6 +234,26 @@ categories:
           path: /health/system
           description: This endpoint returns the API Health Probe
           title: Gets the API System Health
+        - anchor: /logs-get
+          method: get
+          path: /logs
+          description: This endpoint returns the system logs from the disk
+          title: Gets the system logs from the disk
+        - anchor: /logs/stream-get
+          method: get
+          path: /logs/stream
+          description: This endpoint streams the system logs in real-time via WebSocket
+          title: Streams the system logs via WebSocket
+        - anchor: /v1/orchestrator/hosts/{id}/logs-get
+          method: get
+          path: /v1/orchestrator/hosts/{id}/logs
+          description: This endpoint returns the orchestrator host system logs from the disk
+          title: Gets the orchestrator host system logs from the disk
+        - anchor: /logs/stream-get
+          method: get
+          path: /logs/stream
+          description: This endpoint streams the system logs in real-time via WebSocket
+          title: Streams the system logs via WebSocket
         - anchor: /health/probe-get
           method: get
           path: /health/probe
@@ -500,6 +520,11 @@ categories:
           path: /v1/orchestrator/machines
           description: This endpoint creates a virtual machine in one of the hosts for the orchestrator
           title: Creates a virtual machine in one of the hosts for the orchestrator
+        - anchor: /v1/orchestrator/hosts/{id}/reverse-proxy-get
+          method: get
+          path: /v1/orchestrator/hosts/{id}/reverse-proxy
+          description: This endpoint returns orchestrator host reverse proxy configuration
+          title: Gets orchestrator host reverse proxy configuration
         - anchor: /v1/orchestrator/hosts/{id}/reverse-proxy/hosts-get
           method: get
           path: /v1/orchestrator/hosts/{id}/reverse-proxy/hosts
@@ -789,21 +814,19 @@ endpoints:
         A user normally has a password and is used to authenticate with the system
         An api key is used to authenticate with the system from an external application
       response_blocks:
-        - code_block: |
+        - code_block: |-
             {
-            
               "encoded": "string",
               "id": "string",
               "key": "string",
               "name": "string",
               "revoked": "bool"
             }
-
           code: "200"
           code_description: OK
           title: models.ApiKeyResponse
           language: json
-        - code_block: |
+        - code_block: |-
             {
               "code": "int",
               "message": "string",
@@ -811,7 +834,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -820,7 +843,7 @@ endpoints:
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |
+        - code_block: |-
             {
               "error": "OAuthErrorType",
               "error_description": "string",
@@ -931,7 +954,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1025,7 +1048,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1131,7 +1154,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1228,7 +1251,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1335,7 +1358,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1449,7 +1472,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1607,7 +1630,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1763,7 +1786,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1924,7 +1947,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2090,7 +2113,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2256,7 +2279,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2422,7 +2445,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2588,7 +2611,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2754,7 +2777,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2932,7 +2955,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3124,7 +3147,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3316,7 +3339,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3508,7 +3531,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3700,7 +3723,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3892,7 +3915,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3998,7 +4021,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4095,7 +4118,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4197,7 +4220,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4284,6 +4307,7 @@ endpoints:
             {
               "architecture": "string",
               "catalog_id": "string",
+              "compress_pack": "bool",
               "connection": "string",
               "description": "string",
               "local_path": "string",
@@ -4372,7 +4396,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4392,7 +4416,7 @@ endpoints:
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/push' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"local_path\": \"string\",\n  \"minimum_requirements\": {\n    \"cpu\": \"int\",\n    \"disk\": \"int\",\n    \"memory\": \"int\"\n  },\n  \"pack_size\": \"int64\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\",\n  \"uuid\": \"string\",\n  \"version\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/push' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"compress_pack\": \"bool\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"local_path\": \"string\",\n  \"minimum_requirements\": {\n    \"cpu\": \"int\",\n    \"disk\": \"int\",\n    \"memory\": \"int\"\n  },\n  \"pack_size\": \"int64\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\",\n  \"uuid\": \"string\",\n  \"version\": \"string\"\n}'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -4404,6 +4428,7 @@ endpoints:
             request.Content = new StringContent("{
               "architecture": "string",
               "catalog_id": "string",
+              "compress_pack": "bool",
               "connection": "string",
               "description": "string",
               "local_path": "string",
@@ -4441,6 +4466,7 @@ endpoints:
               payload := strings.NewReader(`{
               "architecture": "string",
               "catalog_id": "string",
+              "compress_pack": "bool",
               "connection": "string",
               "description": "string",
               "local_path": "string",
@@ -4531,7 +4557,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4668,7 +4694,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4779,6 +4805,7 @@ endpoints:
               "provider_metadata": "map[string]string",
               "required_claims": "[]string",
               "required_roles": "[]string",
+              "size": "int64",
               "tags": "[]string",
               "type": "string",
               "version": "string"
@@ -4803,7 +4830,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4823,7 +4850,7 @@ endpoints:
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/import-vm' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"force\": \"bool\",\n  \"is_compressed\": \"bool\",\n  \"machine_remote_path\": \"string\",\n  \"provider_metadata\": \"map[string]string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\",\n  \"type\": \"string\",\n  \"version\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/import-vm' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"force\": \"bool\",\n  \"is_compressed\": \"bool\",\n  \"machine_remote_path\": \"string\",\n  \"provider_metadata\": \"map[string]string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"size\": \"int64\",\n  \"tags\": \"[]string\",\n  \"type\": \"string\",\n  \"version\": \"string\"\n}'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -4843,6 +4870,7 @@ endpoints:
               "provider_metadata": "map[string]string",
               "required_claims": "[]string",
               "required_roles": "[]string",
+              "size": "int64",
               "tags": "[]string",
               "type": "string",
               "version": "string"
@@ -4877,6 +4905,7 @@ endpoints:
               "provider_metadata": "map[string]string",
               "required_claims": "[]string",
               "required_roles": "[]string",
+              "size": "int64",
               "tags": "[]string",
               "type": "string",
               "version": "string"
@@ -5003,7 +5032,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5167,7 +5196,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5259,7 +5288,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5351,7 +5380,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5448,7 +5477,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5545,7 +5574,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5648,7 +5677,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5755,7 +5784,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5855,7 +5884,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5960,7 +5989,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -6067,7 +6096,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -6187,7 +6216,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -6287,7 +6316,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -6371,6 +6400,7 @@ endpoints:
               "cpu_type": "string",
               "devops_version": "string",
               "external_ip_address": "string",
+              "is_log_streaming_enabled": "bool",
               "is_reverse_proxy_enabled": "bool",
               "os_name": "string",
               "os_version": "string",
@@ -6395,7 +6425,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -6514,6 +6544,178 @@ endpoints:
 
             func main() {
               url := "http://localhost/api/health/system"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Gets the system logs from the disk
+      description: This endpoint returns the system logs from the disk
+      requires_authorization: true
+      category: Config
+      category_path: config
+      path: /logs
+      method: get
+      response_blocks:
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "error": "OAuthErrorType",
+              "error_description": "string",
+              "error_uri": "string"
+            }
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/logs' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/logs");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/logs"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Streams the system logs via WebSocket
+      description: This endpoint streams the system logs in real-time via WebSocket
+      requires_authorization: true
+      category: Config
+      category_path: config
+      path: /logs/stream
+      method: get
+      response_blocks:
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "error": "OAuthErrorType",
+              "error_description": "string",
+              "error_uri": "string"
+            }
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/logs/stream' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/logs/stream");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/logs/stream"
               method := "get"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
@@ -6797,7 +6999,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7127,7 +7329,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7229,7 +7431,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7331,7 +7533,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7433,7 +7635,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7535,7 +7737,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7637,7 +7839,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7739,7 +7941,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7841,7 +8043,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7933,7 +8135,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -8035,7 +8237,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -8152,7 +8354,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -8273,7 +8475,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -8398,7 +8600,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -8527,7 +8729,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -8879,7 +9081,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -9238,7 +9440,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -9373,7 +9575,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -9499,7 +9701,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -9642,7 +9844,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -9771,7 +9973,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -9861,6 +10063,7 @@ endpoints:
               "cpu_type": "string",
               "devops_version": "string",
               "external_ip_address": "string",
+              "is_log_streaming_enabled": "bool",
               "is_reverse_proxy_enabled": "bool",
               "os_name": "string",
               "os_version": "string",
@@ -9885,7 +10088,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -10026,7 +10229,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -10142,7 +10345,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -10265,7 +10468,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -10388,7 +10591,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -10526,7 +10729,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -10644,7 +10847,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -10750,7 +10953,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -11074,7 +11277,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -11398,7 +11601,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -11490,7 +11693,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -11820,7 +12023,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -12150,7 +12353,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -12257,7 +12460,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -12364,7 +12567,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -12471,7 +12674,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -12578,7 +12781,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -12908,7 +13111,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -13243,7 +13446,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -13340,7 +13543,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -13675,7 +13878,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -14010,7 +14213,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -14122,7 +14325,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -14234,7 +14437,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -14346,7 +14549,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -14458,7 +14661,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -14803,7 +15006,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -15169,7 +15372,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -15300,7 +15503,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -15434,7 +15637,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -15524,6 +15727,108 @@ endpoints:
             }
           title: Go
           language: go
+    - title: Gets orchestrator host reverse proxy configuration
+      description: This endpoint returns orchestrator host reverse proxy configuration
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/reverse-proxy
+      method: get
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+      response_blocks:
+        - code_block: |-
+            {
+              "enabled": "bool",
+              "host": "string",
+              "port": "string"
+            }
+          code: "200"
+          code_description: OK
+          title: models.ReverseProxy
+          language: json
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "error": "OAuthErrorType",
+              "error_description": "string",
+              "error_uri": "string"
+            }
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
     - title: Gets orchestrator host reverse proxy hosts
       description: This endpoint returns orchestrator host reverse proxy hosts
       requires_authorization: true
@@ -15562,7 +15867,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -15670,7 +15975,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -15787,7 +16092,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -15920,7 +16225,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -16031,7 +16336,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -16146,7 +16451,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -16262,7 +16567,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -16377,7 +16682,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -16483,7 +16788,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -16575,7 +16880,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -16667,7 +16972,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -16759,7 +17064,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -16851,7 +17156,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -16948,7 +17253,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -17050,7 +17355,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -17120,6 +17425,174 @@ endpoints:
             }
           title: Go
           language: go
+    - title: Gets the orchestrator host system logs from the disk
+      description: This endpoint returns the orchestrator host system logs from the disk
+      requires_authorization: true
+      category: Config
+      category_path: config
+      path: /v1/orchestrator/hosts/{id}/logs
+      method: get
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+      response_blocks:
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "error": "OAuthErrorType",
+              "error_description": "string",
+              "error_uri": "string"
+            }
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/logs' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/orchestrator/hosts/{id}/logs");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/logs"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Streams the system logs via WebSocket
+      description: This endpoint streams the system logs in real-time via WebSocket
+      requires_authorization: true
+      category: Config
+      category_path: config
+      path: /logs/stream
+      method: get
+      response_blocks:
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/logs/stream' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/logs/stream");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/logs/stream"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
     - title: Gets all the packer templates
       description: This endpoint returns all the packer templates
       requires_authorization: true
@@ -17158,7 +17631,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -17272,7 +17745,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -17402,7 +17875,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -17569,7 +18042,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -17693,7 +18166,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -17772,35 +18245,11 @@ endpoints:
       method: get
       response_blocks:
         - code_block: |-
-            [
-              {
-                "BufferPool": "BufferPool",
-                "Director": "unknown",
-                "ErrorHandler": "unknown",
-                "ErrorLog": {
-                  "flag": {
-                    "noCopy": {},
-                    "value": "int32"
-                  },
-                  "isDiscard": {
-                    "u": {
-                      "noCopy": {},
-                      "value": "uint8"
-                    }
-                  },
-                  "out": "io.Writer",
-                  "outMu": {
-                    "sema": "uint32",
-                    "state": "int32"
-                  },
-                  "prefix": "unknown"
-                },
-                "FlushInterval": "time.Duration",
-                "ModifyResponse": "unknown",
-                "Rewrite": "unknown",
-                "Transport": "http.RoundTripper"
-              }
-            ]
+            {
+              "enabled": "bool",
+              "host": "string",
+              "port": "string"
+            }
           code: "200"
           code_description: OK
           title: '[]models.ReverseProxy'
@@ -17813,7 +18262,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -17915,7 +18364,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -18023,7 +18472,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -18140,7 +18589,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -18273,7 +18722,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -18379,7 +18828,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -18498,7 +18947,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -18617,7 +19066,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -18731,7 +19180,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -18829,7 +19278,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -18915,7 +19364,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -19001,7 +19450,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -19098,7 +19547,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -19201,7 +19650,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -19308,7 +19757,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -19408,7 +19857,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -19510,7 +19959,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -19618,7 +20067,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -19731,19 +20180,48 @@ endpoints:
         - code_block: |-
             {
               "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "message": "string",
-                  "path": "string"
-                }
-              ]
+              "diagnostics": {
+                "end_time": "*time.Time",
+                "errors": [
+                  {
+                    "code": "string",
+                    "component": "string",
+                    "message": "string",
+                    "metadata": "map[string]unknown",
+                    "timestamp": "time.Time"
+                  }
+                ],
+                "metadata": "map[string]unknown",
+                "mu": "sync.RWMutex",
+                "operation": "string",
+                "path": [
+                  {
+                    "component": "string",
+                    "duration": "int64",
+                    "file_name": "string",
+                    "function_name": "string",
+                    "line_number": "int",
+                    "metadata": "map[string]unknown",
+                    "operation": "string",
+                    "timestamp": "time.Time"
+                  }
+                ],
+                "start_time": "time.Time",
+                "warnings": [
+                  {
+                    "code": "string",
+                    "component": "string",
+                    "message": "string",
+                    "metadata": "map[string]unknown",
+                    "timestamp": "time.Time"
+                  }
+                ]
+              },
+              "message": "string"
             }
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
         - code_block: |-
             {
@@ -19848,7 +20326,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -19966,7 +20444,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -20089,7 +20567,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -20198,7 +20676,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -20303,7 +20781,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -20406,7 +20884,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -20515,7 +20993,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -20620,7 +21098,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -20716,7 +21194,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -20791,3 +21269,5 @@ endpoints:
 # API Documentation
 
 This document describes the REST API for the service.
+
+

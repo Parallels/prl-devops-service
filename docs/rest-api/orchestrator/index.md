@@ -235,6 +235,26 @@ categories:
           path: /health/system
           description: This endpoint returns the API Health Probe
           title: Gets the API System Health
+        - anchor: /logs-get
+          method: get
+          path: /logs
+          description: This endpoint returns the system logs from the disk
+          title: Gets the system logs from the disk
+        - anchor: /logs/stream-get
+          method: get
+          path: /logs/stream
+          description: This endpoint streams the system logs in real-time via WebSocket
+          title: Streams the system logs via WebSocket
+        - anchor: /v1/orchestrator/hosts/{id}/logs-get
+          method: get
+          path: /v1/orchestrator/hosts/{id}/logs
+          description: This endpoint returns the orchestrator host system logs from the disk
+          title: Gets the orchestrator host system logs from the disk
+        - anchor: /logs/stream-get
+          method: get
+          path: /logs/stream
+          description: This endpoint streams the system logs in real-time via WebSocket
+          title: Streams the system logs via WebSocket
         - anchor: /health/probe-get
           method: get
           path: /health/probe
@@ -501,6 +521,11 @@ categories:
           path: /v1/orchestrator/machines
           description: This endpoint creates a virtual machine in one of the hosts for the orchestrator
           title: Creates a virtual machine in one of the hosts for the orchestrator
+        - anchor: /v1/orchestrator/hosts/{id}/reverse-proxy-get
+          method: get
+          path: /v1/orchestrator/hosts/{id}/reverse-proxy
+          description: This endpoint returns orchestrator host reverse proxy configuration
+          title: Gets orchestrator host reverse proxy configuration
         - anchor: /v1/orchestrator/hosts/{id}/reverse-proxy/hosts-get
           method: get
           path: /v1/orchestrator/hosts/{id}/reverse-proxy/hosts
@@ -802,7 +827,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -931,7 +956,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1021,6 +1046,7 @@ endpoints:
               "cpu_type": "string",
               "devops_version": "string",
               "external_ip_address": "string",
+              "is_log_streaming_enabled": "bool",
               "is_reverse_proxy_enabled": "bool",
               "os_name": "string",
               "os_version": "string",
@@ -1045,7 +1071,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1186,7 +1212,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1302,7 +1328,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1425,7 +1451,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1548,7 +1574,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1686,7 +1712,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1804,7 +1830,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1910,7 +1936,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2234,7 +2260,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2558,7 +2584,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2650,7 +2676,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -2980,7 +3006,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3310,7 +3336,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3417,7 +3443,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3524,7 +3550,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3631,7 +3657,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -3738,7 +3764,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4068,7 +4094,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4403,7 +4429,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4500,7 +4526,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -4835,7 +4861,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5170,7 +5196,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5282,7 +5308,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5394,7 +5420,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5506,7 +5532,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5618,7 +5644,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -5963,7 +5989,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -6329,7 +6355,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -6460,7 +6486,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -6594,7 +6620,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -6684,6 +6710,108 @@ endpoints:
             }
           title: Go
           language: go
+    - title: Gets orchestrator host reverse proxy configuration
+      description: This endpoint returns orchestrator host reverse proxy configuration
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/reverse-proxy
+      method: get
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+      response_blocks:
+        - code_block: |-
+            {
+              "enabled": "bool",
+              "host": "string",
+              "port": "string"
+            }
+          code: "200"
+          code_description: OK
+          title: models.ReverseProxy
+          language: json
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "error": "OAuthErrorType",
+              "error_description": "string",
+              "error_uri": "string"
+            }
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
     - title: Gets orchestrator host reverse proxy hosts
       description: This endpoint returns orchestrator host reverse proxy hosts
       requires_authorization: true
@@ -6722,7 +6850,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -6830,7 +6958,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -6947,7 +7075,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7080,7 +7208,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7191,7 +7319,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7306,7 +7434,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7422,7 +7550,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7537,7 +7665,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7643,7 +7771,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7735,7 +7863,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7827,7 +7955,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -7919,7 +8047,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -8011,7 +8139,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -8108,7 +8236,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -8210,7 +8338,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]

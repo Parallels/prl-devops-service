@@ -18,7 +18,7 @@ categories:
           path: /v1/auth/api_keys
           description: This endpoint returns all the api keys
           title: Gets all the api keys
-        - anchor: /v1/auth/api_keys/{id}-delete
+        - anchor: _v1_auth_api_keys_{id}_delete
           method: delete
           path: /v1/auth/api_keys/{id}
           description: This endpoint deletes an api key
@@ -235,6 +235,26 @@ categories:
           path: /health/system
           description: This endpoint returns the API Health Probe
           title: Gets the API System Health
+        - anchor: /logs-get
+          method: get
+          path: /logs
+          description: This endpoint returns the system logs from the disk
+          title: Gets the system logs from the disk
+        - anchor: /logs/stream-get
+          method: get
+          path: /logs/stream
+          description: This endpoint streams the system logs in real-time via WebSocket
+          title: Streams the system logs via WebSocket
+        - anchor: /v1/orchestrator/hosts/{id}/logs-get
+          method: get
+          path: /v1/orchestrator/hosts/{id}/logs
+          description: This endpoint returns the orchestrator host system logs from the disk
+          title: Gets the orchestrator host system logs from the disk
+        - anchor: /logs/stream-get
+          method: get
+          path: /logs/stream
+          description: This endpoint streams the system logs in real-time via WebSocket
+          title: Streams the system logs via WebSocket
         - anchor: /health/probe-get
           method: get
           path: /health/probe
@@ -501,6 +521,11 @@ categories:
           path: /v1/orchestrator/machines
           description: This endpoint creates a virtual machine in one of the hosts for the orchestrator
           title: Creates a virtual machine in one of the hosts for the orchestrator
+        - anchor: /v1/orchestrator/hosts/{id}/reverse-proxy-get
+          method: get
+          path: /v1/orchestrator/hosts/{id}/reverse-proxy
+          description: This endpoint returns orchestrator host reverse proxy configuration
+          title: Gets orchestrator host reverse proxy configuration
         - anchor: /v1/orchestrator/hosts/{id}/reverse-proxy/hosts-get
           method: get
           path: /v1/orchestrator/hosts/{id}/reverse-proxy/hosts
@@ -762,11 +787,6 @@ endpoints:
           type: header
           value_type: string
           description: Filter entities
-        - name: x-sort
-          required: true
-          type: header
-          value_type: string
-          description: Sorts entities
       parameters:
         - name: apiKey
           required: false
@@ -783,11 +803,6 @@ endpoints:
               "secret": "string",
               "updated_at": "string"
             }
-        - name: id
-          required: true
-          type: path
-          value_type: string
-          description: Api Key ID
       default_required_roles:
         - SUPER_USER
       default_required_claims:
@@ -800,7 +815,7 @@ endpoints:
         A user normally has a password and is used to authenticate with the system
         An api key is used to authenticate with the system from an external application
       response_blocks:
-        - code_block: |
+        - code_block: |-
             {
               "encoded": "string",
               "id": "string",
@@ -820,7 +835,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -940,7 +955,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1034,7 +1049,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1140,7 +1155,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1237,7 +1252,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1309,6 +1324,8 @@ endpoints:
           language: go
 
 ---
-# Api Keys endpoints
+# Api Keys endpoints 
 
  This document contains the endpoints for the Api Keys category.
+
+

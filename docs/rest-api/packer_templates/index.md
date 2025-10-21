@@ -235,6 +235,26 @@ categories:
           path: /health/system
           description: This endpoint returns the API Health Probe
           title: Gets the API System Health
+        - anchor: /logs-get
+          method: get
+          path: /logs
+          description: This endpoint returns the system logs from the disk
+          title: Gets the system logs from the disk
+        - anchor: /logs/stream-get
+          method: get
+          path: /logs/stream
+          description: This endpoint streams the system logs in real-time via WebSocket
+          title: Streams the system logs via WebSocket
+        - anchor: /v1/orchestrator/hosts/{id}/logs-get
+          method: get
+          path: /v1/orchestrator/hosts/{id}/logs
+          description: This endpoint returns the orchestrator host system logs from the disk
+          title: Gets the orchestrator host system logs from the disk
+        - anchor: /logs/stream-get
+          method: get
+          path: /logs/stream
+          description: This endpoint streams the system logs in real-time via WebSocket
+          title: Streams the system logs via WebSocket
         - anchor: /health/probe-get
           method: get
           path: /health/probe
@@ -501,6 +521,11 @@ categories:
           path: /v1/orchestrator/machines
           description: This endpoint creates a virtual machine in one of the hosts for the orchestrator
           title: Creates a virtual machine in one of the hosts for the orchestrator
+        - anchor: /v1/orchestrator/hosts/{id}/reverse-proxy-get
+          method: get
+          path: /v1/orchestrator/hosts/{id}/reverse-proxy
+          description: This endpoint returns orchestrator host reverse proxy configuration
+          title: Gets orchestrator host reverse proxy configuration
         - anchor: /v1/orchestrator/hosts/{id}/reverse-proxy/hosts-get
           method: get
           path: /v1/orchestrator/hosts/{id}/reverse-proxy/hosts
@@ -787,7 +812,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -901,7 +926,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1031,7 +1056,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1198,7 +1223,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]
@@ -1322,7 +1347,7 @@ endpoints:
                 {
                   "code": "int",
                   "description": "string",
-                  "message": "string",
+                  "error": "string",
                   "path": "string"
                 }
               ]

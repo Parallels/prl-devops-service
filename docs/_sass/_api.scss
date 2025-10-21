@@ -141,7 +141,13 @@
 
     @media screen and (min-width: $l-breakpoint) {
       display: flex;
-      width: $api-side-menu-l-width
+      width: $api-side-menu-l-width;
+      position: sticky;
+      top: 90px;
+      align-self: flex-start;
+      max-height: calc(100vh - 110px);
+      overflow-y: auto;
+      padding-right: 10px;
     }
 
     @media screen and (min-width: $xl-breakpoint) {

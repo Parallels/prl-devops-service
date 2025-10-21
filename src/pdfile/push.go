@@ -40,6 +40,7 @@ func (p *PDFileService) runPush(ctx basecontext.ApiContext) (interface{}, *diagn
 		RequiredClaims:  p.pdfile.Claims,
 		Description:     p.pdfile.Description,
 		Tags:            p.pdfile.Tags,
+		CompressPack:    p.pdfile.CompressPack,
 		ProgressChannel: progressChannel,
 		FileNameChannel: fileNameChannel,
 		StepChannel:     stepChannel,

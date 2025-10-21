@@ -41,6 +41,12 @@ func NewPDFileService(ctx basecontext.ApiContext, pdFile *models.PDFile) *PDFile
 			&processors.CloneCommandProcessor{},
 			&processors.ClientCommandProcessor{},
 			&processors.MinimumSpecsRequirementsCommandProcessor{},
+			&processors.IsCompressedCommandProcessor{},
+			&processors.ForceCommandProcessor{},
+			&processors.CompressPackCommandProcessor{},
+			&processors.VmRemotePathCommandProcessor{},
+			&processors.VmSizeCommandProcessor{},
+			&processors.VmTypeCommandProcessor{},
 		},
 
 		pdfile: pdFile,
@@ -71,6 +77,12 @@ func (p *PDFileService) Run(ctx basecontext.ApiContext) (interface{}, *diagnosti
 
 	if strings.EqualFold(p.pdfile.Command, "import") {
 		out, runDiag := p.runImport(ctx)
+		diag.Append(runDiag)
+		return out, diag
+	}
+
+	if strings.EqualFold(p.pdfile.Command, "import-vm") {
+		out, runDiag := p.runImportVM(ctx)
 		diag.Append(runDiag)
 		return out, diag
 	}
