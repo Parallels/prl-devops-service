@@ -50,7 +50,7 @@ On the example we will show we will only use one host as this is the simplest wa
 
 ### Security
 
-The service will run with default values, these are just fine for demos and to quickly get the service running but for production use, you will need to secure the service. You can find more information about how to secure the service in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/getting-started/harden-security/){:target="_blank"}
+The service will run with default values, these are just fine for demos and to quickly get the service running but for production use, you will need to secure the service. You can find more information about how to secure the service in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/harden-security/){:target="_blank"}
 
 ### Accessing the Orchestrator Service
 

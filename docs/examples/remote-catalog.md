@@ -44,7 +44,7 @@ create_vm_tab:
 One of the key challenges of managing many virtual machines is ensuring that all are running the same software stack. This is especially true when you have a large team of developers, each of whom may have their unique development environment.
 There is also the concern of ensuring the software stack is secure and up-to-date. This is where Golden images come in. A Golden Master image is a virtual machine that has been configured with the software stack that you want to use. This image can then be shared with your team, ensuring everyone uses the same software stack.
 
-Let's look at how you can use the Parallels Desktop DevOps Service to create a Golden Master image and share it with your team. We will create an Ubuntu Virtual Machine and install the required software stack. We will then use the Parallels Desktop DevOps Service to make a Golden Master image of the virtual machine and share it with our team using the Parallels Desktop DevOps Service and its [Remote Catalog]({{ site.url }}{{ site.baseurl }}/docs/catalog) capability.
+Let's look at how you can use the Parallels Desktop DevOps Service to create a Golden Master image and share it with your team. We will create an Ubuntu Virtual Machine and install the required software stack. We will then use the Parallels Desktop DevOps Service to make a Golden Master image of the virtual machine and share it with our team using the Parallels Desktop DevOps Service and its [Remote Catalog]({{ site.url }}{{ site.baseurl }}/docs/devops/catalog) capability.
 
 **So lets get started!**
 
@@ -57,7 +57,7 @@ Let's look at how you can use the Parallels Desktop DevOps Service to create a G
 
 {% include notification.html message="You can try it for free before purchasing by clicking this [link](https://www.parallels.com/products/desktop/trial/){:target=\"_blank\"} and downloading our trial version" status="is-success" icon="comments-dollar" %}
 
-{% assign installationContent = site.pages | where:"url", "/docs/devops/getting-started/installation/" | first %}
+{% assign installationContent = site.pages | where:"url", "/docs/devops/devops/getting-started/installation/" | first %}
 
 {{ installationContent.content }}
 
@@ -145,13 +145,13 @@ After the installation is complete, you will have a virtual machine with the req
 
 ## Configuring and Running our DevOps Remote Catalog
 
-The DevOps Remote Catalog is a service designed to facilitate the sharing of VMs or Golden Master Images in your organization, if you want to know more on how it works you can check the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/catalog/overview/){:target="_blank"}
+The DevOps Remote Catalog is a service designed to facilitate the sharing of VMs or Golden Master Images in your organization, if you want to know more on how it works you can check the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/devops/catalog/overview/){:target="_blank"}
 
 {% include notification.html message="For this example, we will set up **Parallels Desktop DevOps Remote Catalog** service as a locally running daemon. You can deploy it as a docker container in the cloud or as a daemon service in any remote macOS." status="is-info" %}
 
 ### Configuring the DevOps Remote Catalog
 
-To set up the service, we will need to create or edit a [configuration file]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration/){:target="_blank"}.
+To set up the service, we will need to create or edit a [configuration file]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/configuration/){:target="_blank"}.
 
 1. Run the command below to create the config file:  
    *If you have previously created a configuration file, you can skip this step*
@@ -175,11 +175,11 @@ To set up the service, we will need to create or edit a [configuration file]({{ 
       mode: catalog
     ```
 
-This will configure the service to run in catalog mode and listen on port 80 with all the default settings. However, this setup is only suitable for quick testing. For production use, we need to implement additional security measures to ensure a more secure deployment. You can find more information about security options in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/getting-started/harden-security/){:target="_blank"}
+This will configure the service to run in catalog mode and listen on port 80 with all the default settings. However, this setup is only suitable for quick testing. For production use, we need to implement additional security measures to ensure a more secure deployment. You can find more information about security options in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/harden-security/){:target="_blank"}
 
 ### Security
 
-The service will run with default values, these are just fine for demos and to quickly get the service running but for production use, you will need to secure the service. You can find more information about how to secure the service in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/getting-started/harden-security/){:target="_blank"}
+The service will run with default values, these are just fine for demos and to quickly get the service running but for production use, you will need to secure the service. You can find more information about how to secure the service in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/harden-security/){:target="_blank"}
 
 ### Starting the service
 
@@ -206,11 +206,11 @@ prldevops update-root-password --password=VeryStr0ngP@ssw0rd
 ## Pushing the Golden Master Image to the Remote Catalog
 
 We now have our`DevOps Remote Catalog` service up and running, which means we can proceed to push the Golden Master image to the service. But before we start, we need to take care of a few requirements.
-The `DevOps Remote Catalog` works by storing only the metadata of the Golden Master image. This implies that the actual image will be stored in a remote location. In this example, we will be using an **S3 bucket** to store the image. However, you can use any other compatible storage service like **Azure Blob Storage** or **jfrog artifactory**. Most of these providers offer a free tier that you can use to test this feature. For more information about the architecture, you can refer to this link [here]({{ site.url }}{{ site.baseurl }}/docs/catalog/overview/#architecture){:target="_blank"}.
+The `DevOps Remote Catalog` works by storing only the metadata of the Golden Master image. This implies that the actual image will be stored in a remote location. In this example, we will be using an **S3 bucket** to store the image. However, you can use any other compatible storage service like **Azure Blob Storage** or **jfrog artifactory**. Most of these providers offer a free tier that you can use to test this feature. For more information about the architecture, you can refer to this link [here]({{ site.url }}{{ site.baseurl }}/docs/devops/catalog/overview/#architecture){:target="_blank"}.
 
 ### Creating the PDFile
 
-We have designed an easy way to automate the `push` and `pull` process of virtual machines (VMs) using a reusable file called pdfile. This file contains essential information required to `push` and `pull` VMs from our catalog. It is similar to a dockerfile but specific for VMs. You can find more information about the pdfile in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/catalog/pdfile/){:target="_blank"}  
+We have designed an easy way to automate the `push` and `pull` process of virtual machines (VMs) using a reusable file called pdfile. This file contains essential information required to `push` and `pull` VMs from our catalog. It is similar to a dockerfile but specific for VMs. You can find more information about the pdfile in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/devops/catalog/pdfile/){:target="_blank"}  
 
 In this example we will be using the `Local Storage` provider, this provider is used to store the VMs in the local machine, this is useful for testing purposes.
 
@@ -271,7 +271,7 @@ Where:
 
 This will push the VM from the *LOCAL_PATH* to the localhost *remote catalog* with everyone having access to it. However, we can restrict access to specific claims and roles for each catalog entry. To achieve this, you can add the `ROLE` and/or `CLAIM` into the pdfile and using our RBAC system, you can restrict access to the catalog entry.  
 
-You can read more about the RBAC and how to set it up in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/security/rbac/){:target="_blank"}
+You can read more about the RBAC and how to set it up in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/devops/security/rbac/){:target="_blank"}
 
 #### Pushing the Golden Master Image
 
