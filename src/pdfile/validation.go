@@ -85,6 +85,8 @@ func (p *PDFileService) Validate() *diagnostics.PDFileDiagnostics {
 			continue
 		case "COMPRESS_PACK":
 			continue
+		case "COMPRESS_PACK_LEVEL":
+			continue
 		case "VM_REMOTE_PATH":
 			continue
 		case "VM_SIZE":

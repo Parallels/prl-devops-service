@@ -18,7 +18,7 @@ categories:
           path: /v1/auth/api_keys
           description: This endpoint returns all the api keys
           title: Gets all the api keys
-        - anchor: _v1_auth_api_keys_{id}_delete
+        - anchor: /v1/auth/api_keys/{id}-delete
           method: delete
           path: /v1/auth/api_keys/{id}
           description: This endpoint deletes an api key

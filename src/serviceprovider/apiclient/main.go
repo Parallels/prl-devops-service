@@ -19,6 +19,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 )
@@ -53,6 +54,10 @@ func NewHttpClient(ctx basecontext.ApiContext) *HttpClientService {
 		authorizer:    nil,
 		authorization: nil,
 	}
+
+	// Set default headers
+	client.headers["User-Agent"] = "PrlDevOpsService/ApiClient"
+	client.headers[constants.INTERNAL_API_CLIENT] = "true"
 
 	cfg := config.Get()
 	if cfg != nil {

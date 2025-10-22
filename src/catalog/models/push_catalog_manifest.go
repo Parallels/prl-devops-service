@@ -26,6 +26,7 @@ type PushCatalogManifestRequest struct {
 	Architecture            string                 `json:"architecture"`
 	Connection              string                 `json:"connection"`
 	CompressPack            bool                   `json:"compress_pack,omitempty"`
+	CompressPackLevel       int                    `json:"compress_pack_level,omitempty"`
 	Uuid                    string                 `json:"uuid,omitempty"`
 	RequiredRoles           []string               `json:"required_roles,omitempty"`
 	RequiredClaims          []string               `json:"required_claims,omitempty"`

@@ -8,7 +8,7 @@ layout: default
   <div class="category-menu">
     <div class="api-menu-container">
       <div class="api-dropdown-root-item{% if page_name == 'rest-api' %} active{% endif %}">
-        <a class="api-menu-item" href="{{ site.baseurl }}/rest-api">All </a>
+        <a class="api-menu-item" href="{{ site.baseurl }}/docs/devops/restapi/reference/">All </a>
       </div>
       {% for category in page.categories %}
       {% if category.endpoints.size > 0 %}
@@ -19,7 +19,7 @@ layout: default
               <path d="M18 7L10 15L2 7" stroke-width="2" stroke-miterlimit="10"></path>
             </svg>
           </a>
-          <a class="api-menu-item{% if page_name == category.path %} active{% endif %}" href="{{ site.baseurl }}/rest-api/{{ category.path }}">
+          <a class="api-menu-item{% if page_name == category.path %} active{% endif %}" href="{{ site.baseurl }}/docs/devops/restapi/reference/{{ category.path }}">
             <div class="menu-item-text">
               {{ category.name }}
             </div>
@@ -31,7 +31,7 @@ layout: default
             {% assign anchor_id = page.api_prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
             <li class="api-dropdown-menu-item">
               <span class="endpoint {{ endpoint.method | upcase }}"></span>
-              <a href="{{ site.baseurl }}/rest-api/{{ category.path }}#{{ anchor_id }}">{{ endpoint.path }}</a>
+              <a href="{{ site.baseurl }}/docs/devops/restapi/reference/{{ category.path }}#{{ anchor_id }}">{{ endpoint.path }}</a>
             </li>
             {% endfor %}
           </ul>
@@ -39,7 +39,7 @@ layout: default
       </div>
       {% else %}
       <div class="api-dropdown-root-item{% if page_name == category.path %} active{% endif %}">
-        <a class="api-menu-item" href="{{ site.baseurl }}/rest-api/{{ category.path }}">
+        <a class="api-menu-item" href="{{ site.baseurl }}/docs/devops/restapi/reference/{{ category.path }}">
           {{ category.name }}
         </a>
       </div>
@@ -62,7 +62,7 @@ layout: default
     {% for endpoint in endpoints %}
     {% assign path = page.api_prefix | append: endpoint.path %}
     {% assign id = page.api_prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
-    <section class="api-main-content">
+    <section class="api-main-content" id="{{ id }}" style="scroll-margin-top: 120px;">
       <section class="api-main-body">
         {% if endpoint.title %}
         <h6 class="endpoint-title">
@@ -71,7 +71,7 @@ layout: default
         {% endif %}
         <h4 class="api-endpoint-header">
           <div class="endpoint-header">
-            <a class="endpoint-link" id="{{ id }}">
+            <a class="endpoint-link">
               {{ path }}
               {% if endpoint.method %}
               <span class="endpoint {{ endpoint.method | upcase }}"></span>

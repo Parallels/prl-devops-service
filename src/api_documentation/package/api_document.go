@@ -39,7 +39,7 @@ func NewApiDocument() *ApiDocument {
 		Title:            "API Documentation",
 		Endpoints:        []*models.Endpoint{},
 		DefaultHost:      "http://localhost",
-		OutputFolder:     "../../docs/rest-api",
+		OutputFolder:     "../../docs/docs/devops/restapi/reference",
 		ExportCategories: true,
 		Categories:       []*models.Category{},
 		ApiPrefix:        "/api",

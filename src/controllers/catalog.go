@@ -14,6 +14,7 @@ import (
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -282,6 +283,7 @@ func GetCatalogManifestsHandler() restapi.ControllerHandler {
 
 		result := make([]map[string][]models.CatalogManifest, 0)
 		for _, manifest := range manifestsDto {
+
 			var resultManifest map[string][]models.CatalogManifest
 			for _, r := range result {
 				if _, ok := r[manifest.CatalogId]; ok {
@@ -302,6 +304,38 @@ func GetCatalogManifestsHandler() restapi.ControllerHandler {
 		}
 
 		// responseManifests := mappers.DtoCatalogManifestsToApi(manifestsDto)
+
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			for ru, resultItem := range result {
+				for ri, v := range resultItem {
+					for mk, manifest := range v {
+						// obfuscate provider credentials for external calls
+						if manifest.Provider != nil {
+							newProvider := &models.RemoteVirtualMachineProvider{}
+							newProvider.Type = manifest.Provider.Type
+							newProvider.Host = manifest.Provider.Host
+							newProvider.Port = manifest.Provider.Port
+							newProvider.Username = helpers.ObfuscateString(manifest.Provider.Username)
+							newProvider.Password = helpers.ObfuscateString(manifest.Provider.Password)
+							newProvider.ApiKey = helpers.ObfuscateString(manifest.Provider.ApiKey)
+							if manifest.Provider.Meta != nil {
+								newProvider.Meta = make(map[string]string)
+
+								for k, v := range manifest.Provider.Meta {
+									newProvider.Meta[k] = helpers.ObfuscateString(v)
+								}
+							}
+							manifest.Provider = newProvider
+							v[mk] = manifest
+						}
+					}
+					resultItem[ri] = v
+				}
+				result[ru] = resultItem
+			}
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
@@ -349,6 +383,28 @@ func GetCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		resultData := mappers.DtoCatalogManifestsToApi(manifest)
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			for i := range resultData {
+				if resultData[i].Provider != nil {
+					newProvider := &models.RemoteVirtualMachineProvider{}
+					newProvider.Type = resultData[i].Provider.Type
+					newProvider.Host = resultData[i].Provider.Host
+					newProvider.Port = resultData[i].Provider.Port
+					newProvider.Username = helpers.ObfuscateString(resultData[i].Provider.Username)
+					newProvider.Password = helpers.ObfuscateString(resultData[i].Provider.Password)
+					newProvider.ApiKey = helpers.ObfuscateString(resultData[i].Provider.ApiKey)
+					if resultData[i].Provider.Meta != nil {
+						newProvider.Meta = make(map[string]string)
+						for k, v := range resultData[i].Provider.Meta {
+							newProvider.Meta[k] = helpers.ObfuscateString(v)
+						}
+					}
+					resultData[i].Provider = newProvider
+				}
+			}
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
@@ -390,6 +446,29 @@ func GetCatalogManifestVersionHandler() restapi.ControllerHandler {
 		}
 
 		resultData := mappers.DtoCatalogManifestsToApi(manifests)
+
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			for i := range resultData {
+				if resultData[i].Provider != nil {
+					newProvider := &models.RemoteVirtualMachineProvider{}
+					newProvider.Type = resultData[i].Provider.Type
+					newProvider.Host = resultData[i].Provider.Host
+					newProvider.Port = resultData[i].Provider.Port
+					newProvider.Username = helpers.ObfuscateString(resultData[i].Provider.Username)
+					newProvider.Password = helpers.ObfuscateString(resultData[i].Provider.Password)
+					newProvider.ApiKey = helpers.ObfuscateString(resultData[i].Provider.ApiKey)
+					if resultData[i].Provider.Meta != nil {
+						newProvider.Meta = make(map[string]string)
+						for k, v := range resultData[i].Provider.Meta {
+							newProvider.Meta[k] = helpers.ObfuscateString(v)
+						}
+					}
+					resultData[i].Provider = newProvider
+				}
+			}
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
@@ -433,6 +512,26 @@ func GetCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler {
 		}
 
 		resultData := mappers.DtoCatalogManifestToApi(*manifest)
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if resultData.Provider != nil {
+				newProvider := &models.RemoteVirtualMachineProvider{}
+				newProvider.Type = resultData.Provider.Type
+				newProvider.Host = resultData.Provider.Host
+				newProvider.Port = resultData.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(resultData.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(resultData.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(resultData.Provider.ApiKey)
+				if resultData.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range resultData.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				resultData.Provider = newProvider
+			}
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
@@ -497,6 +596,26 @@ func DownloadCatalogManifestVersionHandler() restapi.ControllerHandler {
 		}
 
 		resultData := mappers.DtoCatalogManifestToApi(*manifest)
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if resultData.Provider != nil {
+				newProvider := &models.RemoteVirtualMachineProvider{}
+				newProvider.Type = resultData.Provider.Type
+				newProvider.Host = resultData.Provider.Host
+				newProvider.Port = resultData.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(resultData.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(resultData.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(resultData.Provider.ApiKey)
+				if resultData.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range resultData.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				resultData.Provider = newProvider
+			}
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
@@ -562,6 +681,26 @@ func TaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 		}
 
 		resultData := mappers.DtoCatalogManifestToApi(*result)
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if resultData.Provider != nil {
+				newProvider := &models.RemoteVirtualMachineProvider{}
+				newProvider.Type = resultData.Provider.Type
+				newProvider.Host = resultData.Provider.Host
+				newProvider.Port = resultData.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(resultData.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(resultData.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(resultData.Provider.ApiKey)
+				if resultData.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range resultData.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				resultData.Provider = newProvider
+			}
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
@@ -627,6 +766,26 @@ func UnTaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 		}
 
 		resultData := mappers.DtoCatalogManifestToApi(*result)
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if resultData.Provider != nil {
+				newProvider := &models.RemoteVirtualMachineProvider{}
+				newProvider.Type = resultData.Provider.Type
+				newProvider.Host = resultData.Provider.Host
+				newProvider.Port = resultData.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(resultData.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(resultData.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(resultData.Provider.ApiKey)
+				if resultData.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range resultData.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				resultData.Provider = newProvider
+			}
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
@@ -684,6 +843,26 @@ func RevokeCatalogManifestVersionHandler() restapi.ControllerHandler {
 		}
 
 		resultData := mappers.DtoCatalogManifestToApi(*result)
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if resultData.Provider != nil {
+				newProvider := &models.RemoteVirtualMachineProvider{}
+				newProvider.Type = resultData.Provider.Type
+				newProvider.Host = resultData.Provider.Host
+				newProvider.Port = resultData.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(resultData.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(resultData.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(resultData.Provider.ApiKey)
+				if resultData.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range resultData.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				resultData.Provider = newProvider
+			}
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
@@ -780,6 +959,28 @@ func AddClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if newManifest.Provider != nil {
+				newProvider := &data_models.CatalogManifestProvider{}
+				newProvider.Type = newManifest.Provider.Type
+				newProvider.Host = newManifest.Provider.Host
+				newProvider.Port = newManifest.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(newManifest.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(newManifest.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(newManifest.Provider.ApiKey)
+				if newManifest.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range newManifest.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				newManifest.Provider = newProvider
+			}
+		}
+
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(newManifest)
 		ctx.LogInfof("Manifest Claims Updated: %v", newManifest.ID)
@@ -874,6 +1075,27 @@ func RemoveClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 				Code:    http.StatusBadRequest,
 			})
 			return
+		}
+
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if newManifest.Provider != nil {
+				newProvider := &data_models.CatalogManifestProvider{}
+				newProvider.Type = newManifest.Provider.Type
+				newProvider.Host = newManifest.Provider.Host
+				newProvider.Port = newManifest.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(newManifest.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(newManifest.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(newManifest.Provider.ApiKey)
+				if newManifest.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range newManifest.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				newManifest.Provider = newProvider
+			}
 		}
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(newManifest)
@@ -970,6 +1192,28 @@ func AddRolesToCatalogManifestHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if newManifest.Provider != nil {
+				newProvider := &data_models.CatalogManifestProvider{}
+				newProvider.Type = newManifest.Provider.Type
+				newProvider.Host = newManifest.Provider.Host
+				newProvider.Port = newManifest.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(newManifest.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(newManifest.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(newManifest.Provider.ApiKey)
+				if newManifest.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range newManifest.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				newManifest.Provider = newProvider
+			}
+		}
+
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(newManifest)
 		ctx.LogInfof("Manifest Roles Updated: %v", newManifest.ID)
@@ -1065,6 +1309,28 @@ func RemoveRolesToCatalogManifestHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if newManifest.Provider != nil {
+				newProvider := &data_models.CatalogManifestProvider{}
+				newProvider.Type = newManifest.Provider.Type
+				newProvider.Host = newManifest.Provider.Host
+				newProvider.Port = newManifest.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(newManifest.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(newManifest.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(newManifest.Provider.ApiKey)
+				if newManifest.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range newManifest.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				newManifest.Provider = newProvider
+			}
+		}
+
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(newManifest)
 		ctx.LogInfof("Manifest Claims Updated: %v", newManifest.ID)
@@ -1160,6 +1426,28 @@ func AddTagsToCatalogManifestHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if newManifest.Provider != nil {
+				newProvider := &data_models.CatalogManifestProvider{}
+				newProvider.Type = newManifest.Provider.Type
+				newProvider.Host = newManifest.Provider.Host
+				newProvider.Port = newManifest.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(newManifest.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(newManifest.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(newManifest.Provider.ApiKey)
+				if newManifest.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range newManifest.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				newManifest.Provider = newProvider
+			}
+		}
+
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(newManifest)
 		ctx.LogInfof("Manifest Tags Updated: %v", newManifest.ID)
@@ -1255,6 +1543,28 @@ func RemoveTagsToCatalogManifestHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if newManifest.Provider != nil {
+				newProvider := &data_models.CatalogManifestProvider{}
+				newProvider.Type = newManifest.Provider.Type
+				newProvider.Host = newManifest.Provider.Host
+				newProvider.Port = newManifest.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(newManifest.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(newManifest.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(newManifest.Provider.ApiKey)
+				if newManifest.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range newManifest.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				newManifest.Provider = newProvider
+			}
+		}
+
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(newManifest)
 		ctx.LogInfof("Manifest Claims Updated: %v", newManifest.ID)
@@ -1297,6 +1607,27 @@ func CreateCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		resultData := mappers.DtoCatalogManifestToApi(*result)
+
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if resultData.Provider != nil {
+				newProvider := &models.RemoteVirtualMachineProvider{}
+				newProvider.Type = resultData.Provider.Type
+				newProvider.Host = resultData.Provider.Host
+				newProvider.Port = resultData.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(resultData.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(resultData.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(resultData.Provider.ApiKey)
+				if resultData.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range resultData.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				resultData.Provider = newProvider
+			}
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
@@ -1559,6 +1890,27 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 
 		resultData := mappers.DtoCatalogManifestToApi(mappers.CatalogManifestToDto(*resultManifest))
 		resultData.ID = resultManifest.ID
+
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if resultData.Provider != nil {
+				newProvider := &models.RemoteVirtualMachineProvider{}
+				newProvider.Type = resultData.Provider.Type
+				newProvider.Host = resultData.Provider.Host
+				newProvider.Port = resultData.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(resultData.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(resultData.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(resultData.Provider.ApiKey)
+				if resultData.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range resultData.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				resultData.Provider = newProvider
+			}
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
@@ -1860,6 +2212,27 @@ func UpdateCatalogManifestProviderHandler() restapi.ControllerHandler {
 			return
 		}
 
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			if manifest.Provider != nil {
+				newProvider := &data_models.CatalogManifestProvider{}
+				newProvider.Type = manifest.Provider.Type
+				newProvider.Host = manifest.Provider.Host
+				newProvider.Port = manifest.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(manifest.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(manifest.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(manifest.Provider.ApiKey)
+				if manifest.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range manifest.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				manifest.Provider = newProvider
+			}
+		}
+
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(manifest)
 		ctx.LogInfof("Manifest Claims Updated: %v", manifest.ID)
@@ -1893,6 +2266,29 @@ func GetCatalogCacheHandler() restapi.ControllerHandler {
 		}
 
 		responseManifests := mappers.BaseVirtualMachineCatalogManifestListToApi(items)
+		// obfuscate provider credentials for external calls
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" {
+			for k, items := range responseManifests.Manifests {
+				if items.Provider != nil {
+					newProvider := &models.RemoteVirtualMachineProvider{}
+					newProvider.Type = items.Provider.Type
+					newProvider.Host = items.Provider.Host
+					newProvider.Port = items.Provider.Port
+					newProvider.Username = helpers.ObfuscateString(items.Provider.Username)
+					newProvider.Password = helpers.ObfuscateString(items.Provider.Password)
+					newProvider.ApiKey = helpers.ObfuscateString(items.Provider.ApiKey)
+					if items.Provider.Meta != nil {
+						newProvider.Meta = make(map[string]string)
+						for k, v := range items.Provider.Meta {
+							newProvider.Meta[k] = helpers.ObfuscateString(v)
+						}
+					}
+					items.Provider = newProvider
+				}
+				responseManifests.Manifests[k] = items
+			}
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(responseManifests)

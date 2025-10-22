@@ -119,6 +119,10 @@ func SanitizeArchivePath(d, t string) (v string, err error) {
 }
 
 func ObfuscateString(value string) string {
+	if value == "" {
+		return value
+	}
+
 	if len(value) <= 4 {
 		return value
 	}
@@ -144,4 +148,38 @@ func StringToBool(s string) bool {
 	}
 
 	return false
+}
+
+func ConvertCompressRatioFromString(ratio string) (int, error) {
+	switch strings.ToLower(ratio) {
+	case "best_speed":
+		return 1, nil
+	case "balanced":
+		return 5, nil
+	case "best_compression":
+		return 9, nil
+	case "no_compression":
+		return 0, nil
+	case "default":
+		return -1, nil
+	default:
+		return -1, errors.New("invalid compression ratio")
+	}
+}
+
+func GetCompressRatioEnvValue(ratioValue int) (string, error) {
+	switch ratioValue {
+	case 1:
+		return "best_speed", nil
+	case 5:
+		return "balanced", nil
+	case 9:
+		return "best_compression", nil
+	case 0:
+		return "no_compression", nil
+	case -1:
+		return "default", nil
+	default:
+		return "", errors.New("invalid compression ratio")
+	}
 }

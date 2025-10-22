@@ -34,6 +34,8 @@ type VirtualMachineCatalogManifest struct {
 	DownloadCount           int                                 `json:"download_count"`
 	CompressedPath          string                              `json:"-"`
 	CompressedChecksum      string                              `json:"compressed_checksum"`
+	CompressedSize          int64                               `json:"compressed_size,omitempty"`
+	CompressedRatio         float64                             `json:"compressed_ratio,omitempty"`
 	VirtualMachineContents  []VirtualMachineManifestContentItem `json:"virtual_machine_contents"`
 	PackContents            []VirtualMachineManifestContentItem `json:"pack_contents"`
 	PackSize                int64                               `json:"pack_size,omitempty"`

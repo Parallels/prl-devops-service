@@ -34,6 +34,7 @@ type PDFile struct {
 	CloneId                 string                        `json:"CLONE_ID,omitempty" yaml:"CLONE_ID,omitempty"`
 	IsCompressed            bool                          `json:"IS_COMPRESSED,omitempty" yaml:"IS_COMPRESSED,omitempty"`
 	CompressPack            bool                          `json:"COMPRESS_PACK,omitempty" yaml:"COMPRESS_PACK,omitempty"`
+	CompressPackLevel       int                           `json:"COMPRESS_PACK_LEVEL,omitempty" yaml:"COMPRESS_PACK_LEVEL,omitempty"`
 	VMType                  string                        `json:"VM_TYPE,omitempty" yaml:"VM_TYPE,omitempty"`
 	VMSize                  int64                         `json:"VM_SIZE,omitempty" yaml:"VM_SIZE,omitempty"`
 	VMRemotePath            string                        `json:"VM_REMOTE_PATH,omitempty" yaml:"VM_REMOTE_PATH,omitempty"`

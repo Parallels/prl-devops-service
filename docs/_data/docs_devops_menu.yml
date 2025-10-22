@@ -22,9 +22,8 @@
       link: /docs/devops/restapi/overview/
     - name: Authentication
       link: /docs/devops/restapi/authentication/
-    - name: Endpoints
-      hidden: true
-      path: /docs/devops/restapi/endpoints/
+    - name: Api Reference
+      link: /docs/devops/restapi/reference/
 - label: Catalog
   items:
     - name: Overview

@@ -15,7 +15,6 @@ import (
 	"github.com/Parallels/prl-devops-service/compressor"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
@@ -40,14 +39,19 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 	serviceProvider := serviceprovider.Get()
 	parallelsDesktopSvc := serviceProvider.ParallelsDesktopService
 	db := serviceProvider.JsonDatabase
+
+	disableLocalCatalog := false
+
 	if db == nil {
-		err := data.ErrDatabaseNotConnected
-		response.AddError(err)
-		return response
+		disableLocalCatalog = true
 	}
-	if err := db.Connect(s.ctx); err != nil {
-		response.AddError(err)
-		return response
+
+	// Not testing the db connection if we have the local catalog disabled
+	if !disableLocalCatalog {
+		if err := db.Connect(s.ctx); err != nil {
+			response.AddError(err)
+			return response
+		}
 	}
 
 	if err := helpers.CreateDirIfNotExist("/tmp"); err != nil {
@@ -134,6 +138,10 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		manifest = &m
 		s.ns.NotifyDebugf("Remote Manifest: %v", manifest)
 	} else {
+		if disableLocalCatalog {
+			response.AddError(errors.New("local catalog is disabled"))
+			return response
+		}
 		s.ns.NotifyInfof("Checking if the manifest exists in the local catalog")
 		dto, err := db.GetCatalogManifestByName(s.ctx, r.CatalogId)
 		if err != nil {

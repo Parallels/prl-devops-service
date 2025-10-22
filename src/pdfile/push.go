@@ -32,19 +32,20 @@ func (p *PDFileService) runPush(ctx basecontext.ApiContext) (interface{}, *diagn
 
 	diag := diagnostics.NewPDFileDiagnostics()
 	body := models.PushCatalogManifestRequest{
-		CatalogId:       p.pdfile.CatalogId,
-		Version:         p.pdfile.Version,
-		Architecture:    p.pdfile.Architecture,
-		LocalPath:       p.pdfile.LocalPath,
-		RequiredRoles:   p.pdfile.Roles,
-		RequiredClaims:  p.pdfile.Claims,
-		Description:     p.pdfile.Description,
-		Tags:            p.pdfile.Tags,
-		CompressPack:    p.pdfile.CompressPack,
-		ProgressChannel: progressChannel,
-		FileNameChannel: fileNameChannel,
-		StepChannel:     stepChannel,
-		Connection:      p.pdfile.GetConnectionString(),
+		CatalogId:         p.pdfile.CatalogId,
+		Version:           p.pdfile.Version,
+		Architecture:      p.pdfile.Architecture,
+		LocalPath:         p.pdfile.LocalPath,
+		RequiredRoles:     p.pdfile.Roles,
+		RequiredClaims:    p.pdfile.Claims,
+		Description:       p.pdfile.Description,
+		Tags:              p.pdfile.Tags,
+		CompressPack:      p.pdfile.CompressPack,
+		CompressPackLevel: p.pdfile.CompressPackLevel,
+		ProgressChannel:   progressChannel,
+		FileNameChannel:   fileNameChannel,
+		StepChannel:       stepChannel,
+		Connection:        p.pdfile.GetConnectionString(),
 	}
 
 	if p.pdfile.MinimumSpecRequirements != nil {
