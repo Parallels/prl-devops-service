@@ -116,7 +116,8 @@ func (j *JsonDatabase) GetCatalogManifestsByCatalogIdAndVersion(ctx basecontext.
 	}
 
 	for _, manifest := range catalogManifests {
-		if (strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) ||
+		if (strings.EqualFold(manifest.ID, helpers.NormalizeString(catalogId)) ||
+			strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) ||
 			strings.EqualFold(manifest.Name, helpers.NormalizeString(catalogId))) &&
 			strings.EqualFold(manifest.Version, version) {
 			result = append(result, manifest)

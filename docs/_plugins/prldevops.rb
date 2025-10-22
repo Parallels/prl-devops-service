@@ -9,7 +9,7 @@ Jekyll::Hooks.register :site, :pre_render do |site|
       aliases 'prldevops'
 
       KEYWORDS = %w(
-        catalog push pull api update-root-password gen-rsa
+        catalog push pull run list import import-vm api update-root-password gen-rsa
       ).join('|')
 
       AUTHENTICATE_SUBCOMMANDS = %w(

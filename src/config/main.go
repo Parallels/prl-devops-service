@@ -572,6 +572,23 @@ func (c *Config) IsCanaryEnabled() bool {
 	return enableCanary
 }
 
+func (c *Config) CatalogCompressVM() bool {
+	compressVM := c.GetBoolKey(constants.CATALOG_COMPRESS_VM_ENV_VAR)
+	return compressVM
+}
+
+func (c *Config) CatalogCompressRatio() int {
+	compressRatio := strings.ToLower(c.GetKey(constants.CATALOG_COMPRESS_VM_RATIO_ENV_VAR))
+	returnValue := 9
+
+	ratio, err := helpers.ConvertCompressRatioFromString(compressRatio)
+	if err == nil {
+		returnValue = ratio
+	}
+
+	return returnValue
+}
+
 func (c *Config) IsBetaEnabled() bool {
 	if betaBuildFlag == "true" {
 		return true

@@ -115,6 +115,51 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 	}
 }
 
+func InitParallelsServices(ctx basecontext.ApiContext) {
+	globalProvider = &ServiceProvider{
+		Logger: common.Logger,
+	}
+	globalProvider.System = system.New(ctx)
+	globalProvider.System.SetDependencies([]interfaces.Service{})
+	globalProvider.Services = append(globalProvider.Services, globalProvider.System)
+	globalProvider.ParallelsDesktopService = parallelsdesktop.New(ctx)
+	globalProvider.ParallelsDesktopService.SetDependencies([]interfaces.Service{globalProvider.System})
+	globalProvider.Services = append(globalProvider.Services, globalProvider.ParallelsDesktopService)
+
+	currentUser, err := globalProvider.System.GetCurrentUser(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	globalProvider.CurrentSystemUser = currentUser
+	globalProvider.RunningUser = currentUser
+
+	key := "00000000-0000-0000-0000-000000000000"
+	hid := "XXX00000000000000000000000000000000"
+	if globalProvider.ParallelsDesktopService.Installed() {
+		globalProvider.HardwareInfo, err = globalProvider.ParallelsDesktopService.GetInfo()
+		if err != nil {
+			globalProvider.Logger.Error("Error getting Parallels info")
+		}
+
+		if globalProvider.HardwareInfo == nil {
+			common.Logger.Error("Error getting Parallels info")
+			panic(errors.New("Error getting Parallels Hardware Info"))
+		}
+
+		key = strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(globalProvider.HardwareInfo.License.Key, "-", ""), "*", ""))
+		hid = strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(globalProvider.HardwareInfo.HardwareID, "-", ""), "{", ""), "}", ""))
+	}
+
+	globalProvider.License = key
+
+	globalProvider.HardwareId = hid
+	globalProvider.HardwareSecret = getHardwareSecret(key, hid)
+	if systemHardwareInfo, err := globalProvider.System.GetHardwareInfo(ctx); err == nil {
+		globalProvider.SystemHardwareInfo = systemHardwareInfo
+	}
+}
+
 func InitServices(ctx basecontext.ApiContext) {
 	// Create a new Services struct and add the DB service
 	cfg := config.Get()

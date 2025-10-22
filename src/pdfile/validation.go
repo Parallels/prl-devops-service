@@ -81,6 +81,20 @@ func (p *PDFileService) Validate() *diagnostics.PDFileDiagnostics {
 			continue
 		case "CLONE":
 			continue
+		case "FORCE":
+			continue
+		case "COMPRESS_PACK":
+			continue
+		case "COMPRESS_PACK_LEVEL":
+			continue
+		case "VM_REMOTE_PATH":
+			continue
+		case "VM_SIZE":
+			continue
+		case "VM_TYPE":
+			continue
+		case "IS_COMPRESSED":
+			continue
 		case "PROVIDER":
 			namePart := ""
 			hasProvider = true

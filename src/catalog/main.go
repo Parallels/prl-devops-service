@@ -144,7 +144,7 @@ func (s *CatalogManifestService) GenerateManifestContent(r *models.PushCatalogMa
 
 	s.ns.NotifyInfof("Compressing manifest files for %v", r.CatalogId)
 	s.sendPushStepInfo(r, "Compressing manifest files")
-	packFilePath, err := s.compressMachine(r.LocalPath, manifestPackFileName, "/tmp")
+	packFilePath, err := s.compressMachine(r.LocalPath, manifestPackFileName, "/tmp", r.CompressPack, r.CompressPackLevel)
 	if err != nil {
 		return err
 	}
@@ -153,14 +153,44 @@ func (s *CatalogManifestService) GenerateManifestContent(r *models.PushCatalogMa
 	manifest.CleanupRequest.AddLocalFileCleanupOperation(packFilePath, false)
 	manifest.CompressedPath = packFilePath
 	manifest.PackFile = "/tmp/" + manifestPackFileName
+	manifest.IsCompressed = r.CompressPack
 
 	fileInfo, err := os.Stat(packFilePath)
 	if err != nil {
 		return err
 	}
 
-	manifest.Size = fileInfo.Size()
+	// Getting the total size of the original folder
+	var totalSize int64 = 0
+	err = filepath.Walk(r.LocalPath, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			totalSize += info.Size()
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	manifest.Size = totalSize
 	manifest.PackSize = fileInfo.Size()
+	differenceInSize := manifest.Size - manifest.PackSize
+	compressionPercentage := 0.0
+	if manifest.Size > 0 {
+		// calculating compression percentage and rounding to 2 decimal places
+		compressionPercentage = helpers.RoundFloat((float64(differenceInSize)/float64(manifest.Size))*100, 2)
+	} else {
+		compressionPercentage = 0.0
+	}
+	manifest.CompressedSize = manifest.PackSize
+	manifest.CompressedRatio = compressionPercentage
+	if r.CompressPack {
+		s.ns.NotifyInfof("Original size: %v bytes, Pack size: %v bytes, compressed percentage: %v%%", manifest.Size, manifest.PackSize, compressionPercentage)
+	} else {
+		s.ns.NotifyInfof("Original size: %v bytes, Pack size: %v bytes, compression not applied", manifest.Size, manifest.PackSize)
+	}
 
 	s.ns.NotifyInfof("Getting manifest package checksum for %v", r.CatalogId)
 	checksum, err := helpers.GetFileMD5Checksum(packFilePath)
@@ -269,7 +299,15 @@ func (s *CatalogManifestService) getPackFilename(name string) string {
 	return name
 }
 
-func (s *CatalogManifestService) compressMachine(path string, machineFileName string, destination string) (string, error) {
+func (s *CatalogManifestService) compressMachine(path string, machineFileName string, destination string, enableCompression bool, compressLevel int) (string, error) {
+	compressLevelStr, compressLevelErr := helpers.GetCompressRatioEnvValue(compressLevel)
+
+	// recovering to best compression if error
+	if compressLevelErr != nil {
+		compressLevel = gzip.BestCompression
+		compressLevelStr = "best_compression"
+	}
+
 	startingTime := time.Now()
 	tarFilename := machineFileName
 	tarFilePath := filepath.Join(destination, filepath.Clean(tarFilename))
@@ -280,8 +318,23 @@ func (s *CatalogManifestService) compressMachine(path string, machineFileName st
 	}
 	defer tarFile.Close()
 
-	tarWriter := tar.NewWriter(tarFile)
+	targetWriter := io.Writer(tarFile)
+	var gzipWriter *gzip.Writer
+
+	if enableCompression {
+		s.ns.NotifyInfof("Using gzip compression for %s with level %s (%v)", tarFilePath, compressLevelStr, compressLevel)
+		gzipWriter, err = gzip.NewWriterLevel(tarFile, compressLevel)
+		if err != nil {
+			return "", err
+		}
+		targetWriter = gzipWriter
+	}
+
+	tarWriter := tar.NewWriter(targetWriter)
 	defer tarWriter.Close()
+	if gzipWriter != nil {
+		defer gzipWriter.Close()
+	}
 
 	countFiles := 0
 	if err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {

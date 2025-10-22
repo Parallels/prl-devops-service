@@ -34,6 +34,7 @@ type PullCatalogManifestRequest struct {
 	ProgressChannel    chan int          `json:"-"`
 	FileNameChannel    chan string       `json:"-"`
 	StepChannel        chan string       `json:"-"`
+	FromPdf            bool              `json:"-"`
 	AmplitudeEvent     string            `json:"client,omitempty"`
 }
 

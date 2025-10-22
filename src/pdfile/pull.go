@@ -24,7 +24,7 @@ import (
 
 func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagnostics.PDFileDiagnostics) {
 	ctx.DisableLog()
-	serviceprovider.InitServices(ctx)
+	serviceprovider.InitParallelsServices(ctx)
 	// ns := notifications.Get()
 	// ns.EnableSingleLineOutput()
 	startTime := time.Now()

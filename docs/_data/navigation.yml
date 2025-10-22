@@ -18,6 +18,8 @@
       hidden: true
       description: Learn how to use the Github Actions with Parallels Desktop DevOps Service to automate your CI/CD pipelines.
       link: /docs//github-actions/
+- name: Api Reference
+  link: /docs/devops/restapi/reference/
 - name: Features
   link: /features/
   hidden: true

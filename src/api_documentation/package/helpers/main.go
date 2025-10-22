@@ -1,9 +1,10 @@
 package helpers
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"go/ast"
-	"go/build"
 	"go/parser"
 	"go/token"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/Parallels/prl-devops-service/api_documentation/package/cache"
 )
@@ -177,16 +179,36 @@ func findModelStructInASTRecursive(node *ast.File, modelName string, structField
 	return found
 }
 
+var (
+	moduleInfoOnce sync.Once
+	modulePath     string
+	moduleRoot     string
+)
+
 func findModelStructInImportsRecursive(node *ast.File, modelName string, structFields map[string]interface{}, fileName string) bool {
+	modPath, modRoot := getModuleInfo()
 	for _, imp := range node.Imports {
 		importPath := strings.Trim(imp.Path.Value, `"`) // Remove quotes
-		pkg, err := build.Import(importPath, ".", build.FindOnly)
-		if err != nil {
-			log.Printf("Failed to resolve import path %s: %v", importPath, err)
+
+		dir := ""
+		if modPath != "" && modRoot != "" && strings.HasPrefix(importPath, modPath) {
+			relPath := strings.TrimPrefix(importPath, modPath)
+			relPath = strings.TrimPrefix(relPath, "/")
+			dir = filepath.Join(modRoot, relPath)
+		} else if strings.HasPrefix(importPath, ".") {
+			baseDir := filepath.Dir(fileName)
+			dir = filepath.Join(baseDir, importPath)
+		}
+
+		if dir == "" {
 			continue
 		}
 
-		dir := pkg.Dir
+		info, err := os.Stat(dir)
+		if err != nil || !info.IsDir() {
+			continue
+		}
+
 		err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -216,6 +238,49 @@ func findModelStructInImportsRecursive(node *ast.File, modelName string, structF
 	}
 
 	return false
+}
+
+func getModuleInfo() (string, string) {
+	moduleInfoOnce.Do(func() {
+		dir, err := os.Getwd()
+		if err != nil {
+			log.Printf("Failed to determine working directory: %v", err)
+			return
+		}
+
+		for {
+			goModPath := filepath.Join(dir, "go.mod")
+			if _, err := os.Stat(goModPath); err == nil {
+				moduleRoot = dir
+				content, readErr := os.ReadFile(goModPath)
+				if readErr != nil {
+					log.Printf("Failed to read go.mod at %s: %v", goModPath, readErr)
+					return
+				}
+
+				scanner := bufio.NewScanner(bytes.NewReader(content))
+				for scanner.Scan() {
+					line := strings.TrimSpace(scanner.Text())
+					if strings.HasPrefix(line, "module ") {
+						modulePath = strings.TrimSpace(strings.TrimPrefix(line, "module"))
+						break
+					}
+				}
+				if scanErr := scanner.Err(); scanErr != nil {
+					log.Printf("Failed to parse go.mod at %s: %v", goModPath, scanErr)
+				}
+				return
+			}
+
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+		}
+	})
+
+	return modulePath, moduleRoot
 }
 
 func getJSONTag(field *ast.Field) string {

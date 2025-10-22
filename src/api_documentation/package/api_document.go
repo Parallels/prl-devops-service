@@ -39,7 +39,7 @@ func NewApiDocument() *ApiDocument {
 		Title:            "API Documentation",
 		Endpoints:        []*models.Endpoint{},
 		DefaultHost:      "http://localhost",
-		OutputFolder:     "../../docs/rest-api",
+		OutputFolder:     "../../docs/docs/devops/restapi/reference",
 		ExportCategories: true,
 		Categories:       []*models.Category{},
 		ApiPrefix:        "/api",
@@ -176,30 +176,43 @@ func (d *ApiDocument) extractBlocks() ([]*models.Endpoint, error) {
 		if err != nil {
 			return err
 		}
-		if strings.HasSuffix(info.Name(), ".go") || !strings.Contains(info.Name(), "main.go") {
-			file, err := os.Open(path)
-			if err != nil {
-				log.Fatal(err)
+		if info.IsDir() {
+			return nil
+		}
+
+		if filepath.Ext(info.Name()) != ".go" {
+			return nil
+		}
+
+		if strings.EqualFold(info.Name(), "main.go") {
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		var buffer bytes.Buffer
+
+		inCommentBlock := false
+		rgx := regexp.MustCompile(`^//[\s\t]*@`)
+
+		// Parse the comments
+		for scanner.Scan() {
+			line := scanner.Text()
+			if rgx.MatchString(line) {
+				buffer.WriteString(line + "\n")
+				inCommentBlock = true
+				continue
 			}
 
-			scanner := bufio.NewScanner(file)
-			var buffer bytes.Buffer
-
-			inCommentBlock := false
-
-			// Parse the comments
-			for scanner.Scan() {
-				line := scanner.Text()
-				rgx := regexp.MustCompile(`^//[\s\t]*@`)
-				if rgx.MatchString(line) {
-					buffer.WriteString(line + "\n")
-					inCommentBlock = true
-				} else if inCommentBlock && strings.TrimSpace(line) == "" {
-					// Process the accumulated comment block
-					endpoint := d.parseComments(buffer.String(), path)
-					if endpoint.Path == "" {
-						continue
-					}
+			if inCommentBlock && strings.TrimSpace(line) == "" {
+				// Process the accumulated comment block
+				endpoint := d.parseComments(buffer.String(), path)
+				if endpoint.Path != "" {
 					if endpoint.Category == "" {
 						endpoint.Category = emptyCategory
 					}
@@ -208,11 +221,30 @@ func (d *ApiDocument) extractBlocks() ([]*models.Endpoint, error) {
 					cat := d.addCategory(endpoint.Category)
 					cat.AddEndpoint(endpoint)
 					endpoints = append(endpoints, &endpoint)
-					buffer.Reset()
-					inCommentBlock = false
 				}
+				buffer.Reset()
+				inCommentBlock = false
 			}
 		}
+
+		if inCommentBlock {
+			endpoint := d.parseComments(buffer.String(), path)
+			if endpoint.Path != "" {
+				if endpoint.Category == "" {
+					endpoint.Category = emptyCategory
+				}
+				endpoint.CategoryPath = helpers.NormalizeString(endpoint.Category)
+
+				cat := d.addCategory(endpoint.Category)
+				cat.AddEndpoint(endpoint)
+				endpoints = append(endpoints, &endpoint)
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			return err
+		}
+
 		return nil
 	})
 	if err != nil {

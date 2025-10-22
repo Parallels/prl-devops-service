@@ -1,3 +1,4 @@
+// package processors contains command processors for PDFile parsing
 package processors
 
 import (
