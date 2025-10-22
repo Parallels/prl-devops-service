@@ -9444,6 +9444,12 @@ const docTemplate = `{
                 "catalog_id": {
                     "type": "string"
                 },
+                "compress_pack": {
+                    "type": "boolean"
+                },
+                "compress_pack_level": {
+                    "type": "integer"
+                },
                 "connection": {
                     "type": "string"
                 },
@@ -10128,7 +10134,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.9.14",
+	Version:          "0.9.15",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},

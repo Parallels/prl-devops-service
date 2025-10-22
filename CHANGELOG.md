@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.15] - 2025-10-22
+
+- Introduced new endpoints for retrieving system logs and streaming logs via WebSocket.
+- Added endpoint to fetch orchestrator host system logs.
+- Implemented endpoint for retrieving orchestrator host reverse proxy configuration.
+- Updated error response structure across various endpoints to use "error" instead of "message".
+- Enhanced API documentation to reflect the new endpoints and changes in response formats.
+- Added support for compressing manifest files during the generation process.
+- Introduced new fields in the PushCatalogManifestRequest model to handle compression options.
+- Updated the manifest generation logic to calculate original and packed sizes, and log compression details.
+- Added command processors for handling new PDFile commands: COMPRESS_PACK, FORCE, IS_COMPRESSED, VM_REMOTE_PATH, VM_SIZE, and VM_TYPE.
+- Implemented the runImportVM function to handle the import of VMs with the new parameters.
+- Enhanced validation logic to ensure proper handling of new command arguments.
+- Refactored the logic for extracting API documentation from Go files to improve clarity and maintainability.
+- Added module information retrieval to enhance the handling of import paths in the documentation process.
+- Update documentation links to reflect new directory structure for security and catalog sections
+- the /v1/auth/users API response will include a detailed ApiErrorDiagnosticsResponse object. This diagnostics object provides a full call stack plus categorized errors and warnings to help developers identify the cause and the failing component for any request failures.
+- Fixes # (issue)
+- #245 
+
 ## [0.9.14] - 2025-09-30
 
 - Fix an issue where decompressing could cause a concurrency issue

@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.9.14"
+        "version": "0.9.15"
     },
     "basePath": "/api",
     "paths": {
@@ -9436,6 +9436,12 @@
                 },
                 "catalog_id": {
                     "type": "string"
+                },
+                "compress_pack": {
+                    "type": "boolean"
+                },
+                "compress_pack_level": {
+                    "type": "integer"
                 },
                 "connection": {
                     "type": "string"
