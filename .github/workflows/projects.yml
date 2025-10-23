@@ -20,4 +20,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
         run: |
-          gh pr edit  ${{ env.repo }} --add-project "${{ env.project }}"
+          #gh pr edit  ${{ env.repo }} --add-project "${{ env.project }}"
