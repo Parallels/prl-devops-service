@@ -12,6 +12,7 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/cacheservice"
 	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -306,8 +307,10 @@ func GetCatalogManifestsHandler() restapi.ControllerHandler {
 		// responseManifests := mappers.DtoCatalogManifestsToApi(manifestsDto)
 
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			for ru, resultItem := range result {
 				for ri, v := range resultItem {
 					for mk, manifest := range v {
@@ -384,8 +387,10 @@ func GetCatalogManifestHandler() restapi.ControllerHandler {
 
 		resultData := mappers.DtoCatalogManifestsToApi(manifest)
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			for i := range resultData {
 				if resultData[i].Provider != nil {
 					newProvider := &models.RemoteVirtualMachineProvider{}
@@ -448,8 +453,10 @@ func GetCatalogManifestVersionHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestsToApi(manifests)
 
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			for i := range resultData {
 				if resultData[i].Provider != nil {
 					newProvider := &models.RemoteVirtualMachineProvider{}
@@ -513,8 +520,10 @@ func GetCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler {
 
 		resultData := mappers.DtoCatalogManifestToApi(*manifest)
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if resultData.Provider != nil {
 				newProvider := &models.RemoteVirtualMachineProvider{}
 				newProvider.Type = resultData.Provider.Type
@@ -597,8 +606,10 @@ func DownloadCatalogManifestVersionHandler() restapi.ControllerHandler {
 
 		resultData := mappers.DtoCatalogManifestToApi(*manifest)
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if resultData.Provider != nil {
 				newProvider := &models.RemoteVirtualMachineProvider{}
 				newProvider.Type = resultData.Provider.Type
@@ -682,8 +693,10 @@ func TaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 
 		resultData := mappers.DtoCatalogManifestToApi(*result)
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if resultData.Provider != nil {
 				newProvider := &models.RemoteVirtualMachineProvider{}
 				newProvider.Type = resultData.Provider.Type
@@ -767,8 +780,10 @@ func UnTaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 
 		resultData := mappers.DtoCatalogManifestToApi(*result)
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if resultData.Provider != nil {
 				newProvider := &models.RemoteVirtualMachineProvider{}
 				newProvider.Type = resultData.Provider.Type
@@ -844,8 +859,10 @@ func RevokeCatalogManifestVersionHandler() restapi.ControllerHandler {
 
 		resultData := mappers.DtoCatalogManifestToApi(*result)
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if resultData.Provider != nil {
 				newProvider := &models.RemoteVirtualMachineProvider{}
 				newProvider.Type = resultData.Provider.Type
@@ -961,8 +978,10 @@ func AddClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if newManifest.Provider != nil {
 				newProvider := &data_models.CatalogManifestProvider{}
 				newProvider.Type = newManifest.Provider.Type
@@ -1078,8 +1097,10 @@ func RemoveClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if newManifest.Provider != nil {
 				newProvider := &data_models.CatalogManifestProvider{}
 				newProvider.Type = newManifest.Provider.Type
@@ -1194,8 +1215,10 @@ func AddRolesToCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if newManifest.Provider != nil {
 				newProvider := &data_models.CatalogManifestProvider{}
 				newProvider.Type = newManifest.Provider.Type
@@ -1311,8 +1334,10 @@ func RemoveRolesToCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if newManifest.Provider != nil {
 				newProvider := &data_models.CatalogManifestProvider{}
 				newProvider.Type = newManifest.Provider.Type
@@ -1428,8 +1453,10 @@ func AddTagsToCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if newManifest.Provider != nil {
 				newProvider := &data_models.CatalogManifestProvider{}
 				newProvider.Type = newManifest.Provider.Type
@@ -1545,8 +1572,10 @@ func RemoveTagsToCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if newManifest.Provider != nil {
 				newProvider := &data_models.CatalogManifestProvider{}
 				newProvider.Type = newManifest.Provider.Type
@@ -1609,8 +1638,10 @@ func CreateCatalogManifestHandler() restapi.ControllerHandler {
 		resultData := mappers.DtoCatalogManifestToApi(*result)
 
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if resultData.Provider != nil {
 				newProvider := &models.RemoteVirtualMachineProvider{}
 				newProvider.Type = resultData.Provider.Type
@@ -1892,8 +1923,10 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 		resultData.ID = resultManifest.ID
 
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if resultData.Provider != nil {
 				newProvider := &models.RemoteVirtualMachineProvider{}
 				newProvider.Type = resultData.Provider.Type
@@ -2213,8 +2246,10 @@ func UpdateCatalogManifestProviderHandler() restapi.ControllerHandler {
 		}
 
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			if manifest.Provider != nil {
 				newProvider := &data_models.CatalogManifestProvider{}
 				newProvider.Type = manifest.Provider.Type
@@ -2267,8 +2302,10 @@ func GetCatalogCacheHandler() restapi.ControllerHandler {
 
 		responseManifests := mappers.BaseVirtualMachineCatalogManifestListToApi(items)
 		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
 		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
-		if internalClientHeader != "true" {
+		if internalClientHeader != "true" && enableObfuscation {
 			for k, items := range responseManifests.Manifests {
 				if items.Provider != nil {
 					newProvider := &models.RemoteVirtualMachineProvider{}

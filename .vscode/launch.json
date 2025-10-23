@@ -36,8 +36,8 @@
       // Comment out if you do not need to setup environment variables for the module
       "envFile": "${workspaceFolder}/.env",
       "args": [
-        "test",
-        "catalog-providers"
+        "pull",
+        "/tmp/pull_empty_vm_latest1.pdfile"
       ]
     },
     {

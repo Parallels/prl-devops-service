@@ -598,6 +598,15 @@ func (c *Config) IsBetaEnabled() bool {
 	return enableBeta
 }
 
+func (c *Config) EnableCredentialsObfuscation() bool {
+	enableObfuscationEnvValue := c.GetKey(constants.CATALOG_ENABLE_PROVIDER_CREDENTIALS_OBFUSCATION_ENV_VAR)
+	if enableObfuscationEnvValue == "" {
+		return constants.ENABLE_CREDENTIALS_OBFUSCATION_DEFAULT_VALUE
+	}
+
+	return c.GetBoolKey(constants.CATALOG_ENABLE_PROVIDER_CREDENTIALS_OBFUSCATION_ENV_VAR)
+}
+
 func (c *Config) GetKey(key string) string {
 	value := helper.GetFlagValue(key, "")
 	exists := false
