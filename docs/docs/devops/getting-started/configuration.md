@@ -37,16 +37,28 @@ The root object of the configuration file is the environment object, which conta
 | ---- | ----------- | ------------- |
 | MODE | This can be either `api` or `orchestrator`, and specifies the mode that the service will run in | api |
 | ROOT_PASSWORD | The root password that will be used to update the root password of the virtual machine | |
-| DATABASE_FOLDER_ENV_VAR | The folder where the database will be stored | /User/Folder/.prl-devops-service |
+| DATABASE_FOLDER| The folder where the database will be stored | /User/Folder/.prl-devops-service |
 | DATABASE_NUMBER_BACKUP_FILES | The number of backup files that the database will keep | 10 |
 | DATABASE_BACKUP_INTERVAL_MINUTES | The interval in minutes that the database will be backed up in minutes | 120 minutes |
-| DATABASE_SAVE_INTERVAL_MINUTES | The interval in minutes that the database will be saved in minytes | 5 minutes |
+| DATABASE_SAVE_INTERVAL_MINUTES | The interval in minutes that the database will be saved in minutes | 5 minutes |
 | CATALOG_CACHE_FOLDER | The folder where the catalog cache will be stored | /User/Folder/.prl-devops-service/catalog |
+| CATALOG_COMPRESS_VM | Specifies whether the virtual machines in the catalog should be compressed | false |
+| CATALOG_COMPRESS_VM_RATIO | The ratio that will be used to determine whether the virtual machine should be compressed best_speed/balanced/best_compression/no_compression | best_compression |
+| CATALOG_ENABLE_PROVIDER_CREDENTIALS_OBFUSCATION | Specifies whether the provider credentials in the catalog should be obfuscated | true |
+| VIRTUAL_MACHINES_FOLDER | The folder where the virtual machines will be stored | users/`<username>`/Parallels |
 | PARALLELS_DESKTOP_REFRESH_INTERVAL | The interval in seconds that the service will refresh the Parallels Desktop virtual machines in seconds | 15 seconds |
 | SYSTEM_RESERVED_CPU | The number of cpu cores that will be reserved for the system and not used for Orchestrator | 1 |
 | SYSTEM_RESERVED_MEMORY | The amount of memory that will be reserved for the system and not used for Orchestrator in Mb's | 2048 |
 | SYSTEM_RESERVED_DISK | The amount of disk space that will be reserved for the system and not used for Orchestrator in Mb's | 20000 |
 | SYSTEM_AUTO_RECOVER_DATABASE | Specifies whether the system should auto recover the database if it is corrupted | true |
+| ENABLE_REVERSE_PROXY | Specifies whether the reverse proxy should be enabled | false |
+| REVERSE_PROXY_PORT | The port that the reverse proxy will listen on | 5080 |
+| REVERSE_PROXY_HOST | The host that the reverse proxy will listen on | 0.0.0.0 |
+| PRL_DEVOPS_LOG_TO_FILE | Specifies whether the logs should be written to a file | false |
+| PRL_DEVOPS_LOG_FILE_PATH | if PRL_DEVOPS_LOG_TO_FILE is true, the path to the log file | for root user /var/log/prldevops.log. for normal user users/`<username>`/.prl-devops-service/logs |
+| DISABLE_CATALOG_PROVIDER_STREAMING | Specifies whether the catalog provider streaming should be disabled | false |
+| ENABLE_CANARY | Specifies whether the canary feature should be enabled | false |
+| ENABLE_BETA | Specifies whether the beta feature should be enabled | false |
 
 ### Rest API
 
@@ -61,9 +73,13 @@ The root object of the configuration file is the environment object, which conta
 | TLS_PORT | The port that the service will listen on for tls | 8443 |
 | TLS_CERTIFICATE | A base64 encoded certificate string | |
 | TLS_PRIVATE_KEY | A base64 encoded private key string | |
+| TLS_DISABLE_VALIDATION | Specifies whether the service should disable tls validation | false |
+| ROOT_PASSWORD | The root password to run the service with | |
 | DISABLE_CATALOG_CACHING | Specifies whether the service should disable the catalog caching | false |
+| TOKEN_DURATION_MINUTES | The duration in minutes that the token will be valid for in minutes | 60 |
 | USE_ORCHESTRATOR_RESOURCES | Specifies whether the service is running in orchestrator mode, which allows the service to use the resources of the orchestrator | false |
 | ORCHESTRATOR_PULL_FREQUENCY_SECONDS | The frequency in seconds that the orchestrator will sync with the other hosts in seconds | 30 |
+| ENABLE_CORS | Specifies whether the service should enable cors policy | false |
 | CORS_ALLOWED_HEADERS | The headers that are allowed in the cors policy | "X-Requested-With, authorization, content-type" |
 | CORS_ALLOWED_ORIGINS | The origins that are allowed in the cors policy | "*" |
 | CORS_ALLOWED_METHODS | The methods that are allowed in the cors policy | "GET, HEAD, POST, PUT, DELETE, OPTIONS" |
