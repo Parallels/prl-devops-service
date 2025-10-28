@@ -187,6 +187,7 @@ prldevops run example.import-vm.pdfile
 | TO | {url} | Catalog endpoint used when sending data. | push, import, import-vm | `TO catalog.example.local` |
 | FROM | {url} | Catalog endpoint to read from. | pull, list, import, import-vm | `FROM catalog.example.local` |
 | INSECURE | {boolean} | Force HTTP and skip TLS validation. | push, pull, list, import, import-vm | `INSECURE true` |
+| PREFIX | {prefix} | API prefix for the catalog endpoint. | push, pull, list, import, import-vm | `PREFIX /api/v1` |
 | AUTHENTICATE | {option} {value} | Authentication credentials (repeat for each option). | push, pull, list, import, import-vm |  |
 |  | *USERNAME* | Username for basic authentication. | push, pull, list, import, import-vm | `AUTHENTICATE USERNAME demo-user` |
 |  | *PASSWORD* | Password for basic authentication. | push, pull, list, import, import-vm | `AUTHENTICATE PASSWORD demo-password` |
@@ -205,8 +206,11 @@ prldevops run example.import-vm.pdfile
 | OWNER | {owner} | Owner associated with the pulled VM. | pull | `OWNER demo` |
 | DESTINATION | {path} | Directory where the VM will be stored. | pull | `DESTINATION ~/Parallels` |
 | START_AFTER_PULL | {boolean} | Starts the VM immediately after pulling. | pull | `START_AFTER_PULL true` |
+| COMMAND | {pdfile command} | Alternative to RUN, specifies the PDFile command. | push, pull, list, import, import-vm | `COMMAND PUSH` |
 | EXECUTE | {command} | Command executed once the VM is available. | pull (optional) | `EXECUTE prlctl exec "MachineName" --info` |
 | CLONE | {name} | Clone the pulled VM locally into a new name. | pull (optional) | `CLONE ubuntu-ci-runner-copy` |
+| CLONE_TO | {name} | Alternative to CLONE, specifies the target name for the clone operation. | pull (optional) | `CLONE_TO ubuntu-ci-runner-new` |
+| CLONE_ID |
 | CLIENT | {base64} | Base64 telemetry payload forwarded with the pull. | pull (optional) | `CLIENT eyJldmVudCI6...` |
 | MINIMUM_REQUIREMENT | {metric value} | Minimum CPU, memory, or disk requirements saved with the manifest. | push (optional) | `MINIMUM_REQUIREMENT CPU 4` |
 | COMPRESS_PACK | {boolean} | Compresses the upload into a `.pdpack`. | push (optional) | `COMPRESS_PACK true` |
