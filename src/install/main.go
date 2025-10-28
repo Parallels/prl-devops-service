@@ -213,7 +213,7 @@ func getConfigFromEnv() ApiServiceConfig {
 		config.DisableCatalogCaching = cfg.GetKey(constants.ROOT_PASSWORD_ENV_VAR) == "true"
 	}
 	if cfg.GetKey(constants.TOKEN_DURATION_MINUTES_ENV_VAR) != "" {
-		config.DisableCatalogCaching = cfg.GetKey(constants.TOKEN_DURATION_MINUTES_ENV_VAR) == "true"
+		config.TokenDurationMinutes = cfg.GetKey(constants.TOKEN_DURATION_MINUTES_ENV_VAR)
 	}
 	if cfg.GetKey(constants.MODE_ENV_VAR) != "" {
 		config.Mode = cfg.GetKey(constants.MODE_ENV_VAR)
