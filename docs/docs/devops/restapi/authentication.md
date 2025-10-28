@@ -90,13 +90,13 @@ devops gen-rsa --file=private.pem
 
 The DevOps REST API also includes a password brute force protection system. This system is designed to protect the API from brute force attacks by limiting the number of failed login attempts. If the number of failed login attempts exceeds the limit, the user will be locked out for a specific period of time. We also provide a increasing delay between the login attempts to make it harder for the attackers to guess the password.
 
-This can also be configured in the configuration file of the DevOps service, please check the [configuration guide]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration/#brute-force-protection) for more information.
+This can also be configured in the configuration file of the DevOps service, please check the [configuration guide]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/configuration/#brute-force-protection) for more information.
 
 ## Password Complexity
 
 We implemented a password complexity system to ensure that the passwords are strong and secure. This system enforces the use of strong passwords by requiring a minimum length, and a combination of uppercase, lowercase, numbers, and special characters.
 
-We can also configure the password complexity in the configuration file of the DevOps service, please check the [configuration guide]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration/#password-complexity) for more information.
+We can also configure the password complexity in the configuration file of the DevOps service, please check the [configuration guide]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/configuration/#password-complexity) for more information.
 
 ## How do we store user passwords?
 

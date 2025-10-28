@@ -7,7 +7,7 @@ show_sidebar: false
 toc: true
 ---
 
-If you want to run only the DevOps service [Catalog]({{ site.url }}{{ site.baseurl }}/docs/catalog/overview/), [Orchestrator]({{ site.url }}{{ site.baseurl }}/docs/orchestrator/overview/) or the [Reverse Proxy]({{ site.url }}{{ site.baseurl }}/docs/reverse-poxy/overview/) in a kubernetes cluster we provide a helm chart. This allows you to quickly spin up the service in a cluster by just passing the configuration options as values.
+If you want to run only the DevOps service [Catalog]({{ site.url }}{{ site.baseurl }}/docs/devops/catalog/overview/), [Orchestrator]({{ site.url }}{{ site.baseurl }}/docs/devops/orchestrator/overview/) or the [Reverse Proxy]({{ site.url }}{{ site.baseurl }}/docs/devops/reverse-poxy/overview/) in a kubernetes cluster we provide a helm chart. This allows you to quickly spin up the service in a cluster by just passing the configuration options as values.
 
 ## Prerequisites
 
