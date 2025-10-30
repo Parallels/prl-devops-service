@@ -29,7 +29,7 @@ There are two main types of operations used with virtual machine catalogs are ca
 
 ![Catalog Pushing Diagram]({{ site.url }}{{ site.baseurl }}/img/catalog/catalog_manifest_pushing.drawio.png)
 
-Here is an example of how a flow would typically work for a pushing operation:
+Here is a [push example]({{ site.url }}{{ site.baseurl }}/docs/devops/catalog/pdfile/#create-a-push-pdfile) of how a flow would typically work for a pushing operation:
 
 First, the user creates a virtual machine.
 
@@ -45,7 +45,7 @@ Once complete, the virtual machine is available for download by others who have 
 
 ![Catalog Pulling Diagram]({{ site.url }}{{ site.baseurl }}/img/catalog/catalog_manifest_pulling.drawio.png)
 
-Below is an example of how a flow typically works for a pulling operation:
+Below is a [pull example]({{ site.url }}{{ site.baseurl }}/docs/devops/catalog/pdfile/#pull-a-catalog-machine) of how a flow typically works for a pulling operation:
 
 1. The user requests a virtual machine from the catalog using the REST API or the CLI.
 2. The service then checks the user's security claims and roles to ensure they have access to the virtual machine. It also verifies if the image is not either tainted or revoked.
