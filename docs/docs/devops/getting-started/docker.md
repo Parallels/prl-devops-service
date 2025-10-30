@@ -9,7 +9,7 @@ toc: true
 
 # Running the service as a container
 
-You can run the DevOps service [Catalog]({{ site.url }}{{ site.baseurl }}/docs/catalog/overview/){:target="_blank"}or the [Orchestrator]({{ site.url }}{{ site.baseurl }}/docs/orchestrator/overview/){:target="_blank"} we provide as a docker image. This allows you to quickly spin up the service without having to install any dependencies.
+You can run the DevOps service [Catalog]({{ site.url }}{{ site.baseurl }}/docs/devops/catalog/overview/){:target="_blank"} or the [Orchestrator]({{ site.url }}{{ site.baseurl }}/docs/devops/orchestrator/overview/){:target="_blank"} we provide as a docker image. This allows you to quickly spin up the service without having to install any dependencies.
 
 While this allows for most of the same functionality as running it as a binary, it does have some limitations. Because this works as a container, it will not be able to interact with the host machine, so you will not be able to manage the host machine or the virtual machines running on it. You will however be able to manage the Orchestrator and Catalog services making this perfect for running in a cluster environment.
 
@@ -28,7 +28,7 @@ docker run -d --name pd-devops-service -p 5570:80 -e ROOT_PASSWORD=VeryStr0ngPas
 
 This will start the service and you will be able to access the swagger ui at [http://localhost:5570/swagger/index.html](http://localhost:5570/swagger/index.html){:target="_blank"}
 
-You can pass any of the [configuration options]({{ site.url }}{{ site.baseurl }}/docs/getting-started/configuration//#configuration-file){:target="_blank"} as environment variables to the docker container.
+You can pass any of the [configuration options]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/configuration/#configuration-file){:target="_blank"} as environment variables to the docker container.
 
 for example:
 

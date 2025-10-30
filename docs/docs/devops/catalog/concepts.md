@@ -87,7 +87,7 @@ Pulling a virtual machine from the catalog manifest service allows clients to do
 
 ## Pulling a Virtual Machine Diagram
 
-![Pulling a Virtual Machine](../../../img/catalog/catalog_manifest_pulling.drawio.png)
+![Pulling a Virtual Machine]({{ site.url }}{{ site.baseurl }}/img/catalog/catalog_manifest_pulling.drawio.png)
 
 # Caching
 

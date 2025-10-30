@@ -9,15 +9,18 @@ toc: false
 
 # Source Code
 
-The source code for the DevOps service is available on [GitHub](https://github.com/parallels/devops-service){:target="_blank"}.
+The source code for the DevOps service is available on [GitHub](https://github.com/Parallels/prl-devops-service){:target="_blank"}.
 
 ## 2 Folder Structure
+
+The main source code resides in the [src](https://github.com/Parallels/prl-devops-service/tree/main/src) directory. Here’s a breakdown of the primary folders and their roles:
 
 Folder | Role in the code-base | Why it matters
 api_documentation/ | Generates and hosts the OpenAPI / Swagger spec for every REST and gRPC endpoint. It contains a small code-gen harness plus a packaged HTML bundle for publishing the docs. GitHub | Keeps API contracts explicit and version-controlled for both internal teams and external integrators.
 basecontext/ | Shared helpers that enrich Go context.Context with common cross-cutting data (request IDs, auth claims, deadlines). GitHub | Guarantees traceability and consistent cancellation semantics across micro-services.
 catalog/ | All logic for image metadata: push, pull, validate, taint/revoke, and a pluggable cache layer. Sub-packages such as cacheservice/ and providers/ implement storage adapters. GitHub | Powers the golden-image workflow so every VM starts from a trusted, versioned manifest.
 cmd/ | Entry points for each executable (CLI, orchestrator, catalog, reverse-proxy). Builds are wired through Go’s main packages here. GitHub | Cleanly separates binaries from libraries, simplifying Docker image builds.
+common/ | A shared package featuring a global instance of the common-go-logger, with timestamps enabled for enhanced logging accuracy.| Improves logging consistency and debuggability across the service.
 compressor/ | Utilities to (de)compress large VM archives before upload or after download. GitHub | Reduces network egress costs and speeds up catalog import/export.
 config/ | Strongly-typed structs + YAML/ENV loaders that capture every tunable system parameter. GitHub | Central location for default values, env overrides, and config validation.
 constants/ | Service-wide enumerations, default strings, HTTP header keys, etc. GitHub | Avoids magic strings scattered across the code-base.
@@ -25,6 +28,7 @@ controllers/ | Thin HTTP / gRPC handler layer that wires routing to the underlyi
 data/ | Embedded assets and static seed files (e.g., SQL migrations, default manifests). GitHub | Ensures the service is self-contained at start-up—no external bootstrap scripts needed.
 docs/ | Developer-facing design notes and ADRs that accompany the code. GitHub | Provides living documentation right beside the implementation.
 errors/ | Centralised error types, gRPC status mapping, and helper wrappers for stack traces. GitHub | Gives callers rich, typed feedback while maintaining uniform logging.
+helpers/ | A utility package providing reusable functions for date/time handling, HTTP helpers, integer operations, OS utilities, string manipulation, version parsing, and platform-specific volume management. | Centralizes common helper logic, reducing duplication and simplifying maintenance across the codebase.
 install/ | Shell scripts and helper manifests for bootstrapping hosts and registering them with the orchestrator. GitHub | Accelerates first-time setup in lab and CI environments.
 logs/ | Custom logger façade that standardises JSON output and hooks into telemetry back-ends. GitHub | Provides consistent, structured logs across every micro-service.
 mappers/ | DTO ↔️ persistence translators, shielding business structs from DB schemas. GitHub | Decouples storage evolution from API contracts.

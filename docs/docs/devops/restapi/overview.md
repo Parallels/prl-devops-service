@@ -21,7 +21,7 @@ To ensure the security of your hosts, we've included a robust RBAC system. This 
 
 # How Does It Work?
 
-The RestAPI is built around our powerful command line interface, exposing some of the functionality using the RESTful programming interface. To control the Parallels Desktop host you will need to have the Parallels Desktop Pro or Business installed on the host machine, if you don't have it, the DevOps service can help you with that, check our [installation guide]({{ site.url }}{{ site.baseurl }}/getting-started/installation/).
+The RestAPI is built around our powerful command line interface, exposing some of the functionality using the RESTful programming interface. To control the Parallels Desktop host you will need to have the Parallels Desktop Pro or Business installed on the host machine, if you don't have it, the DevOps service can help you with that, check our [installation guide]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/installation/).
 
 Once this is done, you can start the DevOps service and by default it will enable the RestAPI. You can then start using the RestAPI to control the host and the VMs.
 
