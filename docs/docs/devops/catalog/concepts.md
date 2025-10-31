@@ -20,6 +20,7 @@ This is the designated storage location for all large files. The service can hav
 * [AWS S3](https://aws.amazon.com/s3/)
 * [Azure Blob Storage](https://azure.microsoft.com/en-us/services/storage/blobs/)
 * [Jfrog Artifactory](https://jfrog.com/artifactory/)
+* [MinIO](https://min.io/)
 
 ## Connection String
 
@@ -43,6 +44,12 @@ provider=azure-storage-account;storage_account_name=<storage-account-name>;conta
 
 ```bash
 provider=artifactory;url=<artifactory_url_without_artifact>;repo=<repo_name>;access_key=<api_access_key>
+```
+
+### MinIO
+
+```bash
+provider=minio;bucket=<bucket-name>;endpoint=<minio-endpoint>;access_key=<minio-access-key>;secret_key=<minio-secret-key>
 ```
 
 # Catalog Manifest and Versions
