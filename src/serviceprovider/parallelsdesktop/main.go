@@ -1,6 +1,7 @@
 package parallelsdesktop
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -27,6 +28,7 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider/packer"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
+	"github.com/creack/pty"
 	"github.com/google/uuid"
 
 	"github.com/cjlapao/common-go/helper"
@@ -40,6 +42,7 @@ var (
 type ParallelsService struct {
 	ctx              basecontext.ApiContext
 	refreshStarted   bool
+	eventsProcessing bool
 	cachedLocalVms   []models.ParallelsVM
 	executable       string
 	serverExecutable string
@@ -61,8 +64,9 @@ func Get(ctx basecontext.ApiContext) *ParallelsService {
 
 func New(ctx basecontext.ApiContext) *ParallelsService {
 	globalParallelsService = &ParallelsService{
-		refreshStarted: false,
-		ctx:            ctx,
+		refreshStarted:   false,
+		eventsProcessing: false,
+		ctx:              ctx,
 	}
 
 	if globalParallelsService.cachedLocalVms == nil {
@@ -77,6 +81,7 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 	}
 
 	globalParallelsService.SetDependencies([]interfaces.Service{})
+	globalParallelsService.listenToParallelsEvents(ctx)
 	return globalParallelsService
 }
 
@@ -312,6 +317,93 @@ func (s *ParallelsService) refreshCacheVms(ctx basecontext.ApiContext) {
 			ctx.LogInfof("VM cache refreshed")
 		}
 	}()
+}
+
+func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
+	if s.eventsProcessing {
+		return
+	}
+	s.eventsProcessing = true
+
+	ctx.LogInfof("Setting up Parallels events listener")
+
+	users, err := system.Get().GetSystemUsers(ctx)
+	currentUser := "root"
+	if user, err := system.Get().GetCurrentUser(ctx); err == nil {
+		currentUser = user
+	}
+	ctx.LogInfof("current user %v", currentUser)
+	if currentUser != "root" {
+		newAllUsers := make([]models.SystemUser, 0)
+		for _, user := range users {
+			if strings.EqualFold(user.Username, currentUser) {
+				newAllUsers = append(newAllUsers, user)
+				break
+			}
+		}
+
+		users = newAllUsers
+	}
+
+	if err != nil {
+		return
+	}
+
+	// if current user is root we listen to all users
+	for _, user := range users {
+		go func() {
+			cmd := exec.Command("sudo", "-u", user.Username, s.executable, "monitor-events", "--json")
+			// Use a PTY to avoid buffering
+			ptmx, err := pty.Start(cmd)
+			if err != nil {
+				ctx.LogErrorf("Error starting command with PTY: %v\n", err)
+				return
+			}
+			defer ptmx.Close()
+
+			reader := bufio.NewReader(ptmx)
+			for {
+				line, err := reader.ReadString('\n')
+
+				if err != nil {
+					if err != io.EOF {
+						ctx.LogErrorf("Error reading output: %v\n", err)
+					}
+					break
+				}
+
+				var event models.ParallelsServiceEvent
+				if err := json.Unmarshal([]byte(line), &event); err != nil {
+					// If it's not JSON, just print it (might be stderr or other output)
+					ctx.LogInfof("📄 Non-JSON output: %s", line)
+					continue
+				}
+
+				// Print the processed event with custom formatting
+				if len(event.VMID) >= 8 {
+					ctx.LogInfof("🔔 VM: %s | Event: %s\n",
+
+						event.VMID[:8]+"...",
+						event.EventName)
+				} else {
+					ctx.LogInfof("🔔  VM: %s | Event: %s\n",
+						event.VMID,
+						event.EventName)
+				}
+
+				if event.AdditionalInfo != nil {
+					fmt.Printf("   Info: %v\n", event.AdditionalInfo)
+				}
+			}
+
+			// Clean up
+			if cmd.Process != nil {
+				cmd.Process.Kill()
+			}
+			cmd.Wait()
+			ctx.LogInfof("Parallels events listener stopped")
+		}()
+	}
 }
 
 func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string) ([]models.ParallelsVM, error) {
