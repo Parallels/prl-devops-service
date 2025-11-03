@@ -37,6 +37,7 @@ import (
 var (
 	globalParallelsService *ParallelsService
 	logger                 = common.Logger
+	eventsChannel          = make(chan models.ParallelsServiceEvent, 1000)
 )
 
 type ParallelsService struct {
@@ -70,8 +71,10 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 	}
 
 	if globalParallelsService.cachedLocalVms == nil {
-		globalParallelsService.cachedLocalVms = make([]models.ParallelsVM, 0)
-		globalParallelsService.refreshCacheVms(ctx)
+		vms, err := globalParallelsService.getVms(ctx)
+		if err == nil {
+			globalParallelsService.cachedLocalVms = vms
+		}
 	}
 
 	if globalParallelsService.FindPath() == "" {
@@ -299,26 +302,6 @@ func (s *ParallelsService) IsLicensed() bool {
 	return s.isLicensed
 }
 
-func (s *ParallelsService) refreshCacheVms(ctx basecontext.ApiContext) {
-	if s.refreshStarted {
-		return
-	}
-
-	go func() {
-		s.refreshStarted = true
-		for {
-			ctx.LogInfof("Waiting %s to refresh VM cache", config.Get().ParallelsRefreshInterval())
-			time.Sleep(config.Get().ParallelsRefreshInterval())
-			var err error
-			if s.cachedLocalVms, err = s.GetVms(ctx); err != nil {
-				ctx.LogErrorf("Error refreshing VM cache: %v", err)
-			}
-
-			ctx.LogInfof("VM cache refreshed")
-		}
-	}()
-}
-
 func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 	if s.eventsProcessing {
 		return
@@ -332,7 +315,6 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 	if user, err := system.Get().GetCurrentUser(ctx); err == nil {
 		currentUser = user
 	}
-	ctx.LogInfof("current user %v", currentUser)
 	if currentUser != "root" {
 		newAllUsers := make([]models.SystemUser, 0)
 		for _, user := range users {
@@ -378,22 +360,7 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 					ctx.LogInfof("📄 Non-JSON output: %s", line)
 					continue
 				}
-
-				// Print the processed event with custom formatting
-				if len(event.VMID) >= 8 {
-					ctx.LogInfof("🔔 VM: %s | Event: %s\n",
-
-						event.VMID[:8]+"...",
-						event.EventName)
-				} else {
-					ctx.LogInfof("🔔  VM: %s | Event: %s\n",
-						event.VMID,
-						event.EventName)
-				}
-
-				if event.AdditionalInfo != nil {
-					fmt.Printf("   Info: %v\n", event.AdditionalInfo)
-				}
+				eventsChannel <- event
 			}
 
 			// Clean up
@@ -404,8 +371,25 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 			ctx.LogInfof("Parallels events listener stopped")
 		}()
 	}
+	s.processEventsChannel(ctx)
 }
 
+func (s *ParallelsService) processEventsChannel(ctx basecontext.ApiContext) {
+	go func() {
+		for event := range eventsChannel {
+			s.processEvent(ctx, event)
+		}
+	}()
+}
+
+func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	switch event.EventName {
+	case "vm_state_changed":
+		if event.AdditionalInfo != nil {
+			ctx.LogInfof("VM State Changed Event for VM %s  current state is %s", event.VMID[:5], event.AdditionalInfo.VmStateName)
+		}
+	}
+}
 func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string) ([]models.ParallelsVM, error) {
 	ctx.LogInfof("Getting VMs for user: %s", username)
 	externalIp, _ := system.Get().GetExternalIp(ctx)
@@ -446,14 +430,13 @@ func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter strin
 	ctx.LogInfof("Getting all VMs for all users with cache")
 	var systemMachines []models.ParallelsVM
 	var err error
+
 	if len(s.cachedLocalVms) > 0 {
 		systemMachines = s.cachedLocalVms
 	} else {
-		if systemMachines, err = s.GetVms(ctx); err != nil {
+		if systemMachines, err = s.getVms(ctx); err != nil {
 			return nil, err
 		}
-		s.cachedLocalVms = systemMachines
-		s.refreshCacheVms(ctx)
 	}
 
 	dbFilter, err := data.ParseFilter(filter)
@@ -470,30 +453,10 @@ func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter strin
 }
 
 func (s *ParallelsService) GetVmsSync(ctx basecontext.ApiContext, filter string) ([]models.ParallelsVM, error) {
-	var systemMachines []models.ParallelsVM
-	var err error
-	vms, err := s.GetVms(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	s.cachedLocalVms = vms
-	systemMachines = vms
-
-	dbFilter, err := data.ParseFilter(filter)
-	if err != nil {
-		return nil, err
-	}
-
-	filteredData, err := data.FilterByProperty(systemMachines, dbFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	return filteredData, nil
+	return s.GetCachedVms(ctx, filter)
 }
 
-func (s *ParallelsService) GetVms(ctx basecontext.ApiContext) ([]models.ParallelsVM, error) {
+func (s *ParallelsService) getVms(ctx basecontext.ApiContext) ([]models.ParallelsVM, error) {
 	ctx.LogDebugf("Getting all VMs for all users without cache")
 	var systemMachines []models.ParallelsVM
 
