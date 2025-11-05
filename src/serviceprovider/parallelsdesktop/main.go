@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -44,7 +45,9 @@ type ParallelsService struct {
 	ctx              basecontext.ApiContext
 	refreshStarted   bool
 	eventsProcessing bool
+	sync.RWMutex
 	cachedLocalVms   []models.ParallelsVM
+	cacheInitialized bool
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
@@ -68,12 +71,16 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 		refreshStarted:   false,
 		eventsProcessing: false,
 		ctx:              ctx,
+		cacheInitialized: false,
 	}
 
 	if globalParallelsService.cachedLocalVms == nil {
 		vms, err := globalParallelsService.getVms(ctx)
 		if err == nil {
+			globalParallelsService.Lock()
 			globalParallelsService.cachedLocalVms = vms
+			globalParallelsService.cacheInitialized = true
+			globalParallelsService.Unlock()
 		}
 	}
 
@@ -385,9 +392,23 @@ func (s *ParallelsService) processEventsChannel(ctx basecontext.ApiContext) {
 func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
 	switch event.EventName {
 	case "vm_state_changed":
-		if event.AdditionalInfo != nil {
-			ctx.LogInfof("VM State Changed Event for VM %s  current state is %s", event.VMID[:5], event.AdditionalInfo.VmStateName)
+		s.processVmStateChanged(ctx, event)
+	default:
+		ctx.LogInfof("Unhandled event: %s", event.EventName)
+	}
+}
+
+func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	if event.AdditionalInfo != nil {
+		ctx.LogInfof("VM State Changed Event for VM %s  current state is %s", event.VMID[:5], event.AdditionalInfo.VmStateName)
+		s.Lock()
+		for i, vm := range s.cachedLocalVms {
+			if vm.ID == event.VMID {
+				s.cachedLocalVms[i].State = event.AdditionalInfo.VmStateName
+				break
+			}
 		}
+		s.Unlock()
 	}
 }
 func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string) ([]models.ParallelsVM, error) {
@@ -431,9 +452,13 @@ func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter strin
 	var systemMachines []models.ParallelsVM
 	var err error
 
-	if len(s.cachedLocalVms) > 0 {
-		systemMachines = s.cachedLocalVms
+	s.RLock()
+	if s.cacheInitialized {
+		systemMachines = make([]models.ParallelsVM, len(s.cachedLocalVms))
+		copy(systemMachines, s.cachedLocalVms)
+		s.RUnlock()
 	} else {
+		s.RUnlock()
 		if systemMachines, err = s.getVms(ctx); err != nil {
 			return nil, err
 		}
@@ -505,6 +530,12 @@ func (s *ParallelsService) getVms(ctx basecontext.ApiContext) ([]models.Parallel
 			}
 		}
 	}
+
+	s.Lock()
+	s.cachedLocalVms = make([]models.ParallelsVM, len(systemMachines))
+	copy(s.cachedLocalVms, systemMachines)
+	s.cacheInitialized = true
+	s.Unlock()
 
 	return systemMachines, nil
 }
