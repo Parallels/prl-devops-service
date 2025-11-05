@@ -7,12 +7,105 @@
   <script defer src="https://unpkg.com/alpinejs@3.9.0/dist/cdn.min.js"></script>
   <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css'>
   <script type="text/javascript">
+    // Clarity Consent Management
+    window.ClarityConsent = {
+      STORAGE_KEY: 'clarity_consent_status',
+
+      // Check if user has already made a consent decision
+      hasConsented: function() {
+        return localStorage.getItem(this.STORAGE_KEY) !== null;
+      },
+
+      // Get current consent status
+      getConsentStatus: function() {
+        const status = localStorage.getItem(this.STORAGE_KEY);
+        return status ? JSON.parse(status) : null;
+      },
+
+      // Grant consent for Clarity tracking
+      grantConsent: function() {
+        const consent = {
+          ad_Storage: "granted",
+          analytics_Storage: "granted",
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(consent));
+
+        // Apply consent to Clarity
+        if (window.clarity) {
+          window.clarity('consentv2', {
+            ad_Storage: "granted",
+            analytics_Storage: "granted"
+          });
+        }
+
+        // Hide banner
+        this.hideBanner();
+      },
+
+      // Deny consent for Clarity tracking
+      denyConsent: function() {
+        const consent = {
+          ad_Storage: "denied",
+          analytics_Storage: "denied",
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(consent));
+
+        // Clear Clarity cookies
+        if (window.clarity) {
+          window.clarity('consent', false);
+        }
+
+        // Hide banner
+        this.hideBanner();
+      },
+
+      // Hide the consent banner
+      hideBanner: function() {
+        const banner = document.getElementById('clarity-consent-banner');
+        if (banner) {
+          banner.style.display = 'none';
+        }
+      },
+
+      // Initialize consent based on stored preference
+      initialize: function() {
+        const status = this.getConsentStatus();
+        if (status) {
+          // User has already consented, apply their preference
+          if (status.ad_Storage === "granted" && status.analytics_Storage === "granted") {
+            if (window.clarity) {
+              window.clarity('consentv2', {
+                ad_Storage: "granted",
+                analytics_Storage: "granted"
+              });
+            }
+          } else {
+            // User denied consent
+            if (window.clarity) {
+              window.clarity('consent', false);
+            }
+          }
+        }
+        // If no consent status, banner will be shown by default
+      }
+    };
+  </script>
+  <script type="text/javascript">
     (function (c, l, a, r, i, t, y) {
       c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
       t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
       y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
     })(window, document, "clarity", "script", "n2misezv47");
   </script>
+  <script type="text/javascript">
+    // Initialize consent on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      window.ClarityConsent.initialize();
+    });
+  </script>
+  
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prettify-theme-monokai@1.0.0/monokai.css">
