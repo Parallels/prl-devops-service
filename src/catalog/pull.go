@@ -322,7 +322,7 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(r *models.Pul
 	if !response.HasErrors() {
 		s.ns.NotifyInfof("Renaming machine %v to %v", r.MachineName, r.MachineName)
 		filter := fmt.Sprintf("name=%s", r.MachineName)
-		vms, err := parallelsDesktopSvc.GetVmsSync(s.ctx, filter)
+		vms, err := parallelsDesktopSvc.GetCachedVms(s.ctx, filter)
 		if err != nil {
 			s.ns.NotifyErrorf("Error getting machine %v: %v", r.MachineName, err)
 			response.AddError(err)
@@ -380,7 +380,7 @@ func (s *CatalogManifestService) startMachineWithParallelsDesktop(r *models.Pull
 
 	if !response.HasErrors() {
 		filter := fmt.Sprintf("name=%s", r.MachineName)
-		vms, err := parallelsDesktopSvc.GetVmsSync(s.ctx, filter)
+		vms, err := parallelsDesktopSvc.GetCachedVms(s.ctx, filter)
 		if err != nil {
 			s.ns.NotifyErrorf("Error getting machine %v: %v", r.MachineName, err)
 			response.AddError(err)

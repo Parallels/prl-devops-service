@@ -43,7 +43,6 @@ var (
 
 type ParallelsService struct {
 	ctx              basecontext.ApiContext
-	refreshStarted   bool
 	eventsProcessing bool
 	sync.RWMutex
 	cachedLocalVms   []models.ParallelsVM
@@ -70,7 +69,6 @@ func Get(ctx basecontext.ApiContext) *ParallelsService {
 
 func New(ctx basecontext.ApiContext) *ParallelsService {
 	globalParallelsService = &ParallelsService{
-		refreshStarted:   false,
 		eventsProcessing: false,
 		ctx:              ctx,
 		cacheInitialized: false,
@@ -311,23 +309,7 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 
 	ctx.LogInfof("Setting up Parallels events listener")
 
-	users, err := system.Get().GetSystemUsers(ctx)
-	currentUser := "root"
-	if user, err := system.Get().GetCurrentUser(ctx); err == nil {
-		currentUser = user
-	}
-	if currentUser != "root" {
-		newAllUsers := make([]models.SystemUser, 0)
-		for _, user := range users {
-			if strings.EqualFold(user.Username, currentUser) {
-				newAllUsers = append(newAllUsers, user)
-				break
-			}
-		}
-
-		users = newAllUsers
-	}
-
+	users, err := s.getFilteredUsers(ctx)
 	if err != nil {
 		return
 	}
@@ -382,17 +364,24 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 }
 
 func (s *ParallelsService) processEventsChannel(ctx basecontext.ApiContext) {
-	go func() {
-		for {
-			select {
-			case <-s.listenerCtx.Done():
-				ctx.LogInfof("Stopping Parallels events processing")
-				return
-			case event := <-eventsChannel:
-				s.processEvent(ctx, event)
+	users, err := s.getFilteredUsers(ctx)
+	if err != nil {
+		return
+	}
+	numWorkers := len(users)
+	for i := 0; i < numWorkers; i++ {
+		go func(workerID int) {
+			for {
+				select {
+				case <-s.listenerCtx.Done():
+					ctx.LogInfof("Stopping Parallels events processing worker %d", workerID)
+					return
+				case event := <-eventsChannel:
+					s.processEvent(ctx, event)
+				}
 			}
-		}
-	}()
+		}(i)
+	}
 }
 
 func (s *ParallelsService) StopListeners() {
@@ -428,6 +417,31 @@ func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, eve
 		}
 		s.Unlock()
 	}
+}
+
+func (s *ParallelsService) getFilteredUsers(ctx basecontext.ApiContext) ([]models.SystemUser, error) {
+	users, err := system.Get().GetSystemUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	currentUser := "root"
+	if user, err := system.Get().GetCurrentUser(ctx); err == nil {
+		currentUser = user
+	}
+	if currentUser != "root" {
+		newAllUsers := make([]models.SystemUser, 0)
+		for _, user := range users {
+			if strings.EqualFold(user.Username, currentUser) {
+				newAllUsers = append(newAllUsers, user)
+				break
+			}
+		}
+
+		users = newAllUsers
+	}
+
+	return users, nil
 }
 
 func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
@@ -516,31 +530,11 @@ func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter strin
 	return filteredData, nil
 }
 
-func (s *ParallelsService) GetVmsSync(ctx basecontext.ApiContext, filter string) ([]models.ParallelsVM, error) {
-	return s.GetCachedVms(ctx, filter)
-}
-
 func (s *ParallelsService) getVms(ctx basecontext.ApiContext) ([]models.ParallelsVM, error) {
 	ctx.LogDebugf("Getting all VMs for all users without cache")
 	var systemMachines []models.ParallelsVM
 
-	users, err := system.Get().GetSystemUsers(ctx)
-	currentUser := "root"
-	if user, err := system.Get().GetCurrentUser(ctx); err == nil {
-		currentUser = user
-	}
-	if currentUser != "root" {
-		newAllUsers := make([]models.SystemUser, 0)
-		for _, user := range users {
-			if strings.EqualFold(user.Username, currentUser) {
-				newAllUsers = append(newAllUsers, user)
-				break
-			}
-		}
-
-		users = newAllUsers
-	}
-
+	users, err := s.getFilteredUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -569,6 +563,7 @@ func (s *ParallelsService) getVms(ctx basecontext.ApiContext) ([]models.Parallel
 			}
 		}
 	}
+
 	return systemMachines, nil
 }
 
