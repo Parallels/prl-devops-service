@@ -57,6 +57,8 @@ type ParallelsService struct {
 	version          string
 	build            string
 	dependencies     []interfaces.Service
+	cancelFunc       context.CancelFunc
+	listenerCtx      context.Context
 }
 
 func Get(ctx basecontext.ApiContext) *ParallelsService {
@@ -315,6 +317,8 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 	}
 	s.eventsProcessing = true
 
+	s.listenerCtx, s.cancelFunc = context.WithCancel(context.Background())
+
 	ctx.LogInfof("Setting up Parallels events listener")
 
 	users, err := system.Get().GetSystemUsers(ctx)
@@ -340,8 +344,8 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 
 	// if current user is root we listen to all users
 	for _, user := range users {
-		go func() {
-			cmd := exec.Command("sudo", "-u", user.Username, s.executable, "monitor-events", "--json")
+		go func(u models.SystemUser) {
+			cmd := exec.CommandContext(s.listenerCtx, "sudo", "-u", u.Username, s.executable, "monitor-events", "--json")
 			// Use a PTY to avoid buffering
 			ptmx, err := pty.Start(cmd)
 			if err != nil {
@@ -352,41 +356,61 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 
 			reader := bufio.NewReader(ptmx)
 			for {
-				line, err := reader.ReadString('\n')
-
-				if err != nil {
-					if err != io.EOF {
-						ctx.LogErrorf("Error reading output: %v\n", err)
+				select {
+				case <-s.listenerCtx.Done():
+					ctx.LogInfof("Stopping Parallels events listener for user %s", u.Username)
+					if cmd.Process != nil {
+						if err := cmd.Process.Kill(); err != nil {
+							ctx.LogErrorf("Error killing process for user %s: %v", u.Username, err)
+						}
 					}
-					break
-				}
+					if err := cmd.Wait(); err != nil {
+						ctx.LogErrorf("Error waiting for command to finish for user %s: %v", u.Username, err)
+					}
+					return
+				default:
+					line, err := reader.ReadString('\n')
 
-				var event models.ParallelsServiceEvent
-				if err := json.Unmarshal([]byte(line), &event); err != nil {
-					// If it's not JSON, just print it (might be stderr or other output)
-					ctx.LogInfof("📄 Non-JSON output: %s", line)
-					continue
-				}
-				eventsChannel <- event
-			}
+					if err != nil {
+						if err != io.EOF {
+							ctx.LogErrorf("Error reading output: %v\n", err)
+						}
+						break
+					}
 
-			// Clean up
-			if cmd.Process != nil {
-				cmd.Process.Kill()
+					var event models.ParallelsServiceEvent
+					if err := json.Unmarshal([]byte(line), &event); err != nil {
+						ctx.LogInfof("Non-JSON output: %s", line)
+						continue
+					}
+					eventsChannel <- event
+				}
 			}
-			cmd.Wait()
-			ctx.LogInfof("Parallels events listener stopped")
-		}()
+		}(user)
 	}
 	s.processEventsChannel(ctx)
 }
 
 func (s *ParallelsService) processEventsChannel(ctx basecontext.ApiContext) {
 	go func() {
-		for event := range eventsChannel {
-			s.processEvent(ctx, event)
+		for {
+			select {
+			case <-s.listenerCtx.Done():
+				ctx.LogInfof("Stopping Parallels events processing")
+				return
+			case event := <-eventsChannel:
+				s.processEvent(ctx, event)
+			}
 		}
 	}()
+}
+
+func (s *ParallelsService) StopListeners() {
+	if s.eventsProcessing {
+		s.ctx.LogInfof("Stopping all Parallels event listeners")
+		s.cancelFunc()
+		s.eventsProcessing = false
+	}
 }
 
 func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
