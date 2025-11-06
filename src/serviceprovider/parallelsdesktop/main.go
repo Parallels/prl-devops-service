@@ -75,17 +75,6 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 		ctx:              ctx,
 		cacheInitialized: false,
 	}
-
-	if globalParallelsService.cachedLocalVms == nil {
-		vms, err := globalParallelsService.getVms(ctx)
-		if err == nil {
-			globalParallelsService.Lock()
-			globalParallelsService.cachedLocalVms = vms
-			globalParallelsService.cacheInitialized = true
-			globalParallelsService.Unlock()
-		}
-	}
-
 	if globalParallelsService.FindPath() == "" {
 		ctx.LogWarnf("Running without support for Parallels Desktop")
 	} else {
@@ -93,6 +82,7 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 	}
 
 	globalParallelsService.SetDependencies([]interfaces.Service{})
+	globalParallelsService.refreshCache(ctx)
 	globalParallelsService.listenToParallelsEvents(ctx)
 	return globalParallelsService
 }
@@ -417,17 +407,21 @@ func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models
 	switch event.EventName {
 	case "vm_state_changed":
 		s.processVmStateChanged(ctx, event)
+	case "vm_added":
+		s.processVmAdded(ctx, event)
+	case "vm_unregistered":
+		s.processVmUnregistered(ctx, event)
 	default:
-		ctx.LogInfof("Unhandled event: %s", event.EventName)
+		ctx.LogDebugf("Unhandled event: %s", event.EventName)
 	}
 }
 
 func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
 	if event.AdditionalInfo != nil {
-		ctx.LogInfof("VM State Changed Event for VM %s  current state is %s", event.VMID[:5], event.AdditionalInfo.VmStateName)
 		s.Lock()
 		for i, vm := range s.cachedLocalVms {
 			if vm.ID == event.VMID {
+				ctx.LogInfof("Updating cached state for VM %s from %s to %s", vm.ID, vm.State, event.AdditionalInfo.VmStateName)
 				s.cachedLocalVms[i].State = event.AdditionalInfo.VmStateName
 				break
 			}
@@ -435,6 +429,27 @@ func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, eve
 		s.Unlock()
 	}
 }
+
+func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	ctx.LogInfof("Adding new VM to cache: %s", event.VMID)
+	s.refreshCache(ctx)
+}
+func (s *ParallelsService) processVmUnregistered(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	ctx.LogInfof("Removing VM from cache: %s", event.VMID)
+	s.refreshCache(ctx)
+}
+func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
+	s.ctx.LogInfof("Refreshing Parallels VMs cache")
+	vms, err := s.getVms(ctx)
+	if err != nil {
+		s.ctx.LogErrorf("Error refreshing Parallels VMs cache: %v", err)
+		return
+	}
+	s.Lock()
+	s.cachedLocalVms = vms
+	s.Unlock()
+}
+
 func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string) ([]models.ParallelsVM, error) {
 	ctx.LogInfof("Getting VMs for user: %s", username)
 	externalIp, _ := system.Get().GetExternalIp(ctx)
@@ -554,13 +569,6 @@ func (s *ParallelsService) getVms(ctx basecontext.ApiContext) ([]models.Parallel
 			}
 		}
 	}
-
-	s.Lock()
-	s.cachedLocalVms = make([]models.ParallelsVM, len(systemMachines))
-	copy(s.cachedLocalVms, systemMachines)
-	s.cacheInitialized = true
-	s.Unlock()
-
 	return systemMachines, nil
 }
 
