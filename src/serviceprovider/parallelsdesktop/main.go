@@ -39,6 +39,7 @@ var (
 	globalParallelsService *ParallelsService
 	logger                 = common.Logger
 	eventsChannel          = make(chan models.ParallelsServiceEvent, 1000)
+	eventSupported         = [3]string{"vm_state_changed", "vm_added", "vm_unregistered"}
 )
 
 type ParallelsService struct {
@@ -78,8 +79,11 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 	}
 
 	globalParallelsService.SetDependencies([]interfaces.Service{})
-	globalParallelsService.refreshCache(ctx)
-	globalParallelsService.listenToParallelsEvents(ctx)
+	cfg := config.Get()
+	if cfg.IsApi() || cfg.IsOrchestrator() {
+		globalParallelsService.refreshCache(ctx)
+		globalParallelsService.listenToParallelsEvents(ctx)
+	}
 	return globalParallelsService
 }
 
@@ -297,6 +301,15 @@ func (s *ParallelsService) IsLicensed() bool {
 	return s.isLicensed
 }
 
+func isEventSupported(event models.ParallelsServiceEvent) bool {
+	for _, supported := range eventSupported {
+		if event.EventName == supported {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 	if s.eventsProcessing {
 		return
@@ -357,6 +370,11 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 					var event models.ParallelsServiceEvent
 					if err := json.Unmarshal([]byte(line), &event); err != nil {
 						ctx.LogInfof("Non-JSON output: %s", line)
+						continue
+					}
+					// Check if event is supported
+					if !isEventSupported(event) {
+						ctx.LogDebugf("Unsupported event: %s", event.EventName)
 						continue
 					}
 					eventsChannel <- event
@@ -510,10 +528,17 @@ func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter strin
 	var systemMachines []models.ParallelsVM
 	var err error
 
-	s.RLock()
-	systemMachines = make([]models.ParallelsVM, len(s.cachedLocalVms))
-	copy(systemMachines, s.cachedLocalVms)
-	s.RUnlock()
+	cfg := config.Get()
+	if cfg.IsApi() || cfg.IsOrchestrator() {
+		s.RLock()
+		systemMachines = s.cachedLocalVms
+		s.RUnlock()
+	} else {
+		systemMachines, err = s.getVms(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	dbFilter, err := data.ParseFilter(filter)
 	if err != nil {
