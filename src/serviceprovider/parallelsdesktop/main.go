@@ -25,11 +25,11 @@ import (
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/processlauncher"
 	"github.com/Parallels/prl-devops-service/serviceprovider/git"
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider/packer"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
-	"github.com/creack/pty"
 	"github.com/google/uuid"
 
 	"github.com/cjlapao/common-go/helper"
@@ -58,6 +58,7 @@ type ParallelsService struct {
 	dependencies     []interfaces.Service
 	cancelFunc       context.CancelFunc
 	listenerCtx      context.Context
+	ProcessLauncher  processlauncher.ProcessLauncher
 }
 
 func Get(ctx basecontext.ApiContext) *ParallelsService {
@@ -71,6 +72,7 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 	globalParallelsService = &ParallelsService{
 		eventsProcessing: false,
 		ctx:              ctx,
+		ProcessLauncher:  &processlauncher.RealProcessLauncher{},
 	}
 	if globalParallelsService.FindPath() == "" {
 		ctx.LogWarnf("Running without support for Parallels Desktop")
@@ -336,14 +338,14 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 		go func(u models.SystemUser) {
 			cmd := exec.CommandContext(s.listenerCtx, "sudo", "-u", u.Username, s.executable, "monitor-events", "--json")
 			// Use a PTY to avoid buffering
-			ptmx, err := pty.Start(cmd)
+			file, err := s.ProcessLauncher.Start(cmd)
 			if err != nil {
 				ctx.LogErrorf("Error starting command with PTY: %v\n", err)
 				return
 			}
-			defer ptmx.Close()
+			defer file.Close()
 
-			reader := bufio.NewReader(ptmx)
+			reader := bufio.NewReader(file)
 			for {
 				select {
 				case <-s.listenerCtx.Done():
