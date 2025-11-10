@@ -469,12 +469,37 @@ func (s *ParallelsService) getFilteredUsers(ctx basecontext.ApiContext) ([]model
 }
 
 func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
-	ctx.LogInfof("Adding new VM to cache: %s", event.VMID)
-	s.refreshCache(ctx)
+	users, err := s.getFilteredUsers(ctx)
+	if err != nil {
+		ctx.LogErrorf("Failed to get filtered users: %v", err)
+		return
+	}
+	for _, user := range users {
+		userMachines, err := s.GetUserVm(ctx, user.Username, event.VMID)
+		if err != nil {
+			continue
+		}
+		for _, machine := range userMachines {
+			if machine.ID == event.VMID {
+				s.Lock()
+				s.cachedLocalVms = append(s.cachedLocalVms, machine)
+				s.Unlock()
+				ctx.LogInfof("Added VM %s to cache", event.VMID)
+				return
+			}
+		}
+	}
 }
 func (s *ParallelsService) processVmUnregistered(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
-	ctx.LogInfof("Removing VM from cache: %s", event.VMID)
-	s.refreshCache(ctx)
+	for i, vm := range s.cachedLocalVms {
+		if vm.ID == event.VMID {
+			s.Lock()
+			s.cachedLocalVms = append(s.cachedLocalVms[:i], s.cachedLocalVms[i+1:]...)
+			s.Unlock()
+			ctx.LogInfof("Removed VM %s from cache", event.VMID)
+			break
+		}
+	}
 }
 func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
 	ctx.LogInfof("Refreshing Parallels VMs cache")
@@ -489,13 +514,14 @@ func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
 	s.Unlock()
 }
 
-func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string) ([]models.ParallelsVM, error) {
+func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string, vmId string) ([]models.ParallelsVM, error) {
+	// vmId can be empty to get all VMs for the user
 	ctx.LogInfof("Getting VMs for user: %s", username)
 	externalIp, _ := system.Get().GetExternalIp(ctx)
 	var userMachines []models.ParallelsVM
 	cmd := helpers.Command{
 		Command: "sudo",
-		Args:    []string{"-u", username, s.executable, "list", "-a", "-i", "--json"},
+		Args:    []string{"-u", username, s.executable, "list", vmId, "-a", "-i", "--json"},
 	}
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
@@ -521,7 +547,13 @@ func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string
 		}
 	}
 
-	ctx.LogInfof("User %s has %v VMs", username, len(userMachines))
+	if vmId == "" {
+		ctx.LogInfof("User %s has %v VMs", username, len(userMachines))
+	} else if vmId != "" && len(userMachines) > 0 {
+		ctx.LogInfof("User %s VM %s found", username, vmId)
+	} else {
+		ctx.LogInfof("User %s VM %s not found", username, vmId)
+	}
 	return userMachines, nil
 }
 
@@ -569,7 +601,7 @@ func (s *ParallelsService) getVms(ctx basecontext.ApiContext) ([]models.Parallel
 	}
 
 	for _, user := range users {
-		userMachines, err := s.GetUserVm(ctx, user.Username)
+		userMachines, err := s.GetUserVm(ctx, user.Username, "")
 		if err != nil {
 			return nil, err
 		}
