@@ -1,6 +1,7 @@
 package parallelsdesktop
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -12,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -23,6 +25,7 @@ import (
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/processlauncher"
 	"github.com/Parallels/prl-devops-service/serviceprovider/git"
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider/packer"
@@ -35,11 +38,14 @@ import (
 var (
 	globalParallelsService *ParallelsService
 	logger                 = common.Logger
+	eventsChannel          = make(chan models.ParallelsServiceEvent, 1000)
+	eventSupported         = [3]string{"vm_state_changed", "vm_added", "vm_unregistered"}
 )
 
 type ParallelsService struct {
 	ctx              basecontext.ApiContext
-	refreshStarted   bool
+	eventsProcessing bool
+	sync.RWMutex
 	cachedLocalVms   []models.ParallelsVM
 	executable       string
 	serverExecutable string
@@ -50,6 +56,9 @@ type ParallelsService struct {
 	version          string
 	build            string
 	dependencies     []interfaces.Service
+	cancelFunc       context.CancelFunc
+	listenerCtx      context.Context
+	processLauncher  processlauncher.ProcessLauncher
 }
 
 func Get(ctx basecontext.ApiContext) *ParallelsService {
@@ -61,15 +70,10 @@ func Get(ctx basecontext.ApiContext) *ParallelsService {
 
 func New(ctx basecontext.ApiContext) *ParallelsService {
 	globalParallelsService = &ParallelsService{
-		refreshStarted: false,
-		ctx:            ctx,
+		eventsProcessing: false,
+		ctx:              ctx,
+		processLauncher:  &processlauncher.RealProcessLauncher{},
 	}
-
-	if globalParallelsService.cachedLocalVms == nil {
-		globalParallelsService.cachedLocalVms = make([]models.ParallelsVM, 0)
-		globalParallelsService.refreshCacheVms(ctx)
-	}
-
 	if globalParallelsService.FindPath() == "" {
 		ctx.LogWarnf("Running without support for Parallels Desktop")
 	} else {
@@ -77,6 +81,11 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 	}
 
 	globalParallelsService.SetDependencies([]interfaces.Service{})
+	cfg := config.Get()
+	if cfg.IsApi() || cfg.IsOrchestrator() {
+		globalParallelsService.refreshCache(ctx)
+		globalParallelsService.listenToParallelsEvents(ctx)
+	}
 	return globalParallelsService
 }
 
@@ -294,33 +303,218 @@ func (s *ParallelsService) IsLicensed() bool {
 	return s.isLicensed
 }
 
-func (s *ParallelsService) refreshCacheVms(ctx basecontext.ApiContext) {
-	if s.refreshStarted {
+func isEventSupported(event models.ParallelsServiceEvent) bool {
+	for _, supported := range eventSupported {
+		if event.EventName == supported {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
+	if s.eventsProcessing {
+		return
+	}
+	s.eventsProcessing = true
+
+	ctx.LogInfof("Setting up Parallels events listener")
+	users, err := s.getFilteredUsers(ctx)
+	if err != nil {
+		ctx.LogErrorf("Failed to get filtered users: %v", err)
+		s.eventsProcessing = false
+		return
+	}
+	if len(users) == 0 {
+		ctx.LogWarnf("No users found for event listening")
+		s.eventsProcessing = false
 		return
 	}
 
-	go func() {
-		s.refreshStarted = true
-		for {
-			ctx.LogInfof("Waiting %s to refresh VM cache", config.Get().ParallelsRefreshInterval())
-			time.Sleep(config.Get().ParallelsRefreshInterval())
-			var err error
-			if s.cachedLocalVms, err = s.GetVms(ctx); err != nil {
-				ctx.LogErrorf("Error refreshing VM cache: %v", err)
-			}
+	s.listenerCtx, s.cancelFunc = context.WithCancel(context.Background())
 
-			ctx.LogInfof("VM cache refreshed")
+	// if current user is root we listen to all users
+	for _, user := range users {
+		go func(u models.SystemUser) {
+			cmd := exec.CommandContext(s.listenerCtx, "sudo", "-u", u.Username, s.executable, "monitor-events", "--json")
+			// Use a PTY to avoid buffering
+			file, err := s.processLauncher.Start(cmd)
+			if err != nil {
+				ctx.LogErrorf("Error starting command with PTY: %v\n", err)
+				return
+			}
+			defer file.Close()
+
+			reader := bufio.NewReader(file)
+			for {
+				select {
+				case <-s.listenerCtx.Done():
+					ctx.LogInfof("Stopping Parallels events listener for user %s", u.Username)
+					if cmd.Process != nil {
+						if err := cmd.Process.Kill(); err != nil {
+							ctx.LogErrorf("Error killing process for user %s: %v", u.Username, err)
+						}
+					}
+					if err := cmd.Wait(); err != nil {
+						ctx.LogErrorf("Error waiting for command to finish for user %s: %v", u.Username, err)
+					}
+					return
+				default:
+					line, err := reader.ReadString('\n')
+
+					if err != nil {
+						if err != io.EOF {
+							ctx.LogErrorf("Error reading output: %v\n", err)
+						}
+						break
+					}
+
+					var event models.ParallelsServiceEvent
+					if err := json.Unmarshal([]byte(line), &event); err != nil {
+						ctx.LogInfof("Non-JSON output: %s", line)
+						continue
+					}
+					// Check if event is supported
+					if !isEventSupported(event) {
+						ctx.LogDebugf("Unsupported event: %s", event.EventName)
+						continue
+					}
+					eventsChannel <- event
+				}
+			}
+		}(user)
+	}
+	s.processEventsChannel(ctx)
+}
+
+func (s *ParallelsService) processEventsChannel(ctx basecontext.ApiContext) {
+	go func() {
+		for {
+			select {
+			case <-s.listenerCtx.Done():
+				ctx.LogInfof("Stopping Parallels events processor")
+				return
+			case event := <-eventsChannel:
+				s.processEvent(ctx, event)
+			}
 		}
 	}()
 }
 
-func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string) ([]models.ParallelsVM, error) {
+func (s *ParallelsService) StopListeners() {
+	if s.eventsProcessing {
+		s.ctx.LogInfof("Stopping all Parallels event listeners")
+		s.cancelFunc()
+		s.eventsProcessing = false
+	}
+}
+
+func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	switch event.EventName {
+	case "vm_state_changed":
+		s.processVmStateChanged(ctx, event)
+	case "vm_added":
+		s.processVmAdded(ctx, event)
+	case "vm_unregistered":
+		s.processVmUnregistered(ctx, event)
+	default:
+		ctx.LogDebugf("Unhandled event: %s", event.EventName)
+	}
+}
+
+func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	if event.AdditionalInfo != nil && event.AdditionalInfo.VmStateName != "" {
+		s.Lock()
+		for i, vm := range s.cachedLocalVms {
+			if vm.ID == event.VMID {
+				ctx.LogInfof("Updating cached state for VM %s from %s to %s", vm.ID, vm.State, event.AdditionalInfo.VmStateName)
+				s.cachedLocalVms[i].State = event.AdditionalInfo.VmStateName
+				break
+			}
+		}
+		s.Unlock()
+	}
+}
+
+func (s *ParallelsService) getFilteredUsers(ctx basecontext.ApiContext) ([]models.SystemUser, error) {
+	users, err := system.Get().GetSystemUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	currentUser := "root"
+	if user, err := system.Get().GetCurrentUser(ctx); err == nil {
+		currentUser = user
+	}
+	if currentUser != "root" {
+		newAllUsers := make([]models.SystemUser, 0)
+		for _, user := range users {
+			if strings.EqualFold(user.Username, currentUser) {
+				newAllUsers = append(newAllUsers, user)
+				break
+			}
+		}
+
+		users = newAllUsers
+	}
+
+	return users, nil
+}
+
+func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	users, err := s.getFilteredUsers(ctx)
+	if err != nil {
+		ctx.LogErrorf("Failed to get filtered users: %v", err)
+		return
+	}
+	for _, user := range users {
+		userMachines, err := s.GetUserVm(ctx, user.Username, event.VMID)
+		if err != nil {
+			continue
+		}
+		for _, machine := range userMachines {
+			if machine.ID == event.VMID {
+				s.Lock()
+				s.cachedLocalVms = append(s.cachedLocalVms, machine)
+				s.Unlock()
+				ctx.LogInfof("Added VM %s to cache", event.VMID)
+				return
+			}
+		}
+	}
+}
+func (s *ParallelsService) processVmUnregistered(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	for i, vm := range s.cachedLocalVms {
+		if vm.ID == event.VMID {
+			s.Lock()
+			s.cachedLocalVms = append(s.cachedLocalVms[:i], s.cachedLocalVms[i+1:]...)
+			s.Unlock()
+			ctx.LogInfof("Removed VM %s from cache", event.VMID)
+			break
+		}
+	}
+}
+func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
+	ctx.LogInfof("Refreshing Parallels VMs cache")
+	vms, err := s.getVms(ctx)
+	s.Lock()
+	if err != nil {
+		ctx.LogErrorf("Error refreshing Parallels VMs cache: %v", err)
+		s.cachedLocalVms = []models.ParallelsVM{} // Clear cache on error for consistency
+	} else {
+		s.cachedLocalVms = vms
+	}
+	s.Unlock()
+}
+
+func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string, vmId string) ([]models.ParallelsVM, error) {
+	// vmId can be empty to get all VMs for the user
 	ctx.LogInfof("Getting VMs for user: %s", username)
 	externalIp, _ := system.Get().GetExternalIp(ctx)
 	var userMachines []models.ParallelsVM
 	cmd := helpers.Command{
 		Command: "sudo",
-		Args:    []string{"-u", username, s.executable, "list", "-a", "-i", "--json"},
+		Args:    []string{"-u", username, s.executable, "list", vmId, "-a", "-i", "--json"},
 	}
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
@@ -346,7 +540,13 @@ func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string
 		}
 	}
 
-	ctx.LogInfof("User %s has %v VMs", username, len(userMachines))
+	if vmId == "" {
+		ctx.LogInfof("User %s has %v VMs", username, len(userMachines))
+	} else if vmId != "" && len(userMachines) > 0 {
+		ctx.LogInfof("User %s VM %s found", username, vmId)
+	} else {
+		ctx.LogInfof("User %s VM %s not found", username, vmId)
+	}
 	return userMachines, nil
 }
 
@@ -354,14 +554,17 @@ func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter strin
 	ctx.LogInfof("Getting all VMs for all users with cache")
 	var systemMachines []models.ParallelsVM
 	var err error
-	if len(s.cachedLocalVms) > 0 {
+
+	cfg := config.Get()
+	if cfg.IsApi() || cfg.IsOrchestrator() {
+		s.RLock()
 		systemMachines = s.cachedLocalVms
+		s.RUnlock()
 	} else {
-		if systemMachines, err = s.GetVms(ctx); err != nil {
+		systemMachines, err = s.getVms(ctx)
+		if err != nil {
 			return nil, err
 		}
-		s.cachedLocalVms = systemMachines
-		s.refreshCacheVms(ctx)
 	}
 
 	dbFilter, err := data.ParseFilter(filter)
@@ -377,51 +580,11 @@ func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter strin
 	return filteredData, nil
 }
 
-func (s *ParallelsService) GetVmsSync(ctx basecontext.ApiContext, filter string) ([]models.ParallelsVM, error) {
-	var systemMachines []models.ParallelsVM
-	var err error
-	vms, err := s.GetVms(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	s.cachedLocalVms = vms
-	systemMachines = vms
-
-	dbFilter, err := data.ParseFilter(filter)
-	if err != nil {
-		return nil, err
-	}
-
-	filteredData, err := data.FilterByProperty(systemMachines, dbFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	return filteredData, nil
-}
-
-func (s *ParallelsService) GetVms(ctx basecontext.ApiContext) ([]models.ParallelsVM, error) {
+func (s *ParallelsService) getVms(ctx basecontext.ApiContext) ([]models.ParallelsVM, error) {
 	ctx.LogDebugf("Getting all VMs for all users without cache")
 	var systemMachines []models.ParallelsVM
 
-	users, err := system.Get().GetSystemUsers(ctx)
-	currentUser := "root"
-	if user, err := system.Get().GetCurrentUser(ctx); err == nil {
-		currentUser = user
-	}
-	if currentUser != "root" {
-		newAllUsers := make([]models.SystemUser, 0)
-		for _, user := range users {
-			if strings.EqualFold(user.Username, currentUser) {
-				newAllUsers = append(newAllUsers, user)
-				break
-			}
-		}
-
-		users = newAllUsers
-	}
-
+	users, err := s.getFilteredUsers(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -431,7 +594,7 @@ func (s *ParallelsService) GetVms(ctx basecontext.ApiContext) ([]models.Parallel
 	}
 
 	for _, user := range users {
-		userMachines, err := s.GetUserVm(ctx, user.Username)
+		userMachines, err := s.GetUserVm(ctx, user.Username, "")
 		if err != nil {
 			return nil, err
 		}

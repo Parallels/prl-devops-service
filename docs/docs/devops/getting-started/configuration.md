@@ -46,7 +46,6 @@ The root object of the configuration file is the environment object, which conta
 | CATALOG_COMPRESS_VM_RATIO | The ratio that will be used to determine whether the virtual machine should be compressed best_speed/balanced/best_compression/no_compression | best_compression |
 | CATALOG_ENABLE_PROVIDER_CREDENTIALS_OBFUSCATION | Specifies whether the provider credentials in the catalog should be obfuscated | true |
 | VIRTUAL_MACHINES_FOLDER | The folder where the virtual machines will be stored | users/`<username>`/Parallels |
-| PARALLELS_DESKTOP_REFRESH_INTERVAL | The interval in seconds that the service will refresh the Parallels Desktop virtual machines in seconds | 15 seconds |
 | SYSTEM_RESERVED_CPU | The number of cpu cores that will be reserved for the system and not used for Orchestrator | 1 |
 | SYSTEM_RESERVED_MEMORY | The amount of memory that will be reserved for the system and not used for Orchestrator in Mb's | 2048 |
 | SYSTEM_RESERVED_DISK | The amount of disk space that will be reserved for the system and not used for Orchestrator in Mb's | 20000 |

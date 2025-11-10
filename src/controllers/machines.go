@@ -962,7 +962,7 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		filter := fmt.Sprintf("Home=%s/,i", request.Path)
-		vms, err := svc.GetVmsSync(ctx, filter)
+		vms, err := svc.GetCachedVms(ctx, filter)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return

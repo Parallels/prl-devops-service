@@ -331,15 +331,6 @@ func (c *Config) DbSaveInterval() time.Duration {
 	return time.Duration(interval) * time.Minute
 }
 
-func (c *Config) ParallelsRefreshInterval() time.Duration {
-	interval := c.GetIntKey(constants.PARALLELS_DESKTOP_REFRESH_INTERVAL_ENV_VAR)
-	if interval == 0 {
-		return 20 * time.Second
-	}
-
-	return time.Duration(interval) * time.Second
-}
-
 func (c *Config) RootFolder() (string, error) {
 	ctx := basecontext.NewRootBaseContext()
 	srv := system.Get()
