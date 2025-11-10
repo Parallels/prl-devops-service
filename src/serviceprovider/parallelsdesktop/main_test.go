@@ -26,7 +26,7 @@ func createTestParallelsService() *ParallelsService {
 		eventsProcessing: false,
 		cachedLocalVms:   []models.ParallelsVM{},
 		executable:       "/usr/local/bin/prlctl",
-		ProcessLauncher:  &processlauncher.MockProcessLauncher{},
+		processLauncher:  &processlauncher.MockProcessLauncher{},
 	}
 	return service
 }
@@ -75,7 +75,7 @@ func TestListenToParallelsEvents(t *testing.T) {
 				return r, nil
 			},
 		}
-		service.ProcessLauncher = mockProcessLauncher
+		service.processLauncher = mockProcessLauncher
 		if service.eventsProcessing {
 			t.Error("Expected eventsProcessing to be false initially")
 		}

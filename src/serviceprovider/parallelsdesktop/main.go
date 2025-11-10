@@ -58,7 +58,7 @@ type ParallelsService struct {
 	dependencies     []interfaces.Service
 	cancelFunc       context.CancelFunc
 	listenerCtx      context.Context
-	ProcessLauncher  processlauncher.ProcessLauncher
+	processLauncher  processlauncher.ProcessLauncher
 }
 
 func Get(ctx basecontext.ApiContext) *ParallelsService {
@@ -72,7 +72,7 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 	globalParallelsService = &ParallelsService{
 		eventsProcessing: false,
 		ctx:              ctx,
-		ProcessLauncher:  &processlauncher.RealProcessLauncher{},
+		processLauncher:  &processlauncher.RealProcessLauncher{},
 	}
 	if globalParallelsService.FindPath() == "" {
 		ctx.LogWarnf("Running without support for Parallels Desktop")
@@ -338,7 +338,7 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 		go func(u models.SystemUser) {
 			cmd := exec.CommandContext(s.listenerCtx, "sudo", "-u", u.Username, s.executable, "monitor-events", "--json")
 			// Use a PTY to avoid buffering
-			file, err := s.ProcessLauncher.Start(cmd)
+			file, err := s.processLauncher.Start(cmd)
 			if err != nil {
 				ctx.LogErrorf("Error starting command with PTY: %v\n", err)
 				return
@@ -388,24 +388,17 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 }
 
 func (s *ParallelsService) processEventsChannel(ctx basecontext.ApiContext) {
-	users, err := s.getFilteredUsers(ctx)
-	if err != nil {
-		return
-	}
-	numWorkers := len(users)
-	for i := 0; i < numWorkers; i++ {
-		go func(workerID int) {
-			for {
-				select {
-				case <-s.listenerCtx.Done():
-					ctx.LogInfof("Stopping Parallels events processing worker %d", workerID)
-					return
-				case event := <-eventsChannel:
-					s.processEvent(ctx, event)
-				}
+	go func() {
+		for {
+			select {
+			case <-s.listenerCtx.Done():
+				ctx.LogInfof("Stopping Parallels events processor")
+				return
+			case event := <-eventsChannel:
+				s.processEvent(ctx, event)
 			}
-		}(i)
-	}
+		}
+	}()
 }
 
 func (s *ParallelsService) StopListeners() {
