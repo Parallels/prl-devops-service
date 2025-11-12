@@ -14,6 +14,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/Parallels/prl-devops-service/telemetry"
 
@@ -137,6 +138,11 @@ func main() {
 }
 
 func cleanup(ctx basecontext.ApiContext, db *data.JsonDatabase) {
+	if emitter := eventemitter.Get(); emitter != nil && emitter.IsRunning() {
+		ctx.LogInfof("[Core] Shutting down EventEmitter service")
+		emitter.Shutdown()
+	}
+
 	if db != nil {
 		ctx.LogInfof("[Core] Saving database")
 		if err := db.SaveNow(ctx); err != nil {

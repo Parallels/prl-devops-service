@@ -13,8 +13,8 @@ func TestGracefulShutdown(t *testing.T) {
 	defer cleanup()
 
 	// Register a client
-	client := createTestClient("test1", "testuser", []string{constants.EVENT_TYPE_PDFM})
-	emitter.hub.register <- client
+	client := createTestClient("test1", "testuser", []constants.EventType{constants.EventTypePDFM})
+	emitter.hub.commands <- &registerClientCmd{client: client}
 	time.Sleep(50 * time.Millisecond)
 
 	// Verify client is registered
@@ -28,7 +28,7 @@ func TestGracefulShutdown(t *testing.T) {
 	assert.False(t, emitter.IsRunning())
 
 	// Try to send a message - should not panic
-	err := emitter.SendToType(constants.EVENT_TYPE_PDFM, "Test", nil)
+	err := emitter.SendToType(constants.EventTypePDFM, "Test", nil)
 	assert.Error(t, err) // Should log warning, and error
 }
 
@@ -37,13 +37,13 @@ func TestShutdownWithMultipleClients(t *testing.T) {
 	defer cleanup()
 
 	// Register multiple clients
-	client1 := createTestClient("client1", "user1", []string{constants.EVENT_TYPE_PDFM})
-	client2 := createTestClient("client2", "user2", []string{constants.EVENT_TYPE_VM})
-	client3 := createTestClient("client3", "user3", []string{constants.EVENT_TYPE_HOST})
+	client1 := createTestClient("client1", "user1", []constants.EventType{constants.EventTypePDFM})
+	client2 := createTestClient("client2", "user2", []constants.EventType{constants.EventTypeVM})
+	client3 := createTestClient("client3", "user3", []constants.EventType{constants.EventTypeHost})
 
-	emitter.hub.register <- client1
-	emitter.hub.register <- client2
-	emitter.hub.register <- client3
+	emitter.hub.commands <- &registerClientCmd{client: client1}
+	emitter.hub.commands <- &registerClientCmd{client: client2}
+	emitter.hub.commands <- &registerClientCmd{client: client3}
 	time.Sleep(50 * time.Millisecond)
 
 	stats := emitter.GetStats(false)
