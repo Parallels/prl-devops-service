@@ -4,22 +4,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewEventMessage(t *testing.T) {
-	eventType := "pdfm"
 	message := "Test message"
 	body := map[string]interface{}{
 		"key1": "value1",
 		"key2": 123,
 	}
 
-	msg := NewEventMessage(eventType, message, body)
+	msg := NewEventMessage(constants.EventTypePDFM, message, body)
 
 	assert.NotNil(t, msg)
 	assert.NotEmpty(t, msg.ID, "ID should be generated")
-	assert.Equal(t, eventType, msg.Type)
+	assert.Equal(t, constants.EventTypePDFM, msg.Type)
 	assert.Equal(t, message, msg.Message)
 	assert.Equal(t, body, msg.Body)
 	assert.Empty(t, msg.ClientID, "ClientID should be empty by default")
@@ -31,12 +31,11 @@ func TestNewEventMessage_NilBody(t *testing.T) {
 
 	assert.NotNil(t, msg)
 	assert.Nil(t, msg.Body)
-	assert.Equal(t, "system", msg.Type)
+	assert.Equal(t, constants.EventTypeSystem, msg.Type)
 }
 
 func TestNewEventMessage_EmptyMessage(t *testing.T) {
-	msg := NewEventMessage("vm", "", map[string]interface{}{})
-
+	msg := NewEventMessage(constants.EventTypeVM, "", map[string]interface{}{})
 	assert.NotNil(t, msg)
 	assert.Empty(t, msg.Message)
 	assert.NotEmpty(t, msg.ID)
@@ -66,7 +65,7 @@ func TestEventClientInfo_Fields(t *testing.T) {
 		ConnectedAt:   now,
 		LastPingAt:    now,
 		LastPongAt:    now,
-		Subscriptions: []string{"pdfm", "global"},
+		Subscriptions: []constants.EventType{constants.EventTypePDFM, constants.EventTypeGlobal},
 		IsAlive:       true,
 	}
 
@@ -84,9 +83,9 @@ func TestEventEmitterStats_Fields(t *testing.T) {
 	stats := EventEmitterStats{
 		TotalClients:       5,
 		TotalSubscriptions: 12,
-		TypeStats: map[string]int{
-			"pdfm":   2,
-			"global": 5,
+		TypeStats: map[constants.EventType]int{
+			constants.EventTypePDFM:   2,
+			constants.EventTypeGlobal: 5,
 		},
 		Clients:      []EventClientInfo{},
 		MessagesSent: 100,
@@ -96,7 +95,7 @@ func TestEventEmitterStats_Fields(t *testing.T) {
 
 	assert.Equal(t, 5, stats.TotalClients)
 	assert.Equal(t, 12, stats.TotalSubscriptions)
-	assert.Equal(t, 2, stats.TypeStats["pdfm"])
+	assert.Equal(t, 2, stats.TypeStats[constants.EventTypePDFM])
 	assert.Equal(t, int64(100), stats.MessagesSent)
 	assert.Equal(t, now, stats.StartTime)
 }
