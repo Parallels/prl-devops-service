@@ -9,7 +9,7 @@ import (
 )
 
 // SendToType sends a message to all clients subscribed to a specific type
-func (e *EventEmitter) SendToType(eventType string, message string, body map[string]interface{}) error {
+func (e *EventEmitter) SendToType(eventType constants.EventType, message string, body map[string]interface{}) error {
 	if !e.IsRunning() {
 		e.ctx.LogWarnf("[EventEmitter] Cannot send message, service is not running")
 		return errors.New("event emitter is not running")
@@ -25,7 +25,7 @@ func (e *EventEmitter) SendToType(eventType string, message string, body map[str
 }
 
 // SendToClient sends a message to a specific client
-func (e *EventEmitter) SendToClient(clientID string, eventType string, message string, body map[string]interface{}) error {
+func (e *EventEmitter) SendToClient(clientID string, eventType constants.EventType, message string, body map[string]interface{}) error {
 	if !e.IsRunning() {
 		e.ctx.LogWarnf("[EventEmitter] Cannot send message, service is not running")
 		return errors.New("event emitter is not running")
@@ -43,7 +43,7 @@ func (e *EventEmitter) SendToClient(clientID string, eventType string, message s
 
 // SendToAll sends a message to all connected clients
 func (e *EventEmitter) SendToAll(message string, body map[string]interface{}) error {
-	return e.SendToType(constants.EVENT_TYPE_GLOBAL, message, body)
+	return e.SendToType(constants.EventTypeGlobal, message, body)
 }
 
 // BroadcastMessage sends a pre-constructed event message
@@ -69,7 +69,7 @@ func (e *EventEmitter) GetStats(includeClients bool) *models.EventEmitterStats {
 		return &models.EventEmitterStats{
 			TotalClients:       0,
 			TotalSubscriptions: 0,
-			TypeStats:          make(map[string]int),
+			TypeStats:          make(map[constants.EventType]int),
 			MessagesSent:       0,
 			StartTime:          e.startTime,
 			Uptime:             "0s",
@@ -82,7 +82,7 @@ func (e *EventEmitter) GetStats(includeClients bool) *models.EventEmitterStats {
 	stats := &models.EventEmitterStats{
 		TotalClients:       len(e.hub.clients),
 		TotalSubscriptions: 0,
-		TypeStats:          make(map[string]int),
+		TypeStats:          make(map[constants.EventType]int),
 		MessagesSent:       atomic.LoadInt64(&e.messagesSent),
 		StartTime:          e.startTime,
 		Uptime:             e.getUptime(),
@@ -100,10 +100,11 @@ func (e *EventEmitter) GetStats(includeClients bool) *models.EventEmitterStats {
 		stats.Clients = make([]models.EventClientInfo, 0, len(e.hub.clients))
 		for _, client := range e.hub.clients {
 			client.mu.RLock()
+
 			clientInfo := models.EventClientInfo{
 				ID:            client.ID,
-				UserID:        client.UserID,
-				Username:      client.Username,
+				UserID:        client.User.ID,
+				Username:      client.User.Username,
 				ConnectedAt:   client.ConnectedAt,
 				LastPingAt:    client.LastPingAt,
 				LastPongAt:    client.LastPongAt,

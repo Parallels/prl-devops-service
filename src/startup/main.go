@@ -17,6 +17,7 @@ import (
 	"github.com/Parallels/prl-devops-service/security/jwt"
 	"github.com/Parallels/prl-devops-service/security/password"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/Parallels/prl-devops-service/startup/migrations"
 	"github.com/Parallels/prl-devops-service/telemetry"
@@ -56,6 +57,14 @@ func Start(ctx basecontext.ApiContext) {
 	_ = telemetry.New(ctx)
 
 	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.EventStartApi, nil, nil))
+
+	// Initialize EventEmitter service (for API and Orchestrator modes)
+	if cfg.IsApi() || cfg.IsOrchestrator() {
+		emitter := eventemitter.NewEventEmitter(ctx)
+		if diag := emitter.Initialize(); diag.HasErrors() {
+			ctx.LogErrorf("Failed to initialize EventEmitter: %v", diag.GetErrors())
+		}
+	}
 
 	// Seeding defaults
 	if err := SeedDefaults(); err != nil {

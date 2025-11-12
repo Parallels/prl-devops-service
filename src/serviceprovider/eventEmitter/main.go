@@ -26,24 +26,25 @@ type EventEmitter struct {
 // Hub manages client connections and message broadcasting
 type Hub struct {
 	ctx           basecontext.ApiContext
-	clients       map[string]*Client         // Map of client ID to Client
-	subscriptions map[string]map[string]bool // Map of event type to set of client IDs
-	broadcast     chan *models.EventMessage  // Channel for broadcasting messages
-	register      chan *Client               // Channel for registering new clients
-	unregister    chan *Client               // Channel for unregistering clients
-	done          chan struct{}              // Channel to signal hub shutdown
+	clients       map[string]*Client                      // Map of client ID to Client
+	clientsByIP   map[string]*Client                      // Map of IP address to Client (for connection limiting)
+	subscriptions map[constants.EventType]map[string]bool // Map of event type to set of client IDs (type-safe)
+	broadcast     chan *models.EventMessage               // Channel for broadcasting messages
+	register      chan *Client                            // Channel for registering new clients
+	unregister    chan *Client                            // Channel for unregistering clients
+	done          chan struct{}                           // Channel to signal hub shutdown
 	mu            sync.RWMutex
 }
 
 // Client represents a connected WebSocket client
 type Client struct {
 	ID            string
-	UserID        string
-	Username      string
+	User          *models.ApiUser
 	Hub           *Hub
 	Conn          *websocket.Conn
 	Send          chan *models.EventMessage
-	Subscriptions []string
+	Subscriptions []constants.EventType
+	RemoteIP      string
 	ConnectedAt   time.Time
 	LastPingAt    time.Time
 	LastPongAt    time.Time
@@ -102,8 +103,9 @@ func (e *EventEmitter) Initialize() *errors.Diagnostics {
 	e.hub = &Hub{
 		ctx:           e.ctx,
 		clients:       make(map[string]*Client),
-		subscriptions: make(map[string]map[string]bool),
-		broadcast:     make(chan *models.EventMessage, 256),
+		clientsByIP:   make(map[string]*Client),
+		subscriptions: make(map[constants.EventType]map[string]bool),
+		broadcast:     make(chan *models.EventMessage, 4096),
 		register:      make(chan *Client),
 		unregister:    make(chan *Client),
 		done:          make(chan struct{}),
@@ -210,45 +212,29 @@ func (h *Hub) registerClient(client *Client) {
 
 	h.clients[client.ID] = client
 
-	// Always subscribe to global type automatically
-	if h.subscriptions[constants.EVENT_TYPE_GLOBAL] == nil {
-		h.subscriptions[constants.EVENT_TYPE_GLOBAL] = make(map[string]bool)
+	if client.RemoteIP != "" {
+		h.clientsByIP[client.RemoteIP] = client
 	}
-	h.subscriptions[constants.EVENT_TYPE_GLOBAL][client.ID] = true
+
+	// Always subscribe to global type automatically
+	if h.subscriptions[constants.EventTypeGlobal] == nil {
+		h.subscriptions[constants.EventTypeGlobal] = make(map[string]bool)
+	}
+	h.subscriptions[constants.EventTypeGlobal][client.ID] = true
 
 	// Add global to client subscriptions if not already present
-	if !slices.Contains(client.Subscriptions, constants.EVENT_TYPE_GLOBAL) {
-		client.Subscriptions = append(client.Subscriptions, constants.EVENT_TYPE_GLOBAL)
+	if !slices.Contains(client.Subscriptions, constants.EventTypeGlobal) {
+		client.Subscriptions = append(client.Subscriptions, constants.EventTypeGlobal)
 	}
-
-	for _, eventType := range client.Subscriptions {
-		if !slices.Contains(constants.AllEventTypes, eventType) {
-			h.ctx.LogWarnf("[Hub] Client %s subscribed to unknown event type: %s", client.ID, eventType)
-
-			msg := models.NewEventMessage(constants.EVENT_TYPE_GLOBAL, "Client subscribed to unsupported event type: "+eventType, nil)
-			msg.ClientID = client.ID
-			// Send async to avoid blocking registration
-			go func(m *models.EventMessage) {
-				select {
-				case h.broadcast <- m:
-				case <-time.After(100 * time.Millisecond):
-					h.ctx.LogWarnf("[Hub] Failed to send validation error message (timeout)")
-				}
-			}(msg)
-			continue
-		}
-	}
-
-	h.ctx.LogInfof("[Hub] Registered client %s (user: %s) with %d subscriptions (global auto-subscribed)",
-		client.ID, client.Username, len(client.Subscriptions))
 
 	// Register other subscriptions (skip invalid and global)
 	for _, eventType := range client.Subscriptions {
-		if eventType == constants.EVENT_TYPE_GLOBAL {
+		if eventType == constants.EventTypeGlobal {
 			continue // Already registered above
 		}
 		// Skip invalid event types
-		if !slices.Contains(constants.AllEventTypes, eventType) {
+		if !eventType.IsValid() {
+			h.ctx.LogWarnf("[Hub] Client %s is subscribing to invalid event type %s, skipping", client.ID, eventType)
 			continue
 		}
 		if h.subscriptions[eventType] == nil {
@@ -257,6 +243,9 @@ func (h *Hub) registerClient(client *Client) {
 		h.subscriptions[eventType][client.ID] = true
 		h.ctx.LogDebugf("[Hub] Client %s subscribed to type: %s", client.ID, eventType)
 	}
+
+	h.ctx.LogInfof("[Hub] Registered client %s (user: %s) with %d subscriptions (global auto-subscribed)",
+		client.ID, client.User.Username, len(client.Subscriptions))
 }
 
 // unregisterClient removes a client from the hub
@@ -274,7 +263,7 @@ func (h *Hub) unregisterClient(client *Client) {
 		return
 	}
 
-	h.ctx.LogInfof("[Hub] Unregistering client %s (user: %s)", client.ID, client.Username)
+	h.ctx.LogInfof("[Hub] Unregistering client %s (user: %s)", client.ID, client.User.Username)
 
 	// Remove from subscriptions
 	for _, eventType := range client.Subscriptions {
@@ -286,9 +275,26 @@ func (h *Hub) unregisterClient(client *Client) {
 		}
 	}
 
+	if client.RemoteIP != "" {
+		delete(h.clientsByIP, client.RemoteIP)
+	}
+
 	// Close client connection
 	delete(h.clients, client.ID)
 	close(client.Send)
+}
+
+// HasActiveConnectionFromIP checks if there's already an active connection from the given IP
+func (h *Hub) HasActiveConnectionFromIP(ip string) bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	if ip == "" {
+		return false
+	}
+
+	_, exists := h.clientsByIP[ip]
+	return exists
 }
 
 // broadcastMessage sends a message to appropriate clients based on type and clientID
@@ -318,7 +324,6 @@ func (h *Hub) broadcastMessage(message *models.EventMessage) {
 		return
 	}
 
-	// Broadcast to type subscribers
 	if subscribers, exists := h.subscriptions[message.Type]; exists {
 		for clientID := range subscribers {
 			if client, exists := h.clients[clientID]; exists {

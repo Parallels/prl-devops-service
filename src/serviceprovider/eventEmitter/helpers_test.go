@@ -16,14 +16,14 @@ func TestSendToType(t *testing.T) {
 	defer cleanup()
 
 	// Register a test client
-	client := createTestClient("test1", "testuser", []string{constants.EVENT_TYPE_PDFM})
+	client := createTestClient("test1", "testuser", []constants.EventType{constants.EventTypePDFM})
 	emitter.hub.register <- client
 
 	// Give it time to register
 	time.Sleep(50 * time.Millisecond)
 
 	// Send message
-	err := emitter.SendToType(constants.EVENT_TYPE_PDFM, "Test message", map[string]interface{}{
+	err := emitter.SendToType(constants.EventTypePDFM, "Test message", map[string]interface{}{
 		"key": "value",
 	})
 
@@ -32,9 +32,11 @@ func TestSendToType(t *testing.T) {
 	// Check message was queued
 	select {
 	case msg := <-client.Send:
-		assert.Equal(t, constants.EVENT_TYPE_PDFM, msg.Type)
+		assert.Equal(t, constants.EventTypePDFM, msg.Type)
 		assert.Equal(t, "Test message", msg.Message)
-		assert.Equal(t, "value", msg.Body["key"])
+		if body, ok := msg.Body.(map[string]interface{}); ok {
+			assert.Equal(t, "value", body["key"])
+		}
 	case <-time.After(200 * time.Millisecond):
 		t.Fatal("Client should have received the message")
 	}
@@ -52,7 +54,7 @@ func TestSendToType_NotRunning(t *testing.T) {
 	emitter := NewEventEmitter(ctx)
 
 	// Don't initialize - not running
-	err := emitter.SendToType(constants.EVENT_TYPE_PDFM, "Test", nil)
+	err := emitter.SendToType(constants.EventTypePDFM, "Test", nil)
 
 	// Should return error but should warn in logs
 	assert.Error(t, err)
@@ -63,13 +65,13 @@ func TestSendToClient(t *testing.T) {
 	defer cleanup()
 
 	// Register a test client
-	client := createTestClient("client1", "testuser", []string{constants.EVENT_TYPE_PDFM})
+	client := createTestClient("client1", "testuser", []constants.EventType{constants.EventTypePDFM})
 	emitter.hub.register <- client
 
 	time.Sleep(50 * time.Millisecond)
 
 	// Send message to specific client
-	err := emitter.SendToClient("client1", constants.EVENT_TYPE_PDFM, "Direct message", map[string]interface{}{
+	err := emitter.SendToClient("client1", constants.EventTypePDFM, "Direct message", map[string]interface{}{
 		"direct": true,
 	})
 
@@ -79,7 +81,9 @@ func TestSendToClient(t *testing.T) {
 	case msg := <-client.Send:
 		assert.Equal(t, "client1", msg.ClientID)
 		assert.Equal(t, "Direct message", msg.Message)
-		assert.True(t, msg.Body["direct"].(bool))
+		if body, ok := msg.Body.(map[string]interface{}); ok {
+			assert.True(t, body["direct"].(bool))
+		}
 	case <-time.After(200 * time.Millisecond):
 		t.Fatal("Client should have received the direct message")
 	}
@@ -90,8 +94,8 @@ func TestSendToAll(t *testing.T) {
 	defer cleanup()
 
 	// Register multiple clients with different subscriptions
-	client1 := createTestClient("client1", "user1", []string{constants.EVENT_TYPE_PDFM})
-	client2 := createTestClient("client2", "user2", []string{constants.EVENT_TYPE_VM})
+	client1 := createTestClient("client1", "user1", []constants.EventType{constants.EventTypePDFM})
+	client2 := createTestClient("client2", "user2", []constants.EventType{constants.EventTypeVM})
 
 	emitter.hub.register <- client1
 	emitter.hub.register <- client2
@@ -113,10 +117,10 @@ receiveLoop:
 	for i := 0; i < 2; i++ {
 		select {
 		case msg := <-client1.Send:
-			assert.Equal(t, constants.EVENT_TYPE_GLOBAL, msg.Type)
+			assert.Equal(t, constants.EventTypeGlobal, msg.Type)
 			receivedCount++
 		case msg := <-client2.Send:
-			assert.Equal(t, constants.EVENT_TYPE_GLOBAL, msg.Type)
+			assert.Equal(t, constants.EventTypeGlobal, msg.Type)
 			receivedCount++
 		case <-timeout:
 			break receiveLoop
@@ -130,13 +134,13 @@ func TestBroadcastMessage(t *testing.T) {
 	emitter, cleanup := setupTestEmitterWithMode(t, "api")
 	defer cleanup()
 
-	client := createTestClient("test1", "testuser", []string{constants.EVENT_TYPE_SYSTEM})
+	client := createTestClient("test1", "testuser", []constants.EventType{constants.EventTypeSystem})
 	emitter.hub.register <- client
 
 	time.Sleep(50 * time.Millisecond)
 
 	// Create and broadcast pre-constructed message
-	message := models.NewEventMessage(constants.EVENT_TYPE_SYSTEM, "System alert", map[string]interface{}{
+	message := models.NewEventMessage(constants.EventTypeSystem, "System alert", map[string]interface{}{
 		"level": "warning",
 	})
 
@@ -146,7 +150,7 @@ func TestBroadcastMessage(t *testing.T) {
 	select {
 	case msg := <-client.Send:
 		assert.Equal(t, message.ID, msg.ID)
-		assert.Equal(t, constants.EVENT_TYPE_SYSTEM, msg.Type)
+		assert.Equal(t, constants.EventTypeSystem, msg.Type)
 	case <-time.After(200 * time.Millisecond):
 		t.Fatal("Client should have received the broadcast message")
 	}
@@ -169,8 +173,8 @@ func TestGetStats_WithClients(t *testing.T) {
 	defer cleanup()
 
 	// Register clients
-	client1 := createTestClient("client1", "user1", []string{constants.EVENT_TYPE_PDFM})
-	client2 := createTestClient("client2", "user2", []string{constants.EVENT_TYPE_VM, constants.EVENT_TYPE_HOST})
+	client1 := createTestClient("client1", "user1", []constants.EventType{constants.EventTypePDFM})
+	client2 := createTestClient("client2", "user2", []constants.EventType{constants.EventTypeVM, constants.EventTypeHost})
 
 	emitter.hub.register <- client1
 	emitter.hub.register <- client2
@@ -186,17 +190,17 @@ func TestGetStats_WithClients(t *testing.T) {
 	// Total subscriptions per type:
 	// pdfm: 1, vm: 1, host: 1, global: 2
 	assert.Equal(t, 5, stats.TotalSubscriptions)
-	assert.Equal(t, 1, stats.TypeStats[constants.EVENT_TYPE_PDFM])
-	assert.Equal(t, 1, stats.TypeStats[constants.EVENT_TYPE_VM])
-	assert.Equal(t, 1, stats.TypeStats[constants.EVENT_TYPE_HOST])
-	assert.Equal(t, 2, stats.TypeStats[constants.EVENT_TYPE_GLOBAL])
+	assert.Equal(t, 1, stats.TypeStats[constants.EventTypePDFM])
+	assert.Equal(t, 1, stats.TypeStats[constants.EventTypeVM])
+	assert.Equal(t, 1, stats.TypeStats[constants.EventTypeHost])
+	assert.Equal(t, 2, stats.TypeStats[constants.EventTypeGlobal])
 }
 
 func TestGetStats_IncludeClients(t *testing.T) {
 	emitter, cleanup := setupTestEmitterWithMode(t, "api")
 	defer cleanup()
 
-	client := createTestClient("client1", "user1", []string{constants.EVENT_TYPE_PDFM})
+	client := createTestClient("client1", "user1", []constants.EventType{constants.EventTypePDFM})
 	emitter.hub.register <- client
 
 	time.Sleep(50 * time.Millisecond)
@@ -207,8 +211,8 @@ func TestGetStats_IncludeClients(t *testing.T) {
 	assert.Len(t, stats.Clients, 1, "Should include client details")
 	assert.Equal(t, "client1", stats.Clients[0].ID)
 	assert.Equal(t, "user1", stats.Clients[0].Username)
-	assert.Contains(t, stats.Clients[0].Subscriptions, constants.EVENT_TYPE_PDFM)
-	assert.Contains(t, stats.Clients[0].Subscriptions, constants.EVENT_TYPE_GLOBAL)
+	assert.Contains(t, stats.Clients[0].Subscriptions, constants.EventTypePDFM)
+	assert.Contains(t, stats.Clients[0].Subscriptions, constants.EventTypeGlobal)
 }
 
 func TestGetStats_NotRunning(t *testing.T) {
@@ -231,14 +235,14 @@ func TestMessageCounter(t *testing.T) {
 	emitter, cleanup := setupTestEmitterWithMode(t, "api")
 	defer cleanup()
 
-	client := createTestClient("test1", "testuser", []string{constants.EVENT_TYPE_PDFM})
+	client := createTestClient("test1", "testuser", []constants.EventType{constants.EventTypePDFM})
 	emitter.hub.register <- client
 
 	time.Sleep(50 * time.Millisecond)
 
 	// Send multiple messages
 	for i := 0; i < 5; i++ {
-		emitter.SendToType(constants.EVENT_TYPE_PDFM, "Test", nil)
+		emitter.SendToType(constants.EventTypePDFM, "Test", nil)
 	}
 
 	stats := emitter.GetStats(false)
