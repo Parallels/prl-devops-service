@@ -56,3 +56,17 @@ type UnsubscribeRequest struct {
 	ClientID   string   `json:"client_id"`             // Unique client identifier
 	EventTypes []string `json:"event_types,omitempty"` // List of event types to unsubscribe from
 }
+
+type VmStateChange struct {
+	PreviousState string `json:"previous_state"`
+	CurrentState  string `json:"current_state"`
+	VmID          string `json:"vm_id"`
+}
+
+type VmAdded struct {
+	VmID  string      `json:"vm_id"`
+	NewVm ParallelsVM `json:"new_vm"` // Details of the newly added VM
+}
+type VmRemoved struct {
+	VmID string `json:"vm_id"`
+}
