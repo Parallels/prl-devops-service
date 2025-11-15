@@ -656,3 +656,19 @@ func (c *Config) SetIntKey(key string, value int) {
 func (c *Config) SetBoolKey(key string, value bool) {
 	c.SetKey(key, strconv.FormatBool(value))
 }
+
+func (c *Config) EventEmitterPongTimeout() time.Duration {
+	val := c.GetIntKey(constants.EVENT_EMITTER_PONG_TIMEOUT_SECONDS_ENV_VAR)
+	if val > 0 {
+		return time.Duration(val) * time.Second
+	}
+	return time.Duration(constants.DEFAULT_EVENT_EMITTER_PONG_TIMEOUT_SECONDS) * time.Second
+}
+
+func (c *Config) EventEmitterPingInterval() time.Duration {
+	val := c.GetIntKey(constants.EVENT_EMITTER_PING_INTERVAL_SECONDS_ENV_VAR)
+	if val > 0 {
+		return time.Duration(val) * time.Second
+	}
+	return time.Duration(constants.DEFAULT_EVENT_EMITTER_PING_INTERVAL_SECONDS) * time.Second
+}
