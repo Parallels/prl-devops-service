@@ -7,8 +7,14 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 )
 
-func (s *ParallelsService) findVm(ctx basecontext.ApiContext, idOrName string) (*models.ParallelsVM, error) {
-	vms, err := s.GetCachedVms(ctx, "")
+func (s *ParallelsService) findVm(ctx basecontext.ApiContext, idOrName string, cached bool) (*models.ParallelsVM, error) {
+	var err error
+	var vms []models.ParallelsVM
+	if cached {
+		vms, err = s.GetCachedVms(ctx, "")
+	} else {
+		vms, err = s.GetVms(ctx, "")
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -22,8 +28,15 @@ func (s *ParallelsService) findVm(ctx basecontext.ApiContext, idOrName string) (
 	return nil, ErrVirtualMachineNotFound
 }
 
-func (s *ParallelsService) findVmSync(ctx basecontext.ApiContext, idOrName string) (*models.ParallelsVM, error) {
-	vms, err := s.GetCachedVms(ctx, "")
+func (s *ParallelsService) findVmSync(ctx basecontext.ApiContext, idOrName string, cached bool) (*models.ParallelsVM, error) {
+	var err error
+	var vms []models.ParallelsVM
+	if cached {
+		vms, err = s.GetCachedVms(ctx, "")
+	} else {
+		vms, err = s.GetVms(ctx, "")
+	}
+
 	if err != nil {
 		return nil, err
 	}
