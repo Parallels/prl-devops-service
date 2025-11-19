@@ -2,14 +2,16 @@ package eventemitter
 
 import (
 	"errors"
-	"sync/atomic"
+	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/models"
 )
 
 // SendToType sends a message to all clients subscribed to a specific type
-func (e *EventEmitter) SendToType(eventType string, message string, body map[string]interface{}) error {
+func (e *EventEmitter) SendToType(eventType constants.EventType, message string, body interface{}) error {
 	if !e.IsRunning() {
 		e.ctx.LogWarnf("[EventEmitter] Cannot send message, service is not running")
 		return errors.New("event emitter is not running")
@@ -17,15 +19,12 @@ func (e *EventEmitter) SendToType(eventType string, message string, body map[str
 
 	msg := models.NewEventMessage(eventType, message, body)
 
-	e.hub.broadcast <- msg
-	atomic.AddInt64(&e.messagesSent, 1)
-
-	e.ctx.LogDebugf("[EventEmitter] Queued message %s for type: %s", msg.ID, eventType)
+	e.hub.broadcastMessage(msg)
 	return nil
 }
 
 // SendToClient sends a message to a specific client
-func (e *EventEmitter) SendToClient(clientID string, eventType string, message string, body map[string]interface{}) error {
+func (e *EventEmitter) SendToClient(clientID string, eventType constants.EventType, message string, body interface{}) error {
 	if !e.IsRunning() {
 		e.ctx.LogWarnf("[EventEmitter] Cannot send message, service is not running")
 		return errors.New("event emitter is not running")
@@ -34,16 +33,12 @@ func (e *EventEmitter) SendToClient(clientID string, eventType string, message s
 	msg := models.NewEventMessage(eventType, message, body)
 	msg.ClientID = clientID
 
-	e.hub.broadcast <- msg
-	atomic.AddInt64(&e.messagesSent, 1)
-
-	e.ctx.LogDebugf("[EventEmitter] Queued message %s for client: %s", msg.ID, clientID)
-	return nil
+	return e.hub.broadcastMessage(msg)
 }
 
 // SendToAll sends a message to all connected clients
-func (e *EventEmitter) SendToAll(message string, body map[string]interface{}) error {
-	return e.SendToType(constants.EVENT_TYPE_GLOBAL, message, body)
+func (e *EventEmitter) SendToAll(message string, body interface{}) error {
+	return e.SendToType(constants.EventTypeGlobal, message, body)
 }
 
 // BroadcastMessage sends a pre-constructed event message
@@ -52,75 +47,63 @@ func (e *EventEmitter) BroadcastMessage(msg *models.EventMessage) error {
 		e.ctx.LogWarnf("[EventEmitter] Cannot send message, service is not running")
 		return nil
 	}
-
-	e.hub.broadcast <- msg
-	atomic.AddInt64(&e.messagesSent, 1)
-
-	e.ctx.LogDebugf("[EventEmitter] Queued pre-constructed message %s", msg.ID)
-	return nil
+	return e.hub.broadcastMessage(msg)
 }
 
-// GetStats returns statistics about the event emitter
-func (e *EventEmitter) GetStats(includeClients bool) *models.EventEmitterStats {
-	e.mu.RLock()
-	defer e.mu.RUnlock()
+func stringToEventTypes(eventTypesString []string) ([]constants.EventType, error) {
 
-	if !e.isRunning || e.hub == nil {
-		return &models.EventEmitterStats{
-			TotalClients:       0,
-			TotalSubscriptions: 0,
-			TypeStats:          make(map[string]int),
-			MessagesSent:       0,
-			StartTime:          e.startTime,
-			Uptime:             "0s",
+	if len(eventTypesString) == 0 {
+		return []constants.EventType{}, fmt.Errorf("no event types provided")
+	}
+
+	subscriptions := make([]constants.EventType, 0, len(eventTypesString))
+	invalidTypes := make([]string, 0)
+
+	for _, t := range eventTypesString {
+		eventType := constants.EventType(strings.ToLower(strings.TrimSpace(t)))
+		if !eventType.IsValid() {
+			invalidTypes = append(invalidTypes, strings.TrimSpace(t))
+			continue
+		}
+		subscriptions = append(subscriptions, eventType)
+	}
+
+	if len(invalidTypes) > 0 {
+		allTypes := make([]string, 0, len(constants.GetAllEventTypes()))
+		for _, et := range constants.GetAllEventTypes() {
+			allTypes = append(allTypes, et.String())
+		}
+		return subscriptions, fmt.Errorf("invalid event type(s): %s. Valid types are: %s", strings.Join(invalidTypes, ", "), strings.Join(allTypes, ", "))
+	}
+
+	if len(subscriptions) == 0 && len(invalidTypes) > 0 {
+		return subscriptions, fmt.Errorf("no valid event types provided")
+	}
+	return subscriptions, nil
+}
+
+func extractClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header (may contain multiple IPs, first one is the client)
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		// Take the first IP if there are multiple
+		ips := strings.Split(forwarded, ",")
+		if len(ips) > 0 {
+			return strings.TrimSpace(ips[0])
 		}
 	}
 
-	e.hub.mu.RLock()
-	defer e.hub.mu.RUnlock()
-
-	stats := &models.EventEmitterStats{
-		TotalClients:       len(e.hub.clients),
-		TotalSubscriptions: 0,
-		TypeStats:          make(map[string]int),
-		MessagesSent:       atomic.LoadInt64(&e.messagesSent),
-		StartTime:          e.startTime,
-		Uptime:             e.getUptime(),
+	// Check X-Real-IP header
+	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+		return strings.TrimSpace(realIP)
 	}
 
-	// Count subscriptions per type
-	for eventType, subscribers := range e.hub.subscriptions {
-		count := len(subscribers)
-		stats.TypeStats[eventType] = count
-		stats.TotalSubscriptions += count
-	}
-
-	// Include client details if requested (admin only)
-	if includeClients {
-		stats.Clients = make([]models.EventClientInfo, 0, len(e.hub.clients))
-		for _, client := range e.hub.clients {
-			client.mu.RLock()
-			clientInfo := models.EventClientInfo{
-				ID:            client.ID,
-				UserID:        client.UserID,
-				Username:      client.Username,
-				ConnectedAt:   client.ConnectedAt,
-				LastPingAt:    client.LastPingAt,
-				LastPongAt:    client.LastPongAt,
-				Subscriptions: client.Subscriptions,
-				IsAlive:       client.IsAlive,
-			}
-			client.mu.RUnlock()
-			stats.Clients = append(stats.Clients, clientInfo)
+	// Fall back to RemoteAddr (includes port, so strip it)
+	if r.RemoteAddr != "" {
+		// RemoteAddr is in format "IP:port", extract just the IP
+		if idx := strings.LastIndex(r.RemoteAddr, ":"); idx != -1 {
+			return r.RemoteAddr[:idx]
 		}
+		return r.RemoteAddr
 	}
-
-	return stats
-}
-
-// getUptime returns human-readable uptime string
-func (e *EventEmitter) getUptime() string {
-	duration := e.startTime
-	uptime := duration.String()
-	return uptime
+	return ""
 }

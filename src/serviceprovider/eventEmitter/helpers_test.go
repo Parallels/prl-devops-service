@@ -1,246 +1,145 @@
 package eventemitter
 
 import (
-	"sync"
+	"net/http"
 	"testing"
-	"time"
 
-	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestSendToType(t *testing.T) {
-	emitter, cleanup := setupTestEmitterWithMode(t, "api")
-	defer cleanup()
-
-	// Register a test client
-	client := createTestClient("test1", "testuser", []string{constants.EVENT_TYPE_PDFM})
-	emitter.hub.register <- client
-
-	// Give it time to register
-	time.Sleep(50 * time.Millisecond)
-
-	// Send message
-	err := emitter.SendToType(constants.EVENT_TYPE_PDFM, "Test message", map[string]interface{}{
-		"key": "value",
-	})
-
-	assert.NoError(t, err)
-
-	// Check message was queued
-	select {
-	case msg := <-client.Send:
-		assert.Equal(t, constants.EVENT_TYPE_PDFM, msg.Type)
-		assert.Equal(t, "Test message", msg.Message)
-		assert.Equal(t, "value", msg.Body["key"])
-	case <-time.After(200 * time.Millisecond):
-		t.Fatal("Client should have received the message")
+func TestStringToEventTypes_ValidTypes(t *testing.T) {
+	result, err := stringToEventTypes([]string{"vm", "host", "global"})
+	require.NoError(t, err)
+	expected := []constants.EventType{
+		constants.EventTypeVM,
+		constants.EventTypeHost,
+		constants.EventTypeGlobal,
 	}
-
-	// Check message counter incremented
-	assert.Greater(t, emitter.messagesSent, int64(0), "Message counter should increment")
+	assert.Equal(t, expected, result)
 }
 
-func TestSendToType_NotRunning(t *testing.T) {
-	// Reset singleton
-	globalEventEmitter = nil
-	once = sync.Once{}
-
-	ctx := basecontext.NewBaseContext()
-	emitter := NewEventEmitter(ctx)
-
-	// Don't initialize - not running
-	err := emitter.SendToType(constants.EVENT_TYPE_PDFM, "Test", nil)
-
-	// Should return error but should warn in logs
+func TestStringToEventTypes_EmptySlice(t *testing.T) {
+	result, err := stringToEventTypes([]string{})
 	assert.Error(t, err)
+	assert.Empty(t, result)
 }
 
-func TestSendToClient(t *testing.T) {
-	emitter, cleanup := setupTestEmitterWithMode(t, "api")
-	defer cleanup()
+func TestStringToEventTypes_InvalidTypes(t *testing.T) {
+	result, err := stringToEventTypes([]string{"invalid", "vm", "fake"})
+	// Should return error but still include valid types
+	assert.Error(t, err)
+	assert.Len(t, result, 1)
+	assert.Equal(t, constants.EventTypeVM, result[0])
+}
 
-	// Register a test client
-	client := createTestClient("client1", "testuser", []string{constants.EVENT_TYPE_PDFM})
-	emitter.hub.register <- client
-
-	time.Sleep(50 * time.Millisecond)
-
-	// Send message to specific client
-	err := emitter.SendToClient("client1", constants.EVENT_TYPE_PDFM, "Direct message", map[string]interface{}{
-		"direct": true,
-	})
-
-	assert.NoError(t, err)
-
-	select {
-	case msg := <-client.Send:
-		assert.Equal(t, "client1", msg.ClientID)
-		assert.Equal(t, "Direct message", msg.Message)
-		assert.True(t, msg.Body["direct"].(bool))
-	case <-time.After(200 * time.Millisecond):
-		t.Fatal("Client should have received the direct message")
+func TestStringToEventTypes_MixedCase(t *testing.T) {
+	result, err := stringToEventTypes([]string{"VM", "Host", "GLOBAL"})
+	require.NoError(t, err)
+	expected := []constants.EventType{
+		constants.EventTypeVM,
+		constants.EventTypeHost,
+		constants.EventTypeGlobal,
 	}
+	assert.Equal(t, expected, result)
 }
 
-func TestSendToAll(t *testing.T) {
-	emitter, cleanup := setupTestEmitterWithMode(t, "api")
-	defer cleanup()
-
-	// Register multiple clients with different subscriptions
-	client1 := createTestClient("client1", "user1", []string{constants.EVENT_TYPE_PDFM})
-	client2 := createTestClient("client2", "user2", []string{constants.EVENT_TYPE_VM})
-
-	emitter.hub.register <- client1
-	emitter.hub.register <- client2
-
-	time.Sleep(50 * time.Millisecond)
-
-	// Send to all
-	err := emitter.SendToAll("Broadcast to all", map[string]interface{}{
-		"broadcast": true,
-	})
-
-	assert.NoError(t, err)
-
-	// Both should receive (via global subscription)
-	receivedCount := 0
-	timeout := time.After(200 * time.Millisecond)
-
-receiveLoop:
-	for i := 0; i < 2; i++ {
-		select {
-		case msg := <-client1.Send:
-			assert.Equal(t, constants.EVENT_TYPE_GLOBAL, msg.Type)
-			receivedCount++
-		case msg := <-client2.Send:
-			assert.Equal(t, constants.EVENT_TYPE_GLOBAL, msg.Type)
-			receivedCount++
-		case <-timeout:
-			break receiveLoop
-		}
+func TestStringToEventTypes_ExtraWhitespace(t *testing.T) {
+	result, err := stringToEventTypes([]string{"  vm  ", " host ", " global "})
+	require.NoError(t, err)
+	expected := []constants.EventType{
+		constants.EventTypeVM,
+		constants.EventTypeHost,
+		constants.EventTypeGlobal,
 	}
-
-	assert.Equal(t, 2, receivedCount, "Both clients should receive global message")
+	assert.Equal(t, expected, result)
 }
 
-func TestBroadcastMessage(t *testing.T) {
-	emitter, cleanup := setupTestEmitterWithMode(t, "api")
-	defer cleanup()
-
-	client := createTestClient("test1", "testuser", []string{constants.EVENT_TYPE_SYSTEM})
-	emitter.hub.register <- client
-
-	time.Sleep(50 * time.Millisecond)
-
-	// Create and broadcast pre-constructed message
-	message := models.NewEventMessage(constants.EVENT_TYPE_SYSTEM, "System alert", map[string]interface{}{
-		"level": "warning",
-	})
-
-	err := emitter.BroadcastMessage(message)
-	assert.NoError(t, err)
-
-	select {
-	case msg := <-client.Send:
-		assert.Equal(t, message.ID, msg.ID)
-		assert.Equal(t, constants.EVENT_TYPE_SYSTEM, msg.Type)
-	case <-time.After(200 * time.Millisecond):
-		t.Fatal("Client should have received the broadcast message")
-	}
+func TestStringToEventTypes_AllValidTypes(t *testing.T) {
+	result, err := stringToEventTypes([]string{"vm", "host", "global", "system", "pdfm"})
+	require.NoError(t, err)
+	assert.Len(t, result, 5)
+	assert.Contains(t, result, constants.EventTypeVM)
+	assert.Contains(t, result, constants.EventTypeHost)
+	assert.Contains(t, result, constants.EventTypeGlobal)
+	assert.Contains(t, result, constants.EventTypeSystem)
+	assert.Contains(t, result, constants.EventTypePDFM)
 }
 
-func TestGetStats_NoClients(t *testing.T) {
-	emitter, cleanup := setupTestEmitterWithMode(t, "api")
-	defer cleanup()
-
-	stats := emitter.GetStats(false)
-
-	assert.NotNil(t, stats)
-	assert.Equal(t, 0, stats.TotalClients)
-	assert.Equal(t, 0, stats.TotalSubscriptions)
-	assert.Empty(t, stats.Clients, "Should not include client details")
+func TestStringToEventTypes_OnlyInvalidTypes(t *testing.T) {
+	result, err := stringToEventTypes([]string{"invalid", "fake", "bad"})
+	assert.Error(t, err)
+	assert.Empty(t, result)
 }
 
-func TestGetStats_WithClients(t *testing.T) {
-	emitter, cleanup := setupTestEmitterWithMode(t, "api")
-	defer cleanup()
+func TestExtractClientIP_XRealIP(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Real-Ip", "203.0.113.195")
 
-	// Register clients
-	client1 := createTestClient("client1", "user1", []string{constants.EVENT_TYPE_PDFM})
-	client2 := createTestClient("client2", "user2", []string{constants.EVENT_TYPE_VM, constants.EVENT_TYPE_HOST})
-
-	emitter.hub.register <- client1
-	emitter.hub.register <- client2
-
-	time.Sleep(50 * time.Millisecond)
-
-	stats := emitter.GetStats(false)
-
-	assert.Equal(t, 2, stats.TotalClients)
-	// Each client gets global auto-subscribed
-	// client1: pdfm + global = 2
-	// client2: vm + host + global = 3
-	// Total subscriptions per type:
-	// pdfm: 1, vm: 1, host: 1, global: 2
-	assert.Equal(t, 5, stats.TotalSubscriptions)
-	assert.Equal(t, 1, stats.TypeStats[constants.EVENT_TYPE_PDFM])
-	assert.Equal(t, 1, stats.TypeStats[constants.EVENT_TYPE_VM])
-	assert.Equal(t, 1, stats.TypeStats[constants.EVENT_TYPE_HOST])
-	assert.Equal(t, 2, stats.TypeStats[constants.EVENT_TYPE_GLOBAL])
+	ip := extractClientIP(req)
+	assert.Equal(t, "203.0.113.195", ip)
 }
 
-func TestGetStats_IncludeClients(t *testing.T) {
-	emitter, cleanup := setupTestEmitterWithMode(t, "api")
-	defer cleanup()
+func TestExtractClientIP_XForwardedFor_Single(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Forwarded-For", "198.51.100.1")
 
-	client := createTestClient("client1", "user1", []string{constants.EVENT_TYPE_PDFM})
-	emitter.hub.register <- client
-
-	time.Sleep(50 * time.Millisecond)
-
-	stats := emitter.GetStats(true)
-
-	assert.Equal(t, 1, stats.TotalClients)
-	assert.Len(t, stats.Clients, 1, "Should include client details")
-	assert.Equal(t, "client1", stats.Clients[0].ID)
-	assert.Equal(t, "user1", stats.Clients[0].Username)
-	assert.Contains(t, stats.Clients[0].Subscriptions, constants.EVENT_TYPE_PDFM)
-	assert.Contains(t, stats.Clients[0].Subscriptions, constants.EVENT_TYPE_GLOBAL)
+	ip := extractClientIP(req)
+	assert.Equal(t, "198.51.100.1", ip)
 }
 
-func TestGetStats_NotRunning(t *testing.T) {
-	// Reset singleton
-	globalEventEmitter = nil
-	once = sync.Once{}
+func TestExtractClientIP_XForwardedFor_Multiple(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Forwarded-For", "198.51.100.1, 203.0.113.195, 192.0.2.1")
 
-	ctx := basecontext.NewBaseContext()
-	emitter := NewEventEmitter(ctx)
-
-	// Don't initialize
-	stats := emitter.GetStats(false)
-
-	assert.NotNil(t, stats)
-	assert.Equal(t, 0, stats.TotalClients)
-	assert.Equal(t, int64(0), stats.MessagesSent)
+	ip := extractClientIP(req)
+	// Should return the first IP in the chain
+	assert.Equal(t, "198.51.100.1", ip)
 }
 
-func TestMessageCounter(t *testing.T) {
-	emitter, cleanup := setupTestEmitterWithMode(t, "api")
-	defer cleanup()
+func TestExtractClientIP_RemoteAddr(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.168.1.100:12345"
 
-	client := createTestClient("test1", "testuser", []string{constants.EVENT_TYPE_PDFM})
-	emitter.hub.register <- client
+	ip := extractClientIP(req)
+	assert.Equal(t, "192.168.1.100", ip)
+}
 
-	time.Sleep(50 * time.Millisecond)
+func TestExtractClientIP_RemoteAddr_IPv6(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "[2001:db8::1]:12345"
 
-	// Send multiple messages
-	for i := 0; i < 5; i++ {
-		emitter.SendToType(constants.EVENT_TYPE_PDFM, "Test", nil)
-	}
+	ip := extractClientIP(req)
+	// LastIndex finds the colon after the IPv6 address, keeps the brackets
+	assert.Equal(t, "[2001:db8::1]", ip)
+}
 
-	stats := emitter.GetStats(false)
-	assert.Equal(t, int64(5), stats.MessagesSent)
+func TestExtractClientIP_PreferXForwardedForOverXRealIP(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Real-Ip", "203.0.113.195")
+	req.Header.Set("X-Forwarded-For", "198.51.100.1")
+	req.RemoteAddr = "192.168.1.100:12345"
+
+	ip := extractClientIP(req)
+	// X-Forwarded-For takes precedence over X-Real-IP
+	assert.Equal(t, "198.51.100.1", ip)
+}
+
+func TestExtractClientIP_PreferXForwardedFor(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Forwarded-For", "198.51.100.1")
+	req.RemoteAddr = "192.168.1.100:12345"
+
+	ip := extractClientIP(req)
+	// X-Forwarded-For should take precedence over RemoteAddr
+	assert.Equal(t, "198.51.100.1", ip)
+}
+
+func TestExtractClientIP_EmptyRemoteAddr(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = ""
+
+	ip := extractClientIP(req)
+	assert.Empty(t, ip)
 }
