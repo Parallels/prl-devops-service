@@ -30,7 +30,7 @@ type Hub struct {
 	clientsByIP   map[string]string                       // Map of IP address to client ID
 	subscriptions map[constants.EventType]map[string]bool // Map of event type to set of client IDs (type-safe)
 	broadcast     chan *models.EventMessage               // Channel for broadcasting messages
-	clientToHub   chan hubCommand                         // Channel for commands from clients
+	clientToHub   chan hubCommand                         // Channel for commands from websocket clients
 	shutdownChan  chan struct{}                           // Closed to signal shutdown started (never sent to)
 	stopped       chan struct{}                           // Closed to signal hub has fully stopped
 	mu            sync.RWMutex
@@ -390,15 +390,16 @@ func (h *Hub) broadcastMessage(message *models.EventMessage) error {
 	return nil
 }
 
-func (h *Hub) unsubscribeClientFromTypes(clientID string, userId string, eventTypes []constants.EventType) []string {
+func (h *Hub) unsubscribeClientFromTypes(clientID string, userId string, eventTypes []constants.EventType) ([]string, error) {
 
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	unsubscribed := []string{}
+	err := error(nil)
 	_, clientExists := h.clients[clientID]
 	if !clientExists {
 		h.ctx.LogWarnf("[Client %s] Attempted to unsubscribe but client does not exist", clientID)
-		return unsubscribed
+		return unsubscribed, fmt.Errorf("client %s does not exist", clientID)
 	}
 	var globalAttempted bool
 	for _, eventType := range eventTypes {
@@ -417,6 +418,7 @@ func (h *Hub) unsubscribeClientFromTypes(clientID string, userId string, eventTy
 			}
 		} else {
 			h.ctx.LogWarnf("[Client %s] Not subscribed to event type %s, cannot unsubscribe", clientID, eventType)
+			err = fmt.Errorf("not subscribed to event type %s", eventType)
 		}
 	}
 	if len(unsubscribed) > 0 {
@@ -425,8 +427,9 @@ func (h *Hub) unsubscribeClientFromTypes(clientID string, userId string, eventTy
 
 	if globalAttempted {
 		h.ctx.LogWarnf("[Client %s] Cannot unsubscribe from global event type", clientID)
+		err = fmt.Errorf("cannot unsubscribe from %s event type", constants.EventTypeGlobal)
 	}
-	return unsubscribed
+	return unsubscribed, err
 }
 
 func (c *unregisterClientCmd) execute(h *Hub) {

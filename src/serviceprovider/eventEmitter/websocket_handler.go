@@ -1,6 +1,7 @@
 package eventemitter
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -46,12 +47,11 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basec
 
 	usr := ctx.GetUser()
 	if usr == nil {
-		// for testing purposes only
-		usr = &models.ApiUser{
-			ID:       "anonymous",
-			Username: "anonymous",
+		ctx.LogErrorf("WebSocket connection without authenticated user")
+		return &models.ApiErrorResponse{
+			Message: "Authentication required",
+			Code:    http.StatusUnauthorized,
 		}
-		ctx.LogWarnf("WebSocket connection established without authenticated user")
 	}
 	// Create client
 	client := &Client{
@@ -78,44 +78,55 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basec
 	return nil
 }
 
-func HandleUnsubscribe(r *http.Request, ctx basecontext.ApiContext) *models.ApiErrorResponse {
+func HandleUnsubscribe(w http.ResponseWriter, r *http.Request, ctx basecontext.ApiContext) {
 	var request models.UnsubscribeRequest
 	if err := http_helper.MapRequestBody(r, &request); err != nil {
 		ctx.LogWarnf("Invalid unsubscribe request body: %v", err)
-		return &models.ApiErrorResponse{
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(models.ApiErrorResponse{
 			Message: "Invalid request body: " + err.Error(),
 			Code:    http.StatusBadRequest,
-		}
+		})
 	}
 
 	if len(request.EventTypes) == 0 {
 		ctx.LogInfof("No event_types specified")
-		return &models.ApiErrorResponse{
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(models.ApiErrorResponse{
 			Message: "Invalid event_types body parameter",
 			Code:    http.StatusBadRequest,
-		}
+		})
 	}
 
 	eventTypesList, err := stringToEventTypes(request.EventTypes)
 	if len(eventTypesList) <= 0 {
 		ctx.LogWarnf("No valid event types to unsubscribe: %v", err)
-		return &models.ApiErrorResponse{
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(models.ApiErrorResponse{
 			Message: "No valid event types to unsubscribe: " + err.Error(),
 			Code:    http.StatusBadRequest,
-		}
+		})
+		return
 	}
-	usr := ctx.GetUser()
 
-	unsubscribed := Get().hub.unsubscribeClientFromTypes(request.ClientID, usr.ID, eventTypesList)
+	unsubscribed, err := Get().hub.unsubscribeClientFromTypes(request.ClientID, ctx.GetUser().Username, eventTypesList)
 
 	if len(unsubscribed) == 0 {
-
-		return &models.ApiErrorResponse{
-			Message: "No event types were unsubscribed",
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(models.ApiErrorResponse{
+			Message: err.Error(),
 			Code:    http.StatusBadRequest,
-		}
+		})
+		return
 	}
 
+	if err != nil && len(unsubscribed) > 0 {
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(models.ApiErrorResponse{
+			Message: err.Error() + " unsubscribed from: " + strings.Join(unsubscribed, ", "),
+			Code:    http.StatusOK,
+		})
+		return
+	}
 	ctx.LogInfof("Client %s unsubscribed from event types: %v", request.ClientID, unsubscribed)
-	return nil
 }

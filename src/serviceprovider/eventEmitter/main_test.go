@@ -293,12 +293,13 @@ func TestHub_UnsubscribeClientFromTypes(t *testing.T) {
 	hub.subscriptions[constants.EventTypeHost] = map[string]bool{"client1": true}
 	hub.subscriptions[constants.EventTypeGlobal] = map[string]bool{"client1": true}
 
-	result := hub.unsubscribeClientFromTypes("client1", "user1", []constants.EventType{
+	result, err := hub.unsubscribeClientFromTypes("client1", "user1", []constants.EventType{
 		constants.EventTypeVM,
 		constants.EventTypeHost,
 	})
 
 	assert.Len(t, result, 2)
+	assert.NoError(t, err)
 	assert.Contains(t, result, "vm")
 	assert.Contains(t, result, "host")
 	assert.Empty(t, hub.subscriptions[constants.EventTypeVM])
@@ -318,11 +319,12 @@ func TestHub_UnsubscribeClientFromTypes_CannotUnsubscribeGlobal(t *testing.T) {
 	hub.clients["client1"] = &Client{ID: "client1"}
 	hub.subscriptions[constants.EventTypeGlobal] = map[string]bool{"client1": true}
 
-	result := hub.unsubscribeClientFromTypes("client1", "user1", []constants.EventType{
+	result, err := hub.unsubscribeClientFromTypes("client1", "user1", []constants.EventType{
 		constants.EventTypeGlobal,
 	})
 
 	assert.Empty(t, result)
+	assert.Error(t, err)
 	// Global should still be there
 	assert.Len(t, hub.subscriptions[constants.EventTypeGlobal], 1)
 }

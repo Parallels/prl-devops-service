@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
@@ -15,6 +16,7 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/ws/subscribe").
+		WithRequiredClaim(constants.READ_ONLY_CLAIM).
 		WithHandler(WebSocketSubscribeHandler()).
 		Register()
 
@@ -22,17 +24,16 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.POST).
 		WithVersion(version).
 		WithPath("/ws/unsubscribe").
+		WithRequiredClaim(constants.READ_ONLY_CLAIM).
 		WithHandler(WebSocketUnsubscribeHandler()).
 		Register()
 }
 
 // @Summary		Subscribe to event notifications via WebSocket
-// @Description	This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Supports both JWT Bearer tokens and API Keys for authentication.
+// @Description	This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or X-Api-Key header.
 // @Tags			Events
 // @Produce		json
 // @Param			event_types	query		string	false	"Comma-separated event types to subscribe to (e.g., vm,host,system). Valid types: global, system, vm, host, pdfm. If omitted, subscribes to global events only."
-// @Param			token	query		string	false	"JWT token for authentication (alternative to Authorization header)"
-// @Param			api_key	query		string	false	"API key for authentication (alternative to X-API-KEY header)"
 // @Success		101		{string}	string	"Switching Protocols"
 // @Failure		400		{object}	models.ApiErrorResponse
 // @Failure		401		{object}	models.ApiErrorResponse
@@ -90,11 +91,6 @@ func WebSocketUnsubscribeHandler() restapi.ControllerHandler {
 			})
 			return
 		}
-
-		if err := eventemitter.HandleUnsubscribe(r, ctx); err != nil {
-			ReturnApiError(ctx, w, *err)
-			return
-		}
-		ReturnApiCommonResponse(w)
+		eventemitter.HandleUnsubscribe(w, r, ctx)
 	}
 }
