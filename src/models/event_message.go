@@ -10,6 +10,7 @@ import (
 // EventMessage represents an event that is sent to clients
 type EventMessage struct {
 	ID        string              `json:"id"`                  // Unique identifier for the event
+	RefID     string              `json:"ref_id,omitempty"`    // Optional: Reference to a previous event ID (for replies)
 	Type      constants.EventType `json:"event_type"`          // Type/routing key (e.g., pdfm, vm, host, system, global)
 	Timestamp time.Time           `json:"timestamp"`           // When the event occurred
 	Message   string              `json:"message"`             // Human-readable message

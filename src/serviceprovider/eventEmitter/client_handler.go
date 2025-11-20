@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/gorilla/websocket"
 )
 
 const (
-	writeWait      = 10 * time.Second
-	maxMessageSize = 512
+	writeWait = 10 * time.Second
 )
 
 // clientReader reads messages from the WebSocket connection
@@ -41,11 +41,7 @@ func (c *Client) clientReader() {
 
 		c.ctx.LogDebugf("[Client %s] Received message: %s", c.ID, string(message))
 
-		// Parse and handle client messages if needed
-		var clientMsg map[string]interface{}
-		if err := json.Unmarshal(message, &clientMsg); err == nil {
-			c.handleClientMessage(clientMsg)
-		}
+		c.handleClientMessage(message)
 	}
 }
 
@@ -76,23 +72,55 @@ func (c *Client) clientWriter() {
 	c.ctx.LogInfof("[Client %s] Send channel closed", c.ID)
 }
 
-func (c *Client) handleClientMessage(msg map[string]interface{}) {
-	msgType, ok := msg["type"].(string)
-	if !ok {
-		c.ctx.LogWarnf("[Client %s] Received message without type", c.ID)
+// routingHeader is a lightweight struct for partial parsing
+type routingHeader struct {
+	Type constants.EventType `json:"type"`
+	ID   string              `json:"id"`
+}
+
+func (c *Client) handleClientMessage(rawMsg []byte) {
+	var header routingHeader
+	if err := json.Unmarshal(rawMsg, &header); err != nil {
+		c.ctx.LogWarnf("[Client %s] Failed to parse message header: %v", c.ID, err)
+		msg := models.NewEventMessage(constants.EventTypeGlobal, c.ID, nil)
+		msg.Message = "error"
+		msg.Body = map[string]interface{}{
+			"error": err.Error(),
+		}
+		c.Send <- msg
 		return
 	}
 
-	switch msgType {
-	case "client-id":
-		cidMsg := models.NewEventMessage(constants.EventTypeSystem, c.ID, nil)
-		cidMsg.ClientID = c.ID
-		select {
-		case c.Send <- cidMsg:
-		default:
-			c.ctx.LogWarnf("[Client %s] Failed to send client-id (channel full)", c.ID)
+	if !constants.EventType.IsValid(header.Type) {
+		c.ctx.LogWarnf("[Client %s] Received message with invalid type: %s", c.ID, header.Type)
+		msg := models.NewEventMessage(constants.EventTypeGlobal, c.ID, nil)
+		msg.Message = "error"
+		msg.Body = map[string]interface{}{
+			"error": "invalid message type " + header.Type.String(),
 		}
+		c.Send <- msg
+		return
+	}
+
+	// Generate message ID if missing
+	msgID := header.ID
+	if msgID == "" {
+		msgID = helpers.GenerateId()
+	}
+
+	// Create command and send to hub channel
+	// We pass the original rawMsg directly - ZERO extra allocations/marshaling
+	cmd := &RouteMessageCmd{
+		ClientID: c.ID,
+		Type:     header.Type,
+		Payload:  rawMsg,
+		MsgID:    msgID,
+	}
+
+	// Non-blocking send to avoid deadlocks
+	select {
+	case Get().hub.clientToHub <- cmd:
 	default:
-		c.ctx.LogDebugf("[Client %s] Unknown message type: %s", c.ID, msgType)
+		c.ctx.LogWarnf("[Client %s] Hub command channel full, dropping message %s", c.ID, msgID)
 	}
 }
