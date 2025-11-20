@@ -34,6 +34,10 @@ type Hub struct {
 	shutdownChan  chan struct{}                           // Closed to signal shutdown started (never sent to)
 	stopped       chan struct{}                           // Closed to signal hub has fully stopped
 	mu            sync.RWMutex
+
+	// Registry for message handlers
+	handlers   map[constants.EventType]map[MessageHandler]bool
+	handlersMu sync.RWMutex
 }
 
 // Client represents a connected WebSocket client
@@ -65,6 +69,18 @@ type hubCommand interface {
 // unregisterClientCmd unregister a client
 type unregisterClientCmd struct {
 	clientID string
+}
+
+// RouteMessageCmd wraps a client message to be processed by the Hub
+type RouteMessageCmd struct {
+	ClientID string
+	Type     constants.EventType
+	Payload  []byte
+	MsgID    string
+}
+
+func (c *RouteMessageCmd) execute(h *Hub) {
+	h.DispatchMessage(c.ClientID, c.Type, c.Payload, c.MsgID)
 }
 
 // NewEventEmitter creates a new EventEmitter instance (singleton)
@@ -124,6 +140,17 @@ func (e *EventEmitter) Initialize() *apperrors.Diagnostics {
 	e.ctx.LogInfof("[EventEmitter] Event Emitter service initialized successfully")
 
 	return diag
+}
+
+// RegisterHandler registers a handler for a specific event type
+func (e *EventEmitter) RegisterHandler(eventType []constants.EventType, handler MessageHandler) {
+	if atomic.LoadInt32(&e.isRunning) == 0 {
+		e.ctx.LogWarnf("[EventEmitter] Event emitter is not running, skipping registration of handler for event type %v", eventType)
+		return
+	}
+	if e.hub != nil {
+		e.hub.RegisterHandler(eventType, handler)
+	}
 }
 
 // Shutdown stops the event emitter service
@@ -454,4 +481,58 @@ func (h *Hub) shutdown() {
 	h.subscriptions = make(map[constants.EventType]map[string]bool)
 	h.ctx.LogInfof("[Hub] All clients disconnected")
 	close(h.shutdownChan)
+}
+
+// RegisterHandler allows services to register for specific message types
+func (h *Hub) RegisterHandler(eventTypes []constants.EventType, handler MessageHandler) {
+	h.handlersMu.Lock()
+	defer h.handlersMu.Unlock()
+
+	for _, eventType := range eventTypes {
+		if h.handlers == nil {
+			h.handlers = make(map[constants.EventType]map[MessageHandler]bool)
+		}
+		if h.handlers[eventType] == nil {
+			h.handlers[eventType] = make(map[MessageHandler]bool)
+		}
+		if _, exists := h.handlers[eventType][handler]; exists {
+			h.ctx.LogWarnf("[Hub] Handler already registered for message type: %s", eventType)
+			continue
+		}
+		h.handlers[eventType][handler] = true
+	}
+	h.ctx.LogInfof("[Hub] Registered handler for message type(s): %v", eventTypes)
+}
+
+// DispatchMessage routes the message to the correct handler
+func (h *Hub) DispatchMessage(clientID string, eventType constants.EventType, payload []byte, msgID string) {
+	h.handlersMu.RLock()
+	handlers, exists := h.handlers[eventType]
+	h.handlersMu.RUnlock()
+
+	if !exists || len(handlers) == 0 {
+		h.ctx.LogDebugf("[Hub] No handlers registered for type: %s", eventType)
+		msg := models.NewEventMessage(constants.EventTypeGlobal, clientID, nil)
+		msg.Message = "error"
+		msg.RefID = msgID
+		msg.ClientID = clientID
+		msg.Body = map[string]interface{}{
+			"error": "no handlers registered for type " + eventType.String(),
+		}
+		go func() {
+			err := h.broadcastMessage(msg)
+			if err != nil {
+				h.ctx.LogErrorf("[Hub] Failed to broadcast error message: %v", err)
+			}
+		}()
+		return
+	}
+
+	// Dispatch to all registered handlers
+	for handler := range handlers {
+		// Handlers are executed in a separate goroutine to handle concurrency
+		go func() {
+			handler.Handle(h.ctx, clientID, eventType, payload, msgID)
+		}()
+	}
 }

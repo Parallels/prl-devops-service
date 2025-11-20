@@ -12,6 +12,7 @@ const (
 	EventTypeVM     EventType = "vm"     // Virtual machine events
 	EventTypeHost   EventType = "host"   // Host-level events
 	EventTypePDFM   EventType = "pdfm"   // PDFM-specific events
+	EventTypeHealth EventType = "health" // Health check events
 )
 
 func (e EventType) String() string {
@@ -21,7 +22,7 @@ func (e EventType) String() string {
 // IsValid checks if the EventType is valid
 func (e EventType) IsValid() bool {
 	switch e {
-	case EventTypeGlobal, EventTypeSystem, EventTypeVM, EventTypeHost, EventTypePDFM:
+	case EventTypeGlobal, EventTypeSystem, EventTypeVM, EventTypeHost, EventTypePDFM, EventTypeHealth:
 		return true
 	default:
 		return false
@@ -36,5 +37,6 @@ func GetAllEventTypes() []EventType {
 		EventTypeVM,
 		EventTypeHost,
 		EventTypePDFM,
+		EventTypeHealth,
 	}
 }
