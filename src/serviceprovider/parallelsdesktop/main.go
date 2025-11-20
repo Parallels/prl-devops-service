@@ -26,6 +26,7 @@ import (
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/processlauncher"
+	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
 	"github.com/Parallels/prl-devops-service/serviceprovider/git"
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider/packer"
@@ -423,15 +424,30 @@ func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models
 
 func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
 	if event.AdditionalInfo != nil && event.AdditionalInfo.VmStateName != "" {
+		var prevState string
 		s.Lock()
 		for i, vm := range s.cachedLocalVms {
 			if vm.ID == event.VMID {
 				ctx.LogInfof("Updating cached state for VM %s from %s to %s", vm.ID, vm.State, event.AdditionalInfo.VmStateName)
+				prevState = vm.State
 				s.cachedLocalVms[i].State = event.AdditionalInfo.VmStateName
 				break
 			}
 		}
 		s.Unlock()
+		VmStateChangeEvent := models.VmStateChange{
+			PreviousState: prevState,
+			CurrentState:  event.AdditionalInfo.VmStateName,
+			VmID:          event.VMID,
+		}
+		go func() {
+			if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
+				msg := models.NewEventMessage(constants.EventTypePDFM, "VM_STATE_CHANGED", VmStateChangeEvent)
+				if err := ee.BroadcastMessage(msg); err != nil {
+					ctx.LogErrorf("Error broadcasting VM state change event: %v", err)
+				}
+			}
+		}()
 	}
 }
 
@@ -477,6 +493,19 @@ func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event mode
 				s.cachedLocalVms = append(s.cachedLocalVms, machine)
 				s.Unlock()
 				ctx.LogInfof("Added VM %s to cache", event.VMID)
+				VmAddedEvent := models.VmAdded{
+					VmID:  event.VMID,
+					NewVm: machine,
+				}
+
+				go func() {
+					if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
+						msg := models.NewEventMessage(constants.EventTypePDFM, "VM_ADDED", VmAddedEvent)
+						if err := ee.BroadcastMessage(msg); err != nil {
+							ctx.LogErrorf("Error broadcasting VM added event: %v", err)
+						}
+					}
+				}()
 				return
 			}
 		}
@@ -490,6 +519,19 @@ func (s *ParallelsService) processVmUnregistered(ctx basecontext.ApiContext, eve
 			s.cachedLocalVms = append(s.cachedLocalVms[:i], s.cachedLocalVms[i+1:]...)
 			s.Unlock()
 			ctx.LogInfof("Removed VM %s from cache", event.VMID)
+
+			VmRemoved := models.VmRemoved{
+				VmID: event.VMID,
+			}
+			go func() {
+				if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
+					msg := models.NewEventMessage(constants.EventTypePDFM, "VM_REMOVED", VmRemoved)
+					if err := ee.BroadcastMessage(msg); err != nil {
+						ctx.LogErrorf("Error broadcasting VM removed event: %v", err)
+					}
+				}
+			}()
+
 			break
 		}
 	}

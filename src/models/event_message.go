@@ -62,3 +62,17 @@ type WebSocketConnectResponse struct {
 	ClientID      string                `json:"client_id"`     // Unique client identifier
 	Subscriptions []constants.EventType `json:"subscriptions"` // List of event types the client is subscribed to
 }
+
+type VmStateChange struct {
+	PreviousState string `json:"previous_state"`
+	CurrentState  string `json:"current_state"`
+	VmID          string `json:"vm_id"`
+}
+
+type VmAdded struct {
+	VmID  string      `json:"vm_id"`
+	NewVm ParallelsVM `json:"new_vm"`
+}
+type VmRemoved struct {
+	VmID string `json:"vm_id"`
+}
