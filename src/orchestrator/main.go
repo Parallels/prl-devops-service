@@ -12,6 +12,7 @@ import (
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	apimodels "github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/orchestrator/handlers"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/telemetry"
@@ -26,6 +27,7 @@ type OrchestratorService struct {
 	refreshInterval    time.Duration
 	syncContext        context.Context
 	cancel             context.CancelFunc
+	eventsFromHosts    chan apimodels.EventMessage
 	db                 *data.JsonDatabase
 }
 
@@ -35,6 +37,7 @@ func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
 			ctx:                ctx,
 			timeout:            5 * time.Minute,
 			healthCheckTimeout: 3 * time.Second,
+			eventsFromHosts:    make(chan apimodels.EventMessage, 1024*10),
 		}
 		cfg := config.Get()
 		globalOrchestratorService.refreshInterval = time.Duration(cfg.OrchestratorPullFrequency()) * time.Second
@@ -62,6 +65,16 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	}
 
 	s.db = dbService
+
+	// Initialize WebSocket Manager and Handlers
+	manager := NewHostWebSocketManager(s.ctx)
+	handlers.NewPDfMEventHandler(manager)
+	handlers.NewHostHealthHandler(manager)
+
+	// Initial refresh of connections
+	if hosts, err := s.db.GetOrchestratorHosts(s.ctx, ""); err == nil {
+		manager.RefreshConnections(hosts)
+	}
 
 	if waitForInit {
 		s.ctx.LogInfof("[Orchestrator] Waiting for API to be initialized")
@@ -114,6 +127,11 @@ func (s *OrchestratorService) Stop() {
 	s.cancel()
 	s.syncContext.Done()
 
+	manager := GetHostWebSocketManager()
+	if manager != nil {
+		manager.Shutdown()
+	}
+
 	s.ctx.LogInfof("[Orchestrator] Orchestrator Background Service Stopped")
 }
 
@@ -140,6 +158,26 @@ func (s *OrchestratorService) processHostWaitingGroup(host models.OrchestratorHo
 }
 
 func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
+	// Check if host is connected via WebSocket
+	manager := GetHostWebSocketManager()
+	if manager != nil && manager.IsConnected(host.ID) && host.State == "healthy" {
+		// Check for staleness
+		// If the host hasn't updated its status (via pong) in a while, we should verify health via HTTP
+		lastUpdated, err := time.Parse(time.RFC3339Nano, host.UpdatedAt)
+		stalenessThreshold := s.refreshInterval * 3
+
+		if err == nil && time.Since(lastUpdated) < stalenessThreshold {
+			s.ctx.LogDebugf("[Orchestrator] Host %s is connected and fresh (last updated: %s), sending ping", host.Host, host.UpdatedAt)
+			if err := manager.SendPing(host.ID); err != nil {
+				s.ctx.LogWarnf("[Orchestrator] Failed to send ping to host %s: %v", host.Host, err)
+			} else {
+				return
+			}
+		} else {
+			s.ctx.LogWarnf("[Orchestrator] Host %s is connected but stale (last updated: %s). Falling back to HTTP health check.", host.Host, host.UpdatedAt)
+		}
+	}
+
 	s.ctx.LogInfof("[Orchestrator] Processing host %s", host.Host)
 
 	host.HealthCheck = &apimodels.ApiHealthCheck{}
@@ -263,4 +301,16 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 
 func (s *OrchestratorService) SetHealthCheckTimeout(timeout time.Duration) {
 	s.healthCheckTimeout = timeout
+}
+
+func (s *OrchestratorService) RefreshHosts() error {
+	hosts, err := s.db.GetOrchestratorHosts(s.ctx, "")
+	if err != nil {
+		return err
+	}
+	manager := GetHostWebSocketManager()
+	if manager != nil {
+		manager.RefreshConnections(hosts)
+	}
+	return nil
 }

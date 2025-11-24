@@ -119,5 +119,11 @@ func (s *OrchestratorService) UpdateHost(ctx basecontext.ApiContext, host *model
 		return nil, err
 	}
 
+	manager := GetHostWebSocketManager()
+	if manager != nil {
+		manager.DisconnectHost(updatedHost.ID)
+		manager.ProbeAndConnect(*updatedHost)
+	}
+
 	return updatedHost, nil
 }
