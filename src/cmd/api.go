@@ -22,19 +22,17 @@ func processApi(ctx basecontext.ApiContext, cmd string) {
 		processHelp(constants.API_COMMAND)
 		os.Exit(0)
 	}
+	versionSvc.PrintAnsiHeader()
+	startup.Init(ctx)
+
+	startup.Start(ctx)
 
 	cfg := config.Get()
 	_ = os.Setenv(constants.SOURCE_ENV_VAR, "api")
 	if cfg.Mode() == "" {
 		_ = os.Setenv(constants.MODE_ENV_VAR, "api")
 	}
-
-	versionSvc.PrintAnsiHeader()
 	processTelemetry(cmd)
-	startup.Init(ctx)
-
-	startup.Start(ctx)
-
 	if cfg.EncryptionPrivateKey() == "" {
 		common.Logger.Warn("No security key found, database will be unencrypted")
 	}
