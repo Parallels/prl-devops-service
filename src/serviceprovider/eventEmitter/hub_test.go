@@ -104,11 +104,12 @@ func TestHub_UnsubscribeClientFromTypes_ClientNotFound(t *testing.T) {
 		subscriptions: make(map[constants.EventType]map[string]bool),
 	}
 
-	result := hub.unsubscribeClientFromTypes("nonexistent", "user1", []constants.EventType{
+	result, err := hub.unsubscribeClientFromTypes("nonexistent", "user1", []constants.EventType{
 		constants.EventTypeVM,
 	})
 
 	assert.Empty(t, result)
+	assert.Error(t, err)
 }
 
 func TestHub_UnsubscribeClientFromTypes_NotSubscribed(t *testing.T) {
@@ -122,11 +123,12 @@ func TestHub_UnsubscribeClientFromTypes_NotSubscribed(t *testing.T) {
 	hub.clients["client1"] = &Client{ID: "client1"}
 	hub.subscriptions[constants.EventTypeVM] = map[string]bool{}
 
-	result := hub.unsubscribeClientFromTypes("client1", "user1", []constants.EventType{
+	result, err := hub.unsubscribeClientFromTypes("client1", "user1", []constants.EventType{
 		constants.EventTypeHost, // Not subscribed to this
 	})
 
 	assert.Empty(t, result)
+	assert.Error(t, err)
 }
 
 func TestEventEmitter_SendToType_NotRunning(t *testing.T) {

@@ -72,6 +72,7 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 
 		if cfg.DatabaseFolder() != "" {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json"))
+			dbLocation = cfg.DatabaseFolder()
 		} else {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
 		}
@@ -90,6 +91,7 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 		}
 
 		if cfg.DatabaseFolder() != "" {
+			dbLocation = cfg.DatabaseFolder()
 			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json"))
 		} else {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
@@ -201,6 +203,7 @@ func InitServices(ctx basecontext.ApiContext) {
 		}
 
 		if cfg.DatabaseFolder() != "" {
+			dbLocation = cfg.DatabaseFolder()
 			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json"))
 		} else {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
@@ -220,6 +223,7 @@ func InitServices(ctx basecontext.ApiContext) {
 		}
 
 		if cfg.DatabaseFolder() != "" {
+			dbLocation = cfg.DatabaseFolder()
 			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json"))
 		} else {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))

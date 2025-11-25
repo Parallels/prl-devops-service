@@ -10,6 +10,7 @@ import (
 // EventMessage represents an event that is sent to clients
 type EventMessage struct {
 	ID        string              `json:"id"`                  // Unique identifier for the event
+	RefID     string              `json:"ref_id,omitempty"`    // Optional: Reference to a previous event ID (for replies)
 	Type      constants.EventType `json:"event_type"`          // Type/routing key (e.g., pdfm, vm, host, system, global)
 	Timestamp time.Time           `json:"timestamp"`           // When the event occurred
 	Message   string              `json:"message"`             // Human-readable message
@@ -61,4 +62,18 @@ type UnsubscribeRequest struct {
 type WebSocketConnectResponse struct {
 	ClientID      string                `json:"client_id"`     // Unique client identifier
 	Subscriptions []constants.EventType `json:"subscriptions"` // List of event types the client is subscribed to
+}
+
+type VmStateChange struct {
+	PreviousState string `json:"previous_state"`
+	CurrentState  string `json:"current_state"`
+	VmID          string `json:"vm_id"`
+}
+
+type VmAdded struct {
+	VmID  string      `json:"vm_id"`
+	NewVm ParallelsVM `json:"new_vm"`
+}
+type VmRemoved struct {
+	VmID string `json:"vm_id"`
 }

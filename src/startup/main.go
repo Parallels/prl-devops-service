@@ -18,6 +18,7 @@ import (
 	"github.com/Parallels/prl-devops-service/security/password"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
+	"github.com/Parallels/prl-devops-service/serviceprovider/health"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/Parallels/prl-devops-service/startup/migrations"
 	"github.com/Parallels/prl-devops-service/telemetry"
@@ -63,6 +64,10 @@ func Start(ctx basecontext.ApiContext) {
 		emitter := eventemitter.NewEventEmitter(ctx)
 		if diag := emitter.Initialize(); diag.HasErrors() {
 			ctx.LogErrorf("Failed to initialize EventEmitter: %v", diag.GetErrors())
+		} else {
+			// Register handlers
+			health.NewHealthService(emitter)
+			eventemitter.NewSystemHandler(emitter)
 		}
 	}
 
