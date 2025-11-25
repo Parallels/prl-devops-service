@@ -234,7 +234,7 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 
 	tookTime := time.Since(startTime)
 	tookTimeStr := fmt.Sprintf("%v", tookTime)
-	fmt.Printf("\rFinished pulling manifest " + tookTimeStr + "\n")
+	fmt.Printf("\rFinished pulling manifest %s\n", tookTimeStr)
 	response := models.PullResponse{
 		MachineId:      resultManifest.ID,
 		MachineName:    resultManifest.MachineName,
