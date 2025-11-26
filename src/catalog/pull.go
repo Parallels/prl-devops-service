@@ -103,7 +103,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 			if clientResponse != nil && clientResponse.ApiError != nil {
 				if clientResponse.StatusCode == 403 || clientResponse.StatusCode == 400 {
 					s.ns.NotifyErrorf("Error getting catalog manifest %v: %v", path, clientResponse.ApiError.Message)
-					response.AddError(errors.Newf(clientResponse.ApiError.Message))
+					response.AddError(errors.New(clientResponse.ApiError.Message))
 					return response
 				}
 			}
@@ -146,7 +146,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		dto, err := db.GetCatalogManifestByName(s.ctx, r.CatalogId)
 		if err != nil {
 			manifestErr := errors.Newf("Error getting catalog manifest %v: %v", r.CatalogId, err)
-			s.ns.NotifyErrorf(manifestErr.Error())
+			s.ns.NotifyErrorf("Error getting catalog manifest %v: %v", r.CatalogId, err)
 			response.AddError(manifestErr)
 			return response
 		}
