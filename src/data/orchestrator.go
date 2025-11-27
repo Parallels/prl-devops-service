@@ -22,6 +22,18 @@ func (j *JsonDatabase) GetOrchestratorHosts(ctx basecontext.ApiContext, filter s
 		return nil, ErrDatabaseNotConnected
 	}
 
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
+	return j.getOrchestratorHostsLocked(ctx, filter)
+}
+
+// getOrchestratorHostsLocked returns the list of orchestrator hosts without acquiring a lock.
+//
+// IMPORTANT: The caller MUST hold j.dataMutex (either RLock or Lock) before calling this function.
+// Failure to do so will lead to data races.
+// Attempting to acquire the lock inside this function would cause deadlocks when called from functions that already hold a Write lock.
+func (j *JsonDatabase) getOrchestratorHostsLocked(ctx basecontext.ApiContext, filter string) ([]models.OrchestratorHost, error) {
 	dbFilter, err := ParseFilter(filter)
 	if err != nil {
 		return nil, err
@@ -46,6 +58,9 @@ func (j *JsonDatabase) GetActiveOrchestratorHosts(ctx basecontext.ApiContext, fi
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
 	}
+
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
 
 	var activeHosts []models.OrchestratorHost
 	for _, host := range j.data.OrchestratorHosts {
@@ -79,7 +94,14 @@ func (j *JsonDatabase) GetOrchestratorHost(ctx basecontext.ApiContext, idOrHost 
 		return nil, ErrDatabaseNotConnected
 	}
 
-	hosts, err := j.GetOrchestratorHosts(ctx, "")
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
+	return j.getOrchestratorHostUnsafe(ctx, idOrHost)
+}
+
+func (j *JsonDatabase) getOrchestratorHostUnsafe(ctx basecontext.ApiContext, idOrHost string) (*models.OrchestratorHost, error) {
+	hosts, err := j.getOrchestratorHostsLocked(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -104,12 +126,15 @@ func (j *JsonDatabase) CreateOrchestratorHost(ctx basecontext.ApiContext, host m
 		return nil, ErrOrchestratorHostEmptyName
 	}
 
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+
 	host.ID = helpers.GenerateId()
 	host.CreatedAt = helpers.GetUtcCurrentDateTime()
 	host.UpdatedAt = helpers.GetUtcCurrentDateTime()
 	host.Enabled = true
 
-	if u, _ := j.GetOrchestratorHost(ctx, host.GetHost()); u != nil {
+	if u, _ := j.getOrchestratorHostUnsafe(ctx, host.GetHost()); u != nil {
 		return nil, errors.NewWithCodef(400, "host %s already exists with ID %s", host.GetHost(), host.ID)
 	}
 
@@ -126,6 +151,9 @@ func (j *JsonDatabase) DeleteOrchestratorHost(ctx basecontext.ApiContext, idOrHo
 	if idOrHost == "" {
 		return ErrOrchestratorHostEmptyIdOrHost
 	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
 
 	for i, host := range j.data.OrchestratorHosts {
 		if strings.EqualFold(host.ID, idOrHost) || strings.EqualFold(host.Host, idOrHost) {
@@ -146,6 +174,9 @@ func (j *JsonDatabase) DeleteOrchestratorVirtualMachine(ctx basecontext.ApiConte
 	if idOrHost == "" {
 		return ErrOrchestratorHostEmptyIdOrHost
 	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
 
 	for _, host := range j.data.OrchestratorHosts {
 		if strings.EqualFold(host.ID, idOrHost) || strings.EqualFold(host.Host, idOrHost) {
@@ -171,59 +202,68 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 		return nil, ErrOrchestratorHostEmptyIdOrHost
 	}
 
-	for _, dbHost := range j.data.OrchestratorHosts {
+	j.dataMutex.Lock()
+
+	found := false
+	var result *models.OrchestratorHost
+
+	for i, dbHost := range j.data.OrchestratorHosts {
 		if strings.EqualFold(dbHost.ID, host.ID) || strings.EqualFold(dbHost.Host, host.Host) {
 			ctx.LogDebugf("[Database] Host %s already exists with ID %s", host.Host, dbHost.ID)
-			index, err := GetRecordIndex(j.data.OrchestratorHosts, "id", host.ID)
-			if err != nil {
-				ctx.LogDebugf("[Database] Error getting host index: %v", err.Error())
-				return nil, err
-			}
-			if host.Diff(j.data.OrchestratorHosts[index]) {
-				j.data.OrchestratorHosts[index].Enabled = host.Enabled
-				j.data.OrchestratorHosts[index].UpdatedAt = helpers.GetUtcCurrentDateTime()
-				j.data.OrchestratorHosts[index].Host = host.Host
-				j.data.OrchestratorHosts[index].OsVersion = host.OsVersion
-				j.data.OrchestratorHosts[index].OsName = host.OsName
-				j.data.OrchestratorHosts[index].ExternalIpAddress = host.ExternalIpAddress
-				j.data.OrchestratorHosts[index].DevOpsVersion = host.DevOpsVersion
-				j.data.OrchestratorHosts[index].Architecture = host.Architecture
-				j.data.OrchestratorHosts[index].CpuModel = host.CpuModel
-				j.data.OrchestratorHosts[index].Port = host.Port
-				j.data.OrchestratorHosts[index].Authentication = host.Authentication
-				j.data.OrchestratorHosts[index].Resources = host.Resources
-				j.data.OrchestratorHosts[index].RequiredClaims = host.RequiredClaims
-				j.data.OrchestratorHosts[index].RequiredRoles = host.RequiredRoles
-				j.data.OrchestratorHosts[index].Description = host.Description
-				j.data.OrchestratorHosts[index].Tags = host.Tags
-				j.data.OrchestratorHosts[index].PathPrefix = host.PathPrefix
-				j.data.OrchestratorHosts[index].Schema = host.Schema
-				j.data.OrchestratorHosts[index].State = host.State
-				j.data.OrchestratorHosts[index].LastUnhealthy = host.LastUnhealthy
-				j.data.OrchestratorHosts[index].LastUnhealthyErrorMessage = host.LastUnhealthyErrorMessage
-				j.data.OrchestratorHosts[index].HealthCheck = host.HealthCheck
-				j.data.OrchestratorHosts[index].VirtualMachines = host.VirtualMachines
+			if host.Diff(j.data.OrchestratorHosts[i]) {
+				j.data.OrchestratorHosts[i].Enabled = host.Enabled
+				j.data.OrchestratorHosts[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
+				j.data.OrchestratorHosts[i].Host = host.Host
+				j.data.OrchestratorHosts[i].OsVersion = host.OsVersion
+				j.data.OrchestratorHosts[i].OsName = host.OsName
+				j.data.OrchestratorHosts[i].ExternalIpAddress = host.ExternalIpAddress
+				j.data.OrchestratorHosts[i].DevOpsVersion = host.DevOpsVersion
+				j.data.OrchestratorHosts[i].Architecture = host.Architecture
+				j.data.OrchestratorHosts[i].CpuModel = host.CpuModel
+				j.data.OrchestratorHosts[i].Port = host.Port
+				j.data.OrchestratorHosts[i].Authentication = host.Authentication
+				j.data.OrchestratorHosts[i].Resources = host.Resources
+				j.data.OrchestratorHosts[i].RequiredClaims = host.RequiredClaims
+				j.data.OrchestratorHosts[i].RequiredRoles = host.RequiredRoles
+				j.data.OrchestratorHosts[i].Description = host.Description
+				j.data.OrchestratorHosts[i].Tags = host.Tags
+				j.data.OrchestratorHosts[i].PathPrefix = host.PathPrefix
+				j.data.OrchestratorHosts[i].Schema = host.Schema
+				j.data.OrchestratorHosts[i].State = host.State
+				j.data.OrchestratorHosts[i].LastUnhealthy = host.LastUnhealthy
+				j.data.OrchestratorHosts[i].LastUnhealthyErrorMessage = host.LastUnhealthyErrorMessage
+				j.data.OrchestratorHosts[i].HealthCheck = host.HealthCheck
+				j.data.OrchestratorHosts[i].VirtualMachines = host.VirtualMachines
 				// Other Data
-				j.data.OrchestratorHosts[index].ParallelsDesktopVersion = host.ParallelsDesktopVersion
-				j.data.OrchestratorHosts[index].ParallelsDesktopLicensed = host.ParallelsDesktopLicensed
+				j.data.OrchestratorHosts[i].ParallelsDesktopVersion = host.ParallelsDesktopVersion
+				j.data.OrchestratorHosts[i].ParallelsDesktopLicensed = host.ParallelsDesktopLicensed
 				// Reverse Proxy Hosts
-				j.data.OrchestratorHosts[index].IsReverseProxyEnabled = host.IsReverseProxyEnabled
-				j.data.OrchestratorHosts[index].ReverseProxy = host.ReverseProxy
-				j.data.OrchestratorHosts[index].ReverseProxyHosts = host.ReverseProxyHosts
+				j.data.OrchestratorHosts[i].IsReverseProxyEnabled = host.IsReverseProxyEnabled
+				j.data.OrchestratorHosts[i].ReverseProxy = host.ReverseProxy
+				j.data.OrchestratorHosts[i].ReverseProxyHosts = host.ReverseProxyHosts
 
-				_ = j.SaveNow(ctx)
-				ctx.LogDebugf("[Database] Host %s updated and saved", host.Host)
-				return &j.data.OrchestratorHosts[index], nil
+				found = true
+				result = &j.data.OrchestratorHosts[i]
 			} else {
 				ctx.LogDebugf("[Database] No changes detected for host %s", host.Host)
+				j.dataMutex.Unlock()
 				return host, nil
 			}
+			break
 		}
 	}
 
-	ctx.LogDebugf("[Database] Host %s not found, cannot update it", host.Host)
+	if !found {
+		j.dataMutex.Unlock()
+		ctx.LogDebugf("[Database] Host %s not found, cannot update it", host.Host)
+		return nil, ErrOrchestratorHostNotFound
+	}
 
-	return nil, ErrOrchestratorHostNotFound
+	j.dataMutex.Unlock()
+
+	_ = j.SaveNow(ctx)
+	ctx.LogDebugf("[Database] Host %s updated and saved", host.Host)
+	return result, nil
 }
 
 func (j *JsonDatabase) UpdateOrchestratorHostDetails(ctx basecontext.ApiContext, host *models.OrchestratorHost) (*models.OrchestratorHost, error) {
@@ -234,52 +274,58 @@ func (j *JsonDatabase) UpdateOrchestratorHostDetails(ctx basecontext.ApiContext,
 	if host.ID == "" {
 		return nil, ErrOrchestratorHostEmptyIdOrHost
 	}
+
+	j.dataMutex.Lock()
+
+	// Check for duplicates
 	for _, dbHost := range j.data.OrchestratorHosts {
 		if strings.EqualFold(dbHost.Host, host.Host) && dbHost.ID != host.ID {
+			j.dataMutex.Unlock()
 			return nil, errors.NewWithCodef(400, "host %s already exists with ID %s", host.Host, dbHost.ID)
 		}
 	}
 
-	for _, dbHost := range j.data.OrchestratorHosts {
+	for i, dbHost := range j.data.OrchestratorHosts {
 		if strings.EqualFold(dbHost.ID, host.ID) {
-			index, err := GetRecordIndex(j.data.OrchestratorHosts, "id", host.ID)
-			if err != nil {
-				return nil, err
-			}
+			if host.Diff(j.data.OrchestratorHosts[i]) {
+				j.data.OrchestratorHosts[i].Enabled = host.Enabled
+				j.data.OrchestratorHosts[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
+				j.data.OrchestratorHosts[i].Host = host.Host
+				j.data.OrchestratorHosts[i].Architecture = host.Architecture
+				j.data.OrchestratorHosts[i].CpuModel = host.CpuModel
+				j.data.OrchestratorHosts[i].Port = host.Port
+				j.data.OrchestratorHosts[i].Authentication = host.Authentication
+				j.data.OrchestratorHosts[i].Resources = host.Resources
+				j.data.OrchestratorHosts[i].RequiredClaims = host.RequiredClaims
+				j.data.OrchestratorHosts[i].RequiredRoles = host.RequiredRoles
+				j.data.OrchestratorHosts[i].Description = host.Description
+				j.data.OrchestratorHosts[i].Tags = host.Tags
+				j.data.OrchestratorHosts[i].PathPrefix = host.PathPrefix
+				j.data.OrchestratorHosts[i].Schema = host.Schema
+				j.data.OrchestratorHosts[i].State = host.State
+				j.data.OrchestratorHosts[i].LastUnhealthy = host.LastUnhealthy
+				j.data.OrchestratorHosts[i].LastUnhealthyErrorMessage = host.LastUnhealthyErrorMessage
+				j.data.OrchestratorHosts[i].HealthCheck = host.HealthCheck
+				j.data.OrchestratorHosts[i].VirtualMachines = host.VirtualMachines
 
-			if host.Diff(j.data.OrchestratorHosts[index]) {
-				j.data.OrchestratorHosts[index].Enabled = host.Enabled
-				j.data.OrchestratorHosts[index].UpdatedAt = helpers.GetUtcCurrentDateTime()
-				j.data.OrchestratorHosts[index].Host = host.Host
-				j.data.OrchestratorHosts[index].Architecture = host.Architecture
-				j.data.OrchestratorHosts[index].CpuModel = host.CpuModel
-				j.data.OrchestratorHosts[index].Port = host.Port
-				j.data.OrchestratorHosts[index].Authentication = host.Authentication
-				j.data.OrchestratorHosts[index].Resources = host.Resources
-				j.data.OrchestratorHosts[index].RequiredClaims = host.RequiredClaims
-				j.data.OrchestratorHosts[index].RequiredRoles = host.RequiredRoles
-				j.data.OrchestratorHosts[index].Description = host.Description
-				j.data.OrchestratorHosts[index].Tags = host.Tags
-				j.data.OrchestratorHosts[index].PathPrefix = host.PathPrefix
-				j.data.OrchestratorHosts[index].Schema = host.Schema
-				j.data.OrchestratorHosts[index].State = host.State
-				j.data.OrchestratorHosts[index].LastUnhealthy = host.LastUnhealthy
-				j.data.OrchestratorHosts[index].LastUnhealthyErrorMessage = host.LastUnhealthyErrorMessage
-				j.data.OrchestratorHosts[index].HealthCheck = host.HealthCheck
-				j.data.OrchestratorHosts[index].VirtualMachines = host.VirtualMachines
-
-				return &j.data.OrchestratorHosts[index], nil
+				j.dataMutex.Unlock()
+				return &j.data.OrchestratorHosts[i], nil
 			} else {
 				ctx.LogDebugf("[Database] No changes detected for host %s", host.Host)
+				j.dataMutex.Unlock()
 				return host, nil
 			}
 		}
 	}
 
+	j.dataMutex.Unlock()
 	return nil, ErrOrchestratorHostNotFound
 }
 
 func (j *JsonDatabase) GetOrchestratorAvailableResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
 	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
@@ -304,6 +350,9 @@ func (j *JsonDatabase) GetOrchestratorAvailableResources(ctx basecontext.ApiCont
 }
 
 func (j *JsonDatabase) GetOrchestratorTotalResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
 	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
@@ -328,6 +377,9 @@ func (j *JsonDatabase) GetOrchestratorTotalResources(ctx basecontext.ApiContext)
 }
 
 func (j *JsonDatabase) GetOrchestratorInUseResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
 	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
@@ -352,6 +404,9 @@ func (j *JsonDatabase) GetOrchestratorInUseResources(ctx basecontext.ApiContext)
 }
 
 func (j *JsonDatabase) GetOrchestratorReservedResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
 	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
@@ -377,6 +432,9 @@ func (j *JsonDatabase) GetOrchestratorReservedResources(ctx basecontext.ApiConte
 }
 
 func (j *JsonDatabase) GetOrchestratorSystemReservedResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
 	result := make(map[string]models.HostResourceItem)
 
 	for _, host := range j.data.OrchestratorHosts {
@@ -400,7 +458,10 @@ func (j *JsonDatabase) GetOrchestratorSystemReservedResources(ctx basecontext.Ap
 }
 
 func (j *JsonDatabase) GetOrchestratorHostResources(ctx basecontext.ApiContext, hostId string) (*models.HostResources, error) {
-	host, err := j.GetOrchestratorHost(ctx, hostId)
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
+	host, err := j.getOrchestratorHostUnsafe(ctx, hostId)
 	if err != nil {
 		return nil, err
 	}
@@ -416,9 +477,12 @@ func (j *JsonDatabase) GetOrchestratorVirtualMachines(ctx basecontext.ApiContext
 		return nil, ErrDatabaseNotConnected
 	}
 
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
 	var result []models.VirtualMachine
 
-	hosts, err := j.GetOrchestratorHosts(ctx, "")
+	hosts, err := j.getOrchestratorHostsLocked(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +511,10 @@ func (j *JsonDatabase) GetOrchestratorHostVirtualMachines(ctx basecontext.ApiCon
 		return nil, ErrDatabaseNotConnected
 	}
 
-	host, err := j.GetOrchestratorHost(ctx, hostId)
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
+	host, err := j.getOrchestratorHostUnsafe(ctx, hostId)
 	if err != nil {
 		return nil, err
 	}
@@ -470,7 +537,10 @@ func (j *JsonDatabase) GetOrchestratorHostVirtualMachine(ctx basecontext.ApiCont
 		return nil, ErrDatabaseNotConnected
 	}
 
-	host, err := j.GetOrchestratorHost(ctx, hostId)
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
+	host, err := j.getOrchestratorHostUnsafe(ctx, hostId)
 	if err != nil {
 		return nil, err
 	}
@@ -489,7 +559,10 @@ func (j *JsonDatabase) GetOrchestratorReverseProxyHosts(ctx basecontext.ApiConte
 		return nil, ErrDatabaseNotConnected
 	}
 
-	host, err := j.GetOrchestratorHost(ctx, hostId)
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
+	host, err := j.getOrchestratorHostUnsafe(ctx, hostId)
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +585,10 @@ func (j *JsonDatabase) GetOrchestratorReverseProxyHost(ctx basecontext.ApiContex
 		return nil, ErrDatabaseNotConnected
 	}
 
-	hosts, err := j.GetOrchestratorHosts(ctx, "")
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
+	hosts, err := j.getOrchestratorHostsLocked(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -538,7 +614,10 @@ func (j *JsonDatabase) GetOrchestratorReverseProxyConfig(ctx basecontext.ApiCont
 		return nil, ErrDatabaseNotConnected
 	}
 
-	host, err := j.GetOrchestratorHost(ctx, hostId)
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
+	host, err := j.getOrchestratorHostUnsafe(ctx, hostId)
 	if err != nil {
 		return nil, err
 	}
