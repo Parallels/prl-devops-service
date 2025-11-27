@@ -3,20 +3,24 @@ package orchestrator
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/interfaces"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
 // HostWebSocketManager manages WebSocket connections to hosts
 type HostWebSocketManager struct {
-	ctx        basecontext.ApiContext
-	clients    map[string]*HostWebSocketClient                              // hostID -> HostWebSocketClient
-	handlers   map[constants.EventType]map[interfaces.HostEventHandler]bool // eventType -> handlers
-	mu         sync.RWMutex
-	handlersMu sync.RWMutex
+	ctx           basecontext.ApiContext
+	clients       map[string]*HostWebSocketClient                              // hostID -> HostWebSocketClient
+	handlers      map[constants.EventType]map[interfaces.HostEventHandler]bool // eventType -> handlers
+	mu            sync.RWMutex
+	handlersMu    sync.RWMutex
+	stopChan      chan struct{}
+	refreshTicker *time.Ticker
 }
 
 var (
@@ -31,6 +35,7 @@ func NewHostWebSocketManager(ctx basecontext.ApiContext) *HostWebSocketManager {
 			ctx:      ctx,
 			clients:  make(map[string]*HostWebSocketClient),
 			handlers: make(map[constants.EventType]map[interfaces.HostEventHandler]bool),
+			stopChan: make(chan struct{}),
 		}
 	})
 	return managerInstance
@@ -151,6 +156,15 @@ func (m *HostWebSocketManager) RefreshConnections(hosts []models.OrchestratorHos
 // Shutdown closes all WebSocket connections and cleans up resources
 func (m *HostWebSocketManager) Shutdown() {
 	m.ctx.LogInfof("[HostWebSocketManager] Shutting down...")
+
+	// Stop the connection monitor
+	if m.stopChan != nil {
+		close(m.stopChan)
+	}
+	if m.refreshTicker != nil {
+		m.refreshTicker.Stop()
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -173,6 +187,70 @@ func (m *HostWebSocketManager) ProbeAndConnect(host models.OrchestratorHost) {
 		m.handlersMu.RUnlock()
 		m.ConnectHost(&host, eventTypes)
 	} else {
-		m.ctx.LogInfof("[HostWebSocketManager] Probe failed for host %s, skipping WebSocket connection", host.Host)
+		m.ctx.LogDebugf("[HostWebSocketManager] Probe failed for host %s, skipping WebSocket connection", host.Host)
 	}
+}
+
+// StartConnectionMonitor starts a background goroutine that periodically checks
+// for disconnected hosts and attempts to reconnect them
+func (m *HostWebSocketManager) StartConnectionMonitor(checkInterval time.Duration) {
+	m.refreshTicker = time.NewTicker(checkInterval)
+
+	go func() {
+		m.ctx.LogInfof("[HostWebSocketManager] Starting connection monitor (interval: %v)", checkInterval)
+		for {
+			select {
+			case <-m.stopChan:
+				m.ctx.LogInfof("[HostWebSocketManager] Connection monitor stopped")
+				return
+			case <-m.refreshTicker.C:
+				m.checkAndReconnectHosts()
+			}
+		}
+	}()
+}
+
+// checkAndReconnectHosts checks all enabled hosts and attempts to reconnect disconnected ones
+func (m *HostWebSocketManager) checkAndReconnectHosts() {
+	// Get database service
+	dbService, err := serviceprovider.GetDatabaseService(m.ctx)
+	if err != nil {
+		m.ctx.LogErrorf("[HostWebSocketManager] Error getting database service: %v", err)
+		return
+	}
+
+	// Get all hosts from database
+	hosts, err := dbService.GetOrchestratorHosts(m.ctx, "")
+	if err != nil {
+		m.ctx.LogErrorf("[HostWebSocketManager] Error getting hosts: %v", err)
+		return
+	}
+
+	activeHostIDs := make(map[string]bool)
+
+	// Check each enabled host and attempt to connect if needed
+	for _, host := range hosts {
+		if !host.Enabled {
+			continue
+		}
+
+		activeHostIDs[host.ID] = true
+
+		// If host is not connected, attempt to connect
+		if !m.IsConnected(host.ID) {
+			m.ctx.LogDebugf("[HostWebSocketManager] Host %s is not connected, attempting reconnection", host.Host)
+			hostCopy := host
+			go m.ProbeAndConnect(hostCopy)
+		}
+	}
+
+	// Disconnect hosts that are no longer enabled or in the database
+	m.mu.Lock()
+	for hostID := range m.clients {
+		if !activeHostIDs[hostID] {
+			m.ctx.LogDebugf("[HostWebSocketManager] Host %s is no longer enabled or in database, disconnecting", hostID)
+			go m.DisconnectHost(hostID)
+		}
+	}
+	m.mu.Unlock()
 }

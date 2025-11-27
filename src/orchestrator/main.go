@@ -76,6 +76,9 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 		manager.RefreshConnections(hosts)
 	}
 
+	// Start periodic connection monitor (checks every 30 seconds)
+	manager.StartConnectionMonitor(30 * time.Second)
+
 	if waitForInit {
 		s.ctx.LogInfof("[Orchestrator] Waiting for API to be initialized")
 		<-restapi.Initialized
@@ -304,16 +307,4 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 
 func (s *OrchestratorService) SetHealthCheckTimeout(timeout time.Duration) {
 	s.healthCheckTimeout = timeout
-}
-
-func (s *OrchestratorService) RefreshHosts() error {
-	hosts, err := s.db.GetOrchestratorHosts(s.ctx, "")
-	if err != nil {
-		return err
-	}
-	manager := GetHostWebSocketManager()
-	if manager != nil {
-		manager.RefreshConnections(hosts)
-	}
-	return nil
 }
