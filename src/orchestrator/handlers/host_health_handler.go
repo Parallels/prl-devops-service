@@ -80,7 +80,7 @@ func (h *HostHealthHandler) handlePong(ctx basecontext.ApiContext, hostID string
 	if _, err := dbService.UpdateOrchestratorHost(ctx, host); err != nil {
 		ctx.LogErrorf("[HostHealthHandler] Error updating host %s health in DB: %v", hostID, err)
 	} else if stateChanged {
-		ctx.LogInfof("[HostHealthHandler] Host %s marked as healthy (pong received)", hostID)
+		ctx.LogDebugf("[HostHealthHandler] Host %s marked as healthy (pong received)", hostID)
 	} else {
 		ctx.LogDebugf("[HostHealthHandler] Host %s health timestamp updated (pong received)", hostID)
 	}

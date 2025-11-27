@@ -281,13 +281,16 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 	}
 	s.ctx.LogDebugf("[Orchestrator] oldHost: %v, updated at %s and new one %s updated at %v", oldHost.ID, oldHost.UpdatedAt, host.ID, host.UpdatedAt)
 	if oldHost.UpdatedAt > host.UpdatedAt {
-		s.ctx.LogDebugf("[Orchestrator] Host %s was updated by another process, skipping", host.Host)
-	} else {
-		s.ctx.LogDebugf("[Orchestrator] Saving host %s", host.Host)
-		if _, err := s.db.UpdateOrchestratorHost(s.ctx, &hostToSave); err != nil {
-			s.ctx.LogErrorf("[Orchestrator] Error saving host %s: %v", host.Host, err.Error())
-			return err
-		}
+		// Another process (e.g., ping/pong handler) updated the timestamp more recently
+		// Use the newer timestamp but still save our health check data
+		s.ctx.LogDebugf("[Orchestrator] Host %s was updated by another process, using newer timestamp", host.Host)
+		hostToSave.UpdatedAt = oldHost.UpdatedAt
+	}
+
+	s.ctx.LogDebugf("[Orchestrator] Saving host %s", host.Host)
+	if _, err := s.db.UpdateOrchestratorHost(s.ctx, &hostToSave); err != nil {
+		s.ctx.LogErrorf("[Orchestrator] Error saving host %s: %v", host.Host, err.Error())
+		return err
 	}
 
 	s.ctx.LogDebugf("[Orchestrator] Host %s saved, freeing up memory", host.Host)

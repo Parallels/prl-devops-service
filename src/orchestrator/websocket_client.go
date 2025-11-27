@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -33,6 +34,7 @@ type HostWebSocketClient struct {
 	isConnected bool
 	mu          sync.RWMutex
 	stopChan    chan struct{}
+	pingTicker  *time.Ticker
 }
 
 func NewHostWebSocketClient(ctx basecontext.ApiContext, host *models.OrchestratorHost, manager *HostWebSocketManager) *HostWebSocketClient {
@@ -63,6 +65,7 @@ func (c *HostWebSocketClient) Connect(events []constants.EventType) {
 				}
 			} else {
 				backoff = reconnectInterval
+				c.startPingRoutine()
 				c.readLoop()
 
 				// Check if we are stopping
@@ -191,11 +194,41 @@ func (c *HostWebSocketClient) SendPing() error {
 		"type":    string(constants.EventTypeHealth),
 		"message": "ping",
 	}
+	c.ctx.LogInfof("[HostWebSocketClient] Sending ping to host %s", c.hostID)
 	return c.Send(pingMsg)
+}
+
+func (c *HostWebSocketClient) startPingRoutine() {
+	c.mu.Lock()
+	if c.pingTicker != nil {
+		c.pingTicker.Stop()
+	}
+	cfg := config.Get()
+	c.pingTicker = time.NewTicker(time.Duration(cfg.OrchestratorPullFrequency()) * time.Second)
+	c.mu.Unlock()
+
+	go func() {
+		for {
+			select {
+			case <-c.stopChan:
+				return
+			case <-c.pingTicker.C:
+				if err := c.SendPing(); err != nil {
+					c.ctx.LogDebugf("[HostWebSocketClient] Failed to send periodic ping to host %s: %v", c.hostName, err)
+				}
+			}
+		}
+	}()
 }
 
 func (c *HostWebSocketClient) Close() {
 	close(c.stopChan)
+	c.mu.Lock()
+	if c.pingTicker != nil {
+		c.pingTicker.Stop()
+		c.pingTicker = nil
+	}
+	c.mu.Unlock()
 	if c.conn != nil {
 		c.conn.Close()
 	}

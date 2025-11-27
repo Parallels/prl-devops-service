@@ -85,14 +85,6 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		Register()
 
 	restapi.NewController().
-		WithMethod(restapi.PUT).
-		WithVersion(version).
-		WithPath("/orchestrator/refresh-hosts").
-		WithRequiredClaim(constants.UPDATE_CLAIM).
-		WithHandler(RefreshHostsHandler()).
-		Register()
-
-	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/orchestrator/overview/resources").
@@ -697,33 +689,6 @@ func DisableOrchestratorHostsHandler() restapi.ControllerHandler {
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Host %v disabled successfully", id)
-	}
-}
-
-// @Summary		Refresh hosts connections
-// @Description	This endpoint triggers a refresh of WebSocket connections for all hosts
-// @Tags			Orchestrator
-// @Produce		json
-// @Success		200
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/refresh-hosts [put]
-func RefreshHostsHandler() restapi.ControllerHandler {
-	return func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-		ctx := GetBaseContext(r)
-		defer Recover(ctx, r, w)
-		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-
-		if err := orchestratorSvc.RefreshHosts(); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		ctx.LogInfof("Hosts refreshed successfully")
 	}
 }
 
