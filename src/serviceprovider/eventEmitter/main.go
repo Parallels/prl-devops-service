@@ -153,6 +153,18 @@ func (e *EventEmitter) RegisterHandler(eventType []constants.EventType, handler 
 	}
 }
 
+// Broadcast sends a message to all subscribers of the event type
+func (e *EventEmitter) Broadcast(message *models.EventMessage) error {
+	if atomic.LoadInt32(&e.isRunning) == 0 {
+		e.ctx.LogWarnf("[EventEmitter] Event emitter is not running, skipping broadcast of message %s", message.ID)
+		return errors.New("event emitter is not running")
+	}
+	if e.hub != nil {
+		return e.hub.broadcastMessage(message)
+	}
+	return errors.New("hub is not initialized")
+}
+
 // Shutdown stops the event emitter service
 func (e *EventEmitter) Shutdown() {
 	if atomic.LoadInt32(&e.isRunning) == 0 {

@@ -108,6 +108,19 @@ func (h *PDfMEventHandler) handleVmStateChange(ctx basecontext.ApiContext, hostI
 		ctx.LogErrorf("[PDfMEventHandler] Error updating VM %s state in DB: %v", stateChange.VmID, err)
 	} else {
 		ctx.LogInfof("[PDfMEventHandler] Updated VM %s state to %s", stateChange.VmID, stateChange.CurrentState)
+
+		// Emit VM state change event
+		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+			msg := models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_VM_STATE_CHANGED", models.HostVmEvent{
+				HostID: hostID,
+				Event:  stateChange,
+			})
+			go func() {
+				if err := emitter.Broadcast(msg); err != nil {
+					ctx.LogErrorf("[PDfMEventHandler] Failed to broadcast event HOST_VM_STATE_CHANGED: %v", err)
+				}
+			}()
+		}
 	}
 }
 
@@ -156,6 +169,19 @@ func (h *PDfMEventHandler) handleVmAdded(ctx basecontext.ApiContext, hostID stri
 		ctx.LogErrorf("[PDfMEventHandler] Error updating VM %s state in DB: %v", vmAdded.VmID, err)
 	} else {
 		ctx.LogInfof("[PDfMEventHandler] VM added %s", vmAdded.VmID)
+
+		// Emit VM added event
+		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+			msg := models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_VM_ADDED", models.HostVmEvent{
+				HostID: hostID,
+				Event:  vmAdded,
+			})
+			go func() {
+				if err := emitter.Broadcast(msg); err != nil {
+					ctx.LogErrorf("[PDfMEventHandler] Failed to broadcast event HOST_VM_ADDED: %v", err)
+				}
+			}()
+		}
 	}
 }
 
@@ -205,5 +231,18 @@ func (h *PDfMEventHandler) handleVmRemoved(ctx basecontext.ApiContext, hostID st
 		ctx.LogErrorf("[PDfMEventHandler] Error updating VM %s state in DB: %v", vmRemoved.VmID, err)
 	} else {
 		ctx.LogInfof("[PDfMEventHandler] Removed VM %s", vmRemoved.VmID)
+
+		// Emit VM removed event
+		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+			msg := models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_VM_REMOVED", models.HostVmEvent{
+				HostID: hostID,
+				Event:  vmRemoved,
+			})
+			go func() {
+				if err := emitter.Broadcast(msg); err != nil {
+					ctx.LogErrorf("[PDfMEventHandler] Failed to broadcast event HOST_VM_REMOVED: %v", err)
+				}
+			}()
+		}
 	}
 }
