@@ -28,6 +28,12 @@ func (s *OrchestratorService) EnableHost(ctx basecontext.ApiContext, hostIdOrHos
 	}
 
 	s.Refresh()
+
+	manager := GetHostWebSocketManager()
+	if manager != nil {
+		manager.ProbeAndConnect(*updatedHost)
+	}
+
 	return updatedHost, nil
 }
 
@@ -52,5 +58,11 @@ func (s *OrchestratorService) DisableHost(ctx basecontext.ApiContext, hostIdOrHo
 	}
 
 	s.Refresh()
+
+	manager := GetHostWebSocketManager()
+	if manager != nil {
+		manager.DisconnectHost(updatedHost.ID)
+	}
+
 	return updatedHost, nil
 }

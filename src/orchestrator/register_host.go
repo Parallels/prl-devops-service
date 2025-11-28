@@ -25,5 +25,11 @@ func (s *OrchestratorService) RegisterHost(ctx basecontext.ApiContext, host *mod
 
 	s.Refresh()
 	dbService.SaveNow(ctx)
+
+	manager := GetHostWebSocketManager()
+	if manager != nil {
+		manager.ProbeAndConnect(*dbHost)
+	}
+
 	return dbHost, nil
 }

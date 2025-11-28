@@ -53,6 +53,7 @@ type JsonDatabase struct {
 	saveProcess chan bool
 	filename    string
 	saveMutex   sync.Mutex
+	dataMutex   sync.RWMutex
 	cancel      chan bool
 	data        Data
 }
@@ -289,7 +290,9 @@ func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 
 	defer tempFile.Close()
 
+	j.dataMutex.RLock()
 	jsonString, err := json.MarshalIndent(j.data, "", "  ")
+	j.dataMutex.RUnlock()
 	if err != nil {
 		ctx.LogDebugf("[Database] Error marshalling data to temp file: %v", err)
 		j.isSaving = false
@@ -466,13 +469,15 @@ func (j *JsonDatabase) recoverFromResidualSaveFiles(ctx basecontext.ApiContext, 
 			ctx.LogInfof("[Database] Save file %s is empty, ignoring", latestSaveFile)
 			return false, nil
 		}
-		err = json.Unmarshal(content, &data)
 		if err != nil {
 			ctx.LogErrorf("[Database] Error unmarshalling save file %s: %v", latestSaveFile, err)
 			return false, err
 		}
+		j.dataMutex.Lock()
 		j.data = data
 		j.connected = true
+		j.dataMutex.Unlock()
+
 		ctx.LogInfof("[Database] Successfully recovered data from save file %s", latestSaveFile)
 		if err := j.SaveNow(ctx); err != nil {
 			ctx.LogErrorf("[Database] Error saving database: %v", err)
@@ -518,7 +523,9 @@ func (j *JsonDatabase) recoverFromBackupFile(ctx basecontext.ApiContext) error {
 			ctx.LogErrorf("[Database] Error unmarshalling backup file %s: %v", latestBackupFile, err)
 			return err
 		}
+		j.dataMutex.Lock()
 		j.data = data
+		j.dataMutex.Unlock()
 		ctx.LogInfof("[Database] Successfully recovered data from backup file %s", latestBackupFile)
 		return nil
 	}
@@ -568,13 +575,16 @@ func (j *JsonDatabase) loadFromFile(ctx basecontext.ApiContext) error {
 		}
 	}
 
+	j.dataMutex.Lock()
 	j.data = data
 	j.connected = true
+	j.dataMutex.Unlock()
 	return nil
 }
 
 func (j *JsonDatabase) loadFromEmpty(ctx basecontext.ApiContext) error {
 	ctx.LogInfof("[Database] Database file is empty, creating new file")
+	j.dataMutex.Lock()
 	j.data = Data{
 		Users:            make([]models.User, 0),
 		Claims:           make([]models.Claim, 0),
@@ -583,6 +593,7 @@ func (j *JsonDatabase) loadFromEmpty(ctx basecontext.ApiContext) error {
 		PackerTemplates:  make([]models.PackerTemplate, 0),
 		ManifestsCatalog: make([]models.CatalogManifest, 0),
 	}
+	j.dataMutex.Unlock()
 
 	if j.Config.AutoRecover {
 		// Check if there are any backup files available
