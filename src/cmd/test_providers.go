@@ -48,6 +48,11 @@ func processTestProviders(ctx basecontext.ApiContext, cmd string) {
 				os.Exit(1)
 			}
 		}
+	case "event-load":
+		if err := tests.RunEventLoadTest(ctx); err != nil {
+			ctx.LogErrorf(err.Error())
+			os.Exit(1)
+		}
 	default:
 		processHelp(constants.TEST_COMMAND)
 	}

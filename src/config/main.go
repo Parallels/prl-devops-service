@@ -646,6 +646,9 @@ func (c *Config) GetBoolKey(key string) bool {
 }
 
 func (c *Config) SetKey(key string, value string) {
+	if c.config.Environment == nil {
+		c.config.Environment = make(map[string]string)
+	}
 	c.config.Environment[strings.ToLower(key)] = value
 }
 
