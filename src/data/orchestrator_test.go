@@ -804,3 +804,227 @@ func TestOrchestratorHostAuthorization(t *testing.T) {
 	// Should return empty list due to authorization filter
 	assert.Len(t, hosts, 0)
 }
+
+// Tests for UpdateOrchestratorHostTimestamp
+
+func TestUpdateOrchestratorHostTimestamp_Success(t *testing.T) {
+	db, tmpDir, ctx := setupOrchestratorTestDB(t)
+	defer cleanupTestDB(t, tmpDir, db)
+
+	// Create host
+	host := models.OrchestratorHost{
+		Host:  "timestamp-host.example.com",
+		State: "healthy",
+	}
+	created, err := db.CreateOrchestratorHost(ctx, host)
+	require.NoError(t, err)
+
+	originalTimestamp := created.UpdatedAt
+
+	// Wait a bit to ensure timestamp difference
+	time.Sleep(10 * time.Millisecond)
+
+	// Update timestamp
+	newTimestamp := "2025-11-28T12:30:23.646623Z"
+	err = db.UpdateOrchestratorHostTimestamp(ctx, created.ID, newTimestamp, "")
+	assert.NoError(t, err)
+
+	// Verify timestamp was updated
+	updated, err := db.GetOrchestratorHost(ctx, created.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, updated)
+	assert.Equal(t, newTimestamp, updated.UpdatedAt)
+	assert.NotEqual(t, originalTimestamp, updated.UpdatedAt)
+	assert.Equal(t, "healthy", updated.State) // State should remain unchanged
+}
+
+func TestUpdateOrchestratorHostTimestamp_WithStateChange(t *testing.T) {
+	db, tmpDir, ctx := setupOrchestratorTestDB(t)
+	defer cleanupTestDB(t, tmpDir, db)
+
+	// Create unhealthy host
+	host := models.OrchestratorHost{
+		Host:                      "unhealthy-host.example.com",
+		State:                     "unhealthy",
+		LastUnhealthy:             "2025-11-28T10:00:00Z",
+		LastUnhealthyErrorMessage: "Connection timeout",
+	}
+	created, err := db.CreateOrchestratorHost(ctx, host)
+	require.NoError(t, err)
+
+	// Update timestamp and mark as healthy
+	newTimestamp := "2025-11-28T12:30:23.646623Z"
+	err = db.UpdateOrchestratorHostTimestamp(ctx, created.ID, newTimestamp, "healthy")
+	assert.NoError(t, err)
+
+	// Verify state was updated and error fields cleared
+	updated, err := db.GetOrchestratorHost(ctx, created.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, updated)
+	assert.Equal(t, newTimestamp, updated.UpdatedAt)
+	assert.Equal(t, "healthy", updated.State)
+	assert.Empty(t, updated.LastUnhealthy)
+	assert.Empty(t, updated.LastUnhealthyErrorMessage)
+}
+
+func TestUpdateOrchestratorHostTimestamp_StateChangeToUnhealthy(t *testing.T) {
+	db, tmpDir, ctx := setupOrchestratorTestDB(t)
+	defer cleanupTestDB(t, tmpDir, db)
+
+	// Create healthy host
+	host := models.OrchestratorHost{
+		Host:  "healthy-host.example.com",
+		State: "healthy",
+	}
+	created, err := db.CreateOrchestratorHost(ctx, host)
+	require.NoError(t, err)
+
+	// Update timestamp and mark as unhealthy
+	newTimestamp := "2025-11-28T12:30:23.646623Z"
+	err = db.UpdateOrchestratorHostTimestamp(ctx, created.ID, newTimestamp, "unhealthy")
+	assert.NoError(t, err)
+
+	// Verify state was updated
+	updated, err := db.GetOrchestratorHost(ctx, created.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, updated)
+	assert.Equal(t, newTimestamp, updated.UpdatedAt)
+	assert.Equal(t, "unhealthy", updated.State)
+	// Note: LastUnhealthy and LastUnhealthyErrorMessage are NOT set by this method
+	// They should be set by the caller before calling this method
+}
+
+func TestUpdateOrchestratorHostTimestamp_EmptyState(t *testing.T) {
+	db, tmpDir, ctx := setupOrchestratorTestDB(t)
+	defer cleanupTestDB(t, tmpDir, db)
+
+	// Create host
+	host := models.OrchestratorHost{
+		Host:  "empty-state-host.example.com",
+		State: "healthy",
+	}
+	created, err := db.CreateOrchestratorHost(ctx, host)
+	require.NoError(t, err)
+
+	// Update timestamp without changing state (empty state parameter)
+	newTimestamp := "2025-11-28T12:30:23.646623Z"
+	err = db.UpdateOrchestratorHostTimestamp(ctx, created.ID, newTimestamp, "")
+	assert.NoError(t, err)
+
+	// Verify only timestamp was updated, state unchanged
+	updated, err := db.GetOrchestratorHost(ctx, created.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, updated)
+	assert.Equal(t, newTimestamp, updated.UpdatedAt)
+	assert.Equal(t, "healthy", updated.State) // State should remain unchanged
+}
+
+func TestUpdateOrchestratorHostTimestamp_HostNotFound(t *testing.T) {
+	db, tmpDir, ctx := setupOrchestratorTestDB(t)
+	defer cleanupTestDB(t, tmpDir, db)
+
+	// Try to update timestamp for nonexistent host
+	err := db.UpdateOrchestratorHostTimestamp(ctx, "nonexistent-id", "2025-11-28T12:30:23.646623Z", "healthy")
+	assert.Error(t, err)
+	assert.Equal(t, ErrOrchestratorHostNotFound, err)
+}
+
+func TestUpdateOrchestratorHostTimestamp_EmptyHostID(t *testing.T) {
+	db, tmpDir, ctx := setupOrchestratorTestDB(t)
+	defer cleanupTestDB(t, tmpDir, db)
+
+	// Try to update with empty host ID
+	err := db.UpdateOrchestratorHostTimestamp(ctx, "", "2025-11-28T12:30:23.646623Z", "healthy")
+	assert.Error(t, err)
+	assert.Equal(t, ErrOrchestratorHostEmptyIdOrHost, err)
+}
+
+func TestUpdateOrchestratorHostTimestamp_NotConnected(t *testing.T) {
+	db, tmpDir, ctx := setupOrchestratorTestDB(t)
+	defer cleanupTestDB(t, tmpDir, db)
+
+	// Disconnect the database
+	db.connected = false
+
+	// Try to update timestamp
+	err := db.UpdateOrchestratorHostTimestamp(ctx, "some-id", "2025-11-28T12:30:23.646623Z", "healthy")
+	assert.Error(t, err)
+	assert.Equal(t, ErrDatabaseNotConnected, err)
+}
+
+func TestUpdateOrchestratorHostTimestamp_ConcurrentUpdates(t *testing.T) {
+	db, tmpDir, ctx := setupOrchestratorTestDB(t)
+	defer cleanupTestDB(t, tmpDir, db)
+
+	// Create host
+	host := models.OrchestratorHost{
+		Host:  "concurrent-host.example.com",
+		State: "healthy",
+	}
+	created, err := db.CreateOrchestratorHost(ctx, host)
+	require.NoError(t, err)
+
+	// Simulate concurrent timestamp updates
+	const numGoroutines = 10
+	errChan := make(chan error, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		go func(index int) {
+			timestamp := fmt.Sprintf("2025-11-28T12:30:%02d.000000Z", index)
+			errChan <- db.UpdateOrchestratorHostTimestamp(ctx, created.ID, timestamp, "")
+		}(i)
+	}
+
+	// Collect results
+	for i := 0; i < numGoroutines; i++ {
+		err := <-errChan
+		assert.NoError(t, err)
+	}
+
+	// Verify host still exists and has a valid timestamp
+	updated, err := db.GetOrchestratorHost(ctx, created.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, updated)
+	assert.NotEmpty(t, updated.UpdatedAt)
+}
+
+func TestUpdateOrchestratorHostTimestamp_PreservesOtherFields(t *testing.T) {
+	db, tmpDir, ctx := setupOrchestratorTestDB(t)
+	defer cleanupTestDB(t, tmpDir, db)
+
+	// Create host with various fields
+	host := models.OrchestratorHost{
+		Host:         "preserve-fields-host.example.com",
+		State:        "healthy",
+		Description:  "Test description",
+		Architecture: "arm64",
+		CpuModel:     "Apple M1",
+		Tags:         []string{"test", "production"},
+		Resources: &models.HostResources{
+			CpuType: "arm64",
+			Total: models.HostResourceItem{
+				PhysicalCpuCount: 8,
+			},
+		},
+	}
+	created, err := db.CreateOrchestratorHost(ctx, host)
+	require.NoError(t, err)
+
+	// Update timestamp
+	newTimestamp := "2025-11-28T12:30:23.646623Z"
+	err = db.UpdateOrchestratorHostTimestamp(ctx, created.ID, newTimestamp, "")
+	assert.NoError(t, err)
+
+	// Verify all other fields are preserved
+	updated, err := db.GetOrchestratorHost(ctx, created.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, updated)
+	assert.Equal(t, newTimestamp, updated.UpdatedAt)
+	assert.Equal(t, "Test description", updated.Description)
+	assert.Equal(t, "arm64", updated.Architecture)
+	assert.Equal(t, "Apple M1", updated.CpuModel)
+	assert.Equal(t, []string{"test", "production"}, updated.Tags)
+	assert.NotNil(t, updated.Resources)
+	assert.Equal(t, "arm64", updated.Resources.CpuType)
+	assert.Equal(t, int64(8), updated.Resources.Total.PhysicalCpuCount)
+}

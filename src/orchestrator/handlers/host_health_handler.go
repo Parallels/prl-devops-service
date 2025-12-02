@@ -70,15 +70,26 @@ func (h *HostHealthHandler) handlePong(ctx basecontext.ApiContext, hostID string
 	host.UpdatedAt = helpers.GetUtcCurrentDateTime()
 	stateChanged := false
 
+	newState := ""
 	if host.State != "healthy" {
-		host.State = "healthy"
-		host.LastUnhealthy = ""
-		host.LastUnhealthyErrorMessage = ""
+		newState = "healthy"
 		stateChanged = true
+		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+			msg := models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_HEALTH_UPDATE", models.HostHealthUpdate{
+				HostID: host.ID,
+				State:  newState,
+			})
+			go func() {
+				if err := emitter.Broadcast(msg); err != nil {
+					ctx.LogErrorf("[HostHealthHandler] Failed to broadcast event %s: %v", "HOST_HEALTH_UPDATE", err)
+				}
+			}()
+		}
 	}
 
-	if _, err := dbService.UpdateOrchestratorHost(ctx, host); err != nil {
-		ctx.LogErrorf("[HostHealthHandler] Error updating host %s health in DB: %v", hostID, err)
+	// Use the lightweight timestamp update method instead of full UpdateOrchestratorHost
+	if err := dbService.UpdateOrchestratorHostTimestamp(ctx, hostID, host.UpdatedAt, newState); err != nil {
+		ctx.LogErrorf("[HostHealthHandler] Error updating host %s health timestamp in DB: %v", hostID, err)
 	} else if stateChanged {
 		ctx.LogDebugf("[HostHealthHandler] Host %s marked as healthy (pong received)", hostID)
 	} else {

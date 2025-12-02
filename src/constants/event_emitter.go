@@ -7,12 +7,13 @@ type EventType string
 // Event Message Types - predefined types for event routing
 // Clients subscribe to these types and receive messages of that type
 const (
-	EventTypeGlobal EventType = "global" // Broadcasts to all subscribers
-	EventTypeSystem EventType = "system" // System-level events
-	EventTypeVM     EventType = "vm"     // Virtual machine events
-	EventTypeHost   EventType = "host"   // Host-level events
-	EventTypePDFM   EventType = "pdfm"   // PDFM-specific events
-	EventTypeHealth EventType = "health" // Health check events
+	EventTypeGlobal       EventType = "global"       // Broadcasts to all subscribers
+	EventTypeSystem       EventType = "system"       // System-level events
+	EventTypeVM           EventType = "vm"           // Virtual machine events
+	EventTypeHost         EventType = "host"         // Host-level events
+	EventTypePDFM         EventType = "pdfm"         // PDFM-specific events
+	EventTypeHealth       EventType = "health"       // Health check events
+	EventTypeOrchestrator EventType = "orchestrator" // Orchestrator events
 )
 
 func (e EventType) String() string {
@@ -22,7 +23,7 @@ func (e EventType) String() string {
 // IsValid checks if the EventType is valid
 func (e EventType) IsValid() bool {
 	switch e {
-	case EventTypeGlobal, EventTypeSystem, EventTypeVM, EventTypeHost, EventTypePDFM, EventTypeHealth:
+	case EventTypeGlobal, EventTypeSystem, EventTypeVM, EventTypeHost, EventTypePDFM, EventTypeHealth, EventTypeOrchestrator:
 		return true
 	default:
 		return false
@@ -38,5 +39,6 @@ func GetAllEventTypes() []EventType {
 		EventTypeHost,
 		EventTypePDFM,
 		EventTypeHealth,
+		EventTypeOrchestrator,
 	}
 }

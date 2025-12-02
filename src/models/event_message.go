@@ -77,3 +77,13 @@ type VmAdded struct {
 type VmRemoved struct {
 	VmID string `json:"vm_id"`
 }
+
+type HostHealthUpdate struct {
+	HostID string `json:"host_id"`
+	State  string `json:"state"`
+}
+
+type HostVmEvent struct {
+	HostID string      `json:"host_id"`
+	Event  interface{} `json:"event"` // VmStateChange, VmAdded, or VmRemoved
+}

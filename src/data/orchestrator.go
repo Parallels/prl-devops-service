@@ -29,7 +29,6 @@ func (j *JsonDatabase) GetOrchestratorHosts(ctx basecontext.ApiContext, filter s
 }
 
 // getOrchestratorHostsLocked returns the list of orchestrator hosts without acquiring a lock.
-//
 // IMPORTANT: The caller MUST hold j.dataMutex (either RLock or Lock) before calling this function.
 // Failure to do so will lead to data races.
 // Attempting to acquire the lock inside this function would cause deadlocks when called from functions that already hold a Write lock.
@@ -320,6 +319,38 @@ func (j *JsonDatabase) UpdateOrchestratorHostDetails(ctx basecontext.ApiContext,
 
 	j.dataMutex.Unlock()
 	return nil, ErrOrchestratorHostNotFound
+}
+
+// UpdateOrchestratorHostTimestamp updates only the timestamp and health-related fields
+// without performing a Diff check. This is optimized for WebSocket pong responses.
+func (j *JsonDatabase) UpdateOrchestratorHostTimestamp(ctx basecontext.ApiContext, hostID string, timestamp string, state string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	if hostID == "" {
+		return ErrOrchestratorHostEmptyIdOrHost
+	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+
+	for i, dbHost := range j.data.OrchestratorHosts {
+		if strings.EqualFold(dbHost.ID, hostID) {
+			j.data.OrchestratorHosts[i].UpdatedAt = timestamp
+			if state != "" {
+				j.data.OrchestratorHosts[i].State = state
+				if state == "healthy" {
+					j.data.OrchestratorHosts[i].LastUnhealthy = ""
+					j.data.OrchestratorHosts[i].LastUnhealthyErrorMessage = ""
+				}
+			}
+			ctx.LogDebugf("[Database] Host %s timestamp updated to %s", dbHost.Host, timestamp)
+			return nil
+		}
+	}
+
+	return ErrOrchestratorHostNotFound
 }
 
 func (j *JsonDatabase) GetOrchestratorAvailableResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {

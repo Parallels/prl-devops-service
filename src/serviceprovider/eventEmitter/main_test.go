@@ -385,3 +385,55 @@ func TestUnregisterClientCmd_Execute(t *testing.T) {
 
 	assert.NotContains(t, hub.clients, "test-client")
 }
+
+func TestEventEmitter_Broadcast_Success(t *testing.T) {
+	// Reset singleton
+	globalEventEmitter = nil
+	once = sync.Once{}
+
+	ctx := basecontext.NewBaseContext()
+	emitter := NewEventEmitter(ctx)
+
+	// Manually initialize hub for testing
+	emitter.hub = &Hub{
+		ctx:           ctx,
+		clients:       make(map[string]*Client),
+		subscriptions: make(map[constants.EventType]map[string]bool),
+	}
+	emitter.isRunning = 1
+
+	msg := models.NewEventMessage(constants.EventTypeVM, "test", nil)
+	err := emitter.Broadcast(msg)
+	assert.NoError(t, err)
+}
+
+func TestEventEmitter_Broadcast_NotRunning(t *testing.T) {
+	// Reset singleton
+	globalEventEmitter = nil
+	once = sync.Once{}
+
+	ctx := basecontext.NewBaseContext()
+	emitter := NewEventEmitter(ctx)
+	// Not setting isRunning to 1
+
+	msg := models.NewEventMessage(constants.EventTypeVM, "test", nil)
+	err := emitter.Broadcast(msg)
+	assert.Error(t, err)
+	assert.Equal(t, "event emitter is not running", err.Error())
+}
+
+func TestEventEmitter_Broadcast_HubNotInitialized(t *testing.T) {
+	// Reset singleton
+	globalEventEmitter = nil
+	once = sync.Once{}
+
+	ctx := basecontext.NewBaseContext()
+	emitter := NewEventEmitter(ctx)
+	emitter.isRunning = 1
+	// Hub is nil
+
+	msg := models.NewEventMessage(constants.EventTypeVM, "test", nil)
+	err := emitter.Broadcast(msg)
+	assert.Error(t, err)
+	assert.Equal(t, "hub is not initialized", err.Error())
+}

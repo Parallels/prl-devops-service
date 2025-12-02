@@ -7,6 +7,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -27,7 +28,6 @@ type OrchestratorService struct {
 	refreshInterval    time.Duration
 	syncContext        context.Context
 	cancel             context.CancelFunc
-	eventsFromHosts    chan apimodels.EventMessage
 	db                 *data.JsonDatabase
 }
 
@@ -37,7 +37,6 @@ func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
 			ctx:                ctx,
 			timeout:            5 * time.Minute,
 			healthCheckTimeout: 3 * time.Second,
-			eventsFromHosts:    make(chan apimodels.EventMessage, 1024*10),
 		}
 		cfg := config.Get()
 		globalOrchestratorService.refreshInterval = time.Duration(cfg.OrchestratorPullFrequency()) * time.Second
@@ -237,6 +236,17 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	if err != nil {
 		s.ctx.LogErrorf("[Orchestrator] Error getting virtual machines for host %s: %v", host.Host, err.Error())
 		host.SetUnhealthy(err.Error())
+		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+			msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_HEALTH_UPDATE", apimodels.HostHealthUpdate{
+				HostID: host.ID,
+				State:  host.State,
+			})
+			go func() {
+				if err := emitter.Broadcast(msg); err != nil {
+					s.ctx.LogErrorf("[Orchestrator] Failed to broadcast event %s: %v", "HOST_HEALTH_UPDATE", err)
+				}
+			}()
+		}
 		_ = s.persistHost(&host)
 		return
 	}
@@ -270,6 +280,19 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	host.VirtualMachines = nil
 	host.ReverseProxy = nil
 	host.ReverseProxyHosts = nil
+
+	// Emit host health update event
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_HEALTH_UPDATE", apimodels.HostHealthUpdate{
+			HostID: host.ID,
+			State:  host.State,
+		})
+		go func() {
+			if err := emitter.Broadcast(msg); err != nil {
+				s.ctx.LogErrorf("[Orchestrator] Failed to broadcast event %s: %v", "HOST_HEALTH_UPDATE", err)
+			}
+		}()
+	}
 }
 
 func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
