@@ -10,11 +10,11 @@ import (
 )
 
 func TestStringToEventTypes_ValidTypes(t *testing.T) {
-	result, err := stringToEventTypes([]string{"vm", "host", "global"})
+	result, err := stringToEventTypes([]string{"pdfm", "system", "global"})
 	require.NoError(t, err)
 	expected := []constants.EventType{
-		constants.EventTypeVM,
-		constants.EventTypeHost,
+		constants.EventTypePDFM,
+		constants.EventTypeSystem,
 		constants.EventTypeGlobal,
 	}
 	assert.Equal(t, expected, result)
@@ -27,41 +27,39 @@ func TestStringToEventTypes_EmptySlice(t *testing.T) {
 }
 
 func TestStringToEventTypes_InvalidTypes(t *testing.T) {
-	result, err := stringToEventTypes([]string{"invalid", "vm", "fake"})
+	result, err := stringToEventTypes([]string{"invalid", "pdfm", "fake"})
 	// Should return error but still include valid types
 	assert.Error(t, err)
 	assert.Len(t, result, 1)
-	assert.Equal(t, constants.EventTypeVM, result[0])
+	assert.Equal(t, constants.EventTypePDFM, result[0])
 }
 
 func TestStringToEventTypes_MixedCase(t *testing.T) {
-	result, err := stringToEventTypes([]string{"VM", "Host", "GLOBAL"})
+	result, err := stringToEventTypes([]string{"PDFM", "System", "GLOBAL"})
 	require.NoError(t, err)
 	expected := []constants.EventType{
-		constants.EventTypeVM,
-		constants.EventTypeHost,
+		constants.EventTypePDFM,
+		constants.EventTypeSystem,
 		constants.EventTypeGlobal,
 	}
 	assert.Equal(t, expected, result)
 }
 
 func TestStringToEventTypes_ExtraWhitespace(t *testing.T) {
-	result, err := stringToEventTypes([]string{"  vm  ", " host ", " global "})
+	result, err := stringToEventTypes([]string{"  pdfm  ", " system ", " global "})
 	require.NoError(t, err)
 	expected := []constants.EventType{
-		constants.EventTypeVM,
-		constants.EventTypeHost,
+		constants.EventTypePDFM,
+		constants.EventTypeSystem,
 		constants.EventTypeGlobal,
 	}
 	assert.Equal(t, expected, result)
 }
 
 func TestStringToEventTypes_AllValidTypes(t *testing.T) {
-	result, err := stringToEventTypes([]string{"vm", "host", "global", "system", "pdfm"})
+	result, err := stringToEventTypes([]string{"global", "system", "pdfm"})
 	require.NoError(t, err)
-	assert.Len(t, result, 5)
-	assert.Contains(t, result, constants.EventTypeVM)
-	assert.Contains(t, result, constants.EventTypeHost)
+	assert.Len(t, result, 3)
 	assert.Contains(t, result, constants.EventTypeGlobal)
 	assert.Contains(t, result, constants.EventTypeSystem)
 	assert.Contains(t, result, constants.EventTypePDFM)

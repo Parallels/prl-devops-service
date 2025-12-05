@@ -1,342 +1,308 @@
 ---
 layout: page
-title: Events Hub
-subtitle: Real-Time Event Streaming
-toc: true
-menubar: docs_devops_menu
+title: Events Hub Guide
 show_sidebar: false
 ---
 
-# Events Hub User Guide
+# Events Hub Guide
 
-The Events Hub delivers real-time updates about your Parallels Desktop infrastructure so DevOps and SRE teams can act the moment something changes. Use it to monitor host health, follow orchestrator workflows, or watch VM lifecycle events without resorting to heavy polling.
+The **Events Hub** is a real-time WebSocket service that enables DevOps engineers and SREs to subscribe to critical infrastructure events. Instead of polling REST APIs, you can receive instant updates about host health, VM lifecycle changes, and system alerts.
 
-## 1. Why listen to events?
-- See host, orchestrator, and VM activity the instant it happens
-- Power dashboards and alerting pipelines with live data instead of cron jobs
-- Reduce MTTR by spotting failures before users report them
-- Keep stakeholders informed during incident bridges via global announcements
+## Overview
 
-## 2. Concepts & vocabulary
-- **Events Hub**: the managed WebSocket endpoint exposed by the DevOps Service.
-- **Event channel**: a category of events you can subscribe to (for example `pdfm` for VM lifecycle updates).
-- **Subscription**: the list of event channels attached to your WebSocket session. `global` is always included.
-- **Client ID**: the unique identifier returned after you connect; required for unsubscribe calls.
-- **Welcome message**: the first payload delivered after a successful handshake confirming your active channels.
+- **Protocol**: WebSocket (RFC 6455)
+- **Subscribe Endpoint**: `GET /v1/ws/subscribe?event_types=pdfm,health,orchestrator` [Subscribe API Reference]({{ site.url }}{{ site.baseurl }}/docs/devops/restapi/reference/events/#v1-ws-subscribe-get)
+- **Unsubscribe Endpoint**: `POST /v1/ws/unsubscribe` [Unsubscribe API Reference]({{ site.url }}{{ site.baseurl }}/docs/devops/restapi/reference/events/#v1-ws-unsubscribe-post)
+- **Auth**: Bearer Token (`Authorization: Bearer <token>`) or API Key (`X-Api-Key: <key>`)
+- **Latency**: Sub-millisecond event propagation
+- **Connection Limit**: `One active connection per IP address (enforced)`
 
-| Channel | What it covers | Typical users | Auto-included |
-|---------|----------------|---------------|---------------|
-| `global` | Platform-wide announcements, planned maintenance, shutdown notices | Everyone | Yes (cannot be removed) |
-| `pdfm` | VM lifecycle actions occurring on managed hosts | VM ops teams, CI pipelines | On request |
-| `system` | Host-level state changes and client utilities (client ID lookup) | Host admins, automation frameworks | On request |
-| `orchestrator` | Infrastructure workflows, catalog operations, orchestration tasks | Platform engineers, release managers | On request |
-| `health` | Heartbeat ping events used to verify connectivity | On-call engineers, monitoring bots | On request |
+## Quick Start
 
-## 3. Before you start
-- **Authentication**: supply either a Bearer token or an API key that includes at least the read-only claim.
-- **Connection policy**: only one active WebSocket connection is permitted per public IP address. Plan shared environments (NAT, jump hosts) accordingly.
-- **TLS & proxies**: terminate TLS at the Events Hub or your edge. Preserve `X-Forwarded-For` so IP enforcement works correctly.
-- **Tooling**: you can experiment with the bundled Postman collection (`docs/Parallels_Desktop_API.postman_collection.json`), `websocat`/`wscat`, or language SDKs such as Node.js `ws`, Python `websockets`, or Go `gorilla/websocket`.
-- **Subscription changes**: unsubscribing is done via REST. To add new channels you must close the socket and reconnect with the desired `event_types` query string.
+Connect to the global channel (default) to start receiving events immediately.
 
-## 4. Connection flow at a glance
-```mermaid
-sequenceDiagram
-    participant Client
-    participant EventsHub
-    Client->>EventsHub: GET /v1/ws/subscribe?event_types=pdfm,health
-    note right of EventsHub: Validate token / API key and IP quota
-    EventsHub-->>Client: 101 Switching Protocols
-    EventsHub-->>Client: Welcome message with client_id & subscriptions
-    EventsHub-->>Client: Real-time events as they occur
+### 1. Get your Token
+Obtain a Bearer token or API Key from your administrator or refer to [API Reference](/docs/devops/restapi/reference/api_keys).
+
+### 2. Connect
+```bash
+wscat -H "Authorization: Bearer <YOUR_TOKEN>" -c "ws://<YOUR_HOST>/api/v1/ws/subscribe?event_types=pdfm,health,orchestrator"
 ```
 
-A typical welcome payload looks like:
+### 3. Verify
+You will receive a confirmation message:
+```json
+{
+  "id":"985763c36f1a7f04663353ceb5515afaa497414ebec3226e9fa0d475b7713e34","event_type":"global",
+  "timestamp":"2025-12-11T13:04:37.484843Z",
+  "message":"WebSocket connection established subscribed to global by default",
+  "body":{
+    "client_id":"338a28f7-666e-46e1-8e7d-4feba5edc061",
+    "subscriptions":["pdfm","health","orchestrator","global"]
+  }
+}
+```
+
+## Core Concepts
+
+### Event Channels
+
+Channels are topics you can subscribe to. You can specify multiple channels 
+during connection.
+
+| Channel | Description | Use Case |
+| :--- | :--- | :--- |
+| **`global`** | System-wide broadcasts. **Auto-subscribed**; cannot be removed. | Critical maintenance alerts |
+| **`pdfm`** | Host & VM events | VM lifecycle monitoring |
+| **`orchestrator`** | Cluster-level orchestration events | Task assignments, cluster scaling |
+| **`health`** | Ping/Pong heartbeat channel | Connection liveness checks |
+| **`system`** | System & metadata info | Retrieving your unique `client_id` |
+
+### Connection Rules
+
+- **Single Connection per IP**: To prevent resource exhaustion, only one 
+  active WebSocket connection is allowed per client IP address. New connection 
+  attempts from the same IP will be rejected with `409 Conflict`.
+
+## Real-world Use Cases
+
+### 1. Monitoring VM Lifecycle
+
+Subscribe to `pdfm` to track VM states in real-time.
+
+- **Event**: VM state changes (stopped → running)
+- **Action**: Update dashboard status, trigger automation
+
+### 2. Connection Liveness Checks
+
+Subscribe to `health` to implement a heartbeat. If the server stops responding 
+to your pings, you can trigger a reconnection alert.
+
+### 3. Cluster Health Monitoring
+
+Subscribe to `orchestrator` to receive host health updates and cluster-level 
+VM state changes in real-time.
+
+### 4. System Information
+
+Use `system` channel to retrieve your client ID for unsubscribe operations.
+
+## Event Flows and Examples
+
+### Health Check Flow
+
+The connection is bidirectional. To ensure the link is alive, your client 
+**must** subscribe to the `health` channel and send periodic pings.
+
+#### Complete Flow: Request → Response
+
+**1. Client sends ping:**
 
 ```json
 {
-  "id": "evt-2025-12-05T10:15:30Z",
-  "event_type": "global",
-  "timestamp": "2025-12-05T10:15:30Z",
-  "message": "WebSocket connection established subscribed to global by default",
-  "body": {
-    "client_id": "b6928d12-c836-4efc-98f1-3220db691900",
-    "subscriptions": ["pdfm", "global", "health"]
-  }
+  "event_type": "health",
+  "id": "ping-1",
+  "message": "ping"
 }
 ```
 
-## 5. Quick start walkthrough
-1. **Collect credentials**: obtain a token or API key with read access.
-2. **Pick event channels**: decide which domains you need (for example `pdfm,health`).
-3. **Open the socket**:
-   ```bash
-   websocat "wss://your-devops-host/v1/ws/subscribe?event_types=pdfm,health" \
-     -H "Authorization: Bearer <TOKEN>"
-   ```
-4. **Verify the handshake**: you should receive HTTP `101 Switching Protocols` plus the welcome JSON.
-5. **Watch events stream in**: VM operations, orchestrator steps, or health pings arrive as they happen.
-6. **Optionally test Postman**: import `docs/Parallels_Desktop_API.postman_collection.json`, then run the "Events Hub" folder to exercise subscribe/unsubscribe calls.
-
-### Language snippets
-
-#### Node.js (`ws`)
-```javascript
-import WebSocket from 'ws';
-
-const token = process.env.DEVOPS_TOKEN;
-const host = process.env.DEVOPS_HOST; // e.g., https://devops.example.com
-
-const ws = new WebSocket(
-  `${host}/v1/ws/subscribe?event_types=pdfm,health`,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-
-ws.on('open', () => console.log('Connected to Events Hub'));
-
-ws.on('message', (raw) => {
-  const event = JSON.parse(raw.toString());
-  console.log('Event received:', event);
-
-  if (event.event_type === 'health' && event.message === 'ping') {
-    ws.send(
-      JSON.stringify({ type: 'health', message: 'ping', id: `ping-${Date.now()}` })
-    );
-  }
-});
-
-ws.on('close', () => console.log('Connection closed'));
-ws.on('error', (err) => console.error('WebSocket error:', err));
-```
-
-#### Python (`websockets`)
-```python
-import asyncio
-import json
-import os
-
-import websockets
-
-TOKEN = os.environ["DEVOPS_TOKEN"]
-HOST = os.environ["DEVOPS_HOST"]  # e.g., "https://devops.example.com"
-EVENT_TYPES = "pdfm,health"
-
-
-async def main():
-  uri = f"{HOST}/v1/ws/subscribe?event_types={EVENT_TYPES}"
-  headers = {"Authorization": f"Bearer {TOKEN}"}
-
-  async with websockets.connect(uri, extra_headers=headers) as ws:
-    print("Connected to Events Hub")
-
-    async for raw in ws:
-      event = json.loads(raw)
-      print("Event received:", event)
-
-      if event.get("event_type") == "health" and event.get("message") == "ping":
-        await ws.send(json.dumps({
-          "type": "health",
-          "message": "ping",
-          "id": f"ping-{asyncio.get_event_loop().time()}"
-        }))
-
-
-asyncio.run(main())
-```
-
-#### Go (`gorilla/websocket`)
-```go
-package main
-
-import (
-  "encoding/json"
-  "log"
-  "net/http"
-  "net/url"
-  "os"
-  "time"
-
-  "github.com/gorilla/websocket"
-)
-
-type Event struct {
-  EventType string                 `json:"event_type"`
-  Message   string                 `json:"message"`
-  Body      map[string]interface{} `json:"body"`
-}
-
-func main() {
-  token := os.Getenv("DEVOPS_TOKEN")
-  host := os.Getenv("DEVOPS_HOST") // e.g., https://devops.example.com
-  eventTypes := "pdfm,health"
-
-  u, _ := url.Parse(host)
-  u.Path = "/v1/ws/subscribe"
-  query := u.Query()
-  query.Set("event_types", eventTypes)
-  u.RawQuery = query.Encode()
-
-  header := http.Header{
-    "Authorization": []string{"Bearer " + token},
-  }
-
-  conn, _, err := websocket.DefaultDialer.Dial(u.String(), header)
-  if err != nil {
-    log.Fatalf("dial error: %v", err)
-  }
-  defer conn.Close()
-
-  log.Println("Connected to Events Hub")
-
-  for {
-    _, data, err := conn.ReadMessage()
-    if err != nil {
-      log.Fatalf("read error: %v", err)
-    }
-
-    var event Event
-    if err := json.Unmarshal(data, &event); err != nil {
-      log.Printf("unmarshal error: %v", err)
-      continue
-    }
-
-    log.Printf("Event received: %+v", event)
-
-    if event.EventType == "health" && event.Message == "ping" {
-      payload := map[string]interface{}{
-        "type":    "health",
-        "message": "ping",
-        "id":      "ping-" + time.Now().Format(time.RFC3339Nano),
-      }
-      message, _ := json.Marshal(payload)
-      if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
-        log.Printf("write error: %v", err)
-      }
-    }
-  }
-}
-```
-
-## 6. Choosing the right event channels
-- Combine channels to match your workflow. Example: `global + orchestrator` during release nights, or `pdfm + health` when mirroring VM rollouts.
-- Filter client-side on `event_type`, `message`, or fields inside `body` to drive automation.
-- Expect JSON payloads that contain a unique event `id`, a descriptive `message`, and domain-specific data in `body` (for example VM IDs, host identifiers, state transitions).
-
-## 7. Staying connected & sending commands
-- **Heartbeats**: once you subscribe to `health`, it is your client’s responsibility to initiate periodic ping messages and verify the `pong` replies from the Events Hub.
-- **Client commands**: only two client-to-server messages are currently supported.
-
-Client ID lookup (requires subscription to `system`):
+**2. Server responds with pong:**
 
 ```json
 {
-  "type": "system",
-  "message": "client-id",
-  "id": "request-123"
+  "id":"8f01616715bc598b8b326d77212ee5cc589fb8d900a2dba7b0a7e2179144ae08",
+  "ref_id":"ping-1",
+  "event_type":"health","timestamp":"2025-12-11T13:15:58.302153Z","message":"pong",
+  "timestamp":"2025-12-11T13:15:58.302153Z",
+  "message":"pong",
+  "client_id":"338a28f7-666e-46e1-8e7d-4feba5edc061"
 }
 ```
 
-Response:
+**Expected behavior:** Send ping every 30 seconds to maintain connection 
+liveness.
+
+### VM State Change Flow
+
+Subscribe to `pdfm` to receive real-time VM state notifications.
+
+#### Complete Flow: Action → Event → Response
+
+**1. Action:** User starts a virtual machine
+
+**2. Server broadcasts state change:**
+
+```json
+{
+  "id":"60adab5b984894719ecb83a0ad7da3d2027a63932c65d0f0585f3762083aa4a1",
+  "event_type":"pdfm",
+  "timestamp":"2025-12-11T13:21:21.514683Z",
+  "message":"VM_STATE_CHANGED",
+  "body":
+  {
+    "previous_state":"suspended",
+    "current_state":"resuming",
+    "vm_id":"fb83295e-0ccb-46b1-8205-b03997f82b00"
+  }
+}
+```
+
+**3. Client receives:** Event notification in real-time
+
+**Expected behavior:** Update dashboard, trigger automation based on state 
+changes.
+
+### Orchestrator Event Flow
+
+Subscribe to `orchestrator` to receive cluster-level events including host 
+health updates and VM state changes across the cluster.
+
+#### Complete Flow: Cluster Event → Broadcast → Response
+
+**1. Event:** Host health check or VM state change in cluster
+
+**2. Server broadcasts orchestrator event:**
+
+**Host Health Update:**
+```json
+{
+  "id":"db756a1c56b14cfff4c9be3ca87b42f72b508077bbd63b792f1b04e66fcf3379",
+  "event_type":"orchestrator",
+  "timestamp":"2025-12-11T17:00:06.910809Z",
+  "message":"HOST_HEALTH_UPDATE",
+  "body":
+  {
+    "host_id":"445fb9aefa6914be7d7575ba8fe96d7cebfe2b3c0001442b7628a9ae5fa588d5",
+    "state":"healthy"
+  }
+}
+```
+
+**Host VM State Change:**
+```json
+{
+  "id":"1995bc76d90d27471dc03313d34e54dd30ff56ea07fc351e729a4ff213d4dceb",
+  "event_type":"orchestrator",
+  "timestamp":"2025-12-11T16:24:04.271385Z",
+  "message":"HOST_VM_STATE_CHANGED",
+  "body":
+  {
+    "host_id":"445fb9aefa6914be7d7575ba8fe96d7cebfe2b3c0001442b7628a9ae5fa588d5",
+    "event":{"previous_state":"suspending",
+    "current_state":"suspended",
+    "vm_id":"fb83295e-0ccb-46b1-8205-b03997f82b00"}
+  }
+}
+```
+
+**3. Client receives:** Cluster-level event notifications
+
+**Expected behavior:** Monitor cluster health, track VM distribution across 
+hosts, implement cluster-wide automation.
+
+### Client ID Request Flow
+
+After connecting, you might need your unique `client_id` for unsubscribe 
+operations.
+
+#### Complete Flow: Request → Response
+
+**1. Client requests ID:**
+
+```json
+{
+  "event_type": "system",
+  "message": "client-id"
+}
+```
+
+**2. Server responds with client ID:**
 
 ```json
 {
   "event_type": "system",
   "message": "client-id",
-  "ref_id": "request-123",
-  "client_id": "b6928d12-c836-4efc-98f1-3220db691900",
-  "body": {"client-id": "b6928d12-c836-4efc-98f1-3220db691900"}
+  "body": {
+    "client-id": "550e8400-e29b-41d4-a716-446655440000"
+  }
 }
 ```
 
-Health ping (requires subscription to `health`):
+**Expected behavior:** Store the client ID for future unsubscribe requests.
 
-```json
-{
-  "type": "health",
-  "message": "ping",
-  "id": "ping-001"
-}
-```
+## Endpoints
 
-Response:
+### Subscribe Endpoint
 
-```json
-{
-  "event_type": "health",
-  "message": "pong",
-  "ref_id": "ping-001",
-  "client_id": "b6928d12-c836-4efc-98f1-3220db691900"
-}
-```
+**GET** `/v1/ws/subscribe`
 
-- **Connection ownership**: if the Events Hub stops receiving pong responses your connection is treated as dead and will be closed.
+For complete API details, see: 
+[Subscribe API Reference](/docs/devops/restapi/reference/events/#v1-ws-subscribe-get)
 
-## 8. Updating subscriptions via REST
-Use the REST endpoint when you need to unsubscribe from certain channels without tearing down the socket immediately.
+Upgrades the HTTP connection to WebSocket and subscribes to event notifications.
 
-`POST /v1/ws/unsubscribe`
-
+**Quick Example:**
 ```bash
-curl -X POST "https://your-devops-host/v1/ws/unsubscribe" \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "client_id": "b6928d12-c836-4efc-98f1-3220db691900",
-    "event_types": ["pdfm"]
-  }'
+wscat -H "Authorization: Bearer <TOKEN>" \
+  -c "wss://api.example.com/v1/ws/subscribe?event_types=pdfm,health,orchestrator"
 ```
 
-**Rules to remember**
-- You cannot remove `global` from the subscription list.
-- The client ID must belong to the authenticated user.
-- Successful removal returns HTTP `200` and lists the channels removed. If the request mixes valid and invalid types you receive partial success plus guidance in the response.
-- To add new channels later, close the socket and reconnect with the new `event_types` list.
+### Unsubscribe Endpoint
 
-## 9. Troubleshooting playbook
-- **`409 Conflict` on connect** — another session is already active from your IP. Close the existing connection or connect from a different address.
-- **No events arrive** — either the `event_types` list is wrong or the token lacks read access. Double-check both.
-- **Health pings stop** — your client is not sending `ping` or acknowledging `pong`. Ensure you subscribed to `health` and respond on time.
-- **Unsubscribe fails** — the request includes `global` or the client ID does not belong to the caller. Remove `global` and confirm ownership.
-- **Invalid event type error** — there is a typo or unsupported channel name. Refer back to the channel table in Concepts & vocabulary.
+**POST** `/v1/ws/unsubscribe`
 
-## 10. Operational guardrails & security hygiene
-- One active connection per IP address; coordinate team usage behind NAT or deploy a relay service.
-- Rotate tokens/API keys regularly and scope them to the minimum claims required.
-- Use TLS end-to-end where possible. If terminating upstream, forward the original IP via `X-Forwarded-For`.
-- Monitor idle clients and close unused sessions from your side to stay within limits.
-- During planned maintenance, broadcast via `global` so connected clients can react gracefully.
+For complete API details, see: 
+[Unsubscribe API Reference](/docs/devops/restapi/reference/events/#v1-ws-unsubscribe-post)
 
-## 11. Real-time use cases
-- **Host reliability dashboards**: subscribe to `system` and `health` to stream host state into Grafana, triggering automation when a host degrades.
-- **VM lifecycle governance**: listen to `pdfm` during deployments to reconcile desired vs actual VM inventory and roll back quickly on failure.
-- **Orchestrator workflow tracing**: use the `orchestrator` channel to follow catalog, CI/CD, or provisioning jobs step by step.
-- **Incident war rooms**: mix `global` with domain-specific channels to give responders full situational awareness.
-- Integrate with alerting platforms (PagerDuty, Slack, MS Teams) or runbooks that expect structured JSON events.
-- Validate real-time visibility in staging by simulating host failures and ensuring the Events Hub relays them instantly.
+Unsubscribe active WebSocket client from specific event types without 
+disconnecting. **Note**: You cannot unsubscribe from `global`.
 
-## 12. Reference corner
-- **Endpoints**
-  - `GET /v1/ws/subscribe`: Upgrades to WebSocket. Query parameter `event_types` accepts a comma-separated list (`pdfm,system,health`). Missing or invalid types default to `global` only.
-  - `POST /v1/ws/unsubscribe`: Removes one or more event channels from the active session.
-- **Welcome message schema**
-  - `id`: unique event identifier
-  - `event_type`: always `global` for the welcome event
-  - `message`: descriptive text
-  - `body.client_id`: your connection ID
-  - `body.subscriptions`: array of active channels (always includes `global`)
-- **Event payload tips**
-  - Use `timestamp` for ordering; all values are UTC ISO-8601.
-  - `client_id` in the event body indicates a targeted message, otherwise it is a broadcast.
+**Example Request:**
+```json
+{
+  "client_id": "550e8400-e29b-41d4-a716-446655440000",
+  "event_types": ["pdfm"]
+}
+```
 
-### FAQ
-- **How do I add a new channel after connecting?** Close the socket and reconnect with the updated `event_types` list.
-- **Can multiple applications share one connection?** No. Connections are tied to a single client ID and IP. Create separate connections per consumer.
-- **What if my IP changes?** The new IP can open a connection as long as no other session is active from that address.
-- **Can I disable heartbeats?** No. Heartbeats ensure both sides know the connection is healthy.
-- **Do you expose metrics for the Events Hub?** Not yet. Use your client-side telemetry for monitoring.
+**Example Response:**
+```json
+{
+  "message": "Successfully unsubscribed from event types",
+  "remaining_subscriptions": ["global", "health"]
+}
+```
 
-## 13. Resources & next steps
-- Import and expand the Postman collection at `docs/Parallels_Desktop_API.postman_collection.json` to include your environment URLs.
-- Review example scripts in your automation repos or build new ones using the snippets provided above.
-- Prepare a rollout checklist: issue credentials, update firewall rules, test reconnect backoff, and document alerting integrations.
-- After onboarding, periodically test the unsubscribe endpoint and reconnect logic to ensure they still align with organizational policies.
+## Troubleshooting & FAQ
+
+**Q: I get a `409 Conflict` error when connecting.**
+
+A: You likely have another active connection from the same IP. Close the 
+existing connection or check for "zombie" processes.
+
+**Q: Can I unsubscribe from `global`?**
+
+A: No, the `global` channel is mandatory for system-wide alerts.
+
+**Q: I'm not receiving pongs.**
+
+A: Ensure you have subscribed to the `health` channel in your connection URL 
+(`?event_types=health`).
+
+**Q: My connection drops after 60 seconds.**
+
+A: Check if your client is sending heartbeats. Some load balancers drop idle 
+WebSocket connections.
+
+**Q: I'm not receiving VM state change events.**
+
+A: Ensure you're subscribed to the `pdfm` channel and that VMs are actually 
+changing state. Check the VM exists and you have proper permissions.
+
+**Q: The unsubscribe request fails with 403.**
+
+A: The unsubscribe request must be sent from the same authenticated user/login 
+that created the WebSocket subscription. Additionally, make sure the `client_id` 
+in your unsubscribe request matches your actual client ID. Request your client 
+ID first using the system channel if needed.
+

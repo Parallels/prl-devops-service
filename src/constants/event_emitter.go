@@ -8,10 +8,8 @@ type EventType string
 // Clients subscribe to these types and receive messages of that type
 const (
 	EventTypeGlobal       EventType = "global"       // Broadcasts to all subscribers
-	EventTypeSystem       EventType = "system"       // System-level events
-	EventTypeVM           EventType = "vm"           // Virtual machine events
-	EventTypeHost         EventType = "host"         // Host-level events
 	EventTypePDFM         EventType = "pdfm"         // PDFM-specific events
+	EventTypeSystem       EventType = "system"       // System-level events
 	EventTypeHealth       EventType = "health"       // Health check events
 	EventTypeOrchestrator EventType = "orchestrator" // Orchestrator events
 )
@@ -23,7 +21,7 @@ func (e EventType) String() string {
 // IsValid checks if the EventType is valid
 func (e EventType) IsValid() bool {
 	switch e {
-	case EventTypeGlobal, EventTypeSystem, EventTypeVM, EventTypeHost, EventTypePDFM, EventTypeHealth, EventTypeOrchestrator:
+	case EventTypeGlobal, EventTypePDFM, EventTypeSystem, EventTypeHealth, EventTypeOrchestrator:
 		return true
 	default:
 		return false
@@ -34,9 +32,6 @@ func (e EventType) IsValid() bool {
 func GetAllEventTypes() []EventType {
 	return []EventType{
 		EventTypeGlobal,
-		EventTypeSystem,
-		EventTypeVM,
-		EventTypeHost,
 		EventTypePDFM,
 		EventTypeHealth,
 		EventTypeOrchestrator,
