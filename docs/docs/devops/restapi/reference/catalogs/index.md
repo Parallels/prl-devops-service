@@ -260,6 +260,19 @@ categories:
           path: /health/probe
           description: This endpoint returns the API Health Probe
           title: Gets the API Health Probe
+    - name: Events
+      path: events
+      endpoints:
+        - anchor: /v1/ws/subscribe-get
+          method: get
+          path: /v1/ws/subscribe
+          description: This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or X-Api-Key header.
+          title: Subscribe to event notifications via WebSocket
+        - anchor: /v1/ws/unsubscribe-post
+          method: post
+          path: /v1/ws/unsubscribe
+          description: Unsubscribe an active WebSocket client from specific event types without disconnecting. The client must belong to the authenticated user.
+          title: Unsubscribe from specific event types
     - name: Machines
       path: machines
       endpoints:
@@ -3532,6 +3545,7 @@ endpoints:
               "architecture": "string",
               "catalog_id": "string",
               "compress_pack": "bool",
+              "compress_pack_level": "int",
               "connection": "string",
               "description": "string",
               "local_path": "string",
@@ -3640,7 +3654,7 @@ endpoints:
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/push' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"compress_pack\": \"bool\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"local_path\": \"string\",\n  \"minimum_requirements\": {\n    \"cpu\": \"int\",\n    \"disk\": \"int\",\n    \"memory\": \"int\"\n  },\n  \"pack_size\": \"int64\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\",\n  \"uuid\": \"string\",\n  \"version\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/push' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"compress_pack\": \"bool\",\n  \"compress_pack_level\": \"int\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"local_path\": \"string\",\n  \"minimum_requirements\": {\n    \"cpu\": \"int\",\n    \"disk\": \"int\",\n    \"memory\": \"int\"\n  },\n  \"pack_size\": \"int64\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\",\n  \"uuid\": \"string\",\n  \"version\": \"string\"\n}'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -3653,6 +3667,7 @@ endpoints:
               "architecture": "string",
               "catalog_id": "string",
               "compress_pack": "bool",
+              "compress_pack_level": "int",
               "connection": "string",
               "description": "string",
               "local_path": "string",
@@ -3691,6 +3706,7 @@ endpoints:
               "architecture": "string",
               "catalog_id": "string",
               "compress_pack": "bool",
+              "compress_pack_level": "int",
               "connection": "string",
               "description": "string",
               "local_path": "string",

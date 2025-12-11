@@ -260,6 +260,19 @@ categories:
           path: /health/probe
           description: This endpoint returns the API Health Probe
           title: Gets the API Health Probe
+    - name: Events
+      path: events
+      endpoints:
+        - anchor: /v1/ws/subscribe-get
+          method: get
+          path: /v1/ws/subscribe
+          description: This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or X-Api-Key header.
+          title: Subscribe to event notifications via WebSocket
+        - anchor: /v1/ws/unsubscribe-post
+          method: post
+          path: /v1/ws/unsubscribe
+          description: Unsubscribe an active WebSocket client from specific event types without disconnecting. The client must belong to the authenticated user.
+          title: Unsubscribe from specific event types
     - name: Machines
       path: machines
       endpoints:

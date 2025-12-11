@@ -259,6 +259,19 @@ categories:
           path: /health/probe
           description: This endpoint returns the API Health Probe
           title: Gets the API Health Probe
+    - name: Events
+      path: events
+      endpoints:
+        - anchor: /v1/ws/subscribe-get
+          method: get
+          path: /v1/ws/subscribe
+          description: This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or X-Api-Key header.
+          title: Subscribe to event notifications via WebSocket
+        - anchor: /v1/ws/unsubscribe-post
+          method: post
+          path: /v1/ws/unsubscribe
+          description: Unsubscribe an active WebSocket client from specific event types without disconnecting. The client must belong to the authenticated user.
+          title: Unsubscribe from specific event types
     - name: Machines
       path: machines
       endpoints:
@@ -4308,6 +4321,7 @@ endpoints:
               "architecture": "string",
               "catalog_id": "string",
               "compress_pack": "bool",
+              "compress_pack_level": "int",
               "connection": "string",
               "description": "string",
               "local_path": "string",
@@ -4416,7 +4430,7 @@ endpoints:
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/push' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"compress_pack\": \"bool\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"local_path\": \"string\",\n  \"minimum_requirements\": {\n    \"cpu\": \"int\",\n    \"disk\": \"int\",\n    \"memory\": \"int\"\n  },\n  \"pack_size\": \"int64\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\",\n  \"uuid\": \"string\",\n  \"version\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/push' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"compress_pack\": \"bool\",\n  \"compress_pack_level\": \"int\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"local_path\": \"string\",\n  \"minimum_requirements\": {\n    \"cpu\": \"int\",\n    \"disk\": \"int\",\n    \"memory\": \"int\"\n  },\n  \"pack_size\": \"int64\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\",\n  \"uuid\": \"string\",\n  \"version\": \"string\"\n}'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -4429,6 +4443,7 @@ endpoints:
               "architecture": "string",
               "catalog_id": "string",
               "compress_pack": "bool",
+              "compress_pack_level": "int",
               "connection": "string",
               "description": "string",
               "local_path": "string",
@@ -4467,6 +4482,7 @@ endpoints:
               "architecture": "string",
               "catalog_id": "string",
               "compress_pack": "bool",
+              "compress_pack_level": "int",
               "connection": "string",
               "description": "string",
               "local_path": "string",
@@ -6717,6 +6733,288 @@ endpoints:
             func main() {
               url := "http://localhost/api/logs/stream"
               method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Subscribe to event notifications via WebSocket
+      description: This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or X-Api-Key header.
+      requires_authorization: true
+      category: Events
+      category_path: events
+      path: /v1/ws/subscribe
+      method: get
+      parameters:
+        - name: event_types
+          required: false
+          type: query
+      response_blocks:
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "409"
+          code_description: Conflict
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "503"
+          code_description: Service Unavailable
+          title: models.ApiErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/ws/subscribe' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/subscribe");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/ws/subscribe"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Unsubscribe from specific event types
+      description: Unsubscribe an active WebSocket client from specific event types without disconnecting. The client must belong to the authenticated user.
+      requires_authorization: true
+      category: Events
+      category_path: events
+      path: /v1/ws/unsubscribe
+      method: post
+      parameters:
+        - name: body
+          required: false
+          type: body
+          value_type: object
+          description: Unsubscribe request with client ID and event types
+          body: |-
+            {
+              "client_id": "string",
+              "event_types": "[]string",
+              "user_id": "string"
+            }
+      response_blocks:
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "503"
+          code_description: Service Unavailable
+          title: models.ApiErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/ws/unsubscribe' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"client_id\": \"string\",\n  \"event_types\": \"[]string\",\n  \"user_id\": \"string\"\n}'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/ws/unsubscribe");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{
+              "client_id": "string",
+              "event_types": "[]string",
+              "user_id": "string"
+            }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/ws/unsubscribe"
+              method := "post"
+              payload := strings.NewReader(`{
+              "client_id": "string",
+              "event_types": "[]string",
+              "user_id": "string"
+            }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {

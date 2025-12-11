@@ -119,13 +119,13 @@ func TestHub_UnregisterClient_Success(t *testing.T) {
 
 	hub.clients["test-client"] = client
 	hub.clientsByIP["192.168.1.1"] = "test-client"
-	hub.subscriptions[constants.EventTypeVM] = map[string]bool{"test-client": true}
+	hub.subscriptions[constants.EventTypeOrchestrator] = map[string]bool{"test-client": true}
 
 	hub.unregisterClient("test-client")
 
 	assert.NotContains(t, hub.clients, "test-client")
 	assert.NotContains(t, hub.clientsByIP, "192.168.1.1")
-	assert.Empty(t, hub.subscriptions[constants.EventTypeVM])
+	assert.Empty(t, hub.subscriptions[constants.EventTypeOrchestrator])
 }
 
 func TestHub_UnregisterClient_NonExistent(t *testing.T) {
@@ -157,7 +157,7 @@ func TestHub_BroadcastMessage_ToSpecificClient(t *testing.T) {
 	}
 	hub.clients["test-client"] = client
 
-	msg := models.NewEventMessage(constants.EventTypeVM, "test", nil)
+	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test", nil)
 	msg.ClientID = "test-client"
 
 	err := hub.broadcastMessage(msg)
@@ -179,7 +179,7 @@ func TestHub_BroadcastMessage_ClientNotFound(t *testing.T) {
 		subscriptions: make(map[constants.EventType]map[string]bool),
 	}
 
-	msg := models.NewEventMessage(constants.EventTypeVM, "test", nil)
+	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test", nil)
 	msg.ClientID = "nonexistent"
 
 	err := hub.broadcastMessage(msg)
@@ -207,12 +207,12 @@ func TestHub_BroadcastMessage_ToSubscribers(t *testing.T) {
 
 	hub.clients["client1"] = client1
 	hub.clients["client2"] = client2
-	hub.subscriptions[constants.EventTypeVM] = map[string]bool{
+	hub.subscriptions[constants.EventTypeOrchestrator] = map[string]bool{
 		"client1": true,
 		"client2": true,
 	}
 
-	msg := models.NewEventMessage(constants.EventTypeVM, "test", nil)
+	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test", nil)
 	err := hub.broadcastMessage(msg)
 	assert.NoError(t, err)
 
@@ -255,13 +255,13 @@ func TestHub_BroadcastMessage_ChannelFull(t *testing.T) {
 		Send: make(chan *models.EventMessage, 1),
 	}
 	hub.clients["test-client"] = client
-	hub.subscriptions[constants.EventTypeVM] = map[string]bool{"test-client": true}
+	hub.subscriptions[constants.EventTypeOrchestrator] = map[string]bool{"test-client": true}
 
 	// Fill channel
-	client.Send <- models.NewEventMessage(constants.EventTypeVM, "fill", nil)
+	client.Send <- models.NewEventMessage(constants.EventTypeOrchestrator, "fill", nil)
 
 	// Try to send another - should drop
-	msg := models.NewEventMessage(constants.EventTypeVM, "overflow", nil)
+	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "overflow", nil)
 	err := hub.broadcastMessage(msg)
 	assert.NoError(t, err) // No error, just drops
 }
@@ -289,21 +289,21 @@ func TestHub_UnsubscribeClientFromTypes(t *testing.T) {
 	}
 
 	hub.clients["client1"] = &Client{ID: "client1"}
-	hub.subscriptions[constants.EventTypeVM] = map[string]bool{"client1": true}
-	hub.subscriptions[constants.EventTypeHost] = map[string]bool{"client1": true}
+	hub.subscriptions[constants.EventTypeOrchestrator] = map[string]bool{"client1": true}
+	hub.subscriptions[constants.EventTypeHealth] = map[string]bool{"client1": true}
 	hub.subscriptions[constants.EventTypeGlobal] = map[string]bool{"client1": true}
 
 	result, err := hub.unsubscribeClientFromTypes("client1", "user1", []constants.EventType{
-		constants.EventTypeVM,
-		constants.EventTypeHost,
+		constants.EventTypeOrchestrator,
+		constants.EventTypeHealth,
 	})
 
 	assert.Len(t, result, 2)
 	assert.NoError(t, err)
-	assert.Contains(t, result, "vm")
-	assert.Contains(t, result, "host")
-	assert.Empty(t, hub.subscriptions[constants.EventTypeVM])
-	assert.Empty(t, hub.subscriptions[constants.EventTypeHost])
+	assert.Contains(t, result, "orchestrator")
+	assert.Contains(t, result, "health")
+	assert.Empty(t, hub.subscriptions[constants.EventTypeOrchestrator])
+	assert.Empty(t, hub.subscriptions[constants.EventTypeHealth])
 	// Global should remain
 	assert.Len(t, hub.subscriptions[constants.EventTypeGlobal], 1)
 }
@@ -402,7 +402,7 @@ func TestEventEmitter_Broadcast_Success(t *testing.T) {
 	}
 	emitter.isRunning = 1
 
-	msg := models.NewEventMessage(constants.EventTypeVM, "test", nil)
+	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test", nil)
 	err := emitter.Broadcast(msg)
 	assert.NoError(t, err)
 }
@@ -416,7 +416,7 @@ func TestEventEmitter_Broadcast_NotRunning(t *testing.T) {
 	emitter := NewEventEmitter(ctx)
 	// Not setting isRunning to 1
 
-	msg := models.NewEventMessage(constants.EventTypeVM, "test", nil)
+	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test", nil)
 	err := emitter.Broadcast(msg)
 	assert.Error(t, err)
 	assert.Equal(t, "event emitter is not running", err.Error())
@@ -432,7 +432,7 @@ func TestEventEmitter_Broadcast_HubNotInitialized(t *testing.T) {
 	emitter.isRunning = 1
 	// Hub is nil
 
-	msg := models.NewEventMessage(constants.EventTypeVM, "test", nil)
+	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test", nil)
 	err := emitter.Broadcast(msg)
 	assert.Error(t, err)
 	assert.Equal(t, "hub is not initialized", err.Error())

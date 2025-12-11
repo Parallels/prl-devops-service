@@ -1,6 +1,6 @@
 ---
 layout: api
-title: Roles
+title: Events
 default_host: http://localhost
 api_prefix: /api
 is_category_document: true
@@ -787,128 +787,18 @@ categories:
           description: This endpoint removes a claim from a user
           title: Removes a claim from a user
 endpoints:
-    - title: Gets all the roles
-      description: This endpoint returns all the roles
+    - title: Subscribe to event notifications via WebSocket
+      description: This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or X-Api-Key header.
       requires_authorization: true
-      category: Roles
-      category_path: roles
-      path: '/v1/auth/roles '
-      method: get
-      response_blocks:
-        - code_block: |-
-            [
-              {
-                "id": "string",
-                "name": "string"
-              }
-            ]
-          code: "200"
-          code_description: OK
-          title: '[]models.RoleResponse'
-          language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
-          code: "400"
-          code_description: Bad Request
-          title: models.ApiErrorResponse
-          language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
-          code: "401"
-          code_description: Unauthorized
-          title: models.OAuthErrorResponse
-          language: json
-      example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/auth/roles ' \n--header 'Authorization ••••••'\n"
-          title: cURL
-          language: powershell
-        - code_block: |
-            var client = new HttpClient();
-
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/auth/roles ");
-            request.Headers.Add("Authorization", "••••••");
-            var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var responseString = await response.Content.ReadAsStringAsync();
-          title: C#
-          language: csharp
-        - code_block: |
-            package main
-
-            import (
-              "fmt"
-              "net/http"
-              "strings"
-              "io"
-            )
-
-            func main() {
-              url := "http://localhost/api/v1/auth/roles "
-              method := "get"
-              client := &http.Client{}
-              req, err := http.NewRequest(method, url, payload)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              req.Header.Add("Content-Type", "application/json")
-
-              req.Header.Add("Authorization", "••••••")
-              res, err := client.Do(req)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              defer res.Body.Close()
-              body, err := io.ReadAll(res.Body)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              fmt.Println(string(body))
-            }
-          title: Go
-          language: go
-    - title: Gets a role
-      description: This endpoint returns a role
-      requires_authorization: true
-      category: Roles
-      category_path: roles
-      path: '/v1/auth/roles/{id} '
+      category: Events
+      category_path: events
+      path: /v1/ws/subscribe
       method: get
       parameters:
-        - name: id
-          required: true
-          type: path
-          value_type: string
-          description: Role ID
+        - name: event_types
+          required: false
+          type: query
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "id": "string",
-                "name": "string"
-              }
-            ]
-          code: "200"
-          code_description: OK
-          title: models.RoleResponse
-          language: json
         - code_block: |-
             {
               "code": "int",
@@ -928,22 +818,63 @@ endpoints:
           language: json
         - code_block: |-
             {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
             }
           code: "401"
           code_description: Unauthorized
-          title: models.OAuthErrorResponse
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "409"
+          code_description: Conflict
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "503"
+          code_description: Service Unavailable
+          title: models.ApiErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/auth/roles/{id} ' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/ws/subscribe' \n--header 'Authorization ••••••'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/auth/roles/{id} ");
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/subscribe");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -961,7 +892,7 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/auth/roles/{id} "
+              url := "http://localhost/api/v1/ws/subscribe"
               method := "get"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
@@ -987,35 +918,26 @@ endpoints:
             }
           title: Go
           language: go
-    - title: Gets a role
-      description: This endpoint returns a role
+    - title: Unsubscribe from specific event types
+      description: Unsubscribe an active WebSocket client from specific event types without disconnecting. The client must belong to the authenticated user.
       requires_authorization: true
-      category: Roles
-      category_path: roles
-      path: '/v1/auth/roles '
+      category: Events
+      category_path: events
+      path: /v1/ws/unsubscribe
       method: post
       parameters:
-        - name: roleRequest
+        - name: body
           required: false
           type: body
           value_type: object
-          description: Role Request
+          description: Unsubscribe request with client ID and event types
           body: |-
             {
-              "name": "string"
+              "client_id": "string",
+              "event_types": "[]string",
+              "user_id": "string"
             }
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "id": "string",
-                "name": "string"
-              }
-            ]
-          code: "200"
-          code_description: OK
-          title: models.RoleResponse
-          language: json
         - code_block: |-
             {
               "code": "int",
@@ -1035,26 +957,69 @@ endpoints:
           language: json
         - code_block: |-
             {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
             }
           code: "401"
           code_description: Unauthorized
-          title: models.OAuthErrorResponse
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: |-
+            {
+              "code": "int",
+              "message": "string",
+              "stack": [
+                {
+                  "code": "int",
+                  "description": "string",
+                  "error": "string",
+                  "path": "string"
+                }
+              ]
+            }
+          code: "503"
+          code_description: Service Unavailable
+          title: models.ApiErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/auth/roles ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"name\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/ws/unsubscribe' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"client_id\": \"string\",\n  \"event_types\": \"[]string\",\n  \"user_id\": \"string\"\n}'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/auth/roles ");
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/ws/unsubscribe");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
             request.Content = new StringContent("{
-              "name": "string"
+              "client_id": "string",
+              "event_types": "[]string",
+              "user_id": "string"
             }");
             request.Content = content;
             var response = await client.SendAsync(request);
@@ -1073,103 +1038,13 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/auth/roles "
+              url := "http://localhost/api/v1/ws/unsubscribe"
               method := "post"
               payload := strings.NewReader(`{
-              "name": "string"
+              "client_id": "string",
+              "event_types": "[]string",
+              "user_id": "string"
             }`)
-              client := &http.Client{}
-              req, err := http.NewRequest(method, url, payload)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              req.Header.Add("Content-Type", "application/json")
-
-              req.Header.Add("Authorization", "••••••")
-              res, err := client.Do(req)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              defer res.Body.Close()
-              body, err := io.ReadAll(res.Body)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              fmt.Println(string(body))
-            }
-          title: Go
-          language: go
-    - title: Delete a role
-      description: This endpoint deletes a role
-      requires_authorization: true
-      category: Roles
-      category_path: roles
-      path: '/v1/auth/roles/{id} '
-      method: delete
-      parameters:
-        - name: id
-          required: true
-          type: path
-          value_type: string
-          description: Role ID
-      response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
-          code: "400"
-          code_description: Bad Request
-          title: models.ApiErrorResponse
-          language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
-          code: "401"
-          code_description: Unauthorized
-          title: models.OAuthErrorResponse
-          language: json
-      example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/auth/roles/{id} ' \n--header 'Authorization ••••••'\n"
-          title: cURL
-          language: powershell
-        - code_block: |
-            var client = new HttpClient();
-
-            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/auth/roles/{id} ");
-            request.Headers.Add("Authorization", "••••••");
-            var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var responseString = await response.Content.ReadAsStringAsync();
-          title: C#
-          language: csharp
-        - code_block: |
-            package main
-
-            import (
-              "fmt"
-              "net/http"
-              "strings"
-              "io"
-            )
-
-            func main() {
-              url := "http://localhost/api/v1/auth/roles/{id} "
-              method := "delete"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -1196,8 +1071,8 @@ endpoints:
           language: go
 
 ---
-# Roles endpoints 
+# Events endpoints 
 
- This document contains the endpoints for the Roles category.
+ This document contains the endpoints for the Events category.
 
 

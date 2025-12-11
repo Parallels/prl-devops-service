@@ -66,7 +66,7 @@ func TestHub_Shutdown(t *testing.T) {
 	}
 	hub.clients["test-client"] = client
 	hub.clientsByIP["192.168.1.1"] = "test-client"
-	hub.subscriptions[constants.EventTypeVM] = map[string]bool{"test-client": true}
+	hub.subscriptions[constants.EventTypePDFM] = map[string]bool{"test-client": true}
 
 	hub.shutdown()
 
@@ -87,7 +87,7 @@ func TestHub_BroadcastMessage_NoSubscribers(t *testing.T) {
 		subscriptions: make(map[constants.EventType]map[string]bool),
 	}
 
-	msg := models.NewEventMessage(constants.EventTypeVM, "test", nil)
+	msg := models.NewEventMessage(constants.EventTypePDFM, "test", nil)
 	err := hub.broadcastMessage(msg)
 
 	// Should not error when no subscribers
@@ -105,7 +105,7 @@ func TestHub_UnsubscribeClientFromTypes_ClientNotFound(t *testing.T) {
 	}
 
 	result, err := hub.unsubscribeClientFromTypes("nonexistent", "user1", []constants.EventType{
-		constants.EventTypeVM,
+		constants.EventTypePDFM,
 	})
 
 	assert.Empty(t, result)
@@ -121,10 +121,10 @@ func TestHub_UnsubscribeClientFromTypes_NotSubscribed(t *testing.T) {
 	}
 
 	hub.clients["client1"] = &Client{ID: "client1"}
-	hub.subscriptions[constants.EventTypeVM] = map[string]bool{}
+	hub.subscriptions[constants.EventTypePDFM] = map[string]bool{}
 
 	result, err := hub.unsubscribeClientFromTypes("client1", "user1", []constants.EventType{
-		constants.EventTypeHost, // Not subscribed to this
+		constants.EventTypeSystem, // Not subscribed to this
 	})
 
 	assert.Empty(t, result)
@@ -138,7 +138,7 @@ func TestEventEmitter_SendToType_NotRunning(t *testing.T) {
 		isRunning: 0,
 	}
 
-	err := emitter.SendToType(constants.EventTypeVM, "test", nil)
+	err := emitter.SendToType(constants.EventTypePDFM, "test", nil)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not running")
@@ -151,7 +151,7 @@ func TestEventEmitter_SendToClient_NotRunning(t *testing.T) {
 		isRunning: 0,
 	}
 
-	err := emitter.SendToClient("client1", constants.EventTypeVM, "test", nil)
+	err := emitter.SendToClient("client1", constants.EventTypePDFM, "test", nil)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not running")
@@ -185,7 +185,7 @@ func TestEventEmitter_SendToType_Running(t *testing.T) {
 		isRunning: 1,
 	}
 
-	err := emitter.SendToType(constants.EventTypeVM, "test message", map[string]string{"key": "value"})
+	err := emitter.SendToType(constants.EventTypeOrchestrator, "test message", map[string]string{"key": "value"})
 
 	assert.NoError(t, err)
 }
@@ -206,7 +206,7 @@ func TestEventEmitter_SendToClient_Running(t *testing.T) {
 		Send: make(chan *models.EventMessage, 10),
 	}
 	hub.clients["client1"] = client
-	hub.subscriptions[constants.EventTypeVM] = map[string]bool{"client1": true}
+	hub.subscriptions[constants.EventTypeOrchestrator] = map[string]bool{"client1": true}
 
 	emitter := &EventEmitter{
 		ctx:       ctx,
@@ -214,7 +214,7 @@ func TestEventEmitter_SendToClient_Running(t *testing.T) {
 		isRunning: 1,
 	}
 
-	err := emitter.SendToClient("client1", constants.EventTypeVM, "test message", map[string]string{"key": "value"})
+	err := emitter.SendToClient("client1", constants.EventTypeOrchestrator, "test message", map[string]string{"key": "value"})
 
 	assert.NoError(t, err)
 }
@@ -246,7 +246,7 @@ func TestEventEmitter_BroadcastMessage_NotRunning(t *testing.T) {
 		isRunning: 0,
 	}
 
-	msg := models.NewEventMessage(constants.EventTypeVM, "test", nil)
+	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test", nil)
 	err := emitter.BroadcastMessage(msg)
 
 	// Returns nil but logs warning
@@ -268,7 +268,7 @@ func TestEventEmitter_BroadcastMessage_Running(t *testing.T) {
 		isRunning: 1,
 	}
 
-	msg := models.NewEventMessage(constants.EventTypeVM, "test", map[string]string{"key": "value"})
+	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test", map[string]string{"key": "value"})
 	err := emitter.BroadcastMessage(msg)
 
 	assert.NoError(t, err)
@@ -304,17 +304,17 @@ func TestHub_UnregisterClient_CleansUpEmptySubscriptions(t *testing.T) {
 	}
 
 	hub.clients["test-client"] = client
-	hub.subscriptions[constants.EventTypeVM] = map[string]bool{"test-client": true}
-	hub.subscriptions[constants.EventTypeHost] = map[string]bool{"test-client": true}
+	hub.subscriptions[constants.EventTypePDFM] = map[string]bool{"test-client": true}
+	hub.subscriptions[constants.EventTypeSystem] = map[string]bool{"test-client": true}
 
 	hub.unregisterClient("test-client")
 
 	// Empty subscription maps should be removed
-	_, vmExists := hub.subscriptions[constants.EventTypeVM]
-	assert.False(t, vmExists, "Empty VM subscription map should be removed")
+	_, pdfmExists := hub.subscriptions[constants.EventTypePDFM]
+	assert.False(t, pdfmExists, "Empty PDFM subscription map should be removed")
 
-	_, hostExists := hub.subscriptions[constants.EventTypeHost]
-	assert.False(t, hostExists, "Empty HOST subscription map should be removed")
+	_, systemExists := hub.subscriptions[constants.EventTypeSystem]
+	assert.False(t, systemExists, "Empty SYSTEM subscription map should be removed")
 }
 
 func TestHub_BroadcastMessage_MultipleSubscribers(t *testing.T) {
@@ -345,16 +345,16 @@ func TestHub_BroadcastMessage_MultipleSubscribers(t *testing.T) {
 	hub.clients["client2"] = client2
 	hub.clients["client3"] = client3
 
-	hub.subscriptions[constants.EventTypeVM] = map[string]bool{
+	hub.subscriptions[constants.EventTypeOrchestrator] = map[string]bool{
 		"client1": true,
 		"client2": true,
 	}
-	hub.subscriptions[constants.EventTypeHost] = map[string]bool{
+	hub.subscriptions[constants.EventTypeHealth] = map[string]bool{
 		"client3": true,
 	}
 
-	// Broadcast VM message
-	msg := models.NewEventMessage(constants.EventTypeVM, "test", nil)
+	// Broadcast orchestrator message
+	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test", nil)
 	err := hub.broadcastMessage(msg)
 	assert.NoError(t, err)
 
