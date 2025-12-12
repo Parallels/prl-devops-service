@@ -6,6 +6,10 @@
   <link rel="shortcut icon" type="image/png" {% if site.favicon %} href="{{ site.favicon | relative_url }}" {% else %} href="{{ site.baseurl }}/favicon.ico" {% endif %} />
   <script defer src="https://unpkg.com/alpinejs@3.9.0/dist/cdn.min.js"></script>
   <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css'>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true });
+  </script>
   <script type="text/javascript">
     // Clarity Consent Management
     window.ClarityConsent = {
