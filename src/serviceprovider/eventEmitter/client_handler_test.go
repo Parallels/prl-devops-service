@@ -86,7 +86,7 @@ func TestClient_HandleClientMessage_Success(t *testing.T) {
 	}
 
 	// Valid message
-	payload := []byte(`{"type": "health", "message": "ping", "id": "msg-123"}`)
+	payload := []byte(`{"event_type": "health", "message": "ping", "id": "msg-123"}`)
 
 	client.handleClientMessage(payload)
 
@@ -127,7 +127,7 @@ func TestClient_ClientReader(t *testing.T) {
 		defer conn.Close()
 
 		// Send a message to the client
-		msg := []byte(`{"type": "health", "message": "ping"}`)
+		msg := []byte(`{"event_type": "health", "message": "ping"}`)
 		conn.WriteMessage(websocket.TextMessage, msg)
 
 		// Keep connection open for a bit

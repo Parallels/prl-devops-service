@@ -125,32 +125,9 @@ func (m *HostWebSocketManager) SendPing(hostID string) error {
 
 // RefreshConnections synchronizes active connections with the provided list of hosts
 func (m *HostWebSocketManager) RefreshConnections(hosts []models.OrchestratorHost) {
-	m.ctx.LogInfof("[HostWebSocketManager] Refreshing host connections")
+	m.ctx.LogDebugf("[HostWebSocketManager] Refreshing host connections - found %d hosts", len(hosts))
 
-	activeHostIDs := make(map[string]bool)
-
-	// Connect new hosts or reconnect if needed
-	for _, host := range hosts {
-		if !host.Enabled {
-			continue
-		}
-		activeHostIDs[host.ID] = true
-
-		// We pass a copy of the host to avoid pointer issues in loop
-		hostCopy := host
-		if !m.IsConnected(host.ID) {
-			m.ProbeAndConnect(hostCopy)
-		}
-	}
-
-	// Disconnect hosts that are no longer in the list or disabled
-	m.mu.Lock()
-	for hostID := range m.clients {
-		if !activeHostIDs[hostID] {
-			go m.DisconnectHost(hostID) // Disconnect in background to avoid locking issues if DisconnectHost also locks
-		}
-	}
-	m.mu.Unlock()
+	m.syncConnections(hosts)
 }
 
 // Shutdown closes all WebSocket connections and cleans up resources
@@ -226,6 +203,10 @@ func (m *HostWebSocketManager) checkAndReconnectHosts() {
 		return
 	}
 
+	m.syncConnections(hosts)
+}
+
+func (m *HostWebSocketManager) syncConnections(hosts []models.OrchestratorHost) {
 	activeHostIDs := make(map[string]bool)
 
 	// Check each enabled host and attempt to connect if needed
