@@ -93,6 +93,87 @@
 			]
 		},
 		{
+			"name": "Events Hub",
+			"item": [
+				{
+					"name": "Subscribe (WebSocket handshake)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-Source-Id",
+								"value": "Postman"
+							}
+						],
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/ws/subscribe?event_types=pdfm,health",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ws",
+								"subscribe"
+							],
+							"query": [
+								{
+									"key": "event_types",
+									"value": "pdfm,health"
+								}
+							]
+						},
+						"description": "Opens a WebSocket subscription to the Events Hub."
+					},
+					"response": []
+				},
+				{
+					"name": "Unsubscribe from channels",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Source-Id",
+								"value": "Postman"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"client_id\": \"{{events_client_id}}\",\n    \"event_types\": [\"pdfm\"]\n}"
+						},
+						"url": {
+							"raw": "{{protocol}}://{{host}}/api/v1/ws/unsubscribe",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ws",
+								"unsubscribe"
+							]
+						},
+						"description": "Removes one or more channels from an active Events Hub client."
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Config",
 			"item": [
 				{

@@ -162,6 +162,8 @@ func (s *OrchestratorService) processHostWaitingGroup(host models.OrchestratorHo
 func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	// Check if host is connected via WebSocket
 	manager := GetHostWebSocketManager()
+	websocketPingFailed := false
+
 	if manager != nil && manager.IsConnected(host.ID) && host.State == "healthy" {
 		// Check for staleness
 		// If the host hasn't updated its status (via pong) in a while, we should verify health via HTTP
@@ -171,8 +173,10 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 		if err == nil && time.Since(lastUpdated) < stalenessThreshold {
 			s.ctx.LogDebugf("[Orchestrator] Host %s is connected and fresh (last updated: %s), sending ping", host.Host, host.UpdatedAt)
 			if err := manager.SendPing(host.ID); err != nil {
-				s.ctx.LogWarnf("[Orchestrator] Failed to send ping to host %s: %v", host.Host, err)
+				s.ctx.LogWarnf("[Orchestrator] Failed to send ping to host %s: %v, falling back to HTTP health check", host.Host, err)
+				websocketPingFailed = true
 			} else {
+				// Ping successful, skip HTTP health check
 				return
 			}
 		} else {
@@ -187,11 +191,40 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 		s.ctx.LogErrorf("[Orchestrator] Error getting health check for host %s: %v", host.Host, err.Error())
 		host.SetUnhealthy(err.Error())
 		_ = s.persistHost(&host)
+
+		// Broadcast host unhealthy event
+		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+			msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_HEALTH_UPDATE", apimodels.HostHealthUpdate{
+				HostID: host.ID,
+				State:  host.State,
+			})
+			go func() {
+				if err := emitter.Broadcast(msg); err != nil {
+					s.ctx.LogErrorf("[Orchestrator] Failed to broadcast HOST_HEALTH_UPDATE event: %v", err)
+				}
+			}()
+		}
 		return
 	} else {
 		s.ctx.LogInfof("[Orchestrator] host %s is alive and well: %s", host.Host, healthCheck.Message)
 		host.SetHealthy()
 		host.HealthCheck = healthCheck
+
+		// If WebSocket ping failed but HTTP health check succeeded, broadcast degraded WebSocket event
+		if websocketPingFailed {
+			s.ctx.LogWarnf("[Orchestrator] Host %s has degraded WebSocket connection, using HTTP fallback", host.Host)
+			if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+				msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_DEGRADED", apimodels.HostHealthUpdate{
+					HostID: host.ID,
+					State:  host.State,
+				})
+				go func() {
+					if err := emitter.Broadcast(msg); err != nil {
+						s.ctx.LogErrorf("[Orchestrator] Failed to broadcast HOST_WEBSOCKET_DEGRADED event: %v", err)
+					}
+				}()
+			}
+		}
 	}
 
 	s.ctx.LogInfof("[Orchestrator] Getting hardware info for host %s", host.Host)

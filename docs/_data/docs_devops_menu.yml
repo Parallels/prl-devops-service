@@ -45,3 +45,17 @@
       link: /docs/devops/reverse-proxy/getting-started/
     - name: Configuration
       link: /docs/devops/reverse-proxy/configuration/
+- label: Events Hub
+  items:
+    - name: Overview
+      link: /docs/devops/events-hub/overview/
+    - name: Monitor VM Events
+      link: /docs/devops/events-hub/how-to-monitor-VM-events/
+    - name: Monitor Orchestrator Events
+      link: /docs/devops/events-hub/how-to-monitor-orchestrator-events/
+    - name: Sending Heartbeats
+      link: /docs/devops/events-hub/how-to-send-heartbeat
+    - name: Knowing My Client ID
+      link: /docs/devops/events-hub/how-to-know-my-client-id/  
+    - name: Sending Unsubscribe Requests for Events channel
+      link: /docs/devops/events-hub/how-to-send-unsubscribe-requests/

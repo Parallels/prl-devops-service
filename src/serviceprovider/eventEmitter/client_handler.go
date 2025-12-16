@@ -74,7 +74,7 @@ func (c *Client) clientWriter() {
 
 // routingHeader is a lightweight struct for partial parsing
 type routingHeader struct {
-	Type constants.EventType `json:"type"`
+	Type constants.EventType `json:"event_type"`
 	ID   string              `json:"id"`
 }
 

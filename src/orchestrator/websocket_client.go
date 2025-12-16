@@ -15,6 +15,7 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	api_models "github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/gorilla/websocket"
 )
 
@@ -85,7 +86,7 @@ func (c *HostWebSocketClient) Connect(events []constants.EventType) {
 
 func (c *HostWebSocketClient) establishConnection(events []constants.EventType) error {
 	path := "/api/v1/ws/subscribe"
-
+	c.ctx.LogInfof("[HostWebSocketClient] Establishing connection to host %s", c.hostName)
 	scheme := c.hostSchema
 	if scheme == "" {
 		scheme = "http"
@@ -140,17 +141,22 @@ func (c *HostWebSocketClient) establishConnection(events []constants.EventType) 
 	c.conn = conn
 	c.setConnected(true)
 	c.ctx.LogInfof("[HostWebSocketClient] Connected to host %s", c.hostName)
+
+	c.broadcastConnectionEvent()
+
 	return nil
 }
 
 func (c *HostWebSocketClient) readLoop() {
 	defer func() {
 		c.conn.Close()
+		c.notifyDisconnection()
 	}()
 
 	for {
 		select {
 		case <-c.stopChan:
+			c.ctx.LogDebugf("[HostWebSocketClient] ReadLoop stopping for host %s (stop signal)", c.hostName)
 			return
 		default:
 			_, message, err := c.conn.ReadMessage()
@@ -158,6 +164,7 @@ func (c *HostWebSocketClient) readLoop() {
 				// Check if we are stopping
 				select {
 				case <-c.stopChan:
+					c.ctx.LogDebugf("[HostWebSocketClient] ReadLoop stopping for host %s (stop signal)", c.hostName)
 					return
 				default:
 					c.ctx.LogErrorf("[HostWebSocketClient] Error reading message from host %s: %v", c.hostName, err)
@@ -191,8 +198,8 @@ func (c *HostWebSocketClient) Send(message interface{}) error {
 
 func (c *HostWebSocketClient) SendPing() error {
 	pingMsg := map[string]string{
-		"type":    string(constants.EventTypeHealth),
-		"message": "ping",
+		"event_type": string(constants.EventTypeHealth),
+		"message":    "ping",
 	}
 	c.ctx.LogInfof("[HostWebSocketClient] Sending ping to host %s", c.hostID)
 	return c.Send(pingMsg)
@@ -247,6 +254,58 @@ func (c *HostWebSocketClient) setConnected(connected bool) {
 	c.isConnected = connected
 }
 
+func (c *HostWebSocketClient) notifyDisconnection() {
+	c.ctx.LogWarnf("[HostWebSocketClient] Host %s WebSocket disconnection detected - current state: connected=%v", c.hostName, c.IsConnected())
+
+	// Always broadcast disconnection event if we're not intentionally stopping
+	select {
+	case <-c.stopChan:
+		c.ctx.LogDebugf("[HostWebSocketClient] Host %s disconnection was intentional (stop signal), skipping event", c.hostName)
+		return
+	default:
+		// This is an unexpected disconnection
+	}
+
+	c.setConnected(false)
+
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := api_models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_DISCONNECTED", api_models.HostHealthUpdate{
+			HostID: c.hostID,
+			State:  "websocket_disconnected",
+		})
+		go func() {
+			if err := emitter.Broadcast(msg); err != nil {
+				c.ctx.LogErrorf("[HostWebSocketClient] Failed to broadcast HOST_WEBSOCKET_DISCONNECTED event: %v", err)
+			} else {
+				c.ctx.LogInfof("[HostWebSocketClient] Broadcasted HOST_WEBSOCKET_DISCONNECTED event for host %s", c.hostName)
+			}
+		}()
+	} else {
+		c.ctx.LogWarnf("[HostWebSocketClient] EventEmitter not available to broadcast disconnection for host %s", c.hostName)
+	}
+}
+
+func (c *HostWebSocketClient) broadcastConnectionEvent() {
+	c.ctx.LogInfof("[HostWebSocketClient] Host %s WebSocket connection established", c.hostName)
+
+	// Broadcast WebSocket connection event
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := api_models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_CONNECTED", api_models.HostHealthUpdate{
+			HostID: c.hostID,
+			State:  "websocket_connected",
+		})
+		go func() {
+			if err := emitter.Broadcast(msg); err != nil {
+				c.ctx.LogErrorf("[HostWebSocketClient] Failed to broadcast HOST_WEBSOCKET_CONNECTED event: %v", err)
+			} else {
+				c.ctx.LogInfof("[HostWebSocketClient] Broadcasted HOST_WEBSOCKET_CONNECTED event for host %s", c.hostName)
+			}
+		}()
+	} else {
+		c.ctx.LogWarnf("[HostWebSocketClient] EventEmitter not available to broadcast connection for host %s", c.hostName)
+	}
+}
+
 func (c *HostWebSocketClient) Probe() bool {
 	// Use a short timeout for probing
 	c.ctx.LogInfof("[HostWebSocketClient] Probing host %s for WebSocket support...", c.hostName)
@@ -281,7 +340,7 @@ func (c *HostWebSocketClient) Probe() bool {
 
 	// Add query params
 	q := u.Query()
-	q.Set("event_types", fmt.Sprintf("%s", string(constants.EventTypeHealth)))
+	q.Set("event_types", string(constants.EventTypeHealth))
 	u.RawQuery = q.Encode()
 
 	// Use shared helper to get authentication header

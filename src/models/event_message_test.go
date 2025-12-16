@@ -35,7 +35,7 @@ func TestNewEventMessage_NilBody(t *testing.T) {
 }
 
 func TestNewEventMessage_EmptyMessage(t *testing.T) {
-	msg := NewEventMessage(constants.EventTypeVM, "", map[string]interface{}{})
+	msg := NewEventMessage(constants.EventTypeHealth, "", map[string]interface{}{})
 	assert.NotNil(t, msg)
 	assert.Empty(t, msg.Message)
 	assert.NotEmpty(t, msg.ID)
