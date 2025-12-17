@@ -489,6 +489,7 @@ func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event mode
 		}
 		for _, machine := range userMachines {
 			if machine.ID == event.VMID {
+				machine.User = user.Username
 				s.Lock()
 				s.cachedLocalVms = append(s.cachedLocalVms, machine)
 				s.Unlock()
