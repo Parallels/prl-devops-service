@@ -171,16 +171,35 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 		stalenessThreshold := s.refreshInterval * 3
 
 		if err == nil && time.Since(lastUpdated) < stalenessThreshold {
-			s.ctx.LogDebugf("[Orchestrator] Host %s is connected and fresh (last updated: %s), sending ping", host.Host, host.UpdatedAt)
-			if err := manager.SendPing(host.ID); err != nil {
-				s.ctx.LogWarnf("[Orchestrator] Failed to send ping to host %s: %v, falling back to HTTP health check", host.Host, err)
-				websocketPingFailed = true
-			} else {
-				// Ping successful, skip HTTP health check
-				return
+			s.ctx.LogDebugf("[Orchestrator] Host %s is connected and fresh (last updated: %s). Skipping HTTP health check.", host.Host, host.UpdatedAt)
+			// Ping successful (implied by freshness), skip HTTP health check
+			if !host.HasWebsocketEvents {
+				host.HasWebsocketEvents = true
+				_, _ = s.db.UpdateOrchestratorHostWebsocketStatus(s.ctx, host.ID, true)
 			}
+			return
 		} else {
 			s.ctx.LogWarnf("[Orchestrator] Host %s is connected but stale (last updated: %s). Falling back to HTTP health check.", host.Host, host.UpdatedAt)
+			websocketPingFailed = true
+			if host.HasWebsocketEvents {
+				host.HasWebsocketEvents = false
+				updated, _ := s.db.UpdateOrchestratorHostWebsocketStatus(s.ctx, host.ID, false)
+				if updated {
+					if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+						msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_DISCONNECTED", apimodels.HostHealthUpdate{
+							HostID: host.ID,
+							State:  "websocket_disconnected",
+						})
+						go func() {
+							if err := emitter.Broadcast(msg); err != nil {
+								s.ctx.LogErrorf("[Orchestrator] Failed to broadcast event %s: %v", "HOST_WEBSOCKET_DISCONNECTED", err)
+							} else {
+								s.ctx.LogInfof("[Orchestrator] Broadcasted HOST_WEBSOCKET_DISCONNECTED event for host %s (detected staleness in processHost)", host.Host)
+							}
+						}()
+					}
+				}
+			}
 		}
 	}
 

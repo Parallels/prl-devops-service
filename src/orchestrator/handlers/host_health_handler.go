@@ -67,6 +67,29 @@ func (h *HostHealthHandler) handlePong(ctx basecontext.ApiContext, hostID string
 		return
 	}
 
+	// If the host was not marked as having WebSocket events, update it now that we received a pong
+	if !host.HasWebsocketEvents {
+		updated, err := dbService.UpdateOrchestratorHostWebsocketStatus(ctx, hostID, true)
+		if err != nil {
+			ctx.LogErrorf("[HostHealthHandler] Error updating host %s websocket status: %v", hostID, err)
+		} else if updated {
+			// Broadcast WebSocket connection event now that we have confirmed capability via pong
+			if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+				msg := models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_CONNECTED", models.HostHealthUpdate{
+					HostID: host.ID,
+					State:  "websocket_connected",
+				})
+				go func() {
+					if err := emitter.Broadcast(msg); err != nil {
+						ctx.LogErrorf("[HostHealthHandler] Failed to broadcast event %s: %v", "HOST_WEBSOCKET_CONNECTED", err)
+					} else {
+						ctx.LogInfof("[HostHealthHandler] Broadcasted HOST_WEBSOCKET_CONNECTED event for host %s", hostID)
+					}
+				}()
+			}
+		}
+	}
+
 	host.UpdatedAt = helpers.GetUtcCurrentDateTime()
 	stateChanged := false
 
