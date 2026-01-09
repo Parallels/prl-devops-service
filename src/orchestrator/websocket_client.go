@@ -142,8 +142,6 @@ func (c *HostWebSocketClient) establishConnection(events []constants.EventType) 
 	c.setConnected(true)
 	c.ctx.LogInfof("[HostWebSocketClient] Connected to host %s", c.hostName)
 
-	c.broadcastConnectionEvent()
-
 	return nil
 }
 
@@ -215,6 +213,11 @@ func (c *HostWebSocketClient) startPingRoutine() {
 	c.mu.Unlock()
 
 	go func() {
+		// Send initial ping immediately to confirm connection status
+		if err := c.SendPing(); err != nil {
+			c.ctx.LogDebugf("[HostWebSocketClient] Failed to send initial ping to host %s: %v", c.hostName, err)
+		}
+
 		for {
 			select {
 			case <-c.stopChan:
@@ -268,41 +271,26 @@ func (c *HostWebSocketClient) notifyDisconnection() {
 
 	c.setConnected(false)
 
-	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
-		msg := api_models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_DISCONNECTED", api_models.HostHealthUpdate{
-			HostID: c.hostID,
-			State:  "websocket_disconnected",
-		})
-		go func() {
-			if err := emitter.Broadcast(msg); err != nil {
-				c.ctx.LogErrorf("[HostWebSocketClient] Failed to broadcast HOST_WEBSOCKET_DISCONNECTED event: %v", err)
-			} else {
-				c.ctx.LogInfof("[HostWebSocketClient] Broadcasted HOST_WEBSOCKET_DISCONNECTED event for host %s", c.hostName)
+	// Update DB status
+	if dbService, err := serviceprovider.GetDatabaseService(c.ctx); err == nil {
+		updated, _ := dbService.UpdateOrchestratorHostWebsocketStatus(c.ctx, c.hostID, false)
+		if updated {
+			if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+				msg := api_models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_DISCONNECTED", api_models.HostHealthUpdate{
+					HostID: c.hostID,
+					State:  "websocket_disconnected",
+				})
+				go func() {
+					if err := emitter.Broadcast(msg); err != nil {
+						c.ctx.LogErrorf("[HostWebSocketClient] Failed to broadcast HOST_WEBSOCKET_DISCONNECTED event: %v", err)
+					} else {
+						c.ctx.LogInfof("[HostWebSocketClient] Broadcasted HOST_WEBSOCKET_DISCONNECTED event for host %s", c.hostName)
+					}
+				}()
 			}
-		}()
+		}
 	} else {
 		c.ctx.LogWarnf("[HostWebSocketClient] EventEmitter not available to broadcast disconnection for host %s", c.hostName)
-	}
-}
-
-func (c *HostWebSocketClient) broadcastConnectionEvent() {
-	c.ctx.LogInfof("[HostWebSocketClient] Host %s WebSocket connection established", c.hostName)
-
-	// Broadcast WebSocket connection event
-	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
-		msg := api_models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_CONNECTED", api_models.HostHealthUpdate{
-			HostID: c.hostID,
-			State:  "websocket_connected",
-		})
-		go func() {
-			if err := emitter.Broadcast(msg); err != nil {
-				c.ctx.LogErrorf("[HostWebSocketClient] Failed to broadcast HOST_WEBSOCKET_CONNECTED event: %v", err)
-			} else {
-				c.ctx.LogInfof("[HostWebSocketClient] Broadcasted HOST_WEBSOCKET_CONNECTED event for host %s", c.hostName)
-			}
-		}()
-	} else {
-		c.ctx.LogWarnf("[HostWebSocketClient] EventEmitter not available to broadcast connection for host %s", c.hostName)
 	}
 }
 

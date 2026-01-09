@@ -8,6 +8,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
+	event "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
@@ -98,6 +99,28 @@ func (m *HostWebSocketManager) DisconnectHost(hostID string) {
 		client.Close()
 		delete(m.clients, hostID)
 		m.ctx.LogInfof("[HostWebSocketManager] Disconnected host %s", hostID)
+
+		// Update DB status
+		dbService, err := serviceprovider.GetDatabaseService(m.ctx)
+		if err == nil {
+			updated, _ := dbService.UpdateOrchestratorHostWebsocketStatus(m.ctx, hostID, false)
+			if updated {
+				if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+					msg := event.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_DISCONNECTED",
+						event.HostHealthUpdate{
+							HostID: hostID,
+							State:  "websocket_disconnected",
+						})
+					go func() {
+						if err := emitter.Broadcast(msg); err != nil {
+							m.ctx.LogErrorf("[HostWebSocketManager] Failed to broadcast HOST_WEBSOCKET_DISCONNECTED event: %v", err)
+						} else {
+							m.ctx.LogInfof("[HostWebSocketManager] Broadcasted HOST_WEBSOCKET_DISCONNECTED event for host %s", hostID)
+						}
+					}()
+				}
+			}
+		}
 	}
 }
 

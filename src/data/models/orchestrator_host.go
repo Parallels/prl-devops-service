@@ -25,6 +25,7 @@ type OrchestratorHost struct {
 	PathPrefix                string                          `json:"path_prefix,omitempty"`
 	ParallelsDesktopVersion   string                          `json:"parallels_desktop_version,omitempty"`
 	ParallelsDesktopLicensed  bool                            `json:"parallels_desktop_licensed,omitempty"`
+	HasWebsocketEvents        bool                            `json:"has_websocket_events"`
 	Authentication            *OrchestratorHostAuthentication `json:"authentication,omitempty"`
 	Resources                 *HostResources                  `json:"resources,omitempty"`
 	State                     string                          `json:"state,omitempty"`
@@ -220,6 +221,10 @@ func (o *OrchestratorHost) Diff(source OrchestratorHost) bool {
 	}
 
 	if o.IsReverseProxyEnabled != source.IsReverseProxyEnabled {
+		return true
+	}
+
+	if o.HasWebsocketEvents != source.HasWebsocketEvents {
 		return true
 	}
 

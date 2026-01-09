@@ -114,6 +114,7 @@ type OrchestratorHostResponse struct {
 	State                    string              `json:"state,omitempty"`
 	ParallelsDesktopVersion  string              `json:"parallels_desktop_version,omitempty"`
 	ParallelsDesktopLicensed bool                `json:"parallels_desktop_licensed,omitempty"`
+	HasWebsocketEvents       bool                `json:"has_websocket_events"`
 	IsReverseProxyEnabled    bool                `json:"is_reverse_proxy_enabled"`
 	ReverseProxy             *HostReverseProxy   `json:"reverse_proxy,omitempty"`
 	ReverseProxyHosts        []*ReverseProxyHost `json:"reverse_proxy_hosts,omitempty"`

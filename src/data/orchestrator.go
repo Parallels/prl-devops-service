@@ -238,6 +238,7 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 				j.data.OrchestratorHosts[i].ParallelsDesktopLicensed = host.ParallelsDesktopLicensed
 				// Reverse Proxy Hosts
 				j.data.OrchestratorHosts[i].IsReverseProxyEnabled = host.IsReverseProxyEnabled
+				j.data.OrchestratorHosts[i].HasWebsocketEvents = host.HasWebsocketEvents
 				j.data.OrchestratorHosts[i].ReverseProxy = host.ReverseProxy
 				j.data.OrchestratorHosts[i].ReverseProxyHosts = host.ReverseProxyHosts
 
@@ -351,6 +352,33 @@ func (j *JsonDatabase) UpdateOrchestratorHostTimestamp(ctx basecontext.ApiContex
 	}
 
 	return ErrOrchestratorHostNotFound
+}
+
+// UpdateOrchestratorHostWebsocketStatus updates only the HasWebsocketEvents field
+func (j *JsonDatabase) UpdateOrchestratorHostWebsocketStatus(ctx basecontext.ApiContext, hostID string, hasWebsocketEvents bool) (bool, error) {
+	if !j.IsConnected() {
+		return false, ErrDatabaseNotConnected
+	}
+
+	if hostID == "" {
+		return false, ErrOrchestratorHostEmptyIdOrHost
+	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+
+	for i, dbHost := range j.data.OrchestratorHosts {
+		if strings.EqualFold(dbHost.ID, hostID) {
+			if j.data.OrchestratorHosts[i].HasWebsocketEvents == hasWebsocketEvents {
+				return false, nil
+			}
+			j.data.OrchestratorHosts[i].HasWebsocketEvents = hasWebsocketEvents
+			ctx.LogDebugf("[Database] Host %s websocket status updated to %v", dbHost.Host, hasWebsocketEvents)
+			return true, nil
+		}
+	}
+
+	return false, ErrOrchestratorHostNotFound
 }
 
 func (j *JsonDatabase) GetOrchestratorAvailableResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
