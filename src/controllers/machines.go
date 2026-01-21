@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog"
@@ -962,7 +963,23 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		filter := fmt.Sprintf("Home=%s/,i", request.Path)
-		vms, err := svc.GetCachedVms(ctx, filter)
+		vms := []models.ParallelsVM{}
+		var err error
+		// To avoid race condition, retry fetching the VM from cache for up to 30 seconds
+		retryTime := 30 * time.Second
+		endTime := time.Now().Add(retryTime)
+		for time.Now().Before(endTime) {
+			vms, err = svc.GetCachedVms(ctx, filter)
+			if err == nil && len(vms) > 0 {
+				ctx.LogInfof("Vm found in cache after register: %v", vms[0].ID)
+				break
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		if len(vms) == 0 {
+			ctx.LogInfof("Cache vm timeout reached, trying direct fetch")
+			vms, err = svc.GetVms(ctx, filter)
+		}
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
