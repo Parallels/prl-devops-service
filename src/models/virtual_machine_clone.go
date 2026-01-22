@@ -3,7 +3,8 @@ package models
 import "github.com/Parallels/prl-devops-service/errors"
 
 type VirtualMachineCloneCommandRequest struct {
-	CloneName string `json:"clone_name"`
+	CloneName       string `json:"clone_name"`
+	DestinationPath string `json:"destination_path,omitempty"`
 }
 
 func (r *VirtualMachineCloneCommandRequest) Validate() error {
