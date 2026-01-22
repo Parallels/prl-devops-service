@@ -554,24 +554,42 @@ func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
 func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string, vmId string) ([]models.ParallelsVM, error) {
 	// vmId can be empty to get all VMs for the user
 	ctx.LogInfof("Getting VMs for user: %s", username)
+
+	// TODO: workaround for parallels bug (PDFM-126209) where some fields are not returned when vm id is not specified
+	vmIds := []string{}
+	if vmId == "" {
+		ctx.LogDebugf("Getting all VMs for user %s", username)
+		var err error
+		vmIds, err = s.GetUserVmIds(ctx, username)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		vmIds = append(vmIds, vmId)
+	}
+
 	externalIp, _ := system.Get().GetExternalIp(ctx)
-	var userMachines []models.ParallelsVM
-	cmd := helpers.Command{
-		Command: "sudo",
-		Args:    []string{"-u", username, s.executable, "list", vmId, "-a", "-i", "--json"},
-	}
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	userMachines := []models.ParallelsVM{}
+	for _, id := range vmIds {
+		cmd := helpers.Command{
+			Command: "sudo",
+			Args:    []string{"-u", username, s.executable, "list", id, "-a", "-i", "--json"},
+		}
+		ctx.LogDebugf("Executing command: %s", cmd.String())
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
-	defer cancel()
+		defer cancel()
 
-	stdout, err := helpers.ExecuteWithNoOutput(timeoutCtx, cmd, helpers.ExecutionTimeout)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal([]byte(stdout), &userMachines)
-	if err != nil {
-		return nil, err
+		stdout, err := helpers.ExecuteWithNoOutput(timeoutCtx, cmd, helpers.ExecutionTimeout)
+		if err != nil {
+			return nil, err
+		}
+		vms := []models.ParallelsVM{}
+		err = json.Unmarshal([]byte(stdout), &vms)
+		if err != nil {
+			return nil, err
+		}
+		userMachines = append(userMachines, vms...)
 	}
 
 	// updating the internal and external IP address
@@ -592,6 +610,31 @@ func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string
 		ctx.LogInfof("User %s VM %s not found", username, vmId)
 	}
 	return userMachines, nil
+}
+
+func (s *ParallelsService) GetUserVmIds(ctx basecontext.ApiContext, username string) ([]string, error) {
+	cmd := helpers.Command{
+		Command: "sudo",
+		Args:    make([]string, 0),
+	}
+	cmd.Args = append(cmd.Args, "-u", username, s.executable, "list", "-a", "-f", "--json")
+
+	output, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	var status []models.VirtualMachineStatus
+	err = json.Unmarshal([]byte(output), &status)
+	if err != nil {
+		return nil, err
+	}
+	listOfVms := make([]string, 0)
+	for _, vm := range status {
+		listOfVms = append(listOfVms, vm.UUID)
+	}
+
+	return listOfVms, nil
 }
 
 func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter string) ([]models.ParallelsVM, error) {
@@ -908,11 +951,9 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 		}
 		if vm != nil {
 			return errors.Newf("VM with name %s already exists", r.MachineName)
+		} else if err := s.ReplaceMachineNameInConfigPvs(r.Path, r.MachineName); err != nil {
+			return err
 		}
-	}
-
-	if err := s.ReplaceMachineNameInConfigPvs(r.Path, r.MachineName); err != nil {
-		return err
 	}
 
 	cmd := helpers.Command{
