@@ -31,36 +31,42 @@ func ConvertByteToMegabyte(bytes float64) float64 {
 }
 
 func GetSizeByteFromString(s string) (float64, error) {
+	if s == "" {
+		return -1, errors.New("size string is empty")
+	}
+
 	s = strings.ToLower(s)
-	if strings.Contains(s, "gb") || strings.Contains(s, "gi") {
-		s = strings.ReplaceAll(s, "gb", "")
-		s = strings.ReplaceAll(s, "gi", "")
-		s = strings.TrimSpace(s)
-		size, err := strconv.ParseFloat(s, 64)
-		if err != nil {
-			return -1, err
-		}
-		return size * 1024 * 1024 * 1024, nil
+	s = strings.TrimSpace(s)
+
+	// Define units with their suffixes and multipliers
+	// Order matters: check multi-letter suffixes before single-letter ones
+	units := []struct {
+		suffixes   []string
+		multiplier float64
+	}{
+		{[]string{"tb", "ti"}, 1024 * 1024 * 1024 * 1024},
+		{[]string{"gb", "gi"}, 1024 * 1024 * 1024},
+		{[]string{"mb", "mi"}, 1024 * 1024},
+		{[]string{"kb", "ki"}, 1024},
+		{[]string{"bi", "b"}, 1},
+		{[]string{"t"}, 1024 * 1024 * 1024 * 1024},
+		{[]string{"g"}, 1024 * 1024 * 1024},
+		{[]string{"m"}, 1024 * 1024},
+		{[]string{"k"}, 1024},
 	}
-	if strings.Contains(s, "mb") || strings.Contains(s, "mi") {
-		s = strings.ReplaceAll(s, "mb", "")
-		s = strings.ReplaceAll(s, "mi", "")
-		s = strings.TrimSpace(s)
-		size, err := strconv.ParseFloat(s, 64)
-		if err != nil {
-			return -1, err
+
+	for _, unit := range units {
+		for _, suffix := range unit.suffixes {
+			if strings.HasSuffix(s, suffix) {
+				numStr := strings.TrimSuffix(s, suffix)
+				numStr = strings.TrimSpace(numStr)
+				size, err := strconv.ParseFloat(numStr, 64)
+				if err != nil {
+					return -1, err
+				}
+				return size * unit.multiplier, nil
+			}
 		}
-		return size * 1024 * 1024, nil
-	}
-	if strings.Contains(s, "kb") || strings.Contains(s, "ki") {
-		s = strings.ReplaceAll(s, "kb", "")
-		s = strings.ReplaceAll(s, "ki", "")
-		s = strings.TrimSpace(s)
-		size, err := strconv.ParseFloat(s, 64)
-		if err != nil {
-			return -1, err
-		}
-		return size * 1024, nil
 	}
 
 	return -1, errors.New("invalid size")
