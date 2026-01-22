@@ -1478,7 +1478,7 @@ func (s *ParallelsService) SetVmMachineOperation(ctx basecontext.ApiContext, vm 
 	case "clone":
 		cmd.Args = append(cmd.Args, s.executable, "clone", vm.ID)
 		if op.Value != "" {
-			cmd.Args = append(cmd.Args, "--name", op.Value)
+			cmd.Args = append(cmd.Args, "--name", fmt.Sprintf("\"%s\"", op.Value))
 		}
 		cmd.Args = append(cmd.Args, op.GetCmdArgs()...)
 	case "archive":
@@ -1500,7 +1500,7 @@ func (s *ParallelsService) SetVmMachineOperation(ctx basecontext.ApiContext, vm 
 	case "install-tools":
 		cmd.Args = append(cmd.Args, s.executable, "install-tools", vm.ID)
 	case "rename":
-		cmd.Args = append(cmd.Args, s.executable, "set", vm.ID, "--name", op.Value)
+		cmd.Args = append(cmd.Args, s.executable, "set", vm.ID, "--name", fmt.Sprintf("\"%s\"", op.Value))
 	default:
 		return errors.ErrConfigInvalidOperation(op.Operation)
 	}
