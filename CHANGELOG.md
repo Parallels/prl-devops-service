@@ -3,6 +3,118 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-01-23
+
+- Enhance GetSizeByteFromString to support additional units and improve error handling
+- Fixes #343 
+- Added the missing property for the path where we want to clone
+- Fixed an issue where operations would fail if there was spaces in the vm name
+- Resolve VM registration and retrieval issues
+- Fix machine name being incorrectly set to empty during registration
+- Fix race condition where cached VMs are not updated immediately after registration 
+- Added a retry mech to fetch cache vm if it fails 
+- switch to manual VM fetching to ensure data consistency after registration
+- Work around prlctl limitation where VM info is incomplete when ID is not specified in command arguments
+- Fixes # (issue)
+- Feature: Added HasWebsocketEvents field to the Orchestrator Host API,providing clients with a reliable source of truth for real-time event capabilities.
+- Improvement: Optimized database performance by implementing lightweight status updates for WebSocket events, avoiding full record rewrites.
+- Fix: Enhanced connection reliability by tying the "Connected" status strictly to verified pong responses rather than just TCP connection establishment.
+- Fix: Resolved delay in reconnection events by triggering an immediate ping upon connection, ensuring instant status updates.
+- Improvement: Refactored connection monitoring to automatically detect and handle stale WebSocket connections without redundant network traffic.
+- bugfix: Associate user with added VM in processVmAdded function
+- docs: add Events Hub user guides and reference documentation
+- Introduces a new documentation section for the Events Hub WebSocket service in `docs/docs/devops/events-hub/`.
+- Add `overview.md`: Covers WebSocket protocol details, authentication (Bearer/API Key), connection limits, and available channels (`global`, `pdfm`, `orchestrator`, `health`).
+- Add "How-to" guides:
+- `how-to-monitor-VM-events.md`: Subscribing to VM lifecycle events with JSON payload examples.
+- `how-to-monitor-orchestrator-events.md`: Monitoring cluster-level events like host health and VM state changes.
+- `how-to-send-heartbeat.md`: Implementing ping/pong logic to keep connections alive.
+- `how-to-send-unsubscribe-requests.md` & `how-to-know-my-client-id.md`: Managing subscriptions and client identity.
+- Visualizations: Integrate Mermaid.js todocs: add Events Hub user guides and reference documentation
+- Closes #332 
+- Add `event-load` test command to spawn a dedicated load test server
+- Implement mock auth and realistic PDFM VM event broadcasting (100 events/sec)
+- Register HealthService to support bidirectional ping/pong health checks
+- Add k6 script ([loadtest/hub_load.js](loadtest/hub_load.js) for capacity testing:
+- Subscribes to both `pdfm` and `health` events
+- Tracks latency, message loss, and throughput
+- Verifies bidirectional communication via periodic pings
+- Closes #333 
+- New Event Type: orchestrator - Subscribe via /v1/ws/subscribe?event_types=orchestrator
+- Real-time Host Health Updates: Receive notifications when orchestrator checks host health
+- Real-time VM State Updates: Get instant notifications for VM lifecycle events across all managed hosts
+- closes #321 
+- **Real-time Updates:** Eliminates polling delay for hosts with WebSocket support
+- **Reduced Load:** Significantly decreases API calls for event monitoring
+- **Backward Compatible:** Gracefully falls back to polling for legacy hosts
+- **Scalable:** Efficient connection pooling and resource management
+- **Resilient:** Automatic reconnection and error recovery mechanisms
+- Part of #321 
+- Loading the cfg file properly
+- Corrected log messages
+- HealthService: Implemented a singleton HealthService to handle health events (e.g., ping -> pong) using a decoupled Broadcaster interface.
+- SystemHandler: Implemented a singleton SystemHandler to handle system events (e.g., client-id) using a decoupled Broadcaster interface.
+- Optimized Routing: Refactored handleClientMessage to avoid double-marshalling. It now performs partial parsing of the header and passes the raw []byte payload directly to handlers via RouteMessageCmd.
+- Type Safety: Enforced usage of constants.EventType throughout the system
+- Testing: Added comprehensive unit tests for HealthService, SystemHandler, and Client (Reader/Writer/Handler), significantly improving code coverage.
+- closes #319 
+- Now all parallels engine events are posted to event's emitter
+- User's can now subscribe to PDfM type events and start listening to real time events through a websocket connection.
+- Now Parallels service will broadcast  VM_REMOVED,VM_ADDED and VM_STATE_CHANGED to events emitter
+- closes #320 
+- After the new event emitter we had a racing condition during the catalog pull process where after registering we would check immediately the presence of a VM but this would not be there due to the event not being fired on time
+- Added a new function to get VMs that gets it sync
+- Updated dependencies on the cache function to this method
+- Created WebSocket connection handler with support for multiple event type - subscriptions.
+- Introduce a type‑safe EventType to replace string literals and prevent processing errors.
+- Added client read/write functions (clientReader/Clietnwriter) for bidirectional WebSocket - communication.
+- Implemented connection limiting per IP address with debug/release build variants.
+- Added events controller with WebSocket subscription and unsubscription endpoints.
+- Added EventEmitter configuration for ping interval and pong timeout settings.
+- Integrated EventEmitter service initialization during application startup.
+- Achieved 57% overall code coverage for the eventEmitter package.
+- related to #319 
+- Implemented EventEmitter for managing WebSocket event broadcasting.
+- Created a Hub for handling client connections and message broadcasting.
+- Added Client struct to represent connected WebSocket clients.
+- Introduced methods for sending messages to specific clients, all clients, or by event type.
+- Implemented graceful shutdown for the EventEmitter service.
+- Added tests for environment isolation, EventEmitter functionality, and Hub operations.
+- Included helper functions for setting up test environments and clients.
+- Ensured proper cleanup of environment variables and client connections during tests.
+- related to #319 
+- Implemented a new Event Monitor function in the current DevOps Parallels Desktop service.
+- This will read the output of the Event Monitor from prlctl and update the cached list of VMs depending on the state.
+- Now the whole `ParallelsService` uses event emitter to get real-time status of Vm's 
+- Now in API/Orchestrator will have the real-time VM status
+- PARALLELS_DESKTOP_REFRESH_INTERVAL config is deprecated, vm status is always real-time 
+- Fixes [315](https://github.com/Parallels/prl-devops-service/issues/315)
+- Fixes [317](https://github.com/Parallels/prl-devops-service/issues/317)
+- Removed alludo branding from the documentation
+- Added the new Clarity cookie consent form to the page
+- docs(catalog): add MinIO storage provider details and update push/pull examples with links
+- Updated GitHub links and enhanced folder structure descriptions in `source_code` page
+- Added missing configs descriptions for pd files
+- Updated configuration documentation with new settings for catalog and reverse proxy
+-  Added the ability to disable catalog api credentials obfuscation using env variables (backward compatibility with older clients)
+- Introduced new endpoints for retrieving system logs and streaming logs via WebSocket.
+- Added endpoint to fetch orchestrator host system logs.
+- Implemented endpoint for retrieving orchestrator host reverse proxy configuration.
+- Updated error response structure across various endpoints to use "error" instead of "message".
+- Enhanced API documentation to reflect the new endpoints and changes in response formats.
+- Added support for compressing manifest files during the generation process.
+- Introduced new fields in the PushCatalogManifestRequest model to handle compression options.
+- Updated the manifest generation logic to calculate original and packed sizes, and log compression details.
+- Added command processors for handling new PDFile commands: COMPRESS_PACK, FORCE, IS_COMPRESSED, VM_REMOTE_PATH, VM_SIZE, and VM_TYPE.
+- Implemented the runImportVM function to handle the import of VMs with the new parameters.
+- Enhanced validation logic to ensure proper handling of new command arguments.
+- Refactored the logic for extracting API documentation from Go files to improve clarity and maintainability.
+- Added module information retrieval to enhance the handling of import paths in the documentation process.
+- Update documentation links to reflect new directory structure for security and catalog sections
+- the /v1/auth/users API response will include a detailed ApiErrorDiagnosticsResponse object. This diagnostics object provides a full call stack plus categorized errors and warnings to help developers identify the cause and the failing component for any request failures.
+- Fixes # (issue)
+- #245 
+
 ## [0.9.14] - 2025-09-30
 
 - Fix an issue where decompressing could cause a concurrency issue

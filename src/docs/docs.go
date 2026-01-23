@@ -7256,6 +7256,132 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/v1/ws/subscribe": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or X-Api-Key header.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Subscribe to event notifications via WebSocket",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Comma-separated event types to subscribe to (e.g., global,pdfm,system). Valid types: global,pdfm and orchestrator. If omitted, subscribes to global events only.",
+                        "name": "event_types",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/ws/unsubscribe": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Unsubscribe an active WebSocket client from specific event types without disconnecting. The client must belong to the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Unsubscribe from specific event types",
+                "parameters": [
+                    {
+                        "description": "Unsubscribe request with client ID and event types",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UnsubscribeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -9215,6 +9341,9 @@ const docTemplate = `{
                 "external_ip_address": {
                     "type": "string"
                 },
+                "has_websocket_events": {
+                    "type": "boolean"
+                },
                 "host": {
                     "type": "string"
                 },
@@ -9443,6 +9572,12 @@ const docTemplate = `{
                 },
                 "catalog_id": {
                     "type": "string"
+                },
+                "compress_pack": {
+                    "type": "boolean"
+                },
+                "compress_pack_level": {
+                    "type": "integer"
                 },
                 "connection": {
                     "type": "string"
@@ -9823,6 +9958,26 @@ const docTemplate = `{
                 }
             }
         },
+        "models.UnsubscribeRequest": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "description": "Unique client identifier",
+                    "type": "string"
+                },
+                "event_types": {
+                    "description": "List of event types to unsubscribe from",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_id": {
+                    "description": "User ID from authentication",
+                    "type": "string"
+                }
+            }
+        },
         "models.UserCreateRequest": {
             "type": "object",
             "properties": {
@@ -9901,6 +10056,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "clone_name": {
+                    "type": "string"
+                },
+                "destination_path": {
                     "type": "string"
                 }
             }
@@ -10128,7 +10286,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.9.14",
+	Version:          "0.10.0",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
