@@ -2,8 +2,18 @@ apiVersion: v1
 entries:
   parallels-devops-service:
   - apiVersion: v2
+    appVersion: 0.9.15
+    created: "2026-01-23T08:21:50.428974735Z"
+    description: Parallels Desktop DevOps Service
+    digest: 15a528c38a5132688bc990e3a53c26df91f60480be4af4a0d1a76fe7d9435dcb
+    name: parallels-devops-service
+    type: application
+    urls:
+    - https://parallels.github.io/prl-devops-service/charts/parallels-devops-service-0.9.15.tgz
+    version: 0.9.15
+  - apiVersion: v2
     appVersion: 0.9.14
-    created: "2025-09-30T10:45:48.142055826Z"
+    created: "2026-01-23T08:21:50.428507705Z"
     description: Parallels Desktop DevOps Service
     digest: aeec3654d3fc72ef89ce55d7c6062a0f2407f0f77867ee9dfc9ef478ec8aa511
     name: parallels-devops-service
@@ -13,7 +23,7 @@ entries:
     version: 0.9.14
   - apiVersion: v2
     appVersion: 0.9.13
-    created: "2025-09-30T10:45:48.14075126Z"
+    created: "2026-01-23T08:21:50.42801663Z"
     description: Parallels Desktop DevOps Service
     digest: ed0db9cd85ee79dbe06ef51a9b8fb4bc2772475138de6efe60eb904550ac4fa9
     name: parallels-devops-service
@@ -23,7 +33,7 @@ entries:
     version: 0.9.13
   - apiVersion: v2
     appVersion: 0.9.12
-    created: "2025-09-30T10:45:48.140237881Z"
+    created: "2026-01-23T08:21:50.427505477Z"
     description: Parallels Desktop DevOps Service
     digest: 686cc43c550a5d287e23aac82f64abe1a570e8262f3717b1f4b0b3c2ba9b1bf6
     name: parallels-devops-service
@@ -33,7 +43,7 @@ entries:
     version: 0.9.12
   - apiVersion: v2
     appVersion: 0.9.11
-    created: "2025-09-30T10:45:48.139785746Z"
+    created: "2026-01-23T08:21:50.426953168Z"
     description: Parallels Desktop DevOps Service
     digest: da86c50b169bc27820eee02db73280d425b97990b117f39d0dd4513f3bce16a2
     name: parallels-devops-service
@@ -43,7 +53,7 @@ entries:
     version: 0.9.11
   - apiVersion: v2
     appVersion: 0.9.10
-    created: "2025-09-30T10:45:48.139329965Z"
+    created: "2026-01-23T08:21:50.425605559Z"
     description: Parallels Desktop DevOps Service
     digest: 326b0b887dac93ba658f455d1a09b07547c09b236f1da6e9aea3879750230beb
     name: parallels-devops-service
@@ -53,7 +63,7 @@ entries:
     version: 0.9.10
   - apiVersion: v2
     appVersion: 0.9.9
-    created: "2025-09-30T10:45:48.146070735Z"
+    created: "2026-01-23T08:21:50.433982738Z"
     description: Parallels Desktop DevOps Service
     digest: b7f4b98046dae4c83708d76f62550cc54e9b9eb5ab5b8c91e32164955044cb1e
     name: parallels-devops-service
@@ -63,7 +73,7 @@ entries:
     version: 0.9.9
   - apiVersion: v2
     appVersion: 0.9.8
-    created: "2025-09-30T10:45:48.145635222Z"
+    created: "2026-01-23T08:21:50.432466663Z"
     description: Parallels Desktop DevOps Service
     digest: d2ec0bac5095be00749e2a6bb7cb2e3ace2ce3f3a265ecaccbca8bb098807881
     name: parallels-devops-service
@@ -73,7 +83,7 @@ entries:
     version: 0.9.8
   - apiVersion: v2
     appVersion: 0.9.7
-    created: "2025-09-30T10:45:48.145157098Z"
+    created: "2026-01-23T08:21:50.431999062Z"
     description: Parallels Desktop DevOps Service
     digest: 185fc3b2caeef1a5de1b59de87d091b401b0a04bba4231bbaa6864449448c809
     name: parallels-devops-service
@@ -83,7 +93,7 @@ entries:
     version: 0.9.7
   - apiVersion: v2
     appVersion: 0.9.6
-    created: "2025-09-30T10:45:48.144699895Z"
+    created: "2026-01-23T08:21:50.431546398Z"
     description: Parallels Desktop DevOps Service
     digest: 4e2fc1874fa739c7102cbf4af826d4cd2fbcd47064f9af612740b37d357e4ee8
     name: parallels-devops-service
@@ -93,7 +103,7 @@ entries:
     version: 0.9.6
   - apiVersion: v2
     appVersion: 0.9.5
-    created: "2025-09-30T10:45:48.144245255Z"
+    created: "2026-01-23T08:21:50.431089296Z"
     description: Parallels Desktop DevOps Service
     digest: 180c122e46f302d9b147cf5a00013c07e691622b31d8c90ab94a509930b80912
     name: parallels-devops-service
@@ -103,7 +113,7 @@ entries:
     version: 0.9.5
   - apiVersion: v2
     appVersion: 0.9.4
-    created: "2025-09-30T10:45:48.143759018Z"
+    created: "2026-01-23T08:21:50.430585577Z"
     description: Parallels Desktop DevOps Service
     digest: f91734acdde18ba59ac6951d65b893d629e3a72b8a781213e83ca7859d151fcc
     name: parallels-devops-service
@@ -113,7 +123,7 @@ entries:
     version: 0.9.4
   - apiVersion: v2
     appVersion: 0.9.3
-    created: "2025-09-30T10:45:48.143235159Z"
+    created: "2026-01-23T08:21:50.429981972Z"
     description: Parallels Desktop DevOps Service
     digest: acdff683cf5424839d19e79981c51faab23b41a49c9f08d040dbcc6e4d36e211
     name: parallels-devops-service
@@ -123,7 +133,7 @@ entries:
     version: 0.9.3
   - apiVersion: v2
     appVersion: 0.9.2
-    created: "2025-09-30T10:45:48.142704548Z"
+    created: "2026-01-23T08:21:50.429400158Z"
     description: Parallels Desktop DevOps Service
     digest: a4af67f14b31814afb94a9b73897b5be917c2899c9ed13a25529394602c059ed
     name: parallels-devops-service
@@ -133,7 +143,7 @@ entries:
     version: 0.9.2
   - apiVersion: v2
     appVersion: 0.9.1
-    created: "2025-09-30T10:45:48.138882059Z"
+    created: "2026-01-23T08:21:50.42510713Z"
     description: Parallels Desktop DevOps Service
     digest: 2d667bdb44556fa0bdfb44f2d3478e21fcd4c5a4517cb267110e63983a1349e3
     name: parallels-devops-service
@@ -143,7 +153,7 @@ entries:
     version: 0.9.1
   - apiVersion: v2
     appVersion: 0.9.0
-    created: "2025-09-30T10:45:48.138410418Z"
+    created: "2026-01-23T08:21:50.424668342Z"
     description: Parallels Desktop DevOps Service
     digest: ae9d8d8653c4984a3a0356e00c29e05b0feaa1dbbd02ca29859f23e56b2cdfb2
     name: parallels-devops-service
@@ -153,7 +163,7 @@ entries:
     version: 0.9.0
   - apiVersion: v2
     appVersion: 0.8.8
-    created: "2025-09-30T10:45:48.137947624Z"
+    created: "2026-01-23T08:21:50.424198918Z"
     description: Parallels Desktop DevOps Service
     digest: 5ca196b55adda87d355e32858312e5b5f69c4852eb8e379100eda1c994a0b68a
     name: parallels-devops-service
@@ -163,7 +173,7 @@ entries:
     version: 0.8.8
   - apiVersion: v2
     appVersion: 0.8.7
-    created: "2025-09-30T10:45:48.137485991Z"
+    created: "2026-01-23T08:21:50.423745473Z"
     description: Parallels Desktop DevOps Service
     digest: bf903453bc8c261c699518200304a6fb1774c83c22f4e18ec27fb6ea9b189597
     name: parallels-devops-service
@@ -173,7 +183,7 @@ entries:
     version: 0.8.7
   - apiVersion: v2
     appVersion: 0.8.6
-    created: "2025-09-30T10:45:48.137041221Z"
+    created: "2026-01-23T08:21:50.423304851Z"
     description: Parallels Desktop DevOps Service
     digest: 49ebd0f2a07d40e7fcc1e2c480ded7c33a2701bdbc306b9ecb4fe26b3bfbfd0a
     name: parallels-devops-service
@@ -183,7 +193,7 @@ entries:
     version: 0.8.6
   - apiVersion: v2
     appVersion: 0.8.5
-    created: "2025-09-30T10:45:48.136616277Z"
+    created: "2026-01-23T08:21:50.422893324Z"
     description: Parallels Desktop DevOps Service
     digest: da5b419934de020af1dc77a83e7ef2614aa09cb71598fa76dcf23b0868d447e2
     name: parallels-devops-service
@@ -193,7 +203,7 @@ entries:
     version: 0.8.5
   - apiVersion: v2
     appVersion: 0.8.4
-    created: "2025-09-30T10:45:48.136167629Z"
+    created: "2026-01-23T08:21:50.422484603Z"
     description: Parallels Desktop DevOps Service
     digest: 9ec0f77ebfa1cd0caac2853a9e1ba20b58128bb5115cda32b6136d0475393a6f
     name: parallels-devops-service
@@ -203,7 +213,7 @@ entries:
     version: 0.8.4
   - apiVersion: v2
     appVersion: 0.8.3
-    created: "2025-09-30T10:45:48.135704474Z"
+    created: "2026-01-23T08:21:50.422041437Z"
     description: Parallels Desktop DevOps Service
     digest: 6b8d93c7857ad5e66cdf09f5247f67f2593cff526c364b027666b1b2ecda396c
     name: parallels-devops-service
@@ -213,7 +223,7 @@ entries:
     version: 0.8.3
   - apiVersion: v2
     appVersion: 0.8.2
-    created: "2025-09-30T10:45:48.13433179Z"
+    created: "2026-01-23T08:21:50.421610694Z"
     description: Parallels Desktop DevOps Service
     digest: 3db74c9beb62a456dd442f21e52e46bf5e88744af947360c7e95f11ba084a26b
     name: parallels-devops-service
@@ -223,7 +233,7 @@ entries:
     version: 0.8.2
   - apiVersion: v2
     appVersion: 0.8.1
-    created: "2025-09-30T10:45:48.133882992Z"
+    created: "2026-01-23T08:21:50.421150626Z"
     description: Parallels Desktop DevOps Service
     digest: 94d87635c30adfb14f1e2a402d8f3e5a36c8b65a1e3ec3ed73b9eab87fdc3f69
     name: parallels-devops-service
@@ -233,7 +243,7 @@ entries:
     version: 0.8.1
   - apiVersion: v2
     appVersion: 0.5.4
-    created: "2025-09-30T10:45:48.133380594Z"
+    created: "2026-01-23T08:21:50.420644403Z"
     description: Parallels Desktop DevOps Service
     digest: c2bc464c67821348b07472a34d54c7dea01cbd503942628e4342df3b699a3f62
     name: parallels-devops-service
@@ -241,4 +251,4 @@ entries:
     urls:
     - https://parallels.github.io/prl-devops-service/charts/parallels-devops-service-0.5.4.tgz
     version: 0.5.4
-generated: "2025-09-30T10:45:48.132793457Z"
+generated: "2026-01-23T08:21:50.418844851Z"

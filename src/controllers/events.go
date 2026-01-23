@@ -34,11 +34,11 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 // @Tags			Events
 // @Produce		json
 // @Param			event_types	query		string	false	"Comma-separated event types to subscribe to (e.g., global,pdfm,system). Valid types: global,pdfm and orchestrator. If omitted, subscribes to global events only."
-// @Success		101		{string}	string	"Switching Protocols"
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.ApiErrorResponse
-// @Failure		409		{object}	models.ApiErrorResponse
-// @Failure		503		{object}	models.ApiErrorResponse
+// @Success		101			{string}	string	"Switching Protocols"
+// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		401			{object}	models.ApiErrorResponse
+// @Failure		409			{object}	models.ApiErrorResponse
+// @Failure		503			{object}	models.ApiErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/ws/subscribe [get]
@@ -68,7 +68,7 @@ func WebSocketSubscribeHandler() restapi.ControllerHandler {
 // @Accept			json
 // @Produce		json
 // @Param			body	body		models.UnsubscribeRequest	true	"Unsubscribe request with client ID and event types"
-// @Success		200		{string}	string	"OK"
+// @Success		200		{string}	string						"OK"
 // @Failure		400		{object}	models.ApiErrorResponse
 // @Failure		401		{object}	models.ApiErrorResponse
 // @Failure		404		{object}	models.ApiErrorResponse
