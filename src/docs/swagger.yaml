@@ -1288,6 +1288,8 @@ definitions:
         type: boolean
       external_ip_address:
         type: string
+      has_websocket_events:
+        type: boolean
       host:
         type: string
       id:
@@ -1439,6 +1441,10 @@ definitions:
         type: string
       catalog_id:
         type: string
+      compress_pack:
+        type: boolean
+      compress_pack_level:
+        type: integer
       connection:
         type: string
       description:
@@ -1686,6 +1692,20 @@ definitions:
       owner:
         type: string
     type: object
+  models.UnsubscribeRequest:
+    properties:
+      client_id:
+        description: Unique client identifier
+        type: string
+      event_types:
+        description: List of event types to unsubscribe from
+        items:
+          type: string
+        type: array
+      user_id:
+        description: User ID from authentication
+        type: string
+    type: object
   models.UserCreateRequest:
     properties:
       claims:
@@ -1737,6 +1757,8 @@ definitions:
   models.VirtualMachineCloneCommandRequest:
     properties:
       clone_name:
+        type: string
+      destination_path:
         type: string
     type: object
   models.VirtualMachineCloneCommandResponse:
@@ -1882,7 +1904,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.9.14
+  version: 0.9.15
 paths:
   /health/probe:
     get:
@@ -6358,6 +6380,89 @@ paths:
       summary: Updates a packer template
       tags:
       - Packer Templates
+  /v1/ws/subscribe:
+    get:
+      description: This endpoint upgrades the HTTP connection to WebSocket and subscribes
+        to event notifications. Authentication is required via Authorization header
+        (Bearer token) or X-Api-Key header.
+      parameters:
+      - description: 'Comma-separated event types to subscribe to (e.g., global,pdfm,system).
+          Valid types: global,pdfm and orchestrator. If omitted, subscribes to global
+          events only.'
+        in: query
+        name: event_types
+        type: string
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: Switching Protocols
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Subscribe to event notifications via WebSocket
+      tags:
+      - Events
+  /v1/ws/unsubscribe:
+    post:
+      consumes:
+      - application/json
+      description: Unsubscribe an active WebSocket client from specific event types
+        without disconnecting. The client must belong to the authenticated user.
+      parameters:
+      - description: Unsubscribe request with client ID and event types
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UnsubscribeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Unsubscribe from specific event types
+      tags:
+      - Events
 securityDefinitions:
   ApiKeyAuth:
     description: Type the api key in the input below.
