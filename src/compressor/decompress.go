@@ -248,17 +248,27 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 			}
 		case tar.TypeSymlink:
 			ctx.LogDebugf("Symlink File type found for file %v (byte %v, rune %v)", destinationFilePath, header.Typeflag, string(header.Typeflag))
-			realLinkPath, err := filepath.EvalSymlinks(filepath.Join(destination, header.Linkname))
+
+			// Construct the absolute path the symlink would point to
+			// Join the symlink's directory with the link target
+			linkTarget := filepath.Join(filepath.Dir(destinationFilePath), header.Linkname)
+
+			// Resolve any existing symlinks in the path to prevent symlink-based escapes
+			resolvedLinkTarget, err := filepath.EvalSymlinks(linkTarget)
 			if err != nil {
-				ctx.LogWarnf("Error resolving symlink path: %v", header.Linkname)
+				// If EvalSymlinks fails (e.g., path doesn't exist yet), use the cleaned path
+				resolvedLinkTarget = filepath.Clean(linkTarget)
 			}
 
-			relLinkPath, err := filepath.Rel(destination, realLinkPath)
-			if err != nil || strings.HasPrefix(filepath.Clean(relLinkPath), "..") {
-				ctx.LogWarnf("Symlink path is not within the destination directory: %v", realLinkPath)
+			// Ensure the resolved link target is within the destination directory
+			relPath, err := filepath.Rel(destination, resolvedLinkTarget)
+			if err != nil || strings.HasPrefix(filepath.Clean(relPath), "..") {
+				ctx.LogWarnf("Symlink target escapes destination directory: %v -> %v (resolved: %v)", header.Name, header.Linkname, resolvedLinkTarget)
 				continue
 			}
-			if err := os.Symlink(realLinkPath, destinationFilePath); err != nil {
+
+			// Create the symlink with the original link target from the archive
+			if err := os.Symlink(header.Linkname, destinationFilePath); err != nil {
 				return fmt.Errorf("failed to create symlink: %v", err)
 			}
 		default:
