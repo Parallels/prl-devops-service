@@ -389,52 +389,13 @@ func (s *SystemService) GetCurrentUser(ctx basecontext.ApiContext) (string, erro
 		return s.cache.CurrentUser, nil
 	}
 
-	currentUser := ""
-	var err error
-
-	switch s.GetOperatingSystem() {
-	case "macos":
-		currentUser, err = s.getMacCurrentUser(ctx)
-	case "linux":
-		currentUser, err = s.getLinuxCurrentUser(ctx)
-	case "windows":
-		currentUser, err = s.getWindowsCurrentUser(ctx)
-	default:
-		return "", errors.New("Not implemented")
-	}
-
-	s.cache.CurrentUser = currentUser
-	return currentUser, err
-}
-
-func (s *SystemService) getMacCurrentUser(ctx basecontext.ApiContext) (string, error) {
-	cmd := helpers.Command{
-		Command: "whoami",
-	}
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+	currentUser, err := helpers.GetCurrentSystemUser()
 	if err != nil {
 		return "", err
 	}
 
-	return strings.TrimSpace(out), nil
-}
-
-func (s *SystemService) getLinuxCurrentUser(ctx basecontext.ApiContext) (string, error) {
-	user, exists := os.LookupEnv("USER")
-	if user != "" && !exists {
-		user = "root"
-	}
-
-	return user, nil
-}
-
-func (s *SystemService) getWindowsCurrentUser(ctx basecontext.ApiContext) (string, error) {
-	user, exists := os.LookupEnv("USERNAME")
-	if user != "" && !exists {
-		user = "root"
-	}
-
-	return user, nil
+	s.cache.CurrentUser = currentUser
+	return currentUser, nil
 }
 
 func (s *SystemService) GetUniqueId(ctx basecontext.ApiContext) (string, error) {
