@@ -32,6 +32,56 @@ func (c *Command) String() string {
 	return fmt.Sprintf("%s %s", c.Command, strings.Join(c.Args, " "))
 }
 
+// GetCurrentSystemUser returns the current system user across all platforms
+func GetCurrentSystemUser() (string, error) {
+	switch runtime.GOOS {
+	case "darwin":
+		cmd := exec.Command("whoami")
+		out, err := cmd.Output()
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(string(out)), nil
+	case "linux":
+		user, exists := os.LookupEnv("USER")
+		if user != "" && !exists {
+			user = "root"
+		}
+		return user, nil
+	case "windows":
+		user, exists := os.LookupEnv("USERNAME")
+		if user != "" && !exists {
+			user = "root"
+		}
+		return user, nil
+	default:
+		return "", fmt.Errorf("operating system %s not supported", runtime.GOOS)
+	}
+}
+
+// AsUser returns a new Command configured to run as the specified user.
+// If the current user is root, it prepends "sudo -u username" to the command.
+// If the current user is not root, it returns the command as-is (assuming the current user matches the target).
+func (c Command) AsUser(username string) Command {
+	currentUser, err := GetCurrentSystemUser()
+	if err != nil {
+		return c
+	}
+
+	// If we're already root, use sudo -u to run as the specified user
+	if currentUser == "root" {
+		newCmd := Command{
+			Command:          "sudo",
+			WorkingDirectory: c.WorkingDirectory,
+			Args:             make([]string, 0, len(c.Args)+3),
+		}
+		newCmd.Args = append(newCmd.Args, "-u", username, c.Command)
+		newCmd.Args = append(newCmd.Args, c.Args...)
+		return newCmd
+	}
+	return c
+}
+
 func CreateDirIfNotExist(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0o750)
