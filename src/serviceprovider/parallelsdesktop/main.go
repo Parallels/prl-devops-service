@@ -40,7 +40,7 @@ var (
 	globalParallelsService *ParallelsService
 	logger                 = common.Logger
 	eventsChannel          = make(chan models.ParallelsServiceEvent, 1000)
-	eventSupported         = [3]string{"vm_state_changed", "vm_added", "vm_unregistered"}
+	eventSupported         = [4]string{"vm_state_changed", "vm_added", "vm_unregistered", "vm_deleted"}
 )
 
 type ParallelsService struct {
@@ -423,6 +423,7 @@ func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models
 	case "vm_added":
 		s.processVmAdded(ctx, event)
 	case "vm_unregistered":
+	case "vm_deleted":
 		s.processVmUnregistered(ctx, event)
 	default:
 		ctx.LogDebugf("Unhandled event: %s", event.EventName)

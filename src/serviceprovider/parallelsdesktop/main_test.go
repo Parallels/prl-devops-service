@@ -256,7 +256,7 @@ func TestIsEventSupported(t *testing.T) {
 		{"SupportedVmStateChanged", models.ParallelsServiceEvent{EventName: "vm_state_changed"}, true},
 		{"SupportedVmAdded", models.ParallelsServiceEvent{EventName: "vm_added"}, true},
 		{"SupportedVmUnregistered", models.ParallelsServiceEvent{EventName: "vm_unregistered"}, true},
-		{"UnsupportedEvent", models.ParallelsServiceEvent{EventName: "vm_deleted"}, false},
+		{"UnsupportedEvent", models.ParallelsServiceEvent{EventName: "vm_not_available"}, false},
 		{"EmptyEventName", models.ParallelsServiceEvent{EventName: ""}, false},
 	}
 	for _, tt := range tests {
