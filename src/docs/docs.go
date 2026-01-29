@@ -7026,7 +7026,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint returns all the packer templates",
+                "description": "This endpoint returns all the packer templates. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/",
                 "produces": [
                     "application/json"
                 ],
@@ -7034,6 +7034,7 @@ const docTemplate = `{
                     "Packer Templates"
                 ],
                 "summary": "Gets all the packer templates",
+                "deprecated": true,
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -7067,7 +7068,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint creates a packer template",
+                "description": "This endpoint creates a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/",
                 "produces": [
                     "application/json"
                 ],
@@ -7075,6 +7076,7 @@ const docTemplate = `{
                     "Packer Templates"
                 ],
                 "summary": "Creates a packer template",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "Create Packer Template Request",
@@ -7118,7 +7120,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint returns a packer template",
+                "description": "This endpoint returns a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/",
                 "produces": [
                     "application/json"
                 ],
@@ -7126,6 +7128,7 @@ const docTemplate = `{
                     "Packer Templates"
                 ],
                 "summary": "Gets a packer template",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -7165,7 +7168,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint updates a packer template",
+                "description": "This endpoint updates a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/",
                 "produces": [
                     "application/json"
                 ],
@@ -7173,6 +7176,7 @@ const docTemplate = `{
                     "Packer Templates"
                 ],
                 "summary": "Updates a packer template",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "Update Packer Template Request",
@@ -7221,7 +7225,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint deletes a packer template",
+                "description": "This endpoint deletes a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/",
                 "produces": [
                     "application/json"
                 ],
@@ -7229,6 +7233,7 @@ const docTemplate = `{
                     "Packer Templates"
                 ],
                 "summary": "Deletes a packer template",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
