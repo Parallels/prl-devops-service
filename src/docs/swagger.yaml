@@ -4209,6 +4209,10 @@ paths:
         name: id
         required: true
         type: string
+      - description: Force stop the virtual machine
+        in: query
+        name: force
+        type: boolean
       produces:
       - application/json
       responses:

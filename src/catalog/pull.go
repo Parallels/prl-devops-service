@@ -107,16 +107,16 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 					return response
 				}
 			}
-      if clientResponse.StatusCode == 401 || clientResponse.StatusCode == 403 {
-        s.ns.NotifyErrorf("Error getting catalog manifest %v: Unauthorized access", path)
-        response.AddError(errors.New("Unauthorized access to the catalog manifest"))
-        return response
-      }
-      if clientResponse.StatusCode == 400 {
-        s.ns.NotifyErrorf("Error getting catalog manifest %v: Bad request", path)
-        response.AddError(errors.New("Bad request to the catalog manifest"))
-        return response
-      }
+			if clientResponse.StatusCode == 401 || clientResponse.StatusCode == 403 {
+				s.ns.NotifyErrorf("Error getting catalog manifest %v: Unauthorized access", path)
+				response.AddError(errors.New("Unauthorized access to the catalog manifest"))
+				return response
+			}
+			if clientResponse.StatusCode == 400 {
+				s.ns.NotifyErrorf("Error getting catalog manifest %v: Bad request", path)
+				response.AddError(errors.New("Bad request to the catalog manifest"))
+				return response
+			}
 			s.ns.NotifyErrorf("Error getting catalog manifest %v: %v", path, err)
 			response.AddError(errors.Newf("Could not find a catalog manifest %s version %s for architecture %s", r.CatalogId, r.Version, arch))
 			return response

@@ -752,7 +752,8 @@ func (s *ParallelsService) GetVmSync(ctx basecontext.ApiContext, id string) (*mo
 	return vm, nil
 }
 
-func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, desiredState ParallelsVirtualMachineDesiredState) error {
+func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, desiredState ParallelsVirtualMachineDesiredState,
+	flags DesiredStateFlags) error {
 	vm, err := s.findVmSync(ctx, id, true)
 	if err != nil {
 		return err
@@ -815,7 +816,7 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 	}
 	cmd := helpers.Command{
 		Command: s.executable,
-		Args:    []string{desiredState.String(), id},
+		Args:    append([]string{desiredState.String(), id}, flags.flags...),
 	}.AsUser(vm.User)
 	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
@@ -849,31 +850,31 @@ func (s *ParallelsService) CloneVm(ctx basecontext.ApiContext, id string, cloneN
 }
 
 func (s *ParallelsService) StartVm(ctx basecontext.ApiContext, id string) error {
-	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateStart)
+	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateStart, DesiredStateFlags{})
 }
 
-func (s *ParallelsService) StopVm(ctx basecontext.ApiContext, id string) error {
-	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateStop)
+func (s *ParallelsService) StopVm(ctx basecontext.ApiContext, id string, flags DesiredStateFlags) error {
+	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateStop, flags)
 }
 
 func (s *ParallelsService) RestartVm(ctx basecontext.ApiContext, id string) error {
-	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateRestart)
+	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateRestart, DesiredStateFlags{})
 }
 
 func (s *ParallelsService) SuspendVm(ctx basecontext.ApiContext, id string) error {
-	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateSuspend)
+	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateSuspend, DesiredStateFlags{})
 }
 
 func (s *ParallelsService) ResumeVm(ctx basecontext.ApiContext, id string) error {
-	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateResume)
+	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateResume, DesiredStateFlags{})
 }
 
 func (s *ParallelsService) ResetVm(ctx basecontext.ApiContext, id string) error {
-	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateReset)
+	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStateReset, DesiredStateFlags{})
 }
 
 func (s *ParallelsService) PauseVm(ctx basecontext.ApiContext, id string) error {
-	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStatePause)
+	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStatePause, DesiredStateFlags{})
 }
 
 func (s *ParallelsService) DeleteVm(ctx basecontext.ApiContext, id string) error {
@@ -1214,7 +1215,7 @@ func (s *ParallelsService) ConfigureVm(ctx basecontext.ApiContext, id string, se
 		switch op.Group {
 		case "state":
 			ctx.LogInfof("Setting machine state to %s", op.Operation)
-			if err := s.SetVmState(ctx, vm.ID, ParallelsVirtualMachineDesiredStateFromString(op.Operation)); err != nil {
+			if err := s.SetVmState(ctx, vm.ID, ParallelsVirtualMachineDesiredStateFromString(op.Operation), DesiredStateFlags{}); err != nil {
 				op.Error = err
 			}
 		case "machine":

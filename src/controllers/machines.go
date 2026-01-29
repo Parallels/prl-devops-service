@@ -15,6 +15,7 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/serviceprovider/parallelsdesktop"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 
 	"github.com/cjlapao/common-go/helper"
@@ -307,10 +308,11 @@ func StartVirtualMachineHandler() restapi.ControllerHandler {
 // @Description	This endpoint stops a virtual machine
 // @Tags			Machines
 // @Produce		json
-// @Param			id	path		string	true	"Machine ID"
-// @Success		200	{object}	models.VirtualMachineOperationResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
+// @Param			id		path		string	true	"Machine ID"
+// @Param			force	query		bool	false	"Force stop the virtual machine"
+// @Success		200		{object}	models.VirtualMachineOperationResponse
+// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		401		{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/machines/{id}/stop [get]
@@ -325,7 +327,17 @@ func StopVirtualMachineHandler() restapi.ControllerHandler {
 		params := mux.Vars(r)
 		id := params["id"]
 
-		err := svc.StopVm(ctx, id)
+		// Get force parameter from query string
+		force := r.URL.Query().Get("force") == "true"
+
+		var flags parallelsdesktop.DesiredStateFlags
+		if force {
+			flags = parallelsdesktop.NewDesiredStateFlags("--drop-state")
+		} else {
+			flags = parallelsdesktop.NewDesiredStateFlags()
+		}
+
+		err := svc.StopVm(ctx, id, flags)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -339,7 +351,11 @@ func StopVirtualMachineHandler() restapi.ControllerHandler {
 		}
 
 		_ = json.NewEncoder(w).Encode(result)
-		ctx.LogInfof("Machine stopped: %v", id)
+		if force {
+			ctx.LogInfof("Machine force stopped: %v", id)
+		} else {
+			ctx.LogInfof("Machine stopped: %v", id)
+		}
 	}
 }
 
@@ -1286,7 +1302,7 @@ func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMa
 	}
 
 	if response.CurrentState == "running" || response.CurrentState == "unknown" {
-		if err := parallelsDesktopService.StopVm(ctx, response.ID); err != nil {
+		if err := parallelsDesktopService.StopVm(ctx, response.ID, parallelsdesktop.NewDesiredStateFlags()); err != nil {
 			return nil, err
 		}
 		response.CurrentState = "stopped"
@@ -1379,7 +1395,7 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 	if request.CatalogManifest.Specs != nil {
 
 		if response.CurrentState == "running" || response.CurrentState == "unknown" {
-			if err := parallelsDesktopService.StopVm(ctx, response.ID); err != nil {
+			if err := parallelsDesktopService.StopVm(ctx, response.ID, parallelsdesktop.NewDesiredStateFlags("--drop-state")); err != nil {
 				return nil, err
 			}
 			response.CurrentState = "stopped"

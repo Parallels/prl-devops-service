@@ -43,7 +43,7 @@ func processParallelsDesktop(ctx basecontext.ApiContext, cmd string) {
 			ctx.LogErrorf("No machine id or name provided")
 			os.Exit(1)
 		}
-		err := pdSvc.StopVm(ctx, machineId)
+		err := pdSvc.StopVm(ctx, machineId, parallelsdesktop.DesiredStateFlags{})
 		if err != nil {
 			ctx.LogErrorf("Error stopping vm: %v", err)
 			os.Exit(1)
