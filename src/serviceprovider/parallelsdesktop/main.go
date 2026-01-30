@@ -423,7 +423,7 @@ func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models
 	case "vm_added":
 		s.processVmAdded(ctx, event)
 	case "vm_unregistered":
-            s.processVmUnregistered(ctx, event)
+		s.processVmUnregistered(ctx, event)
 	case "vm_deleted":
 		s.processVmUnregistered(ctx, event)
 	default:
@@ -766,13 +766,13 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 	if vm.User == "" {
 		vm.User = "root"
 	}
-  isStopForceFlagSet := false
-  for _, flag := range flags.flags {
-    if flag == "--drop-state" {
-      isStopForceFlagSet = true
-      break
-    }
-  }
+	isStopForceFlagSet := false
+	for _, flag := range flags.flags {
+		if flag == "--force" {
+			isStopForceFlagSet = true
+			break
+		}
+	}
 
 	switch desiredState {
 	case ParallelsVirtualMachineDesiredStateStart:
@@ -788,6 +788,14 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 		}
 		if vm.State != ParallelsVirtualMachineStateRunning.String() && !isStopForceFlagSet {
 			return errors.New("VM is not running")
+		}
+		if (vm.State == ParallelsVirtualMachineStateRunning.String() ||
+			vm.State == ParallelsVirtualMachineStatePaused.String()) && isStopForceFlagSet {
+			ctx.LogDebugf("Adding --kill flag to stop running VM %s", id)
+			flags.flags = []string{"--kill"}
+		} else if vm.State == ParallelsVirtualMachineStateSuspended.String() && isStopForceFlagSet {
+			ctx.LogDebugf("Adding --drop-state flag to stop VM %s from suspended/paused state", id)
+			flags.flags = []string{"--drop-state"}
 		}
 	case ParallelsVirtualMachineDesiredStatePause:
 		if vm.State == ParallelsVirtualMachineStatePaused.String() {
@@ -830,7 +838,6 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

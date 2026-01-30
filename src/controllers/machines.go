@@ -332,7 +332,7 @@ func StopVirtualMachineHandler() restapi.ControllerHandler {
 
 		var flags parallelsdesktop.DesiredStateFlags
 		if force {
-			flags = parallelsdesktop.NewDesiredStateFlags("--drop-state")
+			flags = parallelsdesktop.NewDesiredStateFlags("--force")
 		} else {
 			flags = parallelsdesktop.NewDesiredStateFlags()
 		}
