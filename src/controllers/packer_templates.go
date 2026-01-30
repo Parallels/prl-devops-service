@@ -68,7 +68,7 @@ func registerPackerTemplatesHandlers(ctx basecontext.ApiContext, version string)
 }
 
 // @Summary		Gets all the packer templates
-// @Description	This endpoint returns all the packer templates
+// @Description	This endpoint returns all the packer templates. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
 // @Tags			Packer Templates
 // @Produce		json
 // @Success		200	{object}	[]models.PackerTemplateResponse
@@ -77,6 +77,7 @@ func registerPackerTemplatesHandlers(ctx basecontext.ApiContext, version string)
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/templates/packer [get]
+// @deprecated
 func GetPackerTemplatesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -110,7 +111,7 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 }
 
 // @Summary		Gets a packer template
-// @Description	This endpoint returns a packer template
+// @Description	This endpoint returns a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
 // @Tags			Packer Templates
 // @Produce		json
 // @Param			id	path		string	true	"Packer Template ID"
@@ -120,6 +121,7 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/templates/packer/{id} [get]
+// @deprecated
 func GetPackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -156,7 +158,7 @@ func GetPackerTemplateHandler() restapi.ControllerHandler {
 }
 
 // @Summary		Creates a packer template
-// @Description	This endpoint creates a packer template
+// @Description	This endpoint creates a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
 // @Tags			Packer Templates
 // @Produce		json
 // @Param			createPackerTemplateRequest	body		models.CreatePackerTemplateRequest	true	"Create Packer Template Request"
@@ -166,6 +168,7 @@ func GetPackerTemplateHandler() restapi.ControllerHandler {
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/templates/packer  [post]
+// @deprecated
 func CreatePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -208,7 +211,7 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 }
 
 // @Summary		Updates a packer template
-// @Description	This endpoint updates a packer template
+// @Description	This endpoint updates a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
 // @Tags			Packer Templates
 // @Produce		json
 // @Param			createPackerTemplateRequest	body		models.CreatePackerTemplateRequest	true	"Update Packer Template Request"
@@ -219,6 +222,7 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/templates/packer/{id}  [PUT]
+// @deprecated
 func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -265,7 +269,7 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 }
 
 // @Summary		Deletes a packer template
-// @Description	This endpoint deletes a packer template
+// @Description	This endpoint deletes a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
 // @Tags			Packer Templates
 // @Produce		json
 // @Param			id	path	string	true	"Packer Template ID"
@@ -275,6 +279,7 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/templates/packer/{id}  [DELETE]
+// @deprecated
 func DeletePackerTemplateHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
