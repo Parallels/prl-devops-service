@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -33,7 +34,8 @@ func (c *Command) String() string {
 }
 
 // GetCurrentSystemUser returns the current system user across all platforms
-func GetCurrentSystemUser() (string, error) {
+// The result is cached and the underlying system call is only made once
+var GetCurrentSystemUser = sync.OnceValues(func() (string, error) {
 	switch runtime.GOOS {
 	case "darwin":
 		cmd := exec.Command("whoami")
@@ -57,14 +59,14 @@ func GetCurrentSystemUser() (string, error) {
 	default:
 		return "", fmt.Errorf("operating system %s not supported", runtime.GOOS)
 	}
-}
+})
 
 // AsUser returns a new Command configured to run as the specified user.
 // If the current user is root, it prepends "sudo -u username" to the command.
 // If the current user is not root, it returns the command as-is (assuming the current user matches the target).
 func (c Command) AsUser(username string) Command {
 	currentUser, err := GetCurrentSystemUser()
-	if err != nil {
+	if err != nil || currentUser == "" {
 		return c
 	}
 
