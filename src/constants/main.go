@@ -57,7 +57,7 @@ const (
 	API_PORT_ENV_VAR                                        = "API_PORT"
 	API_PREFIX_ENV_VAR                                      = "API_PREFIX"
 	HMAC_SECRET_ENV_VAR                                     = "HMAC_SECRET"
-	LOG_LEVEL_ENV_VAR                                       = "PRL_DEVOPS_LOG_LEVEL"
+	LOG_LEVEL_ENV_VAR                                       = "LOG_LEVEL"
 	ENCRYPTION_SECURITY_KEY_ENV_VAR                         = "ENCRYPTION_PRIVATE_KEY"
 	TLS_ENABLED_ENV_VAR                                     = "TLS_ENABLED"
 	TLS_PORT_ENV_VAR                                        = "TLS_PORT"
