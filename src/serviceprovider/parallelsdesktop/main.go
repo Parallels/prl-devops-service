@@ -423,6 +423,7 @@ func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models
 	case "vm_added":
 		s.processVmAdded(ctx, event)
 	case "vm_unregistered":
+            s.processVmUnregistered(ctx, event)
 	case "vm_deleted":
 		s.processVmUnregistered(ctx, event)
 	default:
