@@ -210,9 +210,6 @@ func (c *Config) ApiPrefix() string {
 
 func (c *Config) LogLevel(silent bool) string {
 	logLevel := c.GetKey(constants.LOG_LEVEL_ENV_VAR)
-	if logLevel != "" && !silent {
-		common.Logger.Info("Log Level set to %v", logLevel)
-	}
 	switch strings.ToLower(logLevel) {
 	case "debug":
 		logLevel = "DEBUG"
@@ -226,8 +223,15 @@ func (c *Config) LogLevel(silent bool) string {
 	case "error":
 		logLevel = "ERROR"
 		common.Logger.LogLevel = log.Error
+	default:
+		common.Logger.LogLevel = log.Info
+		if logLevel != "" && !silent {
+			common.Logger.Warn("Invalid log level %s, defaulting to INFO", logLevel)
+		}
 	}
-
+	if logLevel != "" && !silent {
+		common.Logger.Info("Log Level set to %v", common.Logger.LogLevel)
+	}
 	return logLevel
 }
 
