@@ -765,6 +765,13 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 	if vm.User == "" {
 		vm.User = "root"
 	}
+  isStopForceFlagSet := false
+  for _, flag := range flags.flags {
+    if flag == "--drop-state" {
+      isStopForceFlagSet = true
+      break
+    }
+  }
 
 	switch desiredState {
 	case ParallelsVirtualMachineDesiredStateStart:
@@ -778,7 +785,7 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 		if vm.State == ParallelsVirtualMachineStateStopped.String() {
 			return nil
 		}
-		if vm.State != ParallelsVirtualMachineStateRunning.String() {
+		if vm.State != ParallelsVirtualMachineStateRunning.String() && !isStopForceFlagSet {
 			return errors.New("VM is not running")
 		}
 	case ParallelsVirtualMachineDesiredStatePause:
