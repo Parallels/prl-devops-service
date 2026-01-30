@@ -3808,6 +3808,12 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Force stop the virtual machine",
+                        "name": "force",
+                        "in": "query"
                     }
                 ],
                 "responses": {

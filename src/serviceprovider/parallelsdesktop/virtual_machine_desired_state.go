@@ -13,6 +13,18 @@ const (
 	ParallelsVirtualMachineDesiredStateUnknown ParallelsVirtualMachineDesiredState = "unknown"
 )
 
+type DesiredStateFlags struct {
+	flags []string
+}
+
+func NewDesiredStateFlags(flags ...string) DesiredStateFlags {
+	return DesiredStateFlags{flags: flags}
+}
+
+func (f *DesiredStateFlags) AddFlag(flag string) {
+	f.flags = append(f.flags, flag)
+}
+
 func (s ParallelsVirtualMachineDesiredState) String() string {
 	return string(s)
 }
