@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.9.16"
+        "version": "0.9.17"
     },
     "basePath": "/api",
     "paths": {
@@ -3801,6 +3801,12 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Force stop the virtual machine",
+                        "name": "force",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -7019,7 +7025,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint returns all the packer templates",
+                "description": "This endpoint returns all the packer templates. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/",
                 "produces": [
                     "application/json"
                 ],
@@ -7027,6 +7033,7 @@
                     "Packer Templates"
                 ],
                 "summary": "Gets all the packer templates",
+                "deprecated": true,
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -7060,7 +7067,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint creates a packer template",
+                "description": "This endpoint creates a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/",
                 "produces": [
                     "application/json"
                 ],
@@ -7068,6 +7075,7 @@
                     "Packer Templates"
                 ],
                 "summary": "Creates a packer template",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "Create Packer Template Request",
@@ -7111,7 +7119,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint returns a packer template",
+                "description": "This endpoint returns a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/",
                 "produces": [
                     "application/json"
                 ],
@@ -7119,6 +7127,7 @@
                     "Packer Templates"
                 ],
                 "summary": "Gets a packer template",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -7158,7 +7167,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint updates a packer template",
+                "description": "This endpoint updates a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/",
                 "produces": [
                     "application/json"
                 ],
@@ -7166,6 +7175,7 @@
                     "Packer Templates"
                 ],
                 "summary": "Updates a packer template",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "Update Packer Template Request",
@@ -7214,7 +7224,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint deletes a packer template",
+                "description": "This endpoint deletes a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/",
                 "produces": [
                     "application/json"
                 ],
@@ -7222,6 +7232,7 @@
                     "Packer Templates"
                 ],
                 "summary": "Deletes a packer template",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",

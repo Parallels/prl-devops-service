@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.17] - 2026-02-02
+
+- Added deprecation notices for Packer template endpoints and updated documentation
+- Fixed log level flag name as LOG_LEVEL
+- By defualt log level set to INFO
+- Refactored command execution in parallels service to fix non-sudo users failing to run commands
+- Setting the mode of application before starting init, to properly init all modules
+- Added more error messages for the PULL endpoint
+- Bugfix for deleted VM is not removed from cache
+- Now user can send force as param to end point /v1/machines/{id}/stop to force stop the virtual machine
+
 ## [0.9.16] - 2026-01-23
 
 

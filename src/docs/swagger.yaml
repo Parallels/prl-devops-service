@@ -1904,7 +1904,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.9.16
+  version: 0.9.17
 paths:
   /health/probe:
     get:
@@ -4209,6 +4209,10 @@ paths:
         name: id
         required: true
         type: string
+      - description: Force stop the virtual machine
+        in: query
+        name: force
+        type: boolean
       produces:
       - application/json
       responses:
@@ -6234,7 +6238,10 @@ paths:
       - ReverseProxy
   /v1/templates/packer:
     get:
-      description: This endpoint returns all the packer templates
+      deprecated: true
+      description: This endpoint returns all the packer templates. **DEPRECATED:**
+        This endpoint will be deprecated in the future, please upgrade your calls
+        to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
       produces:
       - application/json
       responses:
@@ -6259,7 +6266,10 @@ paths:
       tags:
       - Packer Templates
     post:
-      description: This endpoint creates a packer template
+      deprecated: true
+      description: This endpoint creates a packer template. **DEPRECATED:** This endpoint
+        will be deprecated in the future, please upgrade your calls to use the catalog
+        service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
       parameters:
       - description: Create Packer Template Request
         in: body
@@ -6290,7 +6300,10 @@ paths:
       - Packer Templates
   /v1/templates/packer/{id}:
     delete:
-      description: This endpoint deletes a packer template
+      deprecated: true
+      description: This endpoint deletes a packer template. **DEPRECATED:** This endpoint
+        will be deprecated in the future, please upgrade your calls to use the catalog
+        service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
       parameters:
       - description: Packer Template ID
         in: path
@@ -6317,7 +6330,10 @@ paths:
       tags:
       - Packer Templates
     get:
-      description: This endpoint returns a packer template
+      deprecated: true
+      description: This endpoint returns a packer template. **DEPRECATED:** This endpoint
+        will be deprecated in the future, please upgrade your calls to use the catalog
+        service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
       parameters:
       - description: Packer Template ID
         in: path
@@ -6346,7 +6362,10 @@ paths:
       tags:
       - Packer Templates
     put:
-      description: This endpoint updates a packer template
+      deprecated: true
+      description: This endpoint updates a packer template. **DEPRECATED:** This endpoint
+        will be deprecated in the future, please upgrade your calls to use the catalog
+        service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
       parameters:
       - description: Update Packer Template Request
         in: body
