@@ -27,9 +27,12 @@ SECURITY_TOOLS = $(GOSEC)
 
 .PHONY: help
 help:
-  # make version:
+  # make version
 	# make test
 	# make lint
+	# make build
+	# make generate-swagger
+	# make generate-postman
 
 .PHONY: version
 version:
@@ -205,11 +208,16 @@ generate-swagger:
 	@cd src && swag fmt
 	@cd src && swag init -g main.go
 
+.PHONY: generate-postman
+generate-postman: generate-swagger
+	@echo "Generating Postman collection..."
+	@scripts/generate-postman.sh
+
 .PHONY: deps
 deps: $(DEVELOPMENT_TOOLS) $(SECURITY_TOOLS)
 
 .PHONY: release-check
-release-check: test lint generate-swagger coverage security-check
+release-check: test lint generate-swagger generate-postman coverage security-check
 
 .PHONY: build-docs
 build-docs:
