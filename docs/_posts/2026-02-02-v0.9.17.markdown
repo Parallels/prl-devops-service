@@ -1,0 +1,19 @@
+---
+layout: post
+title:  "Release 0.9.17"
+date:   2026-02-02 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- Added deprecation notices for Packer template endpoints and updated documentation
+- Fixed log level flag name as LOG_LEVEL
+- By defualt log level set to INFO
+- Refactored command execution in parallels service to fix non-sudo users failing to run commands
+- Setting the mode of application before starting init, to properly init all modules
+- Added more error messages for the PULL endpoint
+- Bugfix for deleted VM is not removed from cache
+- Now user can send force as param to end point /v1/machines/{id}/stop to force stop the virtual machine
+
+
