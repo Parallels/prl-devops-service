@@ -537,7 +537,7 @@ func PauseVirtualMachineHandler() restapi.ControllerHandler {
 		params := mux.Vars(r)
 		id := params["id"]
 
-		err := svc.ResetVm(ctx, id)
+		err := svc.PauseVm(ctx, id)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
