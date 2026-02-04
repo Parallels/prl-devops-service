@@ -89,13 +89,13 @@ items:
         </article>
       </div>
       <div class="flex flex-column">
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/v##page.version/prldevops--windows-amd64.tar.gz" class="text-button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/v##page.version/prldevops--windows-amd64.zip" class="text-button is-primary">
           Parallels Desktop DevOps Service x64
         </a>
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/v##page.version/prldevops--windows-x86.tar.gz" class="text-button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/v##page.version/prldevops--windows-x86.zip" class="text-button is-primary">
           Parallels Desktop DevOps Service x86
         </a>
-        <a href="https://github.com/Parallels/prl-devops-service/releases/download/v##page.version/prldevops--windows-arm64.tar.gz" class="text-button is-primary">
+        <a href="https://github.com/Parallels/prl-devops-service/releases/download/v##page.version/prldevops--windows-arm64.zip" class="text-button is-primary">
           Parallels Desktop DevOps Service arm64
         </a>
       </div>
