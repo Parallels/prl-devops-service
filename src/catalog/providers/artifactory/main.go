@@ -124,7 +124,9 @@ func (s *ArtifactoryProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 		remoteFilePath = "/" + remoteFilePath
 	}
 
-	s.FileNameChannel <- filename
+	if s.FileNameChannel != nil {
+		s.FileNameChannel <- filename
+	}
 
 	manager, err := s.getClient(ctx)
 	if err != nil {
