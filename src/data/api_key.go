@@ -84,12 +84,11 @@ func (j *JsonDatabase) DeleteApiKey(ctx basecontext.ApiContext, id string) error
 	for i, apiKey := range j.data.ApiKeys {
 		if strings.EqualFold(apiKey.ID, id) || strings.EqualFold(apiKey.Name, id) || strings.EqualFold(apiKey.Key, id) {
 			for {
-				if j.data.ApiKeys[i].DbRecord.IsLocked {
+				if IsRecordLocked(j.data.ApiKeys[i].DbRecord) {
 					continue
 				}
 				LockRecord(ctx, j.data.ApiKeys[i].DbRecord)
 				j.data.ApiKeys = append(j.data.ApiKeys[:i], j.data.ApiKeys[i+1:]...)
-				UnlockRecord(ctx, j.data.ApiKeys[i].DbRecord)
 				break
 			}
 
@@ -111,7 +110,7 @@ func (j *JsonDatabase) UpdateKey(ctx basecontext.ApiContext, key models.ApiKey) 
 		}
 
 		for {
-			if j.data.ApiKeys[i].DbRecord.IsLocked {
+			if IsRecordLocked(j.data.ApiKeys[i].DbRecord) {
 				continue
 			}
 			LockRecord(ctx, j.data.ApiKeys[i].DbRecord)
