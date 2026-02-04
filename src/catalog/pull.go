@@ -61,7 +61,8 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 	}
 
 	s.ns.NotifyInfof("Checking if the machine %v already exists", r.MachineName)
-	exists, err := parallelsDesktopSvc.GetVmSync(s.ctx, r.MachineName)
+	filter := fmt.Sprintf("name=%s", r.MachineName)
+	vms, err := parallelsDesktopSvc.GetVms(s.ctx, filter)
 	if err != nil {
 		if errors.GetSystemErrorCode(err) != 404 {
 			response.AddError(err)
@@ -69,7 +70,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		}
 	}
 
-	if exists != nil {
+	if len(vms) > 0 {
 		response.AddError(errors.Newf("machine %v already exists", r.MachineName))
 		return response
 	}
