@@ -24,7 +24,7 @@ func (s *ParallelsService) findVm(ctx basecontext.ApiContext, idOrName string, c
 			return &vm, nil
 		}
 	}
-
+	ctx.LogInfof("VM with name or id %v not found with cached=%v", idOrName, cached)
 	return nil, ErrVirtualMachineNotFound
 }
 
@@ -46,6 +46,6 @@ func (s *ParallelsService) findVmSync(ctx basecontext.ApiContext, idOrName strin
 			return &vm, nil
 		}
 	}
-
+	ctx.LogInfof("VM with name or id %v not found with cached=%v", idOrName, cached)
 	return nil, ErrVirtualMachineNotFound
 }

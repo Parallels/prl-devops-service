@@ -87,6 +87,11 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 		globalParallelsService.refreshCache(ctx)
 		globalParallelsService.listenToParallelsEvents(ctx)
 	}
+	if cfg.IsForceCacheRefresh() {
+		globalParallelsService.startForForcedCacheRefresh(ctx)
+	} else {
+		ctx.LogInfof("Force cache refresh is disabled, not starting the forced cache refresh routine")
+	}
 	return globalParallelsService
 }
 
@@ -383,7 +388,7 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 					}
 					// Check if event is supported
 					if !isEventSupported(event) {
-						ctx.LogDebugf("Unsupported event: %s", event.EventName)
+						ctx.LogDebugf("Unsupported event: %s", line)
 						continue
 					}
 					eventsChannel <- event
@@ -403,6 +408,44 @@ func (s *ParallelsService) processEventsChannel(ctx basecontext.ApiContext) {
 				return
 			case event := <-eventsChannel:
 				s.processEvent(ctx, event)
+			}
+		}
+	}()
+}
+
+func (s *ParallelsService) startForForcedCacheRefresh(ctx basecontext.ApiContext) {
+	if !s.eventsProcessing {
+		s.ctx.LogInfof("eventsProcessing is false, not starting forced cache refresh")
+		return
+	}
+	ctx.LogInfof("Starting forced cache refresh for Parallels VMs every 5 minutes")
+	ticker := time.NewTicker(5 * time.Minute)
+	go func() {
+		for {
+			select {
+			case <-s.listenerCtx.Done():
+				ctx.LogInfof("Stopping forced cache refresh for Parallels VMs")
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				s.RLock()
+				cachedVMs := s.cachedLocalVms
+				s.RUnlock()
+				currentVMs, err := s.GetVms(ctx, "")
+				if err != nil {
+					ctx.LogErrorf("Error getting current VMs: %v", err)
+					continue
+				}
+				if len(cachedVMs) != len(currentVMs) {
+					ctx.LogWarnf(
+						"This shouldn't happen: Cached VMs count %d does not match current VMs count %d, refreshing cache",
+						len(cachedVMs),
+						len(currentVMs),
+					)
+					s.Lock()
+					s.cachedLocalVms = currentVMs
+					s.Unlock()
+				}
 			}
 		}
 	}()
