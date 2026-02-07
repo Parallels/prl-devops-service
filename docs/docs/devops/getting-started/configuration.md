@@ -84,6 +84,7 @@ The root object of the configuration file is the environment object, which conta
 | CORS_ALLOWED_METHODS | The methods that are allowed in the cors policy | "GET, HEAD, POST, PUT, DELETE, OPTIONS" |
 | ENABLE_PACKER_PLUGIN | Specifies whether the service should enable the packer plugin | false |
 | ENABLE_VAGRANT_PLUGIN | Specifies whether the service should enable the vagrant plugin | false |
+| VM_FORCE_CACHE_REFRESH | Specifies whether the service should force cache refresh for virtual machines | true |
 
 ### Json Web Tokens
 

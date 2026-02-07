@@ -593,6 +593,13 @@ func (c *Config) IsBetaEnabled() bool {
 	return enableBeta
 }
 
+func (c *Config) IsForceCacheRefresh() bool {
+	forceCacheRefreshEnvValue := c.GetKey(constants.VM_FORCE_CACHE_REFRESH_ENV_VAR)
+	if forceCacheRefreshEnvValue == "" {
+		return constants.VM_FORCE_CACHE_REFRESH
+	}
+	return c.GetBoolKey(constants.VM_FORCE_CACHE_REFRESH_ENV_VAR)
+}
 func (c *Config) EnableCredentialsObfuscation() bool {
 	enableObfuscationEnvValue := c.GetKey(constants.CATALOG_ENABLE_PROVIDER_CREDENTIALS_OBFUSCATION_ENV_VAR)
 	if enableObfuscationEnvValue == "" {

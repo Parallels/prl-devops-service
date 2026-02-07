@@ -45,10 +45,11 @@ const (
 	INTERNAL_API_CLIENT                          = "X-INTERNAL-API-CLIENT"
 	ENABLE_CREDENTIALS_OBFUSCATION_DEFAULT_VALUE = true
 
-	API_MODE          = "api"
-	CLI_MODE          = "cli"
-	ORCHESTRATOR_MODE = "orchestrator"
-	CATALOG_MODE      = "catalog"
+	API_MODE               = "api"
+	CLI_MODE               = "cli"
+	ORCHESTRATOR_MODE      = "orchestrator"
+	CATALOG_MODE           = "catalog"
+	VM_FORCE_CACHE_REFRESH = true
 
 	DEFAULT_LOG_FILE_NAME = "prldevops.log"
 )
@@ -97,6 +98,7 @@ const (
 	DISABLE_CATALOG_PROVIDER_STREAMING_ENV_VAR              = "DISABLE_CATALOG_PROVIDER_STREAMING"
 	ENABLE_CANARY_ENV_VAR                                   = "ENABLE_CANARY"
 	ENABLE_BETA_ENV_VAR                                     = "ENABLE_BETA"
+	VM_FORCE_CACHE_REFRESH_ENV_VAR                          = "VM_FORCE_CACHE_REFRESH"
 )
 
 const (
