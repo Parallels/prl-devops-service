@@ -85,6 +85,7 @@ The root object of the configuration file is the environment object, which conta
 | ENABLE_PACKER_PLUGIN | Specifies whether the service should enable the packer plugin | false |
 | ENABLE_VAGRANT_PLUGIN | Specifies whether the service should enable the vagrant plugin | false |
 | VM_FORCE_CACHE_REFRESH | Specifies whether the service should force cache refresh for virtual machines | true |
+| VM_CACHE_REFRESH_INTERVAL_SECONDS | The interval in seconds that the service will refresh the cache for virtual machines in seconds. Make sure VM_FORCE_CACHE_REFRESH is set to true | 300 |
 
 ### Json Web Tokens
 
