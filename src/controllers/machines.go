@@ -647,17 +647,20 @@ func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 
 		params := mux.Vars(r)
 		id := params["id"]
-
-		response, err := svc.VmStatus(ctx, id)
+		sps, err := svc.SwitchSnapshot(ctx, id, &models.SnapshotSwitchRequest{
+			SnapshotId: "2f69cff8-7fdc-4e9a-bb26-adffacc53440",
+			SkipResume: false,
+		})
+		// response, err := svc.VmStatus(ctx, id)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
-
+		ctx.LogInfof("Snapshots for machine %v: %v", id, sps)
 		result := models.VirtualMachineStatusResponse{
-			ID:           response.UUID,
-			Status:       response.Status,
-			IpConfigured: response.IPConfigured,
+			ID:           "id",
+			Status:       "test",
+			IpConfigured: "",
 		}
 
 		w.WriteHeader(http.StatusOK)

@@ -58,19 +58,20 @@ type ParallelsService struct {
 	ctx              basecontext.ApiContext
 	eventsProcessing bool
 	sync.RWMutex
-	cachedLocalVms   []models.ParallelsVM
-	executable       string
-	serverExecutable string
-	Info             *models.ParallelsDesktopInfo
-	Users            []*models.ParallelsDesktopUser
-	isLicensed       bool
-	installed        bool
-	version          string
-	build            string
-	dependencies     []interfaces.Service
-	cancelFunc       context.CancelFunc
-	listenerCtx      context.Context
-	processLauncher  processlauncher.ProcessLauncher
+	cachedLocalVms    []models.ParallelsVM
+	cachedVmSnapshots map[string][]data_models.VirtualMachineSnapshot
+	executable        string
+	serverExecutable  string
+	Info              *models.ParallelsDesktopInfo
+	Users             []*models.ParallelsDesktopUser
+	isLicensed        bool
+	installed         bool
+	version           string
+	build             string
+	dependencies      []interfaces.Service
+	cancelFunc        context.CancelFunc
+	listenerCtx       context.Context
+	processLauncher   processlauncher.ProcessLauncher
 }
 
 func Get(ctx basecontext.ApiContext) *ParallelsService {
@@ -93,10 +94,12 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 	}
 
 	globalParallelsService.SetDependencies([]interfaces.Service{})
+
 	cfg := config.Get()
 	if cfg.IsApi() || cfg.IsOrchestrator() {
 		globalParallelsService.refreshCache(ctx)
 		globalParallelsService.listenToParallelsEvents(ctx)
+		globalParallelsService.initVmSnapshotsCache()
 	}
 	if cfg.IsForceCacheRefresh() {
 		globalParallelsService.startForForcedCacheRefresh(ctx)
@@ -1381,6 +1384,165 @@ func (s *ParallelsService) VmStatus(ctx basecontext.ApiContext, id string) (*mod
 	}
 
 	return nil, errors.New("VM not found")
+}
+
+// CreateSnapshot creates a new snapshot for the specified VM
+func (s *ParallelsService) CreateSnapshot(ctx basecontext.ApiContext, vmId string, request *models.SnapshotCreateRequest) (*models.VirtualMachineOperationResponse, error) {
+	if request == nil {
+		return nil, errors.New("snapshot create request is required")
+	}
+	vm, err := s.findVmSync(ctx, vmId)
+	if err != nil {
+		return nil, err
+	}
+	if vm == nil {
+		return nil, errors.Newf("VM with id %s was not found", vmId)
+	}
+
+	ctx.LogInfof("Creating snapshot '%s' for VM %s", request.Name, vmId)
+
+	args := []string{"snapshot", vmId}
+	if request.Name != "" {
+		args = append(args, "-n", request.Name)
+	}
+	if request.Description != "" {
+		args = append(args, "-d", request.Description)
+	}
+	cmd := helpers.Command{
+		Command: s.executable,
+		Args:    args,
+	}.AsUser(vm.User)
+
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.VirtualMachineOperationResponse{
+		ID:        vmId,
+		Operation: "snapshot_create",
+		Status:    "success",
+	}, nil
+}
+
+// DeleteSnapshot deletes a snapshot from the specified VM
+func (s *ParallelsService) DeleteSnapshot(ctx basecontext.ApiContext, vmId string, snapshotId string, deleteChildren bool) (*models.VirtualMachineOperationResponse, error) {
+	if snapshotId == "" {
+		return nil, errors.New("snapshot ID is required")
+	}
+
+	vm, err := s.findVmSync(ctx, vmId)
+	if err != nil {
+		return nil, err
+	}
+	if vm == nil {
+		return nil, errors.Newf("VM with id %s was not found", vmId)
+	}
+
+	ctx.LogInfof("Deleting snapshot %s for VM %s", snapshotId, vmId)
+
+	args := []string{"snapshot-delete", vmId, "--id", snapshotId}
+	if deleteChildren {
+		args = append(args, "-c")
+	}
+
+	cmd := helpers.Command{
+		Command: s.executable,
+		Args:    args,
+	}.AsUser(vm.User)
+
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.VirtualMachineOperationResponse{
+		ID:        vmId,
+		Operation: "snapshot_delete",
+		Status:    "success",
+	}, nil
+}
+
+// ListSnapshots lists all snapshots for the specified VM
+func (s *ParallelsService) ListSnapshots(ctx basecontext.ApiContext, vmId string) (*models.SnapshotListResponse, error) {
+	vm, err := s.findVmSync(ctx, vmId)
+	if err != nil {
+		return nil, err
+	}
+	if vm == nil {
+		return nil, errors.Newf("VM with id %s was not found", vmId)
+	}
+
+	ctx.LogInfof("Listing snapshots for VM %s", vmId)
+	cmd := helpers.Command{
+		Command: s.executable,
+		Args:    []string{"snapshot-list", vmId, "--json"},
+	}.AsUser(vm.User)
+
+	output, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	output = strings.TrimSpace(output)
+	if output == "" || output == "{}" {
+		result := make(models.SnapshotListResponse)
+		return &result, nil
+	}
+
+	var snapshots models.SnapshotListResponse
+	err = json.Unmarshal([]byte(output), &snapshots)
+	if err != nil {
+		return nil, errors.Newf("failed to parse snapshot list output: %v", err)
+	}
+
+	return &snapshots, nil
+}
+
+// SwitchSnapshot switches to the specified snapshot
+func (s *ParallelsService) SwitchSnapshot(ctx basecontext.ApiContext, vmId string, request *models.SnapshotSwitchRequest) (*models.VirtualMachineOperationResponse, error) {
+	if request == nil {
+		return nil, errors.New("snapshot switch request is required")
+	}
+	if err := request.Validate(); err != nil {
+		return nil, err
+	}
+
+	vm, err := s.findVmSync(ctx, vmId)
+	if err != nil {
+		return nil, err
+	}
+	if vm == nil {
+		return nil, errors.Newf("VM with id %s was not found", vmId)
+	}
+
+	ctx.LogInfof("Switching to snapshot %s for VM %s", request.SnapshotId, vmId)
+
+	args := []string{"snapshot-switch", vmId, "--id", request.SnapshotId}
+	if request.SkipResume {
+		args = append(args, "--skip-resume")
+	}
+
+	cmd := helpers.Command{
+		Command: s.executable,
+		Args:    args,
+	}.AsUser(vm.User)
+
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.VirtualMachineOperationResponse{
+		ID:        vmId,
+		Operation: "snapshot_switch",
+		Status:    "success",
+	}, nil
+}
+
+// initVmSnapshotsCache initializes the VM snapshots cache
+func (s *ParallelsService) initVmSnapshotsCache() {
+	s.getUserVm()
 }
 
 func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.RegisterVirtualMachineRequest) error {
