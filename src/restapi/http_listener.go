@@ -260,7 +260,20 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 
 	if config.IsCorsEnabled() {
 		l.Logger.Info("Enabling CORS for HTTP")
-		headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "authorization", "Authorization", "content-type"})
+		headersOk := handlers.AllowedHeaders([]string{
+			"X-Requested-With",
+			"Accept",
+			"Authorization",
+			"Content-Type",
+			"Content-Length",
+			"Accept-Encoding",
+			"X-CSRF-Token",
+			"Origin",
+			"Access-Control-Request-Method",
+			"Access-Control-Request-Headers",
+			"x-source-id",
+			"X-Source-Id",
+		})
 		originsOk := handlers.AllowedOrigins([]string{"*"})
 		methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"})
 		configCorsAllowedHeaders := config.GetKey("CORS_ALLOWED_HEADERS")
@@ -325,7 +338,20 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 
 			if config.IsCorsEnabled() {
 				l.Logger.Info("Enabling CORS for HTTPS")
-				headersOk := handlers.AllowedHeaders([]string{"X-Requested-With", "authorization", "Authorization", "content-type"})
+				headersOk := handlers.AllowedHeaders([]string{
+					"X-Requested-With",
+					"Accept",
+					"Authorization",
+					"Content-Type",
+					"Content-Length",
+					"Accept-Encoding",
+					"X-CSRF-Token",
+					"Origin",
+					"Access-Control-Request-Method",
+					"Access-Control-Request-Headers",
+					"x-source-id",
+					"X-Source-Id",
+				})
 				originsOk := handlers.AllowedOrigins([]string{"*"})
 				methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"})
 				configCorsAllowedHeaders := config.GetKey("CORS_ALLOWED_HEADERS")

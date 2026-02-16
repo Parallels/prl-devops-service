@@ -418,8 +418,10 @@ func (s *ParallelsService) startForForcedCacheRefresh(ctx basecontext.ApiContext
 		s.ctx.LogInfof("eventsProcessing is false, not starting forced cache refresh")
 		return
 	}
-	ctx.LogInfof("Starting forced cache refresh for Parallels VMs every 5 minutes")
-	ticker := time.NewTicker(5 * time.Minute)
+  cfg := config.Get()
+  interval := cfg.ForceCacheRefreshInterval()
+	ctx.LogInfof("Starting forced cache refresh for Parallels VMs every %v", interval)
+	ticker := time.NewTicker(interval)
 	go func() {
 		for {
 			select {
