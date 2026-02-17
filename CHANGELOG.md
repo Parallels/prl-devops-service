@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.19] - 2026-02-17
+
+- Fixed a racing condition where the cache checks would remove any vm that would be downloading
+
 ## [0.9.18] - 2026-02-17
 
 - Now we will be performing a folder access test while initialising and performing a PULL operation 
