@@ -76,6 +76,7 @@ import (
 //		return nil
 //	}
 func DecompressFile(ctx basecontext.ApiContext, filePath string, destination string) error {
+	ctx.LogInfof("Starting decompression of machine from %s to %s", filePath, destination)
 	staringTime := time.Now()
 	cleanFilePath := filepath.Clean(filePath)
 	compressedFile, err := os.Open(cleanFilePath)
@@ -93,13 +94,15 @@ func DecompressFile(ctx basecontext.ApiContext, filePath string, destination str
 	if err != nil {
 		return err
 	}
-
+	ctx.LogInfof("Detected file type: %s for file header %v", fileType, fileHeader)
 	var fileReader io.Reader
 
 	switch fileType {
 	case "tar":
+		ctx.LogInfof("File %s detected as tar archive", filePath)
 		fileReader = compressedFile
 	case "gzip":
+		ctx.LogInfof("File %s detected as gzip archive", filePath)
 		// Create a gzip reader
 		bufferReader := bufio.NewReader(compressedFile)
 		gzipReader, err := gzip.NewReader(bufferReader)
@@ -109,6 +112,7 @@ func DecompressFile(ctx basecontext.ApiContext, filePath string, destination str
 		defer gzipReader.Close()
 		fileReader = gzipReader
 	case "tar.gz":
+		ctx.LogInfof("File %s detected as tar.gz archive", filePath)
 		// Create a gzip reader
 		bufferReader := bufio.NewReader(compressedFile)
 		gzipReader, err := gzip.NewReader(bufferReader)
@@ -121,6 +125,7 @@ func DecompressFile(ctx basecontext.ApiContext, filePath string, destination str
 
 	tarReader := tar.NewReader(fileReader)
 	if err := processTarFile(ctx, tarReader, destination); err != nil {
+		ctx.LogErrorf("Error processing file %s: %v", filePath, err)
 		return err
 	}
 
@@ -145,15 +150,17 @@ func DecompressFromReader(ctx basecontext.ApiContext, reader io.Reader, destinat
 	if err != nil {
 		return err
 	}
-
+	ctx.LogInfof("Detected file type: %s for file header %v", fileType, headerBuf[:n])
 	// Put the initial bytes back into the reader stream
 	reader = io.MultiReader(bytes.NewReader(headerBuf[:n]), reader)
 
 	var fileReader io.Reader
 	switch fileType {
 	case "tar":
+		ctx.LogInfof("Detected tar archive from stream")
 		fileReader = reader
 	case "tar.gz", "gzip":
+		ctx.LogInfof("Detected gzip	 archive from stream")
 		// Use pgzip instead of the standard library's gzip
 		pgzReader, err := pgzip.NewReader(reader)
 		if err != nil {
@@ -185,6 +192,7 @@ func DecompressFromReader(ctx basecontext.ApiContext, reader io.Reader, destinat
 
 func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destination string) error {
 	ns := notifications.Get()
+	ctx.LogInfof("Processing tar archive to %s", destination)
 	for {
 		header, err := tarReader.Next()
 		if err == io.EOF {
