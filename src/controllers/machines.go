@@ -1361,6 +1361,11 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 	if err := pullRequest.Validate(); err != nil {
 		return nil, err
 	}
+	err := serviceprovider.TestCacheFolderAccess(ctx)
+	if err != nil {
+		ctx.LogErrorf("Cache folder access test failed: %v", err)
+		return nil, err
+	}
 
 	manifest := catalog.NewManifestService(ctx)
 	resultManifest := manifest.Pull(&pullRequest)
