@@ -602,13 +602,12 @@ func (c *Config) IsForceCacheRefresh() bool {
 }
 
 func (c *Config) ForceCacheRefreshInterval() time.Duration {
-  cacheRefreshIntervalEnvValue := c.GetKey(constants.VM_CACHE_REFRESH_INTERVAL_SECONDS_ENV_VAR)
-  if cacheRefreshIntervalEnvValue == "" {
-    return time.Duration(constants.DEFAULT_VM_CACHE_REFRESH_INTERVAL_SECONDS) * time.Second
-  }
-  return time.Duration(c.GetIntKey(constants.VM_CACHE_REFRESH_INTERVAL_SECONDS_ENV_VAR)) * time.Second
+	cacheRefreshIntervalEnvValue := c.GetKey(constants.VM_CACHE_REFRESH_INTERVAL_SECONDS_ENV_VAR)
+	if cacheRefreshIntervalEnvValue == "" {
+		return time.Duration(constants.DEFAULT_VM_CACHE_REFRESH_INTERVAL_SECONDS) * time.Second
+	}
+	return time.Duration(c.GetIntKey(constants.VM_CACHE_REFRESH_INTERVAL_SECONDS_ENV_VAR)) * time.Second
 }
-
 
 func (c *Config) EnableCredentialsObfuscation() bool {
 	enableObfuscationEnvValue := c.GetKey(constants.CATALOG_ENABLE_PROVIDER_CREDENTIALS_OBFUSCATION_ENV_VAR)

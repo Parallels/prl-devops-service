@@ -415,10 +415,10 @@ func (j *JsonDatabase) copyCurrentDbFileToTemp(ctx basecontext.ApiContext, dateT
 	return nil
 }
 func IsRecordLocked(dbRecord *models.DbRecord) bool {
-  if dbRecord == nil {
-    return false
-  }
-  return dbRecord.IsLocked
+	if dbRecord == nil {
+		return false
+	}
+	return dbRecord.IsLocked
 }
 
 func LockRecord(ctx basecontext.ApiContext, dbRecord *models.DbRecord) {
@@ -434,9 +434,9 @@ func LockRecord(ctx basecontext.ApiContext, dbRecord *models.DbRecord) {
 
 func UnlockRecord(ctx basecontext.ApiContext, dbRecord *models.DbRecord) {
 	mutexLock.Lock()
-  if dbRecord == nil {
-    dbRecord = &models.DbRecord{}
-  }
+	if dbRecord == nil {
+		dbRecord = &models.DbRecord{}
+	}
 	dbRecord.IsLocked = false
 	mutexLock.Unlock()
 }
