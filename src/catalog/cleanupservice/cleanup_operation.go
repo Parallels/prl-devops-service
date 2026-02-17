@@ -52,6 +52,7 @@ func (r *CleanupOperation) Clean(ctx basecontext.ApiContext) error {
 					r.Error = errors.Newf("Error deleting folder %s: %s", r.FilePath, err.Error())
 					return r.Error
 				}
+				ctx.LogInfof("Deleted folder %s from remote storage %s", r.FilePath, r.RemoteStorageService.Name())
 			}
 		} else {
 			exists, err := r.RemoteStorageService.FileExists(ctx, path, fileName)
@@ -64,6 +65,7 @@ func (r *CleanupOperation) Clean(ctx basecontext.ApiContext) error {
 					r.Error = errors.Newf("Error deleting file %s: %s", r.FilePath, err.Error())
 					return r.Error
 				}
+				ctx.LogInfof("Deleted file %s from remote storage %s", r.FilePath, r.RemoteStorageService.Name())
 			}
 		}
 
@@ -82,6 +84,7 @@ func (r *CleanupOperation) Clean(ctx basecontext.ApiContext) error {
 						r.Error = errors.Newf("Error deleting folder %s: %s", r.FilePath, err.Error())
 						return r.Error
 					}
+					ctx.LogInfof("Deleted folder %s from local storage", r.FilePath)
 				}
 			}
 		} else {
@@ -90,6 +93,7 @@ func (r *CleanupOperation) Clean(ctx basecontext.ApiContext) error {
 					r.Error = errors.Newf("Error deleting file %s: %s", r.FilePath, err.Error())
 					return r.Error
 				}
+				ctx.LogInfof("Deleted file %s from local storage", r.FilePath)
 			}
 		}
 		return nil

@@ -501,6 +501,7 @@ func (s *CatalogManifestService) pullFromCache(r *models.PullCatalogManifestRequ
 		s.ns.NotifyErrorf("Error copying cached folder %v to %v: %v", cacheResponse.PackFilePath, r.LocalMachineFolder, err)
 		return err
 	}
+	s.ctx.LogInfof("Finished copying cached folder %v to %v", cacheResponse.PackFilePath, r.LocalMachineFolder)
 
 	return nil
 }
@@ -509,6 +510,7 @@ func (s *CatalogManifestService) pullAndDecompressPackFile(r *models.PullCatalog
 	if rss == nil {
 		return errors.NewWithCode("Remote storage service is nil", 500)
 	}
+	s.ctx.LogInfof("Pulling and decompressing pack file for manifest ID %v, Name %v", manifest.ID, manifest.Name)
 	cfg := config.Get()
 	cleanupSvc := cleanupservice.NewCleanupService()
 	if rss.CanStream() && cfg.IsRemoteProviderStreamEnabled() {
@@ -522,16 +524,18 @@ func (s *CatalogManifestService) pullAndDecompressPackFile(r *models.PullCatalog
 	}
 
 	if err := common.CleanAndFlatten(r.LocalMachineFolder); err != nil {
+		s.ctx.LogErrorf("Error cleaning and flattening local machine folder %v: %v", r.LocalMachineFolder, err)
 		cleanupSvc.Clean(s.ctx)
 		return err
 	}
-
+	s.ctx.LogInfof("Operation completed successfully for manifest ID %v, Name %v, cleaning up", manifest.ID, manifest.Name)
 	cleanupSvc.Clean(s.ctx)
 	return nil
 }
 
 func (s *CatalogManifestService) processFileWithStream(destinationFolder string, rss interfaces.RemoteStorageService, manifest *models.VirtualMachineCatalogManifest, cleanupSvc *cleanupservice.CleanupService) error {
 	if err := rss.PullFileAndDecompress(s.ctx, manifest.Path, manifest.PackFile, destinationFolder); err != nil {
+		s.ctx.LogErrorf("Error pulling and decompressing pack file for manifest ID %v, Name %v: %v adding folder: %v to cleanup", manifest.ID, manifest.Name, err, destinationFolder)
 		cleanupSvc.AddLocalFileCleanupOperation(destinationFolder, true)
 		return err
 	}
@@ -553,9 +557,11 @@ func (s *CatalogManifestService) processFileWithoutStream(destinationFolder stri
 
 	// Adding the cleanup operation for the temporary folder
 	cleanupSvc.AddLocalFileCleanupOperation(tempDestinationFolder, true)
+	s.ctx.LogInfof("Added temporary folder %v to cleanup operations", tempDestinationFolder)
 
 	// Pulling the file to the temporary folder
 	if err := rss.PullFile(s.ctx, manifest.Path, manifest.PackFile, tempDestinationFolder); err != nil {
+		s.ctx.LogErrorf("Error pulling file for manifest ID %v, Name %v: %v adding folder: %v to cleanup", manifest.ID, manifest.Name, err, tempDestinationFolder)
 		cleanupSvc.Clean(s.ctx)
 		return err
 	}
@@ -566,6 +572,7 @@ func (s *CatalogManifestService) processFileWithoutStream(destinationFolder stri
 		compressedFilePath := filepath.Join(tempDestinationFolder, manifest.PackFile)
 		if err := compressor.DecompressFile(s.ctx, compressedFilePath, destinationFolder); err != nil {
 			cleanupSvc.AddLocalFileCleanupOperation(destinationFolder, true)
+			s.ctx.LogErrorf("Error decompressing file for manifest ID %v, Name %v: %v adding folder: %v to cleanup", manifest.ID, manifest.Name, err, destinationFolder)
 			cleanupSvc.Clean(s.ctx)
 			return err
 		}
@@ -574,15 +581,17 @@ func (s *CatalogManifestService) processFileWithoutStream(destinationFolder stri
 		if info, err := os.Stat(tempFilePath); err == nil && info.IsDir() {
 			if err := helpers.CopyDir(tempFilePath, destinationFolder); err != nil {
 				cleanupSvc.Clean(s.ctx)
+				s.ctx.LogErrorf("Error copying directory for manifest ID %v, Name %v: %v adding folder: %v to cleanup", manifest.ID, manifest.Name, err, destinationFolder)
 				return err
 			}
 		} else {
 			if err := helpers.CopyFile(tempFilePath, destinationFolder); err != nil {
+				s.ctx.LogErrorf("Error copying file for manifest ID %v, Name %v: %v adding folder: %v to cleanup", manifest.ID, manifest.Name, err, destinationFolder)
 				cleanupSvc.Clean(s.ctx)
 				return err
 			}
 		}
 	}
-
+	s.ctx.LogInfof("Finished pulling and decompressing pack file for manifest ID %v, Name %v", manifest.ID, manifest.Name)
 	return nil
 }
