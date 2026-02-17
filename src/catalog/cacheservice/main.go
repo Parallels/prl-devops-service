@@ -475,44 +475,76 @@ func (cs *CacheService) processMetadataCacheFolderItem() (map[string]CacheItemFi
 }
 
 func (cs *CacheService) processCacheFileWithStream() (string, error) {
-	destinationFolder := filepath.Join(cs.cacheFolder, fmt.Sprintf("%v.%v/", cs.packChecksum, cs.manifest.Type))
-	if err := cs.rss.PullFileAndDecompress(cs.baseCtx, cs.manifest.Path, cs.manifest.PackFile, destinationFolder); err != nil {
+	destinationFolder := filepath.Join(cs.cacheFolder, fmt.Sprintf("%v.%v", cs.packChecksum, cs.manifest.Type))
+	tempDir, err := os.MkdirTemp("", fmt.Sprintf("temp-%v", cs.packChecksum))
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(tempDir)
+
+	if err := cs.rss.PullFileAndDecompress(cs.baseCtx, cs.manifest.Path, cs.manifest.PackFile, tempDir); err != nil {
 		return destinationFolder, err
 	}
+
+	// Now we move the folder to the destination folder
+	if err := os.Rename(tempDir, destinationFolder); err != nil {
+		// if the rename fails we might have a case where we are trying to rename a folder to a folder that already exists
+		// so we will try to move the content of the folder to the destination folder
+		if err := helpers.CopyDir(tempDir, destinationFolder); err != nil {
+			return destinationFolder, err
+		}
+	}
+
 	cs.cleanupservice.AddLocalFileCleanupOperation(destinationFolder, true)
 	return destinationFolder, nil
 }
 
 func (cs *CacheService) processCacheFileWithoutStream() (string, error) {
 	destinationFolder := filepath.Join(cs.cacheFolder, fmt.Sprintf("%v.%v", cs.packChecksum, cs.manifest.Type))
-	destinationFile := filepath.Join(cs.cacheFolder, cs.manifest.PackFile)
-	if err := cs.rss.PullFile(cs.baseCtx, cs.manifest.Path, cs.manifest.PackFile, cs.cacheFolder); err != nil {
+	tempDir, err := os.MkdirTemp("", fmt.Sprintf("temp-%v", cs.packChecksum))
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(tempDir)
+
+	destinationFile := filepath.Join(tempDir, cs.manifest.PackFile)
+
+	if err := cs.rss.PullFile(cs.baseCtx, cs.manifest.Path, cs.manifest.PackFile, tempDir); err != nil {
 		cs.cleanupservice.Clean(cs.baseCtx)
 		return destinationFolder, err
 	}
-	cs.cleanupservice.AddLocalFileCleanupOperation(destinationFile, false)
-
 	// checking if the pack file is compressed or not if it is we will decompress it to the destination folder
 	// and remove the pack file from the cache folder if not we will just rename the pack file to the checksum
 	if cs.manifest.IsCompressed || strings.HasSuffix(cs.manifest.PackFile, ".pdpack") {
-		if err := compressor.DecompressFile(cs.baseCtx, destinationFile, destinationFolder); err != nil {
-			cs.cleanupservice.AddLocalFileCleanupOperation(destinationFolder, true)
-			cs.cleanupservice.Clean(cs.baseCtx)
+		if err := compressor.DecompressFile(cs.baseCtx, destinationFile, tempDir); err != nil {
 			return destinationFolder, err
 		}
 
-		// adding cleaning the folder in case something goes wrong and cleaning the file
-		cs.cleanupservice.AddLocalFileCleanupOperation(destinationFolder, true)
+		// removing the compressed file
 		if err := os.Remove(destinationFile); err != nil {
-			cs.cleanupservice.Clean(cs.baseCtx)
 			return destinationFolder, err
 		}
+
+		// moving the folder to the destination folder
+		if err := os.Rename(tempDir, destinationFolder); err != nil {
+			// if the rename fails we might have a case where we are trying to rename a folder to a folder that already exists
+			// so we will try to move the content of the folder to the destination folder
+			if err := helpers.CopyDir(tempDir, destinationFolder); err != nil {
+				return destinationFolder, err
+			}
+		}
+		cs.cleanupservice.AddLocalFileCleanupOperation(destinationFolder, true)
 	} else {
 		// rename the pack to the checksum
-		if err := os.Rename(filepath.Join(cs.cacheFolder, cs.manifest.PackFile), cs.cachedPackFilePath()); err != nil {
-			cs.cleanupservice.Clean(cs.baseCtx)
-			return destinationFolder, err
+		if err := os.Rename(destinationFile, cs.cachedPackFilePath()); err != nil {
+			// if the rename fails we might have a case where we are trying to rename a file to a file that already exists
+			// so we will try to move the content of the file to the destination file
+			if err := helpers.CopyFile(destinationFile, cs.cachedPackFilePath()); err != nil {
+				cs.cleanupservice.Clean(cs.baseCtx)
+				return destinationFolder, err
+			}
 		}
+		cs.cleanupservice.AddLocalFileCleanupOperation(cs.cachedPackFilePath(), false)
 	}
 
 	return destinationFolder, nil
