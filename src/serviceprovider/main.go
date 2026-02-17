@@ -1,10 +1,12 @@
 package serviceprovider
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
@@ -257,6 +259,19 @@ func InitServices(ctx basecontext.ApiContext) {
 	if systemHardwareInfo, err := globalProvider.System.GetHardwareInfo(ctx); err == nil {
 		globalProvider.SystemHardwareInfo = systemHardwareInfo
 	}
+  cacheFolder, err := cfg.CatalogCacheFolder()
+  if err != nil {
+    ctx.LogErrorf("Error getting cache folder: %v", err)
+  } else {
+    ctx.LogInfof("Using cache folder: %s", cacheFolder)
+  }
+  ctx.LogInfof("Using system mode: %s", cfg.Mode())
+  ctx.LogInfof("Testing access to cache folder: %s")
+  if err := testCacheFolderAccess(ctx); err != nil {
+    ctx.LogErrorf("Error accessing cache folder: %v", err)
+  } else {
+    ctx.LogInfof("Cache folder access test successful")
+  }
 }
 
 func Get() *ServiceProvider {
@@ -506,4 +521,23 @@ func getHardwareSecret(key, hid string) string {
 	}
 
 	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s%s", secretKey, secretHid)))
+}
+
+func testCacheFolderAccess(ctx basecontext.ApiContext) error {
+  cfg := config.Get()
+  cacheFolder, err := cfg.CatalogCacheFolder()  
+  if err != nil {
+    return err
+  }
+  touchCommand := helpers.Command{
+    Command: fmt.Sprintf("touch"),
+    Args: []string{filepath.Join(cacheFolder, "test_cache_access.txt")},
+  }
+  helpers.ExecuteWithOutput(context.Background(), touchCommand, time.Second*1)
+  removeCommand := helpers.Command{
+    Command: fmt.Sprintf("rm"),
+    Args: []string{filepath.Join(cacheFolder, "test_cache_access.txt")},
+  }
+  helpers.ExecuteWithOutput(context.Background(), removeCommand, time.Second*1)
+  return nil
 }
