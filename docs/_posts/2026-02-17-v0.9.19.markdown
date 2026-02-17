@@ -1,0 +1,12 @@
+---
+layout: post
+title:  "Release 0.9.19"
+date:   2026-02-17 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- Fixed a racing condition where the cache checks would remove any vm that would be downloading
+
+
