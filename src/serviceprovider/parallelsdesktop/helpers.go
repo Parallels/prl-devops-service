@@ -28,6 +28,14 @@ func (s *ParallelsService) findVm(ctx basecontext.ApiContext, idOrName string, c
 	return nil, ErrVirtualMachineNotFound
 }
 
+func (s *ParallelsService) findVmInCacheAndSystem(ctx basecontext.ApiContext, idOrName string) (*models.ParallelsVM, error) {
+	vm, err := s.findVmSync(ctx, idOrName, true)
+	if err == nil {
+		return vm, nil
+	}
+	return s.findVmSync(ctx, idOrName, false)
+}
+
 func (s *ParallelsService) findVmSync(ctx basecontext.ApiContext, idOrName string, cached bool) (*models.ParallelsVM, error) {
 	var err error
 	var vms []models.ParallelsVM

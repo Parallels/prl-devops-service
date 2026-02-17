@@ -418,8 +418,8 @@ func (s *ParallelsService) startForForcedCacheRefresh(ctx basecontext.ApiContext
 		s.ctx.LogInfof("eventsProcessing is false, not starting forced cache refresh")
 		return
 	}
-  cfg := config.Get()
-  interval := cfg.ForceCacheRefreshInterval()
+	cfg := config.Get()
+	interval := cfg.ForceCacheRefreshInterval()
 	ctx.LogInfof("Starting forced cache refresh for Parallels VMs every %v", interval)
 	ticker := time.NewTicker(interval)
 	go func() {
@@ -995,7 +995,7 @@ func (s *ParallelsService) VmStatus(ctx basecontext.ApiContext, id string) (*mod
 
 func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.RegisterVirtualMachineRequest) error {
 	if r.Uuid != "" {
-		vm, err := s.findVmSync(ctx, r.Uuid, true)
+		vm, err := s.findVmInCacheAndSystem(ctx, r.Uuid)
 		if err != nil {
 			return err
 		}
@@ -1007,7 +1007,7 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 	}
 
 	if r.MachineName != "" {
-		vm, err := s.findVmSync(ctx, r.MachineName, true)
+		vm, err := s.findVmInCacheAndSystem(ctx, r.MachineName)
 		if err != nil && errors.GetSystemErrorCode(err) != 404 {
 			return err
 		}

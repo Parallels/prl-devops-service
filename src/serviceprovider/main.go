@@ -257,6 +257,21 @@ func InitServices(ctx basecontext.ApiContext) {
 	if systemHardwareInfo, err := globalProvider.System.GetHardwareInfo(ctx); err == nil {
 		globalProvider.SystemHardwareInfo = systemHardwareInfo
 	}
+	cacheFolder, err := cfg.CatalogCacheFolder()
+	if err != nil {
+		ctx.LogErrorf("Error getting cache folder: %v", err)
+	} else {
+		ctx.LogInfof("Using cache folder: %s", cacheFolder)
+	}
+	ctx.LogInfof("Using system mode: %s", cfg.Mode())
+
+	if err := TestCacheFolderAccess(ctx); err != nil {
+		ctx.LogErrorf("Can't proceed without access to cache folder: %v", err)
+		panic(errors.New("Can't proceed without access to cache folder - " + err.Error()))
+	} else {
+		ctx.LogInfof("Cache folder access test successful")
+	}
+
 }
 
 func Get() *ServiceProvider {
