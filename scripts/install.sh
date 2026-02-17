@@ -153,12 +153,25 @@ function install() {
 
   if [ "$INSTALL_SERVICE" = "true" ]; then
     if [ "$OS" = "darwin" ]; then
-      echo "Installing prldevops service"
-      sudo "$DESTINATION"/prldevops install service
-      if [ -f "/Library/LaunchDaemons/com.parallels.prl-devops-service.plist" ]; then
-        echo "Restarting prl-devops-service"
-        sudo launchctl unload /Library/LaunchDaemons/com.parallels.prl-devops-service.plist
-        sudo launchctl load /Library/LaunchDaemons/com.parallels.prl-devops-service.plist
+      SERVICE_PLIST="/Library/LaunchDaemons/com.parallels.prl-devops-service.plist"
+      CONFIG_EXISTS="false"
+      
+      if [ -f "$DESTINATION/config.yaml" ] || [ -f "$DESTINATION/config.yml" ]; then
+        CONFIG_EXISTS="true"
+      fi
+
+      if [ -f "$SERVICE_PLIST" ] && [ "$CONFIG_EXISTS" = "true" ]; then
+         echo "Service already installed and configured. Updating binary and restarting service."
+         sudo launchctl unload "$SERVICE_PLIST"
+         sudo launchctl load "$SERVICE_PLIST"
+      else
+          echo "Installing prldevops service"
+          sudo "$DESTINATION"/prldevops install service
+          if [ -f "$SERVICE_PLIST" ]; then
+            echo "Restarting prl-devops-service"
+            sudo launchctl unload "$SERVICE_PLIST"
+            sudo launchctl load "$SERVICE_PLIST"
+          fi
       fi
 
       sudo xattr -d com.apple.quarantine "$DESTINATION"/prldevops
@@ -256,13 +269,25 @@ function install_standard() {
 
   if [ "$INSTALL_SERVICE" = "true" ]; then
     if [ "$OS" = "darwin" ]; then
-      echo "Installing prldevops service"
+      SERVICE_PLIST="/Library/LaunchDaemons/com.parallels.prl-devops-service.plist"
+      CONFIG_EXISTS="false"
+      
+      if [ -f "$DESTINATION/config.yaml" ] || [ -f "$DESTINATION/config.yml" ]; then
+        CONFIG_EXISTS="true"
+      fi
 
-      "$DESTINATION"/prldevops install service
-      if [ -f "/Library/LaunchDaemons/com.parallels.prl-devops-service.plist" ]; then
-        echo "Restarting prl-devops-service"
-        launchctl unload /Library/LaunchDaemons/com.parallels.prl-devops-service.plist
-        launchctl load /Library/LaunchDaemons/com.parallels.prl-devops-service.plist
+      if [ -f "$SERVICE_PLIST" ] && [ "$CONFIG_EXISTS" = "true" ]; then
+         echo "Service already installed and configured. Updating binary and restarting service."
+         launchctl unload "$SERVICE_PLIST"
+         launchctl load "$SERVICE_PLIST"
+      else
+          echo "Installing prldevops service"
+          "$DESTINATION"/prldevops install service
+          if [ -f "$SERVICE_PLIST" ]; then
+            echo "Restarting prl-devops-service"
+            launchctl unload "$SERVICE_PLIST"
+            launchctl load "$SERVICE_PLIST"
+          fi
       fi
 
       xattr -d com.apple.quarantine "$DESTINATION"/prldevops
