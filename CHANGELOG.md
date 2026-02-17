@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.18] - 2026-02-17
+
+- Now we will be performing a folder access test while initialising and performing a PULL operation 
+- Improved finding VM logic,  now we will search for VM in the cache and the system 
+- Added the cache refresh rate as a variable
+- Added a small fix for Cors endpoints
+- Introduced new config flag `VM_FORCE_CACHE_REFRESH` to refresh cached VM's for every 5 minutes.By default flag value set to true
+- Log Improvements when VM is not found
+- Please delete options that are not relevant.
+- [X] Documentation Change
+- [X] New feature (non-breaking change which adds functionality)
+-Fixed bug in pull functionality to check existing VM's 
+- Fixed URL for windows binary downloads in installation page
+- Fixed /v1/machines/{id}/pause endtpoint that resting VM, insted of pausing VM.
+- [X] Bug fix (non-breaking change which fixes an issue)
+- Added a script to generate a Postman collection from Swagger/OpenAPI specification
+
 ## [0.9.17] - 2026-02-02
 
 - Added deprecation notices for Packer template endpoints and updated documentation
