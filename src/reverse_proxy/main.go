@@ -252,7 +252,7 @@ func (rps *ReverseProxyService) LoadFromDb() error {
 		if len(hostCopy.HttpRoutes) > 0 {
 			for i, route := range hostCopy.HttpRoutes {
 				if route.TargetVmId != "" {
-					vm, err := prl_svc.GetVm(rps.api_ctx, route.TargetVmId)
+					vm, err := prl_svc.GetVmSync(rps.api_ctx, route.TargetVmId)
 					if err != nil || vm.InternalIpAddress == "" || vm.InternalIpAddress == "-" || vm.State != "running" {
 						e := ""
 						if err != nil {
@@ -279,7 +279,7 @@ func (rps *ReverseProxyService) LoadFromDb() error {
 			}
 		}
 		if hostCopy.TcpRoute != nil && hostCopy.TcpRoute.TargetVmId != "" {
-			vm, err := prl_svc.GetVm(rps.api_ctx, hostCopy.TcpRoute.TargetVmId)
+			vm, err := prl_svc.GetVmSync(rps.api_ctx, hostCopy.TcpRoute.TargetVmId)
 			if err != nil || vm.InternalIpAddress == "" || vm.InternalIpAddress == "-" || vm.State != "running" {
 				if err != nil {
 					rps.api_ctx.LogErrorf("Error getting vm %s for reverse proxy tcp route: %s", hostCopy.TcpRoute.TargetVmId, err)

@@ -84,7 +84,7 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 	globalParallelsService.SetDependencies([]interfaces.Service{})
 	cfg := config.Get()
 	if cfg.IsApi() || cfg.IsOrchestrator() {
-		globalParallelsService.refreshCache(ctx)
+		globalParallelsService.initCache(ctx)
 		globalParallelsService.listenToParallelsEvents(ctx)
 	}
 	if cfg.IsForceCacheRefresh() {
@@ -430,27 +430,31 @@ func (s *ParallelsService) startForForcedCacheRefresh(ctx basecontext.ApiContext
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				s.RLock()
-				cachedVMs := s.cachedLocalVms
-				s.RUnlock()
-				currentVMs, err := s.GetVms(ctx, "")
-				if err != nil {
-					ctx.LogErrorf("Error getting current VMs: %v", err)
-					continue
-				}
-				if len(cachedVMs) != len(currentVMs) {
-					ctx.LogWarnf(
-						"This shouldn't happen: Cached VMs count %d does not match current VMs count %d, refreshing cache",
-						len(cachedVMs),
-						len(currentVMs),
-					)
-					s.Lock()
-					s.cachedLocalVms = currentVMs
-					s.Unlock()
-				}
+				go s.validateAndRefreshCache(ctx)
 			}
 		}
 	}()
+}
+
+func (s *ParallelsService) validateAndRefreshCache(ctx basecontext.ApiContext) {
+	s.RLock()
+	cachedVMs := s.cachedLocalVms
+	s.RUnlock()
+	currentVMs, err := s.GetVms(ctx, "")
+	if err != nil {
+		ctx.LogErrorf("Error getting current VMs: %v", err)
+		return
+	}
+	if len(cachedVMs) != len(currentVMs) {
+		ctx.LogWarnf(
+			"This shouldn't happen: Cached VMs count %d does not match current VMs count %d, refreshing cache",
+			len(cachedVMs),
+			len(currentVMs),
+		)
+		s.Lock()
+		s.cachedLocalVms = currentVMs
+		s.Unlock()
+	}
 }
 
 func (s *ParallelsService) StopListeners() {
@@ -592,9 +596,9 @@ func (s *ParallelsService) processVmUnregistered(ctx basecontext.ApiContext, eve
 	}
 }
 
-func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
+func (s *ParallelsService) initCache(ctx basecontext.ApiContext) {
 	ctx.LogInfof("Refreshing Parallels VMs cache")
-	vms, err := s.getVms(ctx)
+	vms, err := s.gatherUserVMInstances(ctx)
 	s.Lock()
 	if err != nil {
 		ctx.LogErrorf("Error refreshing Parallels VMs cache: %v", err)
@@ -715,17 +719,9 @@ func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter strin
 	var systemMachines []models.ParallelsVM
 	var err error
 
-	cfg := config.Get()
-	if cfg.IsApi() || cfg.IsOrchestrator() {
-		s.RLock()
-		systemMachines = s.cachedLocalVms
-		s.RUnlock()
-	} else {
-		systemMachines, err = s.getVms(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
+	s.RLock()
+	systemMachines = s.cachedLocalVms
+	s.RUnlock()
 
 	dbFilter, err := data.ParseFilter(filter)
 	if err != nil {
@@ -745,7 +741,7 @@ func (s *ParallelsService) GetVms(ctx basecontext.ApiContext, filter string) ([]
 	var systemMachines []models.ParallelsVM
 	var err error
 
-	systemMachines, err = s.getVms(ctx)
+	systemMachines, err = s.gatherUserVMInstances(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -763,7 +759,7 @@ func (s *ParallelsService) GetVms(ctx basecontext.ApiContext, filter string) ([]
 	return filteredData, nil
 }
 
-func (s *ParallelsService) getVms(ctx basecontext.ApiContext) ([]models.ParallelsVM, error) {
+func (s *ParallelsService) gatherUserVMInstances(ctx basecontext.ApiContext) ([]models.ParallelsVM, error) {
 	ctx.LogDebugf("Getting all VMs for all users without cache")
 	var systemMachines []models.ParallelsVM
 
@@ -798,15 +794,6 @@ func (s *ParallelsService) getVms(ctx basecontext.ApiContext) ([]models.Parallel
 	}
 
 	return systemMachines, nil
-}
-
-func (s *ParallelsService) GetVm(ctx basecontext.ApiContext, id string) (*models.ParallelsVM, error) {
-	vm, err := s.findVm(ctx, id, true)
-	if err != nil {
-		return nil, err
-	}
-
-	return vm, nil
 }
 
 func (s *ParallelsService) GetVmSync(ctx basecontext.ApiContext, id string) (*models.ParallelsVM, error) {
@@ -978,7 +965,16 @@ func (s *ParallelsService) DeleteVm(ctx basecontext.ApiContext, id string) error
 	if err != nil {
 		return err
 	}
-
+	filter := fmt.Sprintf("ID=%s", id)
+	vms, err := s.GetCachedVms(ctx, filter)
+	if err != nil {
+		ctx.LogErrorf("Error getting cached VMs: %v", err)
+		return nil
+	}
+	if len(vms) > 0 {
+		ctx.LogErrorf("VM %s still exists after delete, refreshing cache", id)
+		s.validateAndRefreshCache(ctx)
+	}
 	return nil
 }
 
@@ -1068,7 +1064,15 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 	if err != nil {
 		return err
 	}
-
+	var findErr error
+	if r.Uuid != "" {
+		_, findErr = s.findVmSync(ctx, r.Uuid, true)
+	} else if r.MachineName != "" {
+		_, findErr = s.findVmSync(ctx, r.MachineName, true)
+	}
+	if findErr != nil {
+		return findErr
+	}
 	return nil
 }
 
@@ -1102,7 +1106,16 @@ func (s *ParallelsService) UnregisterVm(ctx basecontext.ApiContext, r models.Unr
 	if err != nil {
 		return errors.NewFromErrorf(err, "Error unregistering VM %s", r.ID)
 	}
-
+	filter := fmt.Sprintf("ID=%s", r.ID)
+	vms, err := s.GetCachedVms(ctx, filter)
+	if err != nil {
+		ctx.LogErrorf("Error getting cached VMs: %v", err)
+		return nil
+	}
+	if len(vms) > 0 {
+		ctx.LogErrorf("VM %s still exists after unregistering, refreshing cache", r.ID)
+		s.validateAndRefreshCache(ctx)
+	}
 	return nil
 }
 
