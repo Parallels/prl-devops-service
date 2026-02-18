@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.9.19"
+        "version": "0.9.20"
     },
     "basePath": "/api",
     "paths": {
@@ -7271,7 +7271,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or X-Api-Key header.",
+                "description": "This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or query parameters (access_token or authorization).",
                 "produces": [
                     "application/json"
                 ],
