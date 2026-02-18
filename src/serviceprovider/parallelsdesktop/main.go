@@ -647,12 +647,32 @@ func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string
 	}
 
 	// updating the internal and external IP address
+	// updating the internal and external IP address
 	for i := range userMachines {
 		if externalIp != "" {
 			userMachines[i].HostExternalIpAddress = externalIp
 		}
 		if len(userMachines[i].NetworkInformation.IPAddresses) > 0 {
 			userMachines[i].InternalIpAddress = userMachines[i].NetworkInformation.IPAddresses[0].IP
+		}
+
+		if userMachines[i].InternalIpAddress == "" || userMachines[i].InternalIpAddress == "-" {
+			// If the machine is running and it is a macos machine we will try to get the ip address by running a command
+			// inside the machine
+			if userMachines[i].State == "running" && (userMachines[i].OS == "macosx" || strings.Contains(userMachines[i].Name, "mac")) {
+				cmd := helpers.Command{
+					Command: s.executable,
+					Args:    []string{"exec", userMachines[i].ID, "ipconfig", "getifaddr", "en0"},
+				}.AsUser(username)
+				ctx.LogDebugf("Executing command to get internal ip address: %s", cmd.String())
+				out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+				if err == nil {
+					ip := strings.TrimSpace(out)
+					if ip != "" {
+						userMachines[i].InternalIpAddress = ip
+					}
+				}
+			}
 		}
 	}
 
