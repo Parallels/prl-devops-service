@@ -1,0 +1,14 @@
+---
+layout: post
+title:  "Release 0.9.20"
+date:   2026-02-18 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- Added the ability to have the auth token as a query parameter for UI compatibility
+- Added the new Artifactory user/password authentication
+- Added a workaround to get a ip address from macOS vms if we fail to get it from the config
+
+

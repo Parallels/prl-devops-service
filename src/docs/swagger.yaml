@@ -1904,7 +1904,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.9.19
+  version: 0.9.20
 paths:
   /health/probe:
     get:
@@ -6403,7 +6403,7 @@ paths:
     get:
       description: This endpoint upgrades the HTTP connection to WebSocket and subscribes
         to event notifications. Authentication is required via Authorization header
-        (Bearer token) or X-Api-Key header.
+        (Bearer token) or query parameters (access_token or authorization).
       parameters:
       - description: 'Comma-separated event types to subscribe to (e.g., global,pdfm,system).
           Valid types: global,pdfm and orchestrator. If omitted, subscribes to global

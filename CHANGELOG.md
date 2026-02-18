@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.20] - 2026-02-18
+
+- Added the ability to have the auth token as a query parameter for UI compatibility
+- Added the new Artifactory user/password authentication
+- Added a workaround to get a ip address from macOS vms if we fail to get it from the config
+
 ## [0.9.19] - 2026-02-17
 
 - Fixed a racing condition where the cache checks would remove any vm that would be downloading

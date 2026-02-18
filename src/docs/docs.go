@@ -7278,7 +7278,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or X-Api-Key header.",
+                "description": "This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or query parameters (access_token or authorization).",
                 "produces": [
                     "application/json"
                 ],
@@ -10297,7 +10297,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.9.19",
+	Version:          "0.9.20",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
