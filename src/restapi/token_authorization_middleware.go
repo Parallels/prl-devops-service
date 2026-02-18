@@ -41,8 +41,40 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 				return
 			}
 
-			// this is not for us, move on
-			if !strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
+			// Extracting the token from Header or Query Parameters
+			jwt_token := ""
+			tokenFound := false
+
+			// 1. Check Authorization Header
+			if strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
+				if t, valid := http_helper.GetAuthorizationToken(r.Header); valid {
+					jwt_token = t
+					tokenFound = true
+				}
+			}
+
+			// 2. Check access_token Query Param
+			if !tokenFound {
+				if t := r.URL.Query().Get("access_token"); t != "" {
+					jwt_token = t
+					tokenFound = true
+				}
+			}
+
+			// 3. Check authorization Query Param
+			if !tokenFound {
+				if t := r.URL.Query().Get("authorization"); t != "" {
+					if strings.HasPrefix(t, "Bearer ") {
+						jwt_token = strings.TrimPrefix(t, "Bearer ")
+					} else {
+						jwt_token = t
+					}
+					tokenFound = true
+				}
+			}
+
+			// If no token found, this is not for us, move on
+			if !tokenFound {
 				authorizationContext.IsAuthorized = false
 				ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
 				next.ServeHTTP(w, r.WithContext(ctx))
@@ -65,14 +97,6 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 			// Starting authorization layer of the token
 			authorized := true
 			baseCtx.LogInfof("Token Authorization layer started")
-
-			// Getting the token for validation
-			jwt_token, valid := http_helper.GetAuthorizationToken(r.Header)
-			if !valid {
-				authorized = false
-				validateError := errors.New("bearer token not found in request")
-				baseCtx.LogErrorf("Error validating token, %v", validateError.Error())
-			}
 
 			// Validating userToken against the keys
 			var token *jwt.JwtSystemToken

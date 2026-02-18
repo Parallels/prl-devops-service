@@ -30,7 +30,7 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 }
 
 // @Summary		Subscribe to event notifications via WebSocket
-// @Description	This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or X-Api-Key header.
+// @Description	This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or query parameters (access_token or authorization).
 // @Tags			Events
 // @Produce		json
 // @Param			event_types	query		string	false	"Comma-separated event types to subscribe to (e.g., global,pdfm,system). Valid types: global,pdfm and orchestrator. If omitted, subscribes to global events only."

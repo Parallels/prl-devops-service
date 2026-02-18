@@ -1,6 +1,7 @@
 package artifactory
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -19,11 +20,20 @@ import (
 
 var globalClient *artifactory.ArtifactoryServicesManager
 
+type authenticationMethod string
+
+const (
+	ApiKeyMethod   authenticationMethod = "api_key"
+	UserPassMethod authenticationMethod = "user_pass"
+)
+
 type ArtifactoryRepo struct {
 	Host     string
 	Port     string
 	RepoName string
 	ApiKey   string
+	UserName string
+	Password string
 }
 
 const providerName = "artifactory"
@@ -53,6 +63,8 @@ func (s *ArtifactoryProvider) GetProviderMeta(ctx basecontext.ApiContext) map[st
 		"port":                   s.Repo.Port,
 		"repo":                   s.Repo.RepoName,
 		"access_key":             s.Repo.ApiKey,
+		"username":               s.Repo.UserName,
+		"password":               s.Repo.Password,
 	}
 }
 
@@ -63,6 +75,13 @@ func (s *ArtifactoryProvider) SetProgressChannel(fileNameChannel chan string, pr
 
 func (s *ArtifactoryProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
 	return "/"
+}
+
+func (s *ArtifactoryProvider) getAuthenticationMethod() authenticationMethod {
+	if s.Repo.ApiKey != "" {
+		return ApiKeyMethod
+	}
+	return UserPassMethod
 }
 
 // Check checks the connection to the Artifactory provider.
@@ -97,6 +116,12 @@ func (s *ArtifactoryProvider) Check(ctx basecontext.ApiContext, connection strin
 		if strings.Contains(strings.ToLower(part), "access_key=") {
 			s.Repo.ApiKey = strings.ReplaceAll(part, "access_key=", "")
 		}
+		if strings.Contains(strings.ToLower(part), "username=") {
+			s.Repo.UserName = strings.ReplaceAll(part, "username=", "")
+		}
+		if strings.Contains(strings.ToLower(part), "password=") {
+			s.Repo.Password = strings.ReplaceAll(part, "password=", "")
+		}
 	}
 	if provider == "" || !strings.EqualFold(provider, providerName) {
 		ctx.LogDebugf("Provider %s is not %s, skipping", providerName, provider)
@@ -109,8 +134,17 @@ func (s *ArtifactoryProvider) Check(ctx basecontext.ApiContext, connection strin
 	if s.Repo.Host == "" {
 		return false, fmt.Errorf("missing artifactory host")
 	}
-	if s.Repo.ApiKey == "" {
-		return false, fmt.Errorf("missing artifactory api key")
+	if s.Repo.ApiKey == "" && s.Repo.UserName == "" && s.Repo.Password == "" {
+		return false, fmt.Errorf("missing artifactory api key or username and password")
+	}
+	if s.Repo.ApiKey != "" && s.Repo.UserName != "" && s.Repo.Password != "" {
+		return false, fmt.Errorf("artifactory api key and username and password are mutually exclusive")
+	}
+	if s.Repo.UserName != "" && s.Repo.Password == "" {
+		return false, fmt.Errorf("artifactory username requires password")
+	}
+	if s.Repo.UserName == "" && s.Repo.Password != "" {
+		return false, fmt.Errorf("artifactory password requires username")
 	}
 
 	return true, nil
@@ -168,7 +202,11 @@ func (s *ArtifactoryProvider) PullFile(ctx basecontext.ApiContext, path string, 
 
 	downloadSrv := download.NewDownloadService()
 	headers := make(map[string]string, 0)
-	headers["X-JFrog-Art-Api"] = s.Repo.ApiKey
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		headers["X-JFrog-Art-Api"] = s.Repo.ApiKey
+	} else {
+		headers["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(s.Repo.UserName+":"+s.Repo.Password))
+	}
 	headers["Content-Type"] = "application/json"
 
 	fileSize, err := s.GetFileSize(ctx, path, filename)
@@ -197,7 +235,11 @@ func (s *ArtifactoryProvider) PullFileAndDecompress(ctx basecontext.ApiContext, 
 
 	downloadSrv := download.NewDownloadService()
 	headers := make(map[string]string, 0)
-	headers["X-JFrog-Art-Api"] = s.Repo.ApiKey
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		headers["X-JFrog-Art-Api"] = s.Repo.ApiKey
+	} else {
+		headers["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(s.Repo.UserName+":"+s.Repo.Password))
+	}
 	headers["Content-Type"] = "application/json"
 
 	fileSize, err := s.GetFileSize(ctx, path, filename)
@@ -227,7 +269,11 @@ func (s *ArtifactoryProvider) PullFileToMemory(ctx basecontext.ApiContext, path 
 
 	downloadSrv := download.NewDownloadService()
 	headers := make(map[string]string, 0)
-	headers["X-JFrog-Art-Api"] = s.Repo.ApiKey
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		headers["X-JFrog-Art-Api"] = s.Repo.ApiKey
+	} else {
+		headers["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(s.Repo.UserName+":"+s.Repo.Password))
+	}
 	headers["Content-Type"] = "application/json"
 
 	fileSize, err := s.GetFileSize(ctx, path, filename)
@@ -263,7 +309,11 @@ func (s *ArtifactoryProvider) DeleteFile(ctx basecontext.ApiContext, path string
 		return err
 	}
 
-	request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	} else {
+		request.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(s.Repo.UserName+":"+s.Repo.Password)))
+	}
 	request.Header.Add("Content-Type", "application/json")
 
 	response, err := client.Do(request)
@@ -293,7 +343,11 @@ func (s *ArtifactoryProvider) FileChecksum(ctx basecontext.ApiContext, path stri
 		return "", err
 	}
 
-	request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	} else {
+		request.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(s.Repo.UserName+":"+s.Repo.Password)))
+	}
 	request.Header.Add("Content-Type", "application/json")
 
 	response, err := client.Do(request)
@@ -328,7 +382,11 @@ func (s *ArtifactoryProvider) FileExists(ctx basecontext.ApiContext, path string
 		return false, err
 	}
 
-	request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	} else {
+		request.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(s.Repo.UserName+":"+s.Repo.Password)))
+	}
 	request.Header.Add("Content-Type", "application/json")
 
 	response, err := client.Do(request)
@@ -358,7 +416,11 @@ func (s *ArtifactoryProvider) GetFileSize(ctx basecontext.ApiContext, path strin
 		return -1, err
 	}
 
-	request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	} else {
+		request.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(s.Repo.UserName+":"+s.Repo.Password)))
+	}
 	request.Header.Add("Content-Type", "application/json")
 
 	response, err := client.Do(request)
@@ -393,7 +455,11 @@ func (s *ArtifactoryProvider) CreateFolder(ctx basecontext.ApiContext, folderPat
 		return err
 	}
 
-	request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	} else {
+		request.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(s.Repo.UserName+":"+s.Repo.Password)))
+	}
 	request.Header.Add("Content-Type", "application/json")
 
 	response, err := client.Do(request)
@@ -425,7 +491,11 @@ func (s *ArtifactoryProvider) DeleteFolder(ctx basecontext.ApiContext, folderPat
 		return err
 	}
 
-	request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	} else {
+		request.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(s.Repo.UserName+":"+s.Repo.Password)))
+	}
 	request.Header.Add("Content-Type", "application/json")
 
 	response, err := client.Do(request)
@@ -456,7 +526,11 @@ func (s *ArtifactoryProvider) FolderExists(ctx basecontext.ApiContext, folderPat
 		return false, err
 	}
 
-	request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		request.Header.Add("X-JFrog-Art-Api", s.Repo.ApiKey)
+	} else {
+		request.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(s.Repo.UserName+":"+s.Repo.Password)))
+	}
 	request.Header.Add("Content-Type", "application/json")
 
 	response, err := client.Do(request)
@@ -476,7 +550,11 @@ func (s *ArtifactoryProvider) FileSize(ctx basecontext.ApiContext, path string, 
 	ctx.LogInfof("[%s] Checking file %s size", s.Name(), fileName)
 
 	headers := make(map[string]string, 0)
-	headers["X-JFrog-Art-Api"] = s.Repo.ApiKey
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		headers["X-JFrog-Art-Api"] = s.Repo.ApiKey
+	} else {
+		headers["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(s.Repo.UserName+":"+s.Repo.Password))
+	}
 	headers["Content-Type"] = "application/json"
 
 	fileSize, err := s.GetFileSize(ctx, path, fileName)
@@ -500,7 +578,12 @@ func (s *ArtifactoryProvider) getClient(ctx basecontext.ApiContext) (artifactory
 	host := s.getHost()
 
 	authDetails.SetUrl(host)
-	authDetails.SetApiKey(s.Repo.ApiKey)
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		authDetails.SetApiKey(s.Repo.ApiKey)
+	} else {
+		authDetails.SetUser(s.Repo.UserName)
+		authDetails.SetPassword(s.Repo.Password)
+	}
 
 	serviceConfig, err := config.NewConfigBuilder().
 		SetServiceDetails(authDetails).
