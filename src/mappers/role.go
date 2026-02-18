@@ -9,10 +9,20 @@ import (
 )
 
 func DtoRoleToApi(model data_models.Role) models.RoleResponse {
-	return models.RoleResponse{
+	role := models.RoleResponse{
 		ID:   model.ID,
 		Name: model.Name,
 	}
+	for _, user := range model.Users {
+		role.Users = append(role.Users, models.ApiUser{
+			ID:       user.ID,
+			Username: user.Username,
+			Name:     user.Name,
+			Email:    user.Email,
+		})
+	}
+
+	return role
 }
 
 func DtoRolesToApi(m []data_models.Role) []models.RoleResponse {

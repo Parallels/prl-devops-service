@@ -12,6 +12,7 @@ const (
 	EventTypeSystem       EventType = "system"       // System-level events
 	EventTypeHealth       EventType = "health"       // Health check events
 	EventTypeOrchestrator EventType = "orchestrator" // Orchestrator events
+	EventTypeStats        EventType = "stats"        // Statistics events
 )
 
 func (e EventType) String() string {
@@ -21,7 +22,7 @@ func (e EventType) String() string {
 // IsValid checks if the EventType is valid
 func (e EventType) IsValid() bool {
 	switch e {
-	case EventTypeGlobal, EventTypePDFM, EventTypeSystem, EventTypeHealth, EventTypeOrchestrator:
+	case EventTypeGlobal, EventTypePDFM, EventTypeSystem, EventTypeHealth, EventTypeOrchestrator, EventTypeStats:
 		return true
 	default:
 		return false
@@ -35,5 +36,6 @@ func GetAllEventTypes() []EventType {
 		EventTypePDFM,
 		EventTypeHealth,
 		EventTypeOrchestrator,
+		EventTypeStats,
 	}
 }

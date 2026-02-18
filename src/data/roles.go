@@ -26,6 +26,24 @@ func (j *JsonDatabase) GetRoles(ctx basecontext.ApiContext, filter string) ([]mo
 	if err != nil {
 		return nil, err
 	}
+	users, err := j.GetUsers(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// Add users to roles
+	for i, role := range j.data.Roles {
+		// reset users
+		j.data.Roles[i].Users = make([]models.User, 0)
+		for _, user := range users {
+			for _, r := range user.Roles {
+				if strings.EqualFold(r.ID, role.ID) {
+					// adding the user to the role if
+					j.data.Roles[i].Users = append(j.data.Roles[i].Users, user)
+				}
+			}
+		}
+	}
 
 	filteredData, err := FilterByProperty(j.data.Roles, dbFilter)
 	if err != nil {

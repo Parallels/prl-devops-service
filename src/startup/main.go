@@ -2,6 +2,7 @@ package startup
 
 import (
 	"encoding/base64"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
@@ -19,6 +20,7 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
 	"github.com/Parallels/prl-devops-service/serviceprovider/health"
+	"github.com/Parallels/prl-devops-service/serviceprovider/stats"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/Parallels/prl-devops-service/startup/migrations"
 	"github.com/Parallels/prl-devops-service/telemetry"
@@ -68,6 +70,10 @@ func Start(ctx basecontext.ApiContext) {
 			// Register handlers
 			health.NewHealthService(emitter)
 			eventemitter.NewSystemHandler(emitter)
+
+			// Start Stats Service
+			statsService := stats.NewStatsService(emitter)
+			go statsService.Run(ctx, 5*time.Second)
 		}
 	}
 

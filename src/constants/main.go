@@ -101,6 +101,7 @@ const (
 	ENABLE_BETA_ENV_VAR                                     = "ENABLE_BETA"
 	VM_FORCE_CACHE_REFRESH_ENV_VAR                          = "VM_FORCE_CACHE_REFRESH"
 	VM_CACHE_REFRESH_INTERVAL_SECONDS_ENV_VAR               = "VM_CACHE_REFRESH_INTERVAL_SECONDS"
+	ENABLED_MODULES_ENV_VAR                                 = "ENABLED_MODULES"
 )
 
 const (

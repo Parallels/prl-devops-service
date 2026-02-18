@@ -618,6 +618,19 @@ func (c *Config) EnableCredentialsObfuscation() bool {
 	return c.GetBoolKey(constants.CATALOG_ENABLE_PROVIDER_CREDENTIALS_OBFUSCATION_ENV_VAR)
 }
 
+func (c *Config) GetEnabledModules() []string {
+	modules := c.GetKey(constants.ENABLED_MODULES_ENV_VAR)
+	if modules == "" {
+		return []string{}
+	}
+	modulesList := strings.Split(modules, ",")
+	for i, module := range modulesList {
+		modulesList[i] = strings.TrimSpace(module)
+	}
+
+	return modulesList
+}
+
 func (c *Config) GetKey(key string) string {
 	value := helper.GetFlagValue(key, "")
 	exists := false
