@@ -46,29 +46,3 @@ func (s *ParallelsService) findVmInCacheAndSystem(ctx basecontext.ApiContext, id
 func (s *ParallelsService) findVmSync(ctx basecontext.ApiContext, idOrName string) (*models.ParallelsVM, error) {
 	return s.findVmInCacheAndSystem(ctx, idOrName)
 }
-
-func (s *ParallelsService) findVmWithStateInCacheAndSystem(ctx basecontext.ApiContext, idOrName string, state string) (*models.ParallelsVM, error) {
-	for i := 0; i < CacheFindNumberOfRetries; i++ {
-		s.RLock()
-		vms := s.cachedLocalVms
-		s.RUnlock()
-		for _, vm := range vms {
-			if (strings.EqualFold(vm.Name, idOrName) || strings.EqualFold(vm.ID, idOrName)) && strings.EqualFold(vm.State, state) {
-				return &vm, nil
-			}
-		}
-		ctx.LogInfof("VM with name or id %v and state %v not found in cache, retrying... (%d/%d)", idOrName, state, i+1, CacheFindNumberOfRetries)
-		time.Sleep(CacheFindRetryDelay)
-	}
-	vm, err := s.getVmForCurrentUser(ctx, idOrName)
-	if err == nil {
-		if (strings.EqualFold(vm.Name, idOrName) || strings.EqualFold(vm.ID, idOrName)) && strings.EqualFold(vm.State, state) {
-			ctx.LogWarnf("Vm with desired state is not present in cache but found in machine, updating cache")
-			go func() {
-				s.refreshCache(ctx)
-			}()
-			return &vm, nil
-		}
-	}
-	return nil, ErrVirtualMachineNotFound
-}
