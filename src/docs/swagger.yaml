@@ -980,6 +980,17 @@ definitions:
       template:
         type: string
     type: object
+  models.CreateSnapShotRequest:
+    properties:
+      snapshot_description:
+        type: string
+      snapshot_name:
+        type: string
+      vm_id:
+        type: string
+      vm_name:
+        type: string
+    type: object
   models.CreateVagrantMachineRequest:
     properties:
       architecture:
@@ -1579,6 +1590,13 @@ definitions:
       tls:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTls'
     type: object
+  models.RevertSnapshotRequest:
+    properties:
+      vm_id:
+        type: string
+      vm_name:
+        type: string
+    type: object
   models.RoleRequest:
     properties:
       name:
@@ -1600,6 +1618,15 @@ definitions:
       message:
         type: string
       name:
+        type: string
+    type: object
+  models.SwitchSnapshotRequest:
+    properties:
+      skip_resume:
+        type: boolean
+      vm_id:
+        type: string
+      vm_name:
         type: string
     type: object
   models.SystemReverseProxy:
@@ -4140,6 +4167,184 @@ paths:
       summary: Configures a virtual machine
       tags:
       - Machines
+  /v1/machines/{id}/snapshots:
+    get:
+      description: This endpoint lists snapshots of a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Lists snapshots of a virtual machine
+      tags:
+      - Machines
+    post:
+      description: This endpoint creates a snapshot for a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Create Snapshot Request
+        in: body
+        name: createRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateSnapShotRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a snapshot for a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/snapshots/{snapshot_id}:
+    delete:
+      description: This endpoint deletes a snapshot of a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Snapshot ID
+        in: path
+        name: snapshot_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a snapshot of a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/snapshots/{snapshot_id}/revert:
+    post:
+      description: This endpoint reverts a virtual machine to a snapshot
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Snapshot ID
+        in: path
+        name: snapshot_id
+        required: true
+        type: string
+      - description: Revert Snapshot Request
+        in: body
+        name: revertRequest
+        schema:
+          $ref: '#/definitions/models.RevertSnapshotRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Reverts a virtual machine to a snapshot
+      tags:
+      - Machines
+  /v1/machines/{id}/snapshots/{snapshot_id}/switch:
+    post:
+      description: This endpoint switches a virtual machine to a snapshot
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Snapshot ID
+        in: path
+        name: snapshot_id
+        required: true
+        type: string
+      - description: Switch Snapshot Request
+        in: body
+        name: switchRequest
+        schema:
+          $ref: '#/definitions/models.SwitchSnapshotRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Switches a virtual machine to a snapshot
+      tags:
+      - Machines
   /v1/machines/{id}/start:
     get:
       description: This endpoint starts a virtual machine
@@ -6403,7 +6608,7 @@ paths:
     get:
       description: This endpoint upgrades the HTTP connection to WebSocket and subscribes
         to event notifications. Authentication is required via Authorization header
-        (Bearer token) or X-Api-Key header.
+        (Bearer token) or query parameters (access_token or authorization).
       parameters:
       - description: 'Comma-separated event types to subscribe to (e.g., global,pdfm,system).
           Valid types: global,pdfm and orchestrator. If omitted, subscribes to global

@@ -53,6 +53,46 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 			Register()
 
 		restapi.NewController().
+			WithMethod(restapi.POST).
+			WithVersion(version).
+			WithPath("/machines/{id}/snapshots").
+			WithRequiredClaim(constants.CREATE_SNAPSHOT_VM_CLAIM).
+			WithHandler(CreateSnapshot()).
+			Register()
+
+		restapi.NewController().
+			WithMethod(restapi.DELETE).
+			WithVersion(version).
+			WithPath("/machines/{id}/snapshots/{snapshot_id}").
+			WithRequiredClaim(constants.DELETE_SNAPSHOT_VM_CLAIM).
+			WithHandler(DeleteSnapshot()).
+			Register()
+
+		restapi.NewController().
+			WithMethod(restapi.GET).
+			WithVersion(version).
+			WithPath("/machines/{id}/snapshots").
+			WithRequiredClaim(constants.LIST_SNAPSHOT_VM_CLAIM).
+			WithHandler(ListSnapshot()).
+			Register()
+
+		restapi.NewController().
+			WithMethod(restapi.POST).
+			WithVersion(version).
+			WithPath("/machines/{id}/snapshots/{snapshot_id}/revert").
+			WithRequiredClaim(constants.REVERT_SNAPSHOT_VM_CLAIM).
+			WithHandler(RevertSnapshot()).
+			Register()
+
+		restapi.NewController().
+			WithMethod(restapi.POST).
+			WithVersion(version).
+			WithPath("/machines/{id}/snapshots/{snapshot_id}/switch").
+			WithRequiredClaim(constants.SWITCH_SNAPSHOT_VM_CLAIM).
+			WithHandler(SwitchSnapshot()).
+			Register()
+
+		restapi.NewController().
 			WithMethod(restapi.DELETE).
 			WithVersion(version).
 			WithPath("/machines/{id}").
@@ -1176,6 +1216,232 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+	}
+}
+
+// @Summary		Creates a snapshot for a virtual machine
+// @Description	This endpoint creates a snapshot for a virtual machine
+// @Tags			Machines
+// @Produce		json
+// @Param			id				path		string							true	"Machine ID"
+// @Param			createRequest	body		models.CreateSnapShotRequest	true	"Create Snapshot Request"
+// @Success		200				{object}	models.ApiCommonResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/snapshots [post]
+func CreateSnapshot() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.CreateSnapShotRequest
+		ctx.LogInfof("Creating snapshot")
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			ctx.LogErrorf("Error decoding JSON: %v", err)
+			return
+		}
+
+		// Extract ID from path
+		params := mux.Vars(r)
+		request.VMId = params["id"]
+
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		// TODO: Call the service provider to actually create the snapshot using request
+
+		ctx.LogDebugf("User: %v", request.VMId)
+		ctx.LogDebugf("User: %v", request.VMName)
+		ctx.LogDebugf("User: %v", request.SnapshotName)
+		ctx.LogDebugf("User: %v", request.SnapshotDescription)
+	}
+}
+
+// @Summary		Deletes a snapshot of a virtual machine
+// @Description	This endpoint deletes a snapshot of a virtual machine
+// @Tags			Machines
+// @Produce		json
+// @Param			id			path	string	true	"Machine ID"
+// @Param			snapshot_id	path	string	true	"Snapshot ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/snapshots/{snapshot_id} [delete]
+func DeleteSnapshot() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.DeleteSnapshotRequest
+		ctx.LogInfof("Deleting snapshot")
+
+		// Extract ID from path (Standard for DELETE requests)
+		params := mux.Vars(r)
+		request.VMId = params["id"]
+		request.ChildName = params["snapshot_id"]
+
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid path parameters: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		// TODO: Call the service provider to actually delete the snapshot using request
+
+		ctx.LogDebugf("VM ID: %v", request.VMId)
+		ctx.LogDebugf("Snapshot to delete: %v", request.ChildName)
+	}
+}
+
+// @Summary		Lists snapshots of a virtual machine
+// @Description	This endpoint lists snapshots of a virtual machine
+// @Tags			Machines
+// @Produce		json
+// @Param			id	path		string	true	"Machine ID"
+// @Success		200	{object}	models.ApiCommonResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/snapshots [get]
+func ListSnapshot() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.ListSnapshotRequest
+		ctx.LogInfof("Listing snapshots")
+
+		// Extract ID from path (Standard for GET requests)
+		params := mux.Vars(r)
+		request.VMId = params["id"]
+
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid path parameters: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		// TODO: Call the service provider to actually fetch the snapshot list using request
+
+		ctx.LogDebugf("List snapshots for VM ID: %v", request.VMId)
+	}
+}
+
+// @Summary		Reverts a virtual machine to a snapshot
+// @Description	This endpoint reverts a virtual machine to a snapshot
+// @Tags			Machines
+// @Produce		json
+// @Param			id				path		string							true	"Machine ID"
+// @Param			snapshot_id		path		string							true	"Snapshot ID"
+// @Param			revertRequest	body		models.RevertSnapshotRequest	false	"Revert Snapshot Request"
+// @Success		200				{object}	models.ApiCommonResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/snapshots/{snapshot_id}/revert [post]
+func RevertSnapshot() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.RevertSnapshotRequest
+		ctx.LogInfof("Reverting snapshot")
+
+		// Extract IDs from path
+		params := mux.Vars(r)
+		request.VMId = params["id"]
+
+		// If you also want to pass snapshot ID in body, that's fine,
+		// but typically we get it from path for POST to a specific snapshot action:
+		snapshotId := params["snapshot_id"]
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			// Ignore EOF error for cases where body might be empty if all info is in path
+			if err.Error() != "EOF" {
+				ctx.LogErrorf("Error decoding JSON: %v", err)
+				return
+			}
+		}
+
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		// TODO: Call the service provider to actually revert the snapshot using request
+
+		ctx.LogDebugf("VM ID: %v", request.VMId)
+		ctx.LogDebugf("Reverting to: %v", snapshotId)
+	}
+}
+
+// @Summary		Switches a virtual machine to a snapshot
+// @Description	This endpoint switches a virtual machine to a snapshot
+// @Tags			Machines
+// @Produce		json
+// @Param			id				path		string							true	"Machine ID"
+// @Param			snapshot_id		path		string							true	"Snapshot ID"
+// @Param			switchRequest	body		models.SwitchSnapshotRequest	false	"Switch Snapshot Request"
+// @Success		200				{object}	models.ApiCommonResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/snapshots/{snapshot_id}/switch [post]
+func SwitchSnapshot() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.SwitchSnapshotRequest
+		ctx.LogInfof("Switching snapshot")
+
+		// Extract IDs from path
+		params := mux.Vars(r)
+		request.VMId = params["id"]
+
+		snapshotId := params["snapshot_id"]
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			// Ignore EOF error for cases where body might be empty if all info is in path
+			if err.Error() != "EOF" {
+				ctx.LogErrorf("Error decoding JSON: %v", err)
+				return
+			}
+		}
+
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		// TODO: Call the service provider to actually switch the snapshot using request
+
+		ctx.LogDebugf("VM ID: %v", request.VMId)
+		ctx.LogDebugf("Switching to: %v", snapshotId)
+		ctx.LogDebugf("Skip Resume: %v", request.SkipResume)
 	}
 }
 
