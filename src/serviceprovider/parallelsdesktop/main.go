@@ -828,7 +828,7 @@ func (s *ParallelsService) getVmsInMachineForCurrentUser(ctx basecontext.ApiCont
 }
 
 func (s *ParallelsService) GetVm(ctx basecontext.ApiContext, id string) (*models.ParallelsVM, error) {
-	vm, err := s.findVmInCacheAndSystem(ctx, id)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -837,7 +837,7 @@ func (s *ParallelsService) GetVm(ctx basecontext.ApiContext, id string) (*models
 }
 
 func (s *ParallelsService) GetVmSync(ctx basecontext.ApiContext, id string) (*models.ParallelsVM, error) {
-	vm, err := s.findVmInCacheAndSystem(ctx, id)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -847,7 +847,7 @@ func (s *ParallelsService) GetVmSync(ctx basecontext.ApiContext, id string) (*mo
 
 func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, desiredState ParallelsVirtualMachineDesiredState,
 	flags DesiredStateFlags) error {
-	vm, err := s.findVmWithStateInCacheAndSystem(ctx, id, desiredState.String())
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return err
 	}
