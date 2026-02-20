@@ -59,6 +59,17 @@ func Start(ctx basecontext.ApiContext) {
 	// initializing telemetry with default context
 	_ = telemetry.New(ctx)
 
+	// Validate Host Module
+	if cfg.IsModuleEnabled(constants.HOST_MODE) {
+		provider := serviceprovider.Get()
+		if !provider.IsParallelsDesktopAvailable() {
+			ctx.LogWarnf("Parallels Desktop is not available, disabling host module")
+			cfg.DisableModule(constants.HOST_MODE)
+		}
+	}
+
+	ctx.LogInfof("Enabled Modules: %v", cfg.GetEnabledModules())
+
 	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.EventStartApi, nil, nil))
 
 	// Initialize EventEmitter service (for API and Orchestrator modes)

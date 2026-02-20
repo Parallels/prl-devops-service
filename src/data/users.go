@@ -148,7 +148,9 @@ func (j *JsonDatabase) UpdateUser(ctx basecontext.ApiContext, key models.User) e
 	}
 
 	if key.Name == "root" || key.Username == "root" || key.Email == "root@localhost" {
-		return ErrCannotUpdateRootUser
+		if ctx == nil || ctx.GetAuthorizationContext() == nil || ctx.GetAuthorizationContext().AuthorizedBy != "RootAuthorization" {
+			return ErrCannotUpdateRootUser
+		}
 	}
 
 	for i, user := range j.data.Users {
@@ -166,6 +168,12 @@ func (j *JsonDatabase) UpdateUser(ctx basecontext.ApiContext, key models.User) e
 			}
 			if key.Email != "" {
 				j.data.Users[i].Email = key.Email
+			}
+			if len(key.Roles) > 0 {
+				j.data.Users[i].Roles = key.Roles
+			}
+			if len(key.Claims) > 0 {
+				j.data.Users[i].Claims = key.Claims
 			}
 
 			j.data.Users[i].UpdatedAt = helpers.GetUtcCurrentDateTime()

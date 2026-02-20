@@ -17,6 +17,7 @@ type SystemUsageResponse struct {
 	TotalAvailable           *SystemUsageItem    `json:"total_available,omitempty"`
 	TotalInUse               *SystemUsageItem    `json:"total_in_use,omitempty"`
 	TotalReserved            *SystemUsageItem    `json:"total_reserved,omitempty"`
+	EnabledModules           []string            `json:"enabled_modules,omitempty"`
 }
 
 type SystemUsageItem struct {

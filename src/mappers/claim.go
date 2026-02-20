@@ -9,10 +9,21 @@ import (
 )
 
 func DtoClaimToApi(model data_models.Claim) models.ClaimResponse {
-	return models.ClaimResponse{
+	claim := models.ClaimResponse{
 		ID:   model.ID,
 		Name: model.Name,
 	}
+
+	for _, user := range model.Users {
+		claim.Users = append(claim.Users, models.ApiUser{
+			ID:       user.ID,
+			Username: user.Username,
+			Name:     user.Name,
+			Email:    user.Email,
+		})
+	}
+
+	return claim
 }
 
 func DtoClaimsToApi(m []data_models.Claim) []models.ClaimResponse {

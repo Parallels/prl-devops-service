@@ -64,15 +64,40 @@ if [ -z "$DESTINATION" ]; then
   DESTINATION="/usr/local/bin"
 fi
 
+
+function get_latest_release() {
+  if [ "$PRE_RELEASE" = "true" ]; then
+    URL="https://api.github.com/repos/Parallels/prl-devops-service/releases"
+  else
+    URL="https://api.github.com/repos/Parallels/prl-devops-service/releases/latest"
+  fi
+
+  HTTP_RESPONSE=$(curl -s -w "HTTPSTATUS:%{http_code}" "$URL")
+  HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed -e 's/HTTPSTATUS\:.*//g')
+  HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+
+  if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
+    echo "Error: GitHub API rate limit exceeded. Please try again later."
+    exit 1
+  fi
+
+  if [ "$HTTP_STATUS" != "200" ]; then
+    echo "Error: Failed to fetch release information. HTTP Status: $HTTP_STATUS"
+    exit 1
+  fi
+
+  if [ "$PRE_RELEASE" = "true" ]; then
+    echo "$HTTP_BODY" | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"' | head -n 1
+  else
+    echo "$HTTP_BODY" | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"'
+  fi
+}
+
 function install() {
   if [ -z "$VERSION" ]; then
     echo "Getting latest version from GitHub"
     # Get latest version from github
-    if [ "$PRE_RELEASE" = "true" ]; then
-      VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"' | head -n 1)
-    else
-      VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases/latest | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"')
-    fi
+    VERSION=$(get_latest_release)
   fi
 
   if [[ ! $VERSION == *-beta ]]; then
@@ -114,6 +139,11 @@ function install() {
   echo "Downloading prldevops release from GitHub Releases"
   # Download the file and capture HTTP status code
   HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+
+  if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
+    echo "Error: GitHub API rate limit exceeded during download. Please try again later."
+    exit 1
+  fi
 
   # Check if the status code is 200 (OK)
   if [ "$HTTP_STATUS" != "200" ]; then
@@ -187,11 +217,7 @@ function install_standard() {
   if [ -z "$VERSION" ]; then
     echo "Getting latest version from GitHub"
     # Get latest version from github
-    if [ "$PRE_RELEASE" = "true" ]; then
-      VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"' | head -n 1)
-    else
-      VERSION=$(curl -s https://api.github.com/repos/Parallels/prl-devops-service/releases/latest | grep -o '"tag_name": "[^"]*"' | cut -d ' ' -f 2 | tr -d '"')
-    fi
+    VERSION=$(get_latest_release)
   fi
 
   if [[ ! $VERSION == *-beta ]]; then
@@ -233,6 +259,11 @@ function install_standard() {
   echo "Downloading prldevops release from GitHub Releases"
   # Download the file and capture HTTP status code
   HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+
+  if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
+    echo "Error: GitHub API rate limit exceeded during download. Please try again later."
+    exit 1
+  fi
 
   # Check if the status code is 200 (OK)
   if [ "$HTTP_STATUS" != "200" ]; then

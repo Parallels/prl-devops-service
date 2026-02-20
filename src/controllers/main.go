@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 )
 
 func RegisterV1Handlers(ctx basecontext.ApiContext) error {
@@ -11,11 +13,18 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 	registerApiKeysHandlers(ctx, version)
 	registerClaimsHandlers(ctx, version)
 	registerRolesHandlers(ctx, version)
-	registerCatalogManifestHandlers(ctx, version)
-	registerPackerTemplatesHandlers(ctx, version)
-	registerVirtualMachinesHandlers(ctx, version)
+	if config.Get().IsCatalog() {
+		registerCatalogManifestHandlers(ctx, version)
+	}
+	if config.Get().IsModuleEnabled(constants.HOST_MODE) {
+		registerPackerTemplatesHandlers(ctx, version)
+		registerVirtualMachinesHandlers(ctx, version)
+	}
 	registerConfigHandlers(ctx, version)
-	registerOrchestratorHostsHandlers(ctx, version)
+	if config.Get().IsOrchestrator() {
+		registerOrchestratorHostsHandlers(ctx, version)
+	}
+	registerSshHandlers(ctx, version)
 	registerPerformanceHandlers(ctx, version)
 	registerReverseProxyHandlers(ctx, version)
 	registerEventHandlers(ctx, version)

@@ -65,6 +65,20 @@ func (j *JsonDatabase) GetRole(ctx basecontext.ApiContext, idOrName string) (*mo
 
 	for _, role := range roles {
 		if strings.EqualFold(role.ID, idOrName) || strings.EqualFold(role.Name, idOrName) {
+			users, err := j.GetUsers(ctx, "")
+			if err != nil {
+				return nil, err
+			}
+			// reset users
+			role.Users = make([]models.User, 0)
+			for _, user := range users {
+				for _, r := range user.Roles {
+					if strings.EqualFold(r.ID, role.ID) {
+						// adding the user to the role if
+						role.Users = append(role.Users, user)
+					}
+				}
+			}
 			return &role, nil
 		}
 	}

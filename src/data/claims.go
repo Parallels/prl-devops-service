@@ -26,6 +26,24 @@ func (j *JsonDatabase) GetClaims(ctx basecontext.ApiContext, filter string) ([]m
 	if err != nil {
 		return nil, err
 	}
+	users, err := j.GetUsers(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// Add users to claims
+	for i, claim := range j.data.Claims {
+		// reset users
+		j.data.Claims[i].Users = make([]models.User, 0)
+		for _, user := range users {
+			for _, c := range user.Claims {
+				if strings.EqualFold(c.ID, claim.ID) {
+					// adding the user to the role if
+					j.data.Claims[i].Users = append(j.data.Claims[i].Users, user)
+				}
+			}
+		}
+	}
 
 	filteredData, err := FilterByProperty(j.data.Claims, dbFilter)
 	if err != nil {
@@ -47,6 +65,21 @@ func (j *JsonDatabase) GetClaim(ctx basecontext.ApiContext, idOrName string) (*m
 
 	for _, claim := range claims {
 		if strings.EqualFold(claim.ID, idOrName) || strings.EqualFold(claim.Name, idOrName) {
+			users, err := j.GetUsers(ctx, "")
+			if err != nil {
+				return nil, err
+			}
+			// reset users
+			claim.Users = make([]models.User, 0)
+			for _, user := range users {
+				for _, c := range user.Claims {
+					if strings.EqualFold(c.ID, claim.ID) {
+						// adding the user to the role if
+						claim.Users = append(claim.Users, user)
+					}
+				}
+			}
+
 			return &claim, nil
 		}
 	}
