@@ -20,6 +20,7 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
 	"github.com/Parallels/prl-devops-service/serviceprovider/health"
+	providerlogs "github.com/Parallels/prl-devops-service/serviceprovider/logs"
 	"github.com/Parallels/prl-devops-service/serviceprovider/stats"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/Parallels/prl-devops-service/startup/migrations"
@@ -85,6 +86,10 @@ func Start(ctx basecontext.ApiContext) {
 			// Start Stats Service
 			statsService := stats.NewStatsService(emitter)
 			go statsService.Run(ctx, 5*time.Second)
+
+			// Start Log Service
+			logService := providerlogs.NewLogService(emitter)
+			go logService.Run(ctx)
 		}
 	}
 

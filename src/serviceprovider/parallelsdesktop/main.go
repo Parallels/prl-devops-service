@@ -16,6 +16,9 @@ import (
 	"sync"
 	"time"
 
+	"io/ioutil"
+	"net/http"
+
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/config"
@@ -214,6 +217,163 @@ func (s *ParallelsService) Install(asUser, version string, flags map[string]stri
 			return err
 		}
 		s.installed = true
+	}
+
+	license := ""
+	username := ""
+	password := ""
+
+	for flag, value := range flags {
+		switch flag {
+		case "license":
+			license = value
+		case "my_account_username":
+			username = value
+		case "my_account_password":
+			password = value
+		}
+	}
+
+	if license != "" {
+		s.ctx.LogInfof("Activating Parallels Desktop with license %s", license)
+		if err := s.InstallLicense(license, username, password); err != nil {
+			return err
+		}
+
+		if _, err := s.GetInfo(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *ParallelsService) InstallFromDmg(asUser, version string, flags map[string]string) error {
+	if s.installed {
+		s.ctx.LogInfof("%s already installed", s.Name())
+	} else {
+		if version == "" || version == "latest" {
+			// fallback to a known default if latest is requested and we can't fetch the xml easily
+			// ideally we'd parse the livecheck xml, but for this iteration we'll use a hardcoded recent version or fail
+			version = "20.1.0-55732"
+			s.ctx.LogWarnf("Version not specified, defaulting to %s", version)
+		}
+
+		vParts := strings.Split(version, ".")
+		if len(vParts) < 1 {
+			return errors.New("Invalid version format")
+		}
+		majorVersion := vParts[0]
+
+		dmgUrl := fmt.Sprintf("https://download.parallels.com/desktop/v%s/%s/ParallelsDesktop-%s.dmg", majorVersion, version, version)
+
+		s.ctx.LogInfof("Downloading Parallels Desktop %s from %s", version, dmgUrl)
+
+		// Create a temporary file for the dmg
+		tmpFile, err := ioutil.TempFile("", "parallels-*.dmg")
+		if err != nil {
+			return errors.New("Failed to create temporary file for dmg: " + err.Error())
+		}
+		defer os.Remove(tmpFile.Name())
+
+		resp, err := http.Get(dmgUrl)
+		if err != nil {
+			return errors.New("Failed to download Parallels Desktop: " + err.Error())
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return errors.New(fmt.Sprintf("Failed to download Parallels Desktop, status code: %d", resp.StatusCode))
+		}
+
+		_, err = io.Copy(tmpFile, resp.Body)
+		if err != nil {
+			return errors.New("Failed to save downloaded dmg: " + err.Error())
+		}
+		tmpFile.Close()
+
+		s.ctx.LogInfof("Mounting the downloaded dmg: %s", tmpFile.Name())
+		mountCmd := helpers.Command{
+			Command: "hdiutil",
+			Args:    []string{"attach", "-nobrowse", tmpFile.Name()},
+		}
+		if asUser != "" {
+			mountCmd.Command = "sudo"
+			mountCmd.Args = append([]string{"-u", asUser, "hdiutil", "attach", "-nobrowse", tmpFile.Name()})
+		}
+		out, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), mountCmd, helpers.ExecutionTimeout)
+		if err != nil {
+			return errors.New("Failed to mount dmg: " + err.Error() + ": " + out)
+		}
+
+		// parse the output to find the mount point
+		mountPoint := ""
+		for _, line := range strings.Split(out, "\n") {
+			if strings.Contains(line, "/Volumes/Parallels Desktop") {
+				parts := strings.Split(line, "\t")
+				if len(parts) > 2 {
+					mountPoint = strings.TrimSpace(parts[2])
+				} else {
+					// fallback heuristic
+					mountPoint = "/Volumes/Parallels Desktop"
+				}
+				break
+			}
+		}
+
+		if mountPoint == "" {
+			// default fallback
+			mountPoint = "/Volumes/Parallels Desktop"
+		}
+
+		defer func() {
+			s.ctx.LogInfof("Unmounting dmg at %s", mountPoint)
+			unmountCmd := helpers.Command{
+				Command: "hdiutil",
+				Args:    []string{"detach", mountPoint},
+			}
+			if asUser != "" {
+				unmountCmd.Command = "sudo"
+				unmountCmd.Args = append([]string{"-u", asUser, "hdiutil", "detach", mountPoint})
+			}
+			helpers.ExecuteWithNoOutput(s.ctx.Context(), unmountCmd, helpers.ExecutionTimeout)
+		}()
+
+		appSource := filepath.Join(mountPoint, "Parallels Desktop.app")
+		appDest := "/Applications/Parallels Desktop.app"
+
+		s.ctx.LogInfof("Copying %s to %s", appSource, appDest)
+		copyCmd := helpers.Command{
+			Command: "sudo",
+			Args:    []string{"cp", "-R", appSource, "/Applications/"},
+		}
+		if asUser != "" {
+			copyCmd.Args = append([]string{"-u", asUser, "cp", "-R", appSource, "/Applications/"})
+		}
+
+		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), copyCmd, helpers.ExecutionTimeout)
+		if err != nil {
+			return errors.New("Failed to copy Parallels Desktop.app to /Applications: " + err.Error())
+		}
+
+		s.ctx.LogInfof("Adjusting permissions for Parallels Desktop")
+		helpers.ExecuteWithNoOutput(s.ctx.Context(), helpers.Command{Command: "sudo", Args: []string{"chflags", "nohidden", appDest}}, helpers.ExecutionTimeout)
+		helpers.ExecuteWithNoOutput(s.ctx.Context(), helpers.Command{Command: "sudo", Args: []string{"xattr", "-d", "com.apple.FinderInfo", appDest}}, helpers.ExecutionTimeout)
+
+		initToolPath := filepath.Join(appDest, "Contents", "MacOS", "inittool")
+		s.ctx.LogInfof("Running Parallels inittool")
+		initCmd := helpers.Command{
+			Command: "sudo",
+			Args:    []string{initToolPath, "init"},
+		}
+		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), initCmd, helpers.ExecutionTimeout)
+		if err != nil {
+			return errors.New("Failed to run Parallels inittool: " + err.Error())
+		}
+
+		s.installed = true
+		s.executable = "/usr/local/bin/prlctl"
+		s.serverExecutable = "/usr/local/bin/prlsrvctl"
 	}
 
 	license := ""

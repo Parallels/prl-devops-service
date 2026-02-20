@@ -10,6 +10,7 @@ const (
 	EventTypeGlobal       EventType = "global"       // Broadcasts to all subscribers
 	EventTypePDFM         EventType = "pdfm"         // PDFM-specific events
 	EventTypeSystem       EventType = "system"       // System-level events
+	EventTypeSystemLogs   EventType = "system_logs"  // System logs events
 	EventTypeHealth       EventType = "health"       // Health check events
 	EventTypeOrchestrator EventType = "orchestrator" // Orchestrator events
 	EventTypeStats        EventType = "stats"        // Statistics events
@@ -22,7 +23,7 @@ func (e EventType) String() string {
 // IsValid checks if the EventType is valid
 func (e EventType) IsValid() bool {
 	switch e {
-	case EventTypeGlobal, EventTypePDFM, EventTypeSystem, EventTypeHealth, EventTypeOrchestrator, EventTypeStats:
+	case EventTypeGlobal, EventTypePDFM, EventTypeSystem, EventTypeSystemLogs, EventTypeHealth, EventTypeOrchestrator, EventTypeStats:
 		return true
 	default:
 		return false
@@ -34,6 +35,8 @@ func GetAllEventTypes() []EventType {
 	return []EventType{
 		EventTypeGlobal,
 		EventTypePDFM,
+		EventTypeSystem,
+		EventTypeSystemLogs,
 		EventTypeHealth,
 		EventTypeOrchestrator,
 		EventTypeStats,

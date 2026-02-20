@@ -776,13 +776,48 @@ func (s *SystemService) getOsVersionForMac(ctx basecontext.ApiContext) (string, 
 }
 
 func (s *SystemService) getOsVersionForLinux(ctx basecontext.ApiContext) (string, error) {
-	// first lets try to get the external ip using the ifconfig.me service and curl
+	// Let's first try to parse /etc/os-release
 	cmd := helpers.Command{
-		Command: "sysctl",
-		Args:    []string{"kernel.osrelease"},
+		Command: "cat",
+		Args:    []string{"/etc/os-release"},
+	}
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err == nil && out != "" {
+		lines := strings.Split(out, "\n")
+		var versionId string
+		var buildId string
+		for _, line := range lines {
+			if strings.HasPrefix(line, "VERSION_ID=") {
+				versionId = strings.Trim(strings.TrimPrefix(line, "VERSION_ID="), "\"")
+			} else if strings.HasPrefix(line, "BUILD_ID=") {
+				buildId = strings.Trim(strings.TrimPrefix(line, "BUILD_ID="), "\"")
+			}
+		}
+		if versionId != "" {
+			if buildId != "" {
+				return fmt.Sprintf("%s (%s)", versionId, buildId), nil
+			}
+			return versionId, nil
+		}
 	}
 
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+	// Fallback to redhat-release
+	cmd = helpers.Command{
+		Command: "cat",
+		Args:    []string{"/etc/redhat-release"},
+	}
+	out, err = helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err == nil && out != "" {
+		// e.g. "CentOS Linux release 7.9.2009 (Core)"
+		return strings.TrimSpace(out), nil
+	}
+
+	// Ultimate fallback to kernel release
+	cmd = helpers.Command{
+		Command: "uname",
+		Args:    []string{"-r"},
+	}
+	out, err = helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -878,6 +913,43 @@ func (s *SystemService) GetOSName() string {
 	case "darwin":
 		return "macOS"
 	case "linux":
+		// Let's try to parse /etc/os-release for a pretty name
+		cmd := helpers.Command{
+			Command: "cat",
+			Args:    []string{"/etc/os-release"},
+		}
+		// Creating a background context to avoid timeout on startup if it hangs
+		out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+		if err == nil && out != "" {
+			lines := strings.Split(out, "\n")
+			for _, line := range lines {
+				if strings.HasPrefix(line, "PRETTY_NAME=") {
+					name := strings.Trim(strings.TrimPrefix(line, "PRETTY_NAME="), "\"")
+					if name != "" {
+						return name
+					}
+				} else if strings.HasPrefix(line, "NAME=") {
+					name := strings.Trim(strings.TrimPrefix(line, "NAME="), "\"")
+					if name != "" {
+						return name
+					}
+				}
+			}
+		}
+
+		// Fallback to redhat-release
+		cmd = helpers.Command{
+			Command: "cat",
+			Args:    []string{"/etc/redhat-release"},
+		}
+		out, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+		if err == nil && out != "" {
+			parts := strings.Split(strings.TrimSpace(out), " release ")
+			if len(parts) > 0 {
+				return parts[0]
+			}
+		}
+
 		return "Linux"
 	case "windows":
 		return "Windows"

@@ -51,6 +51,7 @@ const (
 	ORCHESTRATOR_MODE      = "orchestrator"
 	CATALOG_MODE           = "catalog"
 	HOST_MODE              = "host"
+	REVERSE_PROXY_MODE     = "reverse_proxy"
 	VM_FORCE_CACHE_REFRESH = true
 
 	DEFAULT_LOG_FILE_NAME = "prldevops.log"
@@ -61,6 +62,7 @@ var VALID_MODULES = []string{
 	ORCHESTRATOR_MODE,
 	CATALOG_MODE,
 	HOST_MODE,
+	REVERSE_PROXY_MODE,
 }
 
 const (
@@ -113,23 +115,24 @@ const (
 )
 
 const (
-	TEST_COMMAND                  = "test"
-	API_COMMAND                   = "api"
-	REVERSE_PROXY_COMMAND         = "reverse-proxy"
-	GENERATE_SECURITY_KEY_COMMAND = "gen-rsa"
-	INSTALL_SERVICE_COMMAND       = "install"
-	UNINSTALL_SERVICE_COMMAND     = "uninstall"
-	VERSION_COMMAND               = "version"
-	HELP_COMMAND                  = "help"
-	CATALOG_COMMAND               = "catalog"
-	CATALOG_PUSH_COMMAND          = "push"
-	CATALOG_PULL_COMMAND          = "pull"
-	UPDATE_ROOT_PASSWORD_COMMAND  = "update-root-pass"
-	DELETE_COMMAND                = "delete"
-	START_COMMAND                 = "start"
-	STOP_COMMAND                  = "stop"
-	EXEC_COMMAND                  = "exec"
-	CLONE_COMMAND                 = "clone"
+	TEST_COMMAND                     = "test"
+	API_COMMAND                      = "api"
+	REVERSE_PROXY_COMMAND            = "reverse-proxy"
+	GENERATE_SECURITY_KEY_COMMAND    = "gen-rsa"
+	INSTALL_SERVICE_COMMAND          = "install"
+	UNINSTALL_SERVICE_COMMAND        = "uninstall"
+	VERSION_COMMAND                  = "version"
+	HELP_COMMAND                     = "help"
+	CATALOG_COMMAND                  = "catalog"
+	CATALOG_PUSH_COMMAND             = "push"
+	CATALOG_PULL_COMMAND             = "pull"
+	UPDATE_ROOT_PASSWORD_COMMAND     = "update-root-pass"
+	DELETE_COMMAND                   = "delete"
+	START_COMMAND                    = "start"
+	STOP_COMMAND                     = "stop"
+	EXEC_COMMAND                     = "exec"
+	CLONE_COMMAND                    = "clone"
+	INIT_ORCHESTRATOR_CLIENT_COMMAND = "init-orchestrator-client"
 
 	TEST_FLAG                       = "test"
 	TEST_CATALOG_PROVIDERS_FLAG     = "catalog-providers"
@@ -142,6 +145,9 @@ const (
 	PASSWORD_FLAG                   = "password"
 	USE_ORCHESTRATOR_RESOURCES_FLAG = "use-orchestrator-resources"
 	CONFIG_FILE_FLAG                = "config"
+	ORCHESTRATOR_URL_FLAG           = "orchestrator-url"
+	ORCHESTRATOR_TOKEN_FLAG         = "orchestrator-token"
+	HOST_NAME_FLAG                  = "host-name"
 )
 
 const (

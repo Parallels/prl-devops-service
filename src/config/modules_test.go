@@ -32,8 +32,8 @@ func TestGetEnabledModules_Fallback(t *testing.T) {
 	str.Contains(t, modules, "catalog")
 	str.NotContains(t, modules, "orchestrator")
 
-	// Test Fallback to MODE=orchestrator
-	os.Setenv(constants.MODE_ENV_VAR, "orchestrator")
+	// Test Fallback to MODE=orchestrator with different case
+	os.Setenv(constants.MODE_ENV_VAR, "Orchestrator")
 	cfg = New(ctx)
 	modules = cfg.GetEnabledModules()
 	str.Contains(t, modules, "api")
@@ -42,9 +42,31 @@ func TestGetEnabledModules_Fallback(t *testing.T) {
 	str.Contains(t, modules, "orchestrator")
 }
 
+func TestGetEnabledModules_ReverseProxyFallback(t *testing.T) {
+	// Setup
+	os.Unsetenv(constants.ENABLED_MODULES_ENV_VAR)
+	os.Setenv(constants.MODE_ENV_VAR, "api")
+	os.Setenv(constants.ENABLE_REVERSE_PROXY_ENV_VAR, "true")
+	ctx := basecontext.NewBaseContext()
+	cfg := New(ctx)
+
+	// Test Reverse Proxy Fallback
+	modules := cfg.GetEnabledModules()
+	str.Contains(t, modules, "api")
+	str.Contains(t, modules, constants.REVERSE_PROXY_MODE)
+	str.True(t, cfg.IsReverseProxyEnabled())
+
+	// Unset specific
+	os.Setenv(constants.ENABLE_REVERSE_PROXY_ENV_VAR, "false")
+	cfg = New(ctx)
+	modules = cfg.GetEnabledModules()
+	str.NotContains(t, modules, constants.REVERSE_PROXY_MODE)
+	str.False(t, cfg.IsReverseProxyEnabled())
+}
+
 func TestGetEnabledModules_Explicit(t *testing.T) {
 	// Setup
-	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,catalog")
+	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,catalog,reverse_proxy")
 	ctx := basecontext.NewBaseContext()
 	cfg := New(ctx)
 
@@ -52,8 +74,10 @@ func TestGetEnabledModules_Explicit(t *testing.T) {
 	modules := cfg.GetEnabledModules()
 	str.Contains(t, modules, "api")
 	str.Contains(t, modules, "catalog")
+	str.Contains(t, modules, constants.REVERSE_PROXY_MODE)
 	str.NotContains(t, modules, "host")
 	str.NotContains(t, modules, "orchestrator")
+	str.True(t, cfg.IsReverseProxyEnabled())
 }
 
 func TestGetEnabledModules_EnsureApi(t *testing.T) {

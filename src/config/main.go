@@ -514,12 +514,7 @@ func (c *Config) DisableTlsValidation() bool {
 }
 
 func (c *Config) IsReverseProxyEnabled() bool {
-	reverseProxyEnabled := c.GetKey(constants.ENABLE_REVERSE_PROXY_ENV_VAR)
-	if reverseProxyEnabled == "" || reverseProxyEnabled == "false" {
-		return false
-	}
-
-	return true
+	return c.IsModuleEnabled(constants.REVERSE_PROXY_MODE)
 }
 
 func (c *Config) ReverseProxyHost() string {
@@ -634,10 +629,24 @@ func (c *Config) GetEnabledModules() []string {
 		modulesList = append(modulesList, "host")
 
 		mode := c.Mode()
-		if mode == constants.CATALOG_MODE {
+		if strings.EqualFold(mode, constants.CATALOG_MODE) {
 			modulesList = append(modulesList, "catalog")
-		} else if mode == constants.ORCHESTRATOR_MODE {
+		} else if strings.EqualFold(mode, constants.ORCHESTRATOR_MODE) {
 			modulesList = append(modulesList, "orchestrator")
+		}
+	}
+
+	reverseProxyEnabled := c.GetKey(constants.ENABLE_REVERSE_PROXY_ENV_VAR)
+	if strings.EqualFold(reverseProxyEnabled, "true") || reverseProxyEnabled == "1" {
+		found := false
+		for _, m := range modulesList {
+			if strings.EqualFold(m, constants.REVERSE_PROXY_MODE) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			modulesList = append(modulesList, constants.REVERSE_PROXY_MODE)
 		}
 	}
 
