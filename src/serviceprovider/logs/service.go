@@ -1,6 +1,7 @@
 package logs
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -60,6 +61,11 @@ func (s *LogService) Run(ctx basecontext.ApiContext) {
 
 	subscriptionId := "emitter-log-sub"
 	onMessage := func(msg log.LogMessage) {
+		// Filter out noisy or recursive messages
+		if strings.Contains(msg.Message, "[Hub]") || strings.Contains(msg.Message, "[StatsService]") {
+			return
+		}
+
 		logMsg := LogMessage{
 			Level:   msg.Level,
 			Message: msg.Message,
