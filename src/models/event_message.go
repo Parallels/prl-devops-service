@@ -87,3 +87,8 @@ type HostVmEvent struct {
 	HostID string      `json:"host_id"`
 	Event  interface{} `json:"event"` // VmStateChange, VmAdded, or VmRemoved
 }
+
+type HostStatsUpdate struct {
+	HostID string      `json:"host_id"`
+	Stats  interface{} `json:"stats"`
+}
