@@ -2,58 +2,47 @@ package parallelsdesktop
 
 import (
 	"strings"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/models"
 )
 
-func (s *ParallelsService) findVm(ctx basecontext.ApiContext, idOrName string, cached bool) (*models.ParallelsVM, error) {
-	var err error
-	var vms []models.ParallelsVM
-	if cached {
-		vms, err = s.GetCachedVms(ctx, "")
-	} else {
-		vms, err = s.GetVms(ctx, "")
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	for _, vm := range vms {
-		if strings.EqualFold(vm.Name, idOrName) || strings.EqualFold(vm.ID, idOrName) {
-			return &vm, nil
-		}
-	}
-	ctx.LogInfof("VM with name or id %v not found with cached=%v", idOrName, cached)
-	return nil, ErrVirtualMachineNotFound
-}
+const CacheFindNumberOfRetries = 10
+const CacheFindRetryDelay = 500 * time.Millisecond
 
 func (s *ParallelsService) findVmInCacheAndSystem(ctx basecontext.ApiContext, idOrName string) (*models.ParallelsVM, error) {
-	vm, err := s.findVmSync(ctx, idOrName, true)
+
+	for i := 0; i < CacheFindNumberOfRetries; i++ {
+		s.RLock()
+		vms := s.cachedLocalVms
+		s.RUnlock()
+		for _, vm := range vms {
+			if strings.EqualFold(vm.Name, idOrName) || strings.EqualFold(vm.ID, idOrName) {
+				return &vm, nil
+			}
+		}
+		ctx.LogInfof("VM with name or id %v not found in cache, retrying... (%d/%d)", idOrName, i+1, CacheFindNumberOfRetries)
+		time.Sleep(CacheFindRetryDelay)
+	}
+	// To fetch all virtual machines (VMs), we intentionally call `GetVms` without specifying an ID or name.
+	// This process might take some time because our goal is to refresh the entire cache.
+	// If we find any VMs, it means the current cache is outdated, and we will proceed to update it.
+	vms, err := s.GetVms(ctx, "")
 	if err == nil {
-		return vm, nil
-	}
-	return s.findVmSync(ctx, idOrName, false)
-}
-
-func (s *ParallelsService) findVmSync(ctx basecontext.ApiContext, idOrName string, cached bool) (*models.ParallelsVM, error) {
-	var err error
-	var vms []models.ParallelsVM
-	if cached {
-		vms, err = s.GetCachedVms(ctx, "")
-	} else {
-		vms, err = s.GetVms(ctx, "")
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	for _, vm := range vms {
-		if strings.EqualFold(vm.Name, idOrName) || strings.EqualFold(vm.ID, idOrName) {
-			return &vm, nil
+		for _, vm := range vms {
+			if strings.EqualFold(vm.Name, idOrName) || strings.EqualFold(vm.ID, idOrName) {
+				ctx.LogWarnf("Vm is not present in cache but found in machine updating cache")
+				s.Lock()
+				s.cachedLocalVms = vms
+				s.Unlock()
+				return &vm, nil
+			}
 		}
 	}
-	ctx.LogInfof("VM with name or id %v not found with cached=%v", idOrName, cached)
 	return nil, ErrVirtualMachineNotFound
+}
+
+func (s *ParallelsService) findVmSync(ctx basecontext.ApiContext, idOrName string) (*models.ParallelsVM, error) {
+	return s.findVmInCacheAndSystem(ctx, idOrName)
 }
