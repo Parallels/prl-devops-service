@@ -21,10 +21,10 @@ import (
 	"github.com/cjlapao/common-go/version"
 )
 
-var ver = "0.9.20"
+var ver = "0.9.21"
 
 //	@title			Parallels Desktop DevOps Service
-//	@version		0.9.20
+//	@version		0.9.21
 //	@description	Parallels Desktop DevOps Service
 //	@termsOfService	http://swagger.io/terms/
 

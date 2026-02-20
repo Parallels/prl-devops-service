@@ -447,6 +447,24 @@ func (s *ParallelsService) startForForcedCacheRefresh(ctx basecontext.ApiContext
 					s.Lock()
 					s.cachedLocalVms = currentVMs
 					s.Unlock()
+				} else {
+					// Compare cached VMs with current VMs stsus, if there is a mismatch refresh the cache
+					for _, cachedVM := range cachedVMs {
+						for _, currentVM := range currentVMs {
+							if cachedVM.ID == currentVM.ID && cachedVM.State != currentVM.State {
+								ctx.LogWarnf(
+									"This shouldn't happen: Cached VM %s state %s does not match current VM state %s, refreshing cache",
+									cachedVM.ID,
+									cachedVM.State,
+									currentVM.State,
+								)
+								// so no need to continue rest of the comparison refresh the cache and break the loop
+								s.Lock()
+								s.cachedLocalVms = currentVMs
+								s.Unlock()
+							}
+						}
+					}
 				}
 			}
 		}
@@ -543,7 +561,6 @@ func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event mode
 		}
 		for _, machine := range userMachines {
 			if machine.ID == event.VMID {
-				machine.User = user.Username
 				s.Lock()
 				s.cachedLocalVms = append(s.cachedLocalVms, machine)
 				s.Unlock()
@@ -643,6 +660,7 @@ func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string
 		if err != nil {
 			return nil, err
 		}
+		vms[0].User = username
 		userMachines = append(userMachines, vms...)
 	}
 
@@ -761,31 +779,6 @@ func (s *ParallelsService) GetVms(ctx basecontext.ApiContext, filter string) ([]
 	}
 
 	return filteredData, nil
-}
-
-func (s *ParallelsService) getVmForCurrentUser(ctx basecontext.ApiContext, idOrName string) (models.ParallelsVM, error) {
-	ctx.LogInfof("Getting VM %s for current user without cache", idOrName)
-	users, err := s.getFilteredUsers(ctx)
-	if err != nil {
-		return models.ParallelsVM{}, err
-	}
-
-	if len(users) == 0 {
-		return models.ParallelsVM{}, errors.ErrNoSystemUserFound()
-	}
-
-	for _, user := range users {
-		userMachines, err := s.getUserVm(ctx, user.Username, idOrName)
-		if err != nil {
-			return models.ParallelsVM{}, err
-		}
-		if len(userMachines) > 0 {
-			userMachines[0].User = user.Username
-			return userMachines[0], nil
-		}
-	}
-
-	return models.ParallelsVM{}, errors.ErrNoVirtualMachineFound(idOrName)
 }
 
 // Gets all VMs for current user if the user is not root, otherwise gets all VMs for all users
