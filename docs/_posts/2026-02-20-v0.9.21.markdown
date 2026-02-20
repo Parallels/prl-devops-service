@@ -1,0 +1,14 @@
+---
+layout: post
+title:  "Release 0.9.21"
+date:   2026-02-20 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- Improved cache auto refresh to detect state changes too.
+- Corrected vm state change logic to call findVmSync.
+- We'll now check the cache several times with a delay to find a VM. If we still can’t find it, we'll then use a method that doesn't rely on the cache to retrieve it.
+
+
