@@ -36,7 +36,7 @@ func TestGet(t *testing.T) {
 	assert.Same(t, globalEventEmitter, retrieved)
 }
 
-func TestEventEmitter_Initialize_NotAPIOrOrchestrator(t *testing.T) {
+func TestEventEmitter_Initialize_CliMode_Initializes_DueToApiAlwaysEnabled(t *testing.T) {
 	// Reset singleton
 	globalEventEmitter = nil
 	once = sync.Once{}
@@ -48,8 +48,8 @@ func TestEventEmitter_Initialize_NotAPIOrOrchestrator(t *testing.T) {
 	diag := emitter.Initialize()
 
 	assert.NotNil(t, diag)
-	assert.False(t, emitter.IsRunning())
-	assert.Nil(t, emitter.hub)
+	assert.True(t, emitter.IsRunning())
+	assert.NotNil(t, emitter.hub)
 }
 
 func TestEventEmitter_Initialize_AlreadyRunning(t *testing.T) {

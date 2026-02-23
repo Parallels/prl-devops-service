@@ -82,6 +82,7 @@ func SetupFileLogger(logFilename string, ctx basecontext.ApiContext) {
 		logger := ctx.Logger()
 		ctx.LogDebugf("Adding file logger: %s", logFullPath)
 		logger.AddFileLogger(logFullPath)
+		logger.AddChannelLogger() // required to stream logs via OnMessage
 		globalLogFilePath = logFullPath
 	}
 }

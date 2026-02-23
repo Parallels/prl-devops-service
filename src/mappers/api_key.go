@@ -16,6 +16,7 @@ func ApiKeyRequestToDto(model models.ApiKeyRequest) data_models.ApiKey {
 		CreatedAt: model.CreatedAt,
 		UpdatedAt: model.UpdatedAt,
 		RevokedAt: model.RevokedAt,
+		ExpiresAt: model.ExpiresAt,
 	}
 
 	return mapped
@@ -23,10 +24,12 @@ func ApiKeyRequestToDto(model models.ApiKeyRequest) data_models.ApiKey {
 
 func ApiKeyDtoToApiKeyResponse(m data_models.ApiKey) models.ApiKeyResponse {
 	mapped := models.ApiKeyResponse{
-		ID:      m.ID,
-		Name:    m.Name,
-		Key:     m.Key,
-		Revoked: m.Revoked,
+		ID:        m.ID,
+		Name:      m.Name,
+		Key:       m.Key,
+		Revoked:   m.Revoked,
+		ExpiresAt: m.ExpiresAt,
+		RevokedAt: m.RevokedAt,
 	}
 
 	return mapped

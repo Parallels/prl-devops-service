@@ -111,10 +111,11 @@ func GetTokenHandler() restapi.ControllerHandler {
 		}
 
 		claims := map[string]interface{}{
-			"email":  request.Email,
-			"uid":    user.ID,
-			"roles":  userRoles,
-			"claims": userClaims,
+			"email":    user.Email,
+			"username": user.Name,
+			"uid":      user.ID,
+			"roles":    userRoles,
+			"claims":   userClaims,
 		}
 		tokenSvc := jwt.Get()
 		tokenStr, err := tokenSvc.Sign(claims)

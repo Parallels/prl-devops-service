@@ -50,10 +50,20 @@ const (
 	CLI_MODE               = "cli"
 	ORCHESTRATOR_MODE      = "orchestrator"
 	CATALOG_MODE           = "catalog"
+	HOST_MODE              = "host"
+	REVERSE_PROXY_MODE     = "reverse_proxy"
 	VM_FORCE_CACHE_REFRESH = true
 
 	DEFAULT_LOG_FILE_NAME = "prldevops.log"
 )
+
+var VALID_MODULES = []string{
+	API_MODE,
+	ORCHESTRATOR_MODE,
+	CATALOG_MODE,
+	HOST_MODE,
+	REVERSE_PROXY_MODE,
+}
 
 const (
 	API_PORT_ENV_VAR                                        = "API_PORT"
@@ -103,26 +113,29 @@ const (
 	ENABLE_BETA_ENV_VAR                                     = "ENABLE_BETA"
 	VM_FORCE_CACHE_REFRESH_ENV_VAR                          = "VM_FORCE_CACHE_REFRESH"
 	VM_CACHE_REFRESH_INTERVAL_SECONDS_ENV_VAR               = "VM_CACHE_REFRESH_INTERVAL_SECONDS"
+	ENABLED_MODULES_ENV_VAR                                 = "ENABLED_MODULES"
+	ENABLE_INSECURE_KEY_SSH_ENV_VAR                         = "ENABLE_SSH_INSECURE_KEY"
 )
 
 const (
-	TEST_COMMAND                  = "test"
-	API_COMMAND                   = "api"
-	REVERSE_PROXY_COMMAND         = "reverse-proxy"
-	GENERATE_SECURITY_KEY_COMMAND = "gen-rsa"
-	INSTALL_SERVICE_COMMAND       = "install"
-	UNINSTALL_SERVICE_COMMAND     = "uninstall"
-	VERSION_COMMAND               = "version"
-	HELP_COMMAND                  = "help"
-	CATALOG_COMMAND               = "catalog"
-	CATALOG_PUSH_COMMAND          = "push"
-	CATALOG_PULL_COMMAND          = "pull"
-	UPDATE_ROOT_PASSWORD_COMMAND  = "update-root-pass"
-	DELETE_COMMAND                = "delete"
-	START_COMMAND                 = "start"
-	STOP_COMMAND                  = "stop"
-	EXEC_COMMAND                  = "exec"
-	CLONE_COMMAND                 = "clone"
+	TEST_COMMAND                     = "test"
+	API_COMMAND                      = "api"
+	REVERSE_PROXY_COMMAND            = "reverse-proxy"
+	GENERATE_SECURITY_KEY_COMMAND    = "gen-rsa"
+	INSTALL_SERVICE_COMMAND          = "install"
+	UNINSTALL_SERVICE_COMMAND        = "uninstall"
+	VERSION_COMMAND                  = "version"
+	HELP_COMMAND                     = "help"
+	CATALOG_COMMAND                  = "catalog"
+	CATALOG_PUSH_COMMAND             = "push"
+	CATALOG_PULL_COMMAND             = "pull"
+	UPDATE_ROOT_PASSWORD_COMMAND     = "update-root-pass"
+	DELETE_COMMAND                   = "delete"
+	START_COMMAND                    = "start"
+	STOP_COMMAND                     = "stop"
+	EXEC_COMMAND                     = "exec"
+	CLONE_COMMAND                    = "clone"
+	INIT_ORCHESTRATOR_CLIENT_COMMAND = "init-orchestrator-client"
 
 	TEST_FLAG                       = "test"
 	TEST_CATALOG_PROVIDERS_FLAG     = "catalog-providers"
@@ -135,6 +148,9 @@ const (
 	PASSWORD_FLAG                   = "password"
 	USE_ORCHESTRATOR_RESOURCES_FLAG = "use-orchestrator-resources"
 	CONFIG_FILE_FLAG                = "config"
+	ORCHESTRATOR_URL_FLAG           = "orchestrator-url"
+	ORCHESTRATOR_TOKEN_FLAG         = "orchestrator-token"
+	HOST_NAME_FLAG                  = "host-name"
 )
 
 const (
@@ -228,6 +244,8 @@ const (
 	CREATE_REVERSE_PROXY_HOST_TCP_ROUTE_CLAIM  = "CREATE_REVERSE_PROXY_HOST_TCP_ROUTE"
 	DELETE_REVERSE_PROXY_HOST_TCP_ROUTE_CLAIM  = "DELETE_REVERSE_PROXY_HOST_TCP_ROUTE"
 	UPDATE_REVERSE_PROXY_HOST_TCP_ROUTE_CLAIM  = "UPDATE_REVERSE_PROXY_HOST_TCP_ROUTE"
+
+	EXECUTE_SSH_CLAIM = "EXECUTE_SSH"
 )
 
 var AllSystemRoles = []string{
@@ -286,6 +304,7 @@ var AllSystemClaims = []string{
 	CREATE_REVERSE_PROXY_HOST_TCP_ROUTE_CLAIM,
 	DELETE_REVERSE_PROXY_HOST_TCP_ROUTE_CLAIM,
 	UPDATE_REVERSE_PROXY_HOST_TCP_ROUTE_CLAIM,
+	EXECUTE_SSH_CLAIM,
 }
 
 var AllSuperUserClaims = []string{
@@ -338,6 +357,7 @@ var AllSuperUserClaims = []string{
 	CREATE_REVERSE_PROXY_HOST_TCP_ROUTE_CLAIM,
 	DELETE_REVERSE_PROXY_HOST_TCP_ROUTE_CLAIM,
 	UPDATE_REVERSE_PROXY_HOST_TCP_ROUTE_CLAIM,
+	EXECUTE_SSH_CLAIM,
 }
 
 var DefaultRoles = []string{

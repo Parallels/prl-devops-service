@@ -15,6 +15,7 @@ func (r *RoleRequest) Validate() error {
 }
 
 type RoleResponse struct {
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name"`
+	ID    string    `json:"id,omitempty"`
+	Name  string    `json:"name"`
+	Users []ApiUser `json:"users"`
 }

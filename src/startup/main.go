@@ -2,6 +2,7 @@ package startup
 
 import (
 	"encoding/base64"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
@@ -19,6 +20,8 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
 	"github.com/Parallels/prl-devops-service/serviceprovider/health"
+	providerlogs "github.com/Parallels/prl-devops-service/serviceprovider/logs"
+	"github.com/Parallels/prl-devops-service/serviceprovider/stats"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/Parallels/prl-devops-service/startup/migrations"
 	"github.com/Parallels/prl-devops-service/telemetry"
@@ -57,6 +60,17 @@ func Start(ctx basecontext.ApiContext) {
 	// initializing telemetry with default context
 	_ = telemetry.New(ctx)
 
+	// Validate Host Module
+	if cfg.IsModuleEnabled(constants.HOST_MODE) {
+		provider := serviceprovider.Get()
+		if !provider.IsParallelsDesktopAvailable() {
+			ctx.LogWarnf("Parallels Desktop is not available, disabling host module")
+			cfg.DisableModule(constants.HOST_MODE)
+		}
+	}
+
+	ctx.LogInfof("Enabled Modules: %v", cfg.GetEnabledModules())
+
 	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.EventStartApi, nil, nil))
 
 	// Initialize EventEmitter service (for API and Orchestrator modes)
@@ -68,6 +82,14 @@ func Start(ctx basecontext.ApiContext) {
 			// Register handlers
 			health.NewHealthService(emitter)
 			eventemitter.NewSystemHandler(emitter)
+
+			// Start Stats Service
+			statsService := stats.NewStatsService(emitter)
+			go statsService.Run(ctx, 5*time.Second)
+
+			// Start Log Service
+			logService := providerlogs.NewLogService(emitter)
+			go logService.Run(ctx)
 		}
 	}
 

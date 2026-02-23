@@ -48,6 +48,35 @@ func SeedDefaultUsers() error {
 		return err
 	}
 
+	// Update root user with any missing claims
+	if exists, _ := db.GetUser(ctx, "root"); exists != nil {
+		userClaims := make(map[string]bool)
+		for _, claim := range exists.Claims {
+			userClaims[claim.ID] = true
+		}
+
+		needsUpdate := false
+		for _, claim := range claims {
+			if _, ok := userClaims[claim.ID]; !ok {
+				exists.Claims = append(exists.Claims, claim)
+				needsUpdate = true
+			}
+		}
+
+		if needsUpdate {
+			updateUser := *exists
+			updateUser.Password = ""
+			if err := db.UpdateUser(ctx, updateUser); err != nil {
+				common.Logger.Error("Error updating root user claims: %s", err.Error())
+				return err
+			}
+			common.Logger.Info("Updated root user with new claims")
+		}
+
+		_ = db.Disconnect(ctx)
+		return nil
+	}
+
 	defaultPassword, err := cryptorand.GetAlphaNumericRandomString(32)
 	if err != nil {
 		return err

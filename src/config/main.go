@@ -484,15 +484,15 @@ func (c *Config) Localhost() string {
 }
 
 func (c *Config) IsOrchestrator() bool {
-	return c.Mode() == constants.ORCHESTRATOR_MODE
+	return c.IsModuleEnabled(constants.ORCHESTRATOR_MODE)
 }
 
 func (c *Config) IsCatalog() bool {
-	return c.Mode() == constants.CATALOG_MODE
+	return c.IsModuleEnabled(constants.CATALOG_MODE)
 }
 
 func (c *Config) IsApi() bool {
-	return c.Mode() == constants.API_MODE
+	return c.IsModuleEnabled(constants.API_MODE)
 }
 
 func (c *Config) UseOrchestratorResources() bool {
@@ -522,12 +522,7 @@ func (c *Config) DisableTlsValidation() bool {
 }
 
 func (c *Config) IsReverseProxyEnabled() bool {
-	reverseProxyEnabled := c.GetKey(constants.ENABLE_REVERSE_PROXY_ENV_VAR)
-	if reverseProxyEnabled == "" || reverseProxyEnabled == "false" {
-		return false
-	}
-
-	return true
+	return c.IsModuleEnabled(constants.REVERSE_PROXY_MODE)
 }
 
 func (c *Config) ReverseProxyHost() string {
@@ -624,6 +619,112 @@ func (c *Config) EnableCredentialsObfuscation() bool {
 	}
 
 	return c.GetBoolKey(constants.CATALOG_ENABLE_PROVIDER_CREDENTIALS_OBFUSCATION_ENV_VAR)
+}
+
+func (c *Config) GetEnabledModules() []string {
+	modules := c.GetKey(constants.ENABLED_MODULES_ENV_VAR)
+	modulesList := []string{}
+
+	if modules != "" {
+		modulesList = strings.Split(modules, ",")
+		for i, module := range modulesList {
+			modulesList[i] = strings.TrimSpace(module)
+		}
+	} else {
+		// Fallback to MODE if ENABLED_MODULES is empty
+		// API and Host are enabled by default in all modes (Host subject to availability check later)
+		modulesList = append(modulesList, "api")
+		modulesList = append(modulesList, "host")
+
+		mode := c.Mode()
+		if strings.EqualFold(mode, constants.CATALOG_MODE) {
+			modulesList = append(modulesList, "catalog")
+		} else if strings.EqualFold(mode, constants.ORCHESTRATOR_MODE) {
+			modulesList = append(modulesList, "orchestrator")
+		}
+	}
+
+	reverseProxyEnabled := c.GetKey(constants.ENABLE_REVERSE_PROXY_ENV_VAR)
+	if strings.EqualFold(reverseProxyEnabled, "true") || reverseProxyEnabled == "1" {
+		found := false
+		for _, m := range modulesList {
+			if strings.EqualFold(m, constants.REVERSE_PROXY_MODE) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			modulesList = append(modulesList, constants.REVERSE_PROXY_MODE)
+		}
+	}
+
+	// Validate modules
+	validModules := []string{}
+	for _, module := range modulesList {
+		isValid := false
+		for _, validModule := range constants.VALID_MODULES {
+			if strings.EqualFold(module, validModule) {
+				isValid = true
+				break
+			}
+		}
+		if isValid {
+			validModules = append(validModules, module)
+		}
+	}
+	modulesList = validModules
+
+	// Ensure API is always enabled
+	apiFound := false
+	for _, module := range modulesList {
+		if strings.EqualFold(module, constants.API_MODE) {
+			apiFound = true
+			break
+		}
+	}
+
+	if !apiFound {
+		modulesList = append(modulesList, constants.API_MODE)
+	}
+
+	return modulesList
+}
+
+func (c *Config) IsModuleEnabled(module string) bool {
+	modules := c.GetEnabledModules()
+	for _, m := range modules {
+		if strings.EqualFold(m, module) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (c *Config) DisableModule(module string) {
+	modules := c.GetEnabledModules()
+	newModules := []string{}
+	for _, m := range modules {
+		if !strings.EqualFold(m, module) {
+			newModules = append(newModules, m)
+		}
+	}
+
+	newValue := strings.Join(newModules, ",")
+	c.SetKey(constants.ENABLED_MODULES_ENV_VAR, newValue)
+	_ = os.Setenv(constants.ENABLED_MODULES_ENV_VAR, newValue)
+}
+
+func (c *Config) EnableModule(module string) {
+	if c.IsModuleEnabled(module) {
+		return
+	}
+
+	modules := c.GetEnabledModules()
+	modules = append(modules, module)
+	newValue := strings.Join(modules, ",")
+	c.SetKey(constants.ENABLED_MODULES_ENV_VAR, newValue)
+	_ = os.Setenv(constants.ENABLED_MODULES_ENV_VAR, newValue)
 }
 
 func (c *Config) GetKey(key string) string {

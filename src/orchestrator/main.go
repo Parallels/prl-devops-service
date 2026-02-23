@@ -69,6 +69,7 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	manager := NewHostWebSocketManager(s.ctx)
 	handlers.NewPDfMEventHandler(manager)
 	handlers.NewHostHealthHandler(manager)
+	handlers.NewHostStatsHandler(manager)
 
 	// Initial refresh of connections
 	if hosts, err := s.db.GetOrchestratorHosts(s.ctx, ""); err == nil {

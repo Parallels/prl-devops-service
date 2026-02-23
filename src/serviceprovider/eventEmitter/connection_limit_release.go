@@ -4,5 +4,5 @@
 package eventemitter
 
 func isMultipleConnectionsPerIPAllowed() bool {
-	return false
+	return true
 }

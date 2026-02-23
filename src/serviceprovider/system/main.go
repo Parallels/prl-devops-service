@@ -776,12 +776,39 @@ func (s *SystemService) getOsVersionForMac(ctx basecontext.ApiContext) (string, 
 }
 
 func (s *SystemService) getOsVersionForLinux(ctx basecontext.ApiContext) (string, error) {
-	// first lets try to get the external ip using the ifconfig.me service and curl
-	cmd := helpers.Command{
-		Command: "sysctl",
-		Args:    []string{"kernel.osrelease"},
+	// Let's first try to parse /etc/os-release
+	if content, err := os.ReadFile("/etc/os-release"); err == nil {
+		lines := strings.Split(string(content), "\n")
+		var versionId string
+		var buildId string
+		for _, line := range lines {
+			if strings.HasPrefix(line, "VERSION_ID=") {
+				versionId = strings.Trim(strings.TrimPrefix(line, "VERSION_ID="), "\"")
+			} else if strings.HasPrefix(line, "BUILD_ID=") {
+				buildId = strings.Trim(strings.TrimPrefix(line, "BUILD_ID="), "\"")
+			}
+		}
+		if versionId != "" {
+			if buildId != "" {
+				return fmt.Sprintf("%s (%s)", versionId, buildId), nil
+			}
+			return versionId, nil
+		}
 	}
 
+	// Fallback to redhat-release
+	if content, err := os.ReadFile("/etc/redhat-release"); err == nil {
+		out := string(content)
+		if out != "" {
+			return strings.TrimSpace(out), nil
+		}
+	}
+
+	// Ultimate fallback to kernel release
+	cmd := helpers.Command{
+		Command: "uname",
+		Args:    []string{"-r"},
+	}
 	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return "", err
@@ -873,11 +900,40 @@ func (s *SystemService) getOsTempFolderForWindows(ctx basecontext.ApiContext) (s
 }
 
 func (s *SystemService) GetOSName() string {
-	os := runtime.GOOS
-	switch os {
+	goOs := runtime.GOOS
+	switch goOs {
 	case "darwin":
 		return "macOS"
 	case "linux":
+		// Let's try to parse /etc/os-release for a pretty name
+		if content, err := os.ReadFile("/etc/os-release"); err == nil {
+			lines := strings.Split(string(content), "\n")
+			for _, line := range lines {
+				if strings.HasPrefix(line, "PRETTY_NAME=") {
+					name := strings.Trim(strings.TrimPrefix(line, "PRETTY_NAME="), "\"")
+					if name != "" {
+						return name
+					}
+				} else if strings.HasPrefix(line, "NAME=") {
+					name := strings.Trim(strings.TrimPrefix(line, "NAME="), "\"")
+					if name != "" {
+						return name
+					}
+				}
+			}
+		}
+
+		// Fallback to redhat-release
+		if content, err := os.ReadFile("/etc/redhat-release"); err == nil {
+			out := string(content)
+			if out != "" {
+				parts := strings.Split(strings.TrimSpace(out), " release ")
+				if len(parts) > 0 {
+					return parts[0]
+				}
+			}
+		}
+
 		return "Linux"
 	case "windows":
 		return "Windows"

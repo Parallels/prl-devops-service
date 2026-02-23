@@ -25,13 +25,8 @@ type AuthorizationContext struct {
 var baseAuthorizationCtx *AuthorizationContext
 
 func InitAuthorizationContext() *AuthorizationContext {
-	if baseAuthorizationCtx == nil {
-		context := AuthorizationContext{}
-
-		baseAuthorizationCtx = &context
-	}
-
-	return baseAuthorizationCtx
+	context := AuthorizationContext{}
+	return &context
 }
 
 func GetBaseContext() *AuthorizationContext {

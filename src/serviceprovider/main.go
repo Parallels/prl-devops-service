@@ -19,6 +19,7 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider/packer"
 	"github.com/Parallels/prl-devops-service/serviceprovider/parallelsdesktop"
+	"github.com/Parallels/prl-devops-service/serviceprovider/ssh"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/Parallels/prl-devops-service/serviceprovider/vagrant"
 	sql_database "github.com/Parallels/prl-devops-service/sql"
@@ -35,6 +36,7 @@ type ServiceProvider struct {
 	GitService              *git.GitService
 	PackerService           *packer.PackerService
 	VagrantService          *vagrant.VagrantService
+	SshService              *ssh.SshService
 	MySqlService            *sql_database.MySQLService
 	JsonDatabase            *data.JsonDatabase
 	Services                []interfaces.Service
@@ -186,6 +188,9 @@ func InitServices(ctx basecontext.ApiContext) {
 	globalProvider.ParallelsDesktopService = parallelsdesktop.New(ctx)
 	globalProvider.ParallelsDesktopService.SetDependencies([]interfaces.Service{globalProvider.System, globalProvider.Brew})
 	globalProvider.Services = append(globalProvider.Services, globalProvider.ParallelsDesktopService)
+	globalProvider.SshService = ssh.New(ctx)
+	globalProvider.SshService.SetDependencies([]interfaces.Service{})
+	globalProvider.Services = append(globalProvider.Services, globalProvider.SshService)
 
 	currentUser, err := globalProvider.System.GetCurrentUser(ctx)
 	if err != nil {

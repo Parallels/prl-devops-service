@@ -67,6 +67,8 @@ func Process() {
 		constants.DELETE_COMMAND,
 		constants.EXEC_COMMAND:
 		processParallelsDesktop(ctx, command)
+	case constants.INIT_ORCHESTRATOR_CLIENT_COMMAND:
+		processInitOrchestratorClient(ctx, command)
 	default:
 		if helper.GetFlagSwitch("help", false) {
 			processHelp("")

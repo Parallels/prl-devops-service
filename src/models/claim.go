@@ -15,6 +15,7 @@ func (r *ClaimRequest) Validate() error {
 }
 
 type ClaimResponse struct {
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name"`
+	ID    string    `json:"id,omitempty"`
+	Name  string    `json:"name"`
+	Users []ApiUser `json:"users,omitempty"`
 }

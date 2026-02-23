@@ -24,162 +24,160 @@ import (
 )
 
 func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string) {
-	provider := serviceprovider.Get()
+	// provider := serviceprovider.Get()
+	// Validation is now done at startup via 'host' module check
+	ctx.LogInfof("Registering version %s virtual machine handlers", version)
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/machines").
+		WithRequiredClaim(constants.LIST_VM_CLAIM).
+		WithHandler(GetVirtualMachinesHandler()).
+		Register()
 
-	if provider.IsParallelsDesktopAvailable() {
-		ctx.LogInfof("Registering version %s virtual machine handlers", version)
-		restapi.NewController().
-			WithMethod(restapi.GET).
-			WithVersion(version).
-			WithPath("/machines").
-			WithRequiredClaim(constants.LIST_VM_CLAIM).
-			WithHandler(GetVirtualMachinesHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/machines/{id}").
+		WithRequiredClaim(constants.LIST_VM_CLAIM).
+		WithHandler(GetVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.GET).
-			WithVersion(version).
-			WithPath("/machines/{id}").
-			WithRequiredClaim(constants.LIST_VM_CLAIM).
-			WithHandler(GetVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/machines").
+		WithRequiredClaim(constants.CREATE_VM_CLAIM).
+		WithHandler(CreateVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.POST).
-			WithVersion(version).
-			WithPath("/machines").
-			WithRequiredClaim(constants.CREATE_VM_CLAIM).
-			WithHandler(CreateVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/machines/{id}").
+		WithRequiredClaim(constants.DELETE_VM_CLAIM).
+		WithHandler(DeleteVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.DELETE).
-			WithVersion(version).
-			WithPath("/machines/{id}").
-			WithRequiredClaim(constants.DELETE_VM_CLAIM).
-			WithHandler(DeleteVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/machines/register").
+		WithRequiredClaim(constants.CREATE_VM_CLAIM).
+		WithHandler(RegisterVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.POST).
-			WithVersion(version).
-			WithPath("/machines/register").
-			WithRequiredClaim(constants.CREATE_VM_CLAIM).
-			WithHandler(RegisterVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/machines/{id}/unregister").
+		WithRequiredClaim(constants.UPDATE_VM_CLAIM).
+		WithHandler(UnregisterVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.POST).
-			WithVersion(version).
-			WithPath("/machines/{id}/unregister").
-			WithRequiredClaim(constants.UPDATE_VM_CLAIM).
-			WithHandler(UnregisterVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/machines/{id}/start").
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
+		WithHandler(StartVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.GET).
-			WithVersion(version).
-			WithPath("/machines/{id}/start").
-			WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
-			WithHandler(StartVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/machines/{id}/stop").
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
+		WithHandler(StopVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.GET).
-			WithVersion(version).
-			WithPath("/machines/{id}/stop").
-			WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
-			WithHandler(StopVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/machines/{id}/restart").
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
+		WithHandler(RestartVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.GET).
-			WithVersion(version).
-			WithPath("/machines/{id}/restart").
-			WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
-			WithHandler(RestartVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/machines/{id}/pause").
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
+		WithHandler(PauseVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.GET).
-			WithVersion(version).
-			WithPath("/machines/{id}/pause").
-			WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
-			WithHandler(PauseVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/machines/{id}/resume").
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
+		WithHandler(ResumeMachineController()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.GET).
-			WithVersion(version).
-			WithPath("/machines/{id}/resume").
-			WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
-			WithHandler(ResumeMachineController()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/machines/{id}/reset").
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
+		WithHandler(ResetMachineController()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.GET).
-			WithVersion(version).
-			WithPath("/machines/{id}/reset").
-			WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
-			WithHandler(ResetMachineController()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/machines/{id}/suspend").
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
+		WithHandler(SuspendVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.GET).
-			WithVersion(version).
-			WithPath("/machines/{id}/suspend").
-			WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
-			WithHandler(SuspendVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/machines/{id}/status").
+		WithRequiredClaim(constants.LIST_VM_CLAIM).
+		WithHandler(GetVirtualMachineStatusHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.GET).
-			WithVersion(version).
-			WithPath("/machines/{id}/status").
-			WithRequiredClaim(constants.LIST_VM_CLAIM).
-			WithHandler(GetVirtualMachineStatusHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/machines/{id}/set").
+		WithRequiredClaim(constants.UPDATE_VM_CLAIM).
+		WithHandler(SetVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.PUT).
-			WithVersion(version).
-			WithPath("/machines/{id}/set").
-			WithRequiredClaim(constants.UPDATE_VM_CLAIM).
-			WithHandler(SetVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/machines/{id}/execute").
+		WithRequiredClaim(constants.EXECUTE_COMMAND_VM_CLAIM).
+		WithHandler(ExecuteCommandOnVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.PUT).
-			WithVersion(version).
-			WithPath("/machines/{id}/execute").
-			WithRequiredClaim(constants.EXECUTE_COMMAND_VM_CLAIM).
-			WithHandler(ExecuteCommandOnVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/machines/{id}/upload").
+		WithRequiredClaim(constants.UPDATE_VM_CLAIM).
+		WithHandler(UploadFileToVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.POST).
-			WithVersion(version).
-			WithPath("/machines/{id}/upload").
-			WithRequiredClaim(constants.UPDATE_VM_CLAIM).
-			WithHandler(UploadFileToVirtualMachineHandler()).
-			Register()
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/machines/{id}/rename").
+		WithRequiredClaim(constants.UPDATE_VM_CLAIM).
+		WithHandler(RenameVirtualMachineHandler()).
+		Register()
 
-		restapi.NewController().
-			WithMethod(restapi.PUT).
-			WithVersion(version).
-			WithPath("/machines/{id}/rename").
-			WithRequiredClaim(constants.UPDATE_VM_CLAIM).
-			WithHandler(RenameVirtualMachineHandler()).
-			Register()
-
-		restapi.NewController().
-			WithMethod(restapi.PUT).
-			WithVersion(version).
-			WithPath("/machines/{id}/clone").
-			WithRequiredClaim(constants.CREATE_VM_CLAIM).
-			WithHandler(CloneVirtualMachineHandler()).
-			Register()
-	}
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/machines/{id}/clone").
+		WithRequiredClaim(constants.CREATE_VM_CLAIM).
+		WithHandler(CloneVirtualMachineHandler()).
+		Register()
 }
 
 // @Summary		Gets all the virtual machines
