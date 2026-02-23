@@ -447,6 +447,24 @@ func (s *ParallelsService) startForForcedCacheRefresh(ctx basecontext.ApiContext
 					s.Lock()
 					s.cachedLocalVms = currentVMs
 					s.Unlock()
+				} else {
+					// Compare cached VMs with current VMs stsus, if there is a mismatch refresh the cache
+					for _, cachedVM := range cachedVMs {
+						for _, currentVM := range currentVMs {
+							if cachedVM.ID == currentVM.ID && cachedVM.State != currentVM.State {
+								ctx.LogWarnf(
+									"This shouldn't happen: Cached VM %s state %s does not match current VM state %s, refreshing cache",
+									cachedVM.ID,
+									cachedVM.State,
+									currentVM.State,
+								)
+								// so no need to continue rest of the comparison refresh the cache and break the loop
+								s.Lock()
+								s.cachedLocalVms = currentVMs
+								s.Unlock()
+							}
+						}
+					}
 				}
 			}
 		}
@@ -537,13 +555,12 @@ func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event mode
 		return
 	}
 	for _, user := range users {
-		userMachines, err := s.GetUserVm(ctx, user.Username, event.VMID)
+		userMachines, err := s.getUserVm(ctx, user.Username, event.VMID)
 		if err != nil {
 			continue
 		}
 		for _, machine := range userMachines {
 			if machine.ID == event.VMID {
-				machine.User = user.Username
 				s.Lock()
 				s.cachedLocalVms = append(s.cachedLocalVms, machine)
 				s.Unlock()
@@ -594,7 +611,7 @@ func (s *ParallelsService) processVmUnregistered(ctx basecontext.ApiContext, eve
 
 func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
 	ctx.LogInfof("Refreshing Parallels VMs cache")
-	vms, err := s.getVms(ctx)
+	vms, err := s.getVmsInMachineForCurrentUser(ctx)
 	s.Lock()
 	if err != nil {
 		ctx.LogErrorf("Error refreshing Parallels VMs cache: %v", err)
@@ -605,7 +622,7 @@ func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
 	s.Unlock()
 }
 
-func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string, vmId string) ([]models.ParallelsVM, error) {
+func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string, vmId string) ([]models.ParallelsVM, error) {
 	// vmId can be empty to get all VMs for the user
 	ctx.LogInfof("Getting VMs for user: %s", username)
 
@@ -614,7 +631,7 @@ func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string
 	if vmId == "" {
 		ctx.LogDebugf("Getting all VMs for user %s", username)
 		var err error
-		vmIds, err = s.GetUserVmIds(ctx, username)
+		vmIds, err = s.getUserVmIds(ctx, username)
 		if err != nil {
 			return nil, err
 		}
@@ -643,6 +660,7 @@ func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string
 		if err != nil {
 			return nil, err
 		}
+		vms[0].User = username
 		userMachines = append(userMachines, vms...)
 	}
 
@@ -686,7 +704,7 @@ func (s *ParallelsService) GetUserVm(ctx basecontext.ApiContext, username string
 	return userMachines, nil
 }
 
-func (s *ParallelsService) GetUserVmIds(ctx basecontext.ApiContext, username string) ([]string, error) {
+func (s *ParallelsService) getUserVmIds(ctx basecontext.ApiContext, username string) ([]string, error) {
 	cmd := helpers.Command{
 		Command: s.executable,
 		Args:    []string{"list", "-a", "-f", "--json"},
@@ -720,8 +738,8 @@ func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter strin
 		s.RLock()
 		systemMachines = s.cachedLocalVms
 		s.RUnlock()
-	} else {
-		systemMachines, err = s.getVms(ctx)
+	} else { // if not API or Orchestrator, we will not maintain the cache and get the VMs directly from the system
+		systemMachines, err = s.getVmsInMachineForCurrentUser(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -745,7 +763,7 @@ func (s *ParallelsService) GetVms(ctx basecontext.ApiContext, filter string) ([]
 	var systemMachines []models.ParallelsVM
 	var err error
 
-	systemMachines, err = s.getVms(ctx)
+	systemMachines, err = s.getVmsInMachineForCurrentUser(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -763,7 +781,9 @@ func (s *ParallelsService) GetVms(ctx basecontext.ApiContext, filter string) ([]
 	return filteredData, nil
 }
 
-func (s *ParallelsService) getVms(ctx basecontext.ApiContext) ([]models.ParallelsVM, error) {
+// Gets all VMs for current user if the user is not root, otherwise gets all VMs for all users
+// This is non cached
+func (s *ParallelsService) getVmsInMachineForCurrentUser(ctx basecontext.ApiContext) ([]models.ParallelsVM, error) {
 	ctx.LogDebugf("Getting all VMs for all users without cache")
 	var systemMachines []models.ParallelsVM
 
@@ -777,7 +797,7 @@ func (s *ParallelsService) getVms(ctx basecontext.ApiContext) ([]models.Parallel
 	}
 
 	for _, user := range users {
-		userMachines, err := s.GetUserVm(ctx, user.Username, "")
+		userMachines, err := s.getUserVm(ctx, user.Username, "")
 		if err != nil {
 			return nil, err
 		}
@@ -801,7 +821,7 @@ func (s *ParallelsService) getVms(ctx basecontext.ApiContext) ([]models.Parallel
 }
 
 func (s *ParallelsService) GetVm(ctx basecontext.ApiContext, id string) (*models.ParallelsVM, error) {
-	vm, err := s.findVm(ctx, id, true)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -810,7 +830,7 @@ func (s *ParallelsService) GetVm(ctx basecontext.ApiContext, id string) (*models
 }
 
 func (s *ParallelsService) GetVmSync(ctx basecontext.ApiContext, id string) (*models.ParallelsVM, error) {
-	vm, err := s.findVmSync(ctx, id, true)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -820,7 +840,7 @@ func (s *ParallelsService) GetVmSync(ctx basecontext.ApiContext, id string) (*mo
 
 func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, desiredState ParallelsVirtualMachineDesiredState,
 	flags DesiredStateFlags) error {
-	vm, err := s.findVmSync(ctx, id, true)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -958,7 +978,7 @@ func (s *ParallelsService) PauseVm(ctx basecontext.ApiContext, id string) error 
 }
 
 func (s *ParallelsService) DeleteVm(ctx basecontext.ApiContext, id string) error {
-	vm, err := s.findVmSync(ctx, id, true)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -983,7 +1003,7 @@ func (s *ParallelsService) DeleteVm(ctx basecontext.ApiContext, id string) error
 }
 
 func (s *ParallelsService) VmStatus(ctx basecontext.ApiContext, id string) (*models.VirtualMachineStatus, error) {
-	vm, err := s.findVmSync(ctx, id, true)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -1073,7 +1093,7 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 }
 
 func (s *ParallelsService) UnregisterVm(ctx basecontext.ApiContext, r models.UnregisterVirtualMachineRequest) error {
-	vm, err := s.findVmSync(ctx, r.ID, true)
+	vm, err := s.findVmSync(ctx, r.ID)
 	if err != nil {
 		return err
 	}
@@ -1107,7 +1127,7 @@ func (s *ParallelsService) UnregisterVm(ctx basecontext.ApiContext, r models.Unr
 }
 
 func (s *ParallelsService) RenameVm(ctx basecontext.ApiContext, r models.RenameVirtualMachineRequest) error {
-	vm, err := s.findVmSync(ctx, r.GetId(), true)
+	vm, err := s.findVmSync(ctx, r.GetId())
 	if err != nil {
 		return err
 	}
@@ -1140,7 +1160,7 @@ func (s *ParallelsService) RenameVm(ctx basecontext.ApiContext, r models.RenameV
 }
 
 func (s *ParallelsService) PackVm(ctx basecontext.ApiContext, idOrName string) error {
-	vm, err := s.findVmSync(ctx, idOrName, true)
+	vm, err := s.findVmSync(ctx, idOrName)
 	if err != nil {
 		return err
 	}
@@ -1165,7 +1185,7 @@ func (s *ParallelsService) PackVm(ctx basecontext.ApiContext, idOrName string) e
 }
 
 func (s *ParallelsService) UnpackVm(ctx basecontext.ApiContext, idOrName string) error {
-	vm, err := s.findVmSync(ctx, idOrName, true)
+	vm, err := s.findVmSync(ctx, idOrName)
 	if err != nil {
 		return err
 	}
@@ -1282,7 +1302,7 @@ func (s *ParallelsService) GetUserHome(ctx basecontext.ApiContext, user string) 
 }
 
 func (s *ParallelsService) ConfigureVm(ctx basecontext.ApiContext, id string, setOperations *models.VirtualMachineConfigRequest) error {
-	vm, err := s.findVmSync(ctx, id, true)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -1373,7 +1393,7 @@ func (s *ParallelsService) CreateVm(ctx basecontext.ApiContext, template data_mo
 
 func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, template data_models.PackerTemplate, desiredState string) (*models.ParallelsVM, error) {
 	ctx.LogInfof("Creating Packer Virtual Machine %s", template.Name)
-	existVm, err := s.findVmSync(ctx, template.Name, true)
+	existVm, err := s.findVmSync(ctx, template.Name)
 	if existVm != nil || err != nil {
 		if errors.GetSystemErrorCode(err) != 404 {
 			return nil, errors.Newf("Machine %v with ID %v already exists and is %s", template.Name, existVm.ID, existVm.State)
@@ -1564,7 +1584,7 @@ func (s *ParallelsService) CreatePackerTemplateVm(ctx basecontext.ApiContext, te
 
 	ctx.LogInfof("Registered VM %s", destinationFolder)
 
-	existVm, err = s.findVmSync(ctx, template.Name, true)
+	existVm, err = s.findVmSync(ctx, template.Name)
 	if existVm == nil || err != nil {
 		ctx.LogErrorf("Error finding VM %s: %s", template.Name, err.Error())
 		if cleanError := helpers.RemoveFolder(repoPath); cleanError != nil {
@@ -1911,7 +1931,7 @@ func (s *ParallelsService) SetTimeSyncOperation(ctx basecontext.ApiContext, vm *
 func (s *ParallelsService) LocalUploadToVm(ctx basecontext.ApiContext, id string, r *models.VirtualMachineUploadRequest) (*models.VirtualMachineUploadResponse, error) {
 	response := models.VirtualMachineUploadResponse{}
 
-	vm, err := s.findVmSync(ctx, id, true)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		response.Error = err.Error()
 		return &response, err
@@ -2044,7 +2064,7 @@ func (s *ParallelsService) LocalUploadToVm(ctx basecontext.ApiContext, id string
 
 func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id string, r *models.VirtualMachineExecuteCommandRequest) (*models.VirtualMachineExecuteCommandResponse, error) {
 	response := &models.VirtualMachineExecuteCommandResponse{}
-	vm, err := s.findVmSync(ctx, id, true)
+	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		ctx.LogErrorf("Error finding VM %s: %s", id, err.Error())
 		return nil, err
