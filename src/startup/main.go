@@ -72,10 +72,12 @@ func Start(ctx basecontext.ApiContext) {
 	}
 
 	// Seeding defaults
+	ctx.LogInfof("Seeding defaults")
 	if err := SeedDefaults(); err != nil {
 		panic(err)
 	}
 
+	ctx.LogInfof("Applying migrations")
 	for _, migration := range schemaMigrations {
 		if err := migration.Apply(); err != nil {
 			ctx.LogErrorf("Error applying migration: %v", err)

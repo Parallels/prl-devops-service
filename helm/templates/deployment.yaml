@@ -228,16 +228,16 @@ spec:
                   key: SYSTEM_AUTO_RECOVER_DATABASE
             {{- end }}
             {{- if .Values.logs.toFile }}
-            - name: PRL_DEVOPS_LOG_TO_FILE
+            - name: LOG_TO_FILE
               valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
-                  key: PRL_DEVOPS_LOG_TO_FILE
-            - name: PRL_DEVOPS_LOG_FILE_PATH
+                  key: LOG_TO_FILE
+            - name: LOG_FILE_PATH
               valueFrom:
                 configMapKeyRef:
                   name: {{ include "helm.fullname" . }}
-                  key: PRL_DEVOPS_LOG_FILE_PATH
+                  key: LOG_FILE_PATH
             {{- end }}
           {{- with .Values.envFrom }}
           envFrom:
