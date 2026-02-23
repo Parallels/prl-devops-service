@@ -478,6 +478,7 @@ func (j *JsonDatabase) recoverFromResidualSaveFiles(ctx basecontext.ApiContext, 
 			ctx.LogInfof("[Database] Save file %s is empty, ignoring", latestSaveFile)
 			return false, nil
 		}
+		err = json.Unmarshal(content, &data)
 		if err != nil {
 			ctx.LogErrorf("[Database] Error unmarshalling save file %s: %v", latestSaveFile, err)
 			return false, err
@@ -629,18 +630,24 @@ func (j *JsonDatabase) IsDataFileEmpty(ctx basecontext.ApiContext) (bool, error)
 
 	// Adding a delay to allow for slow mounts to be ready
 	for {
-		if _, err := os.Stat(j.filename); os.IsNotExist(err) {
-			ctx.LogInfof("[Database] Database file does not exist, creating new file")
-
-			if retryCount >= maxRetries {
-				ctx.LogErrorf("[Database] Error opening database file after %d retries: %v", maxRetries, err)
-				break
-			}
-			retryCount++
-			time.Sleep(retryInterval)
-		} else {
+		_, err := os.Stat(j.filename)
+		if err == nil {
 			break
 		}
+
+		if os.IsNotExist(err) {
+			// If it definitely doesn't exist, don't wait 10 times for a mount
+			break
+		}
+
+		ctx.LogInfof("[Database] Database file not accessible yet (err: %v), waiting for volume mount...", err)
+
+		if retryCount >= maxRetries {
+			ctx.LogErrorf("[Database] Error opening database file after %d retries: %v", maxRetries, err)
+			break
+		}
+		retryCount++
+		time.Sleep(retryInterval)
 	}
 
 	if _, err := os.Stat(j.filename); os.IsNotExist(err) {

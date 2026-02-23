@@ -11,8 +11,9 @@ import (
 )
 
 type MockBroadcaster struct {
-	messages []*models.EventMessage
-	msgChan  chan *models.EventMessage
+	messages  []*models.EventMessage
+	msgChan   chan *models.EventMessage
+	isRunning bool
 }
 
 func (m *MockBroadcaster) BroadcastMessage(msg *models.EventMessage) error {
@@ -23,10 +24,15 @@ func (m *MockBroadcaster) BroadcastMessage(msg *models.EventMessage) error {
 	return nil
 }
 
+func (m *MockBroadcaster) IsRunning() bool {
+	return m.isRunning
+}
+
 func TestStatsService_Run(t *testing.T) {
 	// Setup
 	mockBroadcaster := &MockBroadcaster{
-		msgChan: make(chan *models.EventMessage, 10),
+		msgChan:   make(chan *models.EventMessage, 10),
+		isRunning: true,
 	}
 
 	// Direct initialization to bypass singleton for testing isolation
