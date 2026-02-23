@@ -27,8 +27,7 @@ func SetupFileLogger(logFilename string, ctx basecontext.ApiContext) {
 	}
 	executableFilePath := filepath.Dir(os.Args[0])
 	// check if we should log to file
-	enableLogToFile := cfg.GetKey(constants.LOG_TO_FILE_ENV_VAR)
-	if enableLogToFile == "true" {
+	if cfg.GetKey(constants.LOG_TO_FILE_ENV_VAR) == "true" || cfg.GetKey(constants.PRL_DEVOPS_LOG_TO_FILE_ENV_VAR) == "true" {
 		// Setting the default path to the executable path
 		logFilePath := executableFilePath
 		// Checking if the user is root and the operating system is linux or macos
@@ -52,6 +51,9 @@ func SetupFileLogger(logFilename string, ctx basecontext.ApiContext) {
 
 		// checking if a custom path is set in the environment variables
 		envFilePath := cfg.GetKey(constants.LOG_FILE_PATH_ENV_VAR)
+		if envFilePath == "" {
+			envFilePath = cfg.GetKey(constants.PRL_DEVOPS_LOG_FILE_PATH_ENV_VAR)
+		}
 		if envFilePath != "" && envFilePath != "." {
 			baseFolder := filepath.Dir(envFilePath)
 			if _, err := os.Stat(baseFolder); os.IsNotExist(err) {

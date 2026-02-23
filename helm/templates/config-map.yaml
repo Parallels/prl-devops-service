@@ -17,8 +17,8 @@ data:
   MODE: "api"
   {{- end }}
   {{- if .Values.logs.toFile }}
-  PRL_DEVOPS_LOG_TO_FILE: "true"
-  PRL_DEVOPS_LOG_FILE_PATH: {{ .Values.logs.folder }}
+  LOG_TO_FILE: "true"
+  LOG_FILE_PATH: {{ .Values.logs.folder }}
   {{- end }}
   JWT_DURATION: {{ .Values.security.jwt.duration | quote }}
   JWT_SIGN_ALGORITHM: {{ .Values.security.jwt.signing_method | quote }}

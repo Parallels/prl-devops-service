@@ -256,6 +256,14 @@ func (c *Config) EncryptionPrivateKey() string {
 	return securityKey
 }
 
+func (c *Config) RootPassword() string {
+	password := c.GetKey(constants.ROOT_PASSWORD_ENV_VAR)
+	if password == "" {
+		return ""
+	}
+	return password
+}
+
 func (c *Config) TlsCertificate() string {
 	tlsCertificate := c.GetKey(constants.TLS_CERTIFICATE_ENV_VAR)
 	decoded, err := security.DecodeBase64String(tlsCertificate)
