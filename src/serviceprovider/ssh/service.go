@@ -6,8 +6,11 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 type SshService struct {
@@ -52,10 +55,25 @@ func (s *SshService) SetDependencies(dependencies []interfaces.Service) {
 	s.dependencies = dependencies
 }
 
-func (s *SshService) Execute(ctx basecontext.ApiContext, host string, port int, user, password, key, command string) (string, error) {
+func (s *SshService) Execute(ctx basecontext.ApiContext, host string, port int, user, password, key, command string, enableInsecureKey bool) (string, error) {
+	cfg := config.Get()
+	sshInsecureKey := cfg.GetBoolKey(constants.ENABLE_INSECURE_KEY_SSH_ENV_VAR)
+	if enableInsecureKey {
+		sshInsecureKey = true
+	}
+	var hostKeyCallback ssh.HostKeyCallback
+	var hostKeyCallbackErr error
+	if sshInsecureKey {
+		hostKeyCallback = ssh.InsecureIgnoreHostKey()
+	} else {
+		hostKeyCallback, hostKeyCallbackErr = knownhosts.New("~/.ssh/known_hosts")
+		if hostKeyCallbackErr != nil {
+			return "", fmt.Errorf("failed to load known_hosts: %v", hostKeyCallbackErr)
+		}
+	}
 	config := &ssh.ClientConfig{
 		User:            user,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: hostKeyCallback,
 		Timeout:         30 * time.Second,
 	}
 

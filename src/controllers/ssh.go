@@ -25,12 +25,13 @@ func registerSshHandlers(ctx basecontext.ApiContext, version string) {
 }
 
 type SshExecutionRequest struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password,omitempty"`
-	Key      string `json:"key,omitempty"`
-	Command  string `json:"command"`
+	Host              string `json:"host"`
+	Port              int    `json:"port"`
+	Username          string `json:"username"`
+	Password          string `json:"password,omitempty"`
+	Key               string `json:"key,omitempty"`
+	Command           string `json:"command"`
+	EnableInsecureKey bool   `json:"enable_insecure_key,omitempty"`
 }
 
 type SshExecutionResponse struct {
@@ -96,7 +97,7 @@ func ExecuteSshHandler() restapi.ControllerHandler {
 			return
 		}
 
-		output, err := provider.SshService.Execute(ctx, request.Host, request.Port, request.Username, request.Password, request.Key, request.Command)
+		output, err := provider.SshService.Execute(ctx, request.Host, request.Port, request.Username, request.Password, request.Key, request.Command, request.EnableInsecureKey)
 		response := SshExecutionResponse{
 			Output: output,
 		}

@@ -35,7 +35,8 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 			// If the authorization context is already authorized we will skip this middleware
 			if authorizationContext.IsAuthorized || HasAuthorizationHeader(r) {
 				baseCtx.LogDebugf("No Api Key was found in the request, skipping")
-				next.ServeHTTP(w, r)
+				ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
+				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
@@ -50,7 +51,8 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapt
 				authError.ErrorDescription = err.Error()
 				authorizationContext.AuthorizationError = &authError
 				baseCtx.LogInfof("No Api Key was found in the request, skipping: %v", err)
-				next.ServeHTTP(w, r)
+				ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
+				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 			isValid := true
