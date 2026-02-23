@@ -428,7 +428,7 @@ func GetSystemLogs() restapi.ControllerHandler {
 		cfg := config.Get()
 
 		// Checking if we have the logs to file enabled so we can read the logs
-		if !cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) {
+		if !cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) && !cfg.GetBoolKey(constants.PRL_DEVOPS_LOG_TO_FILE_ENV_VAR) {
 			err := errors.New("logs to file is not enabled, we cannot read the logs")
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Failed to read log file: " + err.Error(),
