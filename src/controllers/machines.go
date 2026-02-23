@@ -63,6 +63,46 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/machines/{id}/snapshots").
+		WithRequiredClaim(constants.CREATE_SNAPSHOT_VM_CLAIM).
+		WithHandler(CreateSnapshot()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/machines/{id}/snapshots/{snapshot_id}").
+		WithRequiredClaim(constants.DELETE_SNAPSHOT_VM_CLAIM).
+		WithHandler(DeleteSnapshot()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/machines/{id}/snapshots").
+		WithRequiredClaim(constants.LIST_SNAPSHOT_VM_CLAIM).
+		WithHandler(ListSnapshot()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/machines/{id}/snapshots/{snapshot_id}/revert").
+		WithRequiredClaim(constants.REVERT_SNAPSHOT_VM_CLAIM).
+		WithHandler(RevertSnapshot()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/machines/{id}/snapshots/{snapshot_id}/switch").
+		WithRequiredClaim(constants.SWITCH_SNAPSHOT_VM_CLAIM).
+		WithHandler(SwitchSnapshot()).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/machines/{id}").
@@ -1266,6 +1306,302 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Async machine create started, job ID: %v", response.ID)
+	}
+}
+
+// @Summary		Creates a virtual machine asynchronously
+// @Description	This endpoint creates a virtual machine in the background and returns a Job ID to track progress
+// @Tags			Machines
+// @Produce		json
+// @Param			createRequest	body		models.CreateVirtualMachineRequest	true	"New Machine Request"
+// @Success		202				{object}	models.JobResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/async [post]
+func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		userContext := ctx.GetUser()
+		if userContext == nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		var request models.CreateVirtualMachineRequest
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if request.CatalogManifest == nil || request.PackerTemplate != nil || request.VagrantBox != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: async machine creation currently supports only catalog_manifest",
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if err := populateMachineRequestArchitecture(ctx, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		catalogConnection, err := resolveCatalogMachineConnection(ctx, request.CatalogManifest)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+		request.CatalogManifest.Connection = catalogConnection
+		request.CatalogManifest.CatalogManagerId = ""
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			return
+		}
+
+		job, err := jobManager.CreateNewJob(userContext.ID, "machines", "create", "Initializing catalog machine creation")
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		go func(jobID string, req models.CreateVirtualMachineRequest) {
+			asyncCtx := basecontext.NewRootBaseContext()
+			_, _ = jobManager.UpdateJobProgress(jobID, "Starting catalog machine creation", 1, constants.JobStateRunning)
+			result, err := createCatalogMachine(asyncCtx, req, jobID)
+			if err != nil {
+				_ = jobManager.MarkJobError(jobID, err)
+				return
+			}
+
+			resultMessage := fmt.Sprintf("Virtual machine %s created", result.ID)
+			_ = jobManager.MarkJobComplete(jobID, resultMessage)
+		}(job.ID, request)
+
+		response := mappers.MapJobToApiJob(*job)
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Async machine create started, job ID: %v", response.ID)
+	}
+}
+
+// @Summary		Creates a snapshot for a virtual machine
+// @Description	This endpoint creates a snapshot for a virtual machine
+// @Tags			Machines
+// @Produce		json
+// @Param			id				path		string							true	"Machine ID"
+// @Param			createRequest	body		models.CreateSnapShotRequest	true	"Create Snapshot Request"
+// @Success		202				{object}	models.ApiCommonResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/snapshots [post]
+func CreateSnapshot() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.CreateSnapShotRequest
+		ctx.LogInfof("Creating snapshot")
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			ctx.LogErrorf("Error decoding JSON: %v", err)
+			return
+		}
+
+		// Extract ID from path
+		params := mux.Vars(r)
+		VMId := params["id"]
+
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		response, err := svc.CreateSnapshot(ctx, VMId, &request)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		defer r.Body.Close()
+		_ = json.NewEncoder(w).Encode(response)
+	}
+}
+
+// @Summary		Deletes a snapshot of a virtual machine
+// @Description	This endpoint deletes a snapshot of a virtual machine
+// @Tags			Machines
+// @Produce		json
+// @Param			id			path	string	true	"Machine ID"
+// @Param			snapshot_id	path	string	true	"Snapshot ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/snapshots/{snapshot_id} [delete]
+func DeleteSnapshot() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.DeleteSnapshotRequest
+		ctx.LogInfof("Deleting snapshot")
+
+		params := mux.Vars(r)
+		VMId := params["id"]
+		SnapshotId := params["snapshot_id"]
+
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		err := svc.DeleteSnapshot(ctx, VMId, SnapshotId, &request)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		defer r.Body.Close()
+	}
+}
+
+// @Summary		Deletes all snapshots of a virtual machine
+// @Description	This endpoint deletes all snapshots of a virtual machine
+// @Tags			Machines
+// @Produce		json
+// @Param			id	path	string	true	"Machine ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/snapshots [delete]
+func DeleteAllSnapshots() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		ctx.LogInfof("Deleting All snapshots")
+
+		params := mux.Vars(r)
+		VMId := params["id"]
+
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		snapshots, err := svc.ListSnapshots(ctx, VMId)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		for _, snapshot := range snapshots.Snapshots {
+			err = svc.DeleteSnapshot(ctx, VMId, snapshot.ID, &models.DeleteSnapshotRequest{})
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		}
+		w.WriteHeader(http.StatusAccepted)
+		defer r.Body.Close()
+	}
+}
+
+// @Summary		Lists snapshots of a virtual machine
+// @Description	This endpoint lists snapshots of a virtual machine
+// @Tags			Machines
+// @Produce		json
+// @Param			id	path		string	true	"Machine ID"
+// @Success		202	{object}	models.ApiCommonResponse
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/snapshots [get]
+func ListSnapshot() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		ctx.LogInfof("Listing snapshots")
+
+		params := mux.Vars(r)
+		VMId := params["id"]
+
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		response, err := svc.ListSnapshots(ctx, VMId)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		defer r.Body.Close()
+		_ = json.NewEncoder(w).Encode(response)
+	}
+}
+
+// @Summary		Reverts a virtual machine to a snapshot
+// @Description	This endpoint reverts a virtual machine to a snapshot
+// @Tags			Machines
+// @Produce		json
+// @Param			id				path		string							true	"Machine ID"
+// @Param			snapshot_id		path		string							true	"Snapshot ID"
+// @Param			revertRequest	body		models.RevertSnapshotRequest	false	"Revert Snapshot Request"
+// @Success		202				{object}	models.ApiCommonResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/snapshots/{snapshot_id}/revert [post]
+func RevertSnapshot() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.RevertSnapshotRequest
+		ctx.LogInfof("Reverting snapshot")
+
+		params := mux.Vars(r)
+		VMId := params["id"]
+		SnapshotId := params["snapshot_id"]
+
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		err := svc.RevertSnapshot(ctx, VMId, SnapshotId, &request)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		defer r.Body.Close()
 	}
 }
 
