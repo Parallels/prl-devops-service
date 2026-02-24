@@ -402,6 +402,18 @@ func (c *Config) IsCatalogCachingEnable() bool {
 	return true
 }
 
+func (c *Config) CacheKeepFreeDiskSpace() int64 {
+	return int64(c.GetIntKey(constants.CATALOG_CACHE_KEEP_FREE_DISK_SPACE_ENV_VAR))
+}
+
+func (c *Config) CacheMaxSize() int64 {
+	return int64(c.GetIntKey(constants.CATALOG_CACHE_MAX_SIZE_ENV_VAR))
+}
+
+func (c *Config) AllowCacheAboveFreeDiskSpace() bool {
+	return c.GetBoolKey(constants.CATALOG_CACHE_ALLOW_CACHE_ABOVE_FREE_DISK_SPACE_ENV_VAR)
+}
+
 func (c *Config) IsDatabaseAutoRecover() bool {
 	envVar := c.GetKey(constants.SYSTEM_AUTO_RECOVER_DATABASE_ENV_VAR)
 	if envVar == "" ||
@@ -553,6 +565,11 @@ func (c *Config) GetReverseProxyConfig() *ReverseProxyConfig {
 
 func (c *Config) EnableReverseProxy(value bool) bool {
 	c.SetKey(constants.ENABLE_REVERSE_PROXY_ENV_VAR, strconv.FormatBool(value))
+	if value {
+		c.EnableModule(constants.REVERSE_PROXY_MODE)
+	} else {
+		c.DisableModule(constants.REVERSE_PROXY_MODE)
+	}
 	return true
 }
 
@@ -689,6 +706,30 @@ func (c *Config) GetEnabledModules() []string {
 
 	if !apiFound {
 		modulesList = append(modulesList, constants.API_MODE)
+	}
+
+	// Add caching module if enabled and host is enabled
+	if c.IsCatalogCachingEnable() {
+		hostFound := false
+		for _, module := range modulesList {
+			if strings.EqualFold(module, constants.HOST_MODE) {
+				hostFound = true
+				break
+			}
+		}
+
+		if hostFound {
+			cacheFound := false
+			for _, module := range modulesList {
+				if strings.EqualFold(module, constants.CACHE_MODE) {
+					cacheFound = true
+					break
+				}
+			}
+			if !cacheFound {
+				modulesList = append(modulesList, constants.CACHE_MODE)
+			}
+		}
 	}
 
 	return modulesList

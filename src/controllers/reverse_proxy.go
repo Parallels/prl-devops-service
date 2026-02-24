@@ -725,20 +725,6 @@ func EnableReverseProxyHandler() restapi.ControllerHandler {
 		cfg := config.Get()
 		defer Recover(ctx, r, w)
 
-		rps := reverse_proxy.Get(ctx)
-		if cfg.IsReverseProxyEnabled() {
-			if err := rps.Restart(); err != nil {
-				ReturnApiError(ctx, w, models.NewFromError(err))
-				return
-			}
-		} else {
-			go func() {
-				if err := rps.Start(); err != nil {
-					ctx.LogErrorf("Error starting reverse proxy service: %v", err)
-				}
-			}()
-		}
-
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -750,8 +736,23 @@ func EnableReverseProxyHandler() restapi.ControllerHandler {
 			return
 		}
 
+		wasEnabled := cfg.IsReverseProxyEnabled()
 		cfg.EnableReverseProxy(true)
 		cfg.Save()
+
+		rps := reverse_proxy.Get(ctx)
+		if wasEnabled {
+			if err := rps.Restart(); err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		} else {
+			go func() {
+				if err := rps.Start(); err != nil {
+					ctx.LogErrorf("Error starting reverse proxy service: %v", err)
+				}
+			}()
+		}
 
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("Reverse Proxy Config returned successfully")
