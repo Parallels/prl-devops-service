@@ -1479,7 +1479,7 @@ func (s *ParallelsService) RevertSnapshot(ctx basecontext.ApiContext, vmId strin
 
 	ctx.LogInfof("Reverting snapshot %s for VM %s", snapshotId, vmId)
 
-	args := []string{"snapshot-revert", vmId, "--id", snapshotId}
+	args := []string{"snapshot-switch", vmId, "--id", snapshotId}
 	if request.SkipResume {
 		args = append(args, "--skip-resume")
 	}
@@ -1497,82 +1497,35 @@ func (s *ParallelsService) RevertSnapshot(ctx basecontext.ApiContext, vmId strin
 	return nil
 }
 
-// // ListSnapshots lists all snapshots for the specified VM
-// func (s *ParallelsService) ListSnapshots(ctx basecontext.ApiContext, vmId string) (*models.SnapshotListResponse, error) {
-// 	vm, err := s.findVmSync(ctx, vmId)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if vm == nil {
-// 		return nil, errors.Newf("VM with id %s was not found", vmId)
-// 	}
+// ListSnapshots lists all snapshots for the specified VM
+func (s *ParallelsService) ListSnapshots(ctx basecontext.ApiContext, vmId string, snapshotId string) (*models.ListSnapshotResponse, error) {
+	vm, err := s.findVmSync(ctx, vmId)
+	if err != nil {
+		return nil, err
+	}
+	if vm == nil {
+		return nil, errors.Newf("VM with id %s was not found", vmId)
+	}
 
-// 	ctx.LogInfof("Listing snapshots for VM %s", vmId)
-// 	cmd := helpers.Command{
-// 		Command: s.executable,
-// 		Args:    []string{"snapshot-list", vmId, "--json"},
-// 	}.AsUser(vm.User)
+	ctx.LogInfof("Listing snapshots for VM %s", vmId)
+	cmd := helpers.Command{
+		Command: s.executable,
+		Args:    []string{"snapshot-list", vmId, "--json"},
+	}.AsUser(vm.User)
 
-// 	output, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	output, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return nil, err
+	}
 
-// 	output = strings.TrimSpace(output)
-// 	if output == "" || output == "{}" {
-// 		result := make(models.SnapshotListResponse)
-// 		return &result, nil
-// 	}
+	var snapshots models.ListSnapshotResponse
+	err = json.Unmarshal([]byte(output), &snapshots)
+	if err != nil {
+		return nil, errors.Newf("failed to parse snapshot list output: %v", err)
+	}
 
-// 	var snapshots models.SnapshotListResponse
-// 	err = json.Unmarshal([]byte(output), &snapshots)
-// 	if err != nil {
-// 		return nil, errors.Newf("failed to parse snapshot list output: %v", err)
-// 	}
-
-// 	return &snapshots, nil
-// }
-
-// // SwitchSnapshot switches to the specified snapshot
-// func (s *ParallelsService) SwitchSnapshot(ctx basecontext.ApiContext, vmId string, request *models.SnapshotSwitchRequest) (*models.VirtualMachineOperationResponse, error) {
-// 	if request == nil {
-// 		return nil, errors.New("snapshot switch request is required")
-// 	}
-// 	if err := request.Validate(); err != nil {
-// 		return nil, err
-// 	}
-
-// 	vm, err := s.findVmSync(ctx, vmId)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if vm == nil {
-// 		return nil, errors.Newf("VM with id %s was not found", vmId)
-// 	}
-
-// 	ctx.LogInfof("Switching to snapshot %s for VM %s", request.SnapshotId, vmId)
-
-// 	args := []string{"snapshot-switch", vmId, "--id", request.SnapshotId}
-// 	if request.SkipResume {
-// 		args = append(args, "--skip-resume")
-// 	}
-
-// 	cmd := helpers.Command{
-// 		Command: s.executable,
-// 		Args:    args,
-// 	}.AsUser(vm.User)
-
-// 	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return &models.VirtualMachineOperationResponse{
-// 		ID:        vmId,
-// 		Operation: "snapshot_switch",
-// 		Status:    "success",
-// 	}, nil
-// }
+	return &snapshots, nil
+}
 
 func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.RegisterVirtualMachineRequest) error {
 	if r.Uuid != "" {

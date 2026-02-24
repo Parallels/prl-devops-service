@@ -1,9 +1,5 @@
 package models
 
-import (
-	"github.com/Parallels/prl-devops-service/errors"
-)
-
 type CreateSnapShotRequest struct {
 	SnapshotName        string `json:"snapshot_name,omitempty"`
 	SnapshotDescription string `json:"snapshot_description,omitempty"`
@@ -19,34 +15,20 @@ type DeleteSnapshotRequest struct {
 }
 
 type ListSnapshotRequest struct {
-	VMId   string `json:"vm_id"`
-	VMName string `json:"vm_name"`
+}
+type Snapshot struct {
+	ID      string `json:"id,omitempty"`
+	Name    string `json:"name"`
+	Date    string `json:"date"`
+	State   string `json:"state"`
+	Current bool   `json:"current"`
+	Parent  string `json:"parent"`
 }
 
-func (r *ListSnapshotRequest) Validate() error {
-
-	if r.VMId == "" && r.VMName == "" {
-		return errors.New("vm_id and vm_name cannot be empty")
-	}
-
-	return nil
+type ListSnapshotResponse struct {
+	Snapshots []Snapshot `json:"snapshots,omitempty"`
 }
 
 type RevertSnapshotRequest struct {
 	SkipResume bool `json:"skip_resume,omitempty"`
-}
-
-type SwitchSnapshotRequest struct {
-	VMId       string `json:"vm_id"`
-	VMName     string `json:"vm_name"`
-	SkipResume bool   `json:"skip_resume,omitempty"`
-}
-
-func (r *SwitchSnapshotRequest) Validate() error {
-
-	if r.VMId == "" && r.VMName == "" {
-		return errors.New("vm_id and vm_name cannot be empty")
-	}
-
-	return nil
 }
