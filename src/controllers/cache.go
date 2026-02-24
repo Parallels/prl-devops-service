@@ -23,7 +23,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/catalog/cache").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.LIST_CACHE_CLAIM).
 		WithHandler(GetCatalogCacheHandler()).
 		Register()
 
@@ -31,7 +31,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/cache").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.DELETE_ALL_CACHE_CLAIM).
 		WithHandler(DeleteCatalogCacheHandler()).
 		Register()
 
@@ -39,7 +39,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/cache/{catalogId}").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.DELETE_CACHE_ITEM_CLAIM).
 		WithHandler(DeleteCatalogCacheItemHandler()).
 		Register()
 
@@ -47,7 +47,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/cache/{catalogId}/{version}").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.DELETE_CACHE_ITEM_CLAIM).
 		WithHandler(DeleteCatalogCacheItemVersionHandler()).
 		Register()
 
@@ -56,7 +56,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/cache").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.LIST_CACHE_CLAIM).
 		WithHandler(GetCatalogCacheHandler()).
 		Register()
 
@@ -64,7 +64,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/cache").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.DELETE_ALL_CACHE_CLAIM).
 		WithHandler(DeleteCatalogCacheHandler()).
 		Register()
 
@@ -72,7 +72,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/cache/{catalogId}").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.DELETE_CACHE_ITEM_CLAIM).
 		WithHandler(DeleteCatalogCacheItemHandler()).
 		Register()
 
@@ -80,7 +80,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/cache/{catalogId}/{version}").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.DELETE_CACHE_ITEM_CLAIM).
 		WithHandler(DeleteCatalogCacheItemVersionHandler()).
 		Register()
 }

@@ -324,6 +324,19 @@ func GetHardwareInfo() restapi.ControllerHandler {
 			hardwareInfo.IsLogStreamingEnabled = true
 		}
 
+		if cfg.IsHost() {
+			hardwareInfo.CacheConfig = &models.CatalogCacheConfig{
+				Enabled:                 cfg.IsCatalogCachingEnable(),
+				Folder:                  cfg.GetKey(constants.CATALOG_CACHE_FOLDER_ENV_VAR),
+				KeepFreeDiskSpace:       cfg.CacheKeepFreeDiskSpace(),
+				MaxSize:                 cfg.CacheMaxSize(),
+				AllowAboveFreeDiskSpace: cfg.AllowCacheAboveFreeDiskSpace(),
+			}
+			if hardwareInfo.CacheConfig.Folder == "" {
+				hardwareInfo.CacheConfig.Folder = constants.DEFAULT_CATALOG_CACHE_FOLDER
+			}
+		}
+
 		if err != nil || hardwareInfo == nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return

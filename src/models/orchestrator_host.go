@@ -120,6 +120,7 @@ type OrchestratorHostResponse struct {
 	ReverseProxyHosts        []*ReverseProxyHost `json:"reverse_proxy_hosts,omitempty"`
 	Resources                HostResourceItem    `json:"resources,omitempty"`
 	DetailedResources        *HostResources      `json:"detailed_resources,omitempty"`
+	CacheConfig              *CatalogCacheConfig `json:"cache_config,omitempty"`
 	RequiredClaims           []string            `json:"required_claims,omitempty"`
 	RequiredRoles            []string            `json:"required_roles,omitempty"`
 }

@@ -36,6 +36,7 @@ type OrchestratorHost struct {
 	IsReverseProxyEnabled     bool                            `json:"is_reverse_proxy_enabled,omitempty"`
 	ReverseProxy              *ReverseProxy                   `json:"reverse_proxy,omitempty"`
 	ReverseProxyHosts         []*ReverseProxyHost             `json:"reverse_proxy_hosts,omitempty"`
+	CacheConfig               *models.CatalogCacheConfig      `json:"cache_config,omitempty"`
 	CreatedAt                 string                          `json:"created_at,omitempty"`
 	UpdatedAt                 string                          `json:"updated_at,omitempty"`
 	RequiredClaims            []string                        `json:"required_claims,omitempty"`

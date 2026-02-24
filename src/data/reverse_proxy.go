@@ -35,6 +35,7 @@ func (j *JsonDatabase) EnableProxyConfig(ctx basecontext.ApiContext) (*models.Re
 	}
 
 	j.data.ReverseProxy.Enabled = true
+	_ = j.SaveNow(ctx)
 
 	return j.data.ReverseProxy, nil
 }
@@ -49,6 +50,7 @@ func (j *JsonDatabase) DisableProxyConfig(ctx basecontext.ApiContext) (*models.R
 	}
 
 	j.data.ReverseProxy.Enabled = false
+	_ = j.SaveNow(ctx)
 
 	return j.data.ReverseProxy, nil
 }

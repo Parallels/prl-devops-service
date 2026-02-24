@@ -69,7 +69,10 @@ func (s *LogService) Run(ctx basecontext.ApiContext) {
 		}
 
 		// Filter out noisy or recursive messages
-		if strings.Contains(msg.Message, "[Hub]") || strings.Contains(msg.Message, "[StatsService]") {
+		if strings.Contains(msg.Message, "[Hub]") ||
+			strings.Contains(msg.Message, "[StatsService]") ||
+			strings.Contains(msg.Message, "[HostLogsHandler]") ||
+			strings.Contains(msg.Message, "[HostStatsHandler]") {
 			return
 		}
 
