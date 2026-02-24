@@ -20,7 +20,6 @@ import (
 	"net/http"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
@@ -41,7 +40,6 @@ import (
 
 var (
 	globalParallelsService    *ParallelsService
-	logger                    = common.Logger
 	eventsChannel             = make(chan models.ParallelsServiceEvent, 1000)
 	configChangeTimers        = make(map[string]*time.Timer)
 	configChangeTimersMutex   = &sync.Mutex{}
@@ -1518,10 +1516,22 @@ func (s *ParallelsService) ListSnapshots(ctx basecontext.ApiContext, vmId string
 		return nil, err
 	}
 
-	var snapshots models.ListSnapshotResponse
-	err = json.Unmarshal([]byte(output), &snapshots)
+	// Parse the JSON which has snapshot IDs as keys
+	var snapshotMap map[string]models.Snapshot
+	err = json.Unmarshal([]byte(output), &snapshotMap)
 	if err != nil {
 		return nil, errors.Newf("failed to parse snapshot list output: %v", err)
+	}
+
+	// Convert the map to a slice and set the ID field
+	var snapshotList []models.Snapshot
+	for id, snapshot := range snapshotMap {
+		snapshot.ID = id
+		snapshotList = append(snapshotList, snapshot)
+	}
+
+	snapshots := models.ListSnapshotResponse{
+		Snapshots: snapshotList,
 	}
 
 	return &snapshots, nil

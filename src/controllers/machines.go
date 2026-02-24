@@ -78,7 +78,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
-		WithPath("/machines/{id}/snapshots").
+		WithPath("/machines/{id}/snapshots/{snapshot_id}").
 		WithRequiredClaim(constants.LIST_SNAPSHOT_VM_CLAIM).
 		WithHandler(ListSnapshot()).
 		Register()
@@ -257,14 +257,6 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithPath("/machines/{id}/snapshots/{snapshot_id}/revert").
 		WithRequiredClaim(constants.REVERT_SNAPSHOT_VM_CLAIM).
 		WithHandler(RevertSnapshot()).
-		Register()
-
-	restapi.NewController().
-		WithMethod(restapi.GET).
-		WithVersion(version).
-		WithPath("/machines/{id}/snapshots").
-		WithRequiredClaim(constants.LIST_SNAPSHOT_VM_CLAIM).
-		WithHandler(ListSnapshot()).
 		Register()
 
 }
@@ -1321,7 +1313,7 @@ func CreateSnapshot() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/snapshots/{snapshot_id}
+// @Router			/v1/machines/{id}/snapshots/{snapshot_id} [delete]
 func DeleteSnapshot() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1390,7 +1382,7 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/snapshots/{snapshot_id} [get]
+// @Router			/v1/machines/{id}/snapshots/ [get]
 func ListSnapshot() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
