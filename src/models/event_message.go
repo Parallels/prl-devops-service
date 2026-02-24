@@ -92,3 +92,8 @@ type HostStatsUpdate struct {
 	HostID string      `json:"host_id"`
 	Stats  interface{} `json:"stats"`
 }
+
+type HostLogsUpdate struct {
+	HostID string      `json:"host_id"`
+	Log    interface{} `json:"log"`
+}

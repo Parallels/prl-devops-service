@@ -70,6 +70,7 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	handlers.NewPDfMEventHandler(manager)
 	handlers.NewHostHealthHandler(manager)
 	handlers.NewHostStatsHandler(manager)
+	handlers.NewHostLogsHandler(manager)
 
 	// Initial refresh of connections
 	if hosts, err := s.db.GetOrchestratorHosts(s.ctx, ""); err == nil {

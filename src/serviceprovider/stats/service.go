@@ -14,6 +14,7 @@ import (
 // Broadcaster defines the capability required by StatsService to send messages.
 type Broadcaster interface {
 	BroadcastMessage(msg *models.EventMessage) error
+	IsRunning() bool
 }
 
 // StatsMessage represents the payload for stats events
@@ -89,6 +90,13 @@ func (s *StatsService) Stop() {
 }
 
 func (s *StatsService) collectAndBroadcast(ctx basecontext.ApiContext) {
+	// If the event emitter has stopped, signal the run loop to exit
+	if !s.broadcaster.IsRunning() {
+		ctx.LogInfof("[StatsService] Event emitter is no longer running, stopping stats collection")
+		s.Stop()
+		return
+	}
+
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 

@@ -15,6 +15,7 @@ import (
 // Broadcaster defines the capability required by LogService to send messages.
 type Broadcaster interface {
 	BroadcastMessage(msg *models.EventMessage) error
+	IsRunning() bool
 }
 
 // LogMessage represents the payload for log events
@@ -61,6 +62,12 @@ func (s *LogService) Run(ctx basecontext.ApiContext) {
 
 	subscriptionId := "emitter-log-sub"
 	onMessage := func(msg log.LogMessage) {
+		// If the event emitter has stopped, remove the handler and bail out silently
+		if !s.broadcaster.IsRunning() {
+			s.Stop(ctx)
+			return
+		}
+
 		// Filter out noisy or recursive messages
 		if strings.Contains(msg.Message, "[Hub]") || strings.Contains(msg.Message, "[StatsService]") {
 			return
