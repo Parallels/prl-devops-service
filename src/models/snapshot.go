@@ -15,18 +15,8 @@ type CreateSnapShotResponse struct {
 }
 
 type DeleteSnapshotRequest struct {
-	VMId      string `json:"vm_id"`
-	VMName    string `json:"vm_name"`
-	ChildName string `json:"child_name,omitempty"`
-}
-
-func (r *DeleteSnapshotRequest) Validate() error {
-
-	if r.VMId == "" && r.VMName == "" {
-		return errors.New("vm_id and vm_name cannot be empty")
-	}
-
-	return nil
+	SnapshotId     string `json:"snapshot_id,omitempty"`
+	DeleteChildren bool   `json:"delete_children,omitempty"`
 }
 
 type ListSnapshotRequest struct {

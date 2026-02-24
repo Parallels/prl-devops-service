@@ -62,7 +62,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 	restapi.NewController().
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
-		WithPath("/machines/{id}/snapshots/{snapshot_id}").
+		WithPath("/machines/{id}/snapshots").
 		WithRequiredClaim(constants.DELETE_SNAPSHOT_VM_CLAIM).
 		WithHandler(DeleteSnapshot()).
 		Register()
@@ -1320,7 +1320,7 @@ func CreateSnapshot() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/snapshots/{snapshot_id} [delete]
+// @Router			/v1/machines/{id}/snapshots
 func DeleteSnapshot() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1331,21 +1331,21 @@ func DeleteSnapshot() restapi.ControllerHandler {
 
 		// Extract ID from path (Standard for DELETE requests)
 		params := mux.Vars(r)
-		request.VMId = params["id"]
-		request.ChildName = params["snapshot_id"]
-
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid path parameters: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
-			return
-		}
+		VMId := params["id"]
 
 		// TODO: Call the service provider to actually delete the snapshot using request
 
-		ctx.LogDebugf("VM ID: %v", request.VMId)
-		ctx.LogDebugf("Snapshot to delete: %v", request.ChildName)
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		err := svc.DeleteSnapshot(ctx, VMId, &request)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 	}
 }
 

@@ -1431,23 +1431,23 @@ func (s *ParallelsService) CreateSnapshot(ctx basecontext.ApiContext, vmID strin
 }
 
 // DeleteSnapshot deletes a snapshot from the specified VM
-func (s *ParallelsService) DeleteSnapshot(ctx basecontext.ApiContext, vmId string, snapshotId string, deleteChildren bool) (*models.VirtualMachineOperationResponse, error) {
-	if snapshotId == "" {
-		return nil, errors.New("snapshot ID is required")
+func (s *ParallelsService) DeleteSnapshot(ctx basecontext.ApiContext, vmId string, request *models.DeleteSnapshotRequest) error {
+	if request.SnapshotId == "" {
+		return errors.New("snapshot ID is required")
 	}
 
 	vm, err := s.findVmSync(ctx, vmId)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if vm == nil {
-		return nil, errors.Newf("VM with id %s was not found", vmId)
+		return errors.Newf("VM with id %s was not found", vmId)
 	}
 
-	ctx.LogInfof("Deleting snapshot %s for VM %s", snapshotId, vmId)
+	ctx.LogInfof("Deleting snapshot %s for VM %s", request.SnapshotId, vmId)
 
-	args := []string{"snapshot-delete", vmId, "--id", snapshotId}
-	if deleteChildren {
+	args := []string{"snapshot-delete", vmId, "--id", request.SnapshotId}
+	if request.DeleteChildren {
 		args = append(args, "-c")
 	}
 
@@ -1458,14 +1458,10 @@ func (s *ParallelsService) DeleteSnapshot(ctx basecontext.ApiContext, vmId strin
 
 	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &models.VirtualMachineOperationResponse{
-		ID:        vmId,
-		Operation: "snapshot_delete",
-		Status:    "success",
-	}, nil
+	return nil
 }
 
 // // ListSnapshots lists all snapshots for the specified VM
