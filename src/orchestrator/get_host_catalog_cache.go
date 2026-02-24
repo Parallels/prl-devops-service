@@ -38,7 +38,7 @@ func (s *OrchestratorService) GetHostCatalogCache(ctx basecontext.ApiContext, ho
 
 func (s *OrchestratorService) CallGetHostCatalogCache(host *models.OrchestratorHost) (*api_models.VirtualMachineCatalogManifestList, error) {
 	httpClient := s.getApiClient(*host)
-	path := "/v1/catalog/cache"
+	path := "/v1/cache"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {
 		return nil, err

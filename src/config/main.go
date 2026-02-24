@@ -491,6 +491,10 @@ func (c *Config) IsCatalog() bool {
 	return c.IsModuleEnabled(constants.CATALOG_MODE)
 }
 
+func (c *Config) IsHost() bool {
+	return c.IsModuleEnabled(constants.HOST_MODE)
+}
+
 func (c *Config) IsApi() bool {
 	return c.IsModuleEnabled(constants.API_MODE)
 }
