@@ -1,5 +1,29 @@
 basePath: /api
 definitions:
+  controllers.SshExecutionRequest:
+    properties:
+      command:
+        type: string
+      enable_insecure_key:
+        type: boolean
+      host:
+        type: string
+      key:
+        type: string
+      password:
+        type: string
+      port:
+        type: integer
+      username:
+        type: string
+    type: object
+  controllers.SshExecutionResponse:
+    properties:
+      error:
+        type: string
+      output:
+        type: string
+    type: object
   errors.Diagnostics:
     properties:
       end_time:
@@ -821,6 +845,8 @@ definitions:
     properties:
       created_at:
         type: string
+      expires_at:
+        type: string
       key:
         type: string
       name:
@@ -838,6 +864,8 @@ definitions:
     properties:
       encoded:
         type: string
+      expires_at:
+        type: string
       id:
         type: string
       key:
@@ -846,6 +874,8 @@ definitions:
         type: string
       revoked:
         type: boolean
+      revoked_at:
+        type: string
     type: object
   models.ApiUser:
     properties:
@@ -898,6 +928,10 @@ definitions:
         type: string
       name:
         type: string
+      users:
+        items:
+          $ref: '#/definitions/models.ApiUser'
+        type: array
     type: object
   models.CreateCatalogVirtualMachineRequest:
     properties:
@@ -1220,7 +1254,6 @@ definitions:
     - 10
     - 11
     - 12
-    format: int64
     type: integer
     x-enum-varnames:
     - OAuthInvalidRequestError
@@ -1590,6 +1623,10 @@ definitions:
         type: string
       name:
         type: string
+      users:
+        items:
+          $ref: '#/definitions/models.ApiUser'
+        type: array
     type: object
   models.ServiceHealthCheck:
     properties:
@@ -1634,6 +1671,10 @@ definitions:
         type: string
       devops_version:
         type: string
+      enabled_modules:
+        items:
+          type: string
+        type: array
       external_ip_address:
         type: string
       is_log_streaming_enabled:
@@ -2752,6 +2793,121 @@ paths:
       summary: Removes a role from a user
       tags:
       - Users
+  /v1/cache:
+    delete:
+      description: This endpoint returns all the remote catalog cache if any
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes all catalog cache
+      tags:
+      - Catalogs
+    get:
+      description: This endpoint returns all the remote catalog cache if any
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets catalog cache
+      tags:
+      - Catalogs
+  /v1/cache/{catalogId}:
+    delete:
+      description: This endpoint returns all the remote catalog cache if any and all
+        its versions
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes catalog cache item and all its versions
+      tags:
+      - Catalogs
+  /v1/cache/{catalogId}/{version}:
+    delete:
+      description: This endpoint deletes a version of a cache ite,
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes catalog cache version item
+      tags:
+      - Catalogs
   /v1/catalog:
     get:
       description: This endpoint returns all the remote catalogs
@@ -3406,121 +3562,6 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: UnTaints a catalog manifest version
-      tags:
-      - Catalogs
-  /v1/catalog/cache:
-    delete:
-      description: This endpoint returns all the remote catalog cache if any
-      parameters:
-      - description: Catalog ID
-        in: path
-        name: catalogId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "202":
-          description: Accepted
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.OAuthErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      - BearerAuth: []
-      summary: Deletes all catalog cache
-      tags:
-      - Catalogs
-    get:
-      description: This endpoint returns all the remote catalog cache if any
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.OAuthErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      - BearerAuth: []
-      summary: Gets catalog cache
-      tags:
-      - Catalogs
-  /v1/catalog/cache/{catalogId}:
-    delete:
-      description: This endpoint returns all the remote catalog cache if any and all
-        its versions
-      parameters:
-      - description: Catalog ID
-        in: path
-        name: catalogId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "202":
-          description: Accepted
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.OAuthErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      - BearerAuth: []
-      summary: Deletes catalog cache item and all its versions
-      tags:
-      - Catalogs
-  /v1/catalog/cache/{catalogId}/{version}:
-    delete:
-      description: This endpoint deletes a version of a cache ite,
-      parameters:
-      - description: Catalog ID
-        in: path
-        name: catalogId
-        required: true
-        type: string
-      - description: Version
-        in: path
-        name: version
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "202":
-          description: Accepted
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.OAuthErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      - BearerAuth: []
-      summary: Deletes catalog cache version item
       tags:
       - Catalogs
   /v1/catalog/import:
@@ -4881,6 +4922,47 @@ paths:
       summary: Get orchestrator host virtual machine
       tags:
       - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/clone:
+    put:
+      description: This endpoint clones orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      - description: Machine Clone Request
+        in: body
+        name: configRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.VirtualMachineCloneCommandRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineCloneCommandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Clones orchestrator host virtual machine
+      tags:
+      - Orchestrator
   /v1/orchestrator/hosts/{id}/machines/{vmId}/execute:
     put:
       description: This endpoint executes a command in a orchestrator host virtual
@@ -4917,6 +4999,41 @@ paths:
       summary: Executes a command in a orchestrator host virtual machine
       tags:
       - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/pause:
+    put:
+      description: This endpoint pauses orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Pauses orchestrator host virtual machine
+      tags:
+      - Orchestrator
   /v1/orchestrator/hosts/{id}/machines/{vmId}/rename:
     put:
       description: This endpoint renames orchestrator host virtual machine
@@ -4950,6 +5067,111 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Renames orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/reset:
+    put:
+      description: This endpoint resets orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Resets orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/restart:
+    put:
+      description: This endpoint restarts orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Restarts orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/resume:
+    put:
+      description: This endpoint resumes orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Resumes orchestrator host virtual machine
       tags:
       - Orchestrator
   /v1/orchestrator/hosts/{id}/machines/{vmId}/set:
@@ -5007,7 +5229,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
         "400":
           description: Bad Request
           schema:
@@ -5059,7 +5281,46 @@ paths:
       - Orchestrator
   /v1/orchestrator/hosts/{id}/machines/{vmId}/stop:
     put:
-      description: This endpoint starts orchestrator host virtual machine
+      description: This endpoint stops orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      - description: Force Stop
+        in: query
+        name: force
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Stops orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/suspend:
+    put:
+      description: This endpoint suspends orchestrator host virtual machine
       parameters:
       - description: Host ID
         in: path
@@ -5077,7 +5338,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
         "400":
           description: Bad Request
           schema:
@@ -5089,7 +5350,7 @@ paths:
       security:
       - ApiKeyAuth: []
       - BearerAuth: []
-      summary: Starts orchestrator host virtual machine
+      summary: Suspends orchestrator host virtual machine
       tags:
       - Orchestrator
   /v1/orchestrator/hosts/{id}/machines/{vmId}/unregister:
@@ -5648,6 +5909,102 @@ paths:
       summary: Get orchestrator Virtual Machine
       tags:
       - Orchestrator
+  /v1/orchestrator/machines/{id}/clone:
+    put:
+      description: This endpoint clones orchestrator virtual machine
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Machine Clone Request
+        in: body
+        name: configRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.VirtualMachineCloneCommandRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineCloneCommandResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Clones orchestrator virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/machines/{id}/execute:
+    put:
+      description: This endpoint executes a command in a orchestrator virtual machine
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Executes a command in a orchestrator virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/machines/{id}/pause:
+    put:
+      description: This endpoint pauses orchestrator virtual machine
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Pauses orchestrator virtual machine
+      tags:
+      - Orchestrator
   /v1/orchestrator/machines/{id}/rename:
     put:
       description: This endpoint renames orchestrator virtual machine
@@ -5678,9 +6035,9 @@ paths:
       summary: Renames orchestrator virtual machine
       tags:
       - Orchestrator
-  /v1/orchestrator/machines/{vmId}/execute:
+  /v1/orchestrator/machines/{id}/reset:
     put:
-      description: This endpoint executes a command in a orchestrator virtual machine
+      description: This endpoint resets orchestrator virtual machine
       parameters:
       - description: Virtual Machine ID
         in: path
@@ -5693,7 +6050,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
         "400":
           description: Bad Request
           schema:
@@ -5705,10 +6062,70 @@ paths:
       security:
       - ApiKeyAuth: []
       - BearerAuth: []
-      summary: Executes a command in a orchestrator virtual machine
+      summary: Resets orchestrator virtual machine
       tags:
       - Orchestrator
-  /v1/orchestrator/machines/{vmId}/set:
+  /v1/orchestrator/machines/{id}/restart:
+    put:
+      description: This endpoint restarts orchestrator virtual machine
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Restarts orchestrator virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/machines/{id}/resume:
+    put:
+      description: This endpoint resumes orchestrator virtual machine
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Resumes orchestrator virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/machines/{id}/set:
     put:
       description: This endpoint configures orchestrator virtual machine
       parameters:
@@ -5738,7 +6155,7 @@ paths:
       summary: Configures orchestrator virtual machine
       tags:
       - Orchestrator
-  /v1/orchestrator/machines/{vmId}/start:
+  /v1/orchestrator/machines/{id}/start:
     put:
       description: This endpoint starts orchestrator virtual machine
       parameters:
@@ -5753,7 +6170,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
         "400":
           description: Bad Request
           schema:
@@ -5768,7 +6185,7 @@ paths:
       summary: Starts orchestrator virtual machine
       tags:
       - Orchestrator
-  /v1/orchestrator/machines/{vmId}/status:
+  /v1/orchestrator/machines/{id}/status:
     get:
       description: This endpoint returns orchestrator virtual machine status
       parameters:
@@ -5798,7 +6215,7 @@ paths:
       summary: Get orchestrator virtual machine status
       tags:
       - Orchestrator
-  /v1/orchestrator/machines/{vmId}/stop:
+  /v1/orchestrator/machines/{id}/stop:
     put:
       description: This endpoint sops orchestrator virtual machine
       parameters:
@@ -5807,13 +6224,17 @@ paths:
         name: id
         required: true
         type: string
+      - description: Force Stop
+        in: query
+        name: force
+        type: boolean
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.VirtualMachineConfigResponse'
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
         "400":
           description: Bad Request
           schema:
@@ -5826,6 +6247,36 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Stops orchestrator virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/machines/{id}/suspend:
+    put:
+      description: This endpoint suspends orchestrator virtual machine
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.VirtualMachineOperationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Suspends orchestrator virtual machine
       tags:
       - Orchestrator
   /v1/orchestrator/overview/{id}/resources:
@@ -6236,6 +6687,42 @@ paths:
       summary: Restarts the reverse proxy
       tags:
       - ReverseProxy
+  /v1/ssh/execute:
+    post:
+      description: Executes a command on a remote host via SSH
+      parameters:
+      - description: Body
+        in: body
+        name: sshRequest
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.SshExecutionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.SshExecutionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+      summary: Execute SSH Command
+      tags:
+      - SSH
   /v1/templates/packer:
     get:
       deprecated: true

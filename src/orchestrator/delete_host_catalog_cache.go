@@ -42,7 +42,7 @@ func (s *OrchestratorService) DeleteHostCatalogCacheItem(ctx basecontext.ApiCont
 func (s *OrchestratorService) CallDeleteHostCatalogCacheItem(host *models.OrchestratorHost, catalogId string, versionId string) error {
 	httpClient := s.getApiClient(*host)
 	httpClient.WithTimeout(5 * time.Minute) // sometimes deleting files can take a bit, waiting for 5 minutes
-	path := "/v1/catalog/cache"
+	path := "/v1/cache"
 	if catalogId != "" {
 		path = path + "/" + catalogId
 	}
