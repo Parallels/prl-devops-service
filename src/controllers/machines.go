@@ -62,7 +62,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 	restapi.NewController().
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
-		WithPath("/machines/{id}/snapshots").
+		WithPath("/machines/{id}/snapshots/{snapshot_id}").
 		WithRequiredClaim(constants.DELETE_SNAPSHOT_VM_CLAIM).
 		WithHandler(DeleteSnapshot()).
 		Register()
@@ -1320,7 +1320,7 @@ func CreateSnapshot() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/snapshots
+// @Router			/v1/machines/{id}/snapshots/{snapshot_id}
 func DeleteSnapshot() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1329,16 +1329,14 @@ func DeleteSnapshot() restapi.ControllerHandler {
 		var request models.DeleteSnapshotRequest
 		ctx.LogInfof("Deleting snapshot")
 
-		// Extract ID from path (Standard for DELETE requests)
 		params := mux.Vars(r)
 		VMId := params["id"]
-
-		// TODO: Call the service provider to actually delete the snapshot using request
+		SnapshotId := params["snapshot_id"]
 
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		err := svc.DeleteSnapshot(ctx, VMId, &request)
+		err := svc.DeleteSnapshot(ctx, VMId, SnapshotId, &request)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1407,34 +1405,21 @@ func RevertSnapshot() restapi.ControllerHandler {
 		var request models.RevertSnapshotRequest
 		ctx.LogInfof("Reverting snapshot")
 
-		// Extract IDs from path
 		params := mux.Vars(r)
-		request.VMId = params["id"]
+		VMId := params["id"]
+		SnapshotId := params["snapshot_id"]
 
-		// If you also want to pass snapshot ID in body, that's fine,
-		// but typically we get it from path for POST to a specific snapshot action:
-		snapshotId := params["snapshot_id"]
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
-		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			// Ignore EOF error for cases where body might be empty if all info is in path
-			if err.Error() != "EOF" {
-				ctx.LogErrorf("Error decoding JSON: %v", err)
-				return
-			}
-		}
-
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		err := svc.RevertSnapshot(ctx, VMId, SnapshotId, &request)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		// TODO: Call the service provider to actually revert the snapshot using request
-
-		ctx.LogDebugf("VM ID: %v", request.VMId)
-		ctx.LogDebugf("Reverting to: %v", snapshotId)
+		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
 	}
 }
 

@@ -1431,8 +1431,8 @@ func (s *ParallelsService) CreateSnapshot(ctx basecontext.ApiContext, vmID strin
 }
 
 // DeleteSnapshot deletes a snapshot from the specified VM
-func (s *ParallelsService) DeleteSnapshot(ctx basecontext.ApiContext, vmId string, request *models.DeleteSnapshotRequest) error {
-	if request.SnapshotId == "" {
+func (s *ParallelsService) DeleteSnapshot(ctx basecontext.ApiContext, vmId string, snapshotId string, request *models.DeleteSnapshotRequest) error {
+	if snapshotId == "" {
 		return errors.New("snapshot ID is required")
 	}
 
@@ -1444,11 +1444,44 @@ func (s *ParallelsService) DeleteSnapshot(ctx basecontext.ApiContext, vmId strin
 		return errors.Newf("VM with id %s was not found", vmId)
 	}
 
-	ctx.LogInfof("Deleting snapshot %s for VM %s", request.SnapshotId, vmId)
+	ctx.LogInfof("Deleting snapshot %s for VM %s", snapshotId, vmId)
 
-	args := []string{"snapshot-delete", vmId, "--id", request.SnapshotId}
+	args := []string{"snapshot-delete", vmId, "--id", snapshotId}
 	if request.DeleteChildren {
 		args = append(args, "-c")
+	}
+
+	cmd := helpers.Command{
+		Command: s.executable,
+		Args:    args,
+	}.AsUser(vm.User)
+
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *ParallelsService) RevertSnapshot(ctx basecontext.ApiContext, vmId string, snapshotId string, request *models.RevertSnapshotRequest) error {
+	if snapshotId == "" {
+		return errors.New("snapshot ID is required")
+	}
+
+	vm, err := s.findVmSync(ctx, vmId)
+	if err != nil {
+		return err
+	}
+	if vm == nil {
+		return errors.Newf("VM with id %s was not found", vmId)
+	}
+
+	ctx.LogInfof("Reverting snapshot %s for VM %s", snapshotId, vmId)
+
+	args := []string{"snapshot-revert", vmId, "--id", snapshotId}
+	if request.SkipResume {
+		args = append(args, "--skip-resume")
 	}
 
 	cmd := helpers.Command{

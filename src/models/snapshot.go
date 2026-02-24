@@ -15,8 +15,7 @@ type CreateSnapShotResponse struct {
 }
 
 type DeleteSnapshotRequest struct {
-	SnapshotId     string `json:"snapshot_id,omitempty"`
-	DeleteChildren bool   `json:"delete_children,omitempty"`
+	DeleteChildren bool `json:"delete_children,omitempty"`
 }
 
 type ListSnapshotRequest struct {
@@ -34,17 +33,7 @@ func (r *ListSnapshotRequest) Validate() error {
 }
 
 type RevertSnapshotRequest struct {
-	VMId   string `json:"vm_id"`
-	VMName string `json:"vm_name"`
-}
-
-func (r *RevertSnapshotRequest) Validate() error {
-
-	if r.VMId == "" && r.VMName == "" {
-		return errors.New("vm_id and vm_name cannot be empty")
-	}
-
-	return nil
+	SkipResume bool `json:"skip_resume,omitempty"`
 }
 
 type SwitchSnapshotRequest struct {
