@@ -695,20 +695,17 @@ func GetVirtualMachineStatusHandler() restapi.ControllerHandler {
 
 		params := mux.Vars(r)
 		id := params["id"]
-		sps, err := svc.SwitchSnapshot(ctx, id, &models.SnapshotSwitchRequest{
-			SnapshotId: "2f69cff8-7fdc-4e9a-bb26-adffacc53440",
-			SkipResume: false,
-		})
-		// response, err := svc.VmStatus(ctx, id)
+
+		response, err := svc.VmStatus(ctx, id)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
-		ctx.LogInfof("Snapshots for machine %v: %v", id, sps)
+
 		result := models.VirtualMachineStatusResponse{
-			ID:           "id",
-			Status:       "test",
-			IpConfigured: "",
+			ID:           response.UUID,
+			Status:       response.Status,
+			IpConfigured: response.IPConfigured,
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -1295,22 +1292,20 @@ func CreateSnapshot() restapi.ControllerHandler {
 
 		// Extract ID from path
 		params := mux.Vars(r)
-		request.VMId = params["id"]
+		VMId := params["id"]
 
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		response, err := svc.CreateSnapshot(ctx, VMId, &request)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		// TODO: Call the service provider to actually create the snapshot using request
-
-		ctx.LogDebugf("User: %v", request.VMId)
-		ctx.LogDebugf("User: %v", request.VMName)
-		ctx.LogDebugf("User: %v", request.SnapshotName)
-		ctx.LogDebugf("User: %v", request.SnapshotDescription)
+		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
+		_ = json.NewEncoder(w).Encode(response)
 	}
 }
 

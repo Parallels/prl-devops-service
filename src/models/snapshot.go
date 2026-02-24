@@ -5,19 +5,13 @@ import (
 )
 
 type CreateSnapShotRequest struct {
-	VMId                string `json:"vm_id"`
-	VMName              string `json:"vm_name"`
 	SnapshotName        string `json:"snapshot_name,omitempty"`
 	SnapshotDescription string `json:"snapshot_description,omitempty"`
 }
 
-func (r *CreateSnapShotRequest) Validate() error {
-
-	if r.VMId == "" && r.VMName == "" {
-		return errors.New("vm_id and vm_name cannot be empty")
-	}
-
-	return nil
+type CreateSnapShotResponse struct {
+	SnapshotName string `json:"snapshot_name,omitempty"`
+	SnapshotId   string `json:"snapshot_id,omitempty"`
 }
 
 type DeleteSnapshotRequest struct {
