@@ -247,28 +247,6 @@ func TestProcessVmStateChanged(t *testing.T) {
 	})
 }
 
-func TestIsEventSupported(t *testing.T) {
-	tests := []struct {
-		name     string
-		event    models.ParallelsServiceEvent
-		expected bool
-	}{
-		{"SupportedVmStateChanged", models.ParallelsServiceEvent{EventName: "vm_state_changed"}, true},
-		{"SupportedVmAdded", models.ParallelsServiceEvent{EventName: "vm_added"}, true},
-		{"SupportedVmUnregistered", models.ParallelsServiceEvent{EventName: "vm_unregistered"}, true},
-		{"UnsupportedEvent", models.ParallelsServiceEvent{EventName: "vm_not_available"}, false},
-		{"EmptyEventName", models.ParallelsServiceEvent{EventName: ""}, false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := isEventSupported(tt.event)
-			if result != tt.expected {
-				t.Errorf("Expected %v, got %v for event %s", tt.expected, result, tt.event.EventName)
-			}
-		})
-	}
-}
-
 func BenchmarkProcessVmStateChanged(b *testing.B) {
 	service := createTestParallelsService()
 	service.cachedLocalVms = createMockVMs()

@@ -78,6 +78,11 @@ type VmRemoved struct {
 	VmID string `json:"vm_id"`
 }
 
+type VmUpdated struct {
+	VmID  string      `json:"vm_id"`
+	NewVm ParallelsVM `json:"new_vm"`
+}
+
 type HostHealthUpdate struct {
 	HostID string `json:"host_id"`
 	State  string `json:"state"`
