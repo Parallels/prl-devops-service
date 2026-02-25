@@ -1635,6 +1635,230 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/catalog-managers": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns all the catalog managers",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CatalogManagers"
+                ],
+                "summary": "Gets all the catalog managers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManager"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint creates a catalog manager",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CatalogManagers"
+                ],
+                "summary": "Creates a catalog manager",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManager"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog-managers/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns a catalog manager",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CatalogManagers"
+                ],
+                "summary": "Gets a specific catalog manager",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Manager ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManager"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint updates a catalog manager",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CatalogManagers"
+                ],
+                "summary": "Updates a catalog manager",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Manager ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManager"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a catalog manager",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CatalogManagers"
+                ],
+                "summary": "Deletes a catalog manager",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Manager ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiCommonResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/catalog/import": {
             "put": {
                 "security": [
@@ -7161,10 +7385,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxy"
-                            }
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxy"
                         }
                     },
                     "400": {
@@ -8319,6 +8540,56 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_Parallels_prl-devops-service_models.CatalogManager": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "api_key": {
+                    "type": "string"
+                },
+                "authentication_method": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "global": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "internal": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner_id": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "required_claims": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_Parallels_prl-devops-service_models.CatalogManifest": {
             "type": "object",
             "properties": {
@@ -9020,6 +9291,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "port": {
                     "type": "string"
                 },
@@ -9090,6 +9364,9 @@ const docTemplate = `{
                 "target_port": {
                     "type": "string"
                 },
+                "target_vm_details": {
+                    "$ref": "#/definitions/models.ReverseProxyRouteVmDetails"
+                },
                 "target_vm_id": {
                     "type": "string"
                 }
@@ -9106,6 +9383,9 @@ const docTemplate = `{
                 },
                 "target_port": {
                     "type": "string"
+                },
+                "target_vm_details": {
+                    "$ref": "#/definitions/models.ReverseProxyRouteVmDetails"
                 },
                 "target_vm_id": {
                     "type": "string"
@@ -9480,6 +9760,26 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "models.CatalogCacheConfig": {
+            "type": "object",
+            "properties": {
+                "allow_above_free_disk_space": {
+                    "type": "boolean"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "folder": {
+                    "type": "string"
+                },
+                "keep_free_disk_space": {
+                    "type": "integer"
+                },
+                "max_size": {
+                    "type": "integer"
                 }
             }
         },
@@ -10008,6 +10308,7 @@ const docTemplate = `{
         },
         "models.OAuthErrorType": {
             "type": "integer",
+            "format": "int64",
             "enum": [
                 0,
                 1,
@@ -10099,6 +10400,9 @@ const docTemplate = `{
             "properties": {
                 "architecture": {
                     "type": "string"
+                },
+                "cache_config": {
+                    "$ref": "#/definitions/models.CatalogCacheConfig"
                 },
                 "cpu_model": {
                     "type": "string"
@@ -10484,6 +10788,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostHttpRoute"
                     }
                 },
+                "name": {
+                    "type": "string"
+                },
                 "port": {
                     "type": "string"
                 },
@@ -10553,11 +10860,43 @@ const docTemplate = `{
                 "host": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "port": {
                     "type": "string"
                 },
                 "tls": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTls"
+                }
+            }
+        },
+        "models.ReverseProxyRouteVmDetails": {
+            "type": "object",
+            "properties": {
+                "guest_tools_state": {
+                    "type": "string"
+                },
+                "guest_tools_version": {
+                    "type": "string"
+                },
+                "host_external_ip_address": {
+                    "type": "string"
+                },
+                "internal_ip_address": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "os": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "uptime": {
+                    "type": "string"
                 }
             }
         },
@@ -10643,6 +10982,9 @@ const docTemplate = `{
         "models.SystemUsageResponse": {
             "type": "object",
             "properties": {
+                "cache_config": {
+                    "$ref": "#/definitions/models.CatalogCacheConfig"
+                },
                 "cpu_brand": {
                     "type": "string"
                 },
