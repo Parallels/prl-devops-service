@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -733,26 +734,11 @@ func CloneVirtualMachineHandler() restapi.ControllerHandler {
 
 		params := mux.Vars(r)
 		id := params["id"]
-		configure := models.VirtualMachineConfigRequest{
-			Operations: []*models.VirtualMachineConfigRequestOperation{
-				{
-					Group:     "machine",
-					Operation: "clone",
-					Options: []*models.VirtualMachineConfigRequestOperationOption{
-						{
-							Flag:  "name",
-							Value: request.CloneName,
-						},
-					},
-				},
-			},
-		}
 
-		if err := svc.ConfigureVm(ctx, id, &configure); err != nil {
+		if err := svc.CloneVm(ctx, id, strings.TrimSpace(request.CloneName), strings.TrimSpace(request.DestinationPath)); err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
-
 		result := models.VirtualMachineCloneCommandResponse{}
 
 		vmId, err := svc.GetVmSync(ctx, request.CloneName)
@@ -1020,8 +1006,14 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 				ID:      vms[0].ID,
 				NewName: request.MachineName,
 			}); err != nil {
-				ReturnApiError(ctx, w, models.NewFromError(err))
-				return
+				message := err.Error()
+				if message != "error: VM is not stopped" {
+					ReturnApiError(ctx, w, models.ApiErrorResponse{
+						Message: "Failed to rename VM: " + err.Error(),
+						Code:    http.StatusBadRequest,
+					})
+					return
+				}
 			}
 
 			vms[0].Name = request.MachineName
@@ -1142,7 +1134,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Machine created using packer template: %v", response.ID)
-
+			return
 		} else if request.VagrantBox != nil {
 			response, err := createVagrantBox(ctx, request)
 			if err != nil {

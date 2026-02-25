@@ -85,6 +85,7 @@ type ImportVmResponse struct {
 }
 
 type VirtualMachineCatalogManifestList struct {
-	TotalSize int64             `json:"total_size"`
-	Manifests []CatalogManifest `json:"manifests"`
+	TotalSize   int64               `json:"total_size"`
+	Manifests   []CatalogManifest   `json:"manifests"`
+	CacheConfig *CatalogCacheConfig `json:"cache_config,omitempty"`
 }
