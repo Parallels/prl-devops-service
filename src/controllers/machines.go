@@ -78,7 +78,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
-		WithPath("/machines/{id}/snapshots/{snapshot_id}").
+		WithPath("/machines/{id}/snapshots").
 		WithRequiredClaim(constants.LIST_SNAPSHOT_VM_CLAIM).
 		WithHandler(ListSnapshot()).
 		Register()
