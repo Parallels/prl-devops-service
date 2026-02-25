@@ -108,15 +108,20 @@ func GetConfig() models.ReverseProxyConfig {
 
 	result.Host = cfg.ReverseProxyHost()
 	result.Port = cfg.ReverseProxyPort()
-	result.Enabled = cfg.IsReverseProxyEnabled()
 
-	// Returning db data if available and not different from the config
+	// Assume disabled initially; the DB acts as the source of truth for Enabled.
+	result.Enabled = false
+
+	// Returning db data if available
 	dtoRp, err := globalReverseProxyService.db.GetReverseProxyConfig(globalReverseProxyService.api_ctx)
 	if dtoRp != nil && err == nil {
+		// Enabled is pure DB truth
+		result.Enabled = dtoRp.Enabled
+
+		// If other fields didn't drift from config file defaults, sync them
 		if !dtoRp.Diff(mappers.ConfigReverseProxyToDto(result)) {
 			result.Host = dtoRp.Host
 			result.Port = dtoRp.Port
-			result.Enabled = dtoRp.Enabled
 			result.ID = dtoRp.ID
 		}
 
