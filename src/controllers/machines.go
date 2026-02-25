@@ -68,9 +68,17 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/machines/{id}/snapshots").
+		WithRequiredClaim(constants.DELETE_ALL_SNAPSHOTS_VM_CLAIM).
+		WithHandler(DeleteAllSnapshots()).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
-		WithPath("/machines/{id}/snapshots/{snapshot_id}").
+		WithPath("/machines/{id}/snapshots").
 		WithRequiredClaim(constants.LIST_SNAPSHOT_VM_CLAIM).
 		WithHandler(ListSnapshot()).
 		Register()
@@ -236,11 +244,11 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
-		WithMethod(restapi.GET).
+		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/machines/{id}/snapshots").
-		WithRequiredClaim(constants.LIST_SNAPSHOT_VM_CLAIM).
-		WithHandler(ListSnapshot()).
+		WithRequiredClaim(constants.DELETE_ALL_SNAPSHOTS_VM_CLAIM).
+		WithHandler(DeleteAllSnapshots()).
 		Register()
 
 	restapi.NewController().
@@ -249,6 +257,14 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithPath("/machines/{id}/snapshots/{snapshot_id}/revert").
 		WithRequiredClaim(constants.REVERT_SNAPSHOT_VM_CLAIM).
 		WithHandler(RevertSnapshot()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/machines/{id}/snapshots").
+		WithRequiredClaim(constants.LIST_SNAPSHOT_VM_CLAIM).
+		WithHandler(ListSnapshot()).
 		Register()
 
 }
@@ -1327,7 +1343,39 @@ func DeleteSnapshot() restapi.ControllerHandler {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusAccepted)
+		defer r.Body.Close()
+	}
+}
+
+func DeleteAllSnapshots() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		ctx.LogInfof("Deleting All snapshots")
+
+		params := mux.Vars(r)
+		VMId := params["id"]
+
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		snapshots, err := svc.ListSnapshots(ctx, VMId)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		for _, snapshot := range snapshots.Snapshots {
+			err = svc.DeleteSnapshot(ctx, VMId, snapshot.ID, &models.DeleteSnapshotRequest{})
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		}
+		w.WriteHeader(http.StatusAccepted)
 		defer r.Body.Close()
 	}
 }
@@ -1352,12 +1400,11 @@ func ListSnapshot() restapi.ControllerHandler {
 
 		params := mux.Vars(r)
 		VMId := params["id"]
-		SnapshotId := params["snapshot_id"]
 
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		response, err := svc.ListSnapshots(ctx, VMId, SnapshotId)
+		response, err := svc.ListSnapshots(ctx, VMId)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1403,7 +1450,7 @@ func RevertSnapshot() restapi.ControllerHandler {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusAccepted)
 		defer r.Body.Close()
 	}
 }

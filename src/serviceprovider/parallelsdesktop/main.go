@@ -1498,7 +1498,7 @@ func (s *ParallelsService) RevertSnapshot(ctx basecontext.ApiContext, vmId strin
 }
 
 // ListSnapshots lists all snapshots for the specified VM
-func (s *ParallelsService) ListSnapshots(ctx basecontext.ApiContext, vmId string, snapshotId string) (*models.ListSnapshotResponse, error) {
+func (s *ParallelsService) ListSnapshots(ctx basecontext.ApiContext, vmId string) (*models.ListSnapshotResponse, error) {
 	vm, err := s.findVmSync(ctx, vmId)
 	if err != nil {
 		return nil, err
