@@ -3686,6 +3686,53 @@ const docTemplate = `{
             }
         },
         "/v1/machines/{id}/snapshots": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint lists snapshots of a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Lists snapshots of a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiCommonResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -3741,10 +3788,8 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/v1/machines/{id}/snapshots/": {
-            "get": {
+            },
+            "delete": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -3753,14 +3798,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "This endpoint lists snapshots of a virtual machine",
+                "description": "This endpoint deletes all snapshots of a virtual machine",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Machines"
                 ],
-                "summary": "Lists snapshots of a virtual machine",
+                "summary": "Deletes all snapshots of a virtual machine",
                 "parameters": [
                     {
                         "type": "string",
@@ -3771,11 +3816,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.ApiCommonResponse"
-                        }
+                    "202": {
+                        "description": "Accepted"
                     },
                     "400": {
                         "description": "Bad Request",

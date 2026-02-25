@@ -108,14 +108,6 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
-		WithMethod(restapi.DELETE).
-		WithVersion(version).
-		WithPath("/machines/{id}").
-		WithRequiredClaim(constants.DELETE_VM_CLAIM).
-		WithHandler(DeleteVirtualMachineHandler()).
-		Register()
-
-	restapi.NewController().
 		WithMethod(restapi.POST).
 		WithVersion(version).
 		WithPath("/machines/{id}/unregister").
@@ -225,38 +217,6 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithPath("/machines/{id}/clone").
 		WithRequiredClaim(constants.CREATE_VM_CLAIM).
 		WithHandler(CloneVirtualMachineHandler()).
-		Register()
-
-	restapi.NewController().
-		WithMethod(restapi.POST).
-		WithVersion(version).
-		WithPath("/machines/{id}/snapshots").
-		WithRequiredClaim(constants.CREATE_SNAPSHOT_VM_CLAIM).
-		WithHandler(CreateSnapshot()).
-		Register()
-
-	restapi.NewController().
-		WithMethod(restapi.DELETE).
-		WithVersion(version).
-		WithPath("/machines/{id}/snapshots/{snapshot_id}").
-		WithRequiredClaim(constants.DELETE_SNAPSHOT_VM_CLAIM).
-		WithHandler(DeleteSnapshot()).
-		Register()
-
-	restapi.NewController().
-		WithMethod(restapi.DELETE).
-		WithVersion(version).
-		WithPath("/machines/{id}/snapshots").
-		WithRequiredClaim(constants.DELETE_ALL_SNAPSHOTS_VM_CLAIM).
-		WithHandler(DeleteAllSnapshots()).
-		Register()
-
-	restapi.NewController().
-		WithMethod(restapi.POST).
-		WithVersion(version).
-		WithPath("/machines/{id}/snapshots/{snapshot_id}/revert").
-		WithRequiredClaim(constants.REVERT_SNAPSHOT_VM_CLAIM).
-		WithHandler(RevertSnapshot()).
 		Register()
 
 }
@@ -1340,6 +1300,17 @@ func DeleteSnapshot() restapi.ControllerHandler {
 	}
 }
 
+// @Summary		Deletes all snapshots of a virtual machine
+// @Description	This endpoint deletes all snapshots of a virtual machine
+// @Tags			Machines
+// @Produce		json
+// @Param			id	path	string	true	"Machine ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/snapshots [delete]
 func DeleteAllSnapshots() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -1382,7 +1353,7 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/snapshots/ [get]
+// @Router			/v1/machines/{id}/snapshots [get]
 func ListSnapshot() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()

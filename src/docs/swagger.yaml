@@ -4195,6 +4195,62 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/snapshots:
+    delete:
+      description: This endpoint deletes all snapshots of a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes all snapshots of a virtual machine
+      tags:
+      - Machines
+    get:
+      description: This endpoint lists snapshots of a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Lists snapshots of a virtual machine
+      tags:
+      - Machines
     post:
       description: This endpoint creates a snapshot for a virtual machine
       parameters:
@@ -4228,36 +4284,6 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Creates a snapshot for a virtual machine
-      tags:
-      - Machines
-  /v1/machines/{id}/snapshots/:
-    get:
-      description: This endpoint lists snapshots of a virtual machine
-      parameters:
-      - description: Machine ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.ApiCommonResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.OAuthErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      - BearerAuth: []
-      summary: Lists snapshots of a virtual machine
       tags:
       - Machines
   /v1/machines/{id}/snapshots/{snapshot_id}:

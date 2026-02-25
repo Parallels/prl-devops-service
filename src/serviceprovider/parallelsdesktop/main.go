@@ -1519,7 +1519,7 @@ func (s *ParallelsService) ListSnapshots(ctx basecontext.ApiContext, vmId string
 	// Parse the JSON which has snapshot IDs as keys
 	var snapshotMap map[string]models.Snapshot
 	err = json.Unmarshal([]byte(output), &snapshotMap)
-	if err != nil {
+	if err != nil && output != "" {
 		return nil, errors.Newf("failed to parse snapshot list output: %v", err)
 	}
 
