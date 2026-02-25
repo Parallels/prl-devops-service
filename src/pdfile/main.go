@@ -48,6 +48,7 @@ func NewPDFileService(ctx basecontext.ApiContext, pdFile *models.PDFile) *PDFile
 			&processors.VmSizeCommandProcessor{},
 			&processors.VmTypeCommandProcessor{},
 			&processors.CompressPackLevelCommandProcessor{},
+			&processors.CloneDestinationCommandProcessor{},
 		},
 
 		pdfile: pdFile,
