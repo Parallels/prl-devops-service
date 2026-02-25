@@ -177,6 +177,9 @@ func (j *JsonDatabase) UpdateReverseProxyHost(ctx basecontext.ApiContext, rpHost
 			strings.EqualFold(h.GetHost(), rpHost.ID) ||
 			strings.EqualFold(h.GetHost(), rpHost.GetHost()) {
 			if h.Diff(*rpHost) {
+				if rpHost.Name != "" {
+					j.data.ReverseProxyHosts[i].Name = rpHost.Name
+				}
 				if rpHost.Host != "" {
 					j.data.ReverseProxyHosts[i].Host = rpHost.Host
 				}

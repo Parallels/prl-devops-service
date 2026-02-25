@@ -35,6 +35,7 @@ func (o *ReverseProxy) Diff(source ReverseProxy) bool {
 
 type ReverseProxyHost struct {
 	ID         string                       `json:"id"`
+	Name       string                       `json:"name,omitempty"`
 	HostID     string                       `json:"host_id,omitempty"`
 	Host       string                       `json:"host"`
 	Port       string                       `json:"port"`
@@ -57,6 +58,9 @@ func (o *ReverseProxyHost) Diff(source ReverseProxyHost) bool {
 		return true
 	}
 	if o.HostID != source.HostID {
+		return true
+	}
+	if o.Name != source.Name {
 		return true
 	}
 
