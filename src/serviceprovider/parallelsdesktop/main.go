@@ -40,11 +40,19 @@ import (
 )
 
 var (
-	globalParallelsService *ParallelsService
-	logger                 = common.Logger
-	eventsChannel          = make(chan models.ParallelsServiceEvent, 1000)
-	eventSupported         = [4]string{"vm_state_changed", "vm_added", "vm_unregistered", "vm_deleted"}
+	globalParallelsService    *ParallelsService
+	logger                    = common.Logger
+	eventsChannel             = make(chan models.ParallelsServiceEvent, 1000)
+	configChangeTimers        = make(map[string]*time.Timer)
+	configChangeTimersMutex   = &sync.Mutex{}
+	configChangeCooldown      = make(map[string]*time.Timer)
+	configChangeCooldownMutex = &sync.Mutex{}
+	toolsStateTimers          = make(map[string]*time.Timer)
+	toolsStateTimersMutex     = &sync.Mutex{}
 )
+
+const DebounceDelay = 500 * time.Millisecond
+const CooldownDelay = 1 * time.Second
 
 type ParallelsService struct {
 	ctx              basecontext.ApiContext
@@ -470,15 +478,6 @@ func (s *ParallelsService) IsLicensed() bool {
 	return s.isLicensed
 }
 
-func isEventSupported(event models.ParallelsServiceEvent) bool {
-	for _, supported := range eventSupported {
-		if event.EventName == supported {
-			return true
-		}
-	}
-	return false
-}
-
 func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 	if s.eventsProcessing {
 		return
@@ -544,11 +543,6 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 					var event models.ParallelsServiceEvent
 					if err := json.Unmarshal([]byte(line), &event); err != nil {
 						ctx.LogInfof("Non-JSON output: %s", line)
-						continue
-					}
-					// Check if event is supported
-					if !isEventSupported(event) {
-						ctx.LogDebugf("Unsupported event: %s", line)
 						continue
 					}
 					eventsChannel <- event
@@ -636,6 +630,34 @@ func (s *ParallelsService) StopListeners() {
 		s.ctx.LogInfof("Stopping all Parallels event listeners")
 		s.cancelFunc()
 		s.eventsProcessing = false
+
+		// Clean up any pending config change timers
+		configChangeTimersMutex.Lock()
+		for vmID, timer := range configChangeTimers {
+			timer.Stop()
+			delete(configChangeTimers, vmID)
+		}
+		configChangeTimersMutex.Unlock()
+		s.ctx.LogInfof("Cleaned up %d pending config change timers", len(configChangeTimers))
+
+		// Clean up any pending cooldown timers
+		configChangeCooldownMutex.Lock()
+		for vmID, timer := range configChangeCooldown {
+			timer.Stop()
+			delete(configChangeCooldown, vmID)
+		}
+		configChangeCooldownMutex.Unlock()
+		s.ctx.LogInfof("Cleaned up %d pending cooldown timers", len(configChangeCooldown))
+
+		// Clean up any pending tools state timers
+		toolsStateTimersMutex.Lock()
+		for vmID, timer := range toolsStateTimers {
+			timer.Stop()
+			delete(toolsStateTimers, vmID)
+		}
+		toolsStateTimersMutex.Unlock()
+		s.ctx.LogInfof("Cleaned up %d pending tools state timers", len(toolsStateTimers))
+
 	}
 }
 
@@ -649,11 +671,171 @@ func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models
 		s.processVmUnregistered(ctx, event)
 	case "vm_deleted":
 		s.processVmUnregistered(ctx, event)
+	case "vm_config_changed":
+		s.processVmConfigChanged(ctx, event)
+	case "vm_tools_state_changed":
+		s.processVmToolsStateChanged(ctx, event)
 	default:
-		ctx.LogDebugf("Unhandled event: %s", event.EventName)
+		ctx.LogInfof("Unhandled event: %v", event)
 	}
 }
 
+func (s *ParallelsService) updateVmInCache(ctx basecontext.ApiContext, vm *models.ParallelsVM) {
+	s.Lock()
+	defer s.Unlock()
+	found := false
+	for i, cachedVm := range s.cachedLocalVms {
+		if cachedVm.ID == vm.ID {
+			s.cachedLocalVms[i] = *vm
+			ctx.LogInfof("Updated whole VM in cache for VM %s", vm.ID)
+			found = true
+			break
+		}
+	}
+	if !found {
+		ctx.LogInfof("VM %s not found in cache, adding it", vm.ID)
+		s.cachedLocalVms = append(s.cachedLocalVms, *vm)
+	}
+
+	VmUpdatedEvent := models.VmUpdated{
+		VmID:  vm.ID,
+		NewVm: *vm,
+	}
+
+	go func() {
+		if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
+			msg := models.NewEventMessage(constants.EventTypePDFM, "VM_UPDATED", VmUpdatedEvent)
+			if err := ee.BroadcastMessage(msg); err != nil {
+				ctx.LogErrorf("Error broadcasting VM updated event: %v", err)
+			}
+		}
+	}()
+
+}
+
+func (s *ParallelsService) processVmConfigChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+
+	// To Do: Remove the cooldown handling once PDFM fixes the config_changed event trigger for `prlctl list --json`.
+	// This issue causes multiple config_changed events for a single change.
+	// Currently, we're managing it with a debounce and cooldown, but ideally,
+	// PDFM should only trigger the event when there's an actual change in VM config, not for every `prlctl list --json` call.
+	configChangeCooldownMutex.Lock()
+	if _, inCooldown := configChangeCooldown[event.VMID]; inCooldown {
+		configChangeCooldownMutex.Unlock()
+		ctx.LogInfof("VM %s is in cooldown period, ignoring config change event", event.VMID)
+		return
+	}
+	configChangeCooldownMutex.Unlock()
+
+	configChangeTimersMutex.Lock()
+	defer configChangeTimersMutex.Unlock()
+
+	// If there's an existing timer for this VM, stop it
+	if timer, exists := configChangeTimers[event.VMID]; exists {
+		timer.Stop()
+		ctx.LogInfof("Resetting config change timer for VM %s", event.VMID)
+	} else {
+		ctx.LogInfof("Starting config change timer for VM %s", event.VMID)
+	}
+
+	// Create a new timer that will fire after the debounce delay
+	configChangeTimers[event.VMID] = time.AfterFunc(DebounceDelay, func() {
+
+		s.startConfigChangeCooldown(ctx, event.VMID, CooldownDelay)
+
+		vm, err := s.getVmInMachine(ctx, event.VMID)
+		if err == nil {
+			ctx.LogInfof("handeling vm_config_changed updating VM %s in cache", vm.ID)
+			s.updateVmInCache(ctx, vm)
+		} else {
+			ctx.LogErrorf("Failed to get VM in machine for config change event: %v", err)
+		}
+
+		configChangeTimersMutex.Lock()
+		delete(configChangeTimers, event.VMID)
+		configChangeTimersMutex.Unlock()
+	})
+}
+
+func (s *ParallelsService) startConfigChangeCooldown(ctx basecontext.ApiContext, vmID string, cooldownDuration time.Duration) {
+	configChangeCooldownMutex.Lock()
+	defer configChangeCooldownMutex.Unlock()
+
+	// If there's an existing cooldown timer, stop it
+	if timer, exists := configChangeCooldown[vmID]; exists {
+		timer.Stop()
+	}
+
+	ctx.LogDebugf("Starting cooldown period for VM %s (duration: %v)", vmID, cooldownDuration)
+
+	// Create a new cooldown timer
+	configChangeCooldown[vmID] = time.AfterFunc(cooldownDuration, func() {
+		configChangeCooldownMutex.Lock()
+		delete(configChangeCooldown, vmID)
+		configChangeCooldownMutex.Unlock()
+		ctx.LogDebugf("Cooldown period ended for VM %s", vmID)
+	})
+}
+
+func (s *ParallelsService) processVmToolsStateChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+
+	toolsStateTimersMutex.Lock()
+	defer toolsStateTimersMutex.Unlock()
+
+	// If there's an existing timer for this VM, stop it
+	if timer, exists := toolsStateTimers[event.VMID]; exists {
+		timer.Stop()
+		ctx.LogDebugf("Resetting tools state timer for VM %s", event.VMID)
+	} else {
+		ctx.LogDebugf("Starting tools state timer for VM %s", event.VMID)
+	}
+
+	// Create a new timer that will fire after the debounce delay
+	toolsStateTimers[event.VMID] = time.AfterFunc(DebounceDelay, func() {
+		// this will eventually trigger a config chage event if there are any changes
+		// in VM config will be handeled by config change event handler so updating only IP
+		s.updateVMIPInCache(ctx, event.VMID)
+
+		toolsStateTimersMutex.Lock()
+		delete(toolsStateTimers, event.VMID)
+		toolsStateTimersMutex.Unlock()
+	})
+}
+func (s *ParallelsService) updateVMIPInCache(ctx basecontext.ApiContext, vmID string) {
+	status, err := s.VmStatus(ctx, vmID)
+	if err != nil {
+		ctx.LogErrorf("Failed to get VM status for IP update: %v", err)
+		return
+	}
+
+	s.Lock()
+	defer s.Unlock()
+	for i, cachedVm := range s.cachedLocalVms {
+		if cachedVm.ID == vmID {
+			s.cachedLocalVms[i].InternalIpAddress = status.IPConfigured
+			if len(s.cachedLocalVms[i].NetworkInformation.IPAddresses) > 0 {
+				ctx.LogInfof("Updating cached IP address for VM %s from %s to %s", vmID,
+					s.cachedLocalVms[i].NetworkInformation.IPAddresses[0].IP, status.IPConfigured)
+				s.cachedLocalVms[i].NetworkInformation.IPAddresses[0].IP = status.IPConfigured
+			}
+			ctx.LogInfof("Updated VM IP in cache for VM %s to %s", vmID, status.IPConfigured)
+			VmUpdatedEvent := models.VmUpdated{
+				VmID:  vmID,
+				NewVm: s.cachedLocalVms[i],
+			}
+
+			go func() {
+				if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
+					msg := models.NewEventMessage(constants.EventTypePDFM, "VM_UPDATED", VmUpdatedEvent)
+					if err := ee.BroadcastMessage(msg); err != nil {
+						ctx.LogErrorf("Error broadcasting VM updated event: %v", err)
+					}
+				}
+			}()
+			break
+		}
+	}
+}
 func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
 	if event.AdditionalInfo != nil && event.AdditionalInfo.VmStateName != "" {
 		var prevState string
@@ -708,40 +890,48 @@ func (s *ParallelsService) getFilteredUsers(ctx basecontext.ApiContext) ([]model
 	return users, nil
 }
 
-func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+func (s *ParallelsService) getVmInMachine(ctx basecontext.ApiContext, vmId string) (*models.ParallelsVM, error) {
 	users, err := s.getFilteredUsers(ctx)
 	if err != nil {
 		ctx.LogErrorf("Failed to get filtered users: %v", err)
-		return
+		return nil, err
 	}
 	for _, user := range users {
-		userMachines, err := s.getUserVm(ctx, user.Username, event.VMID)
+		userMachines, err := s.getUserVm(ctx, user.Username, vmId)
 		if err != nil {
 			continue
 		}
-		for _, machine := range userMachines {
-			if machine.ID == event.VMID {
-				s.Lock()
-				s.cachedLocalVms = append(s.cachedLocalVms, machine)
-				s.Unlock()
-				ctx.LogInfof("Added VM %s to cache", event.VMID)
-				VmAddedEvent := models.VmAdded{
-					VmID:  event.VMID,
-					NewVm: machine,
-				}
-
-				go func() {
-					if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
-						msg := models.NewEventMessage(constants.EventTypePDFM, "VM_ADDED", VmAddedEvent)
-						if err := ee.BroadcastMessage(msg); err != nil {
-							ctx.LogErrorf("Error broadcasting VM added event: %v", err)
-						}
-					}
-				}()
-				return
-			}
+		if len(userMachines) == 1 {
+			return &userMachines[0], nil
 		}
 	}
+	return nil, errors.New("VM not found ")
+}
+
+func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	machine, err := s.getVmInMachine(ctx, event.VMID)
+	if err != nil {
+		ctx.LogErrorf("Failed to get VM in machine: %v", err)
+		return
+	}
+	s.Lock()
+	s.cachedLocalVms = append(s.cachedLocalVms, *machine)
+	s.Unlock()
+	ctx.LogInfof("Added VM %s to cache", event.VMID)
+	VmAddedEvent := models.VmAdded{
+		VmID:  event.VMID,
+		NewVm: *machine,
+	}
+
+	go func() {
+		if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
+			msg := models.NewEventMessage(constants.EventTypePDFM, "VM_ADDED", VmAddedEvent)
+			if err := ee.BroadcastMessage(msg); err != nil {
+				ctx.LogErrorf("Error broadcasting VM added event: %v", err)
+			}
+		}
+	}()
+
 }
 
 func (s *ParallelsService) processVmUnregistered(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
