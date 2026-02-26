@@ -68,6 +68,14 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/machines/{id}/snapshots").
+		WithRequiredClaim(constants.DELETE_ALL_SNAPSHOTS_VM_CLAIM).
+		WithHandler(DeleteAllSnapshots()).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/machines/{id}/snapshots").
@@ -81,14 +89,6 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithPath("/machines/{id}/snapshots/{snapshot_id}/revert").
 		WithRequiredClaim(constants.REVERT_SNAPSHOT_VM_CLAIM).
 		WithHandler(RevertSnapshot()).
-		Register()
-
-	restapi.NewController().
-		WithMethod(restapi.POST).
-		WithVersion(version).
-		WithPath("/machines/{id}/snapshots/{snapshot_id}/switch").
-		WithRequiredClaim(constants.SWITCH_SNAPSHOT_VM_CLAIM).
-		WithHandler(SwitchSnapshot()).
 		Register()
 
 	restapi.NewController().
@@ -218,6 +218,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithRequiredClaim(constants.CREATE_VM_CLAIM).
 		WithHandler(CloneVirtualMachineHandler()).
 		Register()
+
 }
 
 // @Summary		Gets all the virtual machines
@@ -1223,7 +1224,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id				path		string							true	"Machine ID"
 // @Param			createRequest	body		models.CreateSnapShotRequest	true	"Create Snapshot Request"
-// @Success		200				{object}	models.ApiCommonResponse
+// @Success		202				{object}	models.ApiCommonResponse
 // @Failure		400				{object}	models.ApiErrorResponse
 // @Failure		401				{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
@@ -1244,22 +1245,20 @@ func CreateSnapshot() restapi.ControllerHandler {
 
 		// Extract ID from path
 		params := mux.Vars(r)
-		request.VMId = params["id"]
+		VMId := params["id"]
 
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		response, err := svc.CreateSnapshot(ctx, VMId, &request)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		// TODO: Call the service provider to actually create the snapshot using request
-
-		ctx.LogDebugf("User: %v", request.VMId)
-		ctx.LogDebugf("User: %v", request.VMName)
-		ctx.LogDebugf("User: %v", request.SnapshotName)
-		ctx.LogDebugf("User: %v", request.SnapshotDescription)
+		w.WriteHeader(http.StatusAccepted)
+		defer r.Body.Close()
+		_ = json.NewEncoder(w).Encode(response)
 	}
 }
 
@@ -1283,23 +1282,64 @@ func DeleteSnapshot() restapi.ControllerHandler {
 		var request models.DeleteSnapshotRequest
 		ctx.LogInfof("Deleting snapshot")
 
-		// Extract ID from path (Standard for DELETE requests)
 		params := mux.Vars(r)
-		request.VMId = params["id"]
-		request.ChildName = params["snapshot_id"]
+		VMId := params["id"]
+		SnapshotId := params["snapshot_id"]
 
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid path parameters: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		err := svc.DeleteSnapshot(ctx, VMId, SnapshotId, &request)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		// TODO: Call the service provider to actually delete the snapshot using request
+		w.WriteHeader(http.StatusAccepted)
+		defer r.Body.Close()
+	}
+}
 
-		ctx.LogDebugf("VM ID: %v", request.VMId)
-		ctx.LogDebugf("Snapshot to delete: %v", request.ChildName)
+// @Summary		Deletes all snapshots of a virtual machine
+// @Description	This endpoint deletes all snapshots of a virtual machine
+// @Tags			Machines
+// @Produce		json
+// @Param			id	path	string	true	"Machine ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/{id}/snapshots [delete]
+func DeleteAllSnapshots() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		ctx.LogInfof("Deleting All snapshots")
+
+		params := mux.Vars(r)
+		VMId := params["id"]
+
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		snapshots, err := svc.ListSnapshots(ctx, VMId)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		for _, snapshot := range snapshots.Snapshots {
+			err = svc.DeleteSnapshot(ctx, VMId, snapshot.ID, &models.DeleteSnapshotRequest{})
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		}
+		w.WriteHeader(http.StatusAccepted)
+		defer r.Body.Close()
 	}
 }
 
@@ -1308,7 +1348,7 @@ func DeleteSnapshot() restapi.ControllerHandler {
 // @Tags			Machines
 // @Produce		json
 // @Param			id	path		string	true	"Machine ID"
-// @Success		200	{object}	models.ApiCommonResponse
+// @Success		202	{object}	models.ApiCommonResponse
 // @Failure		400	{object}	models.ApiErrorResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
@@ -1319,24 +1359,23 @@ func ListSnapshot() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		var request models.ListSnapshotRequest
 		ctx.LogInfof("Listing snapshots")
 
-		// Extract ID from path (Standard for GET requests)
 		params := mux.Vars(r)
-		request.VMId = params["id"]
+		VMId := params["id"]
 
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid path parameters: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
+
+		response, err := svc.ListSnapshots(ctx, VMId)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		// TODO: Call the service provider to actually fetch the snapshot list using request
-
-		ctx.LogDebugf("List snapshots for VM ID: %v", request.VMId)
+		w.WriteHeader(http.StatusAccepted)
+		defer r.Body.Close()
+		_ = json.NewEncoder(w).Encode(response)
 	}
 }
 
@@ -1347,7 +1386,7 @@ func ListSnapshot() restapi.ControllerHandler {
 // @Param			id				path		string							true	"Machine ID"
 // @Param			snapshot_id		path		string							true	"Snapshot ID"
 // @Param			revertRequest	body		models.RevertSnapshotRequest	false	"Revert Snapshot Request"
-// @Success		200				{object}	models.ApiCommonResponse
+// @Success		202				{object}	models.ApiCommonResponse
 // @Failure		400				{object}	models.ApiErrorResponse
 // @Failure		401				{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
@@ -1361,85 +1400,21 @@ func RevertSnapshot() restapi.ControllerHandler {
 		var request models.RevertSnapshotRequest
 		ctx.LogInfof("Reverting snapshot")
 
-		// Extract IDs from path
 		params := mux.Vars(r)
-		request.VMId = params["id"]
+		VMId := params["id"]
+		SnapshotId := params["snapshot_id"]
 
-		// If you also want to pass snapshot ID in body, that's fine,
-		// but typically we get it from path for POST to a specific snapshot action:
-		snapshotId := params["snapshot_id"]
+		provider := serviceprovider.Get()
+		svc := provider.ParallelsDesktopService
 
-		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			// Ignore EOF error for cases where body might be empty if all info is in path
-			if err.Error() != "EOF" {
-				ctx.LogErrorf("Error decoding JSON: %v", err)
-				return
-			}
-		}
-
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		err := svc.RevertSnapshot(ctx, VMId, SnapshotId, &request)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
-		// TODO: Call the service provider to actually revert the snapshot using request
-
-		ctx.LogDebugf("VM ID: %v", request.VMId)
-		ctx.LogDebugf("Reverting to: %v", snapshotId)
-	}
-}
-
-// @Summary		Switches a virtual machine to a snapshot
-// @Description	This endpoint switches a virtual machine to a snapshot
-// @Tags			Machines
-// @Produce		json
-// @Param			id				path		string							true	"Machine ID"
-// @Param			snapshot_id		path		string							true	"Snapshot ID"
-// @Param			switchRequest	body		models.SwitchSnapshotRequest	false	"Switch Snapshot Request"
-// @Success		200				{object}	models.ApiCommonResponse
-// @Failure		400				{object}	models.ApiErrorResponse
-// @Failure		401				{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/{id}/snapshots/{snapshot_id}/switch [post]
-func SwitchSnapshot() restapi.ControllerHandler {
-	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
 		defer r.Body.Close()
-		ctx := GetBaseContext(r)
-		defer Recover(ctx, r, w)
-		var request models.SwitchSnapshotRequest
-		ctx.LogInfof("Switching snapshot")
-
-		// Extract IDs from path
-		params := mux.Vars(r)
-		request.VMId = params["id"]
-
-		snapshotId := params["snapshot_id"]
-
-		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			// Ignore EOF error for cases where body might be empty if all info is in path
-			if err.Error() != "EOF" {
-				ctx.LogErrorf("Error decoding JSON: %v", err)
-				return
-			}
-		}
-
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
-			return
-		}
-
-		// TODO: Call the service provider to actually switch the snapshot using request
-
-		ctx.LogDebugf("VM ID: %v", request.VMId)
-		ctx.LogDebugf("Switching to: %v", snapshotId)
-		ctx.LogDebugf("Skip Resume: %v", request.SkipResume)
 	}
 }
 

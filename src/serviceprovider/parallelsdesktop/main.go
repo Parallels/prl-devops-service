@@ -20,7 +20,6 @@ import (
 	"net/http"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
@@ -41,7 +40,6 @@ import (
 
 var (
 	globalParallelsService    *ParallelsService
-	logger                    = common.Logger
 	eventsChannel             = make(chan models.ParallelsServiceEvent, 1000)
 	configChangeTimers        = make(map[string]*time.Timer)
 	configChangeTimersMutex   = &sync.Mutex{}
@@ -93,6 +91,7 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 	}
 
 	globalParallelsService.SetDependencies([]interfaces.Service{})
+
 	cfg := config.Get()
 	if cfg.IsApi() || cfg.IsOrchestrator() {
 		globalParallelsService.refreshCache(ctx)
@@ -1383,6 +1382,161 @@ func (s *ParallelsService) VmStatus(ctx basecontext.ApiContext, id string) (*mod
 	return nil, errors.New("VM not found")
 }
 
+// CreateSnapshot creates a new snapshot for the specified VM
+func (s *ParallelsService) CreateSnapshot(ctx basecontext.ApiContext, vmID string, request *models.CreateSnapShotRequest) (*models.CreateSnapShotResponse, error) {
+	if request == nil {
+		return nil, errors.New("snapshot create request is required")
+	}
+
+	vm, err := s.findVmSync(ctx, vmID)
+	if err != nil {
+		return nil, err
+	}
+	if vm == nil {
+		return nil, errors.Newf("VM with id %s was not found", vmID)
+	}
+
+	args := []string{"snapshot", vmID}
+	if request.SnapshotName != "" {
+		args = append(args, "-n", request.SnapshotName)
+		ctx.LogInfof("Creating snapshot '%s' for VM %s", request.SnapshotName, vmID)
+	}
+	if request.SnapshotDescription != "" {
+		args = append(args, "-d", request.SnapshotDescription)
+		ctx.LogInfof("Creating snapshot with description '%s' for VM %s", request.SnapshotDescription, vmID)
+	}
+	cmd := helpers.Command{
+		Command: s.executable,
+		Args:    args,
+	}.AsUser(vm.User)
+
+	output, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return nil, err
+	}
+	output = strings.TrimSpace(output)
+
+	// Extract snapshot ID from output string in format: "The snapshot with id {snapshot-id} has been successfully created."
+	snapshotId := extractSnapshotId(output)
+	if snapshotId == "" {
+		return nil, errors.New("failed to extract snapshot ID from command output")
+	}
+
+	return &models.CreateSnapShotResponse{
+		SnapshotName: request.SnapshotName,
+		SnapshotId:   snapshotId,
+	}, nil
+}
+
+// DeleteSnapshot deletes a snapshot from the specified VM
+func (s *ParallelsService) DeleteSnapshot(ctx basecontext.ApiContext, vmId string, snapshotId string, request *models.DeleteSnapshotRequest) error {
+	if snapshotId == "" {
+		return errors.New("snapshot ID is required")
+	}
+
+	vm, err := s.findVmSync(ctx, vmId)
+	if err != nil {
+		return err
+	}
+	if vm == nil {
+		return errors.Newf("VM with id %s was not found", vmId)
+	}
+
+	ctx.LogInfof("Deleting snapshot %s for VM %s", snapshotId, vmId)
+
+	args := []string{"snapshot-delete", vmId, "--id", snapshotId}
+	if request.DeleteChildren {
+		args = append(args, "-c")
+	}
+
+	cmd := helpers.Command{
+		Command: s.executable,
+		Args:    args,
+	}.AsUser(vm.User)
+
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *ParallelsService) RevertSnapshot(ctx basecontext.ApiContext, vmId string, snapshotId string, request *models.RevertSnapshotRequest) error {
+	if snapshotId == "" {
+		return errors.New("snapshot ID is required")
+	}
+
+	vm, err := s.findVmSync(ctx, vmId)
+	if err != nil {
+		return err
+	}
+	if vm == nil {
+		return errors.Newf("VM with id %s was not found", vmId)
+	}
+
+	ctx.LogInfof("Reverting snapshot %s for VM %s", snapshotId, vmId)
+
+	args := []string{"snapshot-switch", vmId, "--id", snapshotId}
+	if request.SkipResume {
+		args = append(args, "--skip-resume")
+	}
+
+	cmd := helpers.Command{
+		Command: s.executable,
+		Args:    args,
+	}.AsUser(vm.User)
+
+	_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ListSnapshots lists all snapshots for the specified VM
+func (s *ParallelsService) ListSnapshots(ctx basecontext.ApiContext, vmId string) (*models.ListSnapshotResponse, error) {
+	vm, err := s.findVmSync(ctx, vmId)
+	if err != nil {
+		return nil, err
+	}
+	if vm == nil {
+		return nil, errors.Newf("VM with id %s was not found", vmId)
+	}
+
+	ctx.LogInfof("Listing snapshots for VM %s", vmId)
+	cmd := helpers.Command{
+		Command: s.executable,
+		Args:    []string{"snapshot-list", vmId, "--json"},
+	}.AsUser(vm.User)
+
+	output, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse the JSON which has snapshot IDs as keys
+	var snapshotMap map[string]models.Snapshot
+	err = json.Unmarshal([]byte(output), &snapshotMap)
+	if err != nil && output != "" {
+		return nil, errors.Newf("failed to parse snapshot list output: %v", err)
+	}
+
+	// Convert the map to a slice and set the ID field
+	var snapshotList []models.Snapshot
+	for id, snapshot := range snapshotMap {
+		snapshot.ID = id
+		snapshotList = append(snapshotList, snapshot)
+	}
+
+	snapshots := models.ListSnapshotResponse{
+		Snapshots: snapshotList,
+	}
+
+	return &snapshots, nil
+}
+
 func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.RegisterVirtualMachineRequest) error {
 	if r.Uuid != "" {
 		vm, err := s.findVmInCacheAndSystem(ctx, r.Uuid)
@@ -2656,4 +2810,16 @@ func escapeForBashC(command string) string {
 	result := escaped.String()
 
 	return result
+}
+
+// extractSnapshotId extracts the snapshot ID from output string in format:
+// "The snapshot with id {snapshot-id} has been successfully created."
+func extractSnapshotId(output string) string {
+	// Use regex to find content within curly braces
+	re := regexp.MustCompile(`\{([^}]+)\}`)
+	matches := re.FindStringSubmatch(output)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
 }

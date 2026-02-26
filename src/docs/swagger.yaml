@@ -1020,10 +1020,6 @@ definitions:
         type: string
       snapshot_name:
         type: string
-      vm_id:
-        type: string
-      vm_name:
-        type: string
     type: object
   models.CreateVagrantMachineRequest:
     properties:
@@ -1626,10 +1622,8 @@ definitions:
     type: object
   models.RevertSnapshotRequest:
     properties:
-      vm_id:
-        type: string
-      vm_name:
-        type: string
+      skip_resume:
+        type: boolean
     type: object
   models.RoleRequest:
     properties:
@@ -1656,15 +1650,6 @@ definitions:
       message:
         type: string
       name:
-        type: string
-    type: object
-  models.SwitchSnapshotRequest:
-    properties:
-      skip_resume:
-        type: boolean
-      vm_id:
-        type: string
-      vm_name:
         type: string
     type: object
   models.SystemReverseProxy:
@@ -4210,6 +4195,33 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/snapshots:
+    delete:
+      description: This endpoint deletes all snapshots of a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes all snapshots of a virtual machine
+      tags:
+      - Machines
     get:
       description: This endpoint lists snapshots of a virtual machine
       parameters:
@@ -4345,46 +4357,6 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Reverts a virtual machine to a snapshot
-      tags:
-      - Machines
-  /v1/machines/{id}/snapshots/{snapshot_id}/switch:
-    post:
-      description: This endpoint switches a virtual machine to a snapshot
-      parameters:
-      - description: Machine ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Snapshot ID
-        in: path
-        name: snapshot_id
-        required: true
-        type: string
-      - description: Switch Snapshot Request
-        in: body
-        name: switchRequest
-        schema:
-          $ref: '#/definitions/models.SwitchSnapshotRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.ApiCommonResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.OAuthErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      - BearerAuth: []
-      summary: Switches a virtual machine to a snapshot
       tags:
       - Machines
   /v1/machines/{id}/start:
