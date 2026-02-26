@@ -79,6 +79,14 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/machines/{id}/snapshots").
+		WithRequiredClaim(constants.DELETE_ALL_SNAPSHOTS_VM_CLAIM).
+		WithHandler(DeleteAllSnapshots()).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/machines/{id}/snapshots").
@@ -92,14 +100,6 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithPath("/machines/{id}/snapshots/{snapshot_id}/revert").
 		WithRequiredClaim(constants.REVERT_SNAPSHOT_VM_CLAIM).
 		WithHandler(RevertSnapshot()).
-		Register()
-
-	restapi.NewController().
-		WithMethod(restapi.POST).
-		WithVersion(version).
-		WithPath("/machines/{id}/snapshots/{snapshot_id}/switch").
-		WithRequiredClaim(constants.SWITCH_SNAPSHOT_VM_CLAIM).
-		WithHandler(SwitchSnapshot()).
 		Register()
 
 	restapi.NewController().
@@ -229,6 +229,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithRequiredClaim(constants.CREATE_VM_CLAIM).
 		WithHandler(CloneVirtualMachineHandler()).
 		Register()
+
 }
 
 // @Summary		Gets all the virtual machines
@@ -1210,102 +1211,6 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			})
 			return
 		}
-	}
-}
-
-// @Summary		Creates a virtual machine asynchronously
-// @Description	This endpoint creates a virtual machine in the background and returns a Job ID to track progress
-// @Tags			Machines
-// @Produce		json
-// @Param			createRequest	body		models.CreateVirtualMachineRequest	true	"New Machine Request"
-// @Success		202				{object}	models.JobResponse
-// @Failure		400				{object}	models.ApiErrorResponse
-// @Failure		401				{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/machines/async [post]
-func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
-	return func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-		ctx := GetBaseContext(r)
-		defer Recover(ctx, r, w)
-
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
-			return
-		}
-
-		var request models.CreateVirtualMachineRequest
-		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
-			return
-		}
-
-		if request.CatalogManifest == nil || request.PackerTemplate != nil || request.VagrantBox != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: async machine creation currently supports only catalog_manifest",
-				Code:    http.StatusBadRequest,
-			})
-			return
-		}
-
-		if err := populateMachineRequestArchitecture(ctx, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: err.Error(),
-				Code:    http.StatusBadRequest,
-			})
-			return
-		}
-
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
-			return
-		}
-
-		catalogConnection, err := resolveCatalogMachineConnection(ctx, request.CatalogManifest)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
-		}
-		request.CatalogManifest.Connection = catalogConnection
-		request.CatalogManifest.CatalogManagerId = ""
-
-		jobManager := jobs.Get(ctx)
-		if jobManager == nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
-			return
-		}
-
-		job, err := jobManager.CreateNewJob(userContext.ID, "machines", "create", "Initializing catalog machine creation")
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
-
-		go func(jobID string, req models.CreateVirtualMachineRequest) {
-			asyncCtx := basecontext.NewRootBaseContext()
-			_, _ = jobManager.UpdateJobProgress(jobID, "Starting catalog machine creation", 1, constants.JobStateRunning)
-			result, err := createCatalogMachine(asyncCtx, req, jobID)
-			if err != nil {
-				_ = jobManager.MarkJobError(jobID, err)
-				return
-			}
-
-			resultMessage := fmt.Sprintf("Virtual machine %s created", result.ID)
-			_ = jobManager.MarkJobComplete(jobID, resultMessage)
-		}(job.ID, request)
-
-		response := mappers.MapJobToApiJob(*job)
-		w.WriteHeader(http.StatusAccepted)
-		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfof("Async machine create started, job ID: %v", response.ID)
 	}
 }
 

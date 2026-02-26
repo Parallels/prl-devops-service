@@ -2012,6 +2012,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/catalog/pull/async": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint pulls a remote catalog manifest in the background and returns a Job ID to track progress",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Pull a remote catalog manifest asynchronously",
+                "parameters": [
+                    {
+                        "description": "Pull request",
+                        "name": "pullRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PullCatalogManifestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/models.JobResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/catalog/push": {
             "post": {
                 "security": [
@@ -3330,6 +3381,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/machines/async": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint creates a virtual machine in the background and returns a Job ID to track progress",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Creates a virtual machine asynchronously",
+                "parameters": [
+                    {
+                        "description": "New Machine Request",
+                        "name": "createRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateVirtualMachineRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/models.JobResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/machines/register": {
             "post": {
                 "security": [
@@ -3937,8 +4039,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "$ref": "#/definitions/models.ApiCommonResponse"
                         }
@@ -3993,11 +4095,55 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "$ref": "#/definitions/models.ApiCommonResponse"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes all snapshots of a virtual machine",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Deletes all snapshots of a virtual machine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Machine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -4110,72 +4256,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.ApiCommonResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.OAuthErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/machines/{id}/snapshots/{snapshot_id}/switch": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "This endpoint switches a virtual machine to a snapshot",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Machines"
-                ],
-                "summary": "Switches a virtual machine to a snapshot",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Machine ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Snapshot ID",
-                        "name": "snapshot_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Switch Snapshot Request",
-                        "name": "switchRequest",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/models.SwitchSnapshotRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "$ref": "#/definitions/models.ApiCommonResponse"
                         }
@@ -8099,6 +8181,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/reverse-proxy/hosts/{id}/http_routes/order": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint reorders HTTP routes for a reverse proxy host",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Updates the order of a reverse proxy host HTTP route",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reverse Proxy Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Reverse Proxy Host HTTP Route Reorder Request",
+                        "name": "reverse_proxy_http_route_reorder_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ReverseProxyHostHttpRouteReorderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/reverse-proxy/hosts/{id}/http_routes/{http_route_id}": {
             "delete": {
                 "security": [
@@ -8618,6 +8758,21 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "constants.JobState": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "running",
+                "completed",
+                "failed"
+            ],
+            "x-enum-varnames": [
+                "JobStatePending",
+                "JobStateRunning",
+                "JobStateCompleted",
+                "JobStateFailed"
+            ]
+        },
         "controllers.SshExecutionRequest": {
             "type": "object",
             "properties": {
@@ -8888,6 +9043,9 @@ const docTemplate = `{
                 "cache_file_name": {
                     "type": "string"
                 },
+                "cache_last_used": {
+                    "type": "string"
+                },
                 "cache_local_path": {
                     "type": "string"
                 },
@@ -8899,6 +9057,9 @@ const docTemplate = `{
                 },
                 "cache_type": {
                     "type": "string"
+                },
+                "cache_used_count": {
+                    "type": "integer"
                 },
                 "catalog_id": {
                     "type": "string"
@@ -9623,6 +9784,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "order": {
+                    "type": "integer"
+                },
                 "path": {
                     "type": "string"
                 },
@@ -10132,6 +10296,9 @@ const docTemplate = `{
                 "catalog_id": {
                     "type": "string"
                 },
+                "catalog_manager_id": {
+                    "type": "string"
+                },
                 "connection": {
                     "type": "string"
                 },
@@ -10254,12 +10421,6 @@ const docTemplate = `{
                 },
                 "snapshot_name": {
                     "type": "string"
-                },
-                "vm_id": {
-                    "type": "string"
-                },
-                "vm_name": {
-                    "type": "string"
                 }
             }
         },
@@ -10313,6 +10474,12 @@ const docTemplate = `{
                 "packer_template": {
                     "$ref": "#/definitions/models.CreatePackerVirtualMachineRequest"
                 },
+                "selection_tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "start_on_create": {
                     "type": "boolean"
                 },
@@ -10354,6 +10521,29 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.HostCatalogCacheItem": {
+            "type": "object",
+            "properties": {
+                "architecture": {
+                    "type": "string"
+                },
+                "cache_size": {
+                    "type": "integer"
+                },
+                "cache_type": {
+                    "type": "string"
+                },
+                "cached_date": {
+                    "type": "string"
+                },
+                "catalog_id": {
+                    "type": "string"
+                },
+                "version": {
                     "type": "string"
                 }
             }
@@ -10521,6 +10711,50 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.JobResponse": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "job_operation": {
+                    "type": "string"
+                },
+                "job_type": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "owner_email": {
+                    "type": "string"
+                },
+                "owner_name": {
+                    "type": "string"
+                },
+                "progress": {
+                    "type": "integer"
+                },
+                "result": {
+                    "type": "string"
+                },
+                "state": {
+                    "$ref": "#/definitions/constants.JobState"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -10706,6 +10940,12 @@ const docTemplate = `{
                 },
                 "cache_config": {
                     "$ref": "#/definitions/models.CatalogCacheConfig"
+                },
+                "cache_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.HostCatalogCacheItem"
+                    }
                 },
                 "cpu_model": {
                     "type": "string"
@@ -10925,6 +11165,9 @@ const docTemplate = `{
                 "connection": {
                     "type": "string"
                 },
+                "job_id": {
+                    "type": "string"
+                },
                 "machine_name": {
                     "type": "string"
                 },
@@ -11108,6 +11351,9 @@ const docTemplate = `{
         "models.ReverseProxyHostHttpRouteCreateRequest": {
             "type": "object",
             "properties": {
+                "order": {
+                    "type": "integer"
+                },
                 "path": {
                     "type": "string"
                 },
@@ -11137,6 +11383,17 @@ const docTemplate = `{
                 },
                 "target_vm_id": {
                     "type": "string"
+                }
+            }
+        },
+        "models.ReverseProxyHostHttpRouteReorderRequest": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "order": {
+                    "type": "integer"
                 }
             }
         },
@@ -11174,7 +11431,6 @@ const docTemplate = `{
                 }
             }
         },
-<<<<<<< HEAD
         "models.ReverseProxyRouteVmDetails": {
             "type": "object",
             "properties": {
@@ -11200,16 +11456,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "uptime": {
-=======
+                    "type": "string"
+                }
+            }
+        },
         "models.RevertSnapshotRequest": {
             "type": "object",
             "properties": {
-                "vm_id": {
-                    "type": "string"
-                },
-                "vm_name": {
->>>>>>> 9cd3a4b (feat: Implemented comprehensive virtual machine (#378))
-                    "type": "string"
+                "skip_resume": {
+                    "type": "boolean"
                 }
             }
         },
@@ -11251,20 +11506,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.SwitchSnapshotRequest": {
-            "type": "object",
-            "properties": {
-                "skip_resume": {
-                    "type": "boolean"
-                },
-                "vm_id": {
-                    "type": "string"
-                },
-                "vm_name": {
                     "type": "string"
                 }
             }
