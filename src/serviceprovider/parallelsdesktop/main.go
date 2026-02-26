@@ -829,12 +829,32 @@ func (s *ParallelsService) updateVMIPInCache(ctx basecontext.ApiContext, vmID st
 	defer s.Unlock()
 	for i, cachedVm := range s.cachedLocalVms {
 		if cachedVm.ID == vmID {
-			s.cachedLocalVms[i].InternalIpAddress = status.IPConfigured
-			if len(s.cachedLocalVms[i].NetworkInformation.IPAddresses) > 0 {
-				ctx.LogInfof("Updating cached IP address for VM %s from %s to %s", vmID,
-					s.cachedLocalVms[i].NetworkInformation.IPAddresses[0].IP, status.IPConfigured)
-				s.cachedLocalVms[i].NetworkInformation.IPAddresses[0].IP = status.IPConfigured
+			for j, ip := range s.cachedLocalVms[i].NetworkInformation.IPAddresses {
+				if strings.ToLower(ip.Type) == "ipv4" {
+					s.cachedLocalVms[i].NetworkInformation.IPAddresses[j].IP = status.IPConfigured
+				}
+				if (s.cachedLocalVms[i].State == "running" && s.cachedLocalVms[i].NetworkInformation.IPAddresses[j].IP == "-") &&
+					(s.cachedLocalVms[i].OS == "macosx" || strings.Contains(s.cachedLocalVms[i].Name, "mac")) {
+					cmd := helpers.Command{
+						Command: s.executable,
+						Args:    []string{"exec", s.cachedLocalVms[i].ID, "ipconfig", "getifaddr", "en0"},
+					}.AsUser(s.cachedLocalVms[i].User)
+					ctx.LogDebugf("Executing command to get internal ip address: %s", cmd.String())
+					out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+					if err == nil {
+						ip := strings.TrimSpace(out)
+						ctx.LogDebugf("Got internal IP address %s for VM %s using command execution", ip, vmID)
+						if ip != "" {
+							s.cachedLocalVms[i].InternalIpAddress = ip
+							ctx.LogInfof("Updated VM internal IP in cache for VM %s to %s", vmID, ip)
+						}
+					} else {
+						ctx.LogErrorf("Failed to get internal IP address for VM %s: %v", vmID, err)
+					}
+				}
+				break
 			}
+
 			ctx.LogInfof("Updated VM IP in cache for VM %s to %s", vmID, status.IPConfigured)
 			VmUpdatedEvent := models.VmUpdated{
 				VmID:  vmID,
