@@ -14,6 +14,7 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	apiModels "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/security"
 
 	"github.com/cjlapao/common-go/helper"
@@ -32,17 +33,18 @@ var (
 )
 
 type Data struct {
-	Schema            models.DatabaseSchema     `json:"schema"`
-	Configuration     *models.Configuration     `json:"configuration"`
-	Users             []models.User             `json:"users"`
-	Claims            []models.Claim            `json:"claims"`
-	Roles             []models.Role             `json:"roles"`
-	ApiKeys           []models.ApiKey           `json:"api_keys"`
-	PackerTemplates   []models.PackerTemplate   `json:"virtual_machine_templates"`
-	ManifestsCatalog  []models.CatalogManifest  `json:"catalog_manifests"`
-	OrchestratorHosts []models.OrchestratorHost `json:"orchestrator_hosts"`
-	ReverseProxy      *models.ReverseProxy      `json:"reverse_proxy"`
-	ReverseProxyHosts []models.ReverseProxyHost `json:"reverse_proxy_hosts"`
+	Schema            models.DatabaseSchema           `json:"schema"`
+	Configuration     *models.Configuration           `json:"configuration"`
+	Users             []models.User                   `json:"users"`
+	Claims            []models.Claim                  `json:"claims"`
+	Roles             []models.Role                   `json:"roles"`
+	ApiKeys           []models.ApiKey                 `json:"api_keys"`
+	PackerTemplates   []models.PackerTemplate         `json:"virtual_machine_templates"`
+	ManifestsCatalog  []models.CatalogManifest        `json:"catalog_manifests"`
+	OrchestratorHosts []models.OrchestratorHost       `json:"orchestrator_hosts"`
+	ReverseProxy      *models.ReverseProxy            `json:"reverse_proxy"`
+	ReverseProxyHosts []models.ReverseProxyHost       `json:"reverse_proxy_hosts"`
+	Snapshots         map[string][]apiModels.Snapshot `json:"snapshots"`
 }
 
 type JsonDatabase struct {
@@ -602,6 +604,7 @@ func (j *JsonDatabase) loadFromEmpty(ctx basecontext.ApiContext) error {
 		ApiKeys:          make([]models.ApiKey, 0),
 		PackerTemplates:  make([]models.PackerTemplate, 0),
 		ManifestsCatalog: make([]models.CatalogManifest, 0),
+		Snapshots:        make(map[string][]apiModels.Snapshot),
 	}
 	j.dataMutex.Unlock()
 
