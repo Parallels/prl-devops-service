@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"io/ioutil"
@@ -1322,7 +1324,7 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 	return nil
 }
 
-func (s *ParallelsService) CloneVm(ctx basecontext.ApiContext, id string, cloneName string) error {
+func (s *ParallelsService) CloneVm(ctx basecontext.ApiContext, id string, cloneName string, destinationPath string) error {
 	configure := models.VirtualMachineConfigRequest{
 		Operations: []*models.VirtualMachineConfigRequestOperation{
 			{
@@ -1338,7 +1340,18 @@ func (s *ParallelsService) CloneVm(ctx basecontext.ApiContext, id string, cloneN
 		},
 	}
 
+	if destinationPath != "" {
+		configure.Operations[0].Options = append(configure.Operations[0].Options, &models.VirtualMachineConfigRequestOperationOption{
+			Flag:  "dst",
+			Value: destinationPath,
+		})
+	}
+
 	if err := s.ConfigureVm(ctx, id, &configure); err != nil {
+		return err
+	}
+
+	if err := s.RegenerateMacAddress(ctx, id, "root"); err != nil {
 		return err
 	}
 
@@ -1485,6 +1498,10 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 		return err
 	}
 
+	if err := s.RegenerateMacAddress(ctx, r.Uuid, r.Owner); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1529,6 +1546,10 @@ func (s *ParallelsService) RenameVm(ctx basecontext.ApiContext, r models.RenameV
 	}
 	if vm == nil {
 		return errors.New("VM not found")
+	}
+	if vm.State != "stopped" {
+		ctx.LogWarnf("VM %s is not stopped, we cannot rename it", vm.ID)
+		return errors.New("VM is not stopped")
 	}
 
 	baseCmd := helpers.Command{
@@ -1777,6 +1798,12 @@ func (s *ParallelsService) ConfigureVm(ctx basecontext.ApiContext, id string, se
 			}
 		default:
 			return errors.Newf("Invalid group %s", op.Group)
+		}
+	}
+
+	for _, op := range setOperations.Operations {
+		if op.Error != nil {
+			return op.Error
 		}
 	}
 
@@ -2566,6 +2593,58 @@ func (s *ParallelsService) ReplaceMachineNameInConfigPvs(path string, newName st
 	return nil
 }
 
+func (s *ParallelsService) ReplaceMacAddressInConfigPvs(path string) error {
+	configPath := filepath.Join(path, "config.pvs")
+	if !helper.FileExists(configPath) {
+		return errors.Newf("Config file %s not found", configPath)
+	}
+	// lets get the config.pvs current owner
+	fileInfo, err := os.Stat(configPath)
+	if err != nil {
+		return err
+	}
+
+	fileMode := fileInfo.Mode()
+	// Get the file owner
+	sys := fileInfo.Sys().(*syscall.Stat_t)
+	uid := sys.Uid
+	gid := int(sys.Gid)
+
+	file, err := os.Open(filepath.Clean(configPath))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	content, err := helper.ReadFromFile(configPath)
+	if err != nil {
+		return err
+	}
+	macPrefix := "001C42"
+	macRandom3Octets := fmt.Sprintf("%02X%02X%02X", rand.Intn(256), rand.Intn(256), rand.Intn(256))
+	macAddress := macPrefix + macRandom3Octets
+
+	pattern := regexp.MustCompile(`<[Mm]ac>[^<]*</[Mm]ac>`)
+
+	newContent := pattern.ReplaceAllString(string(content), fmt.Sprintf("<Mac>%s</Mac>", macAddress))
+
+	err = helper.WriteToFile(newContent, configPath)
+	if err != nil {
+		return err
+	}
+
+	// Set the mode and owner of another file to be the same as configPath
+	err = os.Chmod(configPath, fileMode)
+	if err != nil {
+		return err
+	}
+	err = os.Chown(configPath, int(uid), int(gid))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *ParallelsService) RunCustomCommand(ctx basecontext.ApiContext, vm *models.ParallelsVM, op *models.VirtualMachineConfigRequestOperation) error {
 	if vm.State != "stopped" {
 		return errors.New("VM is not stopped")
@@ -2681,6 +2760,41 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	result.OsName = systemSrv.GetOSName()
 
 	return result, nil
+}
+func (s *ParallelsService) RegenerateMacAddress(ctx basecontext.ApiContext, vmID string, owner string) error {
+	// getting the VM to check state
+	vm, err := s.findVmSync(ctx, vmID)
+	if err != nil {
+		return err
+	}
+	if vm == nil {
+		return errors.New("VM not found")
+	}
+	if vm.State != "stopped" {
+		err := s.ReplaceMacAddressInConfigPvs(vm.Home)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// lets regenerate the MAC address for the VM
+	regenerateMacAddressCmd := helpers.Command{
+		Command: s.executable,
+		Args:    []string{"set", vmID, "--device-set", "net0", "--mac", "auto"},
+	}
+
+	if owner != "" && owner != "root" {
+		regenerateMacAddressCmd = regenerateMacAddressCmd.AsUser(owner)
+	}
+
+	ctx.LogDebugf("Executing command: %s", regenerateMacAddressCmd.String())
+	_, err = helpers.ExecuteWithNoOutput(ctx.Context(), regenerateMacAddressCmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func escapeForBashC(command string) string {

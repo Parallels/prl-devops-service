@@ -17,6 +17,7 @@ type SystemUsageResponse struct {
 	TotalAvailable           *SystemUsageItem    `json:"total_available,omitempty"`
 	TotalInUse               *SystemUsageItem    `json:"total_in_use,omitempty"`
 	TotalReserved            *SystemUsageItem    `json:"total_reserved,omitempty"`
+	CacheConfig              *CatalogCacheConfig `json:"cache_config,omitempty"`
 	EnabledModules           []string            `json:"enabled_modules,omitempty"`
 }
 
@@ -28,13 +29,15 @@ type SystemUsageItem struct {
 }
 
 type SystemHardwareInfo struct {
-	CpuType          string  `json:"cpu_type,omitempty"`
-	CpuBrand         string  `json:"cpu_brand,omitempty"`
-	PhysicalCpuCount int     `json:"physical_cpu_count,omitempty"`
-	LogicalCpuCount  int     `json:"logical_cpu_count,omitempty"`
-	MemorySize       float64 `json:"memory_size,omitempty"`
-	DiskSize         float64 `json:"disk_size,omitempty"`
-	FreeDiskSize     float64 `json:"free_disk_size,omitempty"`
+	CpuType          string              `json:"cpu_type,omitempty"`
+	CpuBrand         string              `json:"cpu_brand,omitempty"`
+	PhysicalCpuCount int                 `json:"physical_cpu_count,omitempty"`
+	LogicalCpuCount  int                 `json:"logical_cpu_count,omitempty"`
+	MemorySize       float64             `json:"memory_size,omitempty"`
+	DiskSize         float64             `json:"disk_size,omitempty"`
+	FreeDiskSize     float64             `json:"free_disk_size,omitempty"`
+	CacheConfig      *CatalogCacheConfig `json:"cache_config,omitempty"`
+	EnabledModules   []string            `json:"enabled_modules,omitempty"`
 }
 
 type SystemReverseProxy struct {

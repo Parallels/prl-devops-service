@@ -3,10 +3,11 @@ package models
 import "github.com/Parallels/prl-devops-service/errors"
 
 type ReverseProxyHostTcpRoute struct {
-	ID         string `json:"id,omitempty" yaml:"id,omitempty"`
-	TargetPort string `json:"target_port,omitempty" yaml:"target_port,omitempty"`
-	TargetHost string `json:"target_host,omitempty" yaml:"target_host,omitempty"`
-	TargetVmId string `json:"target_vm_id,omitempty" yaml:"target_vm_id,omitempty"`
+	ID              string                      `json:"id,omitempty" yaml:"id,omitempty"`
+	TargetPort      string                      `json:"target_port,omitempty" yaml:"target_port,omitempty"`
+	TargetHost      string                      `json:"target_host,omitempty" yaml:"target_host,omitempty"`
+	TargetVmId      string                      `json:"target_vm_id,omitempty" yaml:"target_vm_id,omitempty"`
+	TargetVmDetails *ReverseProxyRouteVmDetails `json:"target_vm_details,omitempty" yaml:"target_vm_details,omitempty"`
 }
 
 func (r *ReverseProxyHostTcpRoute) Validate() error {

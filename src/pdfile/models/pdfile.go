@@ -31,6 +31,7 @@ type PDFile struct {
 	Execute                 []string                      `json:"EXECUTE,omitempty" yaml:"EXECUTE,omitempty"`
 	Clone                   bool                          `json:"CLONE,omitempty" yaml:"CLONE,omitempty"`
 	CloneTo                 string                        `json:"CLONE_TO,omitempty" yaml:"CLONE_TO,omitempty"`
+	CloneToDestination      string                        `json:"CLONE_TO_DESTINATION,omitempty" yaml:"CLONE_TO_DESTINATION,omitempty"`
 	CloneId                 string                        `json:"CLONE_ID,omitempty" yaml:"CLONE_ID,omitempty"`
 	IsCompressed            bool                          `json:"IS_COMPRESSED,omitempty" yaml:"IS_COMPRESSED,omitempty"`
 	CompressPack            bool                          `json:"COMPRESS_PACK,omitempty" yaml:"COMPRESS_PACK,omitempty"`

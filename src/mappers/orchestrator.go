@@ -27,6 +27,7 @@ func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.O
 		RequiredRoles:            dto.RequiredRoles,
 		State:                    dto.State,
 		HasWebsocketEvents:       dto.HasWebsocketEvents,
+		CacheConfig:              dto.CacheConfig,
 	}
 
 	if dto.Resources != nil {

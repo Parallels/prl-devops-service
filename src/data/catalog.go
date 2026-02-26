@@ -610,7 +610,7 @@ func (j *JsonDatabase) UpdateCatalogManifestDownloadCount(ctx basecontext.ApiCon
 
 	downloadUser := "unknown"
 	authContext := ctx.GetAuthorizationContext()
-	if authContext.User != nil && authContext.User.Username != "" {
+	if authContext != nil && authContext.User != nil && authContext.User.Username != "" {
 		downloadUser = authContext.User.Username
 	}
 
@@ -634,7 +634,7 @@ func (j *JsonDatabase) TaintCatalogManifestVersion(ctx basecontext.ApiContext, c
 
 	taintUser := "unknown"
 	authContext := ctx.GetAuthorizationContext()
-	if authContext.User != nil && authContext.User.Username != "" {
+	if authContext != nil && authContext.User != nil && authContext.User.Username != "" {
 		taintUser = authContext.User.Username
 	}
 
@@ -658,7 +658,7 @@ func (j *JsonDatabase) UnTaintCatalogManifestVersion(ctx basecontext.ApiContext,
 
 	unTaintUser := "unknown"
 	authContext := ctx.GetAuthorizationContext()
-	if authContext.User != nil && authContext.User.Username != "" {
+	if authContext != nil && authContext.User != nil && authContext.User.Username != "" {
 		unTaintUser = authContext.User.Username
 	}
 
@@ -683,7 +683,7 @@ func (j *JsonDatabase) RevokeCatalogManifestVersion(ctx basecontext.ApiContext, 
 
 	revokeUser := "unknown"
 	authContext := ctx.GetAuthorizationContext()
-	if authContext.User != nil && authContext.User.Username != "" {
+	if authContext != nil && authContext.User != nil && authContext.User.Username != "" {
 		revokeUser = authContext.User.Username
 	}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -96,11 +97,50 @@ func registerReverseProxyHandlers(ctx basecontext.ApiContext, version string) {
 		Register()
 }
 
+func enrichHostWithVmDetails(ctx basecontext.ApiContext, host *models.ReverseProxyHost) {
+	provider := serviceprovider.Get()
+	svc := provider.ParallelsDesktopService
+
+	if host.TcpRoute != nil && host.TcpRoute.TargetVmId != "" {
+		vm, err := svc.GetVmSync(ctx, host.TcpRoute.TargetVmId)
+		if err == nil && vm != nil {
+			host.TcpRoute.TargetVmDetails = &models.ReverseProxyRouteVmDetails{
+				Name:                  vm.Name,
+				State:                 vm.State,
+				OS:                    vm.OS,
+				Uptime:                vm.Uptime,
+				GuestToolsState:       vm.GuestTools.State,
+				GuestToolsVersion:     vm.GuestTools.Version,
+				InternalIpAddress:     vm.InternalIpAddress,
+				HostExternalIpAddress: vm.HostExternalIpAddress,
+			}
+		}
+	}
+
+	for _, route := range host.HttpRoutes {
+		if route.TargetVmId != "" {
+			vm, err := svc.GetVmSync(ctx, route.TargetVmId)
+			if err == nil && vm != nil {
+				route.TargetVmDetails = &models.ReverseProxyRouteVmDetails{
+					Name:                  vm.Name,
+					State:                 vm.State,
+					OS:                    vm.OS,
+					Uptime:                vm.Uptime,
+					GuestToolsState:       vm.GuestTools.State,
+					GuestToolsVersion:     vm.GuestTools.Version,
+					InternalIpAddress:     vm.InternalIpAddress,
+					HostExternalIpAddress: vm.HostExternalIpAddress,
+				}
+			}
+		}
+	}
+}
+
 // @Summary		Gets reverse proxy configuration
 // @Description	This endpoint returns the reverse proxy configuration
 // @Tags			ReverseProxy
 // @Produce		json
-// @Success		200	{object}	[]models.ReverseProxy
+// @Success		200	{object}	models.ReverseProxy
 // @Failure		400	{object}	models.ApiErrorResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
@@ -158,16 +198,11 @@ func GetReverseProxyHostsHandler() restapi.ControllerHandler {
 			return
 		}
 
-		if len(dtoRpHosts) == 0 {
-			w.WriteHeader(http.StatusOK)
-			response := make([]models.ReverseProxyHost, 0)
-			defer r.Body.Close()
-			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfof("Reverse Proxy Hosts returned: %v", len(response))
-			return
-		}
-
 		result := mappers.DtoReverseProxyHostsToApi(dtoRpHosts)
+
+		for i := range result {
+			enrichHostWithVmDetails(ctx, &result[i])
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
@@ -213,6 +248,8 @@ func GetReverseProxyHostHandler() restapi.ControllerHandler {
 		}
 
 		result := mappers.DtoReverseProxyHostToApi(*dtoRpHost)
+
+		enrichHostWithVmDetails(ctx, &result)
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
@@ -273,6 +310,7 @@ func CreateReverseProxyHostHandler() restapi.ControllerHandler {
 		}
 
 		response := mappers.DtoReverseProxyHostToApi(*resultDto)
+		enrichHostWithVmDetails(ctx, &response)
 
 		rps := reverse_proxy.Get(ctx)
 		if err := rps.Restart(); err != nil {
@@ -369,6 +407,7 @@ func UpdateReverseProxyHostHandler() restapi.ControllerHandler {
 		}
 
 		response := mappers.DtoReverseProxyHostToApi(*resultDto)
+		enrichHostWithVmDetails(ctx, &response)
 
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(response)
@@ -519,6 +558,7 @@ func UpsertReverseProxyHostHttpRouteHandler() restapi.ControllerHandler {
 
 		dtoHost, _ = dbService.GetReverseProxyHost(ctx, id)
 		response := mappers.DtoReverseProxyHostToApi(*dtoHost)
+		enrichHostWithVmDetails(ctx, &response)
 
 		rps := reverse_proxy.Get(ctx)
 		if err := rps.Restart(); err != nil {
@@ -662,6 +702,7 @@ func UpdateReverseProxyHostTcpRouteHandler() restapi.ControllerHandler {
 
 		dtoHost, _ = dbService.GetReverseProxyHost(ctx, id)
 		response := mappers.DtoReverseProxyHostToApi(*dtoHost)
+		enrichHostWithVmDetails(ctx, &response)
 
 		rps := reverse_proxy.Get(ctx)
 		if err := rps.Restart(); err != nil {
@@ -725,8 +766,36 @@ func EnableReverseProxyHandler() restapi.ControllerHandler {
 		cfg := config.Get()
 		defer Recover(ctx, r, w)
 
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
 		rps := reverse_proxy.Get(ctx)
-		if cfg.IsReverseProxyEnabled() {
+		rpConfig := reverse_proxy.GetConfig()
+		wasEnabled := rpConfig.Enabled
+
+		if _, err := dbService.EnableProxyConfig(ctx); err != nil {
+			if sysErr, ok := err.(*errors.SystemError); ok && sysErr.Code() == http.StatusNotFound {
+				// Entity doesn't exist, create it and set Enabled to true
+				dto := data_models.ReverseProxy{
+					ID:      helpers.GenerateId(),
+					Enabled: true,
+					Host:    cfg.ReverseProxyHost(),
+					Port:    cfg.ReverseProxyPort(),
+				}
+				if _, err := dbService.UpdateReverseProxy(ctx, dto); err != nil {
+					ReturnApiError(ctx, w, models.NewFromError(err))
+					return
+				}
+			} else {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+		}
+
+		if wasEnabled {
 			if err := rps.Restart(); err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
@@ -738,20 +807,6 @@ func EnableReverseProxyHandler() restapi.ControllerHandler {
 				}
 			}()
 		}
-
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
-
-		if _, err := dbService.EnableProxyConfig(ctx); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
-		}
-
-		cfg.EnableReverseProxy(true)
-		cfg.Save()
 
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("Reverse Proxy Config returned successfully")
@@ -772,11 +827,12 @@ func DisableReverseProxyHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
-		cfg := config.Get()
 		defer Recover(ctx, r, w)
 
 		rps := reverse_proxy.Get(ctx)
-		if cfg.IsReverseProxyEnabled() {
+		rpConfig := reverse_proxy.GetConfig()
+
+		if rpConfig.Enabled {
 			_ = rps.Stop()
 		}
 
@@ -787,12 +843,12 @@ func DisableReverseProxyHandler() restapi.ControllerHandler {
 		}
 
 		if _, err := dbService.DisableProxyConfig(ctx); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
+			// Ignore 404 because if it doesn't exist, it's already "disabled" effectively
+			if sysErr, ok := err.(*errors.SystemError); !ok || sysErr.Code() != http.StatusNotFound {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
 		}
-
-		cfg.EnableReverseProxy(false)
-		cfg.Save()
 
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("Reverse Proxy Config returned successfully")

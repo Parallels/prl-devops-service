@@ -81,6 +81,7 @@ func processParallelsDesktop(ctx basecontext.ApiContext, cmd string) {
 	case constants.CLONE_COMMAND:
 		machineId := helper.GetCommandAt(1)
 		cloneName := helper.GetCommandAt(2)
+		destinationPath := helper.GetCommandAt(3)
 		if machineId == "" {
 			ctx.LogErrorf("No machine id or name provided")
 			os.Exit(1)
@@ -94,7 +95,7 @@ func processParallelsDesktop(ctx basecontext.ApiContext, cmd string) {
 			cloneName = name
 		}
 
-		err := pdSvc.CloneVm(ctx, machineId, cloneName)
+		err := pdSvc.CloneVm(ctx, machineId, cloneName, destinationPath)
 		if err != nil {
 			ctx.LogErrorf("Error cloning vm: %v", err)
 			os.Exit(1)

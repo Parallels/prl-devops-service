@@ -402,6 +402,18 @@ func (c *Config) IsCatalogCachingEnable() bool {
 	return true
 }
 
+func (c *Config) CacheKeepFreeDiskSpace() int64 {
+	return int64(c.GetIntKey(constants.CATALOG_CACHE_KEEP_FREE_DISK_SPACE_ENV_VAR))
+}
+
+func (c *Config) CacheMaxSize() int64 {
+	return int64(c.GetIntKey(constants.CATALOG_CACHE_MAX_SIZE_ENV_VAR))
+}
+
+func (c *Config) AllowCacheAboveFreeDiskSpace() bool {
+	return c.GetBoolKey(constants.CATALOG_CACHE_ALLOW_CACHE_ABOVE_FREE_DISK_SPACE_ENV_VAR)
+}
+
 func (c *Config) IsDatabaseAutoRecover() bool {
 	envVar := c.GetKey(constants.SYSTEM_AUTO_RECOVER_DATABASE_ENV_VAR)
 	if envVar == "" ||
@@ -525,6 +537,15 @@ func (c *Config) DisableTlsValidation() bool {
 	return val
 }
 
+func (c *Config) IsReverseProxyEnable() bool {
+	envVar := c.GetKey(constants.DISABLE_REVERSE_PROXY_ENV_VAR)
+	if envVar == "true" || envVar == "1" {
+		return false
+	}
+
+	return true
+}
+
 func (c *Config) IsReverseProxyEnabled() bool {
 	return c.IsModuleEnabled(constants.REVERSE_PROXY_MODE)
 }
@@ -549,11 +570,6 @@ func (c *Config) ReverseProxyPort() string {
 
 func (c *Config) GetReverseProxyConfig() *ReverseProxyConfig {
 	return c.config.ReverseProxy
-}
-
-func (c *Config) EnableReverseProxy(value bool) bool {
-	c.SetKey(constants.ENABLE_REVERSE_PROXY_ENV_VAR, strconv.FormatBool(value))
-	return true
 }
 
 func (c *Config) IsRemoteProviderStreamEnabled() bool {
@@ -648,20 +664,6 @@ func (c *Config) GetEnabledModules() []string {
 		}
 	}
 
-	reverseProxyEnabled := c.GetKey(constants.ENABLE_REVERSE_PROXY_ENV_VAR)
-	if strings.EqualFold(reverseProxyEnabled, "true") || reverseProxyEnabled == "1" {
-		found := false
-		for _, m := range modulesList {
-			if strings.EqualFold(m, constants.REVERSE_PROXY_MODE) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			modulesList = append(modulesList, constants.REVERSE_PROXY_MODE)
-		}
-	}
-
 	// Validate modules
 	validModules := []string{}
 	for _, module := range modulesList {
@@ -689,6 +691,54 @@ func (c *Config) GetEnabledModules() []string {
 
 	if !apiFound {
 		modulesList = append(modulesList, constants.API_MODE)
+	}
+
+	// Add caching module if enabled and host is enabled
+	if c.IsCatalogCachingEnable() {
+		hostFound := false
+		for _, module := range modulesList {
+			if strings.EqualFold(module, constants.HOST_MODE) {
+				hostFound = true
+				break
+			}
+		}
+
+		if hostFound {
+			cacheFound := false
+			for _, module := range modulesList {
+				if strings.EqualFold(module, constants.CACHE_MODE) {
+					cacheFound = true
+					break
+				}
+			}
+			if !cacheFound {
+				modulesList = append(modulesList, constants.CACHE_MODE)
+			}
+		}
+	}
+
+	// Add reverse proxy module if enabled and host is enabled
+	if c.IsReverseProxyEnable() {
+		hostFound := false
+		for _, module := range modulesList {
+			if strings.EqualFold(module, constants.HOST_MODE) {
+				hostFound = true
+				break
+			}
+		}
+
+		if hostFound {
+			proxyFound := false
+			for _, module := range modulesList {
+				if strings.EqualFold(module, constants.REVERSE_PROXY_MODE) {
+					proxyFound = true
+					break
+				}
+			}
+			if !proxyFound {
+				modulesList = append(modulesList, constants.REVERSE_PROXY_MODE)
+			}
+		}
 	}
 
 	return modulesList

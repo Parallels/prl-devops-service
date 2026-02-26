@@ -32,6 +32,7 @@ func (s *OrchestratorService) UpdateHost(ctx basecontext.ApiContext, host *model
 				host.Architecture = hw.CpuType
 				host.CpuModel = hw.CpuBrand
 			}
+			host.CacheConfig = hw.CacheConfig
 		}
 	}
 

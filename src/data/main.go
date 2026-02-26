@@ -43,6 +43,7 @@ type Data struct {
 	OrchestratorHosts []models.OrchestratorHost `json:"orchestrator_hosts"`
 	ReverseProxy      *models.ReverseProxy      `json:"reverse_proxy"`
 	ReverseProxyHosts []models.ReverseProxyHost `json:"reverse_proxy_hosts"`
+	CatalogManagers   []models.CatalogManager   `json:"catalog_managers"`
 }
 
 type JsonDatabase struct {
@@ -602,6 +603,7 @@ func (j *JsonDatabase) loadFromEmpty(ctx basecontext.ApiContext) error {
 		ApiKeys:          make([]models.ApiKey, 0),
 		PackerTemplates:  make([]models.PackerTemplate, 0),
 		ManifestsCatalog: make([]models.CatalogManifest, 0),
+		CatalogManagers:  make([]models.CatalogManager, 0),
 	}
 	j.dataMutex.Unlock()
 
