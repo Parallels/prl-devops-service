@@ -1224,7 +1224,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id				path		string							true	"Machine ID"
 // @Param			createRequest	body		models.CreateSnapShotRequest	true	"Create Snapshot Request"
-// @Success		200				{object}	models.ApiCommonResponse
+// @Success		202				{object}	models.ApiCommonResponse
 // @Failure		400				{object}	models.ApiErrorResponse
 // @Failure		401				{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
@@ -1256,7 +1256,7 @@ func CreateSnapshot() restapi.ControllerHandler {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusAccepted)
 		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 	}
@@ -1348,7 +1348,7 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 // @Tags			Machines
 // @Produce		json
 // @Param			id	path		string	true	"Machine ID"
-// @Success		200	{object}	models.ApiCommonResponse
+// @Success		202	{object}	models.ApiCommonResponse
 // @Failure		400	{object}	models.ApiErrorResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
@@ -1373,7 +1373,7 @@ func ListSnapshot() restapi.ControllerHandler {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusAccepted)
 		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 	}
@@ -1386,7 +1386,7 @@ func ListSnapshot() restapi.ControllerHandler {
 // @Param			id				path		string							true	"Machine ID"
 // @Param			snapshot_id		path		string							true	"Snapshot ID"
 // @Param			revertRequest	body		models.RevertSnapshotRequest	false	"Revert Snapshot Request"
-// @Success		200				{object}	models.ApiCommonResponse
+// @Success		202				{object}	models.ApiCommonResponse
 // @Failure		400				{object}	models.ApiErrorResponse
 // @Failure		401				{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
