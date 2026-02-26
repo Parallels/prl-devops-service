@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"io/ioutil"
@@ -59,6 +61,8 @@ type ParallelsService struct {
 	eventsProcessing bool
 	sync.RWMutex
 	cachedLocalVms   []models.ParallelsVM
+	VMIDInPorcessing string
+	VMIDMutex        sync.RWMutex
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
@@ -600,7 +604,11 @@ func (s *ParallelsService) startForForcedCacheRefresh(ctx basecontext.ApiContext
 					)
 					s.Lock()
 					s.cachedLocalVms = currentVMs
+					for i := range s.cachedLocalVms {
+						s.updateVmInCache(ctx, &s.cachedLocalVms[i])
+					}
 					s.Unlock()
+
 				} else {
 					// Compare cached VMs with current VMs stsus, if there is a mismatch refresh the cache
 					for _, cachedVM := range cachedVMs {
@@ -615,6 +623,9 @@ func (s *ParallelsService) startForForcedCacheRefresh(ctx basecontext.ApiContext
 								// so no need to continue rest of the comparison refresh the cache and break the loop
 								s.Lock()
 								s.cachedLocalVms = currentVMs
+								for i := range s.cachedLocalVms {
+									s.updateVmInCache(ctx, &s.cachedLocalVms[i])
+								}
 								s.Unlock()
 							}
 						}
@@ -662,6 +673,14 @@ func (s *ParallelsService) StopListeners() {
 }
 
 func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	// TODO: Remove this check once PDFM fixes the config_changed event trigger for `prlctl list --json`.
+	s.VMIDMutex.RLock()
+	currentlyProcessing := s.VMIDInPorcessing
+	s.VMIDMutex.RUnlock()
+	if event.VMID == currentlyProcessing {
+		ctx.LogInfof("VM %s is updating in forced cache refresh, ignoring event: %s", event.VMID, event.EventName)
+		return
+	}
 	switch event.EventName {
 	case "vm_state_changed":
 		s.processVmStateChanged(ctx, event)
@@ -687,13 +706,13 @@ func (s *ParallelsService) updateVmInCache(ctx basecontext.ApiContext, vm *model
 	for i, cachedVm := range s.cachedLocalVms {
 		if cachedVm.ID == vm.ID {
 			s.cachedLocalVms[i] = *vm
-			ctx.LogInfof("Updated whole VM in cache for VM %s", vm.ID)
+			ctx.LogTracef("Updated whole VM in cache for VM %s", vm.ID)
 			found = true
 			break
 		}
 	}
 	if !found {
-		ctx.LogInfof("VM %s not found in cache, adding it", vm.ID)
+		ctx.LogTracef("VM %s not found in cache, adding it", vm.ID)
 		s.cachedLocalVms = append(s.cachedLocalVms, *vm)
 	}
 
@@ -722,7 +741,7 @@ func (s *ParallelsService) processVmConfigChanged(ctx basecontext.ApiContext, ev
 	configChangeCooldownMutex.Lock()
 	if _, inCooldown := configChangeCooldown[event.VMID]; inCooldown {
 		configChangeCooldownMutex.Unlock()
-		ctx.LogInfof("VM %s is in cooldown period, ignoring config change event", event.VMID)
+		ctx.LogTracef("VM %s is in cooldown period, ignoring config change event", event.VMID)
 		return
 	}
 	configChangeCooldownMutex.Unlock()
@@ -733,9 +752,9 @@ func (s *ParallelsService) processVmConfigChanged(ctx basecontext.ApiContext, ev
 	// If there's an existing timer for this VM, stop it
 	if timer, exists := configChangeTimers[event.VMID]; exists {
 		timer.Stop()
-		ctx.LogInfof("Resetting config change timer for VM %s", event.VMID)
+		ctx.LogTracef("Resetting config change timer for VM %s", event.VMID)
 	} else {
-		ctx.LogInfof("Starting config change timer for VM %s", event.VMID)
+		ctx.LogTracef("Starting config change timer for VM %s", event.VMID)
 	}
 
 	// Create a new timer that will fire after the debounce delay
@@ -745,7 +764,7 @@ func (s *ParallelsService) processVmConfigChanged(ctx basecontext.ApiContext, ev
 
 		vm, err := s.getVmInMachine(ctx, event.VMID)
 		if err == nil {
-			ctx.LogInfof("handeling vm_config_changed updating VM %s in cache", vm.ID)
+			ctx.LogDebugf("handeling vm_config_changed updating VM %s in cache", vm.ID)
 			s.updateVmInCache(ctx, vm)
 		} else {
 			ctx.LogErrorf("Failed to get VM in machine for config change event: %v", err)
@@ -812,12 +831,32 @@ func (s *ParallelsService) updateVMIPInCache(ctx basecontext.ApiContext, vmID st
 	defer s.Unlock()
 	for i, cachedVm := range s.cachedLocalVms {
 		if cachedVm.ID == vmID {
-			s.cachedLocalVms[i].InternalIpAddress = status.IPConfigured
-			if len(s.cachedLocalVms[i].NetworkInformation.IPAddresses) > 0 {
-				ctx.LogInfof("Updating cached IP address for VM %s from %s to %s", vmID,
-					s.cachedLocalVms[i].NetworkInformation.IPAddresses[0].IP, status.IPConfigured)
-				s.cachedLocalVms[i].NetworkInformation.IPAddresses[0].IP = status.IPConfigured
+			for j, ip := range s.cachedLocalVms[i].NetworkInformation.IPAddresses {
+				if strings.ToLower(ip.Type) == "ipv4" {
+					s.cachedLocalVms[i].NetworkInformation.IPAddresses[j].IP = status.IPConfigured
+				}
+				if (s.cachedLocalVms[i].State == "running" && s.cachedLocalVms[i].NetworkInformation.IPAddresses[j].IP == "-") &&
+					(s.cachedLocalVms[i].OS == "macosx" || strings.Contains(s.cachedLocalVms[i].Name, "mac")) {
+					cmd := helpers.Command{
+						Command: s.executable,
+						Args:    []string{"exec", s.cachedLocalVms[i].ID, "ipconfig", "getifaddr", "en0"},
+					}.AsUser(s.cachedLocalVms[i].User)
+					ctx.LogDebugf("Executing command to get internal ip address: %s", cmd.String())
+					out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+					if err == nil {
+						ip := strings.TrimSpace(out)
+						ctx.LogDebugf("Got internal IP address %s for VM %s using command execution", ip, vmID)
+						if ip != "" {
+							s.cachedLocalVms[i].InternalIpAddress = ip
+							ctx.LogInfof("Updated VM internal IP in cache for VM %s to %s", vmID, ip)
+						}
+					} else {
+						ctx.LogErrorf("Failed to get internal IP address for VM %s: %v", vmID, err)
+					}
+				}
+				break
 			}
+
 			ctx.LogInfof("Updated VM IP in cache for VM %s to %s", vmID, status.IPConfigured)
 			VmUpdatedEvent := models.VmUpdated{
 				VmID:  vmID,
@@ -992,6 +1031,11 @@ func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string
 	externalIp, _ := system.Get().GetExternalIp(ctx)
 	userMachines := []models.ParallelsVM{}
 	for _, id := range vmIds {
+
+		s.VMIDMutex.Lock()
+		s.VMIDInPorcessing = id
+		s.VMIDMutex.Unlock()
+
 		cmd := helpers.Command{
 			Command: s.executable,
 			Args:    []string{"list", id, "-a", "-i", "--json"},
@@ -1015,8 +1059,10 @@ func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string
 	}
 
 	// updating the internal and external IP address
-	// updating the internal and external IP address
 	for i := range userMachines {
+		s.VMIDMutex.Lock()
+		s.VMIDInPorcessing = userMachines[i].ID
+		s.VMIDMutex.Unlock()
 		if externalIp != "" {
 			userMachines[i].HostExternalIpAddress = externalIp
 		}
@@ -1043,7 +1089,9 @@ func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string
 			}
 		}
 	}
-
+	s.VMIDMutex.Lock()
+	s.VMIDInPorcessing = ""
+	s.VMIDMutex.Unlock()
 	if vmId == "" {
 		ctx.LogInfof("User %s has %v VMs", username, len(userMachines))
 	} else if vmId != "" && len(userMachines) > 0 {
@@ -1276,7 +1324,7 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 	return nil
 }
 
-func (s *ParallelsService) CloneVm(ctx basecontext.ApiContext, id string, cloneName string) error {
+func (s *ParallelsService) CloneVm(ctx basecontext.ApiContext, id string, cloneName string, destinationPath string) error {
 	configure := models.VirtualMachineConfigRequest{
 		Operations: []*models.VirtualMachineConfigRequestOperation{
 			{
@@ -1292,7 +1340,18 @@ func (s *ParallelsService) CloneVm(ctx basecontext.ApiContext, id string, cloneN
 		},
 	}
 
+	if destinationPath != "" {
+		configure.Operations[0].Options = append(configure.Operations[0].Options, &models.VirtualMachineConfigRequestOperationOption{
+			Flag:  "dst",
+			Value: destinationPath,
+		})
+	}
+
 	if err := s.ConfigureVm(ctx, id, &configure); err != nil {
+		return err
+	}
+
+	if err := s.RegenerateMacAddress(ctx, id, "root"); err != nil {
 		return err
 	}
 
@@ -1439,6 +1498,10 @@ func (s *ParallelsService) RegisterVm(ctx basecontext.ApiContext, r models.Regis
 		return err
 	}
 
+	if err := s.RegenerateMacAddress(ctx, r.Uuid, r.Owner); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1483,6 +1546,10 @@ func (s *ParallelsService) RenameVm(ctx basecontext.ApiContext, r models.RenameV
 	}
 	if vm == nil {
 		return errors.New("VM not found")
+	}
+	if vm.State != "stopped" {
+		ctx.LogWarnf("VM %s is not stopped, we cannot rename it", vm.ID)
+		return errors.New("VM is not stopped")
 	}
 
 	baseCmd := helpers.Command{
@@ -1731,6 +1798,12 @@ func (s *ParallelsService) ConfigureVm(ctx basecontext.ApiContext, id string, se
 			}
 		default:
 			return errors.Newf("Invalid group %s", op.Group)
+		}
+	}
+
+	for _, op := range setOperations.Operations {
+		if op.Error != nil {
+			return op.Error
 		}
 	}
 
@@ -2520,6 +2593,58 @@ func (s *ParallelsService) ReplaceMachineNameInConfigPvs(path string, newName st
 	return nil
 }
 
+func (s *ParallelsService) ReplaceMacAddressInConfigPvs(path string) error {
+	configPath := filepath.Join(path, "config.pvs")
+	if !helper.FileExists(configPath) {
+		return errors.Newf("Config file %s not found", configPath)
+	}
+	// lets get the config.pvs current owner
+	fileInfo, err := os.Stat(configPath)
+	if err != nil {
+		return err
+	}
+
+	fileMode := fileInfo.Mode()
+	// Get the file owner
+	sys := fileInfo.Sys().(*syscall.Stat_t)
+	uid := sys.Uid
+	gid := int(sys.Gid)
+
+	file, err := os.Open(filepath.Clean(configPath))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	content, err := helper.ReadFromFile(configPath)
+	if err != nil {
+		return err
+	}
+	macPrefix := "001C42"
+	macRandom3Octets := fmt.Sprintf("%02X%02X%02X", rand.Intn(256), rand.Intn(256), rand.Intn(256))
+	macAddress := macPrefix + macRandom3Octets
+
+	pattern := regexp.MustCompile(`<[Mm]ac>[^<]*</[Mm]ac>`)
+
+	newContent := pattern.ReplaceAllString(string(content), fmt.Sprintf("<Mac>%s</Mac>", macAddress))
+
+	err = helper.WriteToFile(newContent, configPath)
+	if err != nil {
+		return err
+	}
+
+	// Set the mode and owner of another file to be the same as configPath
+	err = os.Chmod(configPath, fileMode)
+	if err != nil {
+		return err
+	}
+	err = os.Chown(configPath, int(uid), int(gid))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *ParallelsService) RunCustomCommand(ctx basecontext.ApiContext, vm *models.ParallelsVM, op *models.VirtualMachineConfigRequestOperation) error {
 	if vm.State != "stopped" {
 		return errors.New("VM is not stopped")
@@ -2635,6 +2760,41 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	result.OsName = systemSrv.GetOSName()
 
 	return result, nil
+}
+func (s *ParallelsService) RegenerateMacAddress(ctx basecontext.ApiContext, vmID string, owner string) error {
+	// getting the VM to check state
+	vm, err := s.findVmSync(ctx, vmID)
+	if err != nil {
+		return err
+	}
+	if vm == nil {
+		return errors.New("VM not found")
+	}
+	if vm.State != "stopped" {
+		err := s.ReplaceMacAddressInConfigPvs(vm.Home)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// lets regenerate the MAC address for the VM
+	regenerateMacAddressCmd := helpers.Command{
+		Command: s.executable,
+		Args:    []string{"set", vmID, "--device-set", "net0", "--mac", "auto"},
+	}
+
+	if owner != "" && owner != "root" {
+		regenerateMacAddressCmd = regenerateMacAddressCmd.AsUser(owner)
+	}
+
+	ctx.LogDebugf("Executing command: %s", regenerateMacAddressCmd.String())
+	_, err = helpers.ExecuteWithNoOutput(ctx.Context(), regenerateMacAddressCmd, helpers.ExecutionTimeout)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func escapeForBashC(command string) string {

@@ -129,7 +129,7 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 			return nil, diag
 		}
 
-		err := provider.ParallelsDesktopService.CloneVm(ctx, resultManifest.MachineID, p.pdfile.CloneTo)
+		err := provider.ParallelsDesktopService.CloneVm(ctx, resultManifest.MachineID, p.pdfile.CloneTo, p.pdfile.Destination)
 		if err != nil {
 			diag.AddError(err)
 			if sendTelemetry {

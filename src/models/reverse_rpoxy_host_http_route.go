@@ -7,16 +7,17 @@ import (
 )
 
 type ReverseProxyHostHttpRoute struct {
-	ID              string            `json:"id,omitempty" yaml:"id,omitempty"`
-	Path            string            `json:"path,omitempty" yaml:"path,omitempty"`
-	TargetVmId      string            `json:"target_vm_id,omitempty" yaml:"target_vm_id,omitempty"`
-	TargetHost      string            `json:"target_host,omitempty" yaml:"target_host,omitempty"`
-	TargetPort      string            `json:"target_port,omitempty" yaml:"target_port,omitempty"`
-	Schema          string            `json:"schema,omitempty" yaml:"scheme,omitempty"`
-	Pattern         string            `json:"pattern,omitempty" yaml:"pattern,omitempty"`
-	RegexpPattern   *regexp.Regexp    `json:"-" yaml:"-"`
-	RequestHeaders  map[string]string `json:"request_headers,omitempty" yaml:"request_headers,omitempty"`
-	ResponseHeaders map[string]string `json:"response_headers,omitempty" yaml:"response_headers,omitempty"`
+	ID              string                      `json:"id,omitempty" yaml:"id,omitempty"`
+	Path            string                      `json:"path,omitempty" yaml:"path,omitempty"`
+	TargetVmId      string                      `json:"target_vm_id,omitempty" yaml:"target_vm_id,omitempty"`
+	TargetHost      string                      `json:"target_host,omitempty" yaml:"target_host,omitempty"`
+	TargetPort      string                      `json:"target_port,omitempty" yaml:"target_port,omitempty"`
+	TargetVmDetails *ReverseProxyRouteVmDetails `json:"target_vm_details,omitempty" yaml:"target_vm_details,omitempty"`
+	Schema          string                      `json:"schema,omitempty" yaml:"scheme,omitempty"`
+	Pattern         string                      `json:"pattern,omitempty" yaml:"pattern,omitempty"`
+	RegexpPattern   *regexp.Regexp              `json:"-" yaml:"-"`
+	RequestHeaders  map[string]string           `json:"request_headers,omitempty" yaml:"request_headers,omitempty"`
+	ResponseHeaders map[string]string           `json:"response_headers,omitempty" yaml:"response_headers,omitempty"`
 }
 
 func (r *ReverseProxyHostHttpRoute) Validate() error {

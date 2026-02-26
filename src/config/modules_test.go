@@ -45,19 +45,19 @@ func TestGetEnabledModules_Fallback(t *testing.T) {
 func TestGetEnabledModules_ReverseProxyFallback(t *testing.T) {
 	// Setup
 	os.Unsetenv(constants.ENABLED_MODULES_ENV_VAR)
-	os.Setenv(constants.MODE_ENV_VAR, "api")
-	os.Setenv(constants.ENABLE_REVERSE_PROXY_ENV_VAR, "true")
+	os.Setenv(constants.MODE_ENV_VAR, "api")             // Ensure API/Host fallback
+	os.Unsetenv(constants.DISABLE_REVERSE_PROXY_ENV_VAR) // Proxy is enabled by default
 	ctx := basecontext.NewBaseContext()
 	cfg := New(ctx)
 
-	// Test Reverse Proxy Fallback
+	// Test Reverse Proxy Fallback (it should be enabled natively if host is enabled)
 	modules := cfg.GetEnabledModules()
 	str.Contains(t, modules, "api")
 	str.Contains(t, modules, constants.REVERSE_PROXY_MODE)
 	str.True(t, cfg.IsReverseProxyEnabled())
 
-	// Unset specific
-	os.Setenv(constants.ENABLE_REVERSE_PROXY_ENV_VAR, "false")
+	// Disable it specifically
+	os.Setenv(constants.DISABLE_REVERSE_PROXY_ENV_VAR, "true")
 	cfg = New(ctx)
 	modules = cfg.GetEnabledModules()
 	str.NotContains(t, modules, constants.REVERSE_PROXY_MODE)

@@ -273,6 +273,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	host.ParallelsDesktopVersion = hardwareInfo.ParallelsDesktopVersion
 	host.ParallelsDesktopLicensed = hardwareInfo.ParallelsDesktopLicensed
 	host.IsReverseProxyEnabled = hardwareInfo.IsReverseProxyEnabled
+	host.CacheConfig = hardwareInfo.CacheConfig
 	if hardwareInfo.ReverseProxy != nil {
 		host.ReverseProxy = &models.ReverseProxy{
 			Host: hardwareInfo.ReverseProxy.Host,
