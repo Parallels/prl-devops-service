@@ -1,5 +1,17 @@
 basePath: /api
 definitions:
+  constants.JobState:
+    enum:
+    - pending
+    - running
+    - completed
+    - failed
+    type: string
+    x-enum-varnames:
+    - JobStatePending
+    - JobStateRunning
+    - JobStateCompleted
+    - JobStateFailed
   controllers.SshExecutionRequest:
     properties:
       command:
@@ -178,6 +190,8 @@ definitions:
         type: string
       cache_file_name:
         type: string
+      cache_last_used:
+        type: string
       cache_local_path:
         type: string
       cache_metadata_name:
@@ -186,6 +200,8 @@ definitions:
         type: integer
       cache_type:
         type: string
+      cache_used_count:
+        type: integer
       catalog_id:
         type: string
       created_at:
@@ -659,6 +675,8 @@ definitions:
     properties:
       id:
         type: string
+      order:
+        type: integer
       path:
         type: string
       pattern:
@@ -991,6 +1009,8 @@ definitions:
         type: string
       catalog_id:
         type: string
+      catalog_manager_id:
+        type: string
       connection:
         type: string
       machine_name:
@@ -1072,10 +1092,6 @@ definitions:
         type: string
       snapshot_name:
         type: string
-      vm_id:
-        type: string
-      vm_name:
-        type: string
     type: object
   models.CreateVagrantMachineRequest:
     properties:
@@ -1110,6 +1126,10 @@ definitions:
         type: string
       packer_template:
         $ref: '#/definitions/models.CreatePackerVirtualMachineRequest'
+      selection_tags:
+        items:
+          type: string
+        type: array
       start_on_create:
         type: boolean
       vagrant_box:
@@ -1137,6 +1157,21 @@ definitions:
       memory:
         type: string
       type:
+        type: string
+    type: object
+  models.HostCatalogCacheItem:
+    properties:
+      architecture:
+        type: string
+      cache_size:
+        type: integer
+      cache_type:
+        type: string
+      cached_date:
+        type: string
+      catalog_id:
+        type: string
+      version:
         type: string
     type: object
   models.HostResourceOverviewResponse:
@@ -1246,6 +1281,35 @@ definitions:
       success:
         type: boolean
       version:
+        type: string
+    type: object
+  models.JobResponse:
+    properties:
+      action:
+        type: string
+      created_at:
+        type: string
+      error:
+        type: string
+      id:
+        type: string
+      job_operation:
+        type: string
+      job_type:
+        type: string
+      owner:
+        type: string
+      owner_email:
+        type: string
+      owner_name:
+        type: string
+      progress:
+        type: integer
+      result:
+        type: string
+      state:
+        $ref: '#/definitions/constants.JobState'
+      updated_at:
         type: string
     type: object
   models.LoginRequest:
@@ -1375,6 +1439,10 @@ definitions:
         type: string
       cache_config:
         $ref: '#/definitions/models.CatalogCacheConfig'
+      cache_items:
+        items:
+          $ref: '#/definitions/models.HostCatalogCacheItem'
+        type: array
       cpu_model:
         type: string
       description:
@@ -1519,6 +1587,8 @@ definitions:
         type: string
       connection:
         type: string
+      job_id:
+        type: string
       machine_name:
         type: string
       owner:
@@ -1639,6 +1709,8 @@ definitions:
     type: object
   models.ReverseProxyHostHttpRouteCreateRequest:
     properties:
+      order:
+        type: integer
       path:
         type: string
       pattern:
@@ -1659,6 +1731,13 @@ definitions:
         type: string
       target_vm_id:
         type: string
+    type: object
+  models.ReverseProxyHostHttpRouteReorderRequest:
+    properties:
+      id:
+        type: string
+      order:
+        type: integer
     type: object
   models.ReverseProxyHostTcpRouteCreateRequest:
     properties:
@@ -1682,7 +1761,6 @@ definitions:
       tls:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTls'
     type: object
-<<<<<<< HEAD
   models.ReverseProxyRouteVmDetails:
     properties:
       guest_tools_state:
@@ -1700,14 +1778,12 @@ definitions:
       state:
         type: string
       uptime:
-=======
+        type: string
+    type: object
   models.RevertSnapshotRequest:
     properties:
-      vm_id:
-        type: string
-      vm_name:
->>>>>>> 9cd3a4b (feat: Implemented comprehensive virtual machine (#378))
-        type: string
+      skip_resume:
+        type: boolean
     type: object
   models.RoleRequest:
     properties:
@@ -1734,15 +1810,6 @@ definitions:
       message:
         type: string
       name:
-        type: string
-    type: object
-  models.SwitchSnapshotRequest:
-    properties:
-      skip_resume:
-        type: boolean
-      vm_id:
-        type: string
-      vm_name:
         type: string
     type: object
   models.SystemReverseProxy:
@@ -3905,6 +3972,38 @@ paths:
       summary: Pull a remote catalog manifest
       tags:
       - Catalogs
+  /v1/catalog/pull/async:
+    put:
+      description: This endpoint pulls a remote catalog manifest in the background
+        and returns a Job ID to track progress
+      parameters:
+      - description: Pull request
+        in: body
+        name: pullRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.PullCatalogManifestRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.JobResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Pull a remote catalog manifest asynchronously
+      tags:
+      - Catalogs
   /v1/catalog/push:
     post:
       description: This endpoint pushes a catalog manifest to the catalog inventory
@@ -4427,6 +4526,33 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/snapshots:
+    delete:
+      description: This endpoint deletes all snapshots of a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes all snapshots of a virtual machine
+      tags:
+      - Machines
     get:
       description: This endpoint lists snapshots of a virtual machine
       parameters:
@@ -4438,8 +4564,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             $ref: '#/definitions/models.ApiCommonResponse'
         "400":
@@ -4473,8 +4599,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             $ref: '#/definitions/models.ApiCommonResponse'
         "400":
@@ -4546,8 +4672,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             $ref: '#/definitions/models.ApiCommonResponse'
         "400":
@@ -4562,46 +4688,6 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Reverts a virtual machine to a snapshot
-      tags:
-      - Machines
-  /v1/machines/{id}/snapshots/{snapshot_id}/switch:
-    post:
-      description: This endpoint switches a virtual machine to a snapshot
-      parameters:
-      - description: Machine ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Snapshot ID
-        in: path
-        name: snapshot_id
-        required: true
-        type: string
-      - description: Switch Snapshot Request
-        in: body
-        name: switchRequest
-        schema:
-          $ref: '#/definitions/models.SwitchSnapshotRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.ApiCommonResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.OAuthErrorResponse'
-      security:
-      - ApiKeyAuth: []
-      - BearerAuth: []
-      summary: Switches a virtual machine to a snapshot
       tags:
       - Machines
   /v1/machines/{id}/start:
@@ -4798,6 +4884,38 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Uploads a file to a virtual machine
+      tags:
+      - Machines
+  /v1/machines/async:
+    post:
+      description: This endpoint creates a virtual machine in the background and returns
+        a Job ID to track progress
+      parameters:
+      - description: New Machine Request
+        in: body
+        name: createRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateVirtualMachineRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.JobResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a virtual machine asynchronously
       tags:
       - Machines
   /v1/machines/register:
@@ -7084,6 +7202,42 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Delete a a reverse proxy host HTTP route
+      tags:
+      - ReverseProxy
+  /v1/reverse-proxy/hosts/{id}/http_routes/order:
+    put:
+      description: This endpoint reorders HTTP routes for a reverse proxy host
+      parameters:
+      - description: Reverse Proxy Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Reverse Proxy Host HTTP Route Reorder Request
+        in: body
+        name: reverse_proxy_http_route_reorder_request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReverseProxyHostHttpRouteReorderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Updates the order of a reverse proxy host HTTP route
       tags:
       - ReverseProxy
   /v1/reverse-proxy/restart:
