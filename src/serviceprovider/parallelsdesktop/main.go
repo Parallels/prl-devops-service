@@ -59,6 +59,8 @@ type ParallelsService struct {
 	eventsProcessing bool
 	sync.RWMutex
 	cachedLocalVms   []models.ParallelsVM
+	VMIDInPorcessing string
+	VMIDMutex        sync.RWMutex
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
@@ -600,7 +602,11 @@ func (s *ParallelsService) startForForcedCacheRefresh(ctx basecontext.ApiContext
 					)
 					s.Lock()
 					s.cachedLocalVms = currentVMs
+					for i := range s.cachedLocalVms {
+						s.updateVmInCache(ctx, &s.cachedLocalVms[i])
+					}
 					s.Unlock()
+
 				} else {
 					// Compare cached VMs with current VMs stsus, if there is a mismatch refresh the cache
 					for _, cachedVM := range cachedVMs {
@@ -615,6 +621,9 @@ func (s *ParallelsService) startForForcedCacheRefresh(ctx basecontext.ApiContext
 								// so no need to continue rest of the comparison refresh the cache and break the loop
 								s.Lock()
 								s.cachedLocalVms = currentVMs
+								for i := range s.cachedLocalVms {
+									s.updateVmInCache(ctx, &s.cachedLocalVms[i])
+								}
 								s.Unlock()
 							}
 						}
@@ -662,6 +671,14 @@ func (s *ParallelsService) StopListeners() {
 }
 
 func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	// TODO: Remove this check once PDFM fixes the config_changed event trigger for `prlctl list --json`.
+	s.VMIDMutex.RLock()
+	currentlyProcessing := s.VMIDInPorcessing
+	s.VMIDMutex.RUnlock()
+	if event.VMID == currentlyProcessing {
+		ctx.LogInfof("VM %s is updating in forced cache refresh, ignoring event: %s", event.VMID, event.EventName)
+		return
+	}
 	switch event.EventName {
 	case "vm_state_changed":
 		s.processVmStateChanged(ctx, event)
@@ -687,13 +704,13 @@ func (s *ParallelsService) updateVmInCache(ctx basecontext.ApiContext, vm *model
 	for i, cachedVm := range s.cachedLocalVms {
 		if cachedVm.ID == vm.ID {
 			s.cachedLocalVms[i] = *vm
-			ctx.LogInfof("Updated whole VM in cache for VM %s", vm.ID)
+			ctx.LogTracef("Updated whole VM in cache for VM %s", vm.ID)
 			found = true
 			break
 		}
 	}
 	if !found {
-		ctx.LogInfof("VM %s not found in cache, adding it", vm.ID)
+		ctx.LogTracef("VM %s not found in cache, adding it", vm.ID)
 		s.cachedLocalVms = append(s.cachedLocalVms, *vm)
 	}
 
@@ -722,7 +739,7 @@ func (s *ParallelsService) processVmConfigChanged(ctx basecontext.ApiContext, ev
 	configChangeCooldownMutex.Lock()
 	if _, inCooldown := configChangeCooldown[event.VMID]; inCooldown {
 		configChangeCooldownMutex.Unlock()
-		ctx.LogInfof("VM %s is in cooldown period, ignoring config change event", event.VMID)
+		ctx.LogTracef("VM %s is in cooldown period, ignoring config change event", event.VMID)
 		return
 	}
 	configChangeCooldownMutex.Unlock()
@@ -733,9 +750,9 @@ func (s *ParallelsService) processVmConfigChanged(ctx basecontext.ApiContext, ev
 	// If there's an existing timer for this VM, stop it
 	if timer, exists := configChangeTimers[event.VMID]; exists {
 		timer.Stop()
-		ctx.LogInfof("Resetting config change timer for VM %s", event.VMID)
+		ctx.LogTracef("Resetting config change timer for VM %s", event.VMID)
 	} else {
-		ctx.LogInfof("Starting config change timer for VM %s", event.VMID)
+		ctx.LogTracef("Starting config change timer for VM %s", event.VMID)
 	}
 
 	// Create a new timer that will fire after the debounce delay
@@ -745,7 +762,7 @@ func (s *ParallelsService) processVmConfigChanged(ctx basecontext.ApiContext, ev
 
 		vm, err := s.getVmInMachine(ctx, event.VMID)
 		if err == nil {
-			ctx.LogInfof("handeling vm_config_changed updating VM %s in cache", vm.ID)
+			ctx.LogDebugf("handeling vm_config_changed updating VM %s in cache", vm.ID)
 			s.updateVmInCache(ctx, vm)
 		} else {
 			ctx.LogErrorf("Failed to get VM in machine for config change event: %v", err)
@@ -992,6 +1009,11 @@ func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string
 	externalIp, _ := system.Get().GetExternalIp(ctx)
 	userMachines := []models.ParallelsVM{}
 	for _, id := range vmIds {
+
+		s.VMIDMutex.Lock()
+		s.VMIDInPorcessing = id
+		s.VMIDMutex.Unlock()
+
 		cmd := helpers.Command{
 			Command: s.executable,
 			Args:    []string{"list", id, "-a", "-i", "--json"},
@@ -1015,8 +1037,10 @@ func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string
 	}
 
 	// updating the internal and external IP address
-	// updating the internal and external IP address
 	for i := range userMachines {
+		s.VMIDMutex.Lock()
+		s.VMIDInPorcessing = userMachines[i].ID
+		s.VMIDMutex.Unlock()
 		if externalIp != "" {
 			userMachines[i].HostExternalIpAddress = externalIp
 		}
@@ -1043,7 +1067,9 @@ func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string
 			}
 		}
 	}
-
+	s.VMIDMutex.Lock()
+	s.VMIDInPorcessing = ""
+	s.VMIDMutex.Unlock()
 	if vmId == "" {
 		ctx.LogInfof("User %s has %v VMs", username, len(userMachines))
 	} else if vmId != "" && len(userMachines) > 0 {
