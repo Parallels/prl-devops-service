@@ -69,6 +69,7 @@ type ParallelsService struct {
 	cancelFunc       context.CancelFunc
 	listenerCtx      context.Context
 	processLauncher  processlauncher.ProcessLauncher
+	databaseService  *data.JsonDatabase
 }
 
 func Get(ctx basecontext.ApiContext) *ParallelsService {
@@ -83,6 +84,7 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 		eventsProcessing: false,
 		ctx:              ctx,
 		processLauncher:  &processlauncher.RealProcessLauncher{},
+		databaseService:  nil, // Will be injected later
 	}
 	if globalParallelsService.FindPath() == "" {
 		ctx.LogWarnf("Running without support for Parallels Desktop")
@@ -107,6 +109,10 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 
 func (s *ParallelsService) Name() string {
 	return "parallels_desktop"
+}
+
+func (s *ParallelsService) SetDatabaseService(dbService *data.JsonDatabase) {
+	s.databaseService = dbService
 }
 
 func (s *ParallelsService) FindPath() string {
@@ -804,19 +810,38 @@ func (s *ParallelsService) processVmToolsStateChanged(ctx basecontext.ApiContext
 }
 
 func (s *ParallelsService) processVmSnapshotsTreeChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
-	snapshots, err := s.ListSnapshots(ctx, event.VMID)
+	snapshots, err := s.listSnapshots(ctx, event.VMID)
 	if err != nil {
 		ctx.LogErrorf("Failed to get snapshots for VM %s: %v", event.VMID, err)
 		return
 	}
-	dbService := data.GetDatabase()
-	if dbService == nil {
-		ctx.LogErrorf("Failed to get database service")
+	if s.databaseService == nil {
+		ctx.LogErrorf("Database service not available")
 		return
 	}
+	s.databaseService.SetListSnapshotsByVMId(event.VMID, snapshots)
 
-	dbService.SetListSnapshotsByVMId(event.VMID, snapshots.Snapshots)
+	VmSnapshotsUpdatedEvent := models.VmSnapshotsUpdated{
+		VmID:      event.VMID,
+		Snapshots: snapshots.Snapshots,
+	}
 
+	go func() {
+		if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
+			msg := models.NewEventMessage(constants.EventTypePDFM, "VM_SNAPSHOTS_UPDATED", VmSnapshotsUpdatedEvent)
+			if err := ee.BroadcastMessage(msg); err != nil {
+				ctx.LogErrorf("Error broadcasting VM snapshots updated event: %v", err)
+			}
+		}
+	}()
+}
+
+func (s *ParallelsService) GetSnapshotsFromDB(ctx basecontext.ApiContext, vmID string) (*models.ListSnapshotResponse, error) {
+	if s.databaseService == nil {
+		ctx.LogErrorf("Database service not available")
+		return nil, nil
+	}
+	return s.databaseService.GetListSnapshotsByVMId(vmID)
 }
 
 func (s *ParallelsService) updateVMIPInCache(ctx basecontext.ApiContext, vmID string) {
@@ -1515,7 +1540,7 @@ func (s *ParallelsService) RevertSnapshot(ctx basecontext.ApiContext, vmId strin
 }
 
 // ListSnapshots lists all snapshots for the specified VM
-func (s *ParallelsService) ListSnapshots(ctx basecontext.ApiContext, vmId string) (*models.ListSnapshotResponse, error) {
+func (s *ParallelsService) listSnapshots(ctx basecontext.ApiContext, vmId string) (*models.ListSnapshotResponse, error) {
 	vm, err := s.findVmSync(ctx, vmId)
 	if err != nil {
 		return nil, err
