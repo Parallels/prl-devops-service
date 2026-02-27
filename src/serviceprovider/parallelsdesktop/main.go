@@ -831,6 +831,9 @@ func (s *ParallelsService) updateVMIPInCache(ctx basecontext.ApiContext, vmID st
 	defer s.Unlock()
 	for i, cachedVm := range s.cachedLocalVms {
 		if cachedVm.ID == vmID {
+			if len(s.cachedLocalVms[i].NetworkInformation.IPAddresses) == 0 && s.cachedLocalVms[i].State == "running" {
+				ctx.LogErrorf("VM %s is running but has no IP addresses seems like Prallels Tools is not installed", vmID)
+			}
 			for j, ip := range s.cachedLocalVms[i].NetworkInformation.IPAddresses {
 				if strings.ToLower(ip.Type) == "ipv4" {
 					s.cachedLocalVms[i].NetworkInformation.IPAddresses[j].IP = status.IPConfigured
