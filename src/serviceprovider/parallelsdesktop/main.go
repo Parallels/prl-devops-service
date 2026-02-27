@@ -674,6 +674,8 @@ func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models
 		s.processVmConfigChanged(ctx, event)
 	case "vm_tools_state_changed":
 		s.processVmToolsStateChanged(ctx, event)
+	case "vm_snapshots_tree_changed":
+		s.processVmSnapshotsTreeChanged(ctx, event)
 	default:
 		ctx.LogInfof("Unhandled event: %v", event)
 	}
@@ -800,6 +802,23 @@ func (s *ParallelsService) processVmToolsStateChanged(ctx basecontext.ApiContext
 		toolsStateTimersMutex.Unlock()
 	})
 }
+
+func (s *ParallelsService) processVmSnapshotsTreeChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	snapshots, err := s.ListSnapshots(ctx, event.VMID)
+	if err != nil {
+		ctx.LogErrorf("Failed to get snapshots for VM %s: %v", event.VMID, err)
+		return
+	}
+	dbService := data.GetDatabase()
+	if dbService == nil {
+		ctx.LogErrorf("Failed to get database service")
+		return
+	}
+
+	dbService.SetListSnapshotsByVMId(event.VMID, snapshots.Snapshots)
+
+}
+
 func (s *ParallelsService) updateVMIPInCache(ctx basecontext.ApiContext, vmID string) {
 	status, err := s.VmStatus(ctx, vmID)
 	if err != nil {

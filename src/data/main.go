@@ -68,6 +68,10 @@ type JsonDatabaseConfig struct {
 	AutoRecover         bool          `json:"auto_recover"`
 }
 
+func GetDatabase() *JsonDatabase {
+	return memoryDatabase
+}
+
 func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase {
 	if memoryDatabase != nil {
 		return memoryDatabase
