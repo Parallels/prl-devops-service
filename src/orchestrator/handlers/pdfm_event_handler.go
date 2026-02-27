@@ -49,6 +49,10 @@ func (h *PDfMEventHandler) Handle(ctx basecontext.ApiContext, hostID string, eve
 		h.handleVmAdded(ctx, hostID, event)
 	case "VM_REMOVED":
 		h.handleVmRemoved(ctx, hostID, event)
+	case "VM_UPDATED":
+		h.handleVmUpdated(ctx, hostID, event)
+	case "VM_UPTIME_CHANGED":
+		h.handleVmUptimeChanged(ctx, hostID, event)
 	default:
 		ctx.LogWarnf("[PDfMEventHandler] Unknown event message : %s", event.Message)
 	}
@@ -245,4 +249,142 @@ func (h *PDfMEventHandler) handleVmRemoved(ctx basecontext.ApiContext, hostID st
 			}()
 		}
 	}
+}
+
+func (h *PDfMEventHandler) handleVmUpdated(ctx basecontext.ApiContext, hostID string, event models.EventMessage) {
+
+	bodyBytes, err := json.Marshal(event.Body)
+	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [Orchestrator] Error marshalling event body: %v", err)
+		return
+	}
+
+	var vmUpdated models.VmUpdated
+	if err := json.Unmarshal(bodyBytes, &vmUpdated); err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [Orchestrator] Error unmarshalling VM updated event: %v", err)
+		return
+	}
+
+	ctx.LogInfof("[PDfMEventHandler] [Orchestrator] VM updated: %s (VM: %s, Host: %s)", vmUpdated.NewVm.Name, vmUpdated.VmID, hostID)
+
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [Orchestrator] Error getting database service: %v", err)
+		return
+	}
+
+	// Update VM state in DB
+	// We need to find the Host first
+	host, err := dbService.GetOrchestratorHost(ctx, hostID)
+	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [Orchestrator] Error getting host %s from DB: %v", hostID, err)
+		return
+	}
+
+	if host == nil {
+		ctx.LogWarnf("[PDfMEventHandler] [Orchestrator] Host %s not found in DB", hostID)
+		return
+	}
+	found := false
+	for i, vm := range host.VirtualMachines {
+		if vm.ID == vmUpdated.VmID {
+			dtoVm := mappers.MapDtoVirtualMachineFromApi(vmUpdated.NewVm)
+			dtoVm.HostId = host.ID
+			dtoVm.Host = host.GetHost()
+			dtoVm.HostUrl = host.GetHostUrl()
+			host.VirtualMachines[i] = dtoVm
+			found = true
+			break
+		}
+	}
+	if !found {
+		ctx.LogWarnf("[PDfMEventHandler] VM %s not found in host %s for update", vmUpdated.VmID, hostID)
+		dtoVm := mappers.MapDtoVirtualMachineFromApi(vmUpdated.NewVm)
+		dtoVm.HostId = host.ID
+		dtoVm.Host = host.GetHost()
+		dtoVm.HostUrl = host.GetHostUrl()
+		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
+	}
+	if _, err := dbService.UpdateOrchestratorHost(ctx, host); err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [Orchestrator] Error updating VM %s state in DB: %v", vmUpdated.VmID, err)
+	} else {
+		ctx.LogInfof("[PDfMEventHandler] [Orchestrator] VM updated %s", vmUpdated.VmID)
+		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+			msg := models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_VM_UPDATED", models.HostVmEvent{
+				HostID: hostID,
+				Event:  vmUpdated,
+			})
+			go func() {
+				if err := emitter.Broadcast(msg); err != nil {
+					ctx.LogErrorf("[PDfMEventHandler] [Orchestrator] Failed to broadcast event HOST_VM_UPDATED: %v", err)
+				}
+			}()
+		}
+	}
+}
+
+func (h *PDfMEventHandler) handleVmUptimeChanged(ctx basecontext.ApiContext, hostID string, event models.EventMessage) {
+
+	bodyBytes, err := json.Marshal(event.Body)
+	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [Orchestrator] [uptime] Error marshalling event body: %v", err)
+		return
+	}
+
+	var uptimeChanged models.VmUptimeChanged
+	if err := json.Unmarshal(bodyBytes, &uptimeChanged); err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [Orchestrator] [uptime] Error unmarshalling VM uptime changed event: %v", err)
+		return
+	}
+
+	ctx.LogInfof("[PDfMEventHandler] [Orchestrator] [uptime] VM uptime changed: %s (VM: %s, Host: %s)", uptimeChanged.Uptime, uptimeChanged.VmID, hostID)
+
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [Orchestrator] [uptime] Error getting database service: %v", err)
+		return
+	}
+
+	// Update VM uptime in DB
+	// We need to find the Host first
+	host, err := dbService.GetOrchestratorHost(ctx, hostID)
+	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [Orchestrator] [uptime] Error getting host %s from DB: %v", hostID, err)
+		return
+	}
+
+	if host == nil {
+		ctx.LogWarnf("[PDfMEventHandler] [Orchestrator] [uptime] Host %s not found in DB", hostID)
+		return
+	}
+
+	found := false
+	for i, vm := range host.VirtualMachines {
+		if vm.ID == uptimeChanged.VmID {
+			host.VirtualMachines[i].Uptime = uptimeChanged.Uptime
+			found = true
+			break
+		}
+	}
+	if !found {
+		ctx.LogWarnf("[PDfMEventHandler] [Orchestrator] [uptime] VM %s not found in host %s for uptime update", uptimeChanged.VmID, hostID)
+		return
+	}
+	if _, err := dbService.UpdateOrchestratorHost(ctx, host); err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [Orchestrator] [uptime] Error updating VM %s uptime in DB: %v", uptimeChanged.VmID, err)
+	} else {
+		ctx.LogInfof("[PDfMEventHandler] [Orchestrator] [uptime] VM uptime updated %s: %s", uptimeChanged.VmID, uptimeChanged.Uptime)
+		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+			msg := models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_VM_UPTIME_CHANGED", models.HostVmEvent{
+				HostID: hostID,
+				Event:  uptimeChanged,
+			})
+			go func() {
+				if err := emitter.Broadcast(msg); err != nil {
+					ctx.LogErrorf("[PDfMEventHandler] [Orchestrator] [uptime] Failed to broadcast event HOST_VM_UPTIME_CHANGED: %v", err)
+				}
+			}()
+		}
+	}
+
 }
