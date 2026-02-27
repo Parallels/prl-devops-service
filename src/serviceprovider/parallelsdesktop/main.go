@@ -60,21 +60,21 @@ type ParallelsService struct {
 	ctx              basecontext.ApiContext
 	eventsProcessing bool
 	sync.RWMutex
-	cachedLocalVms   []models.ParallelsVM
-	VMIDInPorcessing string
-	VMIDMutex        sync.RWMutex
-	executable       string
-	serverExecutable string
-	Info             *models.ParallelsDesktopInfo
-	Users            []*models.ParallelsDesktopUser
-	isLicensed       bool
-	installed        bool
-	version          string
-	build            string
-	dependencies     []interfaces.Service
-	cancelFunc       context.CancelFunc
-	listenerCtx      context.Context
-	processLauncher  processlauncher.ProcessLauncher
+	cachedLocalVms     []models.ParallelsVM
+	areVMsBeingFetched bool
+	vmsAreFetchingMtx  sync.RWMutex
+	executable         string
+	serverExecutable   string
+	Info               *models.ParallelsDesktopInfo
+	Users              []*models.ParallelsDesktopUser
+	isLicensed         bool
+	installed          bool
+	version            string
+	build              string
+	dependencies       []interfaces.Service
+	cancelFunc         context.CancelFunc
+	listenerCtx        context.Context
+	processLauncher    processlauncher.ProcessLauncher
 }
 
 func Get(ctx basecontext.ApiContext) *ParallelsService {
@@ -674,10 +674,10 @@ func (s *ParallelsService) StopListeners() {
 
 func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
 	// TODO: Remove this check once PDFM fixes the config_changed event trigger for `prlctl list --json`.
-	s.VMIDMutex.RLock()
-	currentlyProcessing := s.VMIDInPorcessing
-	s.VMIDMutex.RUnlock()
-	if event.VMID == currentlyProcessing {
+	s.vmsAreFetchingMtx.RLock()
+	currentlyProcessing := s.areVMsBeingFetched
+	s.vmsAreFetchingMtx.RUnlock()
+	if currentlyProcessing {
 		ctx.LogInfof("VM %s is updating in forced cache refresh, ignoring event: %s", event.VMID, event.EventName)
 		return
 	}
@@ -1014,7 +1014,12 @@ func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
 func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string, vmId string) ([]models.ParallelsVM, error) {
 	// vmId can be empty to get all VMs for the user
 	ctx.LogInfof("Getting VMs for user: %s", username)
-
+	s.vmsAreFetchingMtx.Lock()
+	defer s.vmsAreFetchingMtx.Unlock()
+	s.areVMsBeingFetched = true
+	defer func() {
+		s.areVMsBeingFetched = false
+	}()
 	// TODO: workaround for parallels bug (PDFM-126209) where some fields are not returned when vm id is not specified
 	vmIds := []string{}
 	if vmId == "" {
@@ -1031,10 +1036,6 @@ func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string
 	externalIp, _ := system.Get().GetExternalIp(ctx)
 	userMachines := []models.ParallelsVM{}
 	for _, id := range vmIds {
-
-		s.VMIDMutex.Lock()
-		s.VMIDInPorcessing = id
-		s.VMIDMutex.Unlock()
 
 		cmd := helpers.Command{
 			Command: s.executable,
@@ -1060,9 +1061,6 @@ func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string
 
 	// updating the internal and external IP address
 	for i := range userMachines {
-		s.VMIDMutex.Lock()
-		s.VMIDInPorcessing = userMachines[i].ID
-		s.VMIDMutex.Unlock()
 		if externalIp != "" {
 			userMachines[i].HostExternalIpAddress = externalIp
 		}
@@ -1089,9 +1087,6 @@ func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string
 			}
 		}
 	}
-	s.VMIDMutex.Lock()
-	s.VMIDInPorcessing = ""
-	s.VMIDMutex.Unlock()
 	if vmId == "" {
 		ctx.LogInfof("User %s has %v VMs", username, len(userMachines))
 	} else if vmId != "" && len(userMachines) > 0 {
