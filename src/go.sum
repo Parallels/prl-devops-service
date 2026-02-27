@@ -44,8 +44,8 @@ github.com/cjlapao/common-go-cryptorand v0.0.6 h1:0XpMIlu2Hbu5JEq4O/3RxUgo68h21m
 github.com/cjlapao/common-go-cryptorand v0.0.6/go.mod h1:IR5isk32OIQ/yLbZUOmKR7vVo5OzTpfeX0xAagHsQyU=
 github.com/cjlapao/common-go-logger v0.0.10 h1:bhL7ibXo7yb1IjcaSPyFNxeX0c2p5Br/yIwQ0aeyYtQ=
 github.com/cjlapao/common-go-logger v0.0.10/go.mod h1:HTmIKmw8K7eLY5WsoI4fLLNiFGAkk5LGJrYjYt3W5/Y=
-github.com/cloudflare/circl v1.6.1 h1:zqIqSPIndyBh1bjLVVDHMPpVKqp8Su/V+6MeDzzQBQ0=
-github.com/cloudflare/circl v1.6.1/go.mod h1:uddAzsPgqdMAYatqJ0lsjX1oECcQLIlRpzZh3pJrofs=
+github.com/cloudflare/circl v1.6.3 h1:9GPOhQGF9MCYUeXyMYlqTR6a5gTrgR/fBLXvUgtVcg8=
+github.com/cloudflare/circl v1.6.3/go.mod h1:2eXP6Qfat4O/Yhh8BznvKnJ+uzEoTQ6jVKJRn81BiS4=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/creack/pty v1.1.24 h1:bJrF4RRfyJnbTJqzRLHzcGaZK1NeM5kTC9jGgovnR1s=
 github.com/creack/pty v1.1.24/go.mod h1:08sCNb52WyoAwi2QDyzUCTgcvVFhUzewun7wtTfvcwE=

@@ -137,6 +137,39 @@ definitions:
       type:
         type: string
     type: object
+  github_com_Parallels_prl-devops-service_models.CatalogManager:
+    properties:
+      active:
+        type: boolean
+      api_key:
+        type: string
+      authentication_method:
+        type: string
+      created_at:
+        type: string
+      global:
+        type: boolean
+      id:
+        type: string
+      internal:
+        type: boolean
+      name:
+        type: string
+      owner_id:
+        type: string
+      password:
+        type: string
+      required_claims:
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+      url:
+        type: string
+      username:
+        type: string
+    type: object
   github_com_Parallels_prl-devops-service_models.CatalogManifest:
     properties:
       architecture:
@@ -596,6 +629,8 @@ definitions:
         type: array
       id:
         type: string
+      name:
+        type: string
       port:
         type: string
       tcp_route:
@@ -642,6 +677,8 @@ definitions:
         type: string
       target_port:
         type: string
+      target_vm_details:
+        $ref: '#/definitions/models.ReverseProxyRouteVmDetails'
       target_vm_id:
         type: string
     type: object
@@ -653,6 +690,8 @@ definitions:
         type: string
       target_port:
         type: string
+      target_vm_details:
+        $ref: '#/definitions/models.ReverseProxyRouteVmDetails'
       target_vm_id:
         type: string
     type: object
@@ -897,6 +936,19 @@ definitions:
         type: array
       username:
         type: string
+    type: object
+  models.CatalogCacheConfig:
+    properties:
+      allow_above_free_disk_space:
+        type: boolean
+      enabled:
+        type: boolean
+      folder:
+        type: string
+      keep_free_disk_space:
+        type: integer
+      max_size:
+        type: integer
     type: object
   models.CatalogManifestPackItem:
     properties:
@@ -1254,6 +1306,7 @@ definitions:
     - 10
     - 11
     - 12
+    format: int64
     type: integer
     x-enum-varnames:
     - OAuthInvalidRequestError
@@ -1309,6 +1362,8 @@ definitions:
     properties:
       architecture:
         type: string
+      cache_config:
+        $ref: '#/definitions/models.CatalogCacheConfig'
       cpu_model:
         type: string
       description:
@@ -1562,6 +1617,8 @@ definitions:
         items:
           $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostHttpRoute'
         type: array
+      name:
+        type: string
       port:
         type: string
       tcp_route:
@@ -1607,10 +1664,31 @@ definitions:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostCors'
       host:
         type: string
+      name:
+        type: string
       port:
         type: string
       tls:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHostTls'
+    type: object
+  models.ReverseProxyRouteVmDetails:
+    properties:
+      guest_tools_state:
+        type: string
+      guest_tools_version:
+        type: string
+      host_external_ip_address:
+        type: string
+      internal_ip_address:
+        type: string
+      name:
+        type: string
+      os:
+        type: string
+      state:
+        type: string
+      uptime:
+        type: string
     type: object
   models.RoleRequest:
     properties:
@@ -1665,6 +1743,8 @@ definitions:
     type: object
   models.SystemUsageResponse:
     properties:
+      cache_config:
+        $ref: '#/definitions/models.CatalogCacheConfig'
       cpu_brand:
         type: string
       cpu_type:
@@ -2938,6 +3018,143 @@ paths:
       summary: Gets all the remote catalogs
       tags:
       - Catalogs
+  /v1/catalog-managers:
+    get:
+      description: This endpoint returns all the catalog managers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManager'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all the catalog managers
+      tags:
+      - CatalogManagers
+    post:
+      description: This endpoint creates a catalog manager
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManager'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a catalog manager
+      tags:
+      - CatalogManagers
+  /v1/catalog-managers/{id}:
+    delete:
+      description: This endpoint deletes a catalog manager
+      parameters:
+      - description: Manager ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a catalog manager
+      tags:
+      - CatalogManagers
+    get:
+      description: This endpoint returns a catalog manager
+      parameters:
+      - description: Manager ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManager'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a specific catalog manager
+      tags:
+      - CatalogManagers
+    put:
+      description: This endpoint updates a catalog manager
+      parameters:
+      - description: Manager ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManager'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Updates a catalog manager
+      tags:
+      - CatalogManagers
   /v1/catalog/{catalogId}:
     delete:
       description: This endpoint deletes a catalog manifest and all its versions
@@ -6366,9 +6583,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxy'
-            type: array
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxy'
         "400":
           description: Bad Request
           schema:
