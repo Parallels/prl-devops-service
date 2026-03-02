@@ -2437,6 +2437,10 @@ func (s *ParallelsService) RegenerateMacAddress(ctx basecontext.ApiContext, vmID
 		return errors.New("VM not found")
 	}
 	if vm.State != "stopped" {
+		if vm.Home == "" {
+			ctx.LogWarnf("VM %s has no home path, skipping MAC address regeneration", vm.ID)
+			return nil
+		}
 		err := s.ReplaceMacAddressInConfigPvs(vm.Home)
 		if err != nil {
 			return err
