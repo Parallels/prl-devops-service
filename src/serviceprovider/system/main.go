@@ -104,7 +104,7 @@ func (s *SystemService) Installed() bool {
 }
 
 func (s *SystemService) GetSystemUsers(ctx basecontext.ApiContext) ([]models.SystemUser, error) {
-	if s.cache.SystemUsers != nil && len(s.cache.SystemUsers) > 0 {
+	if len(s.cache.SystemUsers) > 0 {
 		ctx.LogDebugf("[SYSTEM] Returning cached system users")
 		return s.cache.SystemUsers, nil
 	}

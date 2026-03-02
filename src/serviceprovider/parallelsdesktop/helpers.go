@@ -1,6 +1,7 @@
 package parallelsdesktop
 
 import (
+	"reflect"
 	"strings"
 	"time"
 
@@ -22,7 +23,7 @@ func (s *ParallelsService) findVmInCacheAndSystem(ctx basecontext.ApiContext, id
 				return &vm, nil
 			}
 		}
-		ctx.LogInfof("VM with name or id %v not found in cache, retrying... (%d/%d)", idOrName, i+1, CacheFindNumberOfRetries)
+		ctx.LogInfof("[ParallelsDesktop] VM with name or id %v not found in cache, retrying... (%d/%d)", idOrName, i+1, CacheFindNumberOfRetries)
 		time.Sleep(CacheFindRetryDelay)
 	}
 	// To fetch all virtual machines (VMs), we intentionally call `GetVms` without specifying an ID or name.
@@ -32,7 +33,7 @@ func (s *ParallelsService) findVmInCacheAndSystem(ctx basecontext.ApiContext, id
 	if err == nil {
 		for _, vm := range vms {
 			if strings.EqualFold(vm.Name, idOrName) || strings.EqualFold(vm.ID, idOrName) {
-				ctx.LogWarnf("Vm is not present in cache but found in machine updating cache")
+				ctx.LogWarnf("[ParallelsDesktop] VM is not present in cache but found in machine updating cache")
 				s.Lock()
 				s.cachedLocalVms = vms
 				s.Unlock()
@@ -45,4 +46,38 @@ func (s *ParallelsService) findVmInCacheAndSystem(ctx basecontext.ApiContext, id
 
 func (s *ParallelsService) findVmSync(ctx basecontext.ApiContext, idOrName string) (*models.ParallelsVM, error) {
 	return s.findVmInCacheAndSystem(ctx, idOrName)
+}
+
+type ChangeType int
+
+const (
+	NoChange ChangeType = iota
+	OnlyUptimeChanged
+	MeaningfulChange
+)
+
+// evaluateVmChanges classifies the difference between two VM states.
+func (s *ParallelsService) evaluateVmChanges(oldVm, newVm models.ParallelsVM) ChangeType {
+	// 1. If they are exactly identical, do nothing.
+	if reflect.DeepEqual(oldVm, newVm) {
+		return NoChange
+	}
+
+	// 2. Make copies to strip out volatile fields
+	oldCopy := oldVm
+	newCopy := newVm
+
+	// BLANK OUT NOISY FIELDS (Adjust 'Uptime' to your actual field name)
+	oldCopy.Uptime = ""
+	newCopy.Uptime = ""
+	// oldCopy.CpuUsage = 0
+	// newCopy.CpuUsage = 0
+
+	// 3. If stripping the uptime makes them identical, ONLY the uptime changed!
+	if reflect.DeepEqual(oldCopy, newCopy) {
+		return OnlyUptimeChanged
+	}
+
+	// 4. Otherwise, something real changed (IP, State, RAM, etc.)
+	return MeaningfulChange
 }

@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -38,24 +39,39 @@ func (s *OrchestratorService) CreateVirtualMachine(ctx basecontext.ApiContext, r
 		return nil, apiError
 	}
 
-	var selectedHost *data_models.OrchestratorHost
+	var validHosts []data_models.OrchestratorHost
 	for _, orchestratorHost := range hosts {
 		isOk, err := s.validateHost(orchestratorHost, request.Architecture, specs)
-		if err != nil {
-			continue
+		if err == nil && isOk {
+			validHosts = append(validHosts, orchestratorHost)
 		}
+	}
 
-		if isOk {
-			resp, err := s.CallCreateHostVirtualMachine(orchestratorHost, request)
-			if err != nil {
-				e := models.NewFromError(err)
-				apiError = &e
-				continue
-			} else {
-				response = *resp
-				selectedHost = &orchestratorHost
-				break
-			}
+	if len(validHosts) == 0 {
+		apiError = &models.ApiErrorResponse{
+			Message: "No host available to create the virtual machine",
+			Code:    400,
+		}
+		return nil, apiError
+	}
+
+	validHosts, filterErr := filterAndSortHosts(validHosts, request, s.pingHostForLatency)
+	if filterErr != nil {
+		return nil, filterErr
+	}
+
+	// Stage 5: Target Execution
+	var selectedHost *data_models.OrchestratorHost
+	for _, host := range validHosts {
+		resp, err := s.CallCreateHostVirtualMachine(host, request)
+		if err != nil {
+			e := models.NewFromError(err)
+			apiError = &e
+			continue
+		} else {
+			response = *resp
+			selectedHost = &host
+			break
 		}
 	}
 
@@ -65,9 +81,10 @@ func (s *OrchestratorService) CreateVirtualMachine(ctx basecontext.ApiContext, r
 		}
 
 		apiError = &models.ApiErrorResponse{
-			Message: "No host available to create the virtual machine",
-			Code:    400,
+			Message: "Failed to dispatch VM to any of the selected hosts",
+			Code:    500,
 		}
+		return nil, apiError
 	}
 
 	s.Refresh()
@@ -133,6 +150,107 @@ func (s *OrchestratorService) CreateHosVirtualMachine(ctx basecontext.ApiContext
 
 	s.Refresh()
 	return &response, apiError
+}
+
+func (s *OrchestratorService) pingHostForLatency(host data_models.OrchestratorHost) time.Duration {
+	client := s.getApiClient(host)
+	client.WithTimeout(2 * time.Second)
+	path := "/api/v1/config/health"
+	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
+	if err != nil {
+		return 10 * time.Second
+	}
+
+	start := time.Now()
+	var res interface{}
+	resp, err := client.Get(url.String(), &res)
+	duration := time.Since(start)
+	if err != nil || resp.StatusCode != 200 {
+		return 10 * time.Second
+	}
+	return duration
+}
+
+func filterAndSortHosts(validHosts []data_models.OrchestratorHost, request models.CreateVirtualMachineRequest, getPing func(host data_models.OrchestratorHost) time.Duration) ([]data_models.OrchestratorHost, *models.ApiErrorResponse) {
+	// Stage 2: Selection Tags Filter
+	if len(request.SelectionTags) > 0 {
+		var tagMatchedHosts []data_models.OrchestratorHost
+		for _, host := range validHosts {
+			matched := false
+			for _, tag := range request.SelectionTags {
+				for _, hostTag := range host.Tags {
+					if strings.EqualFold(tag, hostTag) {
+						matched = true
+						break
+					}
+				}
+				if matched {
+					break
+				}
+			}
+			if matched {
+				tagMatchedHosts = append(tagMatchedHosts, host)
+			}
+		}
+		if len(tagMatchedHosts) == 0 {
+			return nil, &models.ApiErrorResponse{
+				Message: "Did not find any available host that meets the tag condition",
+				Code:    400,
+			}
+		}
+		validHosts = tagMatchedHosts
+	}
+
+	// Stage 3: Cache Locality Check
+	// this will be used to select the host that has the cache and make it the first choice
+	// it will make the creation of the VM faster if the host has the cache as it does not
+	// need to download the cache from the catalog
+	if request.CatalogManifest != nil {
+		var cachedHosts []data_models.OrchestratorHost
+		for _, host := range validHosts {
+			hasCache := false
+			for _, cacheItem := range host.CacheItems {
+				if strings.EqualFold(cacheItem.CatalogId, request.CatalogManifest.CatalogId) &&
+					strings.EqualFold(cacheItem.Version, request.CatalogManifest.Version) &&
+					strings.EqualFold(cacheItem.Architecture, request.Architecture) {
+					hasCache = true
+					break
+				}
+			}
+			if hasCache {
+				cachedHosts = append(cachedHosts, host)
+			}
+		}
+		// Only filter down if at least one host has the cache, otherwise we allow them all to download fresh
+		if len(cachedHosts) > 0 {
+			validHosts = cachedHosts
+		}
+	}
+
+	// Stage 4: Ping Latency Sorting
+	// This is for global load balancing, we decide what is the closest host to the orchestrator and the less busy
+	// and make it the first choice
+	type hostPing struct {
+		host data_models.OrchestratorHost
+		ping time.Duration
+	}
+
+	var pings []hostPing
+	for _, host := range validHosts {
+		duration := getPing(host)
+		pings = append(pings, hostPing{host: host, ping: duration})
+	}
+
+	sort.Slice(pings, func(i, j int) bool {
+		return pings[i].ping < pings[j].ping
+	})
+
+	sortedHosts := make([]data_models.OrchestratorHost, 0)
+	for _, p := range pings {
+		sortedHosts = append(sortedHosts, p.host)
+	}
+
+	return sortedHosts, nil
 }
 
 func (s *OrchestratorService) CallCreateHostVirtualMachine(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
@@ -300,10 +418,6 @@ func (s *OrchestratorService) getCatalogSpecs(connection string, catalogId strin
 
 	var response models.CatalogManifest
 	apiResponse, err := httpClient.Get(url.String(), &response)
-	if err != nil {
-		return nil, err
-	}
-
 	if err != nil {
 		return nil, err
 	}

@@ -13,23 +13,27 @@ import (
 
 // Controller represents a REST API controller with its properties.
 type Controller struct {
-	listener       *HttpListener
-	path           string
-	Handler        ControllerHandler
-	Version        HttpVersion
-	Method         HttpControllerMethod
-	RequiredRoles  []string
-	RequiredClaims []string
+	listener                 *HttpListener
+	path                     string
+	Handler                  ControllerHandler
+	Version                  HttpVersion
+	Method                   HttpControllerMethod
+	RequiredRoles            []string
+	RequiredClaims           []string
+	RoleComparisonOperation  ComparisonOperation
+	ClaimComparisonOperation ComparisonOperation
 }
 
 // NewController creates a new instance of the Controller struct with default values.
 // The returned controller has the GET method, uses the global HTTP listener, and has no required roles or claims.
 func NewController() *Controller {
 	controller := &Controller{
-		Method:         GET,
-		listener:       globalHttpListener,
-		RequiredRoles:  make([]string, 0),
-		RequiredClaims: make([]string, 0),
+		Method:                   GET,
+		listener:                 globalHttpListener,
+		RequiredRoles:            make([]string, 0),
+		RequiredClaims:           make([]string, 0),
+		RoleComparisonOperation:  ComparisonOperationAnd,
+		ClaimComparisonOperation: ComparisonOperationAnd,
 	}
 
 	return controller
@@ -84,6 +88,38 @@ func (c *Controller) WithRequiredClaim(claim string) *Controller {
 	return c
 }
 
+func (c *Controller) WithRoleComparisonOperation(operation ComparisonOperation) *Controller {
+	c.RoleComparisonOperation = normalizeComparisonOperation(operation)
+	return c
+}
+
+func (c *Controller) WithClaimComparisonOperation(operation ComparisonOperation) *Controller {
+	c.ClaimComparisonOperation = normalizeComparisonOperation(operation)
+	return c
+}
+
+func (c *Controller) WithComparisonOperations(roleOperation ComparisonOperation, claimOperation ComparisonOperation) *Controller {
+	c.RoleComparisonOperation = normalizeComparisonOperation(roleOperation)
+	c.ClaimComparisonOperation = normalizeComparisonOperation(claimOperation)
+	return c
+}
+
+func (c *Controller) WithAndRoles() *Controller {
+	return c.WithRoleComparisonOperation(ComparisonOperationAnd)
+}
+
+func (c *Controller) WithOrRoles() *Controller {
+	return c.WithRoleComparisonOperation(ComparisonOperationOr)
+}
+
+func (c *Controller) WithAndClaims() *Controller {
+	return c.WithClaimComparisonOperation(ComparisonOperationAnd)
+}
+
+func (c *Controller) WithOrClaims() *Controller {
+	return c.WithClaimComparisonOperation(ComparisonOperationOr)
+}
+
 func (c *Controller) WithHandler(handler ControllerHandler) *Controller {
 	c.Handler = handler
 	return c
@@ -106,7 +142,14 @@ func (c *Controller) Serve() error {
 	}
 
 	if c.NeedsAuthorization() {
-		c.listener.AddAuthorizedHandlerWithRolesAndClaims(c.Handler, c.Path(), c.RequiredRoles, c.RequiredClaims, string(c.Method))
+		c.listener.AddAuthorizedHandlerWithRolesAndClaims(
+			c.Handler,
+			c.Path(),
+			c.RequiredRoles,
+			c.RequiredClaims,
+			c.RoleComparisonOperation,
+			c.ClaimComparisonOperation,
+			string(c.Method))
 	} else {
 		c.listener.AddHandler(c.Handler, c.Path(), string(c.Method))
 	}
@@ -123,7 +166,14 @@ func (c *Controller) Serve() error {
 
 		if needsDefaultApiController {
 			if c.NeedsAuthorization() {
-				c.listener.AddAuthorizedHandlerWithRolesAndClaims(c.Handler, prefixPath, c.RequiredRoles, c.RequiredClaims, string(c.Method))
+				c.listener.AddAuthorizedHandlerWithRolesAndClaims(
+					c.Handler,
+					prefixPath,
+					c.RequiredRoles,
+					c.RequiredClaims,
+					c.RoleComparisonOperation,
+					c.ClaimComparisonOperation,
+					string(c.Method))
 			} else {
 				c.listener.AddHandler(c.Handler, prefixPath, string(c.Method))
 			}

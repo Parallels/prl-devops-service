@@ -72,6 +72,12 @@ func registerReverseProxyHandlers(ctx basecontext.ApiContext, version string) {
 		WithHandler(DeleteReverseProxyHostHttpRoutesHandler()).
 		Register()
 	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).WithPath("/reverse-proxy/hosts/{id}/http_routes/order").
+		WithRequiredClaim(constants.UPDATE_REVERSE_PROXY_HOST_HTTP_ROUTE_CLAIM).
+		WithHandler(UpdateReverseProxyHostHttpRouteOrderHandler()).
+		Register()
+	restapi.NewController().
 		WithMethod(restapi.POST).
 		WithVersion(version).WithPath("/reverse-proxy/hosts/{id}/tcp_route").
 		WithRequiredClaim(constants.UPDATE_REVERSE_PROXY_HOST_TCP_ROUTE_CLAIM).
@@ -618,6 +624,76 @@ func DeleteReverseProxyHostHttpRoutesHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("Reverse Proxy Host http route deleted successfully")
+	}
+}
+
+// @Summary		Updates the order of a reverse proxy host HTTP route
+// @Description	This endpoint reorders HTTP routes for a reverse proxy host
+// @Tags			ReverseProxy
+// @Produce		json
+// @Param			id	path		string	true	"Reverse Proxy Host ID"
+// @Param			reverse_proxy_http_route_reorder_request	body		models.ReverseProxyHostHttpRouteReorderRequest	true	"Reverse Proxy Host HTTP Route Reorder Request"
+// @Success		200	{object}	models.ReverseProxyHost
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/reverse-proxy/hosts/{id}/http_routes/order [put]
+func UpdateReverseProxyHostHttpRouteOrderHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var request models.ReverseProxyHostHttpRouteReorderRequest
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		cfg := config.Get()
+		if !cfg.IsReverseProxyEnabled() {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
+			return
+		}
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		resultDto, err := dbService.ReorderReverseProxyHostHttpRoute(ctx, id, request.ID, request.Order)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		rps := reverse_proxy.Get(ctx)
+		if err := rps.Restart(); err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		response := mappers.DtoReverseProxyHostToApi(*resultDto)
+		enrichHostWithVmDetails(ctx, &response)
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Reverse Proxy Host HTTP route order updated successfully")
 	}
 }
 

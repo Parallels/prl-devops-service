@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -49,6 +50,7 @@ type MinioBucketProvider struct {
 	Bucket          MinioBucket
 	ProgressChannel chan int
 	FileNameChannel chan string
+	StepChannel     chan string
 }
 
 func NewMinioProvider() *MinioBucketProvider {
@@ -80,9 +82,10 @@ func (s *MinioBucketProvider) CanStream() bool {
 	return true
 }
 
-func (s *MinioBucketProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int) {
+func (s *MinioBucketProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int, stepChannel chan string) {
 	s.ProgressChannel = progressChannel
 	s.FileNameChannel = fileNameChannel
+	s.StepChannel = stepChannel
 }
 
 func (s *MinioBucketProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
@@ -657,13 +660,19 @@ func (s *MinioBucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 
 					// Send a progress notification
 					if ns != nil && totalSize > 0 {
-						percent := float64(float64(totalDownloaded)/float64(totalSize)) * 100 * 10
+						percent := float64(totalDownloaded) / float64(totalSize) * 100
 						msg := notifications.
 							NewProgressNotificationMessage(cid, msgPrefix, percent).
 							SetCurrentSize(totalDownloaded).
 							SetTotalSize(totalSize).
 							SetStartingTime(startTime)
 						ns.Notify(msg)
+						if s.ProgressChannel != nil {
+							s.ProgressChannel <- int(math.Round(percent))
+						}
+						if s.StepChannel != nil {
+							s.StepChannel <- formatStreamingProgress(msgPrefix, percent, totalDownloaded, totalSize, startTime)
+						}
 					}
 				}
 				if readErr != nil {
@@ -730,7 +739,7 @@ func (s *MinioBucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 	// Decompressor goroutine: decompress from the pipe to the destination
 	group.Go(func() error {
 		// Decompress from the read-end of the pipe
-		decompressErr := compressor.DecompressFromReader(ctx, r, destination)
+		decompressErr := compressor.DecompressFromReaderWithStepChannel(ctx, r, destination, s.StepChannel)
 		if decompressErr != nil {
 			// If decompression fails, close the pipe with error (so streamer sees it)
 			_ = w.CloseWithError(decompressErr)
@@ -747,10 +756,46 @@ func (s *MinioBucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 	// Everything finished successfully send a final progress notification
 	finalMsg := fmt.Sprintf("Pulling %s", filename)
 	ns.NotifyProgress(cid, finalMsg, 100)
+	if s.StepChannel != nil {
+		s.StepChannel <- fmt.Sprintf("%s 100.0%%", finalMsg)
+	}
 	ns.NotifyInfo(fmt.Sprintf("Finished pulling and decompressing file %s, took %v",
 		filename, time.Since(startTime)))
 
 	return nil
+}
+
+func formatStreamingProgress(prefix string, percent float64, currentSize int64, totalSize int64, startTime time.Time) string {
+	msg := fmt.Sprintf("%s %.1f%% [%s/%s]", prefix, percent, formatSizeSI(currentSize), formatSizeSI(totalSize))
+	elapsed := time.Since(startTime)
+	if elapsed <= 0 || currentSize <= 0 {
+		return msg
+	}
+
+	bytesPerSecond := float64(currentSize) / elapsed.Seconds()
+	if bytesPerSecond > 0 {
+		msg += fmt.Sprintf(" %s/s", formatSizeSI(int64(bytesPerSecond)))
+	}
+
+	if totalSize > currentSize && bytesPerSecond > 0 {
+		remaining := float64(totalSize-currentSize) / bytesPerSecond
+		msg += fmt.Sprintf(" ETA: %s", (time.Duration(remaining) * time.Second).Round(time.Second))
+	}
+
+	return msg
+}
+
+func formatSizeSI(size int64) string {
+	const unit = 1024
+	if size < unit {
+		return fmt.Sprintf("%d B", size)
+	}
+	div, exp := int64(unit), 0
+	for n := size / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.2f %cB", float64(size)/float64(div), "KMGTPE"[exp])
 }
 
 func (s *MinioBucketProvider) pullFileAndDecompressUnstable(ctx basecontext.ApiContext, path, filename, destination string) error {

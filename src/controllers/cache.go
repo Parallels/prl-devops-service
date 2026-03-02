@@ -12,6 +12,7 @@ import (
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/gorilla/mux"
 )
 
@@ -138,12 +139,17 @@ func GetCatalogCacheHandler() restapi.ControllerHandler {
 			}
 		}
 
+		var freeDiskSpace int64
+		if hwInfo, err := serviceprovider.Get().System.GetHardwareInfo(ctx); err == nil {
+			freeDiskSpace = int64(hwInfo.FreeDiskSize)
+		}
+
 		if cfg.IsHost() {
 			responseManifests.CacheConfig = &models.CatalogCacheConfig{
 				Enabled:                 cfg.IsCatalogCachingEnable(),
 				Folder:                  cfg.GetKey(constants.CATALOG_CACHE_FOLDER_ENV_VAR),
 				KeepFreeDiskSpace:       cfg.CacheKeepFreeDiskSpace(),
-				MaxSize:                 cfg.CacheMaxSize(),
+				MaxSize:                 cfg.CacheMaxSize(freeDiskSpace),
 				AllowAboveFreeDiskSpace: cfg.AllowCacheAboveFreeDiskSpace(),
 			}
 			if responseManifests.CacheConfig.Folder == "" {

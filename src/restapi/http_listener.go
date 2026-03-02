@@ -206,18 +206,46 @@ func (l *HttpListener) AddHandler(c ControllerHandler, path string, methods ...s
 }
 
 func (l *HttpListener) AddAuthorizedHandler(c ControllerHandler, path string, methods ...string) {
-	l.AddAuthorizedHandlerWithRolesAndClaims(c, path, []string{}, []string{}, methods...)
+	l.AddAuthorizedHandlerWithRolesAndClaims(
+		c,
+		path,
+		[]string{},
+		[]string{},
+		ComparisonOperationAnd,
+		ComparisonOperationAnd,
+		methods...)
 }
 
 func (l *HttpListener) AddAuthorizedHandlerWithRoles(c ControllerHandler, path string, roles []string, methods ...string) {
-	l.AddAuthorizedHandlerWithRolesAndClaims(c, path, roles, []string{}, methods...)
+	l.AddAuthorizedHandlerWithRolesAndClaims(
+		c,
+		path,
+		roles,
+		[]string{},
+		ComparisonOperationAnd,
+		ComparisonOperationAnd,
+		methods...)
 }
 
 func (l *HttpListener) AddAuthorizedHandlerWithClaims(c ControllerHandler, path string, claims []string, methods ...string) {
-	l.AddAuthorizedHandlerWithRolesAndClaims(c, path, []string{}, claims, methods...)
+	l.AddAuthorizedHandlerWithRolesAndClaims(
+		c,
+		path,
+		[]string{},
+		claims,
+		ComparisonOperationAnd,
+		ComparisonOperationAnd,
+		methods...)
 }
 
-func (l *HttpListener) AddAuthorizedHandlerWithRolesAndClaims(c ControllerHandler, path string, roles []string, claims []string, methods ...string) {
+func (l *HttpListener) AddAuthorizedHandlerWithRolesAndClaims(
+	c ControllerHandler,
+	path string,
+	roles []string,
+	claims []string,
+	roleComparisonOperation ComparisonOperation,
+	claimComparisonOperation ComparisonOperation,
+	methods ...string) {
 	l.ControllersHandlers = append(l.ControllersHandlers, c)
 	var subRouter *mux.Router
 	if len(methods) > 0 {
@@ -229,8 +257,8 @@ func (l *HttpListener) AddAuthorizedHandlerWithRolesAndClaims(c ControllerHandle
 	adapters = append(adapters, l.DefaultAdapters...)
 	adapters = append(adapters,
 		AddAuthorizationContextMiddlewareAdapter(),
-		TokenAuthorizationMiddlewareAdapter(roles, claims),
-		ApiKeyAuthorizationMiddlewareAdapter(roles, claims),
+		TokenAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation),
+		ApiKeyAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation),
 		EndAuthorizationMiddlewareAdapter())
 
 	if l.GetApiPrefix() != "" && !strings.HasPrefix(path, l.Options.ApiPrefix) {

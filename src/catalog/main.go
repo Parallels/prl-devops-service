@@ -144,7 +144,7 @@ func (s *CatalogManifestService) GenerateManifestContent(r *models.PushCatalogMa
 
 	s.ns.NotifyInfof("Compressing manifest files for %v", r.CatalogId)
 	s.sendPushStepInfo(r, "Compressing manifest files")
-	packFilePath, err := s.compressMachine(r.LocalPath, manifestPackFileName, "/tmp", r.CompressPack, r.CompressPackLevel)
+	packFilePath, err := s.compressMachine(r.LocalPath, manifestPackFileName, "/tmp", r.CompressPack, r.CompressPackLevel, r.StepChannel)
 	if err != nil {
 		return err
 	}
@@ -299,7 +299,7 @@ func (s *CatalogManifestService) getPackFilename(name string) string {
 	return name
 }
 
-func (s *CatalogManifestService) compressMachine(path string, machineFileName string, destination string, enableCompression bool, compressLevel int) (string, error) {
+func (s *CatalogManifestService) compressMachine(path string, machineFileName string, destination string, enableCompression bool, compressLevel int, stepChannel chan string) (string, error) {
 	compressLevelStr, compressLevelErr := helpers.GetCompressRatioEnvValue(compressLevel)
 
 	// recovering to best compression if error
@@ -309,6 +309,9 @@ func (s *CatalogManifestService) compressMachine(path string, machineFileName st
 	}
 
 	startingTime := time.Now()
+	if stepChannel != nil {
+		stepChannel <- fmt.Sprintf("Starting compression for %s", machineFileName)
+	}
 	tarFilename := machineFileName
 	tarFilePath := filepath.Join(destination, filepath.Clean(tarFilename))
 
@@ -352,11 +355,14 @@ func (s *CatalogManifestService) compressMachine(path string, machineFileName st
 
 	compressed := 1
 	err = filepath.Walk(path, func(machineFilePath string, info os.FileInfo, err error) error {
-		s.ns.NotifyInfof("[%v/%v] Compressing file %v", compressed, countFiles, machineFilePath)
-		compressed += 1
 		if err != nil {
 			return err
 		}
+		s.ns.NotifyInfof("[%v/%v] Compressing file %v", compressed, countFiles, machineFilePath)
+		if stepChannel != nil && !info.IsDir() {
+			stepChannel <- fmt.Sprintf("[%v/%v] Compressing %s", compressed, countFiles, machineFilePath)
+		}
+		compressed += 1
 
 		if info.IsDir() {
 			compressed -= 1
@@ -388,6 +394,9 @@ func (s *CatalogManifestService) compressMachine(path string, machineFileName st
 
 	endingTime := time.Now()
 	s.ns.NotifyInfof("Finished compressing machine from %s to %s in %v", path, tarFilePath, endingTime.Sub(startingTime))
+	if stepChannel != nil {
+		stepChannel <- fmt.Sprintf("Finished compression for %s in %v", machineFileName, endingTime.Sub(startingTime).Round(time.Second))
+	}
 	return tarFilePath, nil
 }
 

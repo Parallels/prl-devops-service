@@ -10,6 +10,7 @@ import (
 func DtoReverseProxyHostHttpRouteToApi(m data_models.ReverseProxyHostHttpRoute) models.ReverseProxyHostHttpRoute {
 	return models.ReverseProxyHostHttpRoute{
 		ID:              m.ID,
+		Order:           m.Order,
 		Path:            m.Path,
 		TargetVmId:      m.TargetVmId,
 		TargetPort:      m.TargetPort,
@@ -33,6 +34,7 @@ func DtoReverseProxyHostHttpRoutesFromApi(m []data_models.ReverseProxyHostHttpRo
 func ApiReverseProxyHostHttpRouteToDto(m models.ReverseProxyHostHttpRoute) data_models.ReverseProxyHostHttpRoute {
 	return data_models.ReverseProxyHostHttpRoute{
 		ID:              m.ID,
+		Order:           m.Order,
 		Path:            m.Path,
 		TargetVmId:      m.TargetVmId,
 		TargetPort:      m.TargetPort,
@@ -55,6 +57,7 @@ func ApiReverseProxyHostHttpRoutesToDto(m []models.ReverseProxyHostHttpRoute) []
 
 func ApiReverseProxyHostCreateHttpRouteToDto(m models.ReverseProxyHostHttpRouteCreateRequest) data_models.ReverseProxyHostHttpRoute {
 	result := data_models.ReverseProxyHostHttpRoute{
+		Order:           m.Order,
 		Path:            m.Path,
 		Pattern:         m.Pattern,
 		TargetVmId:      m.TargetVmId,

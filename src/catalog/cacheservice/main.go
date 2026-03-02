@@ -18,7 +18,9 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	global_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/cjlapao/common-go/helper"
 )
 
@@ -664,6 +666,16 @@ func (cs *CacheService) RemoveCacheItem(catalogId string, version string) error 
 						return err
 					}
 				}
+
+				// Emit cache item removed event
+				if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+					msg := global_models.NewEventMessage(constants.EventTypeCatalogCache, "CACHE_ITEM_REMOVED", global_models.CacheItemRemovedEvent{
+						CatalogId:    cache.CatalogId,
+						Version:      cache.Version,
+						Architecture: cache.Architecture,
+					})
+					go func() { _ = emitter.Broadcast(msg) }()
+				}
 			}
 		}
 	}
@@ -740,6 +752,10 @@ func (cs *CacheService) Get() (*models.CacheResponse, error) {
 
 	if r.MetadataFilePath != "" && r.PackFilePath != "" {
 		r.IsCached = true
+		// Update the cache usage count since we successfully got the item
+		if _, err := cs.updateCacheManifestUsedCount(r.MetadataFilePath); err != nil {
+			cs.baseCtx.LogErrorf("Error updating cache usage count: %v", err)
+		}
 	}
 
 	cs.cacheData = &r
@@ -895,6 +911,19 @@ func (cs *CacheService) Cache() error {
 		cs.CacheType = models.CatalogCacheTypeFolder
 	default:
 		cs.CacheType = models.CatalogCacheTypeNone
+	}
+
+	// Emit cache item added event
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := global_models.NewEventMessage(constants.EventTypeCatalogCache, "CACHE_ITEM_ADDED", global_models.CacheItemAddedEvent{
+			CatalogId:    cs.CacheManifest.CatalogId,
+			Version:      cs.CacheManifest.Version,
+			Architecture: cs.CacheManifest.Architecture,
+			CacheSize:    cs.CacheManifest.CacheSize,
+			CacheType:    cs.CacheManifest.CacheType,
+			CachedDate:   cs.CacheManifest.CachedDate,
+		})
+		go func() { _ = emitter.Broadcast(msg) }()
 	}
 	return nil
 }

@@ -42,6 +42,7 @@ type ArtifactoryProvider struct {
 	Repo            ArtifactoryRepo
 	ProgressChannel chan int
 	FileNameChannel chan string
+	StepChannel     chan string
 }
 
 func NewArtifactoryProvider() *ArtifactoryProvider {
@@ -68,9 +69,10 @@ func (s *ArtifactoryProvider) GetProviderMeta(ctx basecontext.ApiContext) map[st
 	}
 }
 
-func (s *ArtifactoryProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int) {
+func (s *ArtifactoryProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int, stepChannel chan string) {
 	s.ProgressChannel = progressChannel
 	s.FileNameChannel = fileNameChannel
+	s.StepChannel = stepChannel
 }
 
 func (s *ArtifactoryProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {

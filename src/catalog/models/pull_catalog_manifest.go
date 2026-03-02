@@ -30,6 +30,7 @@ type PullCatalogManifestRequest struct {
 	Connection         string            `json:"connection,omitempty"`
 	ProviderMetadata   map[string]string `json:"provider_metadata,omitempty"`
 	StartAfterPull     bool              `json:"start_after_pull,omitempty"`
+	JobId              string            `json:"job_id,omitempty"`
 	LocalMachineFolder string            `json:"-"`
 	ProgressChannel    chan int          `json:"-"`
 	FileNameChannel    chan string       `json:"-"`

@@ -83,6 +83,11 @@ type VmUpdated struct {
 	NewVm ParallelsVM `json:"new_vm"`
 }
 
+type VmUptimeChanged struct {
+	VmID   string `json:"vm_id"`
+	Uptime string `json:"uptime"`
+}
+
 type HostHealthUpdate struct {
 	HostID string `json:"host_id"`
 	State  string `json:"state"`
@@ -101,4 +106,43 @@ type HostStatsUpdate struct {
 type HostLogsUpdate struct {
 	HostID string      `json:"host_id"`
 	Log    interface{} `json:"log"`
+}
+
+type ReverseProxyForwardEvent struct {
+	ReverseProxyHostId string `json:"reverse_proxy_host_id,omitempty"`
+	TargetVmId         string `json:"target_vm_id,omitempty"`
+	TargetHost         string `json:"target_host,omitempty"`
+	TargetPort         string `json:"target_port,omitempty"`
+	Path               string `json:"path,omitempty"`
+	TrafficType        string `json:"traffic_type"`
+	InternalIpAddress  string `json:"internal_ip_address,omitempty"`
+	Method             string `json:"method,omitempty"`
+	SourceIp           string `json:"source_ip,omitempty"`
+}
+
+type ReverseProxyRouteUpdatedEvent struct {
+	ReverseProxyHostId string `json:"reverse_proxy_host_id,omitempty"`
+	TargetVmId         string `json:"target_vm_id,omitempty"`
+	InternalIpAddress  string `json:"internal_ip_address,omitempty"`
+}
+
+type ReverseProxyRouteFailedEvent struct {
+	ReverseProxyHostId string `json:"reverse_proxy_host_id,omitempty"`
+	TargetVmId         string `json:"target_vm_id,omitempty"`
+	InternalIpAddress  string `json:"internal_ip_address,omitempty"`
+}
+
+type CacheItemAddedEvent struct {
+	CatalogId    string `json:"catalog_id"`
+	Version      string `json:"version"`
+	Architecture string `json:"architecture,omitempty"`
+	CacheSize    int64  `json:"cache_size"`
+	CacheType    string `json:"cache_type"`
+	CachedDate   string `json:"cached_date,omitempty"`
+}
+
+type CacheItemRemovedEvent struct {
+	CatalogId    string `json:"catalog_id"`
+	Version      string `json:"version"`
+	Architecture string `json:"architecture,omitempty"`
 }
