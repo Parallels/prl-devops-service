@@ -1469,7 +1469,11 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 		for _, snapshot := range snapshots.Snapshots {
 			err = svc.DeleteSnapshot(ctx, VMId, snapshot.ID, &models.DeleteSnapshotRequest{})
 			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromError(err))
+				err = fmt.Errorf("please check snapshot id[%s]: %v", snapshot.ID, err)
+				ReturnApiError(ctx, w, models.ApiErrorResponse{
+					Message: err.Error(),
+					Code:    http.StatusBadRequest,
+				})
 				return
 			}
 		}
@@ -1561,7 +1565,11 @@ func RevertSnapshot() restapi.ControllerHandler {
 
 		err := svc.RevertSnapshot(ctx, VMId, SnapshotId, &request)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			err = fmt.Errorf("please check snapshot id[%s]: %v", SnapshotId, err)
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: err.Error(),
+				Code:    http.StatusBadRequest,
+			})
 			return
 		}
 		var snapshot *models.ListSnapshotResponse
