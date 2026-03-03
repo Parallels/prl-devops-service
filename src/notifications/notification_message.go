@@ -36,6 +36,11 @@ type NotificationMessage struct {
 	correlationId        string
 	Message              string
 	CurrentProgress      float64
+	JobId                string
+	JobPercentage        float64
+	CurrentAction        string
+	CurrentActionStep    string
+	Filename             string
 	totalSize            int64
 	currentSize          int64
 	IsProgress           bool
@@ -111,6 +116,31 @@ func (nm *NotificationMessage) Prefix() string {
 
 func (nm *NotificationMessage) Closed() bool {
 	return nm.closed
+}
+
+func (nm *NotificationMessage) SetJobId(jobId string) *NotificationMessage {
+	nm.JobId = jobId
+	return nm
+}
+
+func (nm *NotificationMessage) SetJobPercentage(jobPercentage float64) *NotificationMessage {
+	nm.JobPercentage = jobPercentage
+	return nm
+}
+
+func (nm *NotificationMessage) SetCurrentAction(action string) *NotificationMessage {
+	nm.CurrentAction = action
+	return nm
+}
+
+func (nm *NotificationMessage) SetCurrentActionStep(step string) *NotificationMessage {
+	nm.CurrentActionStep = step
+	return nm
+}
+
+func (nm *NotificationMessage) SetFilename(filename string) *NotificationMessage {
+	nm.Filename = filename
+	return nm
 }
 
 func (nm *NotificationMessage) Close() *NotificationMessage {

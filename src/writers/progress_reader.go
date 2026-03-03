@@ -3,8 +3,11 @@ package writers
 import (
 	"fmt"
 	"io"
+	"strings"
+	"sync"
 	"sync/atomic"
 
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/notifications"
 )
@@ -17,6 +20,9 @@ type ProgressReader struct {
 	read          int64
 	filename      string
 	prefix        string
+	jobId         string
+	currentAction string
+	mu            sync.Mutex
 }
 
 func NewProgressReader(reader io.Reader, size int64) *ProgressReader {
@@ -44,6 +50,14 @@ func (pr *ProgressReader) CorrelationId() string {
 	return pr.correlationId
 }
 
+func (pr *ProgressReader) SetJobId(jobId string) {
+	pr.jobId = jobId
+}
+
+func (pr *ProgressReader) SetCurrentAction(action string) {
+	pr.currentAction = action
+}
+
 func (pr *ProgressReader) Size() int64 {
 	return pr.size
 }
@@ -65,14 +79,27 @@ func (pr *ProgressReader) Read(p []byte) (int, error) {
 			if pr.ns != nil {
 				prefix := pr.prefix
 				if prefix == "" {
-					prefix = "Processing"
+					prefix = constants.ActionDownloadingManifest
 				}
 				if pr.filename != "" {
 					prefix = fmt.Sprintf("%s %s", prefix, pr.filename)
 				}
+
+				if pr.jobId != "" && !strings.HasPrefix(prefix, "["+pr.jobId+"]") {
+					prefix = fmt.Sprintf("[%s] %s", pr.jobId, prefix)
+				}
+
+				action := pr.currentAction
+				if action == "" {
+					action = constants.ActionDownloadingPackFile
+				}
+
 				msg := notifications.NewProgressNotificationMessage(pr.correlationId, prefix, percentage).
 					SetCurrentSize(newRead).
-					SetTotalSize(pr.size)
+					SetTotalSize(pr.size).
+					SetJobId(pr.jobId).
+					SetCurrentAction(action).
+					SetFilename(pr.filename)
 				pr.ns.Notify(msg)
 			}
 		}
@@ -101,14 +128,27 @@ func (pr *ProgressReader) ReadAt(p []byte, off int64) (int, error) {
 			if pr.ns != nil {
 				prefix := pr.prefix
 				if prefix == "" {
-					prefix = "Processing"
+					prefix = constants.ActionDownloadingManifest
 				}
 				if pr.filename != "" {
 					prefix = fmt.Sprintf("%s %s", prefix, pr.filename)
 				}
+
+				if pr.jobId != "" && !strings.HasPrefix(prefix, "["+pr.jobId+"]") {
+					prefix = fmt.Sprintf("[%s] %s", pr.jobId, prefix)
+				}
+
+				action := pr.currentAction
+				if action == "" {
+					action = constants.ActionDownloadingPackFile
+				}
+
 				msg := notifications.NewProgressNotificationMessage(pr.correlationId, prefix, percentage).
 					SetCurrentSize(newRead).
-					SetTotalSize(pr.size)
+					SetTotalSize(pr.size).
+					SetJobId(pr.jobId).
+					SetCurrentAction(action).
+					SetFilename(pr.filename)
 				pr.ns.Notify(msg)
 			}
 		}

@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"math"
 	"net"
 	"net/http"
 	"os"
@@ -20,6 +19,7 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/common"
 	"github.com/Parallels/prl-devops-service/compressor"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/notifications"
 	"github.com/Parallels/prl-devops-service/writers"
@@ -41,16 +41,13 @@ type MinioBucket struct {
 	AccessKey                    string
 	SecretKey                    string
 	UseEnvironmentAuthentication string
-	ProgressChannel              chan int
 }
 
 const providerName = "minio"
 
 type MinioBucketProvider struct {
-	Bucket          MinioBucket
-	ProgressChannel chan int
-	FileNameChannel chan string
-	StepChannel     chan string
+	Bucket MinioBucket
+	JobId  string
 }
 
 func NewMinioProvider() *MinioBucketProvider {
@@ -82,10 +79,8 @@ func (s *MinioBucketProvider) CanStream() bool {
 	return true
 }
 
-func (s *MinioBucketProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int, stepChannel chan string) {
-	s.ProgressChannel = progressChannel
-	s.FileNameChannel = fileNameChannel
-	s.StepChannel = stepChannel
+func (s *MinioBucketProvider) SetJobId(jobId string) {
+	s.JobId = jobId
 }
 
 func (s *MinioBucketProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
@@ -195,9 +190,6 @@ func (s *MinioBucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 func (s *MinioBucketProvider) PullFile(ctx basecontext.ApiContext, path string, filename string, destination string) error {
 	ctx.LogInfof("Pulling file %s", filename)
 	startTime := time.Now()
-	if s.FileNameChannel != nil {
-		s.FileNameChannel <- filename
-	}
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 	destinationFilePath := filepath.Join(destination, filename)
 
@@ -229,8 +221,8 @@ func (s *MinioBucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 	}
 
 	cw := writers.NewProgressWriter(f, fileSize)
-	cw.SetFilename(filename)
-	cw.SetPrefix("Pulling")
+	cw.SetFilename("")
+	cw.SetPrefix(fmt.Sprintf("Pulling %s", filename))
 	cid := cw.CorrelationId()
 	// Write the contents of S3 Object to the file
 	_, err = downloader.Download(cw, &s3.GetObjectInput{
@@ -262,9 +254,6 @@ func (s *MinioBucketProvider) PullFileToMemory(ctx basecontext.ApiContext, path 
 	ctx.LogInfof("Pulling file %s", filename)
 	maxFileSize := 0.5 * 1024 * 1024 // 0.5MB
 
-	if s.FileNameChannel != nil {
-		s.FileNameChannel <- filename
-	}
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 
 	// Create a new session using the default region and credentials.
@@ -665,14 +654,11 @@ func (s *MinioBucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 							NewProgressNotificationMessage(cid, msgPrefix, percent).
 							SetCurrentSize(totalDownloaded).
 							SetTotalSize(totalSize).
-							SetStartingTime(startTime)
+							SetStartingTime(startTime).
+							SetJobId(s.JobId).
+							SetCurrentAction(constants.ActionDownloadingPackFile).
+							SetFilename(filename)
 						ns.Notify(msg)
-						if s.ProgressChannel != nil {
-							s.ProgressChannel <- int(math.Round(percent))
-						}
-						if s.StepChannel != nil {
-							s.StepChannel <- helpers.FormatStreamingProgress(msgPrefix, percent, totalDownloaded, totalSize, startTime)
-						}
 					}
 				}
 				if readErr != nil {
@@ -739,7 +725,7 @@ func (s *MinioBucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 	// Decompressor goroutine: decompress from the pipe to the destination
 	group.Go(func() error {
 		// Decompress from the read-end of the pipe
-		decompressErr := compressor.DecompressFromReaderWithStepChannel(ctx, r, destination, s.StepChannel)
+		decompressErr := compressor.DecompressTarGzStream(ctx, r, "", destination, s.JobId)
 		if decompressErr != nil {
 			// If decompression fails, close the pipe with error (so streamer sees it)
 			_ = w.CloseWithError(decompressErr)
@@ -754,11 +740,8 @@ func (s *MinioBucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 	}
 
 	// Everything finished successfully send a final progress notification
-	finalMsg := fmt.Sprintf("Pulling %s", filename)
+	finalMsg := fmt.Sprintf("Finished pulling %s", filename)
 	ns.NotifyProgress(cid, finalMsg, 100)
-	if s.StepChannel != nil {
-		s.StepChannel <- fmt.Sprintf("%s 100.0%%", finalMsg)
-	}
 	ns.NotifyInfo(fmt.Sprintf("Finished pulling and decompressing file %s, took %v",
 		filename, time.Since(startTime)))
 
@@ -790,8 +773,9 @@ func (s *MinioBucketProvider) pullFileAndDecompressUnstable(ctx basecontext.ApiC
 		Destination:         destination,
 		ChunkSize:           100 * 1024 * 1024, // 100MB chunks
 		NotificationService: notifications.Get(),
-		MessagePrefix:       fmt.Sprintf("[Streaming] Pulling %s", filename),
+		MessagePrefix:       fmt.Sprintf("Pulling %s", filename),
 		CorrelationID:       helpers.GenerateId(),
+		JobId:               s.JobId,
 	}
 
 	// Execute the download and decompress operation

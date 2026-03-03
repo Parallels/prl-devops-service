@@ -3,8 +3,12 @@ package writers
 import (
 	"fmt"
 	"os"
+	"strings"
+	"sync" // Added sync import for sync.Mutex
 	"sync/atomic"
 
+	// Added global_models import
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/notifications"
 )
 
@@ -15,6 +19,9 @@ type ProgressFileReader struct {
 	size          int64
 	read          int64
 	prefix        string
+	jobId         string
+	currentAction string
+	mu            sync.Mutex // Added mu
 }
 
 func NewProgressFileReader(file *os.File, size int64) *ProgressFileReader {
@@ -37,6 +44,14 @@ func (pr *ProgressFileReader) CorrelationId() string {
 	return pr.correlationId
 }
 
+func (pr *ProgressFileReader) SetJobId(jobId string) {
+	pr.jobId = jobId
+}
+
+func (pr *ProgressFileReader) SetCurrentAction(action string) {
+	pr.currentAction = action
+}
+
 func (pr *ProgressFileReader) Size() int64 {
 	return pr.size
 }
@@ -50,14 +65,27 @@ func (pr *ProgressFileReader) Read(p []byte) (int, error) {
 			if pr.ns != nil {
 				message := pr.prefix
 				if message == "" {
-					message = "Processing"
+					message = constants.ActionDownloadingManifest
 				}
 				if pr.file.Name() != "" {
 					message = fmt.Sprintf("%s %s", message, pr.file.Name())
 				}
+
+				if pr.jobId != "" && !strings.HasPrefix(message, "["+pr.jobId+"]") {
+					message = fmt.Sprintf("[%s] %s", pr.jobId, message)
+				}
+
+				action := pr.currentAction
+				if action == "" {
+					action = constants.ActionDownloadingPackFile
+				}
+
 				msg := notifications.NewProgressNotificationMessage(pr.correlationId, message, percentage).
 					SetCurrentSize(newRead).
-					SetTotalSize(pr.size)
+					SetTotalSize(pr.size).
+					SetJobId(pr.jobId).
+					SetCurrentAction(action).
+					SetFilename(pr.file.Name())
 				pr.ns.Notify(msg)
 			}
 		}
@@ -82,15 +110,27 @@ func (pr *ProgressFileReader) ReadAt(p []byte, off int64) (int, error) {
 		if pr.ns != nil {
 			message := pr.prefix
 			if message == "" {
-				message = "Processing"
+				message = "Downloading Manifest"
 			}
 			if pr.file.Name() != "" {
 				message = fmt.Sprintf("%s %s", message, pr.file.Name())
 			}
 
+			if pr.jobId != "" && !strings.HasPrefix(message, "["+pr.jobId+"]") {
+				message = fmt.Sprintf("[%s] %s", pr.jobId, message)
+			}
+
+			action := pr.currentAction
+			if action == "" {
+				action = "Downloading"
+			}
+
 			msg := notifications.NewProgressNotificationMessage(pr.file.Name(), message, percentage).
 				SetCurrentSize(newRead).
-				SetTotalSize(pr.size)
+				SetTotalSize(pr.size).
+				SetJobId(pr.jobId).
+				SetCurrentAction(action).
+				SetFilename(pr.file.Name())
 			pr.ns.Notify(msg)
 		}
 	}

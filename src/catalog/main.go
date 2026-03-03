@@ -144,7 +144,7 @@ func (s *CatalogManifestService) GenerateManifestContent(r *models.PushCatalogMa
 
 	s.ns.NotifyInfof("Compressing manifest files for %v", r.CatalogId)
 	s.sendPushStepInfo(r, "Compressing manifest files")
-	packFilePath, err := s.compressMachine(r.LocalPath, manifestPackFileName, "/tmp", r.CompressPack, r.CompressPackLevel, r.StepChannel)
+	packFilePath, err := s.compressMachine(r.LocalPath, manifestPackFileName, "/tmp", r.CompressPack, r.CompressPackLevel, nil)
 	if err != nil {
 		return err
 	}
@@ -465,7 +465,5 @@ func (s *CatalogManifestService) Unzip(ctx basecontext.ApiContext, machineFilePa
 }
 
 func (s *CatalogManifestService) sendPushStepInfo(r *models.PushCatalogManifestRequest, msg string) {
-	if r.StepChannel != nil {
-		r.StepChannel <- msg
-	}
+	s.ns.NotifyInfof(msg)
 }

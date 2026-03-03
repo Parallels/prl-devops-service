@@ -803,7 +803,10 @@ func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter strin
 	cfg := config.Get()
 	if cfg.IsApi() || cfg.IsOrchestrator() {
 		s.RLock()
-		systemMachines = s.cachedLocalVms
+		// Making a copy of the slice so we can release the lock IMMEDIATELY
+		// instead of holding it during the filter operations below.
+		systemMachines = make([]models.ParallelsVM, len(s.cachedLocalVms))
+		copy(systemMachines, s.cachedLocalVms)
 		s.RUnlock()
 	} else { // if not API or Orchestrator, we will not maintain the cache and get the VMs directly from the system
 		systemMachines, err = s.getVmsInMachineForCurrentUser(ctx)

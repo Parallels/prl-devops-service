@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"math"
 	"net"
 	"net/http"
 	"os"
@@ -18,6 +17,7 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/common"
 	"github.com/Parallels/prl-devops-service/compressor"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/notifications"
 	"github.com/Parallels/prl-devops-service/writers"
@@ -38,16 +38,14 @@ type S3Bucket struct {
 	SecretKey                    string
 	SessionToken                 string
 	UseEnvironmentAuthentication string
-	ProgressChannel              chan int
 }
 
 const providerName = "aws-s3"
 
 type AwsS3BucketProvider struct {
-	Bucket          S3Bucket
-	ProgressChannel chan int
-	FileNameChannel chan string
-	StepChannel     chan string
+	Bucket S3Bucket
+	ctx    basecontext.ApiContext
+	JobId  string
 }
 
 func NewAwsS3Provider() *AwsS3BucketProvider {
@@ -78,10 +76,8 @@ func (s *AwsS3BucketProvider) CanStream() bool {
 	return true
 }
 
-func (s *AwsS3BucketProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int, stepChannel chan string) {
-	s.ProgressChannel = progressChannel
-	s.FileNameChannel = fileNameChannel
-	s.StepChannel = stepChannel
+func (s *AwsS3BucketProvider) SetJobId(jobId string) {
+	s.JobId = jobId
 }
 
 func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
@@ -188,9 +184,6 @@ func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, filename string, destination string) error {
 	ctx.LogInfof("Pulling file %s", filename)
 	startTime := time.Now()
-	if s.FileNameChannel != nil {
-		s.FileNameChannel <- filename
-	}
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 	destinationFilePath := filepath.Join(destination, filename)
 
@@ -222,8 +215,8 @@ func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 	}
 
 	cw := writers.NewProgressWriter(f, fileSize)
-	cw.SetFilename(filename)
-	cw.SetPrefix("Pulling")
+	cw.SetFilename("")
+	cw.SetPrefix(fmt.Sprintf("Pulling %s", filename))
 	cid := cw.CorrelationId()
 	// Write the contents of S3 Object to the file
 	_, err = downloader.Download(cw, &s3.GetObjectInput{
@@ -236,6 +229,7 @@ func (s *AwsS3BucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 
 	ns := notifications.Get()
 	msg := fmt.Sprintf("Pulling %s", filename)
+	ctx.LogInfof(msg)
 	ns.NotifyProgress(cid, msg, 100)
 	endTime := time.Now()
 	ns.NotifyInfo(fmt.Sprintf("Finished pulling and decompressing file %s, took %s", filename, endTime.Sub(startTime)))
@@ -255,9 +249,6 @@ func (s *AwsS3BucketProvider) PullFileToMemory(ctx basecontext.ApiContext, path 
 	ctx.LogInfof("Pulling file %s", filename)
 	maxFileSize := 0.5 * 1024 * 1024 // 0.5MB
 
-	if s.FileNameChannel != nil {
-		s.FileNameChannel <- filename
-	}
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 
 	// Create a new session using the default region and credentials.
@@ -640,14 +631,11 @@ func (s *AwsS3BucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 							NewProgressNotificationMessage(cid, msgPrefix, percent).
 							SetCurrentSize(totalDownloaded).
 							SetTotalSize(totalSize).
-							SetStartingTime(startTime)
+							SetStartingTime(startTime).
+							SetJobId(s.JobId).
+							SetCurrentAction(constants.ActionDownloadingPackFile).
+							SetFilename(filename)
 						ns.Notify(msg)
-						if s.ProgressChannel != nil {
-							s.ProgressChannel <- int(math.Round(percent))
-						}
-						if s.StepChannel != nil {
-							s.StepChannel <- helpers.FormatStreamingProgress(msgPrefix, percent, totalDownloaded, totalSize, startTime)
-						}
 					}
 				}
 				if readErr != nil {
@@ -714,7 +702,7 @@ func (s *AwsS3BucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 	// Decompressor goroutine: decompress from the pipe to the destination
 	group.Go(func() error {
 		// Decompress from the read-end of the pipe
-		decompressErr := compressor.DecompressFromReaderWithStepChannel(ctx, r, destination, s.StepChannel)
+		decompressErr := compressor.DecompressTarGzStream(ctx, r, "", destination, s.JobId)
 		if decompressErr != nil {
 			// If decompression fails, close the pipe with error (so streamer sees it)
 			_ = w.CloseWithError(decompressErr)
@@ -729,11 +717,8 @@ func (s *AwsS3BucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 	}
 
 	// Everything finished successfully send a final progress notification
-	finalMsg := fmt.Sprintf("Pulling %s", filename)
+	finalMsg := fmt.Sprintf("Finished pulling %s", filename)
 	ns.NotifyProgress(cid, finalMsg, 100)
-	if s.StepChannel != nil {
-		s.StepChannel <- fmt.Sprintf("%s 100.0%%", finalMsg)
-	}
 	ns.NotifyInfo(fmt.Sprintf("Finished pulling and decompressing file %s, took %v",
 		filename, time.Since(startTime)))
 
@@ -765,7 +750,8 @@ func (s *AwsS3BucketProvider) pullFileAndDecompressUnstable(ctx basecontext.ApiC
 		Destination:         destination,
 		ChunkSize:           100 * 1024 * 1024, // 100MB chunks
 		NotificationService: notifications.Get(),
-		MessagePrefix:       fmt.Sprintf("[Streaming] Pulling %s", filename),
+		JobId:               s.JobId,
+		MessagePrefix:       fmt.Sprintf("Pulling %s", filename),
 		CorrelationID:       helpers.GenerateId(),
 	}
 

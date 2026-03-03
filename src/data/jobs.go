@@ -108,6 +108,11 @@ func (j *JsonDatabase) UpdateJob(ctx basecontext.ApiContext, key models.Job) err
 			j.data.Jobs[i].State = key.State
 			j.data.Jobs[i].Progress = key.Progress
 			j.data.Jobs[i].Action = key.Action
+			j.data.Jobs[i].ActionMessage = key.ActionMessage
+			j.data.Jobs[i].ActionValue = key.ActionValue
+			j.data.Jobs[i].ActionPercentage = key.ActionPercentage
+			j.data.Jobs[i].ActionTotal = key.ActionTotal
+			j.data.Jobs[i].ActionETA = key.ActionETA
 			j.data.Jobs[i].Result = key.Result
 			j.data.Jobs[i].Error = key.Error
 			j.data.Jobs[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
@@ -171,6 +176,7 @@ func (j *JsonDatabase) RecoverOngoingJobs(ctx basecontext.ApiContext) {
 		return
 	}
 
+	j.dataMutex.Lock()
 	updated := false
 	for i, job := range j.data.Jobs {
 		if job.State == constants.JobStateRunning || job.State == constants.JobStatePending {
@@ -180,6 +186,7 @@ func (j *JsonDatabase) RecoverOngoingJobs(ctx basecontext.ApiContext) {
 			updated = true
 		}
 	}
+	j.dataMutex.Unlock()
 
 	if updated {
 		ctx.LogInfof("[Database] Recovered and failed ongoing jobs after restart")

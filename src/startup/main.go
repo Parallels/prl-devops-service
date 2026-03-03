@@ -238,6 +238,17 @@ func Start(ctx basecontext.ApiContext) {
 
 	ctx.LogInfof("Starting Job Manager Service")
 	jobManagerService := jobs.New(ctx)
+
+	// Wire up the new global Notification API callbacks for jobs
+	if ns := notifications.Get(); ns != nil {
+		ns.OnUpdateJobActionProgress = func(jobId, action string, currentSize int64, percent int, totalSize int64, eta string, unit string) {
+			jobManagerService.UpdateJobActionProgress(jobId, action, currentSize, percent, totalSize, eta, unit)
+		}
+		ns.OnUpdateJobProgress = func(jobId, action string, percent int, status string) {
+			jobManagerService.UpdateJobProgress(jobId, action, percent, constants.JobState(status))
+		}
+	}
+
 	go func() {
 		if err := jobManagerService.Start(); err != nil {
 			ctx.LogErrorf("Error starting job manager service: %v", err)

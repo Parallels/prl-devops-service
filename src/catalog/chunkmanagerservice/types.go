@@ -22,6 +22,8 @@ type DownloadRequest struct {
 	MessagePrefix string
 	// Unique ID for correlating notifications
 	CorrelationID string
+	// Job ID for progress reporting
+	JobId string
 }
 
 // chunkInfo tracks the state of an individual chunk during download

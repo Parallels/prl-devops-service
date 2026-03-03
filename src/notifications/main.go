@@ -17,16 +17,32 @@ type RateSample struct {
 	Progress  float64
 }
 
+type JobStep struct {
+	Name   string
+	Weight float64 // Percentage weight of this step, e.g. 40.0 for 40%
+}
+
+type JobWorkflow struct {
+	Steps []JobStep
+}
+
 type ProgressTracker struct {
-	CurrentProgress float64
-	LastUpdateTime  time.Time
-	LastLogTime     time.Time // Track when we last logged a message
-	Prefix          string
-	StartTime       time.Time
-	TotalSize       int64
-	CurrentSize     int64
-	IsComplete      bool
-	RateSamples     []RateSample // Store last minute of samples
+	CurrentProgress        float64
+	JobPercentage          float64
+	LastJobPercentageSent  float64
+	LastStepPercentageSent float64
+	JobId                  string
+	CurrentAction          string
+	CurrentActionStep      string
+	Filename               string
+	LastUpdateTime         time.Time
+	LastLogTime            time.Time // Track when we last logged a message
+	Prefix                 string
+	StartTime              time.Time
+	TotalSize              int64
+	CurrentSize            int64
+	IsComplete             bool
+	RateSamples            []RateSample // Store last minute of samples
 }
 
 type NotificationService struct {
@@ -37,10 +53,14 @@ type NotificationService struct {
 	Channel               chan NotificationMessage
 	stopChan              chan bool
 	activeProgress        map[string]*ProgressTracker // Track active progress notifications
+	activeWorkflows       map[string]JobWorkflow      // Track expected steps and weights per JobId
 	progressCounters      map[string]float64
 	previousMessage       NotificationMessage
 	CurrentMessage        NotificationMessage
 	mu                    sync.RWMutex // Protects activeProgress map
+
+	OnUpdateJobActionProgress func(jobId, action string, currentSize int64, percent int, totalSize int64, eta string, unit string)
+	OnUpdateJobProgress       func(jobId, action string, percent int, status string)
 }
 
 // ProgressRate contains rate information for a progress notification
@@ -58,6 +78,7 @@ const (
 	minUpdateInterval         = 500 * time.Millisecond // Minimum time between progress updates
 	significantProgressChange = 1.0                    // Minimum progress change to force an update
 	minSampleInterval         = 2 * time.Second        // Minimum time between rate samples
+	uiProgressPushThreshold   = 1.0                    // 1% step change threshold to trigger UI JobManager socket via Hub
 )
 
 // Add these types for prediction
@@ -73,6 +94,7 @@ func New(ctx basecontext.ApiContext) *NotificationService {
 		Channel:           make(chan NotificationMessage),
 		clearLineOnUpdate: false,
 		activeProgress:    make(map[string]*ProgressTracker),
+		activeWorkflows:   make(map[string]JobWorkflow),
 		progressCounters:  make(map[string]float64),
 	}
 
@@ -97,6 +119,21 @@ func (p *NotificationService) EnableSingleLineOutput() *NotificationService {
 func (p *NotificationService) SetContext(ctx basecontext.ApiContext) *NotificationService {
 	p.ctx = ctx
 	return p
+}
+
+// RegisterJobWorkflow defines the expected steps and their percent-weights for a given JobId.
+// This allows the NotificationService to automatically compute the overall 0-100% JobPercentage
+// by combining the current action's completion with the weights.
+func (p *NotificationService) RegisterJobWorkflow(jobId string, steps []JobStep) {
+	if jobId == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.activeWorkflows[jobId] = JobWorkflow{
+		Steps: steps,
+	}
 }
 
 func (p *NotificationService) ResetCounters(correlationId string) {
@@ -255,20 +292,100 @@ func (p *NotificationService) Start() {
 						// New progress notification
 						if p.CurrentMessage.CurrentProgress < 100 {
 							tracker = &ProgressTracker{
-								StartTime:       time.Now(),
-								Prefix:          p.CurrentMessage.Message,
-								CurrentProgress: p.CurrentMessage.CurrentProgress,
-								LastUpdateTime:  time.Now(),
-								CurrentSize:     p.CurrentMessage.currentSize,
-								TotalSize:       p.CurrentMessage.totalSize,
-								RateSamples:     make([]RateSample, 0, 60),
+								StartTime:              time.Now(),
+								Prefix:                 p.CurrentMessage.Message,
+								CurrentProgress:        p.CurrentMessage.CurrentProgress,
+								JobPercentage:          p.CurrentMessage.JobPercentage,
+								LastJobPercentageSent:  -1.0, // Initial state, force first push
+								LastStepPercentageSent: p.CurrentMessage.CurrentProgress,
+								JobId:                  p.CurrentMessage.JobId,
+								CurrentAction:          p.CurrentMessage.CurrentAction,
+								CurrentActionStep:      p.CurrentMessage.CurrentActionStep,
+								Filename:               p.CurrentMessage.Filename,
+								LastUpdateTime:         time.Now(),
+								CurrentSize:            p.CurrentMessage.currentSize,
+								TotalSize:              p.CurrentMessage.totalSize,
+								RateSamples:            make([]RateSample, 0, 60),
 							}
 							p.activeProgress[p.CurrentMessage.CorrelationId()] = tracker
 							shouldLog = true
+
+							// Emit initial UI setup via jobs manager on new tracker
+							if tracker.JobId != "" {
+								if p.OnUpdateJobActionProgress != nil {
+									eta := calculateETA(tracker.StartTime, tracker.CurrentSize, tracker.TotalSize)
+									p.OnUpdateJobActionProgress(tracker.JobId, tracker.CurrentAction, tracker.CurrentSize, int(tracker.CurrentProgress), tracker.TotalSize, eta, "bytes")
+								}
+								if p.OnUpdateJobProgress != nil && tracker.JobPercentage > 0 {
+									p.OnUpdateJobProgress(tracker.JobId, tracker.CurrentAction, int(tracker.JobPercentage), "running")
+								}
+							}
 						}
 					} else {
 						// Update existing tracker and check if we should log
 						p.updateProgressTracker(tracker, p.CurrentMessage.CurrentProgress, p.CurrentMessage.currentSize)
+						tracker.CurrentAction = p.CurrentMessage.CurrentAction
+						tracker.CurrentActionStep = p.CurrentMessage.CurrentActionStep
+						tracker.Filename = p.CurrentMessage.Filename
+
+						// Apply Workflow Calculation if available
+						if tracker.JobId != "" {
+							if workflow, hasWorkflow := p.activeWorkflows[tracker.JobId]; hasWorkflow {
+								var accumulatedWeight float64
+								var currentStepWeight float64
+								stepFound := false
+
+								for _, step := range workflow.Steps {
+									if step.Name == tracker.CurrentAction {
+										currentStepWeight = step.Weight
+										stepFound = true
+										break
+									}
+									accumulatedWeight += step.Weight
+								}
+
+								if stepFound {
+									// Proportional completion of the current step
+									stepContribution := (tracker.CurrentProgress / 100.0) * currentStepWeight
+									calculatedJobPercentage := accumulatedWeight + stepContribution
+
+									// Cap at 100 just in case
+									if calculatedJobPercentage > 100 {
+										calculatedJobPercentage = 100
+									}
+									tracker.JobPercentage = calculatedJobPercentage
+								} else {
+									// If workflow exists but explicit step not found, fallback to incoming JobPercentage
+									tracker.JobPercentage = p.CurrentMessage.JobPercentage
+								}
+							} else {
+								// No workflow registered, fallback to incoming JobPercentage
+								tracker.JobPercentage = p.CurrentMessage.JobPercentage
+							}
+						} else {
+							tracker.JobPercentage = p.CurrentMessage.JobPercentage
+						}
+
+						if tracker.JobId != "" {
+							// Trigger UI socket on step threshold
+							shouldPushStep := int(tracker.CurrentProgress) >= int(tracker.LastStepPercentageSent+uiProgressPushThreshold) || tracker.CurrentProgress >= 100
+							if shouldPushStep {
+								tracker.LastStepPercentageSent = tracker.CurrentProgress
+								if p.OnUpdateJobActionProgress != nil {
+									eta := calculateETA(tracker.StartTime, tracker.CurrentSize, tracker.TotalSize)
+									p.OnUpdateJobActionProgress(tracker.JobId, tracker.CurrentAction, tracker.CurrentSize, int(tracker.CurrentProgress), tracker.TotalSize, eta, "bytes")
+								}
+							}
+							// Trigger UI socket on job threshold
+							shouldPushJob := int(tracker.JobPercentage) >= int(tracker.LastJobPercentageSent+uiProgressPushThreshold) || tracker.JobPercentage >= 100 || tracker.LastJobPercentageSent == -1.0
+							if shouldPushJob {
+								tracker.LastJobPercentageSent = tracker.JobPercentage
+								if tracker.JobPercentage > 0 && p.OnUpdateJobProgress != nil {
+									p.OnUpdateJobProgress(tracker.JobId, tracker.CurrentAction, int(tracker.JobPercentage), "running")
+								}
+							}
+						}
+
 						shouldLog = p.shouldLogProgress(tracker, p.CurrentMessage.CurrentProgress)
 					}
 
