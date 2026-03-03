@@ -11,7 +11,6 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
-	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -1256,8 +1255,6 @@ func CreateSnapshot() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
-		// adding {}
-		response.SnapshotId = helpers.EnsureCurlyBraces(response.SnapshotId)
 		var snapshots *models.ListSnapshotResponse
 		for i := 0; i < 20; i++ {
 			time.Sleep(500 * time.Millisecond)
@@ -1321,7 +1318,6 @@ func DeleteSnapshot() restapi.ControllerHandler {
 			return
 		}
 
-		SnapshotId = helpers.EnsureCurlyBraces(SnapshotId)
 		for i := 0; i < 20; i++ {
 			time.Sleep(500 * time.Millisecond)
 			snapshots, err := svc.GetSnapshotsFromDB(ctx, VMId)
@@ -1484,7 +1480,6 @@ func RevertSnapshot() restapi.ControllerHandler {
 			return
 		}
 		var snapshot *models.ListSnapshotResponse
-		SnapshotId = helpers.EnsureCurlyBraces(SnapshotId)
 		for i := 0; i < 20; i++ {
 			time.Sleep(500 * time.Millisecond)
 			snapshot, err = svc.GetSnapshotsFromDB(ctx, VMId)

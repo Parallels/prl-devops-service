@@ -1589,7 +1589,7 @@ func (s *ParallelsService) listSnapshots(ctx basecontext.ApiContext, vmId string
 	// Convert the map to a slice and set the ID field
 	var snapshotList []models.Snapshot
 	for id, snapshot := range snapshotMap {
-		snapshot.ID = id
+		snapshot.ID = strings.Trim(id, "{}")
 		snapshotList = append(snapshotList, snapshot)
 	}
 
