@@ -1462,11 +1462,11 @@ func (s *ParallelsService) CreateSnapshot(ctx basecontext.ApiContext, vmID strin
 	args := []string{"snapshot", vmID}
 	if request.SnapshotName != "" {
 		args = append(args, "-n", request.SnapshotName)
-		ctx.LogInfof("[serviceprovider/parallelsdesktop/main][snapshots] Creating snapshot '%s' for VM %s", request.SnapshotName, vmID)
+		ctx.LogInfof("[parallelsdesktop][snapshots] Creating snapshot '%s' for VM %s", request.SnapshotName, vmID)
 	}
 	if request.SnapshotDescription != "" {
 		args = append(args, "-d", request.SnapshotDescription)
-		ctx.LogInfof("[serviceprovider/parallelsdesktop/main][snapshots] Creating snapshot with description '%s' for VM %s", request.SnapshotDescription, vmID)
+		ctx.LogInfof("[parallelsdesktop][snapshots] Creating snapshot with description '%s' for VM %s", request.SnapshotDescription, vmID)
 	}
 	cmd := helpers.Command{
 		Command: s.executable,
@@ -1505,7 +1505,7 @@ func (s *ParallelsService) DeleteSnapshot(ctx basecontext.ApiContext, vmId strin
 		return errors.Newf("VM with id %s was not found", vmId)
 	}
 
-	ctx.LogInfof("[serviceprovider/parallelsdesktop/main][snapshots] Deleting snapshot %s for VM %s", snapshotId, vmId)
+	ctx.LogInfof("[parallelsdesktop][snapshots] Deleting snapshot %s for VM %s", snapshotId, vmId)
 
 	args := []string{"snapshot-delete", vmId, "--id", snapshotId}
 	if request.DeleteChildren {
@@ -1538,7 +1538,7 @@ func (s *ParallelsService) RevertSnapshot(ctx basecontext.ApiContext, vmId strin
 		return errors.Newf("VM with id %s was not found", vmId)
 	}
 
-	ctx.LogInfof("[serviceprovider/parallelsdesktop/main][snapshots] Reverting snapshot %s for VM %s", snapshotId, vmId)
+	ctx.LogInfof("[parallelsdesktop][snapshots] Reverting snapshot %s for VM %s", snapshotId, vmId)
 
 	args := []string{"snapshot-switch", vmId, "--id", snapshotId}
 	if request.SkipResume {
@@ -1568,7 +1568,7 @@ func (s *ParallelsService) listSnapshots(ctx basecontext.ApiContext, vmId string
 		return nil, errors.Newf("VM with id %s was not found", vmId)
 	}
 
-	ctx.LogInfof("[serviceprovider/parallelsdesktop/main][snapshots] Listing snapshots for VM %s", vmId)
+	ctx.LogInfof("[parallelsdesktop][snapshots] Listing snapshots for VM %s", vmId)
 	cmd := helpers.Command{
 		Command: s.executable,
 		Args:    []string{"snapshot-list", vmId, "--json"},
