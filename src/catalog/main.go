@@ -465,5 +465,5 @@ func (s *CatalogManifestService) Unzip(ctx basecontext.ApiContext, machineFilePa
 }
 
 func (s *CatalogManifestService) sendPushStepInfo(r *models.PushCatalogManifestRequest, msg string) {
-	s.ns.NotifyInfof(msg)
+	s.ns.NotifyInfof("%s", msg)
 }
