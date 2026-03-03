@@ -320,6 +320,32 @@ func (p *NotificationService) Start() {
 									p.OnUpdateJobProgress(tracker.JobId, tracker.CurrentAction, int(tracker.JobPercentage), "running")
 								}
 							}
+						} else if p.CurrentMessage.JobId != "" {
+							// Instant-complete step (100%) with no prior tracker.
+							// These are single-shot workflow markers like Registering, Renaming, Starting.
+							// Build a transient tracker just long enough to run the workflow calculation
+							// and fire the DB/socket update, then discard it immediately.
+							transient := &ProgressTracker{
+								StartTime:       time.Now(),
+								CurrentProgress: 100,
+								JobId:           p.CurrentMessage.JobId,
+								CurrentAction:   p.CurrentMessage.CurrentAction,
+								LastUpdateTime:  time.Now(),
+							}
+							if workflow, hasWorkflow := p.activeWorkflows[p.CurrentMessage.JobId]; hasWorkflow {
+								var accumulated float64
+								for _, step := range workflow.Steps {
+									if step.Name == transient.CurrentAction {
+										transient.JobPercentage = accumulated + step.Weight
+										break
+									}
+									accumulated += step.Weight
+								}
+							}
+							if p.OnUpdateJobProgress != nil && transient.JobPercentage > 0 {
+								p.OnUpdateJobProgress(transient.JobId, transient.CurrentAction, int(transient.JobPercentage), "running")
+							}
+							shouldLog = true
 						}
 					} else {
 						// Update existing tracker and check if we should log

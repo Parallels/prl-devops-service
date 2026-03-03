@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -271,6 +272,27 @@ func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, eve
 			}))
 		}
 	}()
+
+	// When a macOS VM finishes starting up, kick off async IP resolution.
+	// waitForVMSSHReady will probe SSH readiness before fetching the IP,
+	// so this is safe to call immediately without any extra delay.
+	if newState == "running" {
+		s.RLock()
+		var isMacOS bool
+		var vmName string
+		for _, vm := range s.cachedLocalVms {
+			if vm.ID == event.VMID {
+				isMacOS = vm.OS == "macosx" || strings.Contains(strings.ToLower(vm.Name), "mac")
+				vmName = vm.Name
+				break
+			}
+		}
+		s.RUnlock()
+		if isMacOS {
+			ctx.LogInfof("[ParallelsDesktop] [IP] VM %s (%s) is now running, scheduling IP resolution", event.VMID, vmName)
+			go s.updateVMIPInCache(ctx, event.VMID)
+		}
+	}
 }
 
 func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {

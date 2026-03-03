@@ -111,7 +111,13 @@ func (jms *JobManagerService) UpdateJobActionProgress(jobId string, actionMessag
 		return nil, err
 	}
 
-	job.ActionMessage = actionMessage
+	if actionMessage != "" {
+		job.ActionMessage = actionMessage
+		// Keep the top-level Action field in sync so the UI sees the correct step
+		if job.Action != actionMessage {
+			job.Action = actionMessage
+		}
+	}
 	job.ActionValue = value
 	job.ActionPercentage = percentage
 	job.ActionTotal = total

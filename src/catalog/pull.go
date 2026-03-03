@@ -177,6 +177,14 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		return response
 	}
 
+	if r.JobId != "" && jobManager != nil {
+		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
+			SetJobId(r.JobId).
+			SetCurrentAction(constants.ActionCheckingLocalCatalog).
+			SetCurrentActionStep(fmt.Sprintf("VM %v does not exist, continuing", r.MachineName)).
+			SetFilename(r.MachineName))
+	}
+
 	var manifest *models.VirtualMachineCatalogManifest
 	provider := models.CatalogManifestProvider{}
 	cfg := config.Get()
@@ -690,7 +698,7 @@ func (s *CatalogManifestService) pullFromCache(r *models.PullCatalogManifestRequ
 							}
 							jobManager := jobs.Get(s.ctx)
 							if jobManager != nil {
-								jobManager.UpdateJobActionProgress(r.JobId, constants.ActionCopyingFromCache, dstSize, percentage, srcSize, eta, "bytes")
+								jobManager.UpdateJobActionProgress(r.JobId, constants.ActionCopyingFromCache, dstSize, percentage, srcSize, eta, "mb")
 							}
 						}
 					}
