@@ -1236,10 +1236,10 @@ func CreateSnapshot() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.CreateSnapShotRequest
-		ctx.LogInfof("Creating snapshot")
+		ctx.LogInfof("[controllers/machines][snapshots] Creating snapshot")
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			ctx.LogErrorf("Error decoding JSON: %v", err)
+			ctx.LogErrorf("[controllers/machines][snapshots] Error decoding JSON: %v", err)
 			return
 		}
 
@@ -1303,7 +1303,7 @@ func DeleteSnapshot() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.DeleteSnapshotRequest
-		ctx.LogInfof("Deleting snapshot")
+		ctx.LogInfof("[controllers/machines][snapshots] Deleting snapshot")
 
 		params := mux.Vars(r)
 		VMId := params["id"]
@@ -1364,7 +1364,7 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
-		ctx.LogInfof("Deleting All snapshots")
+		ctx.LogInfof("[controllers/machines][snapshots] Deleting All snapshots")
 
 		params := mux.Vars(r)
 		VMId := params["id"]
@@ -1426,7 +1426,7 @@ func ListSnapshot() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		ctx.LogInfof("Listing snapshots")
+		ctx.LogInfof("[controllers/machines][snapshots] Listing snapshots")
 
 		params := mux.Vars(r)
 		VMId := params["id"]
@@ -1465,7 +1465,7 @@ func RevertSnapshot() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RevertSnapshotRequest
-		ctx.LogInfof("Reverting snapshot")
+		ctx.LogInfof("[controllers/machines][snapshots] Reverting snapshot")
 
 		params := mux.Vars(r)
 		VMId := params["id"]
