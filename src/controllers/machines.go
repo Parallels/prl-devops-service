@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -12,6 +11,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -1256,29 +1256,35 @@ func CreateSnapshot() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
-		snapshots, err := svc.GetSnapshotsFromDB(ctx, VMId)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
-		}
-
-		found := false
-		for _, snapshot := range snapshots.Snapshots {
-			if snapshot.ID == response.ID {
-				found = true
-				w.WriteHeader(http.StatusAccepted)
-				defer r.Body.Close()
-				_ = json.NewEncoder(w).Encode(response)
+		// adding {}
+		response.SnapshotId = helpers.EnsureCurlyBraces(response.SnapshotId)
+		var snapshots *models.ListSnapshotResponse
+		for i := 0; i < 20; i++ {
+			time.Sleep(500 * time.Millisecond)
+			snapshots, err = svc.GetSnapshotsFromDB(ctx, VMId)
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			found := false
+			for _, snapshot := range snapshots.Snapshots {
+				if snapshot.ID == response.SnapshotId {
+					found = true
+					w.WriteHeader(http.StatusAccepted)
+					defer r.Body.Close()
+					_ = json.NewEncoder(w).Encode(response)
+					return
+				}
+			}
+			if !found {
+				ReturnApiError(ctx, w, models.ApiErrorResponse{
+					Message: "Snapshot not found",
+					Code:    http.StatusBadRequest,
+				})
 				return
 			}
 		}
-		if !found {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Snapshot not found",
-				Code:    http.StatusBadRequest,
-			})
-			return
-		}
+
 	}
 }
 
@@ -1315,29 +1321,33 @@ func DeleteSnapshot() restapi.ControllerHandler {
 			return
 		}
 
-		snapshots, err := svc.GetSnapshotsFromDB(ctx, VMId)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
+		SnapshotId = helpers.EnsureCurlyBraces(SnapshotId)
+		for i := 0; i < 20; i++ {
+			time.Sleep(500 * time.Millisecond)
+			snapshots, err := svc.GetSnapshotsFromDB(ctx, VMId)
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			found := false
+			for _, snapshot := range snapshots.Snapshots {
+				if snapshot.ID != SnapshotId {
+					continue
+				}
+				if snapshot.ID == SnapshotId {
+					found = true
+					w.WriteHeader(http.StatusBadRequest)
+					defer r.Body.Close()
+					break
+				}
+			}
+			if !found {
+				w.WriteHeader(http.StatusAccepted)
+				defer r.Body.Close()
+				return
+			}
 		}
 
-		found := false
-		for _, snapshot := range snapshots.Snapshots {
-			if snapshot.ID != SnapshotId {
-				continue
-			}
-			if snapshot.ID == SnapshotId {
-				found = true
-				w.WriteHeader(http.StatusBadRequest)
-				defer r.Body.Close()
-				break
-			}
-		}
-		if !found {
-			w.WriteHeader(http.StatusAccepted)
-			defer r.Body.Close()
-			return
-		}
 	}
 }
 
@@ -1379,21 +1389,28 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 				return
 			}
 		}
-		snapshot, err := svc.GetSnapshotsFromDB(ctx, VMId)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
+
+		for i := 0; i < 20; i++ {
+			time.Sleep(500 * time.Millisecond)
+			snapshot, err := svc.GetSnapshotsFromDB(ctx, VMId)
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			if len(snapshot.Snapshots) == 0 {
+				w.WriteHeader(http.StatusAccepted)
+				defer r.Body.Close()
+				return
+			} else if len(snapshot.Snapshots) != 0 {
+				ReturnApiError(ctx, w, models.ApiErrorResponse{
+					Message: "Snapshots not deleted",
+					Code:    http.StatusBadRequest,
+				})
+
+				return
+			}
 		}
-		if len(snapshot.Snapshots) == 0 {
-			w.WriteHeader(http.StatusAccepted)
-			defer r.Body.Close()
-		} else if len(snapshot.Snapshots) != 0 {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Snapshots not deleted",
-				Code:    http.StatusBadRequest,
-			})
-			return
-		}
+
 	}
 }
 
@@ -1466,28 +1483,30 @@ func RevertSnapshot() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
-		snapshot, err := svc.GetSnapshotsFromDB(ctx, VMId)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
-		}
-		for _, snapshot := range snapshot.Snapshots {
-			if snapshot.ID == SnapshotId {
-				if snapshot.State == strings.ToLower("true") {
+		var snapshot *models.ListSnapshotResponse
+		SnapshotId = helpers.EnsureCurlyBraces(SnapshotId)
+		for i := 0; i < 20; i++ {
+			time.Sleep(500 * time.Millisecond)
+			snapshot, err = svc.GetSnapshotsFromDB(ctx, VMId)
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			for _, snapshot := range snapshot.Snapshots {
+				if snapshot.ID == SnapshotId && snapshot.Current {
 					w.WriteHeader(http.StatusAccepted)
 					defer r.Body.Close()
 					return
-				} else {
-					ReturnApiError(ctx, w, models.ApiErrorResponse{
-						Message: "Snapshot not reverted",
-						Code:    http.StatusBadRequest,
-					})
-					return
 				}
 			}
-		}
 
+		}
+		ReturnApiError(ctx, w, models.ApiErrorResponse{
+			Message: "Snapshot not reverted",
+			Code:    http.StatusBadRequest,
+		})
 	}
+
 }
 
 func createPackerTemplate(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {

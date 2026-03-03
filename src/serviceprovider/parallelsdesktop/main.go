@@ -809,6 +809,25 @@ func (s *ParallelsService) processVmToolsStateChanged(ctx basecontext.ApiContext
 	})
 }
 
+func (s *ParallelsService) InitSnapshotTreeInDB(ctx basecontext.ApiContext) {
+	s.RLock()
+	cachedVMs := s.cachedLocalVms
+	s.RUnlock()
+
+	for _, vm := range cachedVMs {
+		snapshots, err := s.listSnapshots(ctx, vm.ID)
+		if err != nil {
+			ctx.LogErrorf("Failed to get snapshots for VM %s: %v", vm.ID, err)
+			continue
+		}
+		if s.databaseService == nil {
+			ctx.LogErrorf("Database service not available")
+			return
+		}
+		s.databaseService.SetListSnapshotsByVMId(vm.ID, snapshots)
+	}
+}
+
 func (s *ParallelsService) processVmSnapshotsTreeChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
 	snapshots, err := s.listSnapshots(ctx, event.VMID)
 	if err != nil {
@@ -1461,7 +1480,7 @@ func (s *ParallelsService) CreateSnapshot(ctx basecontext.ApiContext, vmID strin
 	output = strings.TrimSpace(output)
 
 	// Extract snapshot ID from output string in format: "The snapshot with id {snapshot-id} has been successfully created."
-	snapshotId := extractSnapshotId(output)
+	snapshotId := helpers.ExtractSnapshotId(output)
 	if snapshotId == "" {
 		return nil, errors.New("failed to extract snapshot ID from command output")
 	}
@@ -2854,16 +2873,4 @@ func escapeForBashC(command string) string {
 	result := escaped.String()
 
 	return result
-}
-
-// extractSnapshotId extracts the snapshot ID from output string in format:
-// "The snapshot with id {snapshot-id} has been successfully created."
-func extractSnapshotId(output string) string {
-	// Use regex to find content within curly braces
-	re := regexp.MustCompile(`\{([^}]+)\}`)
-	matches := re.FindStringSubmatch(output)
-	if len(matches) > 1 {
-		return matches[1]
-	}
-	return ""
 }

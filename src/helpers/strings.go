@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -188,4 +189,37 @@ func GetCompressRatioEnvValue(ratioValue int) (string, error) {
 	default:
 		return "", errors.New("invalid compression ratio")
 	}
+}
+
+// EnsureCurlyBraces checks if a string is enclosed in curly braces {}.
+// If it is already enclosed, returns the string as is.
+// If not enclosed, wraps the string in curly braces and returns it.
+// Example: "1234" -> "{1234}", "{1234}" -> "{1234}"
+func EnsureCurlyBraces(input string) string {
+	input = strings.TrimSpace(input)
+
+	// If string is empty, return empty braces
+	if input == "" {
+		return "{}"
+	}
+
+	// Check if already enclosed in curly braces
+	if strings.HasPrefix(input, "{") && strings.HasSuffix(input, "}") {
+		return input
+	}
+
+	// Not enclosed, so wrap it
+	return "{" + input + "}"
+}
+
+// ExtractSnapshotId extracts the snapshot ID from output string in format:
+// "The snapshot with id {snapshot-id} has been successfully created."
+func ExtractSnapshotId(output string) string {
+	// Use regex to find content within curly braces
+	re := regexp.MustCompile(`\{([^}]+)\}`)
+	matches := re.FindStringSubmatch(output)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
 }
