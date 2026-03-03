@@ -40,6 +40,7 @@ type ReverseProxyConfigCors struct {
 }
 
 type ReverseProxyConfigHost struct {
+	Name       string                               `json:"name,omitempty" yaml:"name,omitempty"`
 	Host       string                               `json:"host,omitempty" yaml:"host,omitempty"`
 	Port       string                               `json:"port,omitempty" yaml:"port,omitempty"`
 	HttpRoutes []*ReverseProxyConfigServerHttpRoute `json:"http_routes,omitempty" yaml:"http_routes,omitempty"`

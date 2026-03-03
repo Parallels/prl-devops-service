@@ -76,7 +76,14 @@ import (
 //		return nil
 //	}
 func DecompressFile(ctx basecontext.ApiContext, filePath string, destination string) error {
+	return DecompressFileWithStepChannel(ctx, filePath, destination, nil)
+}
+
+func DecompressFileWithStepChannel(ctx basecontext.ApiContext, filePath string, destination string, stepChannel chan string) error {
 	ctx.LogInfof("Starting decompression of machine from %s to %s", filePath, destination)
+	if stepChannel != nil {
+		stepChannel <- fmt.Sprintf("Starting decompression of %s", filepath.Base(filePath))
+	}
 	staringTime := time.Now()
 	cleanFilePath := filepath.Clean(filePath)
 	compressedFile, err := os.Open(cleanFilePath)
@@ -124,19 +131,29 @@ func DecompressFile(ctx basecontext.ApiContext, filePath string, destination str
 	}
 
 	tarReader := tar.NewReader(fileReader)
-	if err := processTarFile(ctx, tarReader, destination); err != nil {
+	if err := processTarFile(ctx, tarReader, destination, stepChannel); err != nil {
 		ctx.LogErrorf("Error processing file %s: %v", filePath, err)
 		return err
 	}
 
 	endingTime := time.Now()
 	ctx.LogInfof("Finished decompressing machine from %s to %s, in %v", filePath, destination, endingTime.Sub(staringTime))
+	if stepChannel != nil {
+		stepChannel <- fmt.Sprintf("Finished decompression of %s in %v", filepath.Base(filePath), endingTime.Sub(staringTime).Round(time.Second))
+	}
 	return nil
 }
 
 func DecompressFromReader(ctx basecontext.ApiContext, reader io.Reader, destination string) error {
+	return DecompressFromReaderWithStepChannel(ctx, reader, destination, nil)
+}
+
+func DecompressFromReaderWithStepChannel(ctx basecontext.ApiContext, reader io.Reader, destination string, stepChannel chan string) error {
 	startingTime := time.Now()
 	ctx.LogInfof("Starting decompression to %s", destination)
+	if stepChannel != nil {
+		stepChannel <- fmt.Sprintf("Starting decompression to %s", destination)
+	}
 
 	// Read initial 512 bytes to determine file type
 	headerBuf := make([]byte, 512)
@@ -181,16 +198,19 @@ func DecompressFromReader(ctx basecontext.ApiContext, reader io.Reader, destinat
 	}
 
 	tarReader := tar.NewReader(fileReader)
-	if err := processTarFile(ctx, tarReader, destination); err != nil {
+	if err := processTarFile(ctx, tarReader, destination, stepChannel); err != nil {
 		return err
 	}
 
 	endingTime := time.Now()
 	ctx.LogInfof("Finished decompressing from stream to %s in %v", destination, endingTime.Sub(startingTime))
+	if stepChannel != nil {
+		stepChannel <- fmt.Sprintf("Finished decompression in %v", endingTime.Sub(startingTime).Round(time.Second))
+	}
 	return nil
 }
 
-func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destination string) error {
+func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destination string, stepChannel chan string) error {
 	ns := notifications.Get()
 	ctx.LogInfof("Processing tar archive to %s", destination)
 	for {
@@ -214,6 +234,9 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 		if ns != nil {
 			msg := fmt.Sprintf("Decompressing file %s", header.Name)
 			ns.NotifyProgress(correlationId, msg, 0)
+		}
+		if stepChannel != nil {
+			stepChannel <- fmt.Sprintf("Decompressing %s", header.Name)
 		}
 
 		// Creating the basedir if it does not exist
@@ -240,7 +263,7 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 			}
 			defer file.Close()
 
-			if err := copyTarChunks(file, tarReader, header.Size); err != nil {
+			if err := copyTarChunks(file, tarReader, header.Size, stepChannel); err != nil {
 				return err
 			}
 		case tar.TypeGNUSparse:
@@ -251,7 +274,7 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 			}
 			defer file.Close()
 
-			if err := copyTarChunks(file, tarReader, header.Size); err != nil {
+			if err := copyTarChunks(file, tarReader, header.Size, stepChannel); err != nil {
 				return err
 			}
 		case tar.TypeSymlink:
@@ -282,7 +305,7 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 	return nil
 }
 
-func copyTarChunks(file *os.File, reader *tar.Reader, fileSize int64) error {
+func copyTarChunks(file *os.File, reader *tar.Reader, fileSize int64, stepChannel chan string) error {
 	extractedSize := int64(0)
 	startTime := time.Now()
 	// lastPrintTime := time.Now()
@@ -306,6 +329,9 @@ func copyTarChunks(file *os.File, reader *tar.Reader, fileSize int64) error {
 			if ns != nil {
 				ns.NotifyProgress(file.Name(), "Decompressing file "+file.Name(), 100)
 			}
+			if stepChannel != nil {
+				stepChannel <- fmt.Sprintf("Decompressing %s 100.0%%", filepath.Base(file.Name()))
+			}
 			break
 		}
 		// If any other read error occurred, propagate it.
@@ -323,6 +349,9 @@ func copyTarChunks(file *os.File, reader *tar.Reader, fileSize int64) error {
 				SetTotalSize(fileSize).
 				SetStartingTime(startTime)
 			ns.Notify(msg)
+			if stepChannel != nil {
+				stepChannel <- fmt.Sprintf("Decompressing %s %.1f%%", filepath.Base(file.Name()), percentage)
+			}
 		}
 	}
 

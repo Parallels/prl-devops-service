@@ -13,6 +13,9 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 	registerApiKeysHandlers(ctx, version)
 	registerClaimsHandlers(ctx, version)
 	registerRolesHandlers(ctx, version)
+	registerCatalogManagerHandlers(ctx, version)
+	registerJobsHandlers(ctx, version)
+
 	if config.Get().IsHost() {
 		registerCacheHandlers(ctx, version)
 	}
@@ -29,7 +32,9 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 	}
 	registerSshHandlers(ctx, version)
 	registerPerformanceHandlers(ctx, version)
-	registerReverseProxyHandlers(ctx, version)
+	if config.Get().IsReverseProxyEnabled() {
+		registerReverseProxyHandlers(ctx, version)
+	}
 	registerEventHandlers(ctx, version)
 
 	return nil

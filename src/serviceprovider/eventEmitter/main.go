@@ -397,7 +397,7 @@ func (h *Hub) broadcastMessage(message *models.EventMessage) error {
 		if client, exists := h.clients[message.ClientID]; exists {
 			select {
 			case client.Send <- message:
-				h.ctx.LogDebugf("[Hub] Sent message %s to client %s", message.ID, client.ID)
+				h.ctx.LogTracef("[Hub] Sent message %s to client %s", message.ID, client.ID)
 			default:
 				h.ctx.LogWarnf("[Hub] Client %s send channel is full, dropping message %s",
 					client.ID, message.ID)
@@ -416,7 +416,7 @@ func (h *Hub) broadcastMessage(message *models.EventMessage) error {
 			if client, exists := h.clients[clientID]; exists {
 				select {
 				case client.Send <- message:
-					h.ctx.LogDebugf("[Hub] Sent message %s to client %s (type: %s)",
+					h.ctx.LogTracef("[Hub] Sent message %s to client %s (type: %s)",
 						message.ID, client.ID, message.Type)
 				default:
 					h.ctx.LogWarnf("[Hub] Client %s send channel is full, dropping message %s",

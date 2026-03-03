@@ -11,6 +11,7 @@ type CreateVirtualMachineRequest struct {
 	Name            string                              `json:"name"`
 	Owner           string                              `json:"owner,omitempty"`
 	Architecture    string                              `json:"architecture,omitempty"`
+	SelectionTags   []string                            `json:"selection_tags,omitempty"`
 	PackerTemplate  *CreatePackerVirtualMachineRequest  `json:"packer_template,omitempty"`
 	VagrantBox      *CreateVagrantMachineRequest        `json:"vagrant_box,omitempty"`
 	CatalogManifest *CreateCatalogVirtualMachineRequest `json:"catalog_manifest,omitempty"`

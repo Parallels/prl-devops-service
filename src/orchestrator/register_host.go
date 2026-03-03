@@ -12,10 +12,11 @@ func (s *OrchestratorService) RegisterHost(ctx basecontext.ApiContext, host *mod
 		return nil, err
 	}
 
-	_, err = s.GetHostHardwareInfo(host)
+	hw, err := s.GetHostHardwareInfo(host)
 	if err != nil {
 		return nil, err
 	}
+	host.CacheConfig = hw.CacheConfig
 
 	host.Enabled = true
 	dbHost, err := dbService.CreateOrchestratorHost(ctx, *host)

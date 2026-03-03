@@ -22,6 +22,14 @@ func TestNewController(t *testing.T) {
 	if len(controller.RequiredClaims) != 0 {
 		t.Errorf("Expected RequiredClaims to be empty, but got %v", controller.RequiredClaims)
 	}
+
+	if controller.RoleComparisonOperation != ComparisonOperationAnd {
+		t.Errorf("Expected RoleComparisonOperation to be %s, but got %s", ComparisonOperationAnd, controller.RoleComparisonOperation)
+	}
+
+	if controller.ClaimComparisonOperation != ComparisonOperationAnd {
+		t.Errorf("Expected ClaimComparisonOperation to be %s, but got %s", ComparisonOperationAnd, controller.ClaimComparisonOperation)
+	}
 }
 
 func TestController_WithPath(t *testing.T) {
@@ -111,5 +119,37 @@ func TestController_Path(t *testing.T) {
 	// Check if the path was generated correctly
 	if path != expectedPath {
 		t.Errorf("Expected path %s, but got %s", expectedPath, path)
+	}
+}
+
+func TestController_ComparisonOperations(t *testing.T) {
+	controller := NewController()
+
+	controller.WithOrRoles()
+	if controller.RoleComparisonOperation != ComparisonOperationOr {
+		t.Errorf("Expected RoleComparisonOperation to be %s, but got %s", ComparisonOperationOr, controller.RoleComparisonOperation)
+	}
+
+	controller.WithAndRoles()
+	if controller.RoleComparisonOperation != ComparisonOperationAnd {
+		t.Errorf("Expected RoleComparisonOperation to be %s, but got %s", ComparisonOperationAnd, controller.RoleComparisonOperation)
+	}
+
+	controller.WithOrClaims()
+	if controller.ClaimComparisonOperation != ComparisonOperationOr {
+		t.Errorf("Expected ClaimComparisonOperation to be %s, but got %s", ComparisonOperationOr, controller.ClaimComparisonOperation)
+	}
+
+	controller.WithAndClaims()
+	if controller.ClaimComparisonOperation != ComparisonOperationAnd {
+		t.Errorf("Expected ClaimComparisonOperation to be %s, but got %s", ComparisonOperationAnd, controller.ClaimComparisonOperation)
+	}
+
+	controller.WithComparisonOperations(ComparisonOperationOr, ComparisonOperationOr)
+	if controller.RoleComparisonOperation != ComparisonOperationOr {
+		t.Errorf("Expected RoleComparisonOperation to be %s, but got %s", ComparisonOperationOr, controller.RoleComparisonOperation)
+	}
+	if controller.ClaimComparisonOperation != ComparisonOperationOr {
+		t.Errorf("Expected ClaimComparisonOperation to be %s, but got %s", ComparisonOperationOr, controller.ClaimComparisonOperation)
 	}
 }

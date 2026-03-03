@@ -15,21 +15,21 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/compressor"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	global_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/cjlapao/common-go/helper"
 )
 
 const (
-	DEFAULT_PACKAGE_SIZE              = 60 * 1024  // 60 MB in megabytes
-	MAX_CACHE_SIZE                    = 400 * 1024 // 400 GB in megabytes
-	KEEP_FREE_DISK_SPACE_ENV_VAR      = "CATALOG_CACHE_KEEP_FREE_DISK_SPACE"
-	MAX_CACHE_SIZE_ENV_VAR            = "CATALOG_CACHE_MAX_SIZE"
-	ALLOW_CACHE_ABOVE_FREE_DISK_SPACE = "CATALOG_CACHE_ALLOW_CACHE_ABOVE_FREE_DISK_SPACE"
-	metadataExtension                 = ".meta"
-	pvmCacheExtension                 = ".pvm"
-	macvmCacheExtension               = ".macvm"
+	DEFAULT_PACKAGE_SIZE = 60 * 1024  // 60 MB in megabytes
+	MAX_CACHE_SIZE       = 400 * 1024 // 400 GB in megabytes
+	metadataExtension    = ".meta"
+	pvmCacheExtension    = ".pvm"
+	macvmCacheExtension  = ".macvm"
 )
 
 type CacheRequest struct {
@@ -82,11 +82,11 @@ func NewCacheService(ctx basecontext.ApiContext) (*CacheService, error) {
 	if svc.manifest.Size == 0 {
 		svc.manifest.Size = DEFAULT_PACKAGE_SIZE
 	}
-	keepFreeDiskSpace := svc.cfg.GetIntKey(KEEP_FREE_DISK_SPACE_ENV_VAR)
+	keepFreeDiskSpace := svc.cfg.GetIntKey(constants.CATALOG_CACHE_KEEP_FREE_DISK_SPACE_ENV_VAR)
 	if keepFreeDiskSpace > 0 {
 		svc.keepFreeDiskSpace = int64(keepFreeDiskSpace)
 	}
-	maxCacheSize := svc.cfg.GetIntKey(MAX_CACHE_SIZE_ENV_VAR)
+	maxCacheSize := svc.cfg.GetIntKey(constants.CATALOG_CACHE_MAX_SIZE_ENV_VAR)
 	if maxCacheSize > 0 {
 		svc.maxCacheSize = int64(maxCacheSize)
 	}
@@ -666,6 +666,16 @@ func (cs *CacheService) RemoveCacheItem(catalogId string, version string) error 
 						return err
 					}
 				}
+
+				// Emit cache item removed event
+				if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+					msg := global_models.NewEventMessage(constants.EventTypeCatalogCache, "CACHE_ITEM_REMOVED", global_models.CacheItemRemovedEvent{
+						CatalogId:    cache.CatalogId,
+						Version:      cache.Version,
+						Architecture: cache.Architecture,
+					})
+					go func() { _ = emitter.Broadcast(msg) }()
+				}
 			}
 		}
 	}
@@ -742,6 +752,10 @@ func (cs *CacheService) Get() (*models.CacheResponse, error) {
 
 	if r.MetadataFilePath != "" && r.PackFilePath != "" {
 		r.IsCached = true
+		// Update the cache usage count since we successfully got the item
+		if _, err := cs.updateCacheManifestUsedCount(r.MetadataFilePath); err != nil {
+			cs.baseCtx.LogErrorf("Error updating cache usage count: %v", err)
+		}
 	}
 
 	cs.cacheData = &r
@@ -795,7 +809,7 @@ func (cs *CacheService) Clean() error {
 
 	// If we would clear all the cache items, and we still need space, we
 	if cleanupRequirement.SpaceNeeded > 0 {
-		allowedAboveFreeDiskSpace := cs.cfg.GetBoolKey(ALLOW_CACHE_ABOVE_FREE_DISK_SPACE)
+		allowedAboveFreeDiskSpace := cs.cfg.GetBoolKey(constants.CATALOG_CACHE_ALLOW_CACHE_ABOVE_FREE_DISK_SPACE_ENV_VAR)
 		if !allowedAboveFreeDiskSpace {
 			cs.notify("Not enough space for the cached item even after cleaning the cache due to required free disk space rule, set the override flag to allow cache above free disk space")
 			return errors.NewWithCodef(500, "Not enough space for the cached item even after cleaning the cache due to required free disk space rule, set the override flag to allow cache above free disk space")
@@ -897,6 +911,19 @@ func (cs *CacheService) Cache() error {
 		cs.CacheType = models.CatalogCacheTypeFolder
 	default:
 		cs.CacheType = models.CatalogCacheTypeNone
+	}
+
+	// Emit cache item added event
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := global_models.NewEventMessage(constants.EventTypeCatalogCache, "CACHE_ITEM_ADDED", global_models.CacheItemAddedEvent{
+			CatalogId:    cs.CacheManifest.CatalogId,
+			Version:      cs.CacheManifest.Version,
+			Architecture: cs.CacheManifest.Architecture,
+			CacheSize:    cs.CacheManifest.CacheSize,
+			CacheType:    cs.CacheManifest.CacheType,
+			CachedDate:   cs.CacheManifest.CachedDate,
+		})
+		go func() { _ = emitter.Broadcast(msg) }()
 	}
 	return nil
 }

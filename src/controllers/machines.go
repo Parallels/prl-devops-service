@@ -4,13 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog"
+	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -49,6 +52,14 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithPath("/machines").
 		WithRequiredClaim(constants.CREATE_VM_CLAIM).
 		WithHandler(CreateVirtualMachineHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/machines/async").
+		WithRequiredClaim(constants.CREATE_VM_CLAIM).
+		WithHandler(AsyncCreateVirtualMachineHandler()).
 		Register()
 
 	restapi.NewController().
@@ -774,26 +785,11 @@ func CloneVirtualMachineHandler() restapi.ControllerHandler {
 
 		params := mux.Vars(r)
 		id := params["id"]
-		configure := models.VirtualMachineConfigRequest{
-			Operations: []*models.VirtualMachineConfigRequestOperation{
-				{
-					Group:     "machine",
-					Operation: "clone",
-					Options: []*models.VirtualMachineConfigRequestOperationOption{
-						{
-							Flag:  "name",
-							Value: request.CloneName,
-						},
-					},
-				},
-			},
-		}
 
-		if err := svc.ConfigureVm(ctx, id, &configure); err != nil {
+		if err := svc.CloneVm(ctx, id, strings.TrimSpace(request.CloneName), strings.TrimSpace(request.DestinationPath)); err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
-
 		result := models.VirtualMachineCloneCommandResponse{}
 
 		vmId, err := svc.GetVmSync(ctx, request.CloneName)
@@ -1061,8 +1057,14 @@ func RegisterVirtualMachineHandler() restapi.ControllerHandler {
 				ID:      vms[0].ID,
 				NewName: request.MachineName,
 			}); err != nil {
-				ReturnApiError(ctx, w, models.NewFromError(err))
-				return
+				message := err.Error()
+				if message != "error: VM is not stopped" {
+					ReturnApiError(ctx, w, models.ApiErrorResponse{
+						Message: "Failed to rename VM: " + err.Error(),
+						Code:    http.StatusBadRequest,
+					})
+					return
+				}
 			}
 
 			vms[0].Name = request.MachineName
@@ -1149,18 +1151,12 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		// Attempt to get the architecture from the system
-		if request.Architecture == "" {
-			svcCtl := system.Get()
-			arch, err := svcCtl.GetArchitecture(ctx)
-			if err != nil {
-				ReturnApiError(ctx, w, models.ApiErrorResponse{
-					Message: "Failed to get architecture and none was provided",
-					Code:    400,
-				})
-				return
-			}
-			request.Architecture = arch
+		if err := populateMachineRequestArchitecture(ctx, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
 		}
 
 		if err := request.Validate(); err != nil {
@@ -1183,7 +1179,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("Machine created using packer template: %v", response.ID)
-
+			return
 		} else if request.VagrantBox != nil {
 			response, err := createVagrantBox(ctx, request)
 			if err != nil {
@@ -1197,7 +1193,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			ctx.LogInfof("Machine created using vagrant box: %v", response.ID)
 			return
 		} else if request.CatalogManifest != nil {
-			response, err := createCatalogMachine(ctx, request)
+			response, err := createCatalogMachine(ctx, request, "")
 			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
@@ -1215,6 +1211,102 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+	}
+}
+
+// @Summary		Creates a virtual machine asynchronously
+// @Description	This endpoint creates a virtual machine in the background and returns a Job ID to track progress
+// @Tags			Machines
+// @Produce		json
+// @Param			createRequest	body		models.CreateVirtualMachineRequest	true	"New Machine Request"
+// @Success		202				{object}	models.JobResponse
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/machines/async [post]
+func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		userContext := ctx.GetUser()
+		if userContext == nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		var request models.CreateVirtualMachineRequest
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if request.CatalogManifest == nil || request.PackerTemplate != nil || request.VagrantBox != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: async machine creation currently supports only catalog_manifest",
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if err := populateMachineRequestArchitecture(ctx, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		catalogConnection, err := resolveCatalogMachineConnection(ctx, request.CatalogManifest)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+		request.CatalogManifest.Connection = catalogConnection
+		request.CatalogManifest.CatalogManagerId = ""
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			return
+		}
+
+		job, err := jobManager.CreateNewJob(userContext.ID, "machines", "create", "Initializing catalog machine creation")
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		go func(jobID string, req models.CreateVirtualMachineRequest) {
+			asyncCtx := basecontext.NewRootBaseContext()
+			_, _ = jobManager.UpdateJobProgress(jobID, "Starting catalog machine creation", 1, constants.JobStateRunning)
+			result, err := createCatalogMachine(asyncCtx, req, jobID)
+			if err != nil {
+				_ = jobManager.MarkJobError(jobID, err)
+				return
+			}
+
+			resultMessage := fmt.Sprintf("Virtual machine %s created", result.ID)
+			_ = jobManager.MarkJobComplete(jobID, resultMessage)
+		}(job.ID, request)
+
+		response := mappers.MapJobToApiJob(*job)
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Async machine create started, job ID: %v", response.ID)
 	}
 }
 
@@ -1670,13 +1762,20 @@ func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMa
 	return &response, nil
 }
 
-func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
+func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest, jobID string) (*models.CreateVirtualMachineResponse, error) {
 	provider := serviceprovider.Get()
 
 	parallelsDesktopService := provider.ParallelsDesktopService
 
+	catalogConnection, err := resolveCatalogMachineConnection(ctx, request.CatalogManifest)
+	if err != nil {
+		return nil, err
+	}
+
 	var response models.CreateVirtualMachineResponse
 	pullRequest := mappers.MapPullCatalogManifestRequestFromCreateCatalogVirtualMachineRequest(*request.CatalogManifest)
+	pullRequest.Connection = catalogConnection
+	pullRequest.JobId = jobID
 	if pullRequest.Architecture == "" {
 		pullRequest.Architecture = request.Architecture
 	}
@@ -1686,14 +1785,19 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 	if err := pullRequest.Validate(); err != nil {
 		return nil, err
 	}
-	err := serviceprovider.TestCacheFolderAccess(ctx)
+	err = serviceprovider.TestCacheFolderAccess(ctx)
 	if err != nil {
 		ctx.LogErrorf("Cache folder access test failed: %v", err)
 		return nil, err
 	}
 
 	manifest := catalog.NewManifestService(ctx)
-	resultManifest := manifest.Pull(&pullRequest)
+	var resultManifest *catalog_models.PullCatalogManifestResponse
+	if jobID != "" {
+		resultManifest = manifest.PullWithExistingJob(jobID, &pullRequest)
+	} else {
+		resultManifest = manifest.Pull(&pullRequest)
+	}
 	if resultManifest.HasErrors() {
 		errorMessage := "Error pulling manifest: \n"
 		for _, err := range resultManifest.Errors {
@@ -1765,4 +1869,50 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 	}
 
 	return &response, nil
+}
+
+func resolveCatalogMachineConnection(ctx basecontext.ApiContext, request *models.CreateCatalogVirtualMachineRequest) (string, error) {
+	if request == nil {
+		return "", errors.NewWithCode("missing catalog manifest request", http.StatusBadRequest)
+	}
+
+	connection := strings.TrimSpace(request.Connection)
+	catalogManagerId := strings.TrimSpace(request.CatalogManagerId)
+	if connection != "" && catalogManagerId != "" {
+		return "", errors.NewWithCode("connection and catalog_manager_id cannot both be provided", http.StatusBadRequest)
+	}
+
+	if catalogManagerId != "" {
+		mgr, errResp := getAuthorizedCatalogManagerForUse(ctx, catalogManagerId)
+		if errResp != nil {
+			return "", errors.NewWithCode(errResp.Message, errResp.Code)
+		}
+
+		managerConnection, err := buildCatalogManagerConnection(*mgr)
+		if err != nil {
+			return "", errors.NewWithCode(err.Error(), http.StatusBadRequest)
+		}
+		return managerConnection, nil
+	}
+
+	if connection == "" {
+		return "", errors.NewWithCode("missing connection or catalog_manager_id", http.StatusBadRequest)
+	}
+
+	return connection, nil
+}
+
+func populateMachineRequestArchitecture(ctx basecontext.ApiContext, request *models.CreateVirtualMachineRequest) error {
+	if request.Architecture != "" {
+		return nil
+	}
+
+	svcCtl := system.Get()
+	arch, err := svcCtl.GetArchitecture(ctx)
+	if err != nil {
+		return errors.NewWithCode("Failed to get architecture and none was provided", http.StatusBadRequest)
+	}
+
+	request.Architecture = arch
+	return nil
 }

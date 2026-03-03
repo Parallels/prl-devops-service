@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/logs"
 	"github.com/Parallels/prl-devops-service/notifications"
 	"github.com/Parallels/prl-devops-service/orchestrator"
@@ -234,6 +235,14 @@ func Start(ctx basecontext.ApiContext) {
 			}
 		}()
 	}
+
+	ctx.LogInfof("Starting Job Manager Service")
+	jobManagerService := jobs.New(ctx)
+	go func() {
+		if err := jobManagerService.Start(); err != nil {
+			ctx.LogErrorf("Error starting job manager service: %v", err)
+		}
+	}()
 }
 
 func Restart() {
