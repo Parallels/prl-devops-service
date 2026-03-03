@@ -20,7 +20,7 @@ type ApiKeyHeader struct {
 	Value string `json:"value"`
 }
 
-func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapter {
+func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string, roleComparisonOperation ComparisonOperation, claimComparisonOperation ComparisonOperation) Adapter {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			baseCtx := basecontext.NewBaseContextFromRequest(r)

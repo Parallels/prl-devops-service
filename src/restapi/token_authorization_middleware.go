@@ -18,12 +18,12 @@ import (
 	"github.com/cjlapao/common-go/helper/http_helper"
 )
 
-// TokenAuthorizationMiddlewareAdapter validates a Authorization Bearer during a rest api call
-// It can take an array of roles and claims to further validate the token in a more granular
-// view, it also can take an OR option in both if the role or claim are coma separated.
-// For example a claim like "_read,_write" will be valid if the user either has a _read claim
-// or a _write claim making them both valid
-func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapter {
+// TokenAuthorizationMiddlewareAdapter validates a Authorization Bearer during a rest api call.
+func TokenAuthorizationMiddlewareAdapter(
+	roles []string,
+	claims []string,
+	roleComparisonOperation ComparisonOperation,
+	claimComparisonOperation ComparisonOperation) Adapter {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			baseCtx := basecontext.NewBaseContextFromRequest(r)
@@ -212,12 +212,15 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 								rolesCheck = append(rolesCheck, roleCheck)
 							}
 
-							if len(roles) != len(rolesCheck) || !rolesCheck.Exists() {
+							if len(roles) != len(rolesCheck) || !rolesCheck.Evaluate(roleComparisonOperation) {
 								failed := rolesCheck.GetFailed()
 								authorized = false
 								response := models.OAuthErrorResponse{
-									Error:            models.OAuthUnauthorizedClient,
-									ErrorDescription: fmt.Sprintf("User does not contain enough permissions, does not have roles, %v", failed),
+									Error: models.OAuthUnauthorizedClient,
+									ErrorDescription: fmt.Sprintf(
+										"User does not contain enough permissions for roles (%s), missing %v",
+										normalizeComparisonOperation(roleComparisonOperation),
+										failed),
 								}
 
 								authorizationContext.IsAuthorized = false
@@ -241,12 +244,15 @@ func TokenAuthorizationMiddlewareAdapter(roles []string, claims []string) Adapte
 									claimsCheck = append(claimsCheck, claimCheck)
 								}
 
-								if len(claims) != len(claimsCheck) || !claimsCheck.Exists() {
+								if len(claims) != len(claimsCheck) || !claimsCheck.Evaluate(claimComparisonOperation) {
 									failed := claimsCheck.GetFailed()
 									authorized = false
 									response := models.OAuthErrorResponse{
-										Error:            models.OAuthUnauthorizedClient,
-										ErrorDescription: fmt.Sprintf("User does not contain enough permissions, does not have claims, %v", failed),
+										Error: models.OAuthUnauthorizedClient,
+										ErrorDescription: fmt.Sprintf(
+											"User does not contain enough permissions for claims (%s), missing %v",
+											normalizeComparisonOperation(claimComparisonOperation),
+											failed),
 									}
 
 									authorizationContext.IsAuthorized = false

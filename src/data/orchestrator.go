@@ -241,6 +241,8 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 				j.data.OrchestratorHosts[i].HasWebsocketEvents = host.HasWebsocketEvents
 				j.data.OrchestratorHosts[i].ReverseProxy = host.ReverseProxy
 				j.data.OrchestratorHosts[i].ReverseProxyHosts = host.ReverseProxyHosts
+				j.data.OrchestratorHosts[i].CacheConfig = host.CacheConfig
+				j.data.OrchestratorHosts[i].CacheItems = host.CacheItems
 
 				found = true
 				result = &j.data.OrchestratorHosts[i]
@@ -307,6 +309,8 @@ func (j *JsonDatabase) UpdateOrchestratorHostDetails(ctx basecontext.ApiContext,
 				j.data.OrchestratorHosts[i].LastUnhealthyErrorMessage = host.LastUnhealthyErrorMessage
 				j.data.OrchestratorHosts[i].HealthCheck = host.HealthCheck
 				j.data.OrchestratorHosts[i].VirtualMachines = host.VirtualMachines
+				j.data.OrchestratorHosts[i].CacheConfig = host.CacheConfig
+				j.data.OrchestratorHosts[i].CacheItems = host.CacheItems
 
 				j.dataMutex.Unlock()
 				return &j.data.OrchestratorHosts[i], nil

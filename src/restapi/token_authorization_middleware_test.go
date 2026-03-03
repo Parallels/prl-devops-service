@@ -139,7 +139,12 @@ func TestTokenAuthorizationMiddlewareAdapter(t *testing.T) {
 
 			// Create middleware chain
 			authContextMiddleware := AddAuthorizationContextMiddlewareAdapter()
-			tokenAuthMiddleware := TokenAuthorizationMiddlewareAdapter(nil, nil)
+			tokenAuthMiddleware := TokenAuthorizationMiddlewareAdapter(
+				nil,
+				nil,
+				ComparisonOperationAnd,
+				ComparisonOperationAnd,
+			)
 
 			// Chain them: context -> token -> handler
 			wrappedHandler := authContextMiddleware(tokenAuthMiddleware(handler))

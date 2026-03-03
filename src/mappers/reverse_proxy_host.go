@@ -10,6 +10,7 @@ import (
 func DtoReverseProxyHostToApi(m data_models.ReverseProxyHost) models.ReverseProxyHost {
 	r := models.ReverseProxyHost{
 		ID:   m.ID,
+		Name: m.Name,
 		Host: m.Host,
 		Port: m.Port,
 	}
@@ -51,6 +52,7 @@ func DtoReverseProxyHostsToApi(m []data_models.ReverseProxyHost) []models.Revers
 func ApiReverseProxyHostToDto(m models.ReverseProxyHost) data_models.ReverseProxyHost {
 	r := data_models.ReverseProxyHost{
 		ID:   m.ID,
+		Name: m.Name,
 		Host: m.Host,
 		Port: m.Port,
 	}
@@ -91,6 +93,7 @@ func ApiReverseProxyHostsToDto(m []models.ReverseProxyHost) []data_models.Revers
 
 func ApiCreateRequestReverseProxyHostToDto(m models.ReverseProxyHostCreateRequest) data_models.ReverseProxyHost {
 	r := data_models.ReverseProxyHost{
+		Name: m.Name,
 		Host: m.Host,
 		Port: m.Port,
 	}
@@ -122,6 +125,7 @@ func ApiCreateRequestReverseProxyHostToDto(m models.ReverseProxyHostCreateReques
 
 func ApiUpdateRequestReverseProxyHostToDto(m models.ReverseProxyHostUpdateRequest) data_models.ReverseProxyHost {
 	r := data_models.ReverseProxyHost{
+		Name: m.Name,
 		Host: m.Host,
 		Port: m.Port,
 	}
@@ -142,6 +146,7 @@ func ApiUpdateRequestReverseProxyHostToDto(m models.ReverseProxyHostUpdateReques
 func ConfigReverseProxyHostToDto(m config_models.ReverseProxyConfigHost) data_models.ReverseProxyHost {
 	r := data_models.ReverseProxyHost{
 		ID:   helpers.GenerateId(),
+		Name: m.Name,
 		Host: m.Host,
 		Port: m.Port,
 	}

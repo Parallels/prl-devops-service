@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/cacheservice"
@@ -17,6 +18,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	api_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -26,6 +28,98 @@ import (
 	"github.com/cjlapao/common-go/helper"
 	"github.com/cjlapao/common-go/helper/http_helper"
 )
+
+func (s *CatalogManifestService) AsyncPull(jobId string, r *models.PullCatalogManifestRequest) {
+	if s.ctx == nil {
+		s.ctx = basecontext.NewRootBaseContext()
+	}
+
+	jobManager := jobs.Get(s.ctx)
+	if jobManager == nil {
+		s.ns.NotifyErrorf("Job Manager is not available")
+		return
+	}
+
+	response := s.PullWithExistingJob(jobId, r)
+	if response.HasErrors() {
+		errorMessage := "Error pulling manifest:"
+		for _, err := range response.Errors {
+			errorMessage += fmt.Sprintf("\n%v", err)
+		}
+		jobManager.MarkJobError(jobId, errors.New(errorMessage))
+	} else {
+		jobManager.MarkJobComplete(jobId, "Virtual Machine Pulled and Registered")
+	}
+}
+
+// PullWithExistingJob runs pull while streaming provider channel progress into an existing job.
+// It does not mark the job as complete/failed; caller owns final job state.
+func (s *CatalogManifestService) PullWithExistingJob(jobId string, r *models.PullCatalogManifestRequest) *models.PullCatalogManifestResponse {
+	if s.ctx == nil {
+		s.ctx = basecontext.NewRootBaseContext()
+	}
+
+	if r == nil {
+		response := models.NewPullCatalogManifestResponse()
+		response.AddError(errors.New("missing pull request"))
+		return response
+	}
+
+	jobManager := jobs.Get(s.ctx)
+	r.JobId = jobId
+	if r.ProgressChannel == nil {
+		r.ProgressChannel = make(chan int)
+	}
+	if r.FileNameChannel == nil {
+		r.FileNameChannel = make(chan string)
+	}
+	if r.StepChannel == nil {
+		r.StepChannel = make(chan string)
+	}
+
+	done := make(chan struct{})
+	var wg sync.WaitGroup
+	if jobManager != nil {
+		wg.Add(1)
+		go func(progressChannel chan int, fileNameChannel chan string, stepChannel chan string) {
+			defer wg.Done()
+			for {
+				select {
+				case <-done:
+					return
+				case progress, ok := <-progressChannel:
+					if !ok {
+						progressChannel = nil
+					} else {
+						jobManager.UpdateJobProgress(jobId, "", progress, "running")
+					}
+				case fileName, ok := <-fileNameChannel:
+					if !ok {
+						fileNameChannel = nil
+					} else {
+						jobManager.UpdateJobProgress(jobId, fmt.Sprintf("Downloading %s", fileName), -1, "running")
+					}
+				case step, ok := <-stepChannel:
+					if !ok {
+						stepChannel = nil
+					} else if step != "" {
+						jobManager.UpdateJobProgress(jobId, step, -1, "running")
+					}
+				}
+
+				if progressChannel == nil && fileNameChannel == nil && stepChannel == nil {
+					return
+				}
+			}
+		}(r.ProgressChannel, r.FileNameChannel, r.StepChannel)
+	}
+
+	response := s.Pull(r)
+	close(done)
+	wg.Wait()
+
+	return response
+}
 
 func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *models.PullCatalogManifestResponse {
 	if s.ctx == nil {
@@ -61,6 +155,11 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 	}
 
 	s.ns.NotifyInfof("Checking if the machine %v already exists", r.MachineName)
+	jobManager := jobs.Get(s.ctx)
+	if r.JobId != "" && jobManager != nil {
+		jobManager.UpdateJobProgress(r.JobId, "Checking if the machine already exists", 5, "running")
+	}
+
 	filter := fmt.Sprintf("name=%s", r.MachineName)
 	vms, err := parallelsDesktopSvc.GetVms(s.ctx, filter)
 	if err != nil {
@@ -87,6 +186,9 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 	// getting the provider metadata from the database
 	if provider.IsRemote() {
 		s.ns.NotifyInfof("Checking if the manifest exists in the remote catalog")
+		if r.JobId != "" && jobManager != nil {
+			jobManager.UpdateJobProgress(r.JobId, "Checking if the manifest exists in the remote catalog", 10, "running")
+		}
 		manifest = &models.VirtualMachineCatalogManifest{}
 		manifest.Provider = &provider
 		apiClient.SetAuthorization(GetAuthenticator(manifest.Provider))
@@ -154,6 +256,9 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 			return response
 		}
 		s.ns.NotifyInfof("Checking if the manifest exists in the local catalog")
+		if r.JobId != "" && jobManager != nil {
+			jobManager.UpdateJobProgress(r.JobId, "Checking if the manifest exists in the local catalog", 10, "running")
+		}
 		dto, err := db.GetCatalogManifestByName(s.ctx, r.CatalogId)
 		if err != nil {
 			manifestErr := errors.Newf("Error getting catalog manifest %v: %v", r.CatalogId, err)
@@ -221,7 +326,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		}
 
 		s.ns.NotifyInfof("Found remote service %v", rs.Name())
-		rs.SetProgressChannel(r.FileNameChannel, r.ProgressChannel)
+		rs.SetProgressChannel(r.FileNameChannel, r.ProgressChannel, r.StepChannel)
 		foundProvider = true
 		r.LocalMachineFolder = fmt.Sprintf("%s.%s", filepath.Join(r.Path, r.MachineName), manifest.Type)
 
@@ -242,12 +347,18 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		// caching service and then pull the files from the cache
 		if cfg.IsCatalogCachingEnable() {
 			s.ns.NotifyInfof("Manifest %v caching is enabled, pulling the pack file", manifest.Name)
+			if r.JobId != "" && jobManager != nil {
+				jobManager.UpdateJobProgress(r.JobId, "Pulling pack file from cache", 15, "running")
+			}
 			if err := s.pullFromCache(r, manifest, rs); err != nil {
 				response.AddError(err)
 				break
 			}
 		} else {
 			s.ns.NotifyInfof("Manifest %v caching is disabled, pulling the pack file", manifest.Name)
+			if r.JobId != "" && jobManager != nil {
+				jobManager.UpdateJobProgress(r.JobId, "Downloading pack file", 15, "running")
+			}
 			if err := s.pullAndDecompressPackFile(r, manifest, rs); err != nil {
 				response.AddError(err)
 				break
@@ -304,6 +415,11 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 
 func (s *CatalogManifestService) registerMachineWithParallelsDesktop(r *models.PullCatalogManifestRequest, response *models.PullCatalogManifestResponse) {
 	s.ns.NotifyInfof("Registering machine %v", r.MachineName)
+	jobManager := jobs.Get(s.ctx)
+	if r.JobId != "" && jobManager != nil {
+		jobManager.UpdateJobProgress(r.JobId, "Registering the machine with Parallels Desktop", 90, "running")
+	}
+
 	serviceProvider := serviceprovider.Get()
 	parallelsDesktopSvc := serviceProvider.ParallelsDesktopService
 
@@ -316,7 +432,6 @@ func (s *CatalogManifestService) registerMachineWithParallelsDesktop(r *models.P
 		}
 
 		if err := parallelsDesktopSvc.RegisterVm(s.ctx, machineRegisterRequest); err != nil {
-			s.ns.NotifyErrorf("Error registering machine %v: %v", r.MachineName, err)
 			response.AddError(err)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
 		}
@@ -327,6 +442,11 @@ func (s *CatalogManifestService) registerMachineWithParallelsDesktop(r *models.P
 
 func (s *CatalogManifestService) renameMachineWithParallelsDesktop(r *models.PullCatalogManifestRequest, response *models.PullCatalogManifestResponse) {
 	s.ns.NotifyInfof("Renaming machine %v", r.MachineName)
+	jobManager := jobs.Get(s.ctx)
+	if r.JobId != "" && jobManager != nil {
+		jobManager.UpdateJobProgress(r.JobId, "Renaming machine", 95, "running")
+	}
+
 	serviceProvider := serviceprovider.Get()
 	parallelsDesktopSvc := serviceProvider.ParallelsDesktopService
 
@@ -440,6 +560,11 @@ func (s *CatalogManifestService) CleanPullRequest(r *models.PullCatalogManifestR
 }
 
 func (s *CatalogManifestService) createDestinationFolder(r *models.PullCatalogManifestRequest, manifest *models.VirtualMachineCatalogManifest) error {
+	jobManager := jobs.Get(s.ctx)
+	if r.JobId != "" && jobManager != nil {
+		jobManager.UpdateJobProgress(r.JobId, "Creating destination folder", 12, "running")
+	}
+
 	r.LocalMachineFolder = fmt.Sprintf("%s.%s", filepath.Join(r.Path, r.MachineName), manifest.Type)
 	s.ns.NotifyInfof("Local machine folder: %v", r.LocalMachineFolder)
 	count := 1
@@ -514,13 +639,18 @@ func (s *CatalogManifestService) pullAndDecompressPackFile(r *models.PullCatalog
 	cfg := config.Get()
 	cleanupSvc := cleanupservice.NewCleanupService()
 	if rss.CanStream() && cfg.IsRemoteProviderStreamEnabled() {
-		if err := s.processFileWithStream(r.LocalMachineFolder, rss, manifest, cleanupSvc); err != nil {
+		if err := s.processFileWithStream(r, rss, manifest, cleanupSvc); err != nil {
 			return err
 		}
 	} else {
-		if err := s.processFileWithoutStream(r.LocalMachineFolder, rss, manifest, cleanupSvc); err != nil {
+		if err := s.processFileWithoutStream(r, rss, manifest, cleanupSvc); err != nil {
 			return err
 		}
+	}
+
+	jobManager := jobs.Get(s.ctx)
+	if r.JobId != "" && jobManager != nil {
+		jobManager.UpdateJobProgress(r.JobId, "Cleaning and flattening pulled structure", 85, "running")
 	}
 
 	if err := common.CleanAndFlatten(r.LocalMachineFolder); err != nil {
@@ -533,7 +663,8 @@ func (s *CatalogManifestService) pullAndDecompressPackFile(r *models.PullCatalog
 	return nil
 }
 
-func (s *CatalogManifestService) processFileWithStream(destinationFolder string, rss interfaces.RemoteStorageService, manifest *models.VirtualMachineCatalogManifest, cleanupSvc *cleanupservice.CleanupService) error {
+func (s *CatalogManifestService) processFileWithStream(r *models.PullCatalogManifestRequest, rss interfaces.RemoteStorageService, manifest *models.VirtualMachineCatalogManifest, cleanupSvc *cleanupservice.CleanupService) error {
+	destinationFolder := r.LocalMachineFolder
 	if err := rss.PullFileAndDecompress(s.ctx, manifest.Path, manifest.PackFile, destinationFolder); err != nil {
 		s.ctx.LogErrorf("Error pulling and decompressing pack file for manifest ID %v, Name %v: %v adding folder: %v to cleanup", manifest.ID, manifest.Name, err, destinationFolder)
 		cleanupSvc.AddLocalFileCleanupOperation(destinationFolder, true)
@@ -542,7 +673,8 @@ func (s *CatalogManifestService) processFileWithStream(destinationFolder string,
 	return nil
 }
 
-func (s *CatalogManifestService) processFileWithoutStream(destinationFolder string, rss interfaces.RemoteStorageService, manifest *models.VirtualMachineCatalogManifest, cleanupSvc *cleanupservice.CleanupService) error {
+func (s *CatalogManifestService) processFileWithoutStream(r *models.PullCatalogManifestRequest, rss interfaces.RemoteStorageService, manifest *models.VirtualMachineCatalogManifest, cleanupSvc *cleanupservice.CleanupService) error {
+	destinationFolder := r.LocalMachineFolder
 	// Creating the path for temporary file
 	tempDir := os.TempDir()
 	tempFilename := manifest.CompressedChecksum
@@ -570,7 +702,13 @@ func (s *CatalogManifestService) processFileWithoutStream(destinationFolder stri
 	// and remove the pack file from the cache folder if not we will just rename the pack file to the checksum
 	if manifest.IsCompressed || strings.HasSuffix(manifest.PackFile, ".pdpack") {
 		compressedFilePath := filepath.Join(tempDestinationFolder, manifest.PackFile)
-		if err := compressor.DecompressFile(s.ctx, compressedFilePath, destinationFolder); err != nil {
+
+		jobManager := jobs.Get(s.ctx)
+		if r.JobId != "" && jobManager != nil {
+			jobManager.UpdateJobProgress(r.JobId, "Decompressing Pack File", 80, "running")
+		}
+
+		if err := compressor.DecompressFileWithStepChannel(s.ctx, compressedFilePath, destinationFolder, r.StepChannel); err != nil {
 			cleanupSvc.AddLocalFileCleanupOperation(destinationFolder, true)
 			s.ctx.LogErrorf("Error decompressing file for manifest ID %v, Name %v: %v adding folder: %v to cleanup", manifest.ID, manifest.Name, err, destinationFolder)
 			cleanupSvc.Clean(s.ctx)

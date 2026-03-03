@@ -44,6 +44,8 @@ type Data struct {
 	OrchestratorHosts []models.OrchestratorHost                 `json:"orchestrator_hosts"`
 	ReverseProxy      *models.ReverseProxy                      `json:"reverse_proxy"`
 	ReverseProxyHosts []models.ReverseProxyHost                 `json:"reverse_proxy_hosts"`
+	CatalogManagers   []models.CatalogManager                   `json:"catalog_managers"`
+	Jobs              []models.Job                              `json:"jobs"`
 	Snapshots         map[string]apiModels.ListSnapshotResponse `json:"snapshots"`
 }
 
@@ -591,6 +593,10 @@ func (j *JsonDatabase) loadFromFile(ctx basecontext.ApiContext) error {
 	j.data = data
 	j.connected = true
 	j.dataMutex.Unlock()
+
+	// Handle recovery of ongoing jobs
+	j.RecoverOngoingJobs(ctx)
+
 	return nil
 }
 
@@ -605,6 +611,8 @@ func (j *JsonDatabase) loadFromEmpty(ctx basecontext.ApiContext) error {
 		PackerTemplates:  make([]models.PackerTemplate, 0),
 		ManifestsCatalog: make([]models.CatalogManifest, 0),
 		Snapshots:        make(map[string]apiModels.ListSnapshotResponse),
+		CatalogManagers:  make([]models.CatalogManager, 0),
+		Jobs:             make([]models.Job, 0),
 	}
 	j.dataMutex.Unlock()
 

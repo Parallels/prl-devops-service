@@ -15,6 +15,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -194,6 +195,14 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithPath("/catalog/pull").
 		WithRequiredClaim(constants.PULL_CATALOG_MANIFEST_CLAIM).
 		WithHandler(PullCatalogManifestHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/catalog/pull/async").
+		WithRequiredClaim(constants.PULL_CATALOG_MANIFEST_CLAIM).
+		WithHandler(AsyncPullCatalogManifestHandler()).
 		Register()
 
 	restapi.NewController().
@@ -2010,6 +2019,70 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest pulled: %v", resultData.ID)
+	}
+}
+
+// @Summary		Pull a remote catalog manifest asynchronously
+// @Description	This endpoint pulls a remote catalog manifest in the background and returns a Job ID to track progress
+// @Tags			Catalogs
+// @Produce		json
+// @Param			pullRequest	body		catalog_models.PullCatalogManifestRequest	true	"Pull request"
+// @Success		202			{object}	models.JobResponse
+// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		401			{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/pull/async [put]
+func AsyncPullCatalogManifestHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		userContext := ctx.GetUser()
+		if userContext == nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		var request catalog_models.PullCatalogManifestRequest
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			return
+		}
+
+		job, err := jobManager.CreateNewJob(userContext.ID, "catalog", "pull", "Initializing repository pull")
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		asyncCtx := basecontext.NewRootBaseContext()
+		manifest := catalog.NewManifestService(asyncCtx)
+		go manifest.AsyncPull(job.ID, &request)
+
+		response := mappers.MapJobToApiJob(*job)
+
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Async manifest pull started, job ID: %v", response.ID)
 	}
 }
 

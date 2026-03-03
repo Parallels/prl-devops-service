@@ -31,6 +31,10 @@ func SeedDefaults() (err error) {
 		common.Logger.Error("Error seeding admin user: %s", err.Error())
 		return fmt.Errorf("SeedDefaultUsers failed: %w", err)
 	}
+	if err = seeds.SeedUsersMissingClaimsByRole(); err != nil {
+		common.Logger.Error("Error syncing role-based user claims: %s", err.Error())
+		return fmt.Errorf("SeedUsersMissingClaimsByRole failed: %w", err)
+	}
 	if err = seeds.SeedDefaultVirtualMachineTemplates(); err != nil {
 		common.Logger.Error("Error seeding default virtual machine templates: %s", err.Error())
 		return fmt.Errorf("SeedDefaultVirtualMachineTemplates failed: %w", err)

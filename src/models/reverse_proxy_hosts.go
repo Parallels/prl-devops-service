@@ -4,12 +4,24 @@ import "github.com/Parallels/prl-devops-service/errors"
 
 type ReverseProxyHost struct {
 	ID         string                       `json:"id"`
+	Name       string                       `json:"name,omitempty" yaml:"name,omitempty"`
 	Host       string                       `json:"host"`
 	Port       string                       `json:"port"`
 	Tls        *ReverseProxyHostTls         `json:"tls,omitempty"`
 	Cors       *ReverseProxyHostCors        `json:"cors,omitempty"`
 	HttpRoutes []*ReverseProxyHostHttpRoute `json:"http_routes,omitempty"`
 	TcpRoute   *ReverseProxyHostTcpRoute    `json:"tcp_route,omitempty"`
+}
+
+type ReverseProxyRouteVmDetails struct {
+	Name                  string `json:"name,omitempty"`
+	State                 string `json:"state,omitempty"`
+	OS                    string `json:"os,omitempty"`
+	Uptime                string `json:"uptime,omitempty"`
+	GuestToolsState       string `json:"guest_tools_state,omitempty"`
+	GuestToolsVersion     string `json:"guest_tools_version,omitempty"`
+	InternalIpAddress     string `json:"internal_ip_address,omitempty"`
+	HostExternalIpAddress string `json:"host_external_ip_address,omitempty"`
 }
 
 func (o *ReverseProxyHost) GetHost() string {
@@ -20,6 +32,7 @@ func (o *ReverseProxyHost) GetHost() string {
 }
 
 type ReverseProxyHostCreateRequest struct {
+	Name       string                       `json:"name,omitempty" yaml:"name,omitempty"`
 	Host       string                       `json:"host"`
 	Port       string                       `json:"port"`
 	Tls        *ReverseProxyHostTls         `json:"tls,omitempty"`
@@ -85,6 +98,7 @@ func (o *ReverseProxyHostCreateRequest) Validate() error {
 }
 
 type ReverseProxyHostUpdateRequest struct {
+	Name string                `json:"name,omitempty" yaml:"name,omitempty"`
 	Host string                `json:"host"`
 	Port string                `json:"port"`
 	Tls  *ReverseProxyHostTls  `json:"tls,omitempty"`

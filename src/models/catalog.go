@@ -39,6 +39,8 @@ type CatalogManifest struct {
 	CacheFileName           string                        `json:"cache_file_name,omitempty"`
 	CacheType               string                        `json:"cache_type,omitempty"`
 	CacheSize               int64                         `json:"cache_size,omitempty"`
+	CacheUsedCount          int64                         `json:"cache_used_count,omitempty"`
+	CacheLastUsed           string                        `json:"cache_last_used,omitempty"`
 }
 
 type MinimumSpecRequirement struct {
@@ -85,6 +87,7 @@ type ImportVmResponse struct {
 }
 
 type VirtualMachineCatalogManifestList struct {
-	TotalSize int64             `json:"total_size"`
-	Manifests []CatalogManifest `json:"manifests"`
+	TotalSize   int64               `json:"total_size"`
+	Manifests   []CatalogManifest   `json:"manifests"`
+	CacheConfig *CatalogCacheConfig `json:"cache_config,omitempty"`
 }

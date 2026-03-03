@@ -35,6 +35,7 @@ func (o *ReverseProxy) Diff(source ReverseProxy) bool {
 
 type ReverseProxyHost struct {
 	ID         string                       `json:"id"`
+	Name       string                       `json:"name,omitempty"`
 	HostID     string                       `json:"host_id,omitempty"`
 	Host       string                       `json:"host"`
 	Port       string                       `json:"port"`
@@ -57,6 +58,9 @@ func (o *ReverseProxyHost) Diff(source ReverseProxyHost) bool {
 		return true
 	}
 	if o.HostID != source.HostID {
+		return true
+	}
+	if o.Name != source.Name {
 		return true
 	}
 
@@ -186,6 +190,7 @@ func (o *ReverseProxyHostTls) Diff(source ReverseProxyHostTls) bool {
 
 type ReverseProxyHostHttpRoute struct {
 	ID              string            `json:"id,omitempty" yaml:"id,omitempty"`
+	Order           int               `json:"order,omitempty" yaml:"order,omitempty"`
 	Path            string            `json:"path,omitempty" yaml:"path,omitempty"`
 	TargetVmId      string            `json:"target_vm_id,omitempty" yaml:"target_vm_id,omitempty"`
 	TargetHost      string            `json:"target_host,omitempty" yaml:"target_host,omitempty"`
@@ -202,6 +207,9 @@ func (o *ReverseProxyHostHttpRoute) Diff(source ReverseProxyHostHttpRoute) bool 
 		return true
 	}
 
+	if o.Order != source.Order {
+		return true
+	}
 	if o.Path != source.Path {
 		return true
 	}

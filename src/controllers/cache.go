@@ -12,6 +12,7 @@ import (
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/gorilla/mux"
 )
 
@@ -23,7 +24,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/catalog/cache").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.LIST_CACHE_CLAIM).
 		WithHandler(GetCatalogCacheHandler()).
 		Register()
 
@@ -31,7 +32,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/cache").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.DELETE_ALL_CACHE_CLAIM).
 		WithHandler(DeleteCatalogCacheHandler()).
 		Register()
 
@@ -39,7 +40,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/cache/{catalogId}").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.DELETE_CACHE_ITEM_CLAIM).
 		WithHandler(DeleteCatalogCacheItemHandler()).
 		Register()
 
@@ -47,7 +48,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/cache/{catalogId}/{version}").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.DELETE_CACHE_ITEM_CLAIM).
 		WithHandler(DeleteCatalogCacheItemVersionHandler()).
 		Register()
 
@@ -56,7 +57,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/cache").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.LIST_CACHE_CLAIM).
 		WithHandler(GetCatalogCacheHandler()).
 		Register()
 
@@ -64,7 +65,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/cache").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.DELETE_ALL_CACHE_CLAIM).
 		WithHandler(DeleteCatalogCacheHandler()).
 		Register()
 
@@ -72,7 +73,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/cache/{catalogId}").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.DELETE_CACHE_ITEM_CLAIM).
 		WithHandler(DeleteCatalogCacheItemHandler()).
 		Register()
 
@@ -80,7 +81,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/cache/{catalogId}/{version}").
-		WithRequiredClaim(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.DELETE_CACHE_ITEM_CLAIM).
 		WithHandler(DeleteCatalogCacheItemVersionHandler()).
 		Register()
 }
@@ -135,6 +136,24 @@ func GetCatalogCacheHandler() restapi.ControllerHandler {
 					items.Provider = newProvider
 				}
 				responseManifests.Manifests[k] = items
+			}
+		}
+
+		var freeDiskSpace int64
+		if hwInfo, err := serviceprovider.Get().System.GetHardwareInfo(ctx); err == nil {
+			freeDiskSpace = int64(hwInfo.FreeDiskSize)
+		}
+
+		if cfg.IsHost() {
+			responseManifests.CacheConfig = &models.CatalogCacheConfig{
+				Enabled:                 cfg.IsCatalogCachingEnable(),
+				Folder:                  cfg.GetKey(constants.CATALOG_CACHE_FOLDER_ENV_VAR),
+				KeepFreeDiskSpace:       cfg.CacheKeepFreeDiskSpace(),
+				MaxSize:                 cfg.CacheMaxSize(freeDiskSpace),
+				AllowAboveFreeDiskSpace: cfg.AllowCacheAboveFreeDiskSpace(),
+			}
+			if responseManifests.CacheConfig.Folder == "" {
+				responseManifests.CacheConfig.Folder = constants.DEFAULT_CATALOG_CACHE_FOLDER
 			}
 		}
 
