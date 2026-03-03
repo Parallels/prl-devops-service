@@ -1400,7 +1400,11 @@ func DeleteSnapshot() restapi.ControllerHandler {
 
 		err := svc.DeleteSnapshot(ctx, VMId, SnapshotId, &request)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			err = fmt.Errorf("please check snapshot id[%s]: %v", SnapshotId, err)
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: err.Error(),
+				Code:    http.StatusBadRequest,
+			})
 			return
 		}
 

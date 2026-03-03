@@ -203,6 +203,8 @@ func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models
 		s.processVmConfigChanged(ctx, event)
 	case "vm_tools_state_changed":
 		s.processVmToolsStateChanged(ctx, event)
+	case "vm_snapshots_tree_changed":
+		s.processVmSnapshotsTreeChanged(ctx, event)
 	default:
 		ctx.LogInfof("[ParallelsDesktop] [Event] Unhandled event: %v", event)
 	}
@@ -311,6 +313,33 @@ func (s *ParallelsService) processVmConfigChanged(ctx basecontext.ApiContext, ev
 func (s *ParallelsService) processVmToolsStateChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
 	ctx.LogInfof("[ParallelsDesktop] [Events] VM %s tools state changed, queuing for sync", event.VMID)
 	s.queueVmForSync(event.VMID, event.EventName)
+}
+
+func (s *ParallelsService) processVmSnapshotsTreeChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	snapshots, err := s.listSnapshots(ctx, event.VMID)
+	if err != nil {
+		ctx.LogErrorf("[parallelsdesktop][snapshots] Failed to get snapshots for VM %s: %v", event.VMID, err)
+		return
+	}
+	if s.databaseService == nil {
+		ctx.LogErrorf("[parallelsdesktop][snapshots] Database service not available")
+		return
+	}
+	s.databaseService.SetListSnapshotsByVMId(event.VMID, snapshots)
+
+	VmSnapshotsUpdatedEvent := models.VmSnapshotsUpdated{
+		VmID:      event.VMID,
+		Snapshots: snapshots.Snapshots,
+	}
+
+	go func() {
+		if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
+			msg := models.NewEventMessage(constants.EventTypePDFM, "VM_SNAPSHOTS_UPDATED", VmSnapshotsUpdatedEvent)
+			if err := ee.BroadcastMessage(msg); err != nil {
+				ctx.LogErrorf("[parallelsdesktop][snapshots] Error broadcasting VM snapshots updated event: %v", err)
+			}
+		}
+	}()
 }
 
 // queueVmForSync safely adds a VM to the processing queue while protecting against echo loops.
