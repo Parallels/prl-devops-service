@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -188,4 +189,16 @@ func GetCompressRatioEnvValue(ratioValue int) (string, error) {
 	default:
 		return "", errors.New("invalid compression ratio")
 	}
+}
+
+// ExtractSnapshotId extracts the snapshot ID from output string in format:
+// "The snapshot with id {snapshot-id} has been successfully created."
+func ExtractSnapshotId(output string) string {
+	// Use regex to find content within curly braces
+	re := regexp.MustCompile(`\{([^}]+)\}`)
+	matches := re.FindStringSubmatch(output)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
 }

@@ -78,6 +78,7 @@ type ParallelsService struct {
 	cancelFunc       context.CancelFunc
 	listenerCtx      context.Context
 	processLauncher  processlauncher.ProcessLauncher
+	databaseService  *data.JsonDatabase
 }
 
 func Get(ctx basecontext.ApiContext) *ParallelsService {
@@ -95,6 +96,7 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 		eventsProcessing: false,
 		ctx:              ctx,
 		processLauncher:  &processlauncher.RealProcessLauncher{},
+		databaseService:  nil, // Will be injected later
 
 		// Initialize maps for the debounce and cooldown logic
 		// this will allow us to deduplicate events and prevent the echo loop
@@ -135,6 +137,10 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 
 func (s *ParallelsService) Name() string {
 	return "parallels_desktop"
+}
+
+func (s *ParallelsService) SetDatabaseService(dbService *data.JsonDatabase) {
+	s.databaseService = dbService
 }
 
 func (s *ParallelsService) FindPath() string {
@@ -561,6 +567,33 @@ func (s *ParallelsService) updateVmInCache(ctx basecontext.ApiContext, newVm *mo
 			}))
 		}
 	}()
+}
+
+func (s *ParallelsService) InitSnapshotTreeInDB(ctx basecontext.ApiContext) {
+	s.RLock()
+	cachedVMs := s.cachedLocalVms
+	s.RUnlock()
+
+	for _, vm := range cachedVMs {
+		snapshots, err := s.listSnapshots(ctx, vm.ID)
+		if err != nil {
+			ctx.LogErrorf("[parallelsdesktop][snapshots] Failed to get snapshots for VM %s: %v", vm.ID, err)
+			continue
+		}
+		if s.databaseService == nil {
+			ctx.LogErrorf("[parallelsdesktop][snapshots] Database service not available")
+			return
+		}
+		s.databaseService.SetListSnapshotsByVMId(vm.ID, snapshots)
+	}
+}
+
+func (s *ParallelsService) GetSnapshotsFromDB(ctx basecontext.ApiContext, vmID string) (*models.ListSnapshotResponse, error) {
+	if s.databaseService == nil {
+		ctx.LogErrorf("[parallelsdesktop][snapshots] Database service not available")
+		return nil, nil
+	}
+	return s.databaseService.GetListSnapshotsByVMId(vmID)
 }
 
 func (s *ParallelsService) updateVMIPInCache(ctx basecontext.ApiContext, vmID string) {
@@ -1133,11 +1166,11 @@ func (s *ParallelsService) CreateSnapshot(ctx basecontext.ApiContext, vmID strin
 	args := []string{"snapshot", vmID}
 	if request.SnapshotName != "" {
 		args = append(args, "-n", request.SnapshotName)
-		ctx.LogInfof("Creating snapshot '%s' for VM %s", request.SnapshotName, vmID)
+		ctx.LogInfof("[parallelsdesktop][snapshots] Creating snapshot '%s' for VM %s", request.SnapshotName, vmID)
 	}
 	if request.SnapshotDescription != "" {
 		args = append(args, "-d", request.SnapshotDescription)
-		ctx.LogInfof("Creating snapshot with description '%s' for VM %s", request.SnapshotDescription, vmID)
+		ctx.LogInfof("[parallelsdesktop][snapshots] Creating snapshot with description '%s' for VM %s", request.SnapshotDescription, vmID)
 	}
 	cmd := helpers.Command{
 		Command: s.executable,
@@ -1176,7 +1209,7 @@ func (s *ParallelsService) DeleteSnapshot(ctx basecontext.ApiContext, vmId strin
 		return errors.Newf("VM with id %s was not found", vmId)
 	}
 
-	ctx.LogInfof("Deleting snapshot %s for VM %s", snapshotId, vmId)
+	ctx.LogInfof("[parallelsdesktop][snapshots] Deleting snapshot %s for VM %s", snapshotId, vmId)
 
 	args := []string{"snapshot-delete", vmId, "--id", snapshotId}
 	if request.DeleteChildren {
@@ -1209,7 +1242,7 @@ func (s *ParallelsService) RevertSnapshot(ctx basecontext.ApiContext, vmId strin
 		return errors.Newf("VM with id %s was not found", vmId)
 	}
 
-	ctx.LogInfof("Reverting snapshot %s for VM %s", snapshotId, vmId)
+	ctx.LogInfof("[parallelsdesktop][snapshots] Reverting snapshot %s for VM %s", snapshotId, vmId)
 
 	args := []string{"snapshot-switch", vmId, "--id", snapshotId}
 	if request.SkipResume {
@@ -1230,7 +1263,7 @@ func (s *ParallelsService) RevertSnapshot(ctx basecontext.ApiContext, vmId strin
 }
 
 // ListSnapshots lists all snapshots for the specified VM
-func (s *ParallelsService) ListSnapshots(ctx basecontext.ApiContext, vmId string) (*models.ListSnapshotResponse, error) {
+func (s *ParallelsService) listSnapshots(ctx basecontext.ApiContext, vmId string) (*models.ListSnapshotResponse, error) {
 	vm, err := s.findVmSync(ctx, vmId)
 	if err != nil {
 		return nil, err
@@ -1239,7 +1272,7 @@ func (s *ParallelsService) ListSnapshots(ctx basecontext.ApiContext, vmId string
 		return nil, errors.Newf("VM with id %s was not found", vmId)
 	}
 
-	ctx.LogInfof("Listing snapshots for VM %s", vmId)
+	ctx.LogInfof("[parallelsdesktop][snapshots] Listing snapshots for VM %s", vmId)
 	cmd := helpers.Command{
 		Command: s.executable,
 		Args:    []string{"snapshot-list", vmId, "--json"},
@@ -1260,7 +1293,7 @@ func (s *ParallelsService) ListSnapshots(ctx basecontext.ApiContext, vmId string
 	// Convert the map to a slice and set the ID field
 	var snapshotList []models.Snapshot
 	for id, snapshot := range snapshotMap {
-		snapshot.ID = id
+		snapshot.ID = strings.Trim(id, "{}")
 		snapshotList = append(snapshotList, snapshot)
 	}
 

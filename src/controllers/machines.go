@@ -1328,10 +1328,10 @@ func CreateSnapshot() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.CreateSnapShotRequest
-		ctx.LogInfof("Creating snapshot")
+		ctx.LogInfof("[controllers/machines][snapshots] Creating snapshot")
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			ctx.LogErrorf("Error decoding JSON: %v", err)
+			ctx.LogErrorf("[controllers/machines][snapshots] Error decoding JSON: %v", err)
 			return
 		}
 
@@ -1347,10 +1347,27 @@ func CreateSnapshot() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
+		var snapshots *models.ListSnapshotResponse
+		for i := 0; i < 20; i++ {
+			time.Sleep(500 * time.Millisecond)
+			snapshots, err = svc.GetSnapshotsFromDB(ctx, VMId)
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			for _, snapshot := range snapshots.Snapshots {
+				if snapshot.ID == response.SnapshotId {
+					w.WriteHeader(http.StatusAccepted)
+					_ = json.NewEncoder(w).Encode(response)
+					return
+				}
+			}
+		}
 
-		w.WriteHeader(http.StatusAccepted)
-		defer r.Body.Close()
-		_ = json.NewEncoder(w).Encode(response)
+		ReturnApiError(ctx, w, models.ApiErrorResponse{
+			Message: "Snapshot not created",
+			Code:    http.StatusBadRequest,
+		})
 	}
 }
 
@@ -1372,7 +1389,7 @@ func DeleteSnapshot() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.DeleteSnapshotRequest
-		ctx.LogInfof("Deleting snapshot")
+		ctx.LogInfof("[controllers/machines][snapshots] Deleting snapshot")
 
 		params := mux.Vars(r)
 		VMId := params["id"]
@@ -1383,12 +1400,38 @@ func DeleteSnapshot() restapi.ControllerHandler {
 
 		err := svc.DeleteSnapshot(ctx, VMId, SnapshotId, &request)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			err = fmt.Errorf("please check snapshot id[%s]: %v", SnapshotId, err)
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: err.Error(),
+				Code:    http.StatusBadRequest,
+			})
 			return
 		}
 
-		w.WriteHeader(http.StatusAccepted)
-		defer r.Body.Close()
+		for i := 0; i < 20; i++ {
+			time.Sleep(500 * time.Millisecond)
+			snapshots, err := svc.GetSnapshotsFromDB(ctx, VMId)
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			found := false
+			for _, snapshot := range snapshots.Snapshots {
+				if snapshot.ID == SnapshotId {
+					found = true
+					break
+				}
+			}
+			if !found {
+				w.WriteHeader(http.StatusAccepted)
+				return
+			}
+		}
+
+		ReturnApiError(ctx, w, models.ApiErrorResponse{
+			Message: "Snapshot not deleted",
+			Code:    http.StatusBadRequest,
+		})
 	}
 }
 
@@ -1409,7 +1452,7 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
-		ctx.LogInfof("Deleting All snapshots")
+		ctx.LogInfof("[controllers/machines][snapshots] Deleting All snapshots")
 
 		params := mux.Vars(r)
 		VMId := params["id"]
@@ -1417,7 +1460,7 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		snapshots, err := svc.ListSnapshots(ctx, VMId)
+		snapshots, err := svc.GetSnapshotsFromDB(ctx, VMId)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1426,12 +1469,33 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 		for _, snapshot := range snapshots.Snapshots {
 			err = svc.DeleteSnapshot(ctx, VMId, snapshot.ID, &models.DeleteSnapshotRequest{})
 			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromError(err))
+				err = fmt.Errorf("please check snapshot id[%s]: %v", snapshot.ID, err)
+				ReturnApiError(ctx, w, models.ApiErrorResponse{
+					Message: err.Error(),
+					Code:    http.StatusBadRequest,
+				})
 				return
 			}
 		}
-		w.WriteHeader(http.StatusAccepted)
-		defer r.Body.Close()
+
+		for i := 0; i < 20; i++ {
+			time.Sleep(500 * time.Millisecond)
+			snapshot, err := svc.GetSnapshotsFromDB(ctx, VMId)
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			if len(snapshot.Snapshots) == 0 {
+				w.WriteHeader(http.StatusAccepted)
+				return
+			}
+		}
+
+		ReturnApiError(ctx, w, models.ApiErrorResponse{
+			Message: "Snapshots not deleted",
+			Code:    http.StatusBadRequest,
+		})
+
 	}
 }
 
@@ -1451,7 +1515,7 @@ func ListSnapshot() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		ctx.LogInfof("Listing snapshots")
+		ctx.LogInfof("[controllers/machines][snapshots] Listing snapshots")
 
 		params := mux.Vars(r)
 		VMId := params["id"]
@@ -1459,7 +1523,7 @@ func ListSnapshot() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		response, err := svc.ListSnapshots(ctx, VMId)
+		response, err := svc.GetSnapshotsFromDB(ctx, VMId)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1490,7 +1554,7 @@ func RevertSnapshot() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RevertSnapshotRequest
-		ctx.LogInfof("Reverting snapshot")
+		ctx.LogInfof("[controllers/machines][snapshots] Reverting snapshot")
 
 		params := mux.Vars(r)
 		VMId := params["id"]
@@ -1501,13 +1565,35 @@ func RevertSnapshot() restapi.ControllerHandler {
 
 		err := svc.RevertSnapshot(ctx, VMId, SnapshotId, &request)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			err = fmt.Errorf("please check snapshot id[%s]: %v", SnapshotId, err)
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: err.Error(),
+				Code:    http.StatusBadRequest,
+			})
 			return
 		}
+		var snapshot *models.ListSnapshotResponse
+		for i := 0; i < 20; i++ {
+			time.Sleep(500 * time.Millisecond)
+			snapshot, err = svc.GetSnapshotsFromDB(ctx, VMId)
+			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			for _, snapshot := range snapshot.Snapshots {
+				if snapshot.ID == SnapshotId && snapshot.Current {
+					w.WriteHeader(http.StatusAccepted)
+					return
+				}
+			}
 
-		w.WriteHeader(http.StatusAccepted)
-		defer r.Body.Close()
+		}
+		ReturnApiError(ctx, w, models.ApiErrorResponse{
+			Message: "Snapshot not reverted",
+			Code:    http.StatusBadRequest,
+		})
 	}
+
 }
 
 func createPackerTemplate(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
