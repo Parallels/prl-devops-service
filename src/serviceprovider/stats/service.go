@@ -3,11 +3,9 @@ package stats
 import (
 	"runtime"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/models"
 )
 
@@ -107,7 +105,7 @@ func (s *StatsService) collectAndBroadcast(ctx basecontext.ApiContext) {
 		return
 	}
 
-	// Convert Timeval to seconds (float64)
+	 Convert Timeval to seconds (float64)
 	userTime := float64(rUsage.Utime.Sec) + float64(rUsage.Utime.Usec)/1e6
 	systemTime := float64(rUsage.Stime.Sec) + float64(rUsage.Stime.Usec)/1e6
 
