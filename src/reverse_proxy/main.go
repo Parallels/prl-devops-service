@@ -2,6 +2,7 @@ package reverse_proxy
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -22,6 +23,7 @@ import (
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
+	global_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/reverse_proxy/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"golang.org/x/sync/errgroup"
@@ -344,6 +346,10 @@ func (rps *ReverseProxyService) startInternal() error {
 		return err
 	}
 
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil {
+		emitter.RegisterHandler([]constants.EventType{constants.EventTypePDFM}, rps)
+	}
+
 	if rps.port == "" {
 		rps.port = cfg.ReverseProxyPort()
 		rps.api_ctx.LogWarnf("[Reverse Proxy] Port not set for reverse proxy, using default port", rps.port)
@@ -500,7 +506,6 @@ func (rps *ReverseProxyService) restartInternal() error {
 }
 
 func (rps *ReverseProxyService) startServer(errorChan chan error) {
-	// Checking if we have a tcp route to deal with
 	for _, host := range rps.forwarding_hosts {
 		h := host
 		if h.TcpRoute != nil {
@@ -525,6 +530,101 @@ func (rps *ReverseProxyService) startServer(errorChan chan error) {
 				}
 			}(h)
 		}
+	}
+}
+
+func (rps *ReverseProxyService) Handle(ctx basecontext.ApiContext, clientID string, msgType constants.EventType, payload []byte, msgID string) {
+	if msgType != constants.EventTypePDFM {
+		return
+	}
+
+	emitter := serviceprovider.GetEventEmitter()
+	// If the event emitter has stopped, bail out silently
+	if emitter == nil || !emitter.IsRunning() || rps.State != ReverseProxyServiceStateStarted {
+		return
+	}
+
+	var event global_models.EventMessage
+	if err := json.Unmarshal(payload, &event); err != nil {
+		rps.api_ctx.LogErrorf("[Reverse Proxy] Error unmarshalling VM event: %v", err)
+		return
+	}
+
+	switch event.Message {
+	case "VM_STATE_CHANGED":
+		// Handle IP changing or VM stopping
+		bodyBytes, err := json.Marshal(event.Body)
+		if err != nil {
+			return
+		}
+		var stateChange global_models.VmStateChange
+		if err := json.Unmarshal(bodyBytes, &stateChange); err != nil {
+			return
+		}
+
+		if stateChange.CurrentState == "stopped" || stateChange.CurrentState == "paused" || stateChange.CurrentState == "suspended" {
+			// Find route by TargetVmId and emit route failed event
+			for _, host := range rps.forwarding_hosts {
+				failed := false
+				if host.TcpRoute != nil && host.TcpRoute.TargetVmId == stateChange.VmID {
+					failed = true
+				} else {
+					for _, route := range host.HttpRoutes {
+						if route.TargetVmId == stateChange.VmID {
+							failed = true
+							break
+						}
+					}
+				}
+				if failed {
+					if emitter != nil && emitter.IsRunning() {
+						msg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "Reverse Proxy Route Failed", global_models.ReverseProxyRouteFailedEvent{
+							ReverseProxyHostId: host.ID,
+							TargetVmId:         stateChange.VmID,
+						})
+						go func() { _ = emitter.Broadcast(msg) }()
+					}
+				}
+			}
+		} else if stateChange.CurrentState == "running" {
+			// Collect host IDs affected by this VM before restart clears the list
+			affectedHostIds := []string{}
+			for _, host := range rps.forwarding_hosts {
+				matched := false
+				if host.TcpRoute != nil && host.TcpRoute.TargetVmId == stateChange.VmID {
+					matched = true
+				} else {
+					for _, route := range host.HttpRoutes {
+						if route.TargetVmId == stateChange.VmID {
+							matched = true
+							break
+						}
+					}
+				}
+				if matched {
+					affectedHostIds = append(affectedHostIds, host.ID)
+				}
+			}
+			// IP might have changed. Reload config from DB which re-resolves VM IPs.
+			go func() {
+				// Avoid deadlock or fast flip-flopping by waiting a bit for DB/IP sync
+				time.Sleep(2 * time.Second)
+				rps.api_ctx.LogInfof("[Reverse Proxy] Refreshing configuration for VM %s state change...", stateChange.VmID)
+				_ = rps.Restart()
+				for _, rpHostId := range affectedHostIds {
+					if emitter != nil && emitter.IsRunning() {
+						msg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "Reverse Proxy Route Updated", global_models.ReverseProxyRouteUpdatedEvent{
+							ReverseProxyHostId: rpHostId,
+							TargetVmId:         stateChange.VmID,
+						})
+						go func() { _ = emitter.Broadcast(msg) }()
+					}
+				}
+			}()
+		}
+	case "VM_ADDED":
+	case "VM_REMOVED":
+		// Similar to stopped, we might want to drop routes
 	}
 }
 
@@ -569,7 +669,7 @@ func (rps *ReverseProxyService) listenTcpRoute(host *data_models.ReverseProxyHos
 		rps.activeConnections.Add(1)
 		go func() {
 			defer rps.activeConnections.Done()
-			rps.handleTcpTraffic(conn, host.Host, fmt.Sprintf("%s:%s", host.TcpRoute.TargetHost, host.TcpRoute.TargetPort))
+			rps.handleTcpTraffic(conn, host.ID, host.Host, fmt.Sprintf("%s:%s", host.TcpRoute.TargetHost, host.TcpRoute.TargetPort))
 		}()
 	}
 }
@@ -725,6 +825,28 @@ func (rps *ReverseProxyService) listenHttpRoute(host *data_models.ReverseProxyHo
 					if req.URL.Path == "" {
 						req.URL.Path = "/"
 					}
+
+					if rps.State == ReverseProxyServiceStateStarted {
+						if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+							msg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "HTTP Traffic Forwarded", global_models.ReverseProxyForwardEvent{
+								ReverseProxyHostId: host.ID,
+								TargetVmId:         route.TargetVmId,
+								TargetHost:         route.TargetHost,
+								TargetPort:         route.TargetPort,
+								Path:               req.URL.Path,
+								TrafficType:        "http",
+								InternalIpAddress:  route.TargetHost,
+								Method:             req.Method,
+								SourceIp:           req.RemoteAddr,
+							})
+							go func() {
+								if err := emitter.Broadcast(msg); err != nil {
+									// Intentionally empty to avoid log loops during shutdown
+								}
+							}()
+						}
+					}
+
 					break
 				}
 			}
@@ -815,7 +937,7 @@ func (rps *ReverseProxyService) listenHttpRoute(host *data_models.ReverseProxyHo
 	return nil
 }
 
-func (rps *ReverseProxyService) handleTcpTraffic(src net.Conn, host string, target string) {
+func (rps *ReverseProxyService) handleTcpTraffic(src net.Conn, hostRecordId string, host string, target string) {
 	rps.activeConnections.Add(1)
 	defer rps.activeConnections.Done()
 
@@ -839,6 +961,25 @@ func (rps *ReverseProxyService) handleTcpTraffic(src net.Conn, host string, targ
 		rps.api_ctx.LogErrorf("[Reverse Proxy] [TCP Route] [%s] Unable to connect to target: %s",
 			connID, err)
 		return
+	}
+
+	if rps.State == ReverseProxyServiceStateStarted {
+		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+			msg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "TCP Traffic Forwarded", global_models.ReverseProxyForwardEvent{
+				ReverseProxyHostId: hostRecordId,
+				TargetVmId:         "",
+				TargetHost:         target,
+				TargetPort:         "",
+				TrafficType:        "tcp",
+				InternalIpAddress:  target,
+				SourceIp:           src.RemoteAddr().String(),
+			})
+			go func() {
+				if err := emitter.Broadcast(msg); err != nil {
+					// Intentionally empty to avoid log loops during shutdown
+				}
+			}()
+		}
 	}
 
 	defer dst.Close()

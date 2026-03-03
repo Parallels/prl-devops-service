@@ -422,6 +422,8 @@ func ApiCatalogManifestToCatalogManifest(m models.CatalogManifest) catalog_model
 		DownloadCount:      m.DownloadCount,
 		PackSize:           m.PackSize,
 		IsCompressed:       m.IsCompressed,
+		CacheUsedCount:     m.CacheUsedCount,
+		CacheLastUsed:      m.CacheLastUsed,
 	}
 
 	if m.Provider != nil {
@@ -519,6 +521,8 @@ func BaseVirtualMachineCatalogManifestToApi(m catalog_models.VirtualMachineCatal
 		CacheFileName:           m.CacheFileName,
 		CacheType:               m.CacheType,
 		CacheSize:               m.CacheSize,
+		CacheUsedCount:          m.CacheUsedCount,
+		CacheLastUsed:           m.CacheLastUsed,
 	}
 
 	return data

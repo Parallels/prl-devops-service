@@ -105,7 +105,12 @@ func TestApiKeyAuthorizationMiddlewareAdapter_Expiration(t *testing.T) {
 		req := makeRequest(key, "secret")
 		w := httptest.NewRecorder()
 
-		testHandler := ApiKeyAuthorizationMiddlewareAdapter(nil, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testHandler := ApiKeyAuthorizationMiddlewareAdapter(
+			nil,
+			nil,
+			ComparisonOperationAnd,
+			ComparisonOperationAnd,
+		)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			val := r.Context().Value(constants.AUTHORIZATION_CONTEXT_KEY)
 			var authCtx *basecontext.AuthorizationContext
 			if val != nil {

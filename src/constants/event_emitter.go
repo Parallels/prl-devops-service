@@ -2,18 +2,20 @@ package constants
 
 // EventType is a type-safe wrapper for event types
 // This prevents arbitrary strings from being used as event types
+// Clients subscribe to these types and receive messages of that type
 type EventType string
 
-// Event Message Types - predefined types for event routing
-// Clients subscribe to these types and receive messages of that type
 const (
-	EventTypeGlobal       EventType = "global"       // Broadcasts to all subscribers
-	EventTypePDFM         EventType = "pdfm"         // PDFM-specific events
-	EventTypeSystem       EventType = "system"       // System-level events
-	EventTypeSystemLogs   EventType = "system_logs"  // System logs events
-	EventTypeHealth       EventType = "health"       // Health check events
-	EventTypeOrchestrator EventType = "orchestrator" // Orchestrator events
-	EventTypeStats        EventType = "stats"        // Statistics events
+	EventTypeGlobal       EventType = "global"        // Broadcasts to all subscribers
+	EventTypePDFM         EventType = "pdfm"          // PDFM-specific events
+	EventTypeSystem       EventType = "system"        // System-level events
+	EventTypeSystemLogs   EventType = "system_logs"   // System logs events
+	EventTypeHealth       EventType = "health"        // Health check events
+	EventTypeOrchestrator EventType = "orchestrator"  // Orchestrator events
+	EventTypeStats        EventType = "stats"         // Statistics events
+	EventTypeReverseProxy EventType = "reverse_proxy" // Reverse Proxy events
+	EventTypeCatalogCache EventType = "catalog_cache" // Catalog cache events
+	EventTypeJobManager   EventType = "job_manager"   // Job Manager events
 )
 
 func (e EventType) String() string {
@@ -23,7 +25,7 @@ func (e EventType) String() string {
 // IsValid checks if the EventType is valid
 func (e EventType) IsValid() bool {
 	switch e {
-	case EventTypeGlobal, EventTypePDFM, EventTypeSystem, EventTypeSystemLogs, EventTypeHealth, EventTypeOrchestrator, EventTypeStats:
+	case EventTypeGlobal, EventTypePDFM, EventTypeSystem, EventTypeSystemLogs, EventTypeHealth, EventTypeOrchestrator, EventTypeStats, EventTypeReverseProxy, EventTypeCatalogCache, EventTypeJobManager:
 		return true
 	default:
 		return false
@@ -40,5 +42,8 @@ func GetAllEventTypes() []EventType {
 		EventTypeHealth,
 		EventTypeOrchestrator,
 		EventTypeStats,
+		EventTypeReverseProxy,
+		EventTypeCatalogCache,
+		EventTypeJobManager,
 	}
 }

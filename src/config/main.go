@@ -403,10 +403,24 @@ func (c *Config) IsCatalogCachingEnable() bool {
 }
 
 func (c *Config) CacheKeepFreeDiskSpace() int64 {
+	val := c.GetKey(constants.CATALOG_CACHE_KEEP_FREE_DISK_SPACE_ENV_VAR)
+	if val == "" {
+		return constants.DEFAULT_CATALOG_CACHE_KEEP_FREE_DISK_SPACE
+	}
+
 	return int64(c.GetIntKey(constants.CATALOG_CACHE_KEEP_FREE_DISK_SPACE_ENV_VAR))
 }
 
-func (c *Config) CacheMaxSize() int64 {
+func (c *Config) CacheMaxSize(freeDiskSpace int64) int64 {
+	val := c.GetKey(constants.CATALOG_CACHE_MAX_SIZE_ENV_VAR)
+	if val == "" {
+		maxSize := freeDiskSpace - c.CacheKeepFreeDiskSpace()
+		if maxSize < 0 {
+			maxSize = 0
+		}
+		return maxSize
+	}
+
 	return int64(c.GetIntKey(constants.CATALOG_CACHE_MAX_SIZE_ENV_VAR))
 }
 
@@ -616,12 +630,12 @@ func (c *Config) IsBetaEnabled() bool {
 	return enableBeta
 }
 
-func (c *Config) IsForceCacheRefresh() bool {
-	forceCacheRefreshEnvValue := c.GetKey(constants.VM_FORCE_CACHE_REFRESH_ENV_VAR)
-	if forceCacheRefreshEnvValue == "" {
-		return constants.VM_FORCE_CACHE_REFRESH
+func (c *Config) IsCacheRefreshEnabled() bool {
+	disableRefreshEnvValue := c.GetBoolKey(constants.DISABLE_VM_CACHE_REFRESH_ENV_VAR)
+	if disableRefreshEnvValue {
+		return false
 	}
-	return c.GetBoolKey(constants.VM_FORCE_CACHE_REFRESH_ENV_VAR)
+	return true
 }
 
 func (c *Config) ForceCacheRefreshInterval() time.Duration {

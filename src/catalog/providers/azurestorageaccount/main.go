@@ -32,6 +32,7 @@ type AzureStorageAccountProvider struct {
 	StorageAccount  AzureStorageAccount
 	ProgressChannel chan int
 	FileNameChannel chan string
+	StepChannel     chan string
 }
 
 func NewAzureStorageAccountProvider() *AzureStorageAccountProvider {
@@ -59,9 +60,10 @@ func (s *AzureStorageAccountProvider) GetProviderRootPath(ctx basecontext.ApiCon
 	return "/"
 }
 
-func (s *AzureStorageAccountProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int) {
+func (s *AzureStorageAccountProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int, stepChannel chan string) {
 	s.ProgressChannel = progressChannel
 	s.FileNameChannel = fileNameChannel
+	s.StepChannel = stepChannel
 }
 
 func (s *AzureStorageAccountProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
@@ -269,7 +271,7 @@ func (s *AzureStorageAccountProvider) PullFileAndDecompress(ctx basecontext.ApiC
 
 	// Now decompress from the reader directly to the destination
 	// This should read the entire blob, decompressing as it goes.
-	if err := compressor.DecompressFromReader(ctx, pr, destination); err != nil {
+	if err := compressor.DecompressFromReaderWithStepChannel(ctx, pr, destination, s.StepChannel); err != nil {
 		return fmt.Errorf("decompression failed: %w", err)
 	}
 

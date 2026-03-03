@@ -14,6 +14,7 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 	registerClaimsHandlers(ctx, version)
 	registerRolesHandlers(ctx, version)
 	registerCatalogManagerHandlers(ctx, version)
+	registerJobsHandlers(ctx, version)
 
 	if config.Get().IsHost() {
 		registerCacheHandlers(ctx, version)

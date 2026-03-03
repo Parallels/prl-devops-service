@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -46,6 +47,7 @@ type AwsS3BucketProvider struct {
 	Bucket          S3Bucket
 	ProgressChannel chan int
 	FileNameChannel chan string
+	StepChannel     chan string
 }
 
 func NewAwsS3Provider() *AwsS3BucketProvider {
@@ -76,9 +78,10 @@ func (s *AwsS3BucketProvider) CanStream() bool {
 	return true
 }
 
-func (s *AwsS3BucketProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int) {
+func (s *AwsS3BucketProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int, stepChannel chan string) {
 	s.ProgressChannel = progressChannel
 	s.FileNameChannel = fileNameChannel
+	s.StepChannel = stepChannel
 }
 
 func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
@@ -632,13 +635,19 @@ func (s *AwsS3BucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 
 					// Send a progress notification
 					if ns != nil && totalSize > 0 {
-						percent := float64(float64(totalDownloaded)/float64(totalSize)) * 100 * 10
+						percent := float64(totalDownloaded) / float64(totalSize) * 100
 						msg := notifications.
 							NewProgressNotificationMessage(cid, msgPrefix, percent).
 							SetCurrentSize(totalDownloaded).
 							SetTotalSize(totalSize).
 							SetStartingTime(startTime)
 						ns.Notify(msg)
+						if s.ProgressChannel != nil {
+							s.ProgressChannel <- int(math.Round(percent))
+						}
+						if s.StepChannel != nil {
+							s.StepChannel <- helpers.FormatStreamingProgress(msgPrefix, percent, totalDownloaded, totalSize, startTime)
+						}
 					}
 				}
 				if readErr != nil {
@@ -705,7 +714,7 @@ func (s *AwsS3BucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 	// Decompressor goroutine: decompress from the pipe to the destination
 	group.Go(func() error {
 		// Decompress from the read-end of the pipe
-		decompressErr := compressor.DecompressFromReader(ctx, r, destination)
+		decompressErr := compressor.DecompressFromReaderWithStepChannel(ctx, r, destination, s.StepChannel)
 		if decompressErr != nil {
 			// If decompression fails, close the pipe with error (so streamer sees it)
 			_ = w.CloseWithError(decompressErr)
@@ -722,6 +731,9 @@ func (s *AwsS3BucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 	// Everything finished successfully send a final progress notification
 	finalMsg := fmt.Sprintf("Pulling %s", filename)
 	ns.NotifyProgress(cid, finalMsg, 100)
+	if s.StepChannel != nil {
+		s.StepChannel <- fmt.Sprintf("%s 100.0%%", finalMsg)
+	}
 	ns.NotifyInfo(fmt.Sprintf("Finished pulling and decompressing file %s, took %v",
 		filename, time.Since(startTime)))
 

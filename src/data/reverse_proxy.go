@@ -13,9 +13,17 @@ var (
 	ErrReverseProxyHostEmptyNameOrId           = errors.NewWithCode("no reverse proxy host specified", 500)
 	ErrorReverseProxyHostNotFound              = errors.NewWithCode("reverse proxy host not found", 404)
 	ErrorReverseProxyHttpRouteNotFound         = errors.NewWithCode("reverse proxy host http route not found", 404)
+	ErrorReverseProxyHttpRouteInvalidOrder     = errors.NewWithCode("invalid reverse proxy host http route order", 400)
+	ErrorReverseProxyHttpRouteOrderUpdate      = errors.NewWithCode("cannot update reverse proxy host http route and change order at the same time", 400)
 	ErrorReverseProxyTcpRouteNotFound          = errors.NewWithCode("reverse proxy host tcp route not found", 404)
 	ErrorReverseProxyTcpRouteWithHttpRouteHost = errors.NewWithCode("cannot update reverse proxy TCP route when HTTP routes are present", 400)
 )
+
+func normalizeReverseProxyHttpRoutesOrder(routes []*models.ReverseProxyHostHttpRoute) {
+	for i, route := range routes {
+		route.Order = i + 1
+	}
+}
 
 func (j *JsonDatabase) GetReverseProxyConfig(ctx basecontext.ApiContext) (*models.ReverseProxy, error) {
 	if !j.IsConnected() {
@@ -255,6 +263,8 @@ func (j *JsonDatabase) CreateReverseProxyHostHttpRoute(ctx basecontext.ApiContex
 	route.ID = helpers.GenerateId()
 	for i, h := range j.data.ReverseProxyHosts {
 		if h.ID == rpHost.ID {
+			normalizeReverseProxyHttpRoutesOrder(j.data.ReverseProxyHosts[i].HttpRoutes)
+			route.Order = len(j.data.ReverseProxyHosts[i].HttpRoutes) + 1
 			j.data.ReverseProxyHosts[i].HttpRoutes = append(j.data.ReverseProxyHosts[i].HttpRoutes, &route)
 			j.SaveNow(ctx)
 			return &route, nil
@@ -274,11 +284,19 @@ func (j *JsonDatabase) DeleteReverseProxyHostHttpRoute(ctx basecontext.ApiContex
 		return err
 	}
 
+	routeDeleted := false
 	for i, r := range rpHost.HttpRoutes {
 		if strings.EqualFold(r.ID, routeId) || strings.EqualFold(r.GetRoute(), routeId) {
 			rpHost.HttpRoutes = append(rpHost.HttpRoutes[:i], rpHost.HttpRoutes[i+1:]...)
+			routeDeleted = true
+			break
 		}
 	}
+	if !routeDeleted {
+		return ErrorReverseProxyHttpRouteNotFound
+	}
+
+	normalizeReverseProxyHttpRoutesOrder(rpHost.HttpRoutes)
 
 	for i, h := range j.data.ReverseProxyHosts {
 		if h.ID == rpHost.ID {
@@ -303,13 +321,71 @@ func (j *JsonDatabase) UpdateReverseProxyHostHttpRoute(ctx basecontext.ApiContex
 
 	for i, r := range rpHost.HttpRoutes {
 		if strings.EqualFold(r.ID, route.ID) || strings.EqualFold(r.GetRoute(), route.GetRoute()) {
+			if route.Order != 0 && route.Order != r.Order {
+				return nil, ErrorReverseProxyHttpRouteOrderUpdate
+			}
+			route.Order = r.Order
 			if r.Diff(route) {
 				rpHost.HttpRoutes[i] = &route
+				normalizeReverseProxyHttpRoutesOrder(rpHost.HttpRoutes)
 				_ = j.SaveNow(ctx)
-				return &route, nil
+				return rpHost.HttpRoutes[i], nil
 			}
 
 			return r, nil
+		}
+	}
+
+	return nil, ErrorReverseProxyHostNotFound
+}
+
+func (j *JsonDatabase) ReorderReverseProxyHostHttpRoute(ctx basecontext.ApiContext, rpHostId, routeId string, newOrder int) (*models.ReverseProxyHost, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	rpHost, err := j.GetReverseProxyHost(ctx, rpHostId)
+	if err != nil {
+		return nil, err
+	}
+
+	if newOrder < 1 || newOrder > len(rpHost.HttpRoutes) {
+		return nil, ErrorReverseProxyHttpRouteInvalidOrder
+	}
+
+	normalizeReverseProxyHttpRoutesOrder(rpHost.HttpRoutes)
+
+	currentIndex := -1
+	for i, r := range rpHost.HttpRoutes {
+		if strings.EqualFold(r.ID, routeId) {
+			currentIndex = i
+			break
+		}
+	}
+
+	if currentIndex < 0 {
+		return nil, ErrorReverseProxyHttpRouteNotFound
+	}
+
+	targetIndex := newOrder - 1
+	if currentIndex == targetIndex {
+		return rpHost, nil
+	}
+
+	route := rpHost.HttpRoutes[currentIndex]
+	rpHost.HttpRoutes = append(rpHost.HttpRoutes[:currentIndex], rpHost.HttpRoutes[currentIndex+1:]...)
+	if targetIndex >= len(rpHost.HttpRoutes) {
+		rpHost.HttpRoutes = append(rpHost.HttpRoutes, route)
+	} else {
+		rpHost.HttpRoutes = append(rpHost.HttpRoutes[:targetIndex], append([]*models.ReverseProxyHostHttpRoute{route}, rpHost.HttpRoutes[targetIndex:]...)...)
+	}
+	normalizeReverseProxyHttpRoutesOrder(rpHost.HttpRoutes)
+
+	for i, h := range j.data.ReverseProxyHosts {
+		if h.ID == rpHost.ID {
+			j.data.ReverseProxyHosts[i].HttpRoutes = rpHost.HttpRoutes
+			_ = j.SaveNow(ctx)
+			return &j.data.ReverseProxyHosts[i], nil
 		}
 	}
 

@@ -37,6 +37,7 @@ type OrchestratorHost struct {
 	ReverseProxy              *ReverseProxy                   `json:"reverse_proxy,omitempty"`
 	ReverseProxyHosts         []*ReverseProxyHost             `json:"reverse_proxy_hosts,omitempty"`
 	CacheConfig               *models.CatalogCacheConfig      `json:"cache_config,omitempty"`
+	CacheItems                []models.HostCatalogCacheItem   `json:"cache_items,omitempty"`
 	CreatedAt                 string                          `json:"created_at,omitempty"`
 	UpdatedAt                 string                          `json:"updated_at,omitempty"`
 	RequiredClaims            []string                        `json:"required_claims,omitempty"`
@@ -249,6 +250,35 @@ func (o *OrchestratorHost) Diff(source OrchestratorHost) bool {
 
 	for i, rpHost := range o.ReverseProxyHosts {
 		if rpHost.Diff(*source.ReverseProxyHosts[i]) {
+			return true
+		}
+	}
+
+	if o.CacheConfig != nil && source.CacheConfig == nil {
+		return true
+	}
+	if o.CacheConfig == nil && source.CacheConfig != nil {
+		return true
+	}
+	if o.CacheConfig != nil && source.CacheConfig != nil {
+		if o.CacheConfig.Enabled != source.CacheConfig.Enabled || o.CacheConfig.MaxSize != source.CacheConfig.MaxSize {
+			return true
+		}
+	}
+
+	if len(o.CacheItems) != len(source.CacheItems) {
+		return true
+	}
+
+	for _, item := range o.CacheItems {
+		found := false
+		for _, sourceItem := range source.CacheItems {
+			if item.CatalogId == sourceItem.CatalogId && item.Version == sourceItem.Version {
+				found = true
+				break
+			}
+		}
+		if !found {
 			return true
 		}
 	}

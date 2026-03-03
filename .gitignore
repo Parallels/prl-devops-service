@@ -26,3 +26,4 @@ _site/
 *.log
 commit.msg
 .cache/
+.ai/

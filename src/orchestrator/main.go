@@ -71,6 +71,9 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	handlers.NewHostHealthHandler(manager)
 	handlers.NewHostStatsHandler(manager)
 	handlers.NewHostLogsHandler(manager)
+	handlers.NewHostCatalogCacheEventHandler(manager, func(hostId string) {
+		go globalOrchestratorService.RefreshHostCache(hostId)
+	})
 
 	// Initial refresh of connections
 	if hosts, err := s.db.GetOrchestratorHosts(s.ctx, ""); err == nil {
@@ -86,6 +89,7 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	}
 
 	s.ctx.LogInfof("[Orchestrator] Starting Orchestrator Background Service")
+	firstRun := true
 	for {
 		select {
 		case <-s.syncContext.Done():
@@ -99,7 +103,7 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 
 			for _, host := range dtoOrchestratorHosts {
 				wg.Add(1)
-				go s.processHostWaitingGroup(host, &wg)
+				go s.processHostWaitingGroup(host, firstRun, &wg)
 			}
 			wg.Wait()
 
@@ -108,6 +112,7 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 				s.ctx.LogInfof("[Orchestrator] Sleeping for %s seconds", s.refreshInterval)
 			}
 
+			firstRun = false
 			time.Sleep(s.refreshInterval)
 		}
 	}
@@ -146,22 +151,22 @@ func (s *OrchestratorService) Refresh() {
 	}
 
 	for _, host := range dtoOrchestratorHosts {
-		go s.processHost(host)
+		go s.processHost(host, true)
 	}
 }
 
-func (s *OrchestratorService) processHostWaitingGroup(host models.OrchestratorHost, wg *sync.WaitGroup) {
+func (s *OrchestratorService) processHostWaitingGroup(host models.OrchestratorHost, forceRefresh bool, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	select {
 	case <-s.syncContext.Done():
 		return
 	default:
-		s.processHost(host)
+		s.processHost(host, forceRefresh)
 	}
 }
 
-func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
+func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRefresh bool) {
 	// Check if host is connected via WebSocket
 	manager := GetHostWebSocketManager()
 	websocketPingFailed := false
@@ -172,7 +177,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 		lastUpdated, err := time.Parse(time.RFC3339Nano, host.UpdatedAt)
 		stalenessThreshold := s.refreshInterval * 3
 
-		if err == nil && time.Since(lastUpdated) < stalenessThreshold {
+		if err == nil && time.Since(lastUpdated) < stalenessThreshold && !forceRefresh {
 			s.ctx.LogDebugf("[Orchestrator] Host %s is connected and fresh (last updated: %s). Skipping HTTP health check.", host.Host, host.UpdatedAt)
 			// Ping successful (implied by freshness), skip HTTP health check
 			if !host.HasWebsocketEvents {
@@ -325,6 +330,23 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	host.Resources.TotalAppleVms = int64(totalAppleVms)
 	host.UpdatedAt = helpers.GetUtcCurrentDateTime()
 
+	// Getting Cache Items
+	if cacheList, err := s.CallGetHostCatalogCache(&host); err == nil && cacheList != nil {
+		host.CacheItems = make([]apimodels.HostCatalogCacheItem, 0)
+		for _, manifest := range cacheList.Manifests {
+			host.CacheItems = append(host.CacheItems, apimodels.HostCatalogCacheItem{
+				CatalogId:    manifest.CatalogId,
+				Version:      manifest.Version,
+				Architecture: manifest.Architecture,
+				CacheSize:    manifest.CacheSize,
+				CacheType:    manifest.CacheType,
+				CachedDate:   manifest.CacheDate,
+			})
+		}
+	} else {
+		s.ctx.LogWarnf("[Orchestrator] Defaulting or error getting cache items for host %s: %v", host.Host, err)
+	}
+
 	s.ctx.LogInfof("[Orchestrator] Host %s has %v CPU Cores and %v Mb of RAM, contains %v VMs of which %v are MacVMs", host.Host, host.Resources.Total.LogicalCpuCount, host.Resources.Total.MemorySize, len(host.VirtualMachines), host.Resources.TotalAppleVms)
 
 	_ = s.persistHost(&host)
@@ -335,6 +357,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost) {
 	host.VirtualMachines = nil
 	host.ReverseProxy = nil
 	host.ReverseProxyHosts = nil
+	host.CacheItems = nil
 
 	// Emit host health update event
 	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
@@ -374,13 +397,37 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 		return err
 	}
 
-	s.ctx.LogDebugf("[Orchestrator] Host %s saved, freeing up memory", host.Host)
 	// Free up memory
 	hostToSave.HealthCheck = nil
 	hostToSave.Resources = nil
 	hostToSave.VirtualMachines = nil
+	hostToSave.ReverseProxy = nil
+	hostToSave.ReverseProxyHosts = nil
+	hostToSave.CacheItems = nil
 
 	return nil
+}
+
+func (s *OrchestratorService) RefreshHostCache(hostId string) {
+	if host, err := s.db.GetOrchestratorHost(s.ctx, hostId); err == nil && host != nil {
+		if cacheList, err := s.CallGetHostCatalogCache(host); err == nil && cacheList != nil {
+			host.CacheItems = make([]apimodels.HostCatalogCacheItem, 0)
+			for _, manifest := range cacheList.Manifests {
+				host.CacheItems = append(host.CacheItems, apimodels.HostCatalogCacheItem{
+					CatalogId:    manifest.CatalogId,
+					Version:      manifest.Version,
+					Architecture: manifest.Architecture,
+					CacheSize:    manifest.CacheSize,
+					CacheType:    manifest.CacheType,
+					CachedDate:   manifest.CacheDate,
+				})
+			}
+			host.UpdatedAt = helpers.GetUtcCurrentDateTime()
+			_ = s.persistHost(host)
+		} else {
+			s.ctx.LogWarnf("[Orchestrator] Error doing real-time cache refresh for host %s: %v", host.Host, err)
+		}
+	}
 }
 
 func (s *OrchestratorService) SetHealthCheckTimeout(timeout time.Duration) {

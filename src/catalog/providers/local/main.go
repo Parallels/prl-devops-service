@@ -25,6 +25,7 @@ type LocalProvider struct {
 	Config          LocalProviderConfig
 	ProgressChannel chan int
 	FileNameChannel chan string
+	StepChannel     chan string
 }
 
 func NewLocalProvider() *LocalProvider {
@@ -56,9 +57,10 @@ func (s *LocalProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
 	return s.Config.Path
 }
 
-func (s *LocalProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int) {
+func (s *LocalProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int, stepChannel chan string) {
 	s.ProgressChannel = progressChannel
 	s.FileNameChannel = fileNameChannel
+	s.StepChannel = stepChannel
 }
 
 func (s *LocalProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
