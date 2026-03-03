@@ -1355,25 +1355,19 @@ func CreateSnapshot() restapi.ControllerHandler {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
-			found := false
 			for _, snapshot := range snapshots.Snapshots {
 				if snapshot.ID == response.SnapshotId {
-					found = true
 					w.WriteHeader(http.StatusAccepted)
-					defer r.Body.Close()
 					_ = json.NewEncoder(w).Encode(response)
 					return
 				}
 			}
-			if !found {
-				ReturnApiError(ctx, w, models.ApiErrorResponse{
-					Message: "Snapshot not found",
-					Code:    http.StatusBadRequest,
-				})
-				return
-			}
 		}
 
+		ReturnApiError(ctx, w, models.ApiErrorResponse{
+			Message: "Snapshot not created",
+			Code:    http.StatusBadRequest,
+		})
 	}
 }
 
@@ -1419,23 +1413,21 @@ func DeleteSnapshot() restapi.ControllerHandler {
 			}
 			found := false
 			for _, snapshot := range snapshots.Snapshots {
-				if snapshot.ID != SnapshotId {
-					continue
-				}
 				if snapshot.ID == SnapshotId {
 					found = true
-					w.WriteHeader(http.StatusBadRequest)
-					defer r.Body.Close()
 					break
 				}
 			}
 			if !found {
 				w.WriteHeader(http.StatusAccepted)
-				defer r.Body.Close()
 				return
 			}
 		}
 
+		ReturnApiError(ctx, w, models.ApiErrorResponse{
+			Message: "Snapshot not deleted",
+			Code:    http.StatusBadRequest,
+		})
 	}
 }
 
@@ -1487,17 +1479,14 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 			}
 			if len(snapshot.Snapshots) == 0 {
 				w.WriteHeader(http.StatusAccepted)
-				defer r.Body.Close()
-				return
-			} else if len(snapshot.Snapshots) != 0 {
-				ReturnApiError(ctx, w, models.ApiErrorResponse{
-					Message: "Snapshots not deleted",
-					Code:    http.StatusBadRequest,
-				})
-
 				return
 			}
 		}
+
+		ReturnApiError(ctx, w, models.ApiErrorResponse{
+			Message: "Snapshots not deleted",
+			Code:    http.StatusBadRequest,
+		})
 
 	}
 }
@@ -1582,7 +1571,6 @@ func RevertSnapshot() restapi.ControllerHandler {
 			for _, snapshot := range snapshot.Snapshots {
 				if snapshot.ID == SnapshotId && snapshot.Current {
 					w.WriteHeader(http.StatusAccepted)
-					defer r.Body.Close()
 					return
 				}
 			}
