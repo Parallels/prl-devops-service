@@ -7,6 +7,7 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	apiModels "github.com/Parallels/prl-devops-service/models"
 )
 
 var (
@@ -15,6 +16,7 @@ var (
 	ErrOrchestratorHostNotFound               = errors.NewWithCode("host not found", 404)
 	ErrOrchestratorReverseProxyHostNotFound   = errors.NewWithCode("reverse proxy host not found", 404)
 	ErrOrchestratorHostVirtualMachineNotFound = errors.NewWithCode("host virtual machine not found", 404)
+	ErrOrchestratorSnapshotsNotFound          = errors.NewWithCode("orchestrator snapshots not found for host", 404)
 )
 
 func (j *JsonDatabase) GetOrchestratorHosts(ctx basecontext.ApiContext, filter string) ([]models.OrchestratorHost, error) {
@@ -686,4 +688,44 @@ func (j *JsonDatabase) GetOrchestratorReverseProxyConfig(ctx basecontext.ApiCont
 	}
 
 	return host.ReverseProxy, nil
+}
+
+func (j *JsonDatabase) GetOrchestratorSnapshots(ctx basecontext.ApiContext, hostId string) (*models.OrchestratorSnapshot, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
+	for _, snap := range j.data.OrchestratorSnapshots {
+		if snap.HostId == hostId {
+			return &snap, nil
+		}
+	}
+
+	return nil, ErrOrchestratorSnapshotsNotFound
+}
+
+func (j *JsonDatabase) SetOrchestratorSnapshots(ctx basecontext.ApiContext, hostId string, vmId string, snapshots apiModels.ListSnapshotResponse) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+
+	for i, snap := range j.data.OrchestratorSnapshots {
+		if snap.HostId == hostId {
+			snap.Snapshots[vmId] = snapshots
+			j.data.OrchestratorSnapshots[i] = snap
+			return nil
+		}
+	}
+
+	j.data.OrchestratorSnapshots = append(j.data.OrchestratorSnapshots, models.OrchestratorSnapshot{
+		HostId:    hostId,
+		Snapshots: map[string]apiModels.ListSnapshotResponse{vmId: snapshots},
+	})
+	return nil
 }
