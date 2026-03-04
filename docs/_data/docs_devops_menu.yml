@@ -59,3 +59,8 @@
       link: /docs/devops/events-hub/how-to-know-my-client-id/  
     - name: Sending Unsubscribe Requests for Events channel
       link: /docs/devops/events-hub/how-to-send-unsubscribe-requests/
+- label: Snapshots
+  items:
+    - name: Managing Virtual Machine Snapshots
+      link: /docs/devops/snapshots/
+
