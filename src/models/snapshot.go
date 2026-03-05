@@ -14,8 +14,6 @@ type DeleteSnapshotRequest struct {
 	DeleteChildren bool `json:"delete_children,omitempty"`
 }
 
-type ListSnapshotRequest struct {
-}
 type Snapshot struct {
 	ID      string `json:"id,omitempty"`
 	Name    string `json:"name"`
