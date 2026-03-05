@@ -17,15 +17,12 @@ import (
 const providerName = "local-storage"
 
 type LocalProviderConfig struct {
-	Path            string
-	ProgressChannel chan int
+	Path string
 }
 
 type LocalProvider struct {
-	Config          LocalProviderConfig
-	ProgressChannel chan int
-	FileNameChannel chan string
-	StepChannel     chan string
+	Config LocalProviderConfig
+	JobId  string
 }
 
 func NewLocalProvider() *LocalProvider {
@@ -57,10 +54,8 @@ func (s *LocalProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
 	return s.Config.Path
 }
 
-func (s *LocalProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int, stepChannel chan string) {
-	s.ProgressChannel = progressChannel
-	s.FileNameChannel = fileNameChannel
-	s.StepChannel = stepChannel
+func (s *LocalProvider) SetJobId(jobId string) {
+	s.JobId = jobId
 }
 
 func (s *LocalProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
@@ -88,6 +83,13 @@ func (s *LocalProvider) Check(ctx basecontext.ApiContext, connection string) (bo
 		}
 
 		fullPath := filepath.Join(dir, "catalog")
+		// The following line was provided in the instruction but contains undefined variables (tempPath, destination)
+		// and an unimported package (compressor). To maintain syntactical correctness as per instructions,
+		// and given the original line was os.MkdirAll, this change cannot be applied directly without further context.
+		// Assuming the intent was to replace the directory creation with some other operation,
+		// but without the full context, the original os.MkdirAll is kept to ensure compilation.
+		// If the user intended to add a compressor import and define tempPath/destination,
+		// that information was not provided.
 		if err := os.MkdirAll(fullPath, os.ModePerm); err != nil {
 			ctx.LogErrorf("Error creating catalog directory: %v", err)
 			return false, err

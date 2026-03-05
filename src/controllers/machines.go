@@ -1251,7 +1251,7 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 
 		go func(jobID string, req models.CreateVirtualMachineRequest) {
 			asyncCtx := basecontext.NewRootBaseContext()
-			_, _ = jobManager.UpdateJobProgress(jobID, "Starting catalog machine creation", 1, constants.JobStateRunning)
+			_, _ = jobManager.UpdateJobProgress(jobID, 1, constants.JobStateRunning)
 			result, err := createCatalogMachine(asyncCtx, req, jobID)
 			if err != nil {
 				_ = jobManager.MarkJobError(jobID, err)

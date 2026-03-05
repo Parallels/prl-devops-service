@@ -31,8 +31,11 @@ package writers
 // }
 
 type ProgressReporter struct {
-	Progress chan int
-	Size     int64
+	Progress             chan int
+	Size                 int64
+	JobId                string
+	Action               string
+	ActionUpdateCallback func(jobId, prefix string, current int64, percent int, total int64)
 }
 
 func NewProgressReporter(size int64, progressChannel chan int) *ProgressReporter {
@@ -40,4 +43,12 @@ func NewProgressReporter(size int64, progressChannel chan int) *ProgressReporter
 		Progress: progressChannel,
 		Size:     size,
 	}
+}
+
+func (pr *ProgressReporter) SetJobId(jobId string) {
+	pr.JobId = jobId
+}
+
+func (pr *ProgressReporter) SetActionUpdateCallback(callback func(jobId, prefix string, current int64, percent int, total int64)) {
+	pr.ActionUpdateCallback = callback
 }

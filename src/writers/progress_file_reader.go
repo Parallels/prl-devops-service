@@ -3,25 +3,31 @@ package writers
 import (
 	"fmt"
 	"os"
+	"strings"
+	"sync" // Added sync import for sync.Mutex
 	"sync/atomic"
 
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 )
 
 type ProgressFileReader struct {
-	ns            *notifications.NotificationService
+	ns            *tracker.JobProgressService
 	file          *os.File
 	correlationId string
 	size          int64
 	read          int64
 	prefix        string
+	jobId         string
+	currentAction string
+	mu            sync.Mutex // Added mu
 }
 
-func NewProgressFileReader(file *os.File, size int64) *ProgressFileReader {
+func NewProgressFileReader(file *os.File, size int64, action string) *ProgressFileReader {
 	return &ProgressFileReader{
-		file: file,
-		size: size,
-		ns:   notifications.Get(),
+		file:          file,
+		size:          size,
+		ns:            tracker.GetProgressService(),
+		currentAction: action,
 	}
 }
 
@@ -37,6 +43,14 @@ func (pr *ProgressFileReader) CorrelationId() string {
 	return pr.correlationId
 }
 
+func (pr *ProgressFileReader) SetJobId(jobId string) {
+	pr.jobId = jobId
+}
+
+func (pr *ProgressFileReader) SetCurrentAction(action string) {
+	pr.currentAction = action
+}
+
 func (pr *ProgressFileReader) Size() int64 {
 	return pr.size
 }
@@ -49,15 +63,18 @@ func (pr *ProgressFileReader) Read(p []byte) (int, error) {
 			percentage := float64(newRead) * 100 / float64(pr.size)
 			if pr.ns != nil {
 				message := pr.prefix
-				if message == "" {
-					message = "Processing"
-				}
 				if pr.file.Name() != "" {
 					message = fmt.Sprintf("%s %s", message, pr.file.Name())
 				}
-				msg := notifications.NewProgressNotificationMessage(pr.correlationId, message, percentage).
-					SetCurrentSize(newRead).
-					SetTotalSize(pr.size)
+
+				if pr.jobId != "" && !strings.HasPrefix(message, "["+pr.jobId+"]") {
+					message = fmt.Sprintf("[%s] %s", pr.jobId, message)
+				}
+
+				msg := tracker.NewJobProgressMessage(pr.correlationId, message, percentage).
+					WithTransfer(newRead, pr.size).
+					WithJob(pr.jobId, pr.currentAction).
+					SetFilename(pr.file.Name())
 				pr.ns.Notify(msg)
 			}
 		}
@@ -81,16 +98,18 @@ func (pr *ProgressFileReader) ReadAt(p []byte, off int64) (int, error) {
 		percentage := float64(newRead) * 100 / float64(pr.size)
 		if pr.ns != nil {
 			message := pr.prefix
-			if message == "" {
-				message = "Processing"
-			}
 			if pr.file.Name() != "" {
 				message = fmt.Sprintf("%s %s", message, pr.file.Name())
 			}
 
-			msg := notifications.NewProgressNotificationMessage(pr.file.Name(), message, percentage).
-				SetCurrentSize(newRead).
-				SetTotalSize(pr.size)
+			if pr.jobId != "" && !strings.HasPrefix(message, "["+pr.jobId+"]") {
+				message = fmt.Sprintf("[%s] %s", pr.jobId, message)
+			}
+
+			msg := tracker.NewJobProgressMessage(pr.correlationId, message, percentage).
+				WithTransfer(newRead, pr.size).
+				WithJob(pr.jobId, pr.currentAction).
+				SetFilename(pr.file.Name())
 			pr.ns.Notify(msg)
 		}
 	}

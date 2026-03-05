@@ -51,10 +51,13 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basec
 	usr := ctx.GetUser()
 	if usr == nil {
 		ctx.LogErrorf("WebSocket connection without authenticated user")
-		return &models.ApiErrorResponse{
-			Message: "Authentication required",
-			Code:    http.StatusUnauthorized,
-		}
+		// Connection is already hijacked; send a WebSocket close frame instead of
+		// writing to the HTTP response writer (which would cause a 'hijacked
+		// connection' runtime warning).
+		_ = conn.WriteMessage(websocket.CloseMessage,
+			websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "authentication required"))
+		conn.Close()
+		return nil
 	}
 	// Create client
 	client := &Client{
@@ -71,11 +74,13 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basec
 
 	if !Get().hub.registerClient(client, subscriptions, clientIP) {
 		ctx.LogWarnf("Failed to register client (shutdown or timeout)")
+		// Connection is already hijacked; send a WebSocket close frame instead of
+		// writing to the HTTP response writer (which would cause a 'hijacked
+		// connection' runtime warning).
+		_ = conn.WriteMessage(websocket.CloseMessage,
+			websocket.FormatCloseMessage(websocket.CloseGoingAway, "service is shutting down"))
 		conn.Close()
-		return &models.ApiErrorResponse{
-			Message: "Service is shutting down",
-			Code:    http.StatusServiceUnavailable,
-		}
+		return nil
 	}
 
 	return nil

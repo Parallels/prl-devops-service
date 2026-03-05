@@ -3,28 +3,34 @@ package writers
 import (
 	"fmt"
 	"io"
+	"strings"
+	"sync"
 	"sync/atomic"
 
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 )
 
 type ProgressReader struct {
-	ns            *notifications.NotificationService
+	ns            *tracker.JobProgressService
 	reader        io.Reader
 	correlationId string
 	size          int64
 	read          int64
 	filename      string
 	prefix        string
+	jobId         string
+	currentAction string
+	mu            sync.Mutex
 }
 
-func NewProgressReader(reader io.Reader, size int64) *ProgressReader {
+func NewProgressReader(reader io.Reader, size int64, action string) *ProgressReader {
 	return &ProgressReader{
 		correlationId: helpers.GenerateId(),
-		ns:            notifications.Get(),
+		ns:            tracker.GetProgressService(),
 		reader:        reader,
 		size:          size,
+		currentAction: action,
 	}
 }
 
@@ -42,6 +48,14 @@ func (pr *ProgressReader) SetCorrelationId(correlationId string) {
 
 func (pr *ProgressReader) CorrelationId() string {
 	return pr.correlationId
+}
+
+func (pr *ProgressReader) SetJobId(jobId string) {
+	pr.jobId = jobId
+}
+
+func (pr *ProgressReader) SetCurrentAction(action string) {
+	pr.currentAction = action
 }
 
 func (pr *ProgressReader) Size() int64 {
@@ -64,15 +78,18 @@ func (pr *ProgressReader) Read(p []byte) (int, error) {
 			percentage := float64(newRead) * 100 / float64(pr.size)
 			if pr.ns != nil {
 				prefix := pr.prefix
-				if prefix == "" {
-					prefix = "Processing"
-				}
 				if pr.filename != "" {
 					prefix = fmt.Sprintf("%s %s", prefix, pr.filename)
 				}
-				msg := notifications.NewProgressNotificationMessage(pr.correlationId, prefix, percentage).
-					SetCurrentSize(newRead).
-					SetTotalSize(pr.size)
+
+				if pr.jobId != "" && !strings.HasPrefix(prefix, "["+pr.jobId+"]") {
+					prefix = fmt.Sprintf("[%s] %s", pr.jobId, prefix)
+				}
+
+				msg := tracker.NewJobProgressMessage(pr.correlationId, prefix, percentage).
+					WithTransfer(newRead, pr.size).
+					WithJob(pr.jobId, pr.currentAction).
+					SetFilename(pr.filename)
 				pr.ns.Notify(msg)
 			}
 		}
@@ -100,15 +117,18 @@ func (pr *ProgressReader) ReadAt(p []byte, off int64) (int, error) {
 			percentage := float64(newRead) * 100 / float64(pr.size)
 			if pr.ns != nil {
 				prefix := pr.prefix
-				if prefix == "" {
-					prefix = "Processing"
-				}
 				if pr.filename != "" {
 					prefix = fmt.Sprintf("%s %s", prefix, pr.filename)
 				}
-				msg := notifications.NewProgressNotificationMessage(pr.correlationId, prefix, percentage).
-					SetCurrentSize(newRead).
-					SetTotalSize(pr.size)
+
+				if pr.jobId != "" && !strings.HasPrefix(prefix, "["+pr.jobId+"]") {
+					prefix = fmt.Sprintf("[%s] %s", pr.jobId, prefix)
+				}
+
+				msg := tracker.NewJobProgressMessage(pr.correlationId, prefix, percentage).
+					WithTransfer(newRead, pr.size).
+					WithJob(pr.jobId, pr.currentAction).
+					SetFilename(pr.filename)
 				pr.ns.Notify(msg)
 			}
 		}

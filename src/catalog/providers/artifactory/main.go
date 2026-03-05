@@ -39,10 +39,8 @@ type ArtifactoryRepo struct {
 const providerName = "artifactory"
 
 type ArtifactoryProvider struct {
-	Repo            ArtifactoryRepo
-	ProgressChannel chan int
-	FileNameChannel chan string
-	StepChannel     chan string
+	Repo  ArtifactoryRepo
+	JobId string
 }
 
 func NewArtifactoryProvider() *ArtifactoryProvider {
@@ -59,20 +57,18 @@ func (s *ArtifactoryProvider) CanStream() bool {
 
 func (s *ArtifactoryProvider) GetProviderMeta(ctx basecontext.ApiContext) map[string]string {
 	return map[string]string{
-		common.PROVIDER_VAR_NAME: providerName,
-		"url":                    s.Repo.Host,
-		"port":                   s.Repo.Port,
-		"repo":                   s.Repo.RepoName,
-		"access_key":             s.Repo.ApiKey,
-		"username":               s.Repo.UserName,
-		"password":               s.Repo.Password,
+		"provider":   providerName,
+		"url":        s.Repo.Host,
+		"port":       s.Repo.Port,
+		"repo":       s.Repo.RepoName,
+		"access_key": s.Repo.ApiKey,
+		"username":   s.Repo.UserName,
+		"password":   s.Repo.Password,
 	}
 }
 
-func (s *ArtifactoryProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int, stepChannel chan string) {
-	s.ProgressChannel = progressChannel
-	s.FileNameChannel = fileNameChannel
-	s.StepChannel = stepChannel
+func (s *ArtifactoryProvider) SetJobId(jobId string) {
+	s.JobId = jobId
 }
 
 func (s *ArtifactoryProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
@@ -160,10 +156,6 @@ func (s *ArtifactoryProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 		remoteFilePath = "/" + remoteFilePath
 	}
 
-	if s.FileNameChannel != nil {
-		s.FileNameChannel <- filename
-	}
-
 	manager, err := s.getClient(ctx)
 	if err != nil {
 		return err
@@ -215,7 +207,8 @@ func (s *ArtifactoryProvider) PullFile(ctx basecontext.ApiContext, path string, 
 	if err != nil {
 		return err
 	}
-	progressReporter := writers.NewProgressReporter(fileSize, s.ProgressChannel)
+	progressReporter := writers.NewProgressReporter(fileSize, nil)
+	progressReporter.SetJobId(s.JobId)
 	err = downloadSrv.DownloadFile(url, headers, destinationFilePath, progressReporter)
 	if err != nil {
 		return err
@@ -248,7 +241,8 @@ func (s *ArtifactoryProvider) PullFileAndDecompress(ctx basecontext.ApiContext, 
 	if err != nil {
 		return err
 	}
-	progressReporter := writers.NewProgressReporter(fileSize, s.ProgressChannel)
+	progressReporter := writers.NewProgressReporter(fileSize, nil)
+	progressReporter.SetJobId(s.JobId)
 	err = downloadSrv.DownloadFile(url, headers, destinationFilePath, progressReporter)
 	if err != nil {
 		return err
@@ -287,7 +281,8 @@ func (s *ArtifactoryProvider) PullFileToMemory(ctx basecontext.ApiContext, path 
 		return nil, fmt.Errorf("file size is too large to pull to memory")
 	}
 
-	progressReporter := writers.NewProgressReporter(fileSize, s.ProgressChannel)
+	progressReporter := writers.NewProgressReporter(fileSize, nil)
+	progressReporter.SetJobId(s.JobId)
 	data, err := downloadSrv.DownloadFileToBytes(url, headers, progressReporter)
 	if err != nil {
 		return nil, err

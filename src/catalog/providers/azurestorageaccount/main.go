@@ -12,27 +12,24 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/common"
 	"github.com/Parallels/prl-devops-service/compressor"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/notifications"
-	"github.com/Parallels/prl-devops-service/writers"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 )
 
 type AzureStorageAccount struct {
-	Name            string `json:"storage_account_name"`
-	Key             string `json:"storage_account_key"`
-	ContainerName   string `json:"container_name"`
-	ProgressChannel chan int
+	Name          string `json:"storage_account_name"`
+	Key           string `json:"storage_account_key"`
+	ContainerName string `json:"container_name"`
 }
 
 const providerName = "azure-storage-account"
 
 type AzureStorageAccountProvider struct {
-	StorageAccount  AzureStorageAccount
-	ProgressChannel chan int
-	FileNameChannel chan string
-	StepChannel     chan string
+	StorageAccount AzureStorageAccount
+	JobId          string
 }
 
 func NewAzureStorageAccountProvider() *AzureStorageAccountProvider {
@@ -60,10 +57,8 @@ func (s *AzureStorageAccountProvider) GetProviderRootPath(ctx basecontext.ApiCon
 	return "/"
 }
 
-func (s *AzureStorageAccountProvider) SetProgressChannel(fileNameChannel chan string, progressChannel chan int, stepChannel chan string) {
-	s.ProgressChannel = progressChannel
-	s.FileNameChannel = fileNameChannel
-	s.StepChannel = stepChannel
+func (s *AzureStorageAccountProvider) SetJobId(jobId string) {
+	s.JobId = jobId
 }
 
 func (s *AzureStorageAccountProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
@@ -120,12 +115,6 @@ func (s *AzureStorageAccountProvider) PushFile(ctx basecontext.ApiContext, rootL
 		return err
 	}
 
-	fileInfo, err := file.Stat()
-	if err != nil {
-		ctx.LogInfof("ERROR:", err)
-		return err
-	}
-
 	defer file.Close()
 
 	md5, err := helpers.GetFileMD5Checksum(localFilePath)
@@ -137,11 +126,6 @@ func (s *AzureStorageAccountProvider) PushFile(ctx basecontext.ApiContext, rootL
 	_, err = azblob.UploadFileToBlockBlob(ctx.Context(), file, blobUrl, azblob.UploadToBlockBlobOptions{
 		BlockSize:   4 * 1024 * 1024,
 		Parallelism: 16,
-		Progress: func(bytesTransferred int64) {
-			if s.ProgressChannel != nil {
-				s.ProgressChannel <- int(bytesTransferred * 100 / fileInfo.Size())
-			}
-		},
 	})
 	if err != nil {
 		return err
@@ -192,13 +176,7 @@ func (s *AzureStorageAccountProvider) PullFile(ctx basecontext.ApiContext, path 
 		return nil
 	}
 
-	err = azblob.DownloadBlobToFile(downloadContext, blobUrl.BlobURL, 0, azblob.CountToEnd, file, azblob.DownloadFromBlobOptions{
-		Progress: func(bytesTransferred int64) {
-			if s.ProgressChannel != nil {
-				s.ProgressChannel <- int(bytesTransferred * 100 / properties.ContentLength())
-			}
-		},
-	})
+	err = azblob.DownloadBlobToFile(downloadContext, blobUrl.BlobURL, 0, azblob.CountToEnd, file, azblob.DownloadFromBlobOptions{})
 
 	return err
 }
@@ -206,7 +184,7 @@ func (s *AzureStorageAccountProvider) PullFile(ctx basecontext.ApiContext, path 
 func (s *AzureStorageAccountProvider) PullFileAndDecompress(ctx basecontext.ApiContext, path string, filename string, destination string) error {
 	ctx.LogInfof("Pulling file %s from Azure Blob Storage", filename)
 
-	// Prepare the remote and local paths
+	// Prepare the remote path
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
 
 	// Create the Azure credentials
@@ -253,32 +231,30 @@ func (s *AzureStorageAccountProvider) PullFileAndDecompress(ctx basecontext.ApiC
 		return nil
 	}
 
-	// Download the blob to get an io.ReadCloser stream
-	resp, err := blob.Download(downloadContext, 0, azblob.CountToEnd, azblob.BlobAccessConditions{}, false, azblob.ClientProvidedKeyOptions{})
+	// Create a temporary file to download the blob into
+	tempDownloadFile, err := os.CreateTemp("", "azure-blob-download-*.tmp")
 	if err != nil {
-		return fmt.Errorf("failed to initiate blob download: %w", err)
+		return fmt.Errorf("failed to create temporary file for download: %w", err)
+	}
+	tempDownloadPath := tempDownloadFile.Name()
+	tempDownloadFile.Close()          // Close the file handle, DownloadBlobToFile will open it again
+	defer os.Remove(tempDownloadPath) // Ensure temporary file is cleaned up
+
+	ctx.LogDebugf("Downloading blob to temporary file: %s", tempDownloadPath)
+
+	// Download the blob to the temporary file
+	err = azblob.DownloadBlobToFile(downloadContext, blob.BlobURL, 0, azblob.CountToEnd, tempDownloadFile, azblob.DownloadFromBlobOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to download blob to temporary file: %w", err)
 	}
 
-	// The response body is a stream of the blob data
-	bodyStream := resp.Body(azblob.RetryReaderOptions{})
-
-	// Wrap the blob stream with a progress reader (similar to the S3 approach)
-	// Adjust this line depending on your progress reader's constructor
-	pr := writers.NewProgressReader(bodyStream, blobSize)
-	pr.SetPrefix("Pulling")
-	pr.SetFilename(filename)
-	cid := pr.CorrelationId()
-
-	// Now decompress from the reader directly to the destination
-	// This should read the entire blob, decompressing as it goes.
-	if err := compressor.DecompressFromReaderWithStepChannel(ctx, pr, destination, s.StepChannel); err != nil {
+	// Now decompress from the temporary file directly to the destination
+	if err := compressor.DecompressFileWithStepChannel(ctx, tempDownloadPath, destination, nil, s.JobId, constants.ActionDecompressingPackFile); err != nil {
 		return fmt.Errorf("decompression failed: %w", err)
 	}
 
 	// After successful extraction, notify completion
-	ns := notifications.Get()
-	msg := fmt.Sprintf("Pulling %s", filename)
-	ns.NotifyProgress(cid, msg, 100)
+	ns := tracker.GetProgressService()
 	ns.NotifyInfo(fmt.Sprintf("Finished pulling and decompressing file %s", filename))
 
 	return nil
@@ -323,13 +299,7 @@ func (s *AzureStorageAccountProvider) PullFileToMemory(ctx basecontext.ApiContex
 
 	data := make([]byte, properties.ContentLength())
 
-	err = azblob.DownloadBlobToBuffer(downloadContext, blobUrl.BlobURL, 0, azblob.CountToEnd, data, azblob.DownloadFromBlobOptions{
-		Progress: func(bytesTransferred int64) {
-			if s.ProgressChannel != nil {
-				s.ProgressChannel <- int(bytesTransferred * 100 / properties.ContentLength())
-			}
-		},
-	})
+	err = azblob.DownloadBlobToBuffer(downloadContext, blobUrl.BlobURL, 0, azblob.CountToEnd, data, azblob.DownloadFromBlobOptions{})
 
 	return data, err
 }
