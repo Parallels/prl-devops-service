@@ -1,6 +1,7 @@
 package data
 
 import (
+	"github.com/Parallels/prl-devops-service/data/models"
 	apiModels "github.com/Parallels/prl-devops-service/models"
 )
 
@@ -12,11 +13,20 @@ func (j *JsonDatabase) SetListSnapshotsByVMId(vmID string, listSnapshotResponse 
 	j.dataMutex.Lock()
 	defer j.dataMutex.Unlock()
 
-	if j.data.Snapshots == nil {
-		j.data.Snapshots = make(map[string]apiModels.ListSnapshotResponse)
+	if j.data.VMSnapshots == nil {
+		j.data.VMSnapshots = make(map[string][]models.Snapshot)
 	}
 
-	j.data.Snapshots[vmID] = *listSnapshotResponse
+	for _, snapshot := range listSnapshotResponse.Snapshots {
+		j.data.VMSnapshots[vmID] = append(j.data.VMSnapshots[vmID], models.Snapshot{
+			ID:      snapshot.ID,
+			Name:    snapshot.Name,
+			Date:    snapshot.Date,
+			State:   snapshot.State,
+			Current: snapshot.Current,
+			Parent:  snapshot.Parent,
+		})
+	}
 	return nil
 }
 
@@ -28,14 +38,24 @@ func (j *JsonDatabase) GetListSnapshotsByVMId(vmID string) (*apiModels.ListSnaps
 	j.dataMutex.RLock()
 	defer j.dataMutex.RUnlock()
 
-	if j.data.Snapshots == nil {
+	if j.data.VMSnapshots == nil {
 		return nil, nil
 	}
 
-	listSnapshotResponse, ok := j.data.Snapshots[vmID]
+	snaps, ok := j.data.VMSnapshots[vmID]
 	if !ok {
 		return nil, nil
 	}
-
-	return &listSnapshotResponse, nil
+	resp := apiModels.ListSnapshotResponse{}
+	for i := range snaps {
+		resp.Snapshots = append(resp.Snapshots, apiModels.Snapshot{
+			ID:      snaps[i].ID,
+			Name:    snaps[i].Name,
+			Date:    snaps[i].Date,
+			State:   snaps[i].State,
+			Current: snaps[i].Current,
+			Parent:  snaps[i].Parent,
+		})
+	}
+	return &resp, nil
 }

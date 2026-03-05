@@ -714,18 +714,28 @@ func (j *JsonDatabase) SetOrchestratorSnapshots(ctx basecontext.ApiContext, host
 
 	j.dataMutex.Lock()
 	defer j.dataMutex.Unlock()
-
-	for i, snap := range j.data.OrchestratorSnapshots {
-		if snap.HostId == hostId {
-			snap.Snapshots[vmId] = snapshots
-			j.data.OrchestratorSnapshots[i] = snap
-			return nil
+	hostFound := false
+	for i, orchSnap := range j.data.OrchestratorSnapshots {
+		if orchSnap.HostId == hostId {
+			snaps := []models.Snapshot{}
+			for _, snapshot := range snapshots.Snapshots {
+				snaps = append(snaps, models.Snapshot{
+					ID:      snapshot.ID,
+					Name:    snapshot.Name,
+					Date:    snapshot.Date,
+					State:   snapshot.State,
+					Current: snapshot.Current,
+					Parent:  snapshot.Parent,
+				})
+			}
+			j.data.OrchestratorSnapshots[i].Snapshots[vmId] = snaps
+			hostFound = true
+			break
 		}
 	}
+	if !hostFound {
+		return ErrOrchestratorHostNotFound
+	}
 
-	j.data.OrchestratorSnapshots = append(j.data.OrchestratorSnapshots, models.OrchestratorSnapshot{
-		HostId:    hostId,
-		Snapshots: map[string]apiModels.ListSnapshotResponse{vmId: snapshots},
-	})
 	return nil
 }
