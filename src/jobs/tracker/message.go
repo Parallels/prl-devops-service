@@ -103,6 +103,20 @@ func (nm *JobMessage) SetCurrentAction(action string) *JobMessage {
 	return nm
 }
 
+// WithJob sets both the job ID and current action in a single call.
+func (nm *JobMessage) WithJob(jobId, action string) *JobMessage {
+	nm.JobId = jobId
+	nm.CurrentAction = action
+	return nm
+}
+
+// WithTransfer sets both the current and total byte counts in a single call.
+func (nm *JobMessage) WithTransfer(current, total int64) *JobMessage {
+	nm.currentSize = current
+	nm.totalSize = total
+	return nm
+}
+
 func (nm *JobMessage) SetCurrentActionStep(step string) *JobMessage {
 	nm.CurrentActionStep = step
 	return nm

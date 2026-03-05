@@ -152,8 +152,7 @@ func DecompressFileWithStepChannel(ctx basecontext.ApiContext, filePath string, 
 
 	if ns != nil {
 		msg := tracker.NewJobProgressMessage(jobId, fmt.Sprintf("Finished decompression of %s in %v", filepath.Base(filePath), endingTime.Sub(staringTime).Round(time.Second)), 100).
-			SetJobId(jobId).
-			SetCurrentAction(action).
+			WithJob(jobId, action).
 			SetFilename(filepath.Base(compressedFile.Name()))
 		ns.Notify(msg)
 	}
@@ -243,8 +242,7 @@ func DecompressTarGzStream(ctx basecontext.ApiContext, reader io.Reader, filenam
 	logger.LogInfof("Finished decompressing from stream to %s in %v", destination, endingTime.Sub(startingTime).Round(time.Millisecond))
 	if ns != nil {
 		msg := tracker.NewJobProgressMessage(jobId, fmt.Sprintf("Finished decompression in %v", endingTime.Sub(startingTime).Round(time.Second)), 100).
-			SetJobId(jobId).
-			SetCurrentAction(action).
+			WithJob(jobId, action).
 			SetFilename(filename)
 		ns.Notify(msg)
 	}
@@ -285,11 +283,9 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 		}
 		if ns != nil {
 			msg := tracker.NewJobProgressMessage(correlationId, fmt.Sprintf("Decompressing %s", header.Name), 0).
-				SetJobId(jobId).
-				SetCurrentAction(action).
-				SetFilename(header.Name).
-				SetTotalSize(header.Size).
-				SetCurrentSize(0)
+				WithJob(jobId, action).
+				WithTransfer(0, header.Size).
+				SetFilename(header.Name)
 			ns.Notify(msg)
 		}
 
@@ -382,10 +378,8 @@ func copyTarChunks(ctx basecontext.ApiContext, file *os.File, reader *tar.Reader
 		if err == io.EOF {
 			if ns != nil {
 				msg := tracker.NewJobProgressMessage(jobId, action, 100).
-					SetCurrentSize(fileSize).
-					SetTotalSize(fileSize).
-					SetJobId(jobId).
-					SetCurrentAction(action).
+					WithJob(jobId, action).
+					WithTransfer(fileSize, fileSize).
 					SetFilename(file.Name())
 				ns.Notify(msg)
 			}
@@ -397,16 +391,10 @@ func copyTarChunks(ctx basecontext.ApiContext, file *os.File, reader *tar.Reader
 		}
 		if ns != nil {
 			percentage := float64(extractedSize) / float64(fileSize) * 100
-			msg := tracker.NewJobProgressMessage(
-				jobId,
-				action,
-				percentage,
-			).
-				SetCurrentSize(extractedSize).
-				SetTotalSize(fileSize).
+			msg := tracker.NewJobProgressMessage(jobId, action, percentage).
+				WithJob(jobId, action).
+				WithTransfer(extractedSize, fileSize).
 				SetStartingTime(startTime).
-				SetJobId(jobId).
-				SetCurrentAction(action).
 				SetFilename(file.Name())
 			ns.Notify(msg)
 		}

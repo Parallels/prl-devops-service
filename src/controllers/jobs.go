@@ -351,11 +351,9 @@ func runDebugProfilePullRemote(jobId string, jobManager *jobs.JobManagerService)
 		for pct := 0.0; pct <= 100.0; pct += 1.0 {
 			curBytes := int64(pct / 100.0 * float64(totalBytes))
 			ns.Notify(tracker.NewJobProgressMessage(dlCorrId, "Downloading debug-vm.pdpack", pct).
-				SetCurrentSize(curBytes).
-				SetTotalSize(totalBytes).
+				WithTransfer(curBytes, totalBytes).
 				SetStartingTime(startTime).
-				SetJobId(jobId).
-				SetCurrentAction(constants.ActionDownloadingPackFile).
+				WithJob(jobId, constants.ActionDownloadingPackFile).
 				SetFilename("debug-vm.pdpack"))
 			time.Sleep(200 * time.Millisecond)
 		}
@@ -370,11 +368,9 @@ func runDebugProfilePullRemote(jobId string, jobManager *jobs.JobManagerService)
 		for pct := 0.0; pct <= 100.0; pct += 1.0 {
 			curBytes := int64(pct / 100.0 * float64(totalBytes))
 			ns.Notify(tracker.NewJobProgressMessage(dcCorrId, "Decompressing debug-vm.pdpack", pct).
-				SetCurrentSize(curBytes).
-				SetTotalSize(totalBytes).
+				WithTransfer(curBytes, totalBytes).
 				SetStartingTime(startTime).
-				SetJobId(jobId).
-				SetCurrentAction(constants.ActionDecompressingPackFile).
+				WithJob(jobId, constants.ActionDecompressingPackFile).
 				SetFilename("debug-vm.pdpack"))
 			time.Sleep(300 * time.Millisecond)
 		}
@@ -453,8 +449,7 @@ func runDebugProfilePullCache(jobId string, jobManager *jobs.JobManagerService) 
 			SetCurrentSize(int64(pct / 100.0 * float64(totalBytes))).
 			SetTotalSize(totalBytes).
 			SetStartingTime(startTime).
-			SetJobId(jobId).
-			SetCurrentAction(constants.ActionCopyingFromCache).
+			WithJob(jobId, constants.ActionCopyingFromCache).
 			SetFilename("debug-vm.pdpack"))
 		time.Sleep(150 * time.Millisecond)
 	}
@@ -542,8 +537,7 @@ func runDebugProfileSkippedSteps(jobId string, jobManager *jobs.JobManagerServic
 			SetCurrentSize(int64(pct / 100.0 * float64(totalBytes))).
 			SetTotalSize(totalBytes).
 			SetStartingTime(startTime).
-			SetJobId(jobId).
-			SetCurrentAction(constants.ActionCopyingFromCache).
+			WithJob(jobId, constants.ActionCopyingFromCache).
 			SetFilename("debug-vm.pdpack"))
 		time.Sleep(200 * time.Millisecond)
 	}

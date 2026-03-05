@@ -837,8 +837,7 @@ func (cs *CacheService) Cache() error {
 	jobManager := jobs.Get(cs.baseCtx)
 	if cs.JobId != "" && jobManager != nil {
 		cs.notifications.Notify(tracker.NewJobProgressMessage(cs.JobId, constants.ActionDownloadingManifest, 100).
-			SetJobId(cs.JobId).
-			SetCurrentAction(constants.ActionDownloadingManifest).
+			WithJob(cs.JobId, constants.ActionDownloadingManifest).
 			SetFilename(cs.manifest.Name))
 	}
 

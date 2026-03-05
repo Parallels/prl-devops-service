@@ -91,10 +91,8 @@ func (pw *ProgressWriter) WriteAt(p []byte, off int64) (n int, err error) {
 				}
 
 				msg := tracker.NewJobProgressMessage(pw.correlationId, prefix, percentage).
-					SetCurrentSize(off).
-					SetTotalSize(pw.size).
-					SetJobId(pw.jobId).
-					SetCurrentAction(pw.currentAction).
+					WithTransfer(off, pw.size).
+					WithJob(pw.jobId, pw.currentAction).
 					SetFilename(pw.filename)
 				pw.ns.Notify(msg)
 			}
@@ -123,10 +121,8 @@ func (pw *ProgressWriter) Write(p []byte) (int, error) {
 				}
 
 				msg := tracker.NewJobProgressMessage(pw.correlationId, prefix, percentage).
-					SetCurrentSize(pw.totalProcessed).
-					SetTotalSize(pw.size).
-					SetJobId(pw.jobId).
-					SetCurrentAction(pw.currentAction).
+					WithTransfer(pw.totalProcessed, pw.size).
+					WithJob(pw.jobId, pw.currentAction).
 					SetFilename(pw.filename)
 
 				pw.ns.Notify(msg)

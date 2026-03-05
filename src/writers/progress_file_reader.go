@@ -72,10 +72,8 @@ func (pr *ProgressFileReader) Read(p []byte) (int, error) {
 				}
 
 				msg := tracker.NewJobProgressMessage(pr.correlationId, message, percentage).
-					SetCurrentSize(newRead).
-					SetTotalSize(pr.size).
-					SetJobId(pr.jobId).
-					SetCurrentAction(pr.currentAction).
+					WithTransfer(newRead, pr.size).
+					WithJob(pr.jobId, pr.currentAction).
 					SetFilename(pr.file.Name())
 				pr.ns.Notify(msg)
 			}
@@ -109,10 +107,8 @@ func (pr *ProgressFileReader) ReadAt(p []byte, off int64) (int, error) {
 			}
 
 			msg := tracker.NewJobProgressMessage(pr.correlationId, message, percentage).
-				SetCurrentSize(newRead).
-				SetTotalSize(pr.size).
-				SetJobId(pr.jobId).
-				SetCurrentAction(pr.currentAction).
+				WithTransfer(newRead, pr.size).
+				WithJob(pr.jobId, pr.currentAction).
 				SetFilename(pr.file.Name())
 			pr.ns.Notify(msg)
 		}

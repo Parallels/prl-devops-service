@@ -152,11 +152,7 @@ func (p *JobProgressService) Notify(msg *JobMessage) {
 // NotifyJobMessage sends a root-level job message without assigning it to any specific step.
 // This is useful for JobStateInit messages and general overall status messages.
 func (p *JobProgressService) NotifyJobMessage(jobId string, msg string, args ...interface{}) {
-	msg = fmt.Sprintf(msg, args...)
-	nMsg := NewJobMessage(msg, JobMessageLevelInfo).
-		SetJobId(jobId).
-		SetCurrentAction("")
-	p.Notify(nMsg)
+	p.Notify(NewJobMessage(fmt.Sprintf(msg, args...), JobMessageLevelInfo).WithJob(jobId, ""))
 }
 
 type JobLogger struct {
@@ -174,63 +170,35 @@ func (p *JobProgressService) WithJob(jobId, action string) *JobLogger {
 }
 
 func (l *JobLogger) NotifyInfo(msg string) {
-	nMsg := NewJobMessage(msg, JobMessageLevelInfo).
-		SetJobId(l.jobId).
-		SetCurrentAction(l.action)
-	l.ns.Notify(nMsg)
+	l.ns.Notify(NewJobMessage(msg, JobMessageLevelInfo).WithJob(l.jobId, l.action))
 }
 
 func (l *JobLogger) NotifyInfof(format string, args ...interface{}) {
-	msg := fmt.Sprintf(format, args...)
-	nMsg := NewJobMessage(msg, JobMessageLevelInfo).
-		SetJobId(l.jobId).
-		SetCurrentAction(l.action)
-	l.ns.Notify(nMsg)
+	l.ns.Notify(NewJobMessage(fmt.Sprintf(format, args...), JobMessageLevelInfo).WithJob(l.jobId, l.action))
 }
 
 func (l *JobLogger) NotifyWarning(msg string) {
-	nMsg := NewJobMessage(msg, JobMessageLevelWarning).
-		SetJobId(l.jobId).
-		SetCurrentAction(l.action)
-	l.ns.Notify(nMsg)
+	l.ns.Notify(NewJobMessage(msg, JobMessageLevelWarning).WithJob(l.jobId, l.action))
 }
 
 func (l *JobLogger) NotifyWarningf(format string, args ...interface{}) {
-	msg := fmt.Sprintf(format, args...)
-	nMsg := NewJobMessage(msg, JobMessageLevelWarning).
-		SetJobId(l.jobId).
-		SetCurrentAction(l.action)
-	l.ns.Notify(nMsg)
+	l.ns.Notify(NewJobMessage(fmt.Sprintf(format, args...), JobMessageLevelWarning).WithJob(l.jobId, l.action))
 }
 
 func (l *JobLogger) NotifyError(msg string) {
-	nMsg := NewJobMessage(msg, JobMessageLevelError).
-		SetJobId(l.jobId).
-		SetCurrentAction(l.action)
-	l.ns.Notify(nMsg)
+	l.ns.Notify(NewJobMessage(msg, JobMessageLevelError).WithJob(l.jobId, l.action))
 }
 
 func (l *JobLogger) NotifyErrorf(format string, args ...interface{}) {
-	msg := fmt.Sprintf(format, args...)
-	nMsg := NewJobMessage(msg, JobMessageLevelError).
-		SetJobId(l.jobId).
-		SetCurrentAction(l.action)
-	l.ns.Notify(nMsg)
+	l.ns.Notify(NewJobMessage(fmt.Sprintf(format, args...), JobMessageLevelError).WithJob(l.jobId, l.action))
 }
 
 func (l *JobLogger) NotifyDebug(msg string) {
-	nMsg := NewJobMessage(msg, JobMessageLevelDebug).
-		SetJobId(l.jobId).
-		SetCurrentAction(l.action)
-	l.ns.Notify(nMsg)
+	l.ns.Notify(NewJobMessage(msg, JobMessageLevelDebug).WithJob(l.jobId, l.action))
 }
 
 func (l *JobLogger) NotifyDebugf(format string, args ...interface{}) {
-	msg := fmt.Sprintf(format, args...)
-	nMsg := NewJobMessage(msg, JobMessageLevelDebug).
-		SetJobId(l.jobId).
-		SetCurrentAction(l.action)
-	l.ns.Notify(nMsg)
+	l.ns.Notify(NewJobMessage(fmt.Sprintf(format, args...), JobMessageLevelDebug).WithJob(l.jobId, l.action))
 }
 
 // LogInfof implements a standard interface matching ApiContext and forwards to NotifyInfof.

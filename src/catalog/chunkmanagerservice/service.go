@@ -154,16 +154,10 @@ func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, 
 		if request.JobId != "" && !strings.HasPrefix(prefix, "["+request.JobId+"]") {
 			prefix = fmt.Sprintf("[%s] %s", request.JobId, prefix)
 		}
-		finalMsg := tracker.NewJobProgressMessage(
-			request.CorrelationID,
-			prefix,
-			100,
-		).
-			SetCurrentSize(s.totalDownloaded).
-			SetTotalSize(totalSize).
-			SetStartingTime(startTime).
-			SetJobId(request.JobId).
-			SetCurrentAction(action)
+		finalMsg := tracker.NewJobProgressMessage(request.CorrelationID, prefix, 100).
+			WithJob(request.JobId, action).
+			WithTransfer(s.totalDownloaded, totalSize).
+			SetStartingTime(startTime)
 		request.NotificationService.Notify(finalMsg)
 
 		// Clean up notifications after we're done
@@ -380,16 +374,10 @@ func (s *ChunkManagerService) downloadChunk(
 				if request.JobId != "" && !strings.HasPrefix(prefix, "["+request.JobId+"]") {
 					prefix = fmt.Sprintf("[%s] %s", request.JobId, prefix)
 				}
-				msg := tracker.NewJobProgressMessage(
-					request.CorrelationID,
-					prefix,
-					percent,
-				).
-					SetCurrentSize(downloaded).
-					SetTotalSize(totalSize).
-					SetStartingTime(startTime).
-					SetJobId(request.JobId).
-					SetCurrentAction(request.Action)
+				msg := tracker.NewJobProgressMessage(request.CorrelationID, prefix, percent).
+					WithJob(request.JobId, request.Action).
+					WithTransfer(downloaded, totalSize).
+					SetStartingTime(startTime)
 				request.NotificationService.Notify(msg)
 			}
 		}
@@ -437,7 +425,7 @@ func (s *ChunkManagerService) runDecompressorGoroutine(
 
 		logger.LogInfof("Starting decompression process")
 		if request.JobId != "" {
-			err := compressor.DecompressTarGzStream(ctx, r, "", request.Destination, request.JobId, constants.ActionDecompressingPackFile)
+			err := compressor.DecompressTarGzStream(ctx, r, "", request.Destination, request.JobId, constants.ActionDecompressor)
 			if err != nil {
 				setGlobalError(err)
 				return fmt.Errorf("decompression failed: %w", err)

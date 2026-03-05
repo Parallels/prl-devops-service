@@ -18,5 +18,8 @@ const (
 	ActionUploadingPackFile         = "Uploading pack file"
 
 	// New ones
-	ActionInitialize = "Initializing"
+	ActionInitialize   = "Initializing"
+	ActionDecompressor = "decompressor"
+	ActionDownloader   = "downloader"
+	ActionUploader     = "uploader"
 )

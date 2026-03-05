@@ -345,8 +345,8 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 			{Name: constants.ActionCheckingLocalCatalog, Weight: 5, Parallel: false, HasPercentage: false},
 			{Name: constants.ActionCheckingRemoteCatalog, Weight: 5, Parallel: false, HasPercentage: false},
 			{Name: constants.ActionDownloadingManifest, Weight: 5, Parallel: false, HasPercentage: false},
-			{Name: constants.ActionDownloadingPackFile, Weight: 40, Parallel: false, HasPercentage: true},
-			{Name: constants.ActionCachingPackFile, Weight: 10, Parallel: false, HasPercentage: true},
+			{Name: constants.ActionDownloader, Weight: 40, Parallel: rs.CanStream(), HasPercentage: true},
+			{Name: constants.ActionDecompressor, Weight: 10, Parallel: rs.CanStream(), HasPercentage: true},
 			{Name: constants.ActionDecompressingPackFile, Weight: 30, Parallel: false, HasPercentage: true},
 			{Name: constants.ActionRegisteringMachine, Weight: 5, Parallel: false, HasPercentage: false},
 		})
