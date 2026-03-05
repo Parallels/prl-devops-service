@@ -368,40 +368,50 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
+		WithOrClaims().
 		WithPath("/orchestrator/hosts/{id}/machines/{vmId}/snapshots").
 		WithRequiredClaim(constants.LIST_SNAPSHOT_VM_CLAIM).
+		WithRequiredClaim(constants.LIST_OWN_VM_SNAPSHOT_CLAIM).
 		WithHandler(ListOrchestratorHostVirtualMachineSnapshots()).
 		Register()
 
 	restapi.NewController().
 		WithMethod(restapi.POST).
 		WithVersion(version).
+		WithOrClaims().
 		WithPath("/orchestrator/hosts/{id}/machines/{vmId}/snapshots").
 		WithRequiredClaim(constants.CREATE_SNAPSHOT_VM_CLAIM).
+		WithRequiredClaim(constants.CREATE_OWN_VM_SNAPSHOT_CLAIM).
 		WithHandler(CreateOrchestratorHostVirtualMachineSnapshot()).
 		Register()
 
 	restapi.NewController().
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
+		WithOrClaims().
 		WithPath("/orchestrator/hosts/{id}/machines/{vmId}/snapshots").
 		WithRequiredClaim(constants.DELETE_ALL_SNAPSHOTS_VM_CLAIM).
+		WithRequiredClaim(constants.DELETE_ALL_OWN_VM_SNAPSHOTS_CLAIM).
 		WithHandler(DeleteAllOrchestratorHostVirtualMachineSnapshots()).
 		Register()
 
 	restapi.NewController().
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
+		WithOrClaims().
 		WithPath("/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}").
 		WithRequiredClaim(constants.DELETE_SNAPSHOT_VM_CLAIM).
+		WithRequiredClaim(constants.DELETE_OWN_VM_SNAPSHOT_CLAIM).
 		WithHandler(DeleteOrchestratorHostVirtualMachineSnapshot()).
 		Register()
 
 	restapi.NewController().
 		WithMethod(restapi.POST).
 		WithVersion(version).
+		WithOrClaims().
 		WithPath("/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}/revert").
 		WithRequiredClaim(constants.REVERT_SNAPSHOT_VM_CLAIM).
+		WithRequiredClaim(constants.REVERT_OWN_VM_SNAPSHOT_CLAIM).
 		WithHandler(RevertOrchestratorHostVirtualMachineSnapshot()).
 		Register()
 

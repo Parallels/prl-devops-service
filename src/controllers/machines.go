@@ -66,7 +66,9 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.POST).
 		WithVersion(version).
 		WithPath("/machines/{id}/snapshots").
+		WithOrClaims().
 		WithRequiredClaim(constants.CREATE_SNAPSHOT_VM_CLAIM).
+		WithRequiredClaim(constants.CREATE_OWN_VM_SNAPSHOT_CLAIM).
 		WithHandler(CreateSnapshot()).
 		Register()
 
@@ -74,7 +76,9 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/machines/{id}/snapshots/{snapshot_id}").
+		WithOrClaims().
 		WithRequiredClaim(constants.DELETE_SNAPSHOT_VM_CLAIM).
+		WithRequiredClaim(constants.DELETE_OWN_VM_SNAPSHOT_CLAIM).
 		WithHandler(DeleteSnapshot()).
 		Register()
 
@@ -82,7 +86,9 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/machines/{id}/snapshots").
+		WithOrClaims().
 		WithRequiredClaim(constants.DELETE_ALL_SNAPSHOTS_VM_CLAIM).
+		WithRequiredClaim(constants.DELETE_ALL_OWN_VM_SNAPSHOTS_CLAIM).
 		WithHandler(DeleteAllSnapshots()).
 		Register()
 
@@ -90,15 +96,19 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/machines/{id}/snapshots").
+		WithOrClaims().
 		WithRequiredClaim(constants.LIST_SNAPSHOT_VM_CLAIM).
+		WithRequiredClaim(constants.LIST_OWN_VM_SNAPSHOT_CLAIM).
 		WithHandler(ListSnapshot()).
 		Register()
 
 	restapi.NewController().
 		WithMethod(restapi.POST).
 		WithVersion(version).
+		WithOrClaims().
 		WithPath("/machines/{id}/snapshots/{snapshot_id}/revert").
 		WithRequiredClaim(constants.REVERT_SNAPSHOT_VM_CLAIM).
+		WithRequiredClaim(constants.REVERT_OWN_VM_SNAPSHOT_CLAIM).
 		WithHandler(RevertSnapshot()).
 		Register()
 
