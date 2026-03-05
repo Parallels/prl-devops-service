@@ -16,4 +16,7 @@ const (
 	ActionRenamingMachine           = "Renaming machine"
 	ActionStartingMachine           = "Starting machine"
 	ActionUploadingPackFile         = "Uploading pack file"
+
+	// New ones
+	ActionInitialize = "Initializing"
 )

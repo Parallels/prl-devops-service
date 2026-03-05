@@ -262,6 +262,9 @@ func Start(ctx basecontext.ApiContext) {
 		ns.OnUpdateJobResultRecord = func(jobId string, recordId string, recordType string) {
 			jobManagerService.UpdateJobResultRecord(jobId, recordId, recordType)
 		}
+		ns.OnInitJob = func(jobId string) {
+			jobManagerService.InitJob(jobId)
+		}
 	}
 
 	go func() {

@@ -75,6 +75,7 @@ type NotificationService struct {
 	qMu                   sync.Mutex
 
 	OnUpdateJobSteps        func(jobId string, steps []data_models.JobStep)
+	OnInitJob               func(jobId string)
 	OnUpdateJobProgress     func(jobId string, percent int, status string)
 	OnUpdateJobMessage      func(jobId string, message string)
 	OnUpdateJobResultRecord func(jobId string, recordId string, recordType string)
@@ -141,6 +142,16 @@ func (p *NotificationService) EnableSingleLineOutput() *NotificationService {
 func (p *NotificationService) SetContext(ctx basecontext.ApiContext) *NotificationService {
 	p.ctx = ctx
 	return p
+}
+
+func (p *NotificationService) InitJob(jobId string) {
+	if jobId == "" {
+		return
+	}
+
+	if p.OnInitJob != nil {
+		p.OnInitJob(jobId)
+	}
 }
 
 // RegisterJobWorkflow defines the expected steps and their percent-weights for a given JobId.
@@ -210,7 +221,8 @@ func (p *NotificationService) Notify(msg *NotificationMessage) {
 
 // NotifyJobMessage sends a root-level job message without assigning it to any specific step.
 // This is useful for JobStateInit messages and general overall status messages.
-func (p *NotificationService) NotifyJobMessage(jobId string, msg string) {
+func (p *NotificationService) NotifyJobMessage(jobId string, msg string, args ...interface{}) {
+	msg = fmt.Sprintf(msg, args...)
 	nMsg := NewNotificationMessage(msg, NotificationMessageLevelInfo).
 		SetJobId(jobId).
 		SetCurrentAction("") // Empty action marks it as a root-level Job message

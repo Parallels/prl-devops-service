@@ -327,6 +327,26 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 		}
 	}
 
+	host.ReverseProxyHosts = make([]*models.ReverseProxyHost, 0)
+	// Updating the reverse proxy hosts
+	rpConfig, err := s.CallGetHostReverseProxyConfig(&host)
+	if err == nil && rpConfig != nil {
+		host.ReverseProxy = &models.ReverseProxy{
+			ID:      rpConfig.ID,
+			Host:    rpConfig.Host,
+			Port:    rpConfig.Port,
+			HostID:  host.ID,
+			Enabled: rpConfig.Enabled,
+		}
+		// Getting all of the hosts in the reverse proxy config
+		hosts, err := s.CallGetHostReverseProxyHosts(&host)
+		if err == nil && hosts != nil {
+			for _, rpHost := range hosts {
+				host.ReverseProxyHosts = append(host.ReverseProxyHosts, rpHost)
+			}
+		}
+	}
+
 	host.Resources.TotalAppleVms = int64(totalAppleVms)
 	host.UpdatedAt = helpers.GetUtcCurrentDateTime()
 

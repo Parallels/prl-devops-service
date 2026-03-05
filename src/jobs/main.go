@@ -61,7 +61,7 @@ func (jms *JobManagerService) Stop() error {
 func (jms *JobManagerService) CreateNewJob(owner string, jobType string, jobOperation string, action string) (*data_models.Job, error) {
 	job := data_models.Job{
 		Owner:        owner,
-		State:        constants.JobStateInit,
+		State:        constants.JobStatePending,
 		JobType:      jobType,
 		JobOperation: jobOperation,
 		Progress:     0,
@@ -75,6 +75,23 @@ func (jms *JobManagerService) CreateNewJob(owner string, jobType string, jobOper
 
 	jms.emitEvent("JOB_CREATED", createdJob)
 	return createdJob, nil
+}
+
+func (jms *JobManagerService) InitJob(jobId string) (*data_models.Job, error) {
+	job, err := jms.db.GetJob(jms.apiCtx, jobId)
+	if err != nil {
+		return nil, err
+	}
+
+	job.State = constants.JobStateInit
+
+	err = jms.db.UpdateJob(jms.apiCtx, *job)
+	if err != nil {
+		return nil, err
+	}
+
+	jms.emitEvent("JOB_UPDATED", job)
+	return job, nil
 }
 
 func (jms *JobManagerService) UpdateJobProgress(jobId string, progress int, state constants.JobState) (*data_models.Job, error) {

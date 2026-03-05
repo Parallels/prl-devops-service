@@ -100,21 +100,9 @@ func (s *CatalogManifestService) PullWithExistingJob(jobId string, r *models.Pul
 		return response
 	}
 
-	jobManager := jobs.Get(s.ctx)
 	r.JobId = jobId
 	if r.JobId != "" {
 		s.ns.NotifyInfof("JobId attached to Pull request for manifest %v: %v", r.CatalogId, r.JobId)
-	}
-
-	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionValidatingRequest, 100).
-			SetJobId(r.JobId).
-			SetCurrentAction(constants.ActionValidatingRequest).
-			SetFilename(r.MachineName))
-
-		// Register a baseline workflow. We re-register with specific steps later
-		// if we detect it's a cache pull vs remote pull, but we start with this
-		s.ns.RegisterJobWorkflow(r.JobId, getPullWorkflowSteps(false, r.StartAfterPull))
 	}
 
 	response := s.Pull(r)
@@ -126,6 +114,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 	if s.ctx == nil {
 		s.ctx = basecontext.NewRootBaseContext()
 	}
+	s.ns.InitJob(r.JobId)
 
 	foundProvider := false
 	response := models.NewPullCatalogManifestResponse()
@@ -148,12 +137,11 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 			return response
 		}
 	}
-	if r.JobId != "" {
-		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionValidatingRequest, 100).
-			SetJobId(r.JobId).
-			SetCurrentAction(constants.ActionValidatingRequest).
-			SetFilename(r.MachineName))
-	}
+
+	// Setting the jobManager
+	jobManager := jobs.Get(s.ctx)
+
+	s.ns.NotifyJobMessage(r.JobId, "Configuring the pull job...")
 
 	if err := helpers.CreateDirIfNotExist("/tmp"); err != nil {
 		s.ns.WithJob(r.JobId, constants.ActionValidatingRequest).NotifyErrorf("Error creating temp dir: %v", err)
@@ -161,46 +149,8 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		return response
 	}
 
-	s.ns.WithJob(r.JobId, constants.ActionCheckingLocalCatalog).NotifyInfof("Checking if the machine %v already exists", r.MachineName)
-	jobManager := jobs.Get(s.ctx)
-	if r.JobId != "" && jobManager != nil {
-		s.ns.RegisterJobWorkflow(r.JobId, []notifications.JobStep{
-			{Name: constants.ActionCheckingLocalCatalog, Weight: 5, Parallel: false, HasPercentage: false},
-			{Name: constants.ActionCheckingRemoteCatalog, Weight: 5, Parallel: false, HasPercentage: false},
-			{Name: constants.ActionDownloadingManifest, Weight: 5, Parallel: false, HasPercentage: false},
-			{Name: constants.ActionDownloadingPackFile, Weight: 40, Parallel: false, HasPercentage: true},
-			{Name: constants.ActionCachingPackFile, Weight: 10, Parallel: false, HasPercentage: true},
-			{Name: constants.ActionDecompressingPackFile, Weight: 30, Parallel: false, HasPercentage: true},
-			{Name: constants.ActionRegisteringMachine, Weight: 5, Parallel: false, HasPercentage: false},
-		})
-
-		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
-			SetJobId(r.JobId).
-			SetCurrentAction(constants.ActionCheckingLocalCatalog).
-			SetFilename(r.MachineName))
-	}
-
-	filter := fmt.Sprintf("name=%s", r.MachineName)
-	vms, err := parallelsDesktopSvc.GetVms(s.ctx, filter)
-	if err != nil {
-		if errors.GetSystemErrorCode(err) != 404 {
-			response.AddError(err)
-			return response
-		}
-	}
-
-	if len(vms) > 0 {
-		response.AddError(errors.Newf("machine %v already exists", r.MachineName))
-		return response
-	}
-
-	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
-			SetJobId(r.JobId).
-			SetCurrentAction(constants.ActionCheckingLocalCatalog).
-			SetCurrentActionStep(fmt.Sprintf("VM %v does not exist, continuing", r.MachineName)).
-			SetFilename(r.MachineName))
-	}
+	// Just for test, setting everything to take way more time
+	time.Sleep(5 * time.Second)
 
 	var manifest *models.VirtualMachineCatalogManifest
 	provider := models.CatalogManifestProvider{}
@@ -213,12 +163,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 
 	// getting the provider metadata from the database
 	if provider.IsRemote() {
-		if r.JobId != "" && jobManager != nil {
-			s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCheckingRemoteCatalog, 100).
-				SetJobId(r.JobId).
-				SetCurrentAction(constants.ActionCheckingRemoteCatalog).
-				SetFilename(r.MachineName))
-		}
+		s.ns.NotifyJobMessage(r.JobId, "Checking remote catalog...")
 		manifest = &models.VirtualMachineCatalogManifest{}
 		manifest.Provider = &provider
 		apiClient.SetAuthorization(GetAuthenticator(manifest.Provider))
@@ -235,22 +180,22 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		if clientResponse, err := apiClient.Get(getUrl, &catalogManifest); err != nil {
 			if clientResponse != nil && clientResponse.ApiError != nil {
 				if clientResponse.StatusCode == 401 || clientResponse.StatusCode == 403 || clientResponse.StatusCode == 400 {
-					s.ns.WithJob(r.JobId, constants.ActionCheckingRemoteCatalog).NotifyErrorf("Error getting catalog manifest %v: %v", path, clientResponse.ApiError.Message)
+					s.ns.NotifyJobMessage(r.JobId, fmt.Sprintf("Error getting catalog manifest %v: %v", path, clientResponse.ApiError.Message))
 					response.AddError(errors.New(clientResponse.ApiError.Message))
 					return response
 				}
 			}
 			if clientResponse.StatusCode == 401 || clientResponse.StatusCode == 403 {
-				s.ns.WithJob(r.JobId, constants.ActionCheckingRemoteCatalog).NotifyErrorf("Error getting catalog manifest %v: Unauthorized access", path)
+				s.ns.NotifyJobMessage(r.JobId, fmt.Sprintf("Error getting catalog manifest %v: Unauthorized access", path))
 				response.AddError(errors.New("Unauthorized access to the catalog manifest"))
 				return response
 			}
 			if clientResponse.StatusCode == 400 {
-				s.ns.WithJob(r.JobId, constants.ActionCheckingRemoteCatalog).NotifyErrorf("Error getting catalog manifest %v: Bad request", path)
+				s.ns.NotifyJobMessage(r.JobId, fmt.Sprintf("Error getting catalog manifest %v: Bad request", path))
 				response.AddError(errors.New("Bad request to the catalog manifest"))
 				return response
 			}
-			s.ns.WithJob(r.JobId, constants.ActionCheckingRemoteCatalog).NotifyErrorf("Error getting catalog manifest %v: %v", path, err)
+			s.ns.NotifyJobMessage(r.JobId, fmt.Sprintf("Error getting catalog manifest %v: %v", path, err))
 			response.AddError(errors.Newf("Could not find a catalog manifest %s version %s for architecture %s", r.CatalogId, r.Version, arch))
 			return response
 		}
@@ -347,6 +292,31 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 
 	response.Manifest = manifest
 
+	// Checking if the machine already exists before starting the pull process
+	s.ns.NotifyJobMessage(r.JobId, fmt.Sprintf("Checking if the machine %v already exists", r.MachineName))
+
+	filter := fmt.Sprintf("name=%s", r.MachineName)
+	vms, err := parallelsDesktopSvc.GetVms(s.ctx, filter)
+	if err != nil {
+		if errors.GetSystemErrorCode(err) != 404 {
+			response.AddError(err)
+			return response
+		}
+	}
+
+	if len(vms) > 0 {
+		response.AddError(errors.Newf("machine %v already exists", r.MachineName))
+		return response
+	}
+
+	if r.JobId != "" && jobManager != nil {
+		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
+			SetJobId(r.JobId).
+			SetCurrentAction(constants.ActionCheckingLocalCatalog).
+			SetCurrentActionStep(fmt.Sprintf("VM %v does not exist, continuing", r.MachineName)).
+			SetFilename(r.MachineName))
+	}
+
 	if r.JobId != "" && jobManager != nil {
 		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCheckingRemoteCatalog, 100).
 			SetJobId(r.JobId).
@@ -370,6 +340,23 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		rs.SetJobId(r.JobId)
 		foundProvider = true
 		r.LocalMachineFolder = fmt.Sprintf("%s.%s", filepath.Join(r.Path, r.MachineName), manifest.Type)
+
+		s.ns.RegisterJobWorkflow(r.JobId, []notifications.JobStep{
+			{Name: constants.ActionCheckingLocalCatalog, Weight: 5, Parallel: false, HasPercentage: false},
+			{Name: constants.ActionCheckingRemoteCatalog, Weight: 5, Parallel: false, HasPercentage: false},
+			{Name: constants.ActionDownloadingManifest, Weight: 5, Parallel: false, HasPercentage: false},
+			{Name: constants.ActionDownloadingPackFile, Weight: 40, Parallel: false, HasPercentage: true},
+			{Name: constants.ActionCachingPackFile, Weight: 10, Parallel: false, HasPercentage: true},
+			{Name: constants.ActionDecompressingPackFile, Weight: 30, Parallel: false, HasPercentage: true},
+			{Name: constants.ActionRegisteringMachine, Weight: 5, Parallel: false, HasPercentage: false},
+		})
+
+		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
+			SetJobId(r.JobId).
+			SetCurrentAction(constants.ActionCheckingLocalCatalog).
+			SetFilename(r.MachineName))
+
+		time.Sleep(5 * time.Second)
 
 		// Creating the destination folder for the local machine
 		if err := s.createDestinationFolder(r, manifest); err != nil {
