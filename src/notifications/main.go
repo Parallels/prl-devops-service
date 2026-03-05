@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 )
 
 var _globalNotificationService *NotificationService
@@ -18,12 +20,22 @@ type RateSample struct {
 }
 
 type JobStep struct {
-	Name   string
-	Weight float64 // Percentage weight of this step, e.g. 40.0 for 40%
+	Name          string
+	Weight        float64 // Percentage weight of this step, e.g. 40.0 for 40%
+	Parallel      bool
+	HasPercentage bool
 }
 
 type JobWorkflow struct {
-	Steps []JobStep
+	Message      string
+	Steps        []JobStep
+	StepProgress map[string]float64
+	StepMessage  map[string]string
+	StepError    map[string]string
+	StepValue    map[string]int64
+	StepTotal    map[string]int64
+	StepFilename map[string]string
+	StepState    map[string]constants.JobState
 }
 
 type ProgressTracker struct {
@@ -31,6 +43,7 @@ type ProgressTracker struct {
 	JobPercentage          float64
 	LastJobPercentageSent  float64
 	LastStepPercentageSent float64
+	LastLogPercentageSent  float64
 	JobId                  string
 	CurrentAction          string
 	CurrentActionStep      string
@@ -58,9 +71,17 @@ type NotificationService struct {
 	previousMessage       NotificationMessage
 	CurrentMessage        NotificationMessage
 	mu                    sync.RWMutex // Protects activeProgress map
+	queue                 map[string]map[string]NotificationMessage
+	qMu                   sync.Mutex
 
-	OnUpdateJobActionProgress func(jobId, action string, currentSize int64, percent int, totalSize int64, eta string, unit string)
-	OnUpdateJobProgress       func(jobId, action string, percent int, status string)
+	OnUpdateJobSteps        func(jobId string, steps []data_models.JobStep)
+	OnUpdateJobProgress     func(jobId string, percent int, status string)
+	OnUpdateJobMessage      func(jobId string, message string)
+	OnUpdateJobResultRecord func(jobId string, recordId string, recordType string)
+	// OnUpdateJobProgressAndSteps is called instead of the two separate callbacks when available.
+	// It writes progress + step snapshot in a single atomic operation, avoiding the race where
+	// a separate UpdateJobProgress read could see stale (empty) steps.
+	OnUpdateJobProgressAndSteps func(jobId string, percent int, state string, steps []data_models.JobStep)
 }
 
 // ProgressRate contains rate information for a progress notification
@@ -96,6 +117,7 @@ func New(ctx basecontext.ApiContext) *NotificationService {
 		activeProgress:    make(map[string]*ProgressTracker),
 		activeWorkflows:   make(map[string]JobWorkflow),
 		progressCounters:  make(map[string]float64),
+		queue:             make(map[string]map[string]NotificationMessage),
 	}
 
 	_globalNotificationService.Start()
@@ -131,8 +153,48 @@ func (p *NotificationService) RegisterJobWorkflow(jobId string, steps []JobStep)
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	stepProgress := make(map[string]float64)
+	stepMessage := make(map[string]string)
+	stepError := make(map[string]string)
+	stepValue := make(map[string]int64)
+	stepTotal := make(map[string]int64)
+	stepFilename := make(map[string]string)
+	stepState := make(map[string]constants.JobState)
+
+	if existing, exists := p.activeWorkflows[jobId]; exists {
+		if existing.StepProgress != nil {
+			stepProgress = existing.StepProgress
+		}
+		if existing.StepMessage != nil {
+			stepMessage = existing.StepMessage
+		}
+		if existing.StepError != nil {
+			stepError = existing.StepError
+		}
+		if existing.StepValue != nil {
+			stepValue = existing.StepValue
+		}
+		if existing.StepTotal != nil {
+			stepTotal = existing.StepTotal
+		}
+		if existing.StepFilename != nil {
+			stepFilename = existing.StepFilename
+		}
+		if existing.StepState != nil {
+			stepState = existing.StepState
+		}
+	}
+
 	p.activeWorkflows[jobId] = JobWorkflow{
-		Steps: steps,
+		Message:      "", // Message is not passed to RegisterJobWorkflow, so it should be empty or handled elsewhere
+		Steps:        steps,
+		StepProgress: stepProgress,
+		StepMessage:  stepMessage,
+		StepError:    stepError,
+		StepValue:    stepValue,
+		StepTotal:    stepTotal,
+		StepFilename: stepFilename,
+		StepState:    stepState,
 	}
 }
 
@@ -144,6 +206,104 @@ func (p *NotificationService) ResetCounters(correlationId string) {
 
 func (p *NotificationService) Notify(msg *NotificationMessage) {
 	p.Channel <- *msg
+}
+
+// NotifyJobMessage sends a root-level job message without assigning it to any specific step.
+// This is useful for JobStateInit messages and general overall status messages.
+func (p *NotificationService) NotifyJobMessage(jobId string, msg string) {
+	nMsg := NewNotificationMessage(msg, NotificationMessageLevelInfo).
+		SetJobId(jobId).
+		SetCurrentAction("") // Empty action marks it as a root-level Job message
+	p.Notify(nMsg)
+}
+
+type JobLogger struct {
+	ns     *NotificationService
+	jobId  string
+	action string
+}
+
+func (p *NotificationService) WithJob(jobId, action string) *JobLogger {
+	return &JobLogger{
+		ns:     p,
+		jobId:  jobId,
+		action: action,
+	}
+}
+
+func (l *JobLogger) NotifyInfo(msg string) {
+	nMsg := NewNotificationMessage(msg, NotificationMessageLevelInfo).
+		SetJobId(l.jobId).
+		SetCurrentAction(l.action)
+	l.ns.Notify(nMsg)
+}
+
+func (l *JobLogger) NotifyInfof(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	nMsg := NewNotificationMessage(msg, NotificationMessageLevelInfo).
+		SetJobId(l.jobId).
+		SetCurrentAction(l.action)
+	l.ns.Notify(nMsg)
+}
+
+func (l *JobLogger) NotifyWarning(msg string) {
+	nMsg := NewNotificationMessage(msg, NotificationMessageLevelWarning).
+		SetJobId(l.jobId).
+		SetCurrentAction(l.action)
+	l.ns.Notify(nMsg)
+}
+
+func (l *JobLogger) NotifyWarningf(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	nMsg := NewNotificationMessage(msg, NotificationMessageLevelWarning).
+		SetJobId(l.jobId).
+		SetCurrentAction(l.action)
+	l.ns.Notify(nMsg)
+}
+
+func (l *JobLogger) NotifyError(msg string) {
+	nMsg := NewNotificationMessage(msg, NotificationMessageLevelError).
+		SetJobId(l.jobId).
+		SetCurrentAction(l.action)
+	l.ns.Notify(nMsg)
+}
+
+func (l *JobLogger) NotifyErrorf(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	nMsg := NewNotificationMessage(msg, NotificationMessageLevelError).
+		SetJobId(l.jobId).
+		SetCurrentAction(l.action)
+	l.ns.Notify(nMsg)
+}
+
+func (l *JobLogger) NotifyDebug(msg string) {
+	nMsg := NewNotificationMessage(msg, NotificationMessageLevelDebug).
+		SetJobId(l.jobId).
+		SetCurrentAction(l.action)
+	l.ns.Notify(nMsg)
+}
+
+func (l *JobLogger) NotifyDebugf(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	nMsg := NewNotificationMessage(msg, NotificationMessageLevelDebug).
+		SetJobId(l.jobId).
+		SetCurrentAction(l.action)
+	l.ns.Notify(nMsg)
+}
+
+// LogInfof implements a standard interface matching ApiContext and forwards to NotifyInfof
+func (l *JobLogger) LogInfof(format string, args ...interface{}) {
+	l.NotifyInfof(format, args...)
+}
+
+// LogErrorf implements a standard interface matching ApiContext and forwards to NotifyErrorf
+func (l *JobLogger) LogErrorf(format string, args ...interface{}) {
+	l.NotifyErrorf(format, args...)
+}
+
+// LogDebugf implements a standard interface matching ApiContext and forwards to NotifyDebugf
+func (l *JobLogger) LogDebugf(format string, args ...interface{}) {
+	l.NotifyDebugf(format, args...)
 }
 
 func (p *NotificationService) NotifyInfo(msg string) {
@@ -202,9 +362,13 @@ func (p *NotificationService) updateProgressTracker(tracker *ProgressTracker, pr
 		tracker.RateSamples = append(tracker.RateSamples, newSample)
 	}
 
-	tracker.CurrentProgress = progress
+	if progress > tracker.CurrentProgress {
+		tracker.CurrentProgress = progress
+	}
 	tracker.LastUpdateTime = now
-	tracker.CurrentSize = currentSize
+	if currentSize > tracker.CurrentSize {
+		tracker.CurrentSize = currentSize
+	}
 }
 
 func (p *NotificationService) NotifyProgress(correlationId string, prefix string, progress float64) {
@@ -275,216 +439,397 @@ func (p *NotificationService) Start() {
 		}
 	}()
 
-	// Existing message processing goroutine
-	go func() {
-		defer close(p.Channel)
-		for {
-			select {
-			case <-p.stopChan:
-				return
-			case p.CurrentMessage = <-p.Channel:
-				shouldLog := false
+	go p.ingestMessages()
+	go p.processQueueWorker()
+}
 
-				if p.CurrentMessage.IsProgress {
-					p.mu.Lock()
-					tracker, exists := p.activeProgress[p.CurrentMessage.CorrelationId()]
-					if !exists {
-						// New progress notification
-						if p.CurrentMessage.CurrentProgress < 100 {
-							tracker = &ProgressTracker{
-								StartTime:              time.Now(),
-								Prefix:                 p.CurrentMessage.Message,
-								CurrentProgress:        p.CurrentMessage.CurrentProgress,
-								JobPercentage:          p.CurrentMessage.JobPercentage,
-								LastJobPercentageSent:  -1.0, // Initial state, force first push
-								LastStepPercentageSent: p.CurrentMessage.CurrentProgress,
-								JobId:                  p.CurrentMessage.JobId,
-								CurrentAction:          p.CurrentMessage.CurrentAction,
-								CurrentActionStep:      p.CurrentMessage.CurrentActionStep,
-								Filename:               p.CurrentMessage.Filename,
-								LastUpdateTime:         time.Now(),
-								CurrentSize:            p.CurrentMessage.currentSize,
-								TotalSize:              p.CurrentMessage.totalSize,
-								RateSamples:            make([]RateSample, 0, 60),
-							}
-							p.activeProgress[p.CurrentMessage.CorrelationId()] = tracker
-							shouldLog = true
+func (p *NotificationService) ingestMessages() {
+	defer close(p.Channel)
+	for {
+		select {
+		case <-p.stopChan:
+			return
+		case msg := <-p.Channel:
+			p.qMu.Lock()
+			encodedID := msg.CorrelationId()
+			if p.queue[encodedID] == nil {
+				p.queue[encodedID] = make(map[string]NotificationMessage)
+			}
+			actionKey := msg.CurrentAction
+			if actionKey == "" {
+				actionKey = "default"
+			}
+			p.queue[encodedID][actionKey] = msg
+			p.qMu.Unlock()
+		}
+	}
+}
 
-							// Emit initial UI setup via jobs manager on new tracker
-							if tracker.JobId != "" {
-								if p.OnUpdateJobActionProgress != nil {
-									eta := calculateETA(tracker.StartTime, tracker.CurrentSize, tracker.TotalSize)
-									p.OnUpdateJobActionProgress(tracker.JobId, tracker.CurrentAction, tracker.CurrentSize, int(tracker.CurrentProgress), tracker.TotalSize, eta, "bytes")
-								}
-								if p.OnUpdateJobProgress != nil && tracker.JobPercentage > 0 {
-									p.OnUpdateJobProgress(tracker.JobId, tracker.CurrentAction, int(tracker.JobPercentage), "running")
-								}
-							}
-						} else if p.CurrentMessage.JobId != "" {
-							// Instant-complete step (100%) with no prior tracker.
-							// These are single-shot workflow markers like Registering, Renaming, Starting.
-							// Build a transient tracker just long enough to run the workflow calculation
-							// and fire the DB/socket update, then discard it immediately.
-							transient := &ProgressTracker{
-								StartTime:       time.Now(),
-								CurrentProgress: 100,
-								JobId:           p.CurrentMessage.JobId,
-								CurrentAction:   p.CurrentMessage.CurrentAction,
-								LastUpdateTime:  time.Now(),
-							}
-							if workflow, hasWorkflow := p.activeWorkflows[p.CurrentMessage.JobId]; hasWorkflow {
-								var accumulated float64
-								for _, step := range workflow.Steps {
-									if step.Name == transient.CurrentAction {
-										transient.JobPercentage = accumulated + step.Weight
-										break
-									}
-									accumulated += step.Weight
-								}
-							}
-							if p.OnUpdateJobProgress != nil && transient.JobPercentage > 0 {
-								p.OnUpdateJobProgress(transient.JobId, transient.CurrentAction, int(transient.JobPercentage), "running")
-							}
-							shouldLog = true
+func (p *NotificationService) processQueueWorker() {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-p.stopChan:
+			return
+		case <-ticker.C:
+			p.qMu.Lock()
+			inflight := p.queue
+			p.queue = make(map[string]map[string]NotificationMessage)
+			p.qMu.Unlock()
+
+			if len(inflight) > 0 {
+				p.processInflightQueue(inflight)
+			}
+		}
+	}
+}
+
+func (p *NotificationService) processInflightQueue(inflight map[string]map[string]NotificationMessage) {
+	for _, actionMsgs := range inflight {
+		for _, msg := range actionMsgs {
+			p.processSingleMessage(msg)
+		}
+	}
+}
+
+func (p *NotificationService) processSingleMessage(msg NotificationMessage) {
+	p.CurrentMessage = msg
+	shouldLog := false
+
+	if p.CurrentMessage.IsProgress {
+		p.mu.Lock()
+		tracker, exists := p.activeProgress[p.CurrentMessage.CorrelationId()]
+		if !exists {
+			// New progress notification
+			if p.CurrentMessage.CurrentProgress < 100 {
+				tracker = &ProgressTracker{
+					StartTime:              time.Now(),
+					Prefix:                 p.CurrentMessage.Message,
+					CurrentProgress:        p.CurrentMessage.CurrentProgress,
+					JobPercentage:          p.CurrentMessage.JobPercentage,
+					LastJobPercentageSent:  -1.0,
+					LastStepPercentageSent: p.CurrentMessage.CurrentProgress,
+					LastLogPercentageSent:  -1.0,
+					JobId:                  p.CurrentMessage.JobId,
+					CurrentAction:          p.CurrentMessage.CurrentAction,
+					CurrentActionStep:      p.CurrentMessage.CurrentActionStep,
+					Filename:               p.CurrentMessage.Filename,
+					LastUpdateTime:         time.Now(),
+					CurrentSize:            p.CurrentMessage.currentSize,
+					TotalSize:              p.CurrentMessage.totalSize,
+					RateSamples:            make([]RateSample, 0, 60),
+				}
+				p.activeProgress[p.CurrentMessage.CorrelationId()] = tracker
+				shouldLog = true
+
+				if tracker.JobId != "" && p.OnUpdateJobSteps != nil {
+					p.publishJobSteps(tracker.JobId)
+				}
+			} else if p.CurrentMessage.JobId != "" {
+				// Instant-complete step
+				transient := &ProgressTracker{
+					StartTime:       time.Now(),
+					CurrentProgress: 100,
+					JobId:           p.CurrentMessage.JobId,
+					CurrentAction:   p.CurrentMessage.CurrentAction,
+					LastUpdateTime:  time.Now(),
+				}
+				if workflow, hasWorkflow := p.activeWorkflows[p.CurrentMessage.JobId]; hasWorkflow {
+					autoSkipPreviousSteps(&workflow, transient.CurrentAction)
+					workflow.StepProgress[transient.CurrentAction] = 100.0
+					if p.CurrentMessage.totalSize > 0 {
+						workflow.StepTotal[transient.CurrentAction] = p.CurrentMessage.totalSize
+						workflow.StepValue[transient.CurrentAction] = p.CurrentMessage.totalSize
+					}
+					if p.CurrentMessage.Filename != "" {
+						workflow.StepFilename[transient.CurrentAction] = p.CurrentMessage.Filename
+					}
+
+					var calculatedJobPercentage float64
+					for _, step := range workflow.Steps {
+						if prog, exists := workflow.StepProgress[step.Name]; exists {
+							calculatedJobPercentage += (prog / 100.0) * step.Weight
 						}
+					}
+					if calculatedJobPercentage > 100 {
+						calculatedJobPercentage = 100
+					}
+					transient.JobPercentage = calculatedJobPercentage
+					p.activeWorkflows[p.CurrentMessage.JobId] = workflow
+					p.publishJobSteps(p.CurrentMessage.JobId)
+				}
+
+				if p.OnUpdateJobProgress != nil && transient.JobPercentage > 0 {
+					p.OnUpdateJobProgress(transient.JobId, int(transient.JobPercentage), "running")
+				}
+				shouldLog = true
+			}
+		} else {
+			// Update existing tracker
+			p.updateProgressTracker(tracker, p.CurrentMessage.CurrentProgress, p.CurrentMessage.currentSize)
+
+			tracker.CurrentAction = p.CurrentMessage.CurrentAction
+			tracker.CurrentActionStep = p.CurrentMessage.CurrentActionStep
+			tracker.Filename = p.CurrentMessage.Filename
+
+			if tracker.JobId != "" {
+				if workflow, hasWorkflow := p.activeWorkflows[tracker.JobId]; hasWorkflow {
+					autoSkipPreviousSteps(&workflow, tracker.CurrentAction)
+					if tracker.CurrentProgress >= 100 {
+						workflow.StepProgress[tracker.CurrentAction] = 100.0
 					} else {
-						// Update existing tracker and check if we should log
-						p.updateProgressTracker(tracker, p.CurrentMessage.CurrentProgress, p.CurrentMessage.currentSize)
-						tracker.CurrentAction = p.CurrentMessage.CurrentAction
-						tracker.CurrentActionStep = p.CurrentMessage.CurrentActionStep
-						tracker.Filename = p.CurrentMessage.Filename
-
-						// Apply Workflow Calculation if available
-						if tracker.JobId != "" {
-							if workflow, hasWorkflow := p.activeWorkflows[tracker.JobId]; hasWorkflow {
-								var accumulatedWeight float64
-								var currentStepWeight float64
-								stepFound := false
-
-								for _, step := range workflow.Steps {
-									if step.Name == tracker.CurrentAction {
-										currentStepWeight = step.Weight
-										stepFound = true
-										break
-									}
-									accumulatedWeight += step.Weight
-								}
-
-								if stepFound {
-									// Proportional completion of the current step
-									stepContribution := (tracker.CurrentProgress / 100.0) * currentStepWeight
-									calculatedJobPercentage := accumulatedWeight + stepContribution
-
-									// Cap at 100 just in case
-									if calculatedJobPercentage > 100 {
-										calculatedJobPercentage = 100
-									}
-									tracker.JobPercentage = calculatedJobPercentage
-								} else {
-									// If workflow exists but explicit step not found, fallback to incoming JobPercentage
-									tracker.JobPercentage = p.CurrentMessage.JobPercentage
-								}
-							} else {
-								// No workflow registered, fallback to incoming JobPercentage
-								tracker.JobPercentage = p.CurrentMessage.JobPercentage
-							}
-						} else {
-							tracker.JobPercentage = p.CurrentMessage.JobPercentage
-						}
-
-						if tracker.JobId != "" {
-							// Trigger UI socket on step threshold
-							shouldPushStep := int(tracker.CurrentProgress) >= int(tracker.LastStepPercentageSent+uiProgressPushThreshold) || tracker.CurrentProgress >= 100
-							if shouldPushStep {
-								tracker.LastStepPercentageSent = tracker.CurrentProgress
-								if p.OnUpdateJobActionProgress != nil {
-									eta := calculateETA(tracker.StartTime, tracker.CurrentSize, tracker.TotalSize)
-									p.OnUpdateJobActionProgress(tracker.JobId, tracker.CurrentAction, tracker.CurrentSize, int(tracker.CurrentProgress), tracker.TotalSize, eta, "bytes")
-								}
-							}
-							// Trigger UI socket on job threshold
-							shouldPushJob := int(tracker.JobPercentage) >= int(tracker.LastJobPercentageSent+uiProgressPushThreshold) || tracker.JobPercentage >= 100 || tracker.LastJobPercentageSent == -1.0
-							if shouldPushJob {
-								tracker.LastJobPercentageSent = tracker.JobPercentage
-								if tracker.JobPercentage > 0 && p.OnUpdateJobProgress != nil {
-									p.OnUpdateJobProgress(tracker.JobId, tracker.CurrentAction, int(tracker.JobPercentage), "running")
-								}
-							}
-						}
-
-						shouldLog = p.shouldLogProgress(tracker, p.CurrentMessage.CurrentProgress)
+						workflow.StepProgress[tracker.CurrentAction] = tracker.CurrentProgress
 					}
 
-					// Clean up completed progress
-					if p.CurrentMessage.Closed() || p.CurrentMessage.CurrentProgress >= 100 {
-						delete(p.activeProgress, p.CurrentMessage.CorrelationId())
+					if tracker.TotalSize > 0 {
+						workflow.StepTotal[tracker.CurrentAction] = tracker.TotalSize
+						workflow.StepValue[tracker.CurrentAction] = tracker.CurrentSize
 					}
-					p.mu.Unlock()
+					if tracker.Filename != "" {
+						workflow.StepFilename[tracker.CurrentAction] = tracker.Filename
+					}
+
+					var calculatedJobPercentage float64
+					furthestAction := tracker.CurrentAction
+					var furthestWeight float64 = -1.0
+					var furthestProgress float64 = tracker.CurrentProgress
+
+					for _, step := range workflow.Steps {
+						if prog, exists := workflow.StepProgress[step.Name]; exists {
+							calculatedJobPercentage += (prog / 100.0) * step.Weight
+							if prog > 0 {
+								furthestAction = step.Name
+								furthestWeight = step.Weight
+								furthestProgress = prog
+							}
+						}
+					}
+					if furthestWeight != -1.0 {
+						tracker.CurrentAction = furthestAction
+						tracker.CurrentProgress = furthestProgress
+					}
+					if calculatedJobPercentage > 100 {
+						calculatedJobPercentage = 100
+					}
+					tracker.JobPercentage = calculatedJobPercentage
+					p.activeWorkflows[tracker.JobId] = workflow
+
+					// Single atomic update: progress + steps in one DB write + one event broadcast.
+					// This prevents the race where separate UpdateJobSteps/UpdateJobProgress calls
+					// could emit a stale no-steps event.
+					if p.OnUpdateJobProgressAndSteps != nil && int(calculatedJobPercentage) > 0 {
+						dtos := p.buildStepDTOs(tracker.JobId)
+						p.OnUpdateJobProgressAndSteps(tracker.JobId, int(calculatedJobPercentage), "running", dtos)
+					} else {
+						// Fallback: fire separately (old path, kept for compatibility)
+						p.publishJobSteps(tracker.JobId)
+						if tracker.JobPercentage > 0 && p.OnUpdateJobProgress != nil {
+							p.OnUpdateJobProgress(tracker.JobId, int(tracker.JobPercentage), "running")
+						}
+					}
 				} else {
-					// Non-progress messages
-					if p.CurrentMessage.Message != "" {
-						shouldLog = true
-					}
+					tracker.JobPercentage = p.CurrentMessage.JobPercentage
 				}
+			} else {
+				tracker.JobPercentage = p.CurrentMessage.JobPercentage
+			}
 
-				if p.CurrentMessage.Message != p.previousMessage.Message && !p.forceClearLine {
-					p.previousMessage = p.CurrentMessage
-					p.clearLineOnUpdate = false
-				}
+			// Since we're ticking exactly once a second, skip traditional throttling checks and just print what we have
+			shouldLog = true
 
-				// if logging is disabled in the context, then we should not log
-				if !p.ctx.Verbose() {
-					shouldLog = false
-				}
-
-				if shouldLog {
-					requestId := p.ctx.GetRequestId()
-					printMsg := ""
-					if requestId != "" {
-						printMsg = fmt.Sprintf("[%s] ", requestId)
-					}
-
-					if p.CurrentMessage.IsProgress {
-						// Use the new formatting for progress messages
-						p.mu.RLock()
-						tracker, exists := p.activeProgress[p.CurrentMessage.CorrelationId()]
-						p.mu.RUnlock()
-						if exists {
-							baseMsg := p.CurrentMessage.Message
-							if baseMsg == "" {
-								baseMsg = tracker.Prefix
-							}
-							printMsg += baseMsg + " "
-							printMsg += formatProgressMessage(&p.CurrentMessage, tracker, p)
-						} else {
-							// Fallback for completed/cleaned up progress
-							printMsg += fmt.Sprintf("%s (%.1f%%)",
-								p.CurrentMessage.Message,
-								p.CurrentMessage.CurrentProgress)
-						}
-					} else {
-						printMsg += p.CurrentMessage.Message
-					}
-
-					if p.clearLineOnUpdate {
-						ClearLine()
-						fmt.Printf("\r%s", printMsg)
-					} else {
-						switch p.CurrentMessage.Level {
-						case NotificationMessageLevelError:
-							p.ctx.LogErrorf("%s", printMsg)
-						case NotificationMessageLevelWarning:
-							p.ctx.LogWarnf("%s", printMsg)
-						case NotificationMessageLevelDebug:
-							p.ctx.LogDebugf("%s", printMsg)
-						default:
-							p.ctx.LogInfof("%s", printMsg)
-						}
-					}
+			// Only call OnUpdateJobProgress when we did NOT call OnUpdateJobProgressAndSteps
+			if tracker.JobId != "" && p.OnUpdateJobProgressAndSteps == nil {
+				if tracker.JobPercentage > 0 && p.OnUpdateJobProgress != nil {
+					p.OnUpdateJobProgress(tracker.JobId, int(tracker.JobPercentage), "running")
 				}
 			}
 		}
-	}()
+
+		shouldDelete := false
+		if p.CurrentMessage.Closed() {
+			shouldDelete = true
+		} else if tracker != nil && tracker.JobId != "" && len(p.activeWorkflows[tracker.JobId].Steps) > 0 {
+			if tracker.JobPercentage >= 100 {
+				shouldDelete = true
+			}
+		} else if p.CurrentMessage.CurrentProgress >= 100 {
+			shouldDelete = true
+		}
+
+		if shouldDelete {
+			delete(p.activeProgress, p.CurrentMessage.CorrelationId())
+			if tracker != nil && tracker.JobId != "" {
+				delete(p.activeWorkflows, tracker.JobId)
+			}
+		}
+		p.mu.Unlock()
+	} else {
+		if p.CurrentMessage.Message != "" {
+			shouldLog = true
+		}
+
+		if p.CurrentMessage.JobId != "" {
+			p.mu.Lock()
+			if workflow, hasWorkflow := p.activeWorkflows[p.CurrentMessage.JobId]; hasWorkflow {
+				if p.CurrentMessage.CurrentAction != "" {
+					if p.CurrentMessage.Level == NotificationMessageLevelError {
+						workflow.StepError[p.CurrentMessage.CurrentAction] = p.CurrentMessage.Message
+					} else {
+						workflow.StepMessage[p.CurrentMessage.CurrentAction] = p.CurrentMessage.Message
+					}
+					p.activeWorkflows[p.CurrentMessage.JobId] = workflow
+					p.publishJobSteps(p.CurrentMessage.JobId)
+				} else {
+					// Root-level Job message (CurrentAction is empty)
+					workflow.Message = p.CurrentMessage.Message
+					p.activeWorkflows[p.CurrentMessage.JobId] = workflow
+					if p.OnUpdateJobMessage != nil {
+						p.OnUpdateJobMessage(p.CurrentMessage.JobId, p.CurrentMessage.Message)
+					}
+				}
+			} else if p.CurrentMessage.CurrentAction == "" && p.OnUpdateJobMessage != nil {
+				// No active workflow, but it's a root-level job message
+				p.OnUpdateJobMessage(p.CurrentMessage.JobId, p.CurrentMessage.Message)
+			}
+			p.mu.Unlock()
+		}
+	}
+
+	if p.CurrentMessage.Message != p.previousMessage.Message && !p.forceClearLine {
+		p.previousMessage = p.CurrentMessage
+		p.clearLineOnUpdate = false
+	}
+
+	if !p.ctx.Verbose() {
+		shouldLog = false
+	}
+
+	if shouldLog {
+		requestId := p.ctx.GetRequestId()
+		printMsg := ""
+		if requestId != "" {
+			printMsg = fmt.Sprintf("[%s] ", requestId)
+		}
+
+		if p.CurrentMessage.IsProgress {
+			p.mu.RLock()
+			tracker, exists := p.activeProgress[p.CurrentMessage.CorrelationId()]
+			p.mu.RUnlock()
+			if exists {
+				baseMsg := p.CurrentMessage.Message
+				if baseMsg == "" {
+					baseMsg = tracker.Prefix
+				}
+				printMsg += baseMsg + " "
+				printMsg += formatProgressMessage(&p.CurrentMessage, tracker, p)
+			} else {
+				printMsg += fmt.Sprintf("%s (%.1f%%)", p.CurrentMessage.Message, p.CurrentMessage.CurrentProgress)
+			}
+		} else {
+			printMsg += p.CurrentMessage.Message
+		}
+
+		if p.clearLineOnUpdate {
+			ClearLine()
+			fmt.Printf("\r%s", printMsg)
+		} else {
+			switch p.CurrentMessage.Level {
+			case NotificationMessageLevelError:
+				p.ctx.LogErrorf("%s", printMsg)
+			case NotificationMessageLevelWarning:
+				p.ctx.LogWarnf("%s", printMsg)
+			case NotificationMessageLevelDebug:
+				p.ctx.LogDebugf("%s", printMsg)
+			default:
+				p.ctx.LogInfof("%s", printMsg)
+			}
+		}
+	}
+}
+
+// buildStepDTOs assembles the current step snapshot for a job.
+// Caller must hold p.mu (read lock is sufficient).
+func (p *NotificationService) buildStepDTOs(jobId string) []data_models.JobStep {
+	workflow, ok := p.activeWorkflows[jobId]
+	if !ok {
+		return nil
+	}
+
+	var dtos []data_models.JobStep
+	for _, stepInfo := range workflow.Steps {
+		prog := workflow.StepProgress[stepInfo.Name]
+		state := constants.JobStatePending
+		if prog > 0 && prog < 100 {
+			state = constants.JobStateRunning
+		} else if prog >= 100 {
+			state = constants.JobStateCompleted
+			prog = 100.0 // Ensure it's exactly 100 in the UI
+		}
+
+		if explicitState, ok := workflow.StepState[stepInfo.Name]; ok && explicitState != "" {
+			state = explicitState
+		}
+
+		dto := data_models.JobStep{
+			Name:              stepInfo.Name,
+			Weight:            stepInfo.Weight,
+			Parallel:          stepInfo.Parallel,
+			HasPercentage:     stepInfo.HasPercentage,
+			State:             state,
+			CurrentPercentage: prog,
+		}
+
+		// Inject active tracker metadata (bytes, ETA, filename) from persisted workflow maps
+		if total, hasTotal := workflow.StepTotal[stepInfo.Name]; hasTotal && total > 0 {
+			dto.Total = total
+			if val, hasVal := workflow.StepValue[stepInfo.Name]; hasVal {
+				if prog >= 100 {
+					dto.Value = total // Ensure Value matches Total when completed
+				} else {
+					dto.Value = val
+				}
+			}
+			dto.Unit = "bytes"
+		}
+		if fname, hasFname := workflow.StepFilename[stepInfo.Name]; hasFname {
+			dto.Filename = fname
+		}
+
+		// Still inject ETA from active trackers if it's currently running
+		for _, v := range p.activeProgress {
+			if v.JobId == jobId && v.CurrentAction == stepInfo.Name {
+				dto.ETA = calculateETA(v.StartTime, v.CurrentSize, v.TotalSize)
+			}
+		}
+
+		if msg, ok := workflow.StepMessage[stepInfo.Name]; ok {
+			dto.Message = msg
+		}
+		if errStr, ok := workflow.StepError[stepInfo.Name]; ok {
+			dto.Error = errStr
+		}
+
+		dtos = append(dtos, dto)
+	}
+	return dtos
+}
+
+func (p *NotificationService) publishJobSteps(jobId string) {
+	if p.OnUpdateJobSteps == nil || jobId == "" {
+		return
+	}
+	dtos := p.buildStepDTOs(jobId)
+	if dtos != nil {
+		p.OnUpdateJobSteps(jobId, dtos)
+	}
+}
+
+func (p *NotificationService) UpdateJobResultRecord(jobId string, recordId string, recordType string) {
+	if p.OnUpdateJobResultRecord != nil {
+		p.OnUpdateJobResultRecord(jobId, recordId, recordType)
+	}
 }
 
 func (p *NotificationService) Restart() {
@@ -494,6 +839,78 @@ func (p *NotificationService) Restart() {
 
 func ClearLine() {
 	fmt.Printf("\r\033[K")
+}
+
+func autoSkipPreviousSteps(workflow *JobWorkflow, currentAction string) {
+	currentIdx := -1
+	for i, step := range workflow.Steps {
+		if step.Name == currentAction {
+			currentIdx = i
+			break
+		}
+	}
+	if currentIdx > 0 {
+		for i := 0; i < currentIdx; i++ {
+			prevStep := workflow.Steps[i]
+			if !prevStep.Parallel && workflow.StepProgress[prevStep.Name] < 100 {
+				workflow.StepProgress[prevStep.Name] = 100.0
+				if workflow.StepState == nil {
+					workflow.StepState = make(map[string]constants.JobState)
+				}
+				workflow.StepState[prevStep.Name] = constants.JobStateSkipped
+				if workflow.StepMessage == nil {
+					workflow.StepMessage = make(map[string]string)
+				}
+				workflow.StepMessage[prevStep.Name] = "Step implicitly skipped"
+			}
+		}
+	}
+}
+
+func (p *NotificationService) SkipStep(jobId string, stepName string, message string) {
+	if jobId == "" || stepName == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if workflow, exists := p.activeWorkflows[jobId]; exists {
+		if workflow.StepProgress == nil {
+			workflow.StepProgress = make(map[string]float64)
+		}
+		if workflow.StepState == nil {
+			workflow.StepState = make(map[string]constants.JobState)
+		}
+		if workflow.StepMessage == nil {
+			workflow.StepMessage = make(map[string]string)
+		}
+		workflow.StepProgress[stepName] = 100.0
+		workflow.StepState[stepName] = constants.JobStateSkipped
+		if message != "" {
+			workflow.StepMessage[stepName] = message
+		} else {
+			workflow.StepMessage[stepName] = "Step skipped"
+		}
+
+		var calculatedJobPercentage float64
+		for _, step := range workflow.Steps {
+			if prog, exists := workflow.StepProgress[step.Name]; exists {
+				calculatedJobPercentage += (prog / 100.0) * step.Weight
+			}
+		}
+		if calculatedJobPercentage > 100 {
+			calculatedJobPercentage = 100
+		}
+
+		p.activeWorkflows[jobId] = workflow
+
+		if p.OnUpdateJobProgressAndSteps != nil && int(calculatedJobPercentage) > 0 {
+			dtos := p.buildStepDTOs(jobId)
+			p.OnUpdateJobProgressAndSteps(jobId, int(calculatedJobPercentage), "running", dtos)
+		} else {
+			p.publishJobSteps(jobId)
+		}
+	}
 }
 
 // CleanupNotifications removes all progress tracking for a specific correlation ID
@@ -715,32 +1132,37 @@ func (p *NotificationService) GetFormattedProgressRate(correlationId string) str
 	return result
 }
 
-// Update the shouldLog check in Start() method
 func (p *NotificationService) shouldLogProgress(tracker *ProgressTracker, currentProgress float64) bool {
 	now := time.Now()
 
-	// Always show first and last updates
-	if tracker.LastLogTime.IsZero() || currentProgress >= 100 {
+	if currentProgress >= 100 && tracker.LastLogPercentageSent < 100 {
+		tracker.LastLogPercentageSent = 100
+		tracker.LastLogTime = now
+		return true
+	}
+
+	if currentProgress <= 0 && tracker.LastLogPercentageSent < 0 {
+		tracker.LastLogPercentageSent = 0
 		tracker.LastLogTime = now
 		return true
 	}
 
 	timeSinceLastLog := now.Sub(tracker.LastLogTime)
-	progressChange := currentProgress - tracker.CurrentProgress
 
-	// Log if any of these conditions are met:
-	// 1. Minimum time has passed (regardless of progress change)
-	// 2. We have significant progress change
-	// 3. We have any progress change and it's been at least 100ms
-	shouldLog := timeSinceLastLog >= minUpdateInterval ||
-		progressChange >= significantProgressChange ||
-		(progressChange > 0 && timeSinceLastLog >= 100*time.Millisecond)
-
-	if shouldLog {
-		tracker.LastLogTime = now
+	currentDecile := int(currentProgress / 10)
+	lastDecile := int(tracker.LastLogPercentageSent / 10)
+	if tracker.LastLogPercentageSent < 0 {
+		lastDecile = -1
 	}
 
-	return shouldLog
+	// Log if we cross a 10% boundary, or if 1 second has passed
+	if currentDecile > lastDecile || timeSinceLastLog >= time.Second {
+		tracker.LastLogPercentageSent = currentProgress
+		tracker.LastLogTime = now
+		return true
+	}
+
+	return false
 }
 
 // Update the message formatting in Start() method

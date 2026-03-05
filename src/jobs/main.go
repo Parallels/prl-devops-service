@@ -7,6 +7,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/mappers"
 	global_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
@@ -60,11 +61,11 @@ func (jms *JobManagerService) Stop() error {
 func (jms *JobManagerService) CreateNewJob(owner string, jobType string, jobOperation string, action string) (*data_models.Job, error) {
 	job := data_models.Job{
 		Owner:        owner,
-		State:        constants.JobStatePending,
+		State:        constants.JobStateInit,
 		JobType:      jobType,
 		JobOperation: jobOperation,
-		Action:       action,
 		Progress:     0,
+		Steps:        make([]data_models.JobStep, 0),
 	}
 
 	createdJob, err := jms.db.CreateJob(jms.apiCtx, job)
@@ -76,23 +77,16 @@ func (jms *JobManagerService) CreateNewJob(owner string, jobType string, jobOper
 	return createdJob, nil
 }
 
-func (jms *JobManagerService) UpdateJobProgress(jobId string, action string, progress int, state constants.JobState) (*data_models.Job, error) {
+func (jms *JobManagerService) UpdateJobProgress(jobId string, progress int, state constants.JobState) (*data_models.Job, error) {
 	job, err := jms.db.GetJob(jms.apiCtx, jobId)
 	if err != nil {
 		return nil, err
 	}
 
-	if action != "" {
-		if job.Action != action {
-			job.Action = action
-			// Reset the granular action details for the new main action
-			job.ActionMessage = ""
-			job.ActionPercentage = 0
-			job.ActionValue = 0
-			job.ActionTotal = 0
-			job.ActionETA = ""
-		}
+	if job.State == constants.JobStateCompleted || job.State == constants.JobStateFailed {
+		return job, nil
 	}
+
 	job.Progress = progress
 	job.State = state
 
@@ -105,26 +99,17 @@ func (jms *JobManagerService) UpdateJobProgress(jobId string, action string, pro
 	return job, nil
 }
 
-func (jms *JobManagerService) UpdateJobActionProgress(jobId string, actionMessage string, value int64, percentage int, total int64, eta string, unit string) (*data_models.Job, error) {
+func (jms *JobManagerService) UpdateJobSteps(jobId string, steps []data_models.JobStep) (*data_models.Job, error) {
 	job, err := jms.db.GetJob(jms.apiCtx, jobId)
 	if err != nil {
 		return nil, err
 	}
 
-	if actionMessage != "" {
-		job.ActionMessage = actionMessage
-		// Keep the top-level Action field in sync so the UI sees the correct step
-		if job.Action != actionMessage {
-			job.Action = actionMessage
-		}
+	if job.State == constants.JobStateCompleted || job.State == constants.JobStateFailed {
+		return job, nil
 	}
-	job.ActionValue = value
-	job.ActionPercentage = percentage
-	job.ActionTotal = total
-	job.ActionETA = eta
-	if unit != "" {
-		job.ActionValueUnit = unit
-	}
+
+	job.Steps = steps
 
 	err = jms.db.UpdateJob(jms.apiCtx, *job)
 	if err != nil {
@@ -135,13 +120,24 @@ func (jms *JobManagerService) UpdateJobActionProgress(jobId string, actionMessag
 	return job, nil
 }
 
-func (jms *JobManagerService) UpdateJobActionMessage(jobId string, actionMessage string) (*data_models.Job, error) {
+// UpdateJobProgressAndSteps atomically writes both the overall progress percentage
+// and the step snapshot in one DB update and one event broadcast.
+// This avoids the race condition where separate UpdateJobSteps + UpdateJobProgress
+// calls could emit a stale "no steps" event because the second read happened
+// before the first write was visible.
+func (jms *JobManagerService) UpdateJobProgressAndSteps(jobId string, progress int, state constants.JobState, steps []data_models.JobStep) (*data_models.Job, error) {
 	job, err := jms.db.GetJob(jms.apiCtx, jobId)
 	if err != nil {
 		return nil, err
 	}
 
-	job.ActionMessage = actionMessage
+	if job.State == constants.JobStateCompleted || job.State == constants.JobStateFailed {
+		return job, nil
+	}
+
+	job.Progress = progress
+	job.State = state
+	job.Steps = steps
 
 	err = jms.db.UpdateJob(jms.apiCtx, *job)
 	if err != nil {
@@ -152,13 +148,13 @@ func (jms *JobManagerService) UpdateJobActionMessage(jobId string, actionMessage
 	return job, nil
 }
 
-func (jms *JobManagerService) UpdateJobActionPercent(jobId string, percentage int) (*data_models.Job, error) {
+func (jms *JobManagerService) UpdateJobMessage(jobId string, message string) (*data_models.Job, error) {
 	job, err := jms.db.GetJob(jms.apiCtx, jobId)
 	if err != nil {
 		return nil, err
 	}
 
-	job.ActionPercentage = percentage
+	job.Message = message
 
 	err = jms.db.UpdateJob(jms.apiCtx, *job)
 	if err != nil {
@@ -166,6 +162,24 @@ func (jms *JobManagerService) UpdateJobActionPercent(jobId string, percentage in
 	}
 
 	jms.emitEvent("JOB_UPDATED", job)
+	return job, nil
+}
+
+func (jms *JobManagerService) UpdateJobResultRecord(jobId string, recordId string, recordType string) (*data_models.Job, error) {
+	job, err := jms.db.GetJob(jms.apiCtx, jobId)
+	if err != nil {
+		return nil, err
+	}
+
+	job.ResultRecordId = recordId
+	job.ResultRecordType = recordType
+
+	err = jms.db.UpdateJob(jms.apiCtx, *job)
+	if err != nil {
+		return nil, err
+	}
+
+	// Deliberately not emitting an event here, per user request, this is just a silent DB update
 	return job, nil
 }
 
@@ -184,7 +198,7 @@ func (jms *JobManagerService) MarkJobComplete(jobId string, result string) error
 		return err
 	}
 
-	jms.emitEvent("JOB_COMPLETED", job)
+	jms.emitEvent("JOB_UPDATED", job)
 	return nil
 }
 
@@ -204,14 +218,17 @@ func (jms *JobManagerService) MarkJobError(jobId string, jobErr error) error {
 		return err
 	}
 
-	jms.emitEvent("JOB_FAILED", job)
+	jms.emitEvent("JOB_UPDATED", job)
 	return nil
 }
 
 func (jms *JobManagerService) emitEvent(message string, job *data_models.Job) {
 	emitter := serviceprovider.GetEventEmitter()
 	if emitter != nil && emitter.IsRunning() {
-		msg := global_models.NewEventMessage(constants.EventTypeJobManager, message, job)
+		// Always broadcast the mapped API model so the UI always receives
+		// the full schema including Steps (never the raw DB struct).
+		apiJob := mappers.MapJobToApiJob(*job)
+		msg := global_models.NewEventMessage(constants.EventTypeJobManager, message, apiJob)
 		go func() {
 			_ = emitter.Broadcast(msg)
 		}()

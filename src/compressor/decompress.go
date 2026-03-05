@@ -81,7 +81,17 @@ func DecompressFile(ctx basecontext.ApiContext, filePath string, destination str
 }
 
 func DecompressFileWithStepChannel(ctx basecontext.ApiContext, filePath string, destination string, stepChannel chan string, jobId string) error {
-	ctx.LogInfof("Starting decompression of machine from %s to %s", filePath, destination)
+	ns := notifications.Get()
+	var logger interface {
+		LogInfof(format string, args ...interface{})
+		LogErrorf(format string, args ...interface{})
+	} = ctx
+
+	if ns != nil && jobId != "" {
+		logger = ns.WithJob(jobId, constants.ActionDecompressingPackFile)
+	}
+
+	logger.LogInfof("Starting decompression of machine from %s to %s", filePath, destination)
 	if stepChannel != nil {
 		stepChannel <- fmt.Sprintf("Starting decompression of %s", filepath.Base(filePath))
 	}
@@ -102,15 +112,15 @@ func DecompressFileWithStepChannel(ctx basecontext.ApiContext, filePath string, 
 	if err != nil {
 		return err
 	}
-	ctx.LogInfof("Detected file type: %s for file header %v", fileType, fileHeader)
+	logger.LogInfof("Detected file type: %s", fileType)
 	var fileReader io.Reader
 
 	switch fileType {
 	case "tar":
-		ctx.LogInfof("File %s detected as tar archive", filePath)
+		logger.LogInfof("File %s detected as tar archive", filepath.Base(filePath))
 		fileReader = compressedFile
 	case "gzip":
-		ctx.LogInfof("File %s detected as gzip archive", filePath)
+		logger.LogInfof("File %s detected as gzip archive", filepath.Base(filePath))
 		// Create a gzip reader
 		bufferReader := bufio.NewReader(compressedFile)
 		gzipReader, err := gzip.NewReader(bufferReader)
@@ -120,7 +130,7 @@ func DecompressFileWithStepChannel(ctx basecontext.ApiContext, filePath string, 
 		defer gzipReader.Close()
 		fileReader = gzipReader
 	case "tar.gz":
-		ctx.LogInfof("File %s detected as tar.gz archive", filePath)
+		logger.LogInfof("File %s detected as tar.gz archive", filepath.Base(filePath))
 		// Create a gzip reader
 		bufferReader := bufio.NewReader(compressedFile)
 		gzipReader, err := gzip.NewReader(bufferReader)
@@ -133,15 +143,15 @@ func DecompressFileWithStepChannel(ctx basecontext.ApiContext, filePath string, 
 
 	tarReader := tar.NewReader(fileReader)
 	if err := processTarFile(ctx, tarReader, destination, jobId); err != nil {
-		ctx.LogErrorf("Error processing file %s: %v", filePath, err)
+		logger.LogErrorf("Error processing file %s: %v", filepath.Base(filePath), err)
 		return err
 	}
 
 	endingTime := time.Now()
-	ctx.LogInfof("Finished decompressing machine from %s to %s, in %v", filePath, destination, endingTime.Sub(staringTime))
-	ns := notifications.Get()
+	logger.LogInfof("Finished decompressing machine from %s to %s, in %v", filepath.Base(filePath), destination, endingTime.Sub(staringTime).Round(time.Millisecond))
+
 	if ns != nil {
-		msg := notifications.NewProgressNotificationMessage(filePath, fmt.Sprintf("Finished decompression of %s in %v", filepath.Base(filePath), endingTime.Sub(staringTime).Round(time.Second)), 100).
+		msg := notifications.NewProgressNotificationMessage(jobId, fmt.Sprintf("Finished decompression of %s in %v", filepath.Base(filePath), endingTime.Sub(staringTime).Round(time.Second)), 100).
 			SetJobId(jobId).
 			SetCurrentAction(constants.ActionDecompressingPackFile).
 			SetFilename(filepath.Base(compressedFile.Name()))
@@ -169,8 +179,18 @@ func DecompressTarGz(ctx basecontext.ApiContext, src string, destination string,
 }
 
 func DecompressTarGzStream(ctx basecontext.ApiContext, reader io.Reader, filename string, destination string, jobId string) error {
+	ns := notifications.Get()
+	var logger interface {
+		LogInfof(format string, args ...interface{})
+		LogErrorf(format string, args ...interface{})
+	} = ctx
+
+	if ns != nil && jobId != "" {
+		logger = ns.WithJob(jobId, constants.ActionDecompressingPackFile)
+	}
+
 	startingTime := time.Now()
-	ctx.LogInfof("Starting decompression to %s", destination)
+	logger.LogInfof("Starting decompression to %s", destination)
 
 	// Read initial 512 bytes to determine file type
 	headerBuf := make([]byte, 512)
@@ -184,17 +204,17 @@ func DecompressTarGzStream(ctx basecontext.ApiContext, reader io.Reader, filenam
 	if err != nil {
 		return err
 	}
-	ctx.LogInfof("Detected file type: %s for file header %v", fileType, headerBuf[:n])
+	logger.LogInfof("Detected file type: %s", fileType)
 	// Put the initial bytes back into the reader stream
 	reader = io.MultiReader(bytes.NewReader(headerBuf[:n]), reader)
 
 	var fileReader io.Reader
 	switch fileType {
 	case "tar":
-		ctx.LogInfof("Detected tar archive from stream")
+		logger.LogInfof("Detected tar archive from stream")
 		fileReader = reader
 	case "tar.gz", "gzip":
-		ctx.LogInfof("Detected gzip	 archive from stream")
+		logger.LogInfof("Detected gzip archive from stream")
 		// Use pgzip instead of the standard library's gzip
 		pgzReader, err := pgzip.NewReader(reader)
 		if err != nil {
@@ -220,12 +240,11 @@ func DecompressTarGzStream(ctx basecontext.ApiContext, reader io.Reader, filenam
 	}
 
 	endingTime := time.Now()
-	ctx.LogInfof("Finished decompressing from stream to %s in %v", destination, endingTime.Sub(startingTime))
-	ns := notifications.Get()
+	logger.LogInfof("Finished decompressing from stream to %s in %v", destination, endingTime.Sub(startingTime).Round(time.Millisecond))
 	if ns != nil {
-		msg := notifications.NewProgressNotificationMessage(filename, fmt.Sprintf("Finished decompression in %v", endingTime.Sub(startingTime).Round(time.Second)), 100).
+		msg := notifications.NewProgressNotificationMessage(jobId, fmt.Sprintf("Finished decompression in %v", endingTime.Sub(startingTime).Round(time.Second)), 100).
 			SetJobId(jobId).
-			SetCurrentAction("Decompressing").
+			SetCurrentAction(constants.ActionDecompressingPackFile).
 			SetFilename(filename)
 		ns.Notify(msg)
 	}
@@ -234,7 +253,16 @@ func DecompressTarGzStream(ctx basecontext.ApiContext, reader io.Reader, filenam
 
 func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destination string, jobId string) error {
 	ns := notifications.Get()
-	ctx.LogInfof("Processing tar archive to %s", destination)
+	var logger interface {
+		LogInfof(format string, args ...interface{})
+		LogDebugf(format string, args ...interface{})
+	} = ctx
+
+	if ns != nil && jobId != "" {
+		logger = ns.WithJob(jobId, constants.ActionDecompressingPackFile)
+	}
+
+	logger.LogInfof("Processing tar archive to %s", destination)
 	for {
 		header, err := tarReader.Next()
 		if err == io.EOF {
@@ -244,19 +272,21 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 			return err
 		}
 
-		ctx.LogDebugf("Decompressing file: %s", header.Name)
+		logger.LogDebugf("Decompressing file: %s", header.Name)
 
 		destinationFilePath, err := helpers.SanitizeArchivePath(destination, header.Name)
 		if err != nil {
 			return err
 		}
 
-		// Use the file path as correlation ID for notifications
-		correlationId := destinationFilePath
+		correlationId := jobId
+		if correlationId == "" {
+			correlationId = destinationFilePath
+		}
 		if ns != nil {
 			msg := notifications.NewProgressNotificationMessage(correlationId, fmt.Sprintf("Decompressing %s", header.Name), 0).
 				SetJobId(jobId).
-				SetCurrentAction("Decompressing").
+				SetCurrentAction(constants.ActionDecompressingPackFile).
 				SetFilename(header.Name).
 				SetTotalSize(header.Size).
 				SetCurrentSize(0)
@@ -351,11 +381,11 @@ func copyTarChunks(ctx basecontext.ApiContext, file *os.File, reader *tar.Reader
 		// If we hit EOF, we're done with this file.
 		if err == io.EOF {
 			if ns != nil {
-				msg := notifications.NewProgressNotificationMessage(file.Name(), "Decompressing Manifest", 100).
+				msg := notifications.NewProgressNotificationMessage(jobId, constants.ActionDecompressingPackFile, 100).
 					SetCurrentSize(fileSize).
 					SetTotalSize(fileSize).
 					SetJobId(jobId).
-					SetCurrentAction("Decompressing").
+					SetCurrentAction(constants.ActionDecompressingPackFile).
 					SetFilename(file.Name())
 				ns.Notify(msg)
 			}
@@ -368,15 +398,15 @@ func copyTarChunks(ctx basecontext.ApiContext, file *os.File, reader *tar.Reader
 		if ns != nil {
 			percentage := float64(extractedSize) / float64(fileSize) * 100
 			msg := notifications.NewProgressNotificationMessage(
-				file.Name(),
-				"Decompressing Manifest",
+				jobId,
+				constants.ActionDecompressingPackFile,
 				percentage,
 			).
 				SetCurrentSize(extractedSize).
 				SetTotalSize(fileSize).
 				SetStartingTime(startTime).
 				SetJobId(jobId).
-				SetCurrentAction("Decompressing").
+				SetCurrentAction(constants.ActionDecompressingPackFile).
 				SetFilename(file.Name())
 			ns.Notify(msg)
 		}

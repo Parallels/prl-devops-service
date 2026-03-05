@@ -8,19 +8,32 @@ type Job struct {
 	OwnerName        string             `json:"owner_name,omitempty"`
 	OwnerEmail       string             `json:"owner_email,omitempty"`
 	State            constants.JobState `json:"state"`
+	Message          string             `json:"message,omitempty"`
 	Progress         int                `json:"progress"`
 	JobType          string             `json:"job_type"`
 	JobOperation     string             `json:"job_operation"`
-	Action           string             `json:"action"`
-	ActionMessage    string             `json:"action_message,omitempty"`
-	ActionValue      int64              `json:"action_value,omitempty"`
-	ActionPercentage int                `json:"action_percentage,omitempty"`
-	ActionTotal      int64              `json:"action_total,omitempty"`
-	ActionETA        string             `json:"action_eta,omitempty"`
-	ActionValueUnit  string             `json:"action_value_unit,omitempty"`
+	Steps            []JobStep          `json:"steps,omitempty"`
 	Result           string             `json:"result"`
+	ResultRecordId   string             `json:"result_record_id,omitempty"`
+	ResultRecordType string             `json:"result_record_type,omitempty"`
 	Error            string             `json:"error"`
 	CreatedAt        string             `json:"created_at"`
 	UpdatedAt        string             `json:"updated_at"`
 	*DbRecord        `json:"db_record"`
+}
+
+type JobStep struct {
+	Name              string             `json:"name"`
+	Weight            float64            `json:"weight"`
+	Parallel          bool               `json:"parallel"`
+	HasPercentage     bool               `json:"has_percentage"`
+	State             constants.JobState `json:"state"`
+	CurrentPercentage float64            `json:"current_percentage"`
+	Value             int64              `json:"value"`
+	Total             int64              `json:"total"`
+	ETA               string             `json:"eta"`
+	Message           string             `json:"message"`
+	Error             string             `json:"error"`
+	Filename          string             `json:"filename"`
+	Unit              string             `json:"unit"`
 }

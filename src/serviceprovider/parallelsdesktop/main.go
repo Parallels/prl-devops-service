@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"io/ioutil"
@@ -2403,10 +2402,8 @@ func (s *ParallelsService) ReplaceMacAddressInConfigPvs(path string) error {
 	}
 
 	fileMode := fileInfo.Mode()
-	// Get the file owner
-	sys := fileInfo.Sys().(*syscall.Stat_t)
-	uid := sys.Uid
-	gid := int(sys.Gid)
+	// Get the file owner (platform-specific)
+	uid, gid := getFileOwner(fileInfo)
 
 	file, err := os.Open(filepath.Clean(configPath))
 	if err != nil {

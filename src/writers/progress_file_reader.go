@@ -125,7 +125,7 @@ func (pr *ProgressFileReader) ReadAt(p []byte, off int64) (int, error) {
 				action = "Downloading"
 			}
 
-			msg := notifications.NewProgressNotificationMessage(pr.file.Name(), message, percentage).
+			msg := notifications.NewProgressNotificationMessage(pr.correlationId, message, percentage).
 				SetCurrentSize(newRead).
 				SetTotalSize(pr.size).
 				SetJobId(pr.jobId).

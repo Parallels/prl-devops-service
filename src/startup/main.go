@@ -8,6 +8,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
@@ -239,13 +240,27 @@ func Start(ctx basecontext.ApiContext) {
 	ctx.LogInfof("Starting Job Manager Service")
 	jobManagerService := jobs.New(ctx)
 
-	// Wire up the new global Notification API callbacks for jobs
+	// Wire up the NotificationService → JobManager callbacks.
+	// We use the combined OnUpdateJobProgressAndSteps callback so that progress
+	// and the step snapshot are written to the DB in a single operation, which
+	// prevents the race condition where a separate UpdateJobProgress read could
+	// see stale (empty) steps that were written by a concurrent UpdateJobSteps.
 	if ns := notifications.Get(); ns != nil {
-		ns.OnUpdateJobActionProgress = func(jobId, action string, currentSize int64, percent int, totalSize int64, eta string, unit string) {
-			jobManagerService.UpdateJobActionProgress(jobId, action, currentSize, percent, totalSize, eta, unit)
+		ns.OnUpdateJobProgressAndSteps = func(jobId string, percent int, state string, steps []data_models.JobStep) {
+			jobManagerService.UpdateJobProgressAndSteps(jobId, percent, constants.JobState(state), steps)
 		}
-		ns.OnUpdateJobProgress = func(jobId, action string, percent int, status string) {
-			jobManagerService.UpdateJobProgress(jobId, action, percent, constants.JobState(status))
+		// Keep the legacy callbacks as fallbacks (called only when OnUpdateJobProgressAndSteps is nil)
+		ns.OnUpdateJobSteps = func(jobId string, steps []data_models.JobStep) {
+			jobManagerService.UpdateJobSteps(jobId, steps)
+		}
+		ns.OnUpdateJobProgress = func(jobId string, percent int, status string) {
+			jobManagerService.UpdateJobProgress(jobId, percent, constants.JobState(status))
+		}
+		ns.OnUpdateJobMessage = func(jobId string, message string) {
+			jobManagerService.UpdateJobMessage(jobId, message)
+		}
+		ns.OnUpdateJobResultRecord = func(jobId string, recordId string, recordType string) {
+			jobManagerService.UpdateJobResultRecord(jobId, recordId, recordType)
 		}
 	}
 
