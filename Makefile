@@ -33,6 +33,7 @@ help:
 	# make build
 	# make generate-swagger
 	# make generate-postman
+	# make generate-docs
 
 .PHONY: version
 version:
@@ -212,6 +213,11 @@ generate-swagger:
 generate-postman: generate-swagger
 	@echo "Generating Postman collection..."
 	@scripts/generate-postman.sh
+
+.PHONY: generate-docs
+generate-docs: generate-swagger
+	@echo "Generating Jekyll API documentation..."
+	@node scripts/generate-docs.js
 
 .PHONY: deps
 deps: $(DEVELOPMENT_TOOLS) $(SECURITY_TOOLS)

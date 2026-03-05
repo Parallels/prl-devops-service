@@ -1,9 +1,8 @@
 ---
 layout: api
-title: API Reference
+title: CatalogManagers
 default_host: http://localhost
 api_prefix: /api
-is_category_document: true
 categories:
     - name: Config
       path: config
@@ -912,8 +911,465 @@ categories:
           path: /v1/ws/unsubscribe
           description: Unsubscribe an active WebSocket client from specific event types without disconnecting. The client must belong to the authenticated user.
           title: Unsubscribe from specific event types
+endpoints:
+  - path: /v1/catalog-managers
+    method: get
+    title: Gets all the catalog managers
+    description: This endpoint returns all the catalog managers
+    requires_authorization: true
+    example_blocks:
+      - title: cURL
+        language: powershell
+        code_block: |
+          curl --location '{{host}}/v1/catalog-managers' \
+          --header 'Authorization: ******'
+      - title: C#
+        language: csharp
+        code_block: |
+          var client = new HttpClient();
+          var request = new HttpRequestMessage(HttpMethod.Get, "{{host}}/v1/catalog-managers");
+          request.Headers.Add("Authorization", "******");
+          
+          var response = await client.SendAsync(request);
+      - title: Go
+        language: go
+        code_block: |
+          package main
+          
+          import (
+              "fmt"
+              "strings"
+              "net/http"
+              "io/ioutil"
+          )
+          
+          func main() {
+              url := "{{host}}/v1/catalog-managers"
+              method := "GET"
+              
+              payload := strings.NewReader("")
+              
+              client := &http.Client {}
+              req, err := http.NewRequest(method, url, payload)
+              
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              req.Header.Add("Authorization", "******")
+              
+              
+              res, err := client.Do(req)
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              defer res.Body.Close()
+              
+              body, err := ioutil.ReadAll(res.Body)
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              fmt.Println(string(body))
+          }
+    response_blocks:
+      - code: 200
+        code_description: OK
+        code_block: |
+          [
+            {
+              "id": "string",
+              "name": "string"
+            }
+          ]
+      - code: 400
+        code_description: Bad Request
+        code_block: |
+          {
+            "message": "string",
+            "timestamp": "2024-01-01T00:00:00Z"
+          }
+      - code: 401
+        code_description: Unauthorized
+        code_block: |
+          {
+            "code": "int",
+            "message": "string",
+            "stack": [
+              {
+                "function": "string",
+                "file": "string",
+                "line": "int"
+              }
+            ]
+          }
+  - path: /v1/catalog-managers
+    method: post
+    title: Creates a catalog manager
+    description: This endpoint creates a catalog manager
+    requires_authorization: true
+    example_blocks:
+      - title: cURL
+        language: powershell
+        code_block: |
+          curl --location '{{host}}/v1/catalog-managers' \
+          --header 'Authorization: ******' \
+          --header 'Content-Type: application/json' \
+          --data '{}'
+      - title: C#
+        language: csharp
+        code_block: |
+          var client = new HttpClient();
+          var request = new HttpRequestMessage(HttpMethod.Post, "{{host}}/v1/catalog-managers");
+          request.Headers.Add("Authorization", "******");
+          request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
+          var response = await client.SendAsync(request);
+      - title: Go
+        language: go
+        code_block: |
+          package main
+          
+          import (
+              "fmt"
+              "strings"
+              "net/http"
+              "io/ioutil"
+          )
+          
+          func main() {
+              url := "{{host}}/v1/catalog-managers"
+              method := "POST"
+              
+              payload := strings.NewReader("{}")
+              
+              client := &http.Client {}
+              req, err := http.NewRequest(method, url, payload)
+              
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              req.Header.Add("Authorization", "******")
+              req.Header.Add("Content-Type", "application/json")
+              
+              res, err := client.Do(req)
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              defer res.Body.Close()
+              
+              body, err := ioutil.ReadAll(res.Body)
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              fmt.Println(string(body))
+          }
+    response_blocks:
+      - code: 200
+        code_description: OK
+        code_block: |
+          {
+            "message": "string",
+            "timestamp": "2024-01-01T00:00:00Z"
+          }
+      - code: 400
+        code_description: Bad Request
+        code_block: |
+          {
+            "message": "string",
+            "timestamp": "2024-01-01T00:00:00Z"
+          }
+      - code: 401
+        code_description: Unauthorized
+        code_block: |
+          {
+            "code": "int",
+            "message": "string",
+            "stack": [
+              {
+                "function": "string",
+                "file": "string",
+                "line": "int"
+              }
+            ]
+          }
+  - path: /v1/catalog-managers/{id}
+    method: get
+    title: Gets a specific catalog manager
+    description: This endpoint returns a catalog manager
+    requires_authorization: true
+    example_blocks:
+      - title: cURL
+        language: powershell
+        code_block: |
+          curl --location '{{host}}/v1/catalog-managers/{id}' \
+          --header 'Authorization: ******'
+      - title: C#
+        language: csharp
+        code_block: |
+          var client = new HttpClient();
+          var request = new HttpRequestMessage(HttpMethod.Get, "{{host}}/v1/catalog-managers/{id}");
+          request.Headers.Add("Authorization", "******");
+          
+          var response = await client.SendAsync(request);
+      - title: Go
+        language: go
+        code_block: |
+          package main
+          
+          import (
+              "fmt"
+              "strings"
+              "net/http"
+              "io/ioutil"
+          )
+          
+          func main() {
+              url := "{{host}}/v1/catalog-managers/{id}"
+              method := "GET"
+              
+              payload := strings.NewReader("")
+              
+              client := &http.Client {}
+              req, err := http.NewRequest(method, url, payload)
+              
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              req.Header.Add("Authorization", "******")
+              
+              
+              res, err := client.Do(req)
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              defer res.Body.Close()
+              
+              body, err := ioutil.ReadAll(res.Body)
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              fmt.Println(string(body))
+          }
+    response_blocks:
+      - code: 200
+        code_description: OK
+        code_block: |
+          {
+            "message": "string",
+            "timestamp": "2024-01-01T00:00:00Z"
+          }
+      - code: 400
+        code_description: Bad Request
+        code_block: |
+          {
+            "message": "string",
+            "timestamp": "2024-01-01T00:00:00Z"
+          }
+      - code: 401
+        code_description: Unauthorized
+        code_block: |
+          {
+            "code": "int",
+            "message": "string",
+            "stack": [
+              {
+                "function": "string",
+                "file": "string",
+                "line": "int"
+              }
+            ]
+          }
+  - path: /v1/catalog-managers/{id}
+    method: put
+    title: Updates a catalog manager
+    description: This endpoint updates a catalog manager
+    requires_authorization: true
+    example_blocks:
+      - title: cURL
+        language: powershell
+        code_block: |
+          curl --location '{{host}}/v1/catalog-managers/{id}' \
+          --header 'Authorization: ******' \
+          --header 'Content-Type: application/json' \
+          --data '{}'
+      - title: C#
+        language: csharp
+        code_block: |
+          var client = new HttpClient();
+          var request = new HttpRequestMessage(HttpMethod.Put, "{{host}}/v1/catalog-managers/{id}");
+          request.Headers.Add("Authorization", "******");
+          request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
+          var response = await client.SendAsync(request);
+      - title: Go
+        language: go
+        code_block: |
+          package main
+          
+          import (
+              "fmt"
+              "strings"
+              "net/http"
+              "io/ioutil"
+          )
+          
+          func main() {
+              url := "{{host}}/v1/catalog-managers/{id}"
+              method := "PUT"
+              
+              payload := strings.NewReader("{}")
+              
+              client := &http.Client {}
+              req, err := http.NewRequest(method, url, payload)
+              
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              req.Header.Add("Authorization", "******")
+              req.Header.Add("Content-Type", "application/json")
+              
+              res, err := client.Do(req)
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              defer res.Body.Close()
+              
+              body, err := ioutil.ReadAll(res.Body)
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              fmt.Println(string(body))
+          }
+    response_blocks:
+      - code: 200
+        code_description: OK
+        code_block: |
+          {
+            "message": "string",
+            "timestamp": "2024-01-01T00:00:00Z"
+          }
+      - code: 400
+        code_description: Bad Request
+        code_block: |
+          {
+            "message": "string",
+            "timestamp": "2024-01-01T00:00:00Z"
+          }
+      - code: 401
+        code_description: Unauthorized
+        code_block: |
+          {
+            "code": "int",
+            "message": "string",
+            "stack": [
+              {
+                "function": "string",
+                "file": "string",
+                "line": "int"
+              }
+            ]
+          }
+  - path: /v1/catalog-managers/{id}
+    method: delete
+    title: Deletes a catalog manager
+    description: This endpoint deletes a catalog manager
+    requires_authorization: true
+    example_blocks:
+      - title: cURL
+        language: powershell
+        code_block: |
+          curl --location '{{host}}/v1/catalog-managers/{id}' \
+          --header 'Authorization: ******'
+      - title: C#
+        language: csharp
+        code_block: |
+          var client = new HttpClient();
+          var request = new HttpRequestMessage(HttpMethod.Delete, "{{host}}/v1/catalog-managers/{id}");
+          request.Headers.Add("Authorization", "******");
+          
+          var response = await client.SendAsync(request);
+      - title: Go
+        language: go
+        code_block: |
+          package main
+          
+          import (
+              "fmt"
+              "strings"
+              "net/http"
+              "io/ioutil"
+          )
+          
+          func main() {
+              url := "{{host}}/v1/catalog-managers/{id}"
+              method := "DELETE"
+              
+              payload := strings.NewReader("")
+              
+              client := &http.Client {}
+              req, err := http.NewRequest(method, url, payload)
+              
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              req.Header.Add("Authorization", "******")
+              
+              
+              res, err := client.Do(req)
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              defer res.Body.Close()
+              
+              body, err := ioutil.ReadAll(res.Body)
+              if err != nil {
+                  fmt.Println(err)
+                  return
+              }
+              fmt.Println(string(body))
+          }
+    response_blocks:
+      - code: 200
+        code_description: OK
+        code_block: |
+          {
+            "message": "string",
+            "timestamp": "2024-01-01T00:00:00Z"
+          }
+      - code: 400
+        code_description: Bad Request
+        code_block: |
+          {
+            "message": "string",
+            "timestamp": "2024-01-01T00:00:00Z"
+          }
+      - code: 401
+        code_description: Unauthorized
+        code_block: |
+          {
+            "code": "int",
+            "message": "string",
+            "stack": [
+              {
+                "function": "string",
+                "file": "string",
+                "line": "int"
+              }
+            ]
+          }
 ---
 
-# API Reference
+# CatalogManagers API
 
-This page contains all API endpoints organized by category.
+This section contains all catalogmanagers related endpoints.
