@@ -1093,6 +1093,13 @@ definitions:
       snapshot_name:
         type: string
     type: object
+  models.CreateSnapShotResponse:
+    properties:
+      snapshot_id:
+        type: string
+      snapshot_name:
+        type: string
+    type: object
   models.CreateVagrantMachineRequest:
     properties:
       architecture:
@@ -1311,6 +1318,13 @@ definitions:
         $ref: '#/definitions/constants.JobState'
       updated_at:
         type: string
+    type: object
+  models.ListSnapshotResponse:
+    properties:
+      snapshots:
+        items:
+          $ref: '#/definitions/models.Snapshot'
+        type: array
     type: object
   models.LoginRequest:
     properties:
@@ -1810,6 +1824,21 @@ definitions:
       message:
         type: string
       name:
+        type: string
+    type: object
+  models.Snapshot:
+    properties:
+      current:
+        type: boolean
+      date:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      parent:
+        type: string
+      state:
         type: string
     type: object
   models.SystemReverseProxy:
@@ -5748,6 +5777,198 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Configures orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots:
+    delete:
+      description: This endpoint deletes all snapshots of orchestrator host virtual
+        machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes all snapshots of orchestrator host virtual machine
+      tags:
+      - Orchestrator
+    get:
+      description: This endpoint lists snapshots of orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ListSnapshotResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Lists snapshots of orchestrator host virtual machine
+      tags:
+      - Orchestrator
+    post:
+      description: This endpoint creates a snapshot for orchestrator host virtual
+        machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      - description: Create Snapshot Request
+        in: body
+        name: createRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateSnapShotRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.CreateSnapShotResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a snapshot for orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}:
+    delete:
+      description: This endpoint deletes a snapshot of orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      - description: Snapshot ID
+        in: path
+        name: snapshot_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a snapshot of orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}/revert:
+    post:
+      description: This endpoint reverts orchestrator host virtual machine to a snapshot
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      - description: Snapshot ID
+        in: path
+        name: snapshot_id
+        required: true
+        type: string
+      - description: Revert Snapshot Request
+        in: body
+        name: revertRequest
+        schema:
+          $ref: '#/definitions/models.RevertSnapshotRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Reverts orchestrator host virtual machine to a snapshot
       tags:
       - Orchestrator
   /v1/orchestrator/hosts/{id}/machines/{vmId}/start:
