@@ -63,4 +63,12 @@
   items:
     - name: Managing Virtual Machine Snapshots
       link: /docs/devops/snapshots/
+    - name: Create Snapshot
+      link: /docs/devops/snapshots/create/
+    - name: List Snapshots
+      link: /docs/devops/snapshots/list/
+    - name: Delete Snapshot
+      link: /docs/devops/snapshots/delete/
+    - name: Revert Snapshot
+      link: /docs/devops/snapshots/revert/
 
