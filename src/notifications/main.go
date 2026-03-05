@@ -372,6 +372,9 @@ func (p *NotificationService) updateProgressTracker(tracker *ProgressTracker, pr
 }
 
 func (p *NotificationService) NotifyProgress(correlationId string, prefix string, progress float64) {
+	if correlationId == "" {
+		return
+	}
 	msg := NewProgressNotificationMessage(correlationId, prefix, progress)
 	encodedID := msg.CorrelationId()
 
@@ -405,6 +408,9 @@ func (p *NotificationService) NotifyProgress(correlationId string, prefix string
 }
 
 func (p *NotificationService) FinishProgress(correlationId string, prefix string) {
+	if correlationId == "" {
+		return
+	}
 	encodedID := normalizeCorrelationID(correlationId)
 	p.mu.Lock()
 	if tracker, exists := p.activeProgress[encodedID]; exists {
@@ -450,6 +456,9 @@ func (p *NotificationService) ingestMessages() {
 		case <-p.stopChan:
 			return
 		case msg := <-p.Channel:
+			if msg.JobId == "" && msg.CorrelationId() == "" && msg.Message == "" {
+				continue // Drop completely empty payloads
+			}
 			p.qMu.Lock()
 			encodedID := msg.CorrelationId()
 			if p.queue[encodedID] == nil {

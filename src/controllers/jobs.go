@@ -323,7 +323,7 @@ func runDebugProfilePullRemote(jobId string, jobManager *jobs.JobManagerService)
 	time.Sleep(1 * time.Second)
 
 	instantStep := func(action, msg string) {
-		ns.WithJob(jobId, action).NotifyInfof(msg)
+		ns.WithJob(jobId, action).NotifyInfof("%s", msg)
 		ns.Notify(notifications.NewProgressNotificationMessage(jobId, action, 100).
 			SetJobId(jobId).SetCurrentAction(action))
 		time.Sleep(300 * time.Millisecond)
@@ -431,7 +431,7 @@ func runDebugProfilePullCache(jobId string, jobManager *jobs.JobManagerService) 
 	time.Sleep(1 * time.Second)
 
 	instantStep := func(action, msg string) {
-		ns.WithJob(jobId, action).NotifyInfof(msg)
+		ns.WithJob(jobId, action).NotifyInfof("%s", msg)
 		ns.Notify(notifications.NewProgressNotificationMessage(jobId, action, 100).
 			SetJobId(jobId).SetCurrentAction(action))
 		time.Sleep(400 * time.Millisecond)
@@ -509,7 +509,7 @@ func runDebugProfileSkippedSteps(jobId string, jobManager *jobs.JobManagerServic
 	time.Sleep(800 * time.Millisecond)
 
 	instantStep := func(action, msg string) {
-		ns.WithJob(jobId, action).NotifyInfof(msg)
+		ns.WithJob(jobId, action).NotifyInfof("%s", msg)
 		ns.Notify(notifications.NewProgressNotificationMessage(jobId, action, 100).
 			SetJobId(jobId).SetCurrentAction(action))
 		time.Sleep(300 * time.Millisecond)
