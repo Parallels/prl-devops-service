@@ -20,7 +20,7 @@ import (
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
 	global_models "github.com/Parallels/prl-devops-service/models"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/cjlapao/common-go/helper"
 )
@@ -51,7 +51,7 @@ func NewCacheRequest(ctx basecontext.ApiContext, catalogManifest *models.Virtual
 
 type CacheService struct {
 	notificationChannel chan string
-	notifications       *notifications.NotificationService
+	notifications       *tracker.JobProgressService
 	cfg                 *config.Config
 	baseCtx             basecontext.ApiContext
 	rss                 interfaces.RemoteStorageService
@@ -79,7 +79,7 @@ func NewCacheService(ctx basecontext.ApiContext) (*CacheService, error) {
 		cfg:            config.Get(),
 		CacheType:      models.CatalogCacheTypeNone,
 		cleanupservice: cleanupservice.NewCleanupService(),
-		notifications:  notifications.Get(),
+		notifications:  tracker.GetProgressService(),
 	}
 
 	// checking if we have a size for the vm, if not we will set a default size
@@ -521,7 +521,7 @@ func (cs *CacheService) processCacheFileWithoutStream() (string, error) {
 	// checking if the pack file is compressed or not if it is we will decompress it to the destination folder
 	// and remove the pack file from the cache folder if not we will just rename the pack file to the checksum
 	if cs.manifest.IsCompressed || strings.HasSuffix(cs.manifest.PackFile, ".pdpack") {
-		if err := compressor.DecompressFileWithStepChannel(cs.baseCtx, destinationFile, tempDir, nil, cs.JobId); err != nil {
+		if err := compressor.DecompressFileWithStepChannel(cs.baseCtx, destinationFile, tempDir, nil, cs.JobId, constants.ActionDecompressingPackFile); err != nil {
 			return destinationFolder, err
 		}
 
@@ -836,7 +836,7 @@ func (cs *CacheService) Cache() error {
 	cs.notify("Downloading catalog manifest file")
 	jobManager := jobs.Get(cs.baseCtx)
 	if cs.JobId != "" && jobManager != nil {
-		cs.notifications.Notify(notifications.NewProgressNotificationMessage(cs.JobId, constants.ActionDownloadingManifest, 100).
+		cs.notifications.Notify(tracker.NewJobProgressMessage(cs.JobId, constants.ActionDownloadingManifest, 100).
 			SetJobId(cs.JobId).
 			SetCurrentAction(constants.ActionDownloadingManifest).
 			SetFilename(cs.manifest.Name))

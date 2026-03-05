@@ -34,6 +34,7 @@ type ProgressReporter struct {
 	Progress             chan int
 	Size                 int64
 	JobId                string
+	Action               string
 	ActionUpdateCallback func(jobId, prefix string, current int64, percent int, total int64)
 }
 

@@ -20,9 +20,9 @@ import (
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	"github.com/Parallels/prl-devops-service/mappers"
 	api_models "github.com/Parallels/prl-devops-service/models"
-	"github.com/Parallels/prl-devops-service/notifications"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/serviceprovider/apiclient"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
@@ -54,8 +54,8 @@ func (s *CatalogManifestService) AsyncPull(jobId string, r *models.PullCatalogMa
 	}
 }
 
-func getPullWorkflowSteps(isCache bool, startAfterPull bool) []notifications.JobStep {
-	steps := []notifications.JobStep{
+func getPullWorkflowSteps(isCache bool, startAfterPull bool) []tracker.JobStep {
+	steps := []tracker.JobStep{
 		{Name: constants.ActionValidatingRequest, Weight: 5.0},
 		{Name: constants.ActionCheckingLocalCatalog, Weight: 5.0},
 		{Name: constants.ActionCheckingRemoteCatalog, Weight: 5.0},
@@ -71,19 +71,19 @@ func getPullWorkflowSteps(isCache bool, startAfterPull bool) []notifications.Job
 	heavyWeight := (100.0 - fixedWeight) / 2.0
 
 	if isCache {
-		steps = append(steps, notifications.JobStep{Name: constants.ActionDownloadingPackFile, Weight: heavyWeight / 2.0})
-		steps = append(steps, notifications.JobStep{Name: constants.ActionCachingPackFile, Weight: heavyWeight / 2.0})
-		steps = append(steps, notifications.JobStep{Name: constants.ActionCopyingFromCache, Weight: heavyWeight})
+		steps = append(steps, tracker.JobStep{Name: constants.ActionDownloadingPackFile, Weight: heavyWeight / 2.0})
+		steps = append(steps, tracker.JobStep{Name: constants.ActionCachingPackFile, Weight: heavyWeight / 2.0})
+		steps = append(steps, tracker.JobStep{Name: constants.ActionCopyingFromCache, Weight: heavyWeight})
 	} else {
-		steps = append(steps, notifications.JobStep{Name: constants.ActionDownloadingPackFile, Weight: heavyWeight})
-		steps = append(steps, notifications.JobStep{Name: constants.ActionDecompressingPackFile, Weight: heavyWeight})
+		steps = append(steps, tracker.JobStep{Name: constants.ActionDownloadingPackFile, Weight: heavyWeight})
+		steps = append(steps, tracker.JobStep{Name: constants.ActionDecompressingPackFile, Weight: heavyWeight})
 	}
 
-	steps = append(steps, notifications.JobStep{Name: constants.ActionCleaningStructure, Weight: 5.0})
-	steps = append(steps, notifications.JobStep{Name: constants.ActionRegisteringMachine, Weight: 5.0})
-	steps = append(steps, notifications.JobStep{Name: constants.ActionRenamingMachine, Weight: 5.0})
+	steps = append(steps, tracker.JobStep{Name: constants.ActionCleaningStructure, Weight: 5.0})
+	steps = append(steps, tracker.JobStep{Name: constants.ActionRegisteringMachine, Weight: 5.0})
+	steps = append(steps, tracker.JobStep{Name: constants.ActionRenamingMachine, Weight: 5.0})
 	if startAfterPull {
-		steps = append(steps, notifications.JobStep{Name: constants.ActionStartingMachine, Weight: 5.0})
+		steps = append(steps, tracker.JobStep{Name: constants.ActionStartingMachine, Weight: 5.0})
 	}
 
 	return steps
@@ -232,7 +232,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		}
 		s.ns.NotifyInfof("Checking if the manifest exists in the local catalog")
 		if r.JobId != "" && jobManager != nil {
-			s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
+			s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
 				SetJobId(r.JobId).
 				SetCurrentAction(constants.ActionCheckingLocalCatalog).
 				SetFilename(r.CatalogId))
@@ -310,7 +310,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 	}
 
 	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
+		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
 			SetJobId(r.JobId).
 			SetCurrentAction(constants.ActionCheckingLocalCatalog).
 			SetCurrentActionStep(fmt.Sprintf("VM %v does not exist, continuing", r.MachineName)).
@@ -318,7 +318,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 	}
 
 	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCheckingRemoteCatalog, 100).
+		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionCheckingRemoteCatalog, 100).
 			SetJobId(r.JobId).
 			SetCurrentAction(constants.ActionCheckingRemoteCatalog).
 			SetFilename(manifest.Name))
@@ -341,7 +341,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		foundProvider = true
 		r.LocalMachineFolder = fmt.Sprintf("%s.%s", filepath.Join(r.Path, r.MachineName), manifest.Type)
 
-		s.ns.RegisterJobWorkflow(r.JobId, []notifications.JobStep{
+		s.ns.RegisterJobWorkflow(r.JobId, []tracker.JobStep{
 			{Name: constants.ActionCheckingLocalCatalog, Weight: 5, Parallel: false, HasPercentage: false},
 			{Name: constants.ActionCheckingRemoteCatalog, Weight: 5, Parallel: false, HasPercentage: false},
 			{Name: constants.ActionDownloadingManifest, Weight: 5, Parallel: false, HasPercentage: false},
@@ -351,7 +351,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 			{Name: constants.ActionRegisteringMachine, Weight: 5, Parallel: false, HasPercentage: false},
 		})
 
-		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
+		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
 			SetJobId(r.JobId).
 			SetCurrentAction(constants.ActionCheckingLocalCatalog).
 			SetFilename(r.MachineName))
@@ -445,7 +445,7 @@ func (s *CatalogManifestService) registerMachineWithParallelsDesktop(r *models.P
 	s.ns.WithJob(r.JobId, constants.ActionRegisteringMachine).NotifyInfof("Registering machine %v", r.MachineName)
 	jobManager := jobs.Get(s.ctx)
 	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionRegisteringMachine, 100).
+		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionRegisteringMachine, 100).
 			SetJobId(r.JobId).
 			SetCurrentAction(constants.ActionRegisteringMachine).
 			SetFilename(r.MachineName))
@@ -475,7 +475,7 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(r *models.Pul
 	s.ns.WithJob(r.JobId, constants.ActionRenamingMachine).NotifyInfof("Renaming machine %v", r.MachineName)
 	jobManager := jobs.Get(s.ctx)
 	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionRenamingMachine, 100).
+		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionRenamingMachine, 100).
 			SetJobId(r.JobId).
 			SetCurrentAction(constants.ActionRenamingMachine).
 			SetFilename(r.MachineName))
@@ -542,7 +542,7 @@ func (s *CatalogManifestService) startMachineWithParallelsDesktop(r *models.Pull
 	s.ns.WithJob(r.JobId, constants.ActionStartingMachine).NotifyInfof("Starting machine %v for %v", r.MachineName, r.CatalogId)
 	jobManager := jobs.Get(s.ctx)
 	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionStartingMachine, 100).
+		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionStartingMachine, 100).
 			SetJobId(r.JobId).
 			SetCurrentAction(constants.ActionStartingMachine).
 			SetFilename(r.MachineName))
@@ -604,7 +604,7 @@ func (s *CatalogManifestService) CleanPullRequest(r *models.PullCatalogManifestR
 func (s *CatalogManifestService) createDestinationFolder(r *models.PullCatalogManifestRequest, manifest *models.VirtualMachineCatalogManifest) error {
 	jobManager := jobs.Get(s.ctx)
 	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCreatingDestinationFolder, 100).
+		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionCreatingDestinationFolder, 100).
 			SetJobId(r.JobId).
 			SetCurrentAction(constants.ActionCreatingDestinationFolder).
 			SetFilename(manifest.Name))
@@ -694,7 +694,7 @@ func (s *CatalogManifestService) pullFromCache(r *models.PullCatalogManifestRequ
 							}
 
 							if s.ns != nil {
-								msg := notifications.NewProgressNotificationMessage(
+								msg := tracker.NewJobProgressMessage(
 									r.JobId,
 									constants.ActionCopyingFromCache,
 									float64(percentage),
@@ -741,7 +741,7 @@ func (s *CatalogManifestService) pullAndDecompressPackFile(r *models.PullCatalog
 
 	jobManager := jobs.Get(s.ctx)
 	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(notifications.NewProgressNotificationMessage(r.JobId, constants.ActionCleaningStructure, 100).
+		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionCleaningStructure, 100).
 			SetJobId(r.JobId).
 			SetCurrentAction(constants.ActionCleaningStructure).
 			SetFilename(manifest.Name))
@@ -802,7 +802,7 @@ func (s *CatalogManifestService) processFileWithoutStream(r *models.PullCatalogM
 			// Job management is now handled exclusively through NotificationService
 		}
 
-		if err := compressor.DecompressFileWithStepChannel(s.ctx, compressedFilePath, destinationFolder, nil, r.JobId); err != nil {
+		if err := compressor.DecompressFileWithStepChannel(s.ctx, compressedFilePath, destinationFolder, nil, r.JobId, constants.ActionDecompressingPackFile); err != nil {
 			cleanupSvc.AddLocalFileCleanupOperation(destinationFolder, true)
 			s.ctx.LogErrorf("Error decompressing file for manifest ID %v, Name %v: %v adding folder: %v to cleanup", manifest.ID, manifest.Name, err, destinationFolder)
 			cleanupSvc.Clean(s.ctx)

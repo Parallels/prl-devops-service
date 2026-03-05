@@ -6,13 +6,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 )
 
 type ProgressWriter struct {
-	ns             *notifications.NotificationService
+	ns             *tracker.JobProgressService
 	writer         io.Writer
 	correlationId  string
 	totalProcessed int64
@@ -24,12 +23,13 @@ type ProgressWriter struct {
 	mu             sync.Mutex
 }
 
-func NewProgressWriter(writer io.Writer, size int64) *ProgressWriter {
+func NewProgressWriter(writer io.Writer, size int64, action string) *ProgressWriter {
 	return &ProgressWriter{
 		correlationId: helpers.GenerateId(),
-		ns:            notifications.Get(),
+		ns:            tracker.GetProgressService(),
 		writer:        writer,
 		size:          size,
+		currentAction: action,
 	}
 }
 
@@ -82,9 +82,6 @@ func (pw *ProgressWriter) WriteAt(p []byte, off int64) (n int, err error) {
 			percentage := float64(off*100) / float64(pw.size)
 			if pw.ns != nil {
 				prefix := pw.prefix
-				if prefix == "" {
-					prefix = constants.ActionDownloadingManifest
-				}
 				if pw.filename != "" {
 					prefix = fmt.Sprintf("%s %s", prefix, pw.filename)
 				}
@@ -93,16 +90,11 @@ func (pw *ProgressWriter) WriteAt(p []byte, off int64) (n int, err error) {
 					prefix = fmt.Sprintf("[%s] %s", pw.jobId, prefix)
 				}
 
-				action := pw.currentAction
-				if action == "" {
-					action = constants.ActionDownloadingPackFile
-				}
-
-				msg := notifications.NewProgressNotificationMessage(pw.correlationId, prefix, percentage).
+				msg := tracker.NewJobProgressMessage(pw.correlationId, prefix, percentage).
 					SetCurrentSize(off).
 					SetTotalSize(pw.size).
 					SetJobId(pw.jobId).
-					SetCurrentAction(action).
+					SetCurrentAction(pw.currentAction).
 					SetFilename(pw.filename)
 				pw.ns.Notify(msg)
 			}
@@ -122,9 +114,6 @@ func (pw *ProgressWriter) Write(p []byte) (int, error) {
 			percentage := float64(pw.totalProcessed*100) / float64(pw.size)
 			if pw.ns != nil {
 				prefix := pw.prefix
-				if prefix == "" {
-					prefix = constants.ActionDownloadingManifest
-				}
 				if pw.filename != "" {
 					prefix = fmt.Sprintf("%s %s", prefix, pw.filename)
 				}
@@ -133,16 +122,11 @@ func (pw *ProgressWriter) Write(p []byte) (int, error) {
 					prefix = fmt.Sprintf("[%s] %s", pw.jobId, prefix)
 				}
 
-				action := pw.currentAction
-				if action == "" {
-					action = constants.ActionDownloadingPackFile
-				}
-
-				msg := notifications.NewProgressNotificationMessage(pw.correlationId, prefix, percentage).
+				msg := tracker.NewJobProgressMessage(pw.correlationId, prefix, percentage).
 					SetCurrentSize(pw.totalProcessed).
 					SetTotalSize(pw.size).
 					SetJobId(pw.jobId).
-					SetCurrentAction(action).
+					SetCurrentAction(pw.currentAction).
 					SetFilename(pw.filename)
 
 				pw.ns.Notify(msg)

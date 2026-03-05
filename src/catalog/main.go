@@ -23,7 +23,7 @@ import (
 	"github.com/Parallels/prl-devops-service/compressor"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 
 	"github.com/cjlapao/common-go/helper"
 )
@@ -36,7 +36,7 @@ const (
 )
 
 type CatalogManifestService struct {
-	ns             *notifications.NotificationService
+	ns             *tracker.JobProgressService
 	ctx            basecontext.ApiContext
 	remoteServices []interfaces.RemoteStorageService
 }
@@ -44,7 +44,7 @@ type CatalogManifestService struct {
 func NewManifestService(ctx basecontext.ApiContext) *CatalogManifestService {
 	manifestService := &CatalogManifestService{
 		ctx: ctx,
-		ns:  notifications.Get(),
+		ns:  tracker.GetProgressService(),
 	}
 	// Adding remote services to the catalog service
 	manifestService.remoteServices = make([]interfaces.RemoteStorageService, 0)

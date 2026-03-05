@@ -14,7 +14,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/compressor"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -55,8 +55,13 @@ func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, 
 		LogDebugf(format string, args ...interface{})
 	} = ctx
 
+	if request.Action == "" {
+		request.Action = constants.ActionDownloadingPackFile
+	}
+	action := request.Action
+
 	if request.NotificationService != nil && request.JobId != "" {
-		logger = request.NotificationService.WithJob(request.JobId, constants.ActionDownloadingPackFile)
+		logger = request.NotificationService.WithJob(request.JobId, action)
 	}
 
 	logger.LogInfof("[Catalog] Starting download for %s", request.Filename)
@@ -149,7 +154,7 @@ func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, 
 		if request.JobId != "" && !strings.HasPrefix(prefix, "["+request.JobId+"]") {
 			prefix = fmt.Sprintf("[%s] %s", request.JobId, prefix)
 		}
-		finalMsg := notifications.NewProgressNotificationMessage(
+		finalMsg := tracker.NewJobProgressMessage(
 			request.CorrelationID,
 			prefix,
 			100,
@@ -158,7 +163,7 @@ func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, 
 			SetTotalSize(totalSize).
 			SetStartingTime(startTime).
 			SetJobId(request.JobId).
-			SetCurrentAction(constants.ActionDownloadingPackFile)
+			SetCurrentAction(action)
 		request.NotificationService.Notify(finalMsg)
 
 		// Clean up notifications after we're done
@@ -375,7 +380,7 @@ func (s *ChunkManagerService) downloadChunk(
 				if request.JobId != "" && !strings.HasPrefix(prefix, "["+request.JobId+"]") {
 					prefix = fmt.Sprintf("[%s] %s", request.JobId, prefix)
 				}
-				msg := notifications.NewProgressNotificationMessage(
+				msg := tracker.NewJobProgressMessage(
 					request.CorrelationID,
 					prefix,
 					percent,
@@ -384,7 +389,7 @@ func (s *ChunkManagerService) downloadChunk(
 					SetTotalSize(totalSize).
 					SetStartingTime(startTime).
 					SetJobId(request.JobId).
-					SetCurrentAction(constants.ActionDownloadingPackFile)
+					SetCurrentAction(request.Action)
 				request.NotificationService.Notify(msg)
 			}
 		}
@@ -432,7 +437,7 @@ func (s *ChunkManagerService) runDecompressorGoroutine(
 
 		logger.LogInfof("Starting decompression process")
 		if request.JobId != "" {
-			err := compressor.DecompressTarGzStream(ctx, r, "", request.Destination, request.JobId)
+			err := compressor.DecompressTarGzStream(ctx, r, "", request.Destination, request.JobId, constants.ActionDecompressingPackFile)
 			if err != nil {
 				setGlobalError(err)
 				return fmt.Errorf("decompression failed: %w", err)

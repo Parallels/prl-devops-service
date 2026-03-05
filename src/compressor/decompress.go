@@ -16,7 +16,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	"github.com/klauspost/pgzip"
 )
 
@@ -77,18 +77,18 @@ import (
 //		return nil
 //	}
 func DecompressFile(ctx basecontext.ApiContext, filePath string, destination string) error {
-	return DecompressFileWithStepChannel(ctx, filePath, destination, nil, "")
+	return DecompressFileWithStepChannel(ctx, filePath, destination, nil, "", constants.ActionDecompressingPackFile)
 }
 
-func DecompressFileWithStepChannel(ctx basecontext.ApiContext, filePath string, destination string, stepChannel chan string, jobId string) error {
-	ns := notifications.Get()
+func DecompressFileWithStepChannel(ctx basecontext.ApiContext, filePath string, destination string, stepChannel chan string, jobId string, action string) error {
+	ns := tracker.GetProgressService()
 	var logger interface {
 		LogInfof(format string, args ...interface{})
 		LogErrorf(format string, args ...interface{})
 	} = ctx
 
 	if ns != nil && jobId != "" {
-		logger = ns.WithJob(jobId, constants.ActionDecompressingPackFile)
+		logger = ns.WithJob(jobId, action)
 	}
 
 	logger.LogInfof("Starting decompression of machine from %s to %s", filePath, destination)
@@ -142,7 +142,7 @@ func DecompressFileWithStepChannel(ctx basecontext.ApiContext, filePath string, 
 	}
 
 	tarReader := tar.NewReader(fileReader)
-	if err := processTarFile(ctx, tarReader, destination, jobId); err != nil {
+	if err := processTarFile(ctx, tarReader, destination, jobId, action); err != nil {
 		logger.LogErrorf("Error processing file %s: %v", filepath.Base(filePath), err)
 		return err
 	}
@@ -151,9 +151,9 @@ func DecompressFileWithStepChannel(ctx basecontext.ApiContext, filePath string, 
 	logger.LogInfof("Finished decompressing machine from %s to %s, in %v", filepath.Base(filePath), destination, endingTime.Sub(staringTime).Round(time.Millisecond))
 
 	if ns != nil {
-		msg := notifications.NewProgressNotificationMessage(jobId, fmt.Sprintf("Finished decompression of %s in %v", filepath.Base(filePath), endingTime.Sub(staringTime).Round(time.Second)), 100).
+		msg := tracker.NewJobProgressMessage(jobId, fmt.Sprintf("Finished decompression of %s in %v", filepath.Base(filePath), endingTime.Sub(staringTime).Round(time.Second)), 100).
 			SetJobId(jobId).
-			SetCurrentAction(constants.ActionDecompressingPackFile).
+			SetCurrentAction(action).
 			SetFilename(filepath.Base(compressedFile.Name()))
 		ns.Notify(msg)
 	}
@@ -161,10 +161,10 @@ func DecompressFileWithStepChannel(ctx basecontext.ApiContext, filePath string, 
 }
 
 func DecompressFromReader(ctx basecontext.ApiContext, reader io.Reader, destination string) error {
-	return DecompressTarGzStream(ctx, reader, "", destination, "")
+	return DecompressTarGzStream(ctx, reader, "", destination, "", constants.ActionDecompressingPackFile)
 }
 
-func DecompressTarGz(ctx basecontext.ApiContext, src string, destination string, jobId string) error {
+func DecompressTarGz(ctx basecontext.ApiContext, src string, destination string, jobId string, action string) error {
 	ctx.LogInfof("Decompressing %s to %s", src, destination)
 	reader, err := os.Open(src)
 	if err != nil {
@@ -172,21 +172,21 @@ func DecompressTarGz(ctx basecontext.ApiContext, src string, destination string,
 	}
 	defer reader.Close()
 
-	if err := DecompressTarGzStream(ctx, reader, filepath.Base(src), destination, jobId); err != nil {
+	if err := DecompressTarGzStream(ctx, reader, filepath.Base(src), destination, jobId, action); err != nil {
 		return err
 	}
 	return nil
 }
 
-func DecompressTarGzStream(ctx basecontext.ApiContext, reader io.Reader, filename string, destination string, jobId string) error {
-	ns := notifications.Get()
+func DecompressTarGzStream(ctx basecontext.ApiContext, reader io.Reader, filename string, destination string, jobId string, action string) error {
+	ns := tracker.GetProgressService()
 	var logger interface {
 		LogInfof(format string, args ...interface{})
 		LogErrorf(format string, args ...interface{})
 	} = ctx
 
 	if ns != nil && jobId != "" {
-		logger = ns.WithJob(jobId, constants.ActionDecompressingPackFile)
+		logger = ns.WithJob(jobId, action)
 	}
 
 	startingTime := time.Now()
@@ -235,31 +235,31 @@ func DecompressTarGzStream(ctx basecontext.ApiContext, reader io.Reader, filenam
 	}
 
 	tarReader := tar.NewReader(fileReader)
-	if err := processTarFile(ctx, tarReader, destination, jobId); err != nil {
+	if err := processTarFile(ctx, tarReader, destination, jobId, action); err != nil {
 		return err
 	}
 
 	endingTime := time.Now()
 	logger.LogInfof("Finished decompressing from stream to %s in %v", destination, endingTime.Sub(startingTime).Round(time.Millisecond))
 	if ns != nil {
-		msg := notifications.NewProgressNotificationMessage(jobId, fmt.Sprintf("Finished decompression in %v", endingTime.Sub(startingTime).Round(time.Second)), 100).
+		msg := tracker.NewJobProgressMessage(jobId, fmt.Sprintf("Finished decompression in %v", endingTime.Sub(startingTime).Round(time.Second)), 100).
 			SetJobId(jobId).
-			SetCurrentAction(constants.ActionDecompressingPackFile).
+			SetCurrentAction(action).
 			SetFilename(filename)
 		ns.Notify(msg)
 	}
 	return nil
 }
 
-func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destination string, jobId string) error {
-	ns := notifications.Get()
+func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destination string, jobId string, action string) error {
+	ns := tracker.GetProgressService()
 	var logger interface {
 		LogInfof(format string, args ...interface{})
 		LogDebugf(format string, args ...interface{})
 	} = ctx
 
 	if ns != nil && jobId != "" {
-		logger = ns.WithJob(jobId, constants.ActionDecompressingPackFile)
+		logger = ns.WithJob(jobId, action)
 	}
 
 	logger.LogInfof("Processing tar archive to %s", destination)
@@ -284,9 +284,9 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 			correlationId = destinationFilePath
 		}
 		if ns != nil {
-			msg := notifications.NewProgressNotificationMessage(correlationId, fmt.Sprintf("Decompressing %s", header.Name), 0).
+			msg := tracker.NewJobProgressMessage(correlationId, fmt.Sprintf("Decompressing %s", header.Name), 0).
 				SetJobId(jobId).
-				SetCurrentAction(constants.ActionDecompressingPackFile).
+				SetCurrentAction(action).
 				SetFilename(header.Name).
 				SetTotalSize(header.Size).
 				SetCurrentSize(0)
@@ -317,7 +317,7 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 			}
 			defer file.Close()
 
-			if err := copyTarChunks(ctx, file, tarReader, header.Size, jobId); err != nil {
+			if err := copyTarChunks(ctx, file, tarReader, header.Size, jobId, action); err != nil {
 				return err
 			}
 		case tar.TypeGNUSparse:
@@ -328,7 +328,7 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 			}
 			defer file.Close()
 
-			if err := copyTarChunks(ctx, file, tarReader, header.Size, jobId); err != nil {
+			if err := copyTarChunks(ctx, file, tarReader, header.Size, jobId, action); err != nil {
 				return err
 			}
 		case tar.TypeSymlink:
@@ -359,11 +359,11 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 	return nil
 }
 
-func copyTarChunks(ctx basecontext.ApiContext, file *os.File, reader *tar.Reader, fileSize int64, jobId string) error {
+func copyTarChunks(ctx basecontext.ApiContext, file *os.File, reader *tar.Reader, fileSize int64, jobId string, action string) error {
 	extractedSize := int64(0)
 	startTime := time.Now()
 	// lastPrintTime := time.Now()
-	ns := notifications.Get()
+	ns := tracker.GetProgressService()
 	bufferSize := int64(40480 * 1024) // 10MB
 	buf := make([]byte, bufferSize)
 	for {
@@ -381,11 +381,11 @@ func copyTarChunks(ctx basecontext.ApiContext, file *os.File, reader *tar.Reader
 		// If we hit EOF, we're done with this file.
 		if err == io.EOF {
 			if ns != nil {
-				msg := notifications.NewProgressNotificationMessage(jobId, constants.ActionDecompressingPackFile, 100).
+				msg := tracker.NewJobProgressMessage(jobId, action, 100).
 					SetCurrentSize(fileSize).
 					SetTotalSize(fileSize).
 					SetJobId(jobId).
-					SetCurrentAction(constants.ActionDecompressingPackFile).
+					SetCurrentAction(action).
 					SetFilename(file.Name())
 				ns.Notify(msg)
 			}
@@ -397,16 +397,16 @@ func copyTarChunks(ctx basecontext.ApiContext, file *os.File, reader *tar.Reader
 		}
 		if ns != nil {
 			percentage := float64(extractedSize) / float64(fileSize) * 100
-			msg := notifications.NewProgressNotificationMessage(
+			msg := tracker.NewJobProgressMessage(
 				jobId,
-				constants.ActionDecompressingPackFile,
+				action,
 				percentage,
 			).
 				SetCurrentSize(extractedSize).
 				SetTotalSize(fileSize).
 				SetStartingTime(startTime).
 				SetJobId(jobId).
-				SetCurrentAction(constants.ActionDecompressingPackFile).
+				SetCurrentAction(action).
 				SetFilename(file.Name())
 			ns.Notify(msg)
 		}

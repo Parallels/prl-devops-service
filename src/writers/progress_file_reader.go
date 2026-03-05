@@ -7,13 +7,11 @@ import (
 	"sync" // Added sync import for sync.Mutex
 	"sync/atomic"
 
-	// Added global_models import
-	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 )
 
 type ProgressFileReader struct {
-	ns            *notifications.NotificationService
+	ns            *tracker.JobProgressService
 	file          *os.File
 	correlationId string
 	size          int64
@@ -24,11 +22,12 @@ type ProgressFileReader struct {
 	mu            sync.Mutex // Added mu
 }
 
-func NewProgressFileReader(file *os.File, size int64) *ProgressFileReader {
+func NewProgressFileReader(file *os.File, size int64, action string) *ProgressFileReader {
 	return &ProgressFileReader{
-		file: file,
-		size: size,
-		ns:   notifications.Get(),
+		file:          file,
+		size:          size,
+		ns:            tracker.GetProgressService(),
+		currentAction: action,
 	}
 }
 
@@ -64,9 +63,6 @@ func (pr *ProgressFileReader) Read(p []byte) (int, error) {
 			percentage := float64(newRead) * 100 / float64(pr.size)
 			if pr.ns != nil {
 				message := pr.prefix
-				if message == "" {
-					message = constants.ActionDownloadingManifest
-				}
 				if pr.file.Name() != "" {
 					message = fmt.Sprintf("%s %s", message, pr.file.Name())
 				}
@@ -75,16 +71,11 @@ func (pr *ProgressFileReader) Read(p []byte) (int, error) {
 					message = fmt.Sprintf("[%s] %s", pr.jobId, message)
 				}
 
-				action := pr.currentAction
-				if action == "" {
-					action = constants.ActionDownloadingPackFile
-				}
-
-				msg := notifications.NewProgressNotificationMessage(pr.correlationId, message, percentage).
+				msg := tracker.NewJobProgressMessage(pr.correlationId, message, percentage).
 					SetCurrentSize(newRead).
 					SetTotalSize(pr.size).
 					SetJobId(pr.jobId).
-					SetCurrentAction(action).
+					SetCurrentAction(pr.currentAction).
 					SetFilename(pr.file.Name())
 				pr.ns.Notify(msg)
 			}
@@ -109,9 +100,6 @@ func (pr *ProgressFileReader) ReadAt(p []byte, off int64) (int, error) {
 		percentage := float64(newRead) * 100 / float64(pr.size)
 		if pr.ns != nil {
 			message := pr.prefix
-			if message == "" {
-				message = "Downloading Manifest"
-			}
 			if pr.file.Name() != "" {
 				message = fmt.Sprintf("%s %s", message, pr.file.Name())
 			}
@@ -120,16 +108,11 @@ func (pr *ProgressFileReader) ReadAt(p []byte, off int64) (int, error) {
 				message = fmt.Sprintf("[%s] %s", pr.jobId, message)
 			}
 
-			action := pr.currentAction
-			if action == "" {
-				action = "Downloading"
-			}
-
-			msg := notifications.NewProgressNotificationMessage(pr.correlationId, message, percentage).
+			msg := tracker.NewJobProgressMessage(pr.correlationId, message, percentage).
 				SetCurrentSize(newRead).
 				SetTotalSize(pr.size).
 				SetJobId(pr.jobId).
-				SetCurrentAction(action).
+				SetCurrentAction(pr.currentAction).
 				SetFilename(pr.file.Name())
 			pr.ns.Notify(msg)
 		}

@@ -12,8 +12,9 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/common"
 	"github.com/Parallels/prl-devops-service/compressor"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
 )
@@ -248,12 +249,12 @@ func (s *AzureStorageAccountProvider) PullFileAndDecompress(ctx basecontext.ApiC
 	}
 
 	// Now decompress from the temporary file directly to the destination
-	if err := compressor.DecompressFileWithStepChannel(ctx, tempDownloadPath, destination, nil, s.JobId); err != nil {
+	if err := compressor.DecompressFileWithStepChannel(ctx, tempDownloadPath, destination, nil, s.JobId, constants.ActionDecompressingPackFile); err != nil {
 		return fmt.Errorf("decompression failed: %w", err)
 	}
 
 	// After successful extraction, notify completion
-	ns := notifications.Get()
+	ns := tracker.GetProgressService()
 	ns.NotifyInfo(fmt.Sprintf("Finished pulling and decompressing file %s", filename))
 
 	return nil

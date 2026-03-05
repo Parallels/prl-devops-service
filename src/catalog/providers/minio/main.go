@@ -21,7 +21,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	"github.com/Parallels/prl-devops-service/writers"
 	"golang.org/x/sync/errgroup"
 
@@ -167,7 +167,7 @@ func (s *MinioBucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 
 	defer file.Close()
 
-	cr := writers.NewProgressFileReader(file, fileInfo.Size())
+	cr := writers.NewProgressFileReader(file, fileInfo.Size(), constants.ActionUploadingPackFile)
 	cid := cr.CorrelationId()
 	cr.SetPrefix("Reading file parts")
 
@@ -180,7 +180,7 @@ func (s *MinioBucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 		return err
 	}
 
-	ns := notifications.Get()
+	ns := tracker.GetProgressService()
 	msg := fmt.Sprintf("Pushing file %s", filename)
 	ns.FinishProgress(cid, msg)
 	ns.NotifyInfo(fmt.Sprintf("Finished pushing file %s", filename))
@@ -220,7 +220,7 @@ func (s *MinioBucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 		return err
 	}
 
-	cw := writers.NewProgressWriter(f, fileSize)
+	cw := writers.NewProgressWriter(f, fileSize, constants.ActionDownloadingPackFile)
 	cw.SetFilename("")
 	cw.SetPrefix(fmt.Sprintf("Pulling %s", filename))
 	cid := cw.CorrelationId()
@@ -233,7 +233,7 @@ func (s *MinioBucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 		return err
 	}
 
-	ns := notifications.Get()
+	ns := tracker.GetProgressService()
 	msg := fmt.Sprintf("Pulling %s", filename)
 	ns.NotifyProgress(cid, msg, 100)
 	endTime := time.Now()
@@ -562,7 +562,7 @@ func (s *MinioBucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 	ctx.LogInfof("Pulling file %s", filename)
 	startTime := time.Now()
 	remoteFilePath := strings.TrimPrefix(filepath.Join(path, filename), "/")
-	ns := notifications.Get()
+	ns := tracker.GetProgressService()
 
 	session, err := s.createNewSession()
 	if err != nil {
@@ -650,8 +650,8 @@ func (s *MinioBucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 					// Send a progress notification
 					if ns != nil && totalSize > 0 {
 						percent := float64(totalDownloaded) / float64(totalSize) * 100
-						msg := notifications.
-							NewProgressNotificationMessage(cid, msgPrefix, percent).
+						msg := tracker.
+							NewJobProgressMessage(cid, msgPrefix, percent).
 							SetCurrentSize(totalDownloaded).
 							SetTotalSize(totalSize).
 							SetStartingTime(startTime).
@@ -725,7 +725,7 @@ func (s *MinioBucketProvider) pullFileAndDecompressStable(ctx basecontext.ApiCon
 	// Decompressor goroutine: decompress from the pipe to the destination
 	group.Go(func() error {
 		// Decompress from the read-end of the pipe
-		decompressErr := compressor.DecompressTarGzStream(ctx, r, "", destination, s.JobId)
+		decompressErr := compressor.DecompressTarGzStream(ctx, r, "", destination, s.JobId, constants.ActionDecompressingPackFile)
 		if decompressErr != nil {
 			// If decompression fails, close the pipe with error (so streamer sees it)
 			_ = w.CloseWithError(decompressErr)
@@ -772,7 +772,7 @@ func (s *MinioBucketProvider) pullFileAndDecompressUnstable(ctx basecontext.ApiC
 		Filename:            filename,
 		Destination:         destination,
 		ChunkSize:           100 * 1024 * 1024, // 100MB chunks
-		NotificationService: notifications.Get(),
+		NotificationService: tracker.GetProgressService(),
 		MessagePrefix:       fmt.Sprintf("Pulling %s", filename),
 		CorrelationID:       helpers.GenerateId(),
 		JobId:               s.JobId,

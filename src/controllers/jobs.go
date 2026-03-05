@@ -14,7 +14,7 @@ import (
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/cjlapao/common-go/helper/http_helper"
@@ -267,7 +267,7 @@ func DebugJobHandler() restapi.ControllerHandler {
 // ---------------------------------------------------------------------------
 
 func runDebugProfileSimple(jobId string, jobManager *jobs.JobManagerService) {
-	ns := notifications.Get()
+	ns := tracker.GetProgressService()
 	bCtx := basecontext.NewRootBaseContext()
 	bCtx.LogInfof("[Debug/simple] Starting job %s", jobId)
 
@@ -295,7 +295,7 @@ func runDebugProfileSimple(jobId string, jobManager *jobs.JobManagerService) {
 // ---------------------------------------------------------------------------
 
 func runDebugProfilePullRemote(jobId string, jobManager *jobs.JobManagerService) {
-	ns := notifications.Get()
+	ns := tracker.GetProgressService()
 	if ns == nil {
 		return
 	}
@@ -303,7 +303,7 @@ func runDebugProfilePullRemote(jobId string, jobManager *jobs.JobManagerService)
 	bCtx.LogInfof("[Debug/pull_remote] Starting job %s", jobId)
 
 	// Register the same step configuration as catalog/pull.go (no caching)
-	ns.RegisterJobWorkflow(jobId, []notifications.JobStep{
+	ns.RegisterJobWorkflow(jobId, []tracker.JobStep{
 		{Name: constants.ActionValidatingRequest, Weight: 2, Parallel: false, HasPercentage: false},
 		{Name: constants.ActionCheckingLocalCatalog, Weight: 3, Parallel: false, HasPercentage: false},
 		{Name: constants.ActionCheckingRemoteCatalog, Weight: 5, Parallel: false, HasPercentage: false},
@@ -324,7 +324,7 @@ func runDebugProfilePullRemote(jobId string, jobManager *jobs.JobManagerService)
 
 	instantStep := func(action, msg string) {
 		ns.WithJob(jobId, action).NotifyInfof("%s", msg)
-		ns.Notify(notifications.NewProgressNotificationMessage(jobId, action, 100).
+		ns.Notify(tracker.NewJobProgressMessage(jobId, action, 100).
 			SetJobId(jobId).SetCurrentAction(action))
 		time.Sleep(300 * time.Millisecond)
 	}
@@ -350,7 +350,7 @@ func runDebugProfilePullRemote(jobId string, jobManager *jobs.JobManagerService)
 		startTime := time.Now()
 		for pct := 0.0; pct <= 100.0; pct += 1.0 {
 			curBytes := int64(pct / 100.0 * float64(totalBytes))
-			ns.Notify(notifications.NewProgressNotificationMessage(dlCorrId, "Downloading debug-vm.pdpack", pct).
+			ns.Notify(tracker.NewJobProgressMessage(dlCorrId, "Downloading debug-vm.pdpack", pct).
 				SetCurrentSize(curBytes).
 				SetTotalSize(totalBytes).
 				SetStartingTime(startTime).
@@ -369,7 +369,7 @@ func runDebugProfilePullRemote(jobId string, jobManager *jobs.JobManagerService)
 		startTime := time.Now()
 		for pct := 0.0; pct <= 100.0; pct += 1.0 {
 			curBytes := int64(pct / 100.0 * float64(totalBytes))
-			ns.Notify(notifications.NewProgressNotificationMessage(dcCorrId, "Decompressing debug-vm.pdpack", pct).
+			ns.Notify(tracker.NewJobProgressMessage(dcCorrId, "Decompressing debug-vm.pdpack", pct).
 				SetCurrentSize(curBytes).
 				SetTotalSize(totalBytes).
 				SetStartingTime(startTime).
@@ -405,14 +405,14 @@ func runDebugProfilePullRemote(jobId string, jobManager *jobs.JobManagerService)
 // ---------------------------------------------------------------------------
 
 func runDebugProfilePullCache(jobId string, jobManager *jobs.JobManagerService) {
-	ns := notifications.Get()
+	ns := tracker.GetProgressService()
 	if ns == nil {
 		return
 	}
 	bCtx := basecontext.NewRootBaseContext()
 	bCtx.LogInfof("[Debug/pull_cache] Starting job %s", jobId)
 
-	ns.RegisterJobWorkflow(jobId, []notifications.JobStep{
+	ns.RegisterJobWorkflow(jobId, []tracker.JobStep{
 		{Name: constants.ActionValidatingRequest, Weight: 3, Parallel: false, HasPercentage: false},
 		{Name: constants.ActionCheckingLocalCatalog, Weight: 3, Parallel: false, HasPercentage: false},
 		{Name: constants.ActionDownloadingManifest, Weight: 4, Parallel: false, HasPercentage: false},
@@ -432,7 +432,7 @@ func runDebugProfilePullCache(jobId string, jobManager *jobs.JobManagerService) 
 
 	instantStep := func(action, msg string) {
 		ns.WithJob(jobId, action).NotifyInfof("%s", msg)
-		ns.Notify(notifications.NewProgressNotificationMessage(jobId, action, 100).
+		ns.Notify(tracker.NewJobProgressMessage(jobId, action, 100).
 			SetJobId(jobId).SetCurrentAction(action))
 		time.Sleep(400 * time.Millisecond)
 	}
@@ -449,7 +449,7 @@ func runDebugProfilePullCache(jobId string, jobManager *jobs.JobManagerService) 
 	startTime := time.Now()
 	ns.WithJob(jobId, constants.ActionCopyingFromCache).NotifyInfof("Copying debug-vm from cache to /tmp/debug-vm.pvm")
 	for pct := 0.0; pct <= 100.0; pct += 1.0 {
-		ns.Notify(notifications.NewProgressNotificationMessage(cacheId, "Copying from cache", pct).
+		ns.Notify(tracker.NewJobProgressMessage(cacheId, "Copying from cache", pct).
 			SetCurrentSize(int64(pct / 100.0 * float64(totalBytes))).
 			SetTotalSize(totalBytes).
 			SetStartingTime(startTime).
@@ -479,14 +479,14 @@ func runDebugProfilePullCache(jobId string, jobManager *jobs.JobManagerService) 
 // ---------------------------------------------------------------------------
 
 func runDebugProfileSkippedSteps(jobId string, jobManager *jobs.JobManagerService) {
-	ns := notifications.Get()
+	ns := tracker.GetProgressService()
 	if ns == nil {
 		return
 	}
 	bCtx := basecontext.NewRootBaseContext()
 	bCtx.LogInfof("[Debug/skipped_steps] Starting job %s", jobId)
 
-	ns.RegisterJobWorkflow(jobId, []notifications.JobStep{
+	ns.RegisterJobWorkflow(jobId, []tracker.JobStep{
 		{Name: constants.ActionValidatingRequest, Weight: 2, Parallel: false, HasPercentage: false},
 		{Name: constants.ActionCheckingLocalCatalog, Weight: 3, Parallel: false, HasPercentage: false},
 		{Name: constants.ActionCheckingRemoteCatalog, Weight: 5, Parallel: false, HasPercentage: false},
@@ -510,14 +510,14 @@ func runDebugProfileSkippedSteps(jobId string, jobManager *jobs.JobManagerServic
 
 	instantStep := func(action, msg string) {
 		ns.WithJob(jobId, action).NotifyInfof("%s", msg)
-		ns.Notify(notifications.NewProgressNotificationMessage(jobId, action, 100).
+		ns.Notify(tracker.NewJobProgressMessage(jobId, action, 100).
 			SetJobId(jobId).SetCurrentAction(action))
 		time.Sleep(300 * time.Millisecond)
 	}
 
 	skip := func(action, reason string) {
 		ns.WithJob(jobId, action).NotifyInfof("SKIPPED — %s", reason)
-		ns.Notify(notifications.NewProgressNotificationMessage(jobId, action, 100).
+		ns.Notify(tracker.NewJobProgressMessage(jobId, action, 100).
 			SetJobId(jobId).SetCurrentAction(action))
 		time.Sleep(50 * time.Millisecond) // nearly instant
 	}
@@ -538,7 +538,7 @@ func runDebugProfileSkippedSteps(jobId string, jobManager *jobs.JobManagerServic
 	startTime := time.Now()
 	ns.WithJob(jobId, constants.ActionCopyingFromCache).NotifyInfof("Copying from cache to /tmp/debug-vm.pvm")
 	for pct := 0.0; pct <= 100.0; pct += 2.0 {
-		ns.Notify(notifications.NewProgressNotificationMessage(cacheId, "Copying from cache", pct).
+		ns.Notify(tracker.NewJobProgressMessage(cacheId, "Copying from cache", pct).
 			SetCurrentSize(int64(pct / 100.0 * float64(totalBytes))).
 			SetTotalSize(totalBytes).
 			SetStartingTime(startTime).

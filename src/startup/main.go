@@ -12,8 +12,8 @@ import (
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	"github.com/Parallels/prl-devops-service/logs"
-	"github.com/Parallels/prl-devops-service/notifications"
 	"github.com/Parallels/prl-devops-service/orchestrator"
 	"github.com/Parallels/prl-devops-service/reverse_proxy"
 	bruteforceguard "github.com/Parallels/prl-devops-service/security/brute_force_guard"
@@ -40,7 +40,7 @@ func Init(ctx basecontext.ApiContext) {
 
 	logs.SetupFileLogger(constants.DEFAULT_LOG_FILE_NAME, ctx)
 
-	_ = notifications.New(ctx)
+	_ = tracker.NewProgressService(ctx)
 
 	password.New(ctx)
 	jwt.New(ctx)
@@ -245,7 +245,7 @@ func Start(ctx basecontext.ApiContext) {
 	// and the step snapshot are written to the DB in a single operation, which
 	// prevents the race condition where a separate UpdateJobProgress read could
 	// see stale (empty) steps that were written by a concurrent UpdateJobSteps.
-	if ns := notifications.Get(); ns != nil {
+	if ns := tracker.GetProgressService(); ns != nil {
 		ns.OnUpdateJobProgressAndSteps = func(jobId string, percent int, state string, steps []data_models.JobStep) {
 			jobManagerService.UpdateJobProgressAndSteps(jobId, percent, constants.JobState(state), steps)
 		}

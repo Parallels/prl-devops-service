@@ -44,7 +44,7 @@ func (s *DownloadService) DownloadFile(url string, headers map[string]string, de
 	defer file.Close()
 	var progressWriter io.Writer
 	if progressReporter != nil {
-		pw := writers.NewProgressWriter(file, progressReporter.Size)
+		pw := writers.NewProgressWriter(file, progressReporter.Size, progressReporter.Action)
 		pw.SetJobId(progressReporter.JobId)
 		progressWriter = pw
 	} else {
