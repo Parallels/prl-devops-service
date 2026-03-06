@@ -1,5 +1,7 @@
 name: Release Service
-
+permissions:
+  contents: read
+  
 on:
   release:
     types: [published]
