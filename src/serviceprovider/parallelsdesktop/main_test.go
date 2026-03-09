@@ -30,6 +30,7 @@ func createTestParallelsService() *ParallelsService {
 		pending:          make(map[string]struct{}),
 		inFlight:         make(map[string]struct{}),
 		cooldown:         make(map[string]time.Time),
+		fastStateUpdates: make(map[string]time.Time),
 	}
 	return service
 }

@@ -28,6 +28,7 @@ func MapJobToApiJob(job data_models.Job) *api_models.JobResponse {
 	for _, step := range job.Steps {
 		response.Steps = append(response.Steps, api_models.JobStepResponse{
 			Name:              step.Name,
+			DisplayName:       step.DisplayName,
 			Weight:            step.Weight,
 			Parallel:          step.Parallel,
 			HasPercentage:     step.HasPercentage,

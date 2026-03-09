@@ -22,4 +22,13 @@ const (
 	ActionDecompressor = "decompressor"
 	ActionDownloader   = "downloader"
 	ActionUploader     = "uploader"
+	ActionCleaningUp   = "cleaning_up"
+
+	// Pull Actions
+	ActionPullValidateStage   = "pull_validate_stage"
+	ActionPullCheckCacheStage = "pull_check_cache_stage"
+	ActionPullCacheStage      = "pull_cache_stage"
+	ActionPullRegisterVm      = "pull_register_stage"
+	ActionPullRenameVm        = "pull_rename_stage"
+	ActionPullStartVm         = "pull_start_stage"
 )

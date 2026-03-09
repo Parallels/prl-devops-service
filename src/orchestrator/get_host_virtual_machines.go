@@ -33,12 +33,13 @@ func (s *OrchestratorService) GetHostVirtualMachines(ctx basecontext.ApiContext,
 
 	result := make([]*models.VirtualMachine, 0)
 
-	// Updating Host State for each VM
+	// Updating Host State and Name for each VM
 	for _, vm := range vms {
 	hostLoop:
 		for _, host := range hosts {
 			if strings.EqualFold(vm.HostId, host.ID) {
 				vm.HostState = host.State
+				vm.HostName = getHostName(host)
 				break hostLoop
 			}
 		}
@@ -69,11 +70,11 @@ func (s *OrchestratorService) GetHostVirtualMachine(ctx basecontext.ApiContext, 
 		return nil, err
 	}
 
-	// Updating Host State for each VM
-
+	// Updating Host State and Name for each VM
 	for _, host := range hosts {
 		if vm.HostId == host.ID {
 			vm.HostState = host.State
+			vm.HostName = getHostName(host)
 			break
 		}
 	}

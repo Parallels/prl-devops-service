@@ -137,6 +137,15 @@ func (p *JobProgressService) RegisterJobWorkflow(jobId string, steps []JobStep) 
 		StepFilename: stepFilename,
 		StepState:    stepState,
 	}
+
+	// Emit the initial step structure immediately so the UI reflects the workflow
+	// as soon as it is registered, without waiting for the queue ticker.
+	if p.OnUpdateJobProgressAndSteps != nil {
+		dtos := p.buildStepDTOs(jobId)
+		p.OnUpdateJobProgressAndSteps(jobId, 0, "running", dtos)
+	} else {
+		p.publishJobSteps(jobId)
+	}
 }
 
 func (p *JobProgressService) ResetCounters(correlationId string) {
@@ -150,9 +159,13 @@ func (p *JobProgressService) Notify(msg *JobMessage) {
 }
 
 // NotifyJobMessage sends a root-level job message without assigning it to any specific step.
-// This is useful for JobStateInit messages and general overall status messages.
-func (p *JobProgressService) NotifyJobMessage(jobId string, msg string, args ...interface{}) {
-	p.Notify(NewJobMessage(fmt.Sprintf(msg, args...), JobMessageLevelInfo).WithJob(jobId, ""))
+// It is processed immediately (bypasses the queue) to ensure the UI reflects the update at once.
+func (p *JobProgressService) NotifyJobMessage(jobId string, msg string, args ...any) {
+	formatted := fmt.Sprintf(msg, args...)
+	p.ctx.LogInfof("[job:%s] %s", jobId, formatted)
+	if jobId != "" && p.OnUpdateJobMessage != nil {
+		p.OnUpdateJobMessage(jobId, formatted)
+	}
 }
 
 type JobLogger struct {
@@ -199,6 +212,62 @@ func (l *JobLogger) NotifyDebug(msg string) {
 
 func (l *JobLogger) NotifyDebugf(format string, args ...interface{}) {
 	l.ns.Notify(NewJobMessage(fmt.Sprintf(format, args...), JobMessageLevelDebug).WithJob(l.jobId, l.action))
+}
+
+func (l *JobLogger) StartStep(message string) {
+	l.ns.StartStep(l.jobId, l.action, message)
+}
+
+func (l *JobLogger) StartStepf(format string, args ...any) {
+	l.ns.StartStepf(l.jobId, l.action, format, args...)
+}
+
+func (l *JobLogger) UpdateStepProgress(progress float64) {
+	l.ns.UpdateStepProgress(l.jobId, l.action, progress)
+}
+
+func (l *JobLogger) UpdateStepMessage(message string) {
+	l.ns.UpdateStepMessage(l.jobId, l.action, message)
+}
+
+func (l *JobLogger) UpdateStepMessagef(format string, args ...any) {
+	l.ns.UpdateStepMessagef(l.jobId, l.action, format, args...)
+}
+
+func (l *JobLogger) SkipStep(message string) {
+	l.ns.SkipStep(l.jobId, l.action, message)
+}
+
+func (l *JobLogger) SkipStepf(format string, args ...any) {
+	l.ns.SkipStepf(l.jobId, l.action, format, args...)
+}
+
+func (l *JobLogger) CompleteStep(message string) {
+	l.ns.CompleteStep(l.jobId, l.action, message)
+}
+
+func (l *JobLogger) CompleteStepf(format string, args ...any) {
+	l.ns.CompleteStepf(l.jobId, l.action, format, args...)
+}
+
+func (l *JobLogger) CompleteStepWithFile(filename string, message string) {
+	l.ns.CompleteStepWithFile(l.jobId, l.action, filename, message)
+}
+
+func (l *JobLogger) FailStep(message string) {
+	l.ns.FailStep(l.jobId, l.action, message)
+}
+
+func (l *JobLogger) FailStepf(format string, args ...any) {
+	l.ns.FailStepf(l.jobId, l.action, format, args...)
+}
+
+func (l *JobLogger) FailJob(message string) {
+	l.ns.FailJob(l.jobId, message)
+}
+
+func (l *JobLogger) FailJobf(format string, args ...any) {
+	l.ns.FailJobf(l.jobId, format, args...)
 }
 
 // LogInfof implements a standard interface matching ApiContext and forwards to NotifyInfof.
@@ -438,10 +507,47 @@ func (p *JobProgressService) processSingleMessage(msg JobMessage) {
 				p.activeProgress[p.CurrentMessage.CorrelationId()] = pt
 				shouldLog = true
 
-				if pt.JobId != "" && p.OnUpdateJobSteps != nil {
-					p.publishJobSteps(pt.JobId)
+				// First message for this step: seed the workflow step progress so
+				// job percentage immediately reflects this step starting.
+				if pt.JobId != "" {
+					if workflow, hasWorkflow := p.activeWorkflows[pt.JobId]; hasWorkflow {
+						autoSkipPreviousSteps(&workflow, pt.CurrentAction)
+						workflow.StepProgress[pt.CurrentAction] = pt.CurrentProgress
+						if pt.TotalSize > 0 {
+							workflow.StepTotal[pt.CurrentAction] = pt.TotalSize
+							workflow.StepValue[pt.CurrentAction] = pt.CurrentSize
+						}
+						if pt.Filename != "" {
+							workflow.StepFilename[pt.CurrentAction] = pt.Filename
+						}
+
+						var calculatedJobPercentage float64
+						for _, step := range workflow.Steps {
+							if prog, exists := workflow.StepProgress[step.Name]; exists {
+								calculatedJobPercentage += (prog / 100.0) * step.Weight
+							}
+						}
+						if calculatedJobPercentage > 100 {
+							calculatedJobPercentage = 100
+						}
+						pt.JobPercentage = calculatedJobPercentage
+						p.activeWorkflows[pt.JobId] = workflow
+
+						if p.OnUpdateJobProgressAndSteps != nil && int(calculatedJobPercentage) > 0 {
+							dtos := p.buildStepDTOs(pt.JobId)
+							p.OnUpdateJobProgressAndSteps(pt.JobId, int(calculatedJobPercentage), "running", dtos)
+						} else {
+							p.publishJobSteps(pt.JobId)
+							if calculatedJobPercentage > 0 && p.OnUpdateJobProgress != nil {
+								p.OnUpdateJobProgress(pt.JobId, int(calculatedJobPercentage), "running")
+							}
+						}
+					} else {
+						p.publishJobSteps(pt.JobId)
+					}
 				}
 			} else if p.CurrentMessage.JobId != "" {
+				// Progress == 100 with no existing tracker: instant-complete step.
 				transient := &ProgressTracker{
 					JobId:         p.CurrentMessage.JobId,
 					CurrentAction: p.CurrentMessage.CurrentAction,
@@ -468,11 +574,16 @@ func (p *JobProgressService) processSingleMessage(msg JobMessage) {
 					}
 					transient.JobPercentage = calculatedJobPercentage
 					p.activeWorkflows[p.CurrentMessage.JobId] = workflow
-					p.publishJobSteps(p.CurrentMessage.JobId)
-				}
 
-				if p.OnUpdateJobProgress != nil && transient.JobPercentage > 0 {
-					p.OnUpdateJobProgress(transient.JobId, int(transient.JobPercentage), "running")
+					if p.OnUpdateJobProgressAndSteps != nil && int(calculatedJobPercentage) > 0 {
+						dtos := p.buildStepDTOs(p.CurrentMessage.JobId)
+						p.OnUpdateJobProgressAndSteps(p.CurrentMessage.JobId, int(calculatedJobPercentage), "running", dtos)
+					} else {
+						p.publishJobSteps(p.CurrentMessage.JobId)
+						if transient.JobPercentage > 0 && p.OnUpdateJobProgress != nil {
+							p.OnUpdateJobProgress(transient.JobId, int(transient.JobPercentage), "running")
+						}
+					}
 				}
 				shouldLog = true
 			}
@@ -501,23 +612,10 @@ func (p *JobProgressService) processSingleMessage(msg JobMessage) {
 					}
 
 					var calculatedJobPercentage float64
-					furthestAction := pt.CurrentAction
-					var furthestWeight float64 = -1.0
-					var furthestProgress float64 = pt.CurrentProgress
-
 					for _, step := range workflow.Steps {
 						if prog, exists := workflow.StepProgress[step.Name]; exists {
 							calculatedJobPercentage += (prog / 100.0) * step.Weight
-							if prog > 0 {
-								furthestAction = step.Name
-								furthestWeight = step.Weight
-								furthestProgress = prog
-							}
 						}
-					}
-					if furthestWeight != -1.0 {
-						pt.CurrentAction = furthestAction
-						pt.CurrentProgress = furthestProgress
 					}
 					if calculatedJobPercentage > 100 {
 						calculatedJobPercentage = 100
@@ -543,12 +641,6 @@ func (p *JobProgressService) processSingleMessage(msg JobMessage) {
 			}
 
 			shouldLog = true
-
-			if pt.JobId != "" && p.OnUpdateJobProgressAndSteps == nil {
-				if pt.JobPercentage > 0 && p.OnUpdateJobProgress != nil {
-					p.OnUpdateJobProgress(pt.JobId, int(pt.JobPercentage), "running")
-				}
-			}
 		}
 
 		shouldDelete := false
@@ -674,14 +766,15 @@ func (p *JobProgressService) buildStepDTOs(jobId string) []data_models.JobStep {
 			state = explicitState
 		}
 
-		// Use DisplayName for the UI-facing name; fall back to Name if not set.
+		// DisplayName is the UI label; always populated, falling back to Name.
 		displayName := stepInfo.DisplayName
 		if displayName == "" {
 			displayName = stepInfo.Name
 		}
 
 		dto := data_models.JobStep{
-			Name:              displayName,
+			Name:              stepInfo.Name,
+			DisplayName:       displayName,
 			Weight:            stepInfo.Weight,
 			Parallel:          stepInfo.Parallel,
 			HasPercentage:     stepInfo.HasPercentage,
@@ -815,6 +908,427 @@ func (p *JobProgressService) SkipStep(jobId string, stepName string, message str
 			p.OnUpdateJobProgressAndSteps(jobId, int(calculatedJobPercentage), "running", dtos)
 		} else {
 			p.publishJobSteps(jobId)
+		}
+	}
+}
+
+// FailStep marks a workflow step as failed, stores the error message, recalculates
+// job percentage, publishes the updated step snapshot, and logs the error to the console.
+func (p *JobProgressService) FailStep(jobId string, stepName string, message string) {
+	if jobId == "" || stepName == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	workflow, exists := p.activeWorkflows[jobId]
+	if !exists {
+		return
+	}
+
+	if workflow.StepProgress == nil {
+		workflow.StepProgress = make(map[string]float64)
+	}
+	if workflow.StepState == nil {
+		workflow.StepState = make(map[string]constants.JobState)
+	}
+	if workflow.StepError == nil {
+		workflow.StepError = make(map[string]string)
+	}
+
+	workflow.StepProgress[stepName] = 100.0
+	workflow.StepState[stepName] = constants.JobStateFailed
+	if message != "" {
+		workflow.StepError[stepName] = message
+	} else {
+		workflow.StepError[stepName] = "Step failed"
+	}
+
+	var calculatedJobPercentage float64
+	for _, step := range workflow.Steps {
+		if prog, ok := workflow.StepProgress[step.Name]; ok {
+			calculatedJobPercentage += (prog / 100.0) * step.Weight
+		}
+	}
+	if calculatedJobPercentage > 100 {
+		calculatedJobPercentage = 100
+	}
+
+	p.activeWorkflows[jobId] = workflow
+
+	p.ctx.LogErrorf("[job:%s] step %q failed: %s", jobId, stepName, workflow.StepError[stepName])
+
+	if p.OnUpdateJobProgressAndSteps != nil && int(calculatedJobPercentage) > 0 {
+		dtos := p.buildStepDTOs(jobId)
+		p.OnUpdateJobProgressAndSteps(jobId, int(calculatedJobPercentage), "running", dtos)
+	} else {
+		p.publishJobSteps(jobId)
+		if calculatedJobPercentage > 0 && p.OnUpdateJobProgress != nil {
+			p.OnUpdateJobProgress(jobId, int(calculatedJobPercentage), "running")
+		}
+	}
+}
+
+// FailJob marks all pending and running steps as failed, leaving completed and skipped
+// steps untouched. It then publishes a final JOB_UPDATE with the failed state.
+func (p *JobProgressService) FailJob(jobId string, message string) {
+	if jobId == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	workflow, exists := p.activeWorkflows[jobId]
+	if !exists {
+		return
+	}
+
+	if workflow.StepState == nil {
+		workflow.StepState = make(map[string]constants.JobState)
+	}
+	if workflow.StepError == nil {
+		workflow.StepError = make(map[string]string)
+	}
+	if workflow.StepProgress == nil {
+		workflow.StepProgress = make(map[string]float64)
+	}
+
+	errMsg := message
+	if errMsg == "" {
+		errMsg = "Job failed"
+	}
+
+	for _, step := range workflow.Steps {
+		state := workflow.StepState[step.Name]
+		if state == constants.JobStateCompleted || state == constants.JobStateSkipped {
+			continue
+		}
+		workflow.StepProgress[step.Name] = 100.0
+		workflow.StepState[step.Name] = constants.JobStateFailed
+		workflow.StepError[step.Name] = errMsg
+	}
+
+	p.activeWorkflows[jobId] = workflow
+	p.ctx.LogErrorf("[job:%s] failed: %s", jobId, errMsg)
+
+	if p.OnUpdateJobProgressAndSteps != nil {
+		dtos := p.buildStepDTOs(jobId)
+		p.OnUpdateJobProgressAndSteps(jobId, 100, "failed", dtos)
+	} else {
+		p.publishJobSteps(jobId)
+		if p.OnUpdateJobProgress != nil {
+			p.OnUpdateJobProgress(jobId, 100, "failed")
+		}
+	}
+}
+
+// FailJobf is a formatting helper for FailJob.
+func (p *JobProgressService) FailJobf(jobId string, format string, args ...any) {
+	p.FailJob(jobId, fmt.Sprintf(format, args...))
+}
+
+// StartStep immediately marks a step as running (JobStateRunning) without changing its
+// percentage, logs the message to the console, and emits a full JOB_UPDATE bypassing the queue.
+func (p *JobProgressService) StartStep(jobId string, stepName string, message string) {
+	if jobId == "" || stepName == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	workflow, exists := p.activeWorkflows[jobId]
+	if !exists {
+		return
+	}
+
+	if workflow.StepState == nil {
+		workflow.StepState = make(map[string]constants.JobState)
+	}
+	if workflow.StepMessage == nil {
+		workflow.StepMessage = make(map[string]string)
+	}
+	workflow.StepState[stepName] = constants.JobStateRunning
+	if message != "" {
+		workflow.StepMessage[stepName] = message
+		p.ctx.LogInfof("[job:%s] step %q started: %s", jobId, stepName, message)
+	} else {
+		p.ctx.LogInfof("[job:%s] step %q started", jobId, stepName)
+	}
+	p.activeWorkflows[jobId] = workflow
+
+	var calculatedJobPercentage float64
+	for _, step := range workflow.Steps {
+		if prog, ok := workflow.StepProgress[step.Name]; ok {
+			calculatedJobPercentage += (prog / 100.0) * step.Weight
+		}
+	}
+	if calculatedJobPercentage > 100 {
+		calculatedJobPercentage = 100
+	}
+
+	if p.OnUpdateJobProgressAndSteps != nil {
+		dtos := p.buildStepDTOs(jobId)
+		p.OnUpdateJobProgressAndSteps(jobId, int(calculatedJobPercentage), "running", dtos)
+	} else {
+		p.publishJobSteps(jobId)
+	}
+}
+
+// StartStepf is a formatting helper for StartStep.
+func (p *JobProgressService) StartStepf(jobId string, stepName string, format string, args ...any) {
+	p.StartStep(jobId, stepName, fmt.Sprintf(format, args...))
+}
+
+// UpdateStepProgress updates a step's percentage and emits a full JOB_UPDATE without
+// changing the step's message or state. progress should be 0-100.
+func (p *JobProgressService) UpdateStepProgress(jobId string, stepName string, progress float64) {
+	if jobId == "" || stepName == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	workflow, exists := p.activeWorkflows[jobId]
+	if !exists {
+		return
+	}
+
+	if workflow.StepProgress == nil {
+		workflow.StepProgress = make(map[string]float64)
+	}
+	if progress > 100 {
+		progress = 100
+	}
+	workflow.StepProgress[stepName] = progress
+	p.activeWorkflows[jobId] = workflow
+
+	var calculatedJobPercentage float64
+	for _, step := range workflow.Steps {
+		if prog, ok := workflow.StepProgress[step.Name]; ok {
+			calculatedJobPercentage += (prog / 100.0) * step.Weight
+		}
+	}
+	if calculatedJobPercentage > 100 {
+		calculatedJobPercentage = 100
+	}
+
+	if p.OnUpdateJobProgressAndSteps != nil && int(calculatedJobPercentage) > 0 {
+		dtos := p.buildStepDTOs(jobId)
+		p.OnUpdateJobProgressAndSteps(jobId, int(calculatedJobPercentage), "running", dtos)
+	} else {
+		p.publishJobSteps(jobId)
+		if calculatedJobPercentage > 0 && p.OnUpdateJobProgress != nil {
+			p.OnUpdateJobProgress(jobId, int(calculatedJobPercentage), "running")
+		}
+	}
+}
+
+// UpdateStepMessage updates a step's message, logs it to the console, and emits a full
+// JOB_UPDATE (via OnUpdateJobProgressAndSteps) without changing the step's percentage.
+func (p *JobProgressService) UpdateStepMessage(jobId string, stepName string, message string) {
+	if jobId == "" || stepName == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	workflow, exists := p.activeWorkflows[jobId]
+	if !exists {
+		return
+	}
+
+	if workflow.StepMessage == nil {
+		workflow.StepMessage = make(map[string]string)
+	}
+	workflow.StepMessage[stepName] = message
+	p.activeWorkflows[jobId] = workflow
+
+	p.ctx.LogInfof("[job:%s] step %q: %s", jobId, stepName, message)
+
+	var calculatedJobPercentage float64
+	for _, step := range workflow.Steps {
+		if prog, ok := workflow.StepProgress[step.Name]; ok {
+			calculatedJobPercentage += (prog / 100.0) * step.Weight
+		}
+	}
+	if calculatedJobPercentage > 100 {
+		calculatedJobPercentage = 100
+	}
+
+	if p.OnUpdateJobProgressAndSteps != nil {
+		dtos := p.buildStepDTOs(jobId)
+		p.OnUpdateJobProgressAndSteps(jobId, int(calculatedJobPercentage), "running", dtos)
+	} else {
+		p.publishJobSteps(jobId)
+	}
+}
+
+// UpdateStepMessagef is a formatting helper for UpdateStepMessage.
+func (p *JobProgressService) UpdateStepMessagef(jobId string, stepName string, format string, args ...any) {
+	p.UpdateStepMessage(jobId, stepName, fmt.Sprintf(format, args...))
+}
+
+// SkipStepf is a formatting helper for SkipStep.
+func (p *JobProgressService) SkipStepf(jobId string, stepName string, format string, args ...any) {
+	p.SkipStep(jobId, stepName, fmt.Sprintf(format, args...))
+}
+
+// CompleteStepf is a formatting helper for CompleteStep.
+func (p *JobProgressService) CompleteStepf(jobId string, stepName string, format string, args ...any) {
+	p.CompleteStep(jobId, stepName, fmt.Sprintf(format, args...))
+}
+
+// CompleteStepWithFile marks a step as completed and also records the filename
+// associated with it (e.g. a downloaded file). Use this instead of sending a
+// raw 100% progress message when you need to set the filename in the step DTO.
+func (p *JobProgressService) CompleteStepWithFile(jobId string, stepName string, filename string, message string) {
+	if jobId == "" || stepName == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	workflow, exists := p.activeWorkflows[jobId]
+	if !exists {
+		return
+	}
+
+	if workflow.StepProgress == nil {
+		workflow.StepProgress = make(map[string]float64)
+	}
+	if workflow.StepState == nil {
+		workflow.StepState = make(map[string]constants.JobState)
+	}
+	if workflow.StepMessage == nil {
+		workflow.StepMessage = make(map[string]string)
+	}
+	if workflow.StepFilename == nil {
+		workflow.StepFilename = make(map[string]string)
+	}
+
+	workflow.StepProgress[stepName] = 100.0
+	workflow.StepState[stepName] = constants.JobStateCompleted
+	if filename != "" {
+		workflow.StepFilename[stepName] = filename
+	}
+	if message != "" {
+		workflow.StepMessage[stepName] = message
+	}
+
+	var calculatedJobPercentage float64
+	for _, step := range workflow.Steps {
+		if prog, ok := workflow.StepProgress[step.Name]; ok {
+			calculatedJobPercentage += (prog / 100.0) * step.Weight
+		}
+	}
+	if calculatedJobPercentage > 100 {
+		calculatedJobPercentage = 100
+	}
+
+	p.activeWorkflows[jobId] = workflow
+
+	if p.OnUpdateJobProgressAndSteps != nil && int(calculatedJobPercentage) > 0 {
+		dtos := p.buildStepDTOs(jobId)
+		p.OnUpdateJobProgressAndSteps(jobId, int(calculatedJobPercentage), "running", dtos)
+	} else {
+		p.publishJobSteps(jobId)
+		if calculatedJobPercentage > 0 && p.OnUpdateJobProgress != nil {
+			p.OnUpdateJobProgress(jobId, int(calculatedJobPercentage), "running")
+		}
+	}
+}
+
+// FailStepf is a formatting helper for FailStep.
+func (p *JobProgressService) FailStepf(jobId string, stepName string, format string, args ...any) {
+	p.FailStep(jobId, stepName, fmt.Sprintf(format, args...))
+}
+
+// CompleteStep manually marks a workflow step as completed (100%, JobStateCompleted)
+// and immediately publishes the updated step snapshot.
+// Use this when automatic progress tracking hasn't fired for a step
+// that is done (e.g. near-instant steps, or steps driven outside the tracker).
+func (p *JobProgressService) CompleteStep(jobId string, stepName string, message string) {
+	if jobId == "" || stepName == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	workflow, exists := p.activeWorkflows[jobId]
+	if !exists {
+		return
+	}
+
+	if workflow.StepProgress == nil {
+		workflow.StepProgress = make(map[string]float64)
+	}
+	if workflow.StepState == nil {
+		workflow.StepState = make(map[string]constants.JobState)
+	}
+	if workflow.StepMessage == nil {
+		workflow.StepMessage = make(map[string]string)
+	}
+
+	workflow.StepProgress[stepName] = 100.0
+	workflow.StepState[stepName] = constants.JobStateCompleted
+	if message != "" {
+		workflow.StepMessage[stepName] = message
+	}
+
+	var calculatedJobPercentage float64
+	for _, step := range workflow.Steps {
+		if prog, ok := workflow.StepProgress[step.Name]; ok {
+			calculatedJobPercentage += (prog / 100.0) * step.Weight
+		}
+	}
+	if calculatedJobPercentage > 100 {
+		calculatedJobPercentage = 100
+	}
+
+	p.activeWorkflows[jobId] = workflow
+
+	if p.OnUpdateJobProgressAndSteps != nil && int(calculatedJobPercentage) > 0 {
+		dtos := p.buildStepDTOs(jobId)
+		p.OnUpdateJobProgressAndSteps(jobId, int(calculatedJobPercentage), "running", dtos)
+	} else {
+		p.publishJobSteps(jobId)
+		if calculatedJobPercentage > 0 && p.OnUpdateJobProgress != nil {
+			p.OnUpdateJobProgress(jobId, int(calculatedJobPercentage), "running")
+		}
+	}
+}
+
+// PublishJobUpdate manually recalculates and broadcasts the current job progress
+// and step snapshot. Use this to force a UI refresh without changing any step state.
+func (p *JobProgressService) PublishJobUpdate(jobId string) {
+	if jobId == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	workflow, exists := p.activeWorkflows[jobId]
+	if !exists {
+		return
+	}
+
+	var calculatedJobPercentage float64
+	for _, step := range workflow.Steps {
+		if prog, ok := workflow.StepProgress[step.Name]; ok {
+			calculatedJobPercentage += (prog / 100.0) * step.Weight
+		}
+	}
+	if calculatedJobPercentage > 100 {
+		calculatedJobPercentage = 100
+	}
+
+	if p.OnUpdateJobProgressAndSteps != nil {
+		dtos := p.buildStepDTOs(jobId)
+		p.OnUpdateJobProgressAndSteps(jobId, int(calculatedJobPercentage), "running", dtos)
+	} else {
+		p.publishJobSteps(jobId)
+		if calculatedJobPercentage > 0 && p.OnUpdateJobProgress != nil {
+			p.OnUpdateJobProgress(jobId, int(calculatedJobPercentage), "running")
 		}
 	}
 }

@@ -420,10 +420,14 @@ func (s *ChunkManagerService) runDecompressorGoroutine(
 	setGlobalError func(error),
 ) {
 	group.Go(func() error {
-		defer logger.LogInfof("Decompressor goroutine exited")
 		defer r.Close()
 
-		logger.LogInfof("Starting decompression process")
+		decompLogger := logger
+		if request.NotificationService != nil && request.JobId != "" {
+			decompLogger = request.NotificationService.WithJob(request.JobId, constants.ActionDecompressor)
+		}
+
+		decompLogger.LogInfof("Starting decompression process")
 		if request.JobId != "" {
 			err := compressor.DecompressTarGzStream(ctx, r, "", request.Destination, request.JobId, constants.ActionDecompressor)
 			if err != nil {
@@ -436,7 +440,7 @@ func (s *ChunkManagerService) runDecompressorGoroutine(
 				return fmt.Errorf("decompression failed: %w", err)
 			}
 		}
-		logger.LogInfof("Decompression completed successfully")
+		decompLogger.LogInfof("Decompression completed successfully")
 		return nil
 	})
 }

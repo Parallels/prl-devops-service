@@ -48,6 +48,10 @@ var (
 const cooldownDelay = 2 * time.Second
 const eventWorkerTicker = 1 * time.Second
 
+// maxConcurrentSSH is the maximum number of simultaneous prlctl exec SSH logon
+// attempts. macOS enforces a hard cap on simultaneous logons, so we keep this low.
+const maxConcurrentSSH = 2
+
 type ParallelsService struct {
 	ctx              basecontext.ApiContext
 	eventsProcessing bool
@@ -64,7 +68,13 @@ type ParallelsService struct {
 	// ipLastFetched tracks the last time we ran prlctl exec to fetch a macOS VM IP.
 	// This prevents concurrent SSH logon floods when many cache refreshes and events
 	// fire simultaneously (macOS enforces a hard cap on simultaneous logon attempts).
-	ipLastFetched    map[string]time.Time
+	ipLastFetched map[string]time.Time
+	// sshSem is a semaphore that caps the number of simultaneous prlctl exec SSH
+	// operations (waitForVMSSHReady probes + IP fetches) across all VMs.
+	sshSem chan struct{}
+	// fastStateUpdates is used for the fast state updates that we do not need to the
+	// prlctl command and can update the database
+	fastStateUpdates map[string]time.Time
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
@@ -98,10 +108,12 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 		// Initialize maps for the debounce and cooldown logic
 		// this will allow us to deduplicate events and prevent the echo loop
 		// also will prevent multiple prlctl commands from being executed at the same time
-		pending:       make(map[string]struct{}),
-		inFlight:      make(map[string]struct{}),
-		cooldown:      make(map[string]time.Time),
-		ipLastFetched: make(map[string]time.Time),
+		pending:          make(map[string]struct{}),
+		inFlight:         make(map[string]struct{}),
+		cooldown:         make(map[string]time.Time),
+		ipLastFetched:    make(map[string]time.Time),
+		fastStateUpdates: make(map[string]time.Time),
+		sshSem:           make(chan struct{}, maxConcurrentSSH),
 
 		// registered to the event listener to allow us to cancel it when needed
 		listenerCtx: listenerCtx,
@@ -504,7 +516,7 @@ func (s *ParallelsService) IsLicensed() bool {
 	return s.isLicensed
 }
 
-func (s *ParallelsService) updateVmInCache(ctx basecontext.ApiContext, newVm *models.ParallelsVM) {
+func (s *ParallelsService) updateVmInCache(ctx basecontext.ApiContext, newVm *models.ParallelsVM, syncStartTime time.Time) {
 	s.Lock()
 	defer s.Unlock()
 	found := false
@@ -512,18 +524,28 @@ func (s *ParallelsService) updateVmInCache(ctx basecontext.ApiContext, newVm *mo
 
 	for i, cachedVm := range s.cachedLocalVms {
 		if cachedVm.ID == newVm.ID {
-			// RACE CONDITION PROTECTION:
-			// If the UI just set the state to "starting" (Fast Path), but our slow prlctl list
-			// finally returned and says it's "stopped", we KEEP the "starting" state because it's newer.
-			isCachedTransitional := cachedVm.State == "starting" || cachedVm.State == "stopping" ||
-				cachedVm.State == "resuming" || cachedVm.State == "suspending"
+			// // RACE CONDITION PROTECTION:
+			// // If the UI just set the state to "starting" (Fast Path), but our slow prlctl list
+			// // finally returned and says it's "stopped", we KEEP the "starting" state because it's newer.
+			// isCachedTransitional := cachedVm.State == "starting" || cachedVm.State == "stopping" ||
+			// 	cachedVm.State == "resuming" || cachedVm.State == "suspending"
 
-			isNewStatic := newVm.State == "stopped" || newVm.State == "running" ||
-				newVm.State == "paused" || newVm.State == "suspended"
+			// isNewStatic := newVm.State == "stopped" || newVm.State == "running" ||
+			// 	newVm.State == "paused" || newVm.State == "suspended"
 
-			if isCachedTransitional && isNewStatic {
-				ctx.LogInfof("[ParallelsDesktop] [Event] Preserving newer transitional state '%s' over older static state '%s'", cachedVm.State, newVm.State)
-				newVm.State = cachedVm.State // Preserve the intermediate state!
+			// if isCachedTransitional && isNewStatic {
+			// 	ctx.LogInfof("[ParallelsDesktop] [Event] Preserving newer transitional state '%s' over older static state '%s'", cachedVm.State, newVm.State)
+			// 	newVm.State = cachedVm.State // Preserve the intermediate state!
+			// }
+
+			// the deterministic timestamp shield to avoid loosing some of the fast path updates
+			if lastFastUpdate, exists := s.fastStateUpdates[newVm.ID]; exists {
+				// If the Fast Path updated the state AFTER we started our slow prlctl command...
+				// The Fast Path is newer and more accurate. Reject the slow path's state!
+				if lastFastUpdate.After(syncStartTime) {
+					ctx.LogInfof("[ParallelsDesktop] [Cache] Shielding newer fast-path state '%s' from older slow-path state '%s'", cachedVm.State, newVm.State)
+					newVm.State = cachedVm.State // Preserve the fast path state!
+				}
 			}
 
 			// DIFF ENGINE: Classify the change
@@ -568,17 +590,19 @@ func (s *ParallelsService) updateVmInCache(ctx basecontext.ApiContext, newVm *mo
 // This is safe to call from any goroutine and has no side-effects on the cache.
 func (s *ParallelsService) waitForVMSSHReady(ctx basecontext.ApiContext, vmID, username string) bool {
 	const (
-		retryInterval = 3 * time.Second
+		retryInterval = 5 * time.Second
 		totalTimeout  = 30 * time.Second
 	)
 	ctx.LogInfof("[ParallelsDesktop] [SSH] Waiting for VM %s SSH to become ready (timeout: %v)", vmID, totalTimeout)
 	deadline := time.Now().Add(totalTimeout)
 	for time.Now().Before(deadline) {
+		s.sshSem <- struct{}{}
 		cmd := helpers.Command{
 			Command: s.executable,
 			Args:    []string{"exec", vmID, "echo", "hello"},
 		}.AsUser(username)
 		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, retryInterval)
+		<-s.sshSem
 		if err == nil {
 			ctx.LogInfof("[ParallelsDesktop] [SSH] VM %s is ready for SSH commands", vmID)
 			return true
@@ -636,13 +660,16 @@ func (s *ParallelsService) updateVMIPInCache(ctx basecontext.ApiContext, vmID st
 		return
 	}
 
-	// Fetch the internal IP via prlctl exec.
+	// Fetch the internal IP via prlctl exec, holding the semaphore to avoid
+	// flooding macOS with simultaneous SSH logon attempts.
 	cmd := helpers.Command{
 		Command: s.executable,
 		Args:    []string{"exec", vmID, "ipconfig", "getifaddr", "en0"},
 	}.AsUser(username)
 	ctx.LogDebugf("[ParallelsDesktop] [IP] Fetching internal IP for VM %s: %s", vmID, cmd.String())
+	s.sshSem <- struct{}{}
 	out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	<-s.sshSem
 	if err != nil {
 		ctx.LogErrorf("[ParallelsDesktop] [IP] Failed to get internal IP for VM %s: %v", vmID, err)
 		return
@@ -764,12 +791,20 @@ func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
 	// For every running macOS VM that's already up when we first load the cache,
 	// kick off an async IP resolution so InternalIpAddress is populated quickly.
 	if err == nil {
+		stagger := 0
 		for _, vm := range vms {
 			if vm.State == "running" &&
 				(vm.OS == "macosx" || strings.Contains(strings.ToLower(vm.Name), "mac")) {
 				ctx.LogInfof("[ParallelsDesktop] [IP] Scheduling IP resolution for running macOS VM %s (%s)", vm.ID, vm.Name)
-				vmID := vm.ID // capture loop variable
-				go s.updateVMIPInCache(ctx, vmID)
+				vmID := vm.ID
+				delay := time.Duration(stagger) * 3 * time.Second
+				stagger++
+				go func() {
+					if delay > 0 {
+						time.Sleep(delay)
+					}
+					s.updateVMIPInCache(ctx, vmID)
+				}()
 			}
 		}
 	}

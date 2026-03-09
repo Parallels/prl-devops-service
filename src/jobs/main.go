@@ -239,6 +239,20 @@ func (jms *JobManagerService) MarkJobError(jobId string, jobErr error) error {
 	return nil
 }
 
+func (jms *JobManagerService) DeleteJob(jobId string) error {
+	job, err := jms.db.GetJob(jms.apiCtx, jobId)
+	if err != nil {
+		return err
+	}
+
+	if err := jms.db.DeleteJob(jms.apiCtx, jobId); err != nil {
+		return err
+	}
+
+	jms.emitEvent("JOB_DELETED", job)
+	return nil
+}
+
 func (jms *JobManagerService) emitEvent(message string, job *data_models.Job) {
 	emitter := serviceprovider.GetEventEmitter()
 	if emitter != nil && emitter.IsRunning() {

@@ -29,7 +29,6 @@ type Hub struct {
 	clients       map[string]*Client                      // Map of client ID to Client
 	clientsByIP   map[string]string                       // Map of IP address to client ID
 	subscriptions map[constants.EventType]map[string]bool // Map of event type to set of client IDs (type-safe)
-	broadcast     chan *models.EventMessage               // Channel for broadcasting messages
 	clientToHub   chan hubCommand                         // Channel for commands from websocket clients
 	shutdownChan  chan struct{}                           // Closed to signal shutdown started (never sent to)
 	stopped       chan struct{}                           // Closed to signal hub has fully stopped
@@ -40,20 +39,28 @@ type Hub struct {
 	handlersMu sync.RWMutex
 }
 
-// Client represents a connected WebSocket client
-// Immutable fields: ID, User, RemoteIP, ConnectedAt, Conn, Send, hub
-// Mutable fields (LastPingAt, LastPongAt, IsAlive, Subscriptions) are modified via hub commands
+// Client represents a connected WebSocket client.
+// Immutable after construction: ID, User, Conn, ConnectedAt, done.
+// Mutable (pendingMu): pending queue.
+// Mutable (mu): IsAlive, LastPingAt, LastPongAt.
 type Client struct {
 	ctx         basecontext.ApiContext
 	ID          string
 	User        *models.ApiUser
 	Conn        *websocket.Conn
-	Send        chan *models.EventMessage
 	ConnectedAt time.Time
 	LastPingAt  time.Time
 	LastPongAt  time.Time
 	IsAlive     bool
 	mu          sync.RWMutex
+
+	// Per-client outbound queue — drained every queueTickInterval by clientQueueWorker.
+	pending   []*models.EventMessage
+	pendingMu sync.Mutex
+
+	// done is closed (exactly once via closeOnce) to signal clientQueueWorker to stop.
+	done      chan struct{}
+	closeOnce sync.Once
 }
 
 var (
@@ -128,7 +135,6 @@ func (e *EventEmitter) Initialize() *apperrors.Diagnostics {
 		clientsByIP:   make(map[string]string),
 		subscriptions: make(map[constants.EventType]map[string]bool),
 		clientToHub:   make(chan hubCommand, 4096),
-		broadcast:     make(chan *models.EventMessage, 4096),
 		shutdownChan:  make(chan struct{}),
 		stopped:       make(chan struct{}),
 	}
@@ -190,7 +196,7 @@ func (e *EventEmitter) IsRunning() bool {
 	return atomic.LoadInt32(&e.isRunning) == 1
 }
 
-// run is the main loop for the hub, managing client registration and message broadcasting
+// run is the main loop for the hub, managing client registration and command routing.
 func (h *Hub) run() {
 	h.ctx.LogInfof("[Hub] Starting hub message routing")
 	defer close(h.stopped) // Signal that hub has fully stopped
@@ -198,20 +204,14 @@ func (h *Hub) run() {
 	for {
 		select {
 		case <-h.shutdownChan:
-			// Shutdown signal received
 			h.ctx.LogInfof("[Hub] Shutdown signal received, exiting run loop")
 			return
 		case cmd, ok := <-h.clientToHub:
 			if !ok {
-				// Commands channel closed unexpectedly
 				h.ctx.LogWarnf("[Hub] Commands channel closed")
 				return
 			}
 			cmd.execute(h)
-		case msg, ok := <-h.broadcast:
-			if ok {
-				h.broadcastMessage(msg)
-			}
 		}
 	}
 }
@@ -296,11 +296,12 @@ func (h *Hub) registerClient(client *Client, subscriptions []constants.EventType
 	} else {
 		rsp.Subscriptions = append(subscriptions, constants.EventTypeGlobal)
 	}
-	// Start client goroutines
-	go client.clientWriter()
-	go client.clientReader()
+	// Enqueue welcome message before starting goroutines (no lock needed yet).
+	client.pending = append(client.pending, models.NewEventMessage(constants.EventTypeGlobal, "WebSocket connection established subscribed to global by default", rsp))
 
-	client.Send <- models.NewEventMessage(constants.EventTypeGlobal, "WebSocket connection established subscribed to global by default", rsp)
+	// Start client goroutines.
+	go client.clientQueueWorker()
+	go client.clientReader()
 
 	h.ctx.LogInfof("[Hub] Registered client %s (user: %s) with %d subscriptions %v + (global auto-subscribed)",
 		client.ID, client.User.Username, len(rsp.Subscriptions), rsp.Subscriptions)
@@ -344,11 +345,9 @@ func (h *Hub) unregisterClient(clientID string) {
 
 	delete(h.clients, clientID)
 
-	// Close the client's Send channel (hub owns this channel)
-	// This is safe because client is removed from h.clients,
-	// so no new messages will be sent to this channel
-	if client != nil && client.Send != nil {
-		close(client.Send)
+	// Signal the client's queue worker to stop (safe via sync.Once).
+	if client != nil {
+		client.closeOnce.Do(func() { close(client.done) })
 	}
 }
 
@@ -382,7 +381,8 @@ func (h *Hub) HasActiveConnectionFromIP(ip string) bool {
 	return exists
 }
 
-// broadcastMessage sends a message to appropriate clients based on type and clientID
+// broadcastMessage enqueues a message into each target client's pending queue.
+// The clientQueueWorker drains the queue every queueTickInterval.
 func (h *Hub) broadcastMessage(message *models.EventMessage) error {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
@@ -395,14 +395,8 @@ func (h *Hub) broadcastMessage(message *models.EventMessage) error {
 	// If message targets a specific client
 	if message.ClientID != "" {
 		if client, exists := h.clients[message.ClientID]; exists {
-			select {
-			case client.Send <- message:
-				h.ctx.LogTracef("[Hub] Sent message %s to client %s", message.ID, client.ID)
-			default:
-				h.ctx.LogWarnf("[Hub] Client %s send channel is full, dropping message %s",
-					client.ID, message.ID)
-				// Drop message - channel is full
-			}
+			client.enqueue(message)
+			h.ctx.LogTracef("[Hub] Enqueued message %s for client %s", message.ID, client.ID)
 		} else {
 			h.ctx.LogWarnf("[Hub] Target client %s not found for message %s",
 				message.ClientID, message.ID)
@@ -414,15 +408,9 @@ func (h *Hub) broadcastMessage(message *models.EventMessage) error {
 	if subscribers, exists := h.subscriptions[message.Type]; exists {
 		for clientID := range subscribers {
 			if client, exists := h.clients[clientID]; exists {
-				select {
-				case client.Send <- message:
-					h.ctx.LogTracef("[Hub] Sent message %s to client %s (type: %s)",
-						message.ID, client.ID, message.Type)
-				default:
-					h.ctx.LogWarnf("[Hub] Client %s send channel is full, dropping message %s",
-						client.ID, message.ID)
-					// Drop message - channel is full
-				}
+				client.enqueue(message)
+				h.ctx.LogTracef("[Hub] Enqueued message %s for client %s (type: %s)",
+					message.ID, client.ID, message.Type)
 			}
 		}
 	}
@@ -480,14 +468,12 @@ func (h *Hub) shutdown() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	// Close all client connections
 	for _, client := range h.clients {
-		close(client.Send)
+		client.closeOnce.Do(func() { close(client.done) })
 		if client.Conn != nil {
 			client.Conn.Close()
 		}
 	}
-	// Clear all maps
 	h.clients = make(map[string]*Client)
 	h.clientsByIP = make(map[string]string)
 	h.subscriptions = make(map[constants.EventType]map[string]bool)

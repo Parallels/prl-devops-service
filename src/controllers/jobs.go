@@ -55,6 +55,16 @@ func registerJobsHandlers(ctx basecontext.ApiContext, version string) {
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/jobs/{id}").
+		WithRequiredClaim(constants.JOBS_MANAGER_DELETE_CLAIM).
+		WithRequiredClaim(constants.JOBS_MANAGER_LIST_OWN_CLAIM).
+		WithOrClaims().
+		WithHandler(DeleteJobHandler()).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.POST).
 		WithVersion(version).
 		WithPath("/jobs/debug").
@@ -154,6 +164,68 @@ func GetJobHandler() restapi.ControllerHandler {
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Job returned successfully")
+	}
+}
+
+// @Summary		Deletes a job by ID
+// @Description	This endpoint deletes a single job. Users with JOB_MANAGER_DELETE can delete any job; users with JOB_MANAGER_LIST_OWN can only delete their own.
+// @Tags			Jobs
+// @Param			id	path	string	true	"Job ID"
+// @Success		204
+// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Failure		403	{object}	models.ApiErrorResponse
+// @Failure		404	{object}	models.ApiErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/jobs/{id} [delete]
+func DeleteJobHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		userContext := ctx.GetUser()
+		if userContext == nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		vars := mux.Vars(r)
+		jobId := vars["id"]
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		dbJob, err := dbService.GetJob(ctx, jobId)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusNotFound))
+			return
+		}
+
+		authCtx := ctx.GetAuthorizationContext()
+		canDeleteAll := authCtx != nil && authCtx.UserHasClaim("job_manager_delete")
+		if !canDeleteAll && !strings.EqualFold(dbJob.Owner, userContext.ID) {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusForbidden, Message: "Forbidden to delete this job"})
+			return
+		}
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			return
+		}
+
+		if err := jobManager.DeleteJob(jobId); err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+		ctx.LogInfof("Job %s deleted successfully", jobId)
 	}
 }
 

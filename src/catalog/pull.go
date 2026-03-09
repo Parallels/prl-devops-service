@@ -138,9 +138,6 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		}
 	}
 
-	// Setting the jobManager
-	jobManager := jobs.Get(s.ctx)
-
 	s.ns.NotifyJobMessage(r.JobId, "Configuring the pull job...")
 
 	if err := helpers.CreateDirIfNotExist("/tmp"); err != nil {
@@ -150,7 +147,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 	}
 
 	// Just for test, setting everything to take way more time
-	time.Sleep(5 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	var manifest *models.VirtualMachineCatalogManifest
 	provider := models.CatalogManifestProvider{}
@@ -180,22 +177,22 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		if clientResponse, err := apiClient.Get(getUrl, &catalogManifest); err != nil {
 			if clientResponse != nil && clientResponse.ApiError != nil {
 				if clientResponse.StatusCode == 401 || clientResponse.StatusCode == 403 || clientResponse.StatusCode == 400 {
-					s.ns.NotifyJobMessage(r.JobId, fmt.Sprintf("Error getting catalog manifest %v: %v", path, clientResponse.ApiError.Message))
+					s.ns.NotifyJobMessage(r.JobId, "Error getting catalog manifest %s: %s", path, clientResponse.ApiError.Message)
 					response.AddError(errors.New(clientResponse.ApiError.Message))
 					return response
 				}
 			}
 			if clientResponse.StatusCode == 401 || clientResponse.StatusCode == 403 {
-				s.ns.NotifyJobMessage(r.JobId, fmt.Sprintf("Error getting catalog manifest %v: Unauthorized access", path))
+				s.ns.NotifyJobMessage(r.JobId, "Error getting catalog manifest %s: Unauthorized access", path)
 				response.AddError(errors.New("Unauthorized access to the catalog manifest"))
 				return response
 			}
 			if clientResponse.StatusCode == 400 {
-				s.ns.NotifyJobMessage(r.JobId, fmt.Sprintf("Error getting catalog manifest %v: Bad request", path))
+				s.ns.NotifyJobMessage(r.JobId, "Error getting catalog manifest %s: Bad request", path)
 				response.AddError(errors.New("Bad request to the catalog manifest"))
 				return response
 			}
-			s.ns.NotifyJobMessage(r.JobId, fmt.Sprintf("Error getting catalog manifest %v: %v", path, err))
+			s.ns.NotifyJobMessage(r.JobId, "Error getting catalog manifest %s: %s", path, err)
 			response.AddError(errors.Newf("Could not find a catalog manifest %s version %s for architecture %s", r.CatalogId, r.Version, arch))
 			return response
 		}
@@ -224,64 +221,62 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		}
 
 		manifest = &m
+		s.ns.NotifyJobMessage(r.JobId, "Manifest %s version %s for architecture %s has been downloaded", r.CatalogId, r.Version, arch)
 		s.ns.NotifyDebugf("Remote Manifest: %v", manifest)
 	} else {
 		if disableLocalCatalog {
 			response.AddError(errors.New("local catalog is disabled"))
 			return response
 		}
-		s.ns.NotifyInfof("Checking if the manifest exists in the local catalog")
-		if r.JobId != "" && jobManager != nil {
-			s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
-				SetJobId(r.JobId).
-				SetCurrentAction(constants.ActionCheckingLocalCatalog).
-				SetFilename(r.CatalogId))
-		}
+		s.ns.NotifyJobMessage(r.JobId, "Checking if the manifest exists in the local catalog")
 		dto, err := db.GetCatalogManifestByName(s.ctx, r.CatalogId)
 		if err != nil {
 			manifestErr := errors.Newf("Error getting catalog manifest %v: %v", r.CatalogId, err)
-			s.ns.NotifyErrorf("Error getting catalog manifest %v: %v", r.CatalogId, err)
+			s.ns.NotifyJobMessage(r.JobId, "Error getting catalog manifest %s: %s", r.CatalogId, err)
 			response.AddError(manifestErr)
 			return response
 		}
 		m := mappers.DtoCatalogManifestToBase(*dto)
 		manifest = &m
+		s.ns.NotifyJobMessage(r.JobId, "Manifest %s version %s for architecture %s has been downloaded", r.CatalogId, r.Version, m.Architecture)
 		s.ns.NotifyDebugf("Local Manifest: %v", manifest)
 	}
 
 	// Checking if we have read all of the manifest correctly
 	if manifest.CatalogId == "" {
-		s.ns.WithJob(r.JobId, constants.ActionValidatingRequest).NotifyErrorf("Manifest %v not found in the catalog", r.CatalogId)
 		manifestErr := errors.Newf("manifest %v not found in the catalog", r.CatalogId)
+		s.ns.NotifyJobMessage(r.JobId, "Error getting catalog manifest %s: %s", r.CatalogId, manifestErr)
 		response.AddError(manifestErr)
 		return response
 	}
 
 	if manifest.Provider == nil {
-		response.AddError(errors.Newf("Manifest %v does not contain a valid provider", r.CatalogId))
+		manifestErr := errors.Newf("Manifest %v does not contain a valid provider", r.CatalogId)
+		s.ns.NotifyJobMessage(r.JobId, "Error getting catalog manifest %s: %s", r.CatalogId, manifestErr)
+		response.AddError(manifestErr)
 		return response
 	}
 
 	// Checking for tainted or revoked manifests
 	if manifest.Tainted {
-		s.ns.WithJob(r.JobId, constants.ActionValidatingRequest).NotifyErrorf("Manifest %v is tainted", r.CatalogId)
 		manifestErr := errors.Newf("manifest %v is tainted", r.CatalogId)
+		s.ns.NotifyJobMessage(r.JobId, "Error getting catalog manifest %s: %s", r.CatalogId, manifestErr)
 		response.AddError(manifestErr)
 		return response
 	}
 
 	// Check if the manifest is revoked
 	if manifest.Revoked {
-		s.ns.WithJob(r.JobId, constants.ActionValidatingRequest).NotifyErrorf("Manifest %v is revoked", r.CatalogId)
 		manifestErr := errors.Newf("manifest %v is revoked", r.CatalogId)
+		s.ns.NotifyJobMessage(r.JobId, "Error getting catalog manifest %s: %s", r.CatalogId, manifestErr)
 		response.AddError(manifestErr)
 		return response
 	}
 
 	// Check if the path for the machine exists
 	if !helper.FileExists(r.Path) {
-		s.ns.WithJob(r.JobId, constants.ActionValidatingRequest).NotifyErrorf("Path %v does not exist", r.Path)
 		manifestErr := errors.Newf("path %v does not exist", r.Path)
+		s.ns.NotifyJobMessage(r.JobId, "Error getting catalog manifest %s: %s", r.CatalogId, manifestErr)
 		response.AddError(manifestErr)
 		return response
 	}
@@ -289,40 +284,9 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 	response.ID = manifest.ID
 	response.CatalogId = manifest.CatalogId
 	response.Version = manifest.Version
-
 	response.Manifest = manifest
 
-	// Checking if the machine already exists before starting the pull process
-	s.ns.NotifyJobMessage(r.JobId, fmt.Sprintf("Checking if the machine %v already exists", r.MachineName))
-
-	filter := fmt.Sprintf("name=%s", r.MachineName)
-	vms, err := parallelsDesktopSvc.GetVms(s.ctx, filter)
-	if err != nil {
-		if errors.GetSystemErrorCode(err) != 404 {
-			response.AddError(err)
-			return response
-		}
-	}
-
-	if len(vms) > 0 {
-		response.AddError(errors.Newf("machine %v already exists", r.MachineName))
-		return response
-	}
-
-	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
-			SetJobId(r.JobId).
-			SetCurrentAction(constants.ActionCheckingLocalCatalog).
-			SetCurrentActionStep(fmt.Sprintf("VM %v does not exist, continuing", r.MachineName)).
-			SetFilename(r.MachineName))
-	}
-
-	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionCheckingRemoteCatalog, 100).
-			SetJobId(r.JobId).
-			SetCurrentAction(constants.ActionCheckingRemoteCatalog).
-			SetFilename(manifest.Name))
-	}
+	s.ns.NotifyJobMessage(r.JobId, "Finding the remote storage provider for %s", r.MachineName)
 
 	for _, rs := range s.remoteServices {
 		check, checkErr := rs.Check(s.ctx, manifest.Provider.String())
@@ -336,61 +300,88 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 			continue
 		}
 
-		s.ns.WithJob(r.JobId, constants.ActionCheckingRemoteCatalog).NotifyInfof("Found remote service %v", rs.Name())
+		s.ns.NotifyJobMessage(r.JobId, "Found remote service %v", rs.Name())
 		rs.SetJobId(r.JobId)
 		foundProvider = true
 		r.LocalMachineFolder = fmt.Sprintf("%s.%s", filepath.Join(r.Path, r.MachineName), manifest.Type)
 
+		// Registering the job workflow now that we found the proper provider
 		s.ns.RegisterJobWorkflow(r.JobId, []tracker.JobStep{
-			{Name: constants.ActionCheckingLocalCatalog, Weight: 5, Parallel: false, HasPercentage: false},
-			{Name: constants.ActionCheckingRemoteCatalog, Weight: 5, Parallel: false, HasPercentage: false},
-			{Name: constants.ActionDownloadingManifest, Weight: 5, Parallel: false, HasPercentage: false},
-			{Name: constants.ActionDownloader, Weight: 40, Parallel: rs.CanStream(), HasPercentage: true},
-			{Name: constants.ActionDecompressor, Weight: 10, Parallel: rs.CanStream(), HasPercentage: true},
-			{Name: constants.ActionDecompressingPackFile, Weight: 30, Parallel: false, HasPercentage: true},
-			{Name: constants.ActionRegisteringMachine, Weight: 5, Parallel: false, HasPercentage: false},
+			{Name: constants.ActionPullValidateStage, Weight: 5, Parallel: false, HasPercentage: true, DisplayName: "Validating Requirements"},
+			{Name: constants.ActionPullCheckCacheStage, Weight: 5, Parallel: false, HasPercentage: false, DisplayName: "Checking Cache"},
+			{Name: constants.ActionDownloader, Weight: 20, Parallel: rs.CanStream(), HasPercentage: true, DisplayName: "Downloading Pack File"},
+			{Name: constants.ActionDecompressor, Weight: 20, Parallel: rs.CanStream(), HasPercentage: true, DisplayName: "Decompressing Pack File"},
+			{Name: constants.ActionPullCacheStage, Weight: 20, Parallel: false, HasPercentage: false, DisplayName: "Copy Manifest from cache"},
+			{Name: constants.ActionPullRegisterVm, Weight: 10, Parallel: false, HasPercentage: false, DisplayName: "Registering Machine"},
+			{Name: constants.ActionPullRenameVm, Weight: 10, Parallel: false, HasPercentage: false, DisplayName: "Renaming Machine"},
+			{Name: constants.ActionPullStartVm, Weight: 5, Parallel: false, HasPercentage: false, DisplayName: "Starting Machine"},
+			{Name: constants.ActionCleaningUp, Weight: 5, Parallel: false, HasPercentage: false, DisplayName: "Cleaning up"},
 		})
 
-		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionCheckingLocalCatalog, 100).
-			SetJobId(r.JobId).
-			SetCurrentAction(constants.ActionCheckingLocalCatalog).
-			SetFilename(r.MachineName))
+		// Checking if the machine already exists before starting the pull process
+		s.ns.UpdateStepProgress(r.JobId, constants.ActionPullValidateStage, 10)
+		s.ns.UpdateStepMessagef(r.JobId, constants.ActionPullValidateStage, "Checking if the machine %s already exists", r.MachineName)
 
-		time.Sleep(5 * time.Second)
+		filter := fmt.Sprintf("name=%s", r.MachineName)
+		vms, err := parallelsDesktopSvc.GetVms(s.ctx, filter)
+		if err != nil {
+			if errors.GetSystemErrorCode(err) != 404 {
+				s.ns.FailStepf(r.JobId, constants.ActionPullValidateStage, "Failed to validate manifest: %v", err)
+				response.AddError(err)
+				return response
+			}
+		}
+
+		if len(vms) > 0 {
+			err := errors.Newf("machine %v already exists", r.MachineName)
+			s.ns.FailStepf(r.JobId, constants.ActionPullValidateStage, "Failed to validate manifest: %v", err)
+			response.AddError(err)
+			return response
+		}
+
+		s.ns.UpdateStepProgress(r.JobId, constants.ActionPullValidateStage, 60)
+
+		time.Sleep(2 * time.Second)
 
 		// Creating the destination folder for the local machine
 		if err := s.createDestinationFolder(r, manifest); err != nil {
+			s.ns.FailStepf(r.JobId, constants.ActionPullValidateStage, "Failed to create destination folder: %v", err)
 			response.AddError(err)
 			break
 		}
 
 		// checking if the manifest is correctly generated
 		if manifest.PackFile == "" || manifest.MetadataFile == "" || manifest.Path == "" {
-			s.ns.WithJob(r.JobId, constants.ActionValidatingRequest).NotifyErrorf("Manifest %v is not correctly generated", manifest.Name)
-			response.AddError(errors.Newf("Manifest %v is not correctly generated", manifest.Name))
+			errorMsg := errors.Newf("Manifest %v is not correctly generated", manifest.Name)
+			s.ns.FailStepf(r.JobId, constants.ActionPullValidateStage, "Failed to validate manifest: %v", errorMsg)
+			response.AddError(errorMsg)
 			break
 		}
+
+		s.ns.CompleteStepf(r.JobId, constants.ActionPullValidateStage, "Completed checks")
+
+		time.Sleep(2 * time.Second)
 
 		// checking if we have the caching enabled, if so we will cache the files using the
 		// caching service and then pull the files from the cache
 		if cfg.IsCatalogCachingEnable() {
-			s.ns.WithJob(r.JobId, constants.ActionDownloadingPackFile).NotifyInfof("Manifest %v caching is enabled, pulling the pack file", manifest.Name)
-			if r.JobId != "" && jobManager != nil {
-				s.ns.RegisterJobWorkflow(r.JobId, getPullWorkflowSteps(true, r.StartAfterPull))
-			}
+			// starting the cache service, the job tracking will now be coordinated by the cache service
+			// this means all download/extract/copy from cache will be handled by the cache service
+			// and the job tracking will be updated accordingly
 			if err := s.pullFromCache(r, manifest, rs); err != nil {
 				response.AddError(err)
 				break
 			}
 		} else {
-			s.ns.WithJob(r.JobId, constants.ActionDownloadingPackFile).NotifyInfof("Manifest %v caching is disabled, pulling the pack file", manifest.Name)
-			if r.JobId != "" && jobManager != nil {
-				s.ns.RegisterJobWorkflow(r.JobId, getPullWorkflowSteps(false, r.StartAfterPull))
-			}
+			// Skipping the check cache stage and copy from cache stage so we can update the UI they are not going to happen
+			s.ns.SkipStep(r.JobId, constants.ActionPullCheckCacheStage, "Skipping cache check because caching is disabled")
+			time.Sleep(2 * time.Second)
 			if err := s.pullAndDecompressPackFile(r, manifest, rs); err != nil {
 				response.AddError(err)
 				break
 			}
+			s.ns.SkipStep(r.JobId, constants.ActionPullCacheStage, "Skipping cache stage because caching is disabled")
+			time.Sleep(2 * time.Second)
 		}
 
 		systemSrv := serviceProvider.System
@@ -433,6 +424,8 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 	// starting the machine
 	if r.StartAfterPull {
 		s.startMachineWithParallelsDesktop(r, response)
+	} else {
+		s.ns.SkipStep(r.JobId, constants.ActionPullStartVm, "Skipping starting machine because start after pull is disabled")
 	}
 
 	// Cleaning up
@@ -442,14 +435,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 }
 
 func (s *CatalogManifestService) registerMachineWithParallelsDesktop(r *models.PullCatalogManifestRequest, response *models.PullCatalogManifestResponse) {
-	s.ns.WithJob(r.JobId, constants.ActionRegisteringMachine).NotifyInfof("Registering machine %v", r.MachineName)
-	jobManager := jobs.Get(s.ctx)
-	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionRegisteringMachine, 100).
-			SetJobId(r.JobId).
-			SetCurrentAction(constants.ActionRegisteringMachine).
-			SetFilename(r.MachineName))
-	}
+	s.ns.StartStepf(r.JobId, constants.ActionPullRegisterVm, "Registering machine %v", r.MachineName)
 
 	serviceProvider := serviceprovider.Get()
 	parallelsDesktopSvc := serviceProvider.ParallelsDesktopService
@@ -464,32 +450,29 @@ func (s *CatalogManifestService) registerMachineWithParallelsDesktop(r *models.P
 
 		if err := parallelsDesktopSvc.RegisterVm(s.ctx, machineRegisterRequest); err != nil {
 			response.AddError(err)
+			s.ns.FailStepf(r.JobId, constants.ActionPullRegisterVm, "Error registering machine %v: %v", r.MachineName, err)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
+		} else {
+			s.ns.CompleteStepf(r.JobId, constants.ActionPullRegisterVm, "Completed registering machine %v", r.MachineName)
 		}
+
 	} else {
-		s.ns.WithJob(r.JobId, constants.ActionRegisteringMachine).NotifyErrorf("Error registering machine %v: %v", r.MachineName, response.Errors)
+		s.ns.FailStepf(r.JobId, constants.ActionPullRegisterVm, "Error registering machine %v: %v", r.MachineName, response.Errors)
 	}
 }
 
 func (s *CatalogManifestService) renameMachineWithParallelsDesktop(r *models.PullCatalogManifestRequest, response *models.PullCatalogManifestResponse) {
-	s.ns.WithJob(r.JobId, constants.ActionRenamingMachine).NotifyInfof("Renaming machine %v", r.MachineName)
-	jobManager := jobs.Get(s.ctx)
-	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionRenamingMachine, 100).
-			SetJobId(r.JobId).
-			SetCurrentAction(constants.ActionRenamingMachine).
-			SetFilename(r.MachineName))
-	}
+	s.ns.StartStepf(r.JobId, constants.ActionPullRenameVm, "Renaming machine %v", r.MachineName)
 
 	serviceProvider := serviceprovider.Get()
 	parallelsDesktopSvc := serviceProvider.ParallelsDesktopService
 
 	if !response.HasErrors() {
-		s.ns.WithJob(r.JobId, constants.ActionRenamingMachine).NotifyInfof("Renaming machine %v to %v", r.MachineName, r.MachineName)
+
 		filter := fmt.Sprintf("name=%s", r.MachineName)
 		vms, err := parallelsDesktopSvc.GetVms(s.ctx, filter)
 		if err != nil {
-			s.ns.WithJob(r.JobId, constants.ActionRenamingMachine).NotifyErrorf("Error getting machine %v: %v", r.MachineName, err)
+			s.ns.FailStepf(r.JobId, constants.ActionPullRenameVm, "Error getting machine %v: %v", r.MachineName, err)
 			response.AddError(err)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
 			return
@@ -509,7 +492,7 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(r *models.Pul
 
 		if vm == nil {
 			notFoundError := errors.Newf("Machine %v not found", r.MachineName)
-			s.ns.WithJob(r.JobId, constants.ActionRenamingMachine).NotifyErrorf("Error getting machine %v: %v", r.MachineName, notFoundError)
+			s.ns.FailStepf(r.JobId, constants.ActionPullRenameVm, "Error getting machine %v: %v", r.MachineName, notFoundError)
 			response.AddError(notFoundError)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
 			return
@@ -525,7 +508,7 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(r *models.Pul
 			}
 
 			if err := parallelsDesktopSvc.RenameVm(s.ctx, renameRequest); err != nil {
-				s.ns.WithJob(r.JobId, constants.ActionRenamingMachine).NotifyErrorf("Error renaming machine %v: %v", r.MachineName, err)
+				s.ns.FailStepf(r.JobId, constants.ActionPullRenameVm, "Error renaming machine %v: %v", r.MachineName, err)
 				response.AddError(err)
 				response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
 				return
@@ -533,20 +516,14 @@ func (s *CatalogManifestService) renameMachineWithParallelsDesktop(r *models.Pul
 		}
 
 		response.MachineID = vms[0].ID
+		s.ns.CompleteStepf(r.JobId, constants.ActionPullRenameVm, "Completed renaming machine %v", r.MachineName)
 	} else {
-		s.ns.WithJob(r.JobId, constants.ActionRenamingMachine).NotifyErrorf("Error renaming machine %v: %v", r.MachineName, response.Errors)
+		s.ns.FailStepf(r.JobId, constants.ActionPullRenameVm, "Error renaming machine %v: %v", r.MachineName, response.Errors)
 	}
 }
 
 func (s *CatalogManifestService) startMachineWithParallelsDesktop(r *models.PullCatalogManifestRequest, response *models.PullCatalogManifestResponse) {
-	s.ns.WithJob(r.JobId, constants.ActionStartingMachine).NotifyInfof("Starting machine %v for %v", r.MachineName, r.CatalogId)
-	jobManager := jobs.Get(s.ctx)
-	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionStartingMachine, 100).
-			SetJobId(r.JobId).
-			SetCurrentAction(constants.ActionStartingMachine).
-			SetFilename(r.MachineName))
-	}
+	s.ns.StartStepf(r.JobId, constants.ActionPullStartVm, "Starting machine %v for %v", r.MachineName, r.CatalogId)
 
 	serviceProvider := serviceprovider.Get()
 	parallelsDesktopSvc := serviceProvider.ParallelsDesktopService
@@ -555,7 +532,7 @@ func (s *CatalogManifestService) startMachineWithParallelsDesktop(r *models.Pull
 		filter := fmt.Sprintf("name=%s", r.MachineName)
 		vms, err := parallelsDesktopSvc.GetVms(s.ctx, filter)
 		if err != nil {
-			s.ns.WithJob(r.JobId, constants.ActionStartingMachine).NotifyErrorf("Error getting machine %v: %v", r.MachineName, err)
+			s.ns.FailStepf(r.JobId, constants.ActionPullStartVm, "Error getting machine %v: %v", r.MachineName, err)
 			response.AddError(err)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
 			return
@@ -575,53 +552,50 @@ func (s *CatalogManifestService) startMachineWithParallelsDesktop(r *models.Pull
 
 		if vm == nil {
 			notFoundError := errors.Newf("Machine %v not found", r.MachineName)
-			s.ns.WithJob(r.JobId, constants.ActionStartingMachine).NotifyErrorf("Error getting machine %v: %v", r.MachineName, notFoundError)
+			s.ns.FailStepf(r.JobId, constants.ActionPullStartVm, "Error getting machine %v: %v", r.MachineName, notFoundError)
 			response.AddError(notFoundError)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
 			return
 		}
 
 		if err := parallelsDesktopSvc.StartVm(s.ctx, vm.ID); err != nil {
-			s.ns.WithJob(r.JobId, constants.ActionStartingMachine).NotifyErrorf("Error starting machine %v: %v", r.MachineName, err)
+			s.ns.FailStepf(r.JobId, constants.ActionPullStartVm, "Error starting machine %v: %v", r.MachineName, err)
 			response.AddError(err)
 			response.CleanupRequest.AddLocalFileCleanupOperation(r.LocalMachineFolder, true)
 			return
 		}
+		s.ns.CompleteStepf(r.JobId, constants.ActionPullStartVm, "Completed starting machine %v", r.MachineName)
 	} else {
-		s.ns.WithJob(r.JobId, constants.ActionStartingMachine).NotifyErrorf("Error starting machine %v: %v", r.MachineName, response.Errors)
+		s.ns.FailStepf(r.JobId, constants.ActionPullStartVm, "Error starting machine %v: %v", r.MachineName, response.Errors)
 	}
 }
 
 func (s *CatalogManifestService) CleanPullRequest(r *models.PullCatalogManifestRequest, response *models.PullCatalogManifestResponse) {
+	s.ns.StartStepf(r.JobId, constants.ActionCleaningUp, "Cleaning up")
 	if cleanErrors := response.CleanupRequest.Clean(s.ctx); len(cleanErrors) > 0 {
-		s.ns.WithJob(r.JobId, "cleaning_up").NotifyErrorf("Error cleaning up: %v", cleanErrors)
+		s.ns.FailStepf(r.JobId, constants.ActionCleaningUp, "Error cleaning up: %v", cleanErrors)
 		for _, err := range cleanErrors {
 			response.AddError(err)
 		}
+	} else {
+		s.ns.CompleteStepf(r.JobId, constants.ActionCleaningUp, "Completed cleaning up")
 	}
 }
 
 func (s *CatalogManifestService) createDestinationFolder(r *models.PullCatalogManifestRequest, manifest *models.VirtualMachineCatalogManifest) error {
-	jobManager := jobs.Get(s.ctx)
-	if r.JobId != "" && jobManager != nil {
-		s.ns.Notify(tracker.NewJobProgressMessage(r.JobId, constants.ActionCreatingDestinationFolder, 100).
-			SetJobId(r.JobId).
-			SetCurrentAction(constants.ActionCreatingDestinationFolder).
-			SetFilename(manifest.Name))
-	}
-
+	s.ns.UpdateStepMessage(r.JobId, constants.ActionPullValidateStage, "Creating folder")
 	r.LocalMachineFolder = fmt.Sprintf("%s.%s", filepath.Join(r.Path, r.MachineName), manifest.Type)
-	s.ns.WithJob(r.JobId, constants.ActionCreatingDestinationFolder).NotifyInfof("Local machine folder: %v", r.LocalMachineFolder)
+	s.ns.UpdateStepMessagef(r.JobId, constants.ActionPullValidateStage, "Local machine folder: %v", r.LocalMachineFolder)
 	count := 1
 	max_attempts := 30
 	created := false
 	for {
 		if helper.FileExists(r.LocalMachineFolder) {
-			s.ns.WithJob(r.JobId, constants.ActionCreatingDestinationFolder).NotifyInfof("Local machine folder %v already exists, attempting to create a different one", r.LocalMachineFolder)
+			s.ns.UpdateStepMessagef(r.JobId, constants.ActionPullValidateStage, "Local machine folder %v already exists, attempting to create a different one", r.LocalMachineFolder)
 			r.LocalMachineFolder = fmt.Sprintf("%s_%v.%s", filepath.Join(r.Path, r.MachineName), count, manifest.Type)
 			count += 1
 			if count > max_attempts {
-				s.ns.WithJob(r.JobId, constants.ActionCreatingDestinationFolder).NotifyInfof("Max attempts reached to find a new local machine folder name, breaking")
+				s.ns.UpdateStepMessagef(r.JobId, constants.ActionPullValidateStage, "Max attempts reached to find a new local machine folder name, breaking")
 				break
 			}
 		} else {
@@ -630,95 +604,102 @@ func (s *CatalogManifestService) createDestinationFolder(r *models.PullCatalogMa
 		}
 	}
 	if !created {
-		s.ns.WithJob(r.JobId, constants.ActionCreatingDestinationFolder).NotifyErrorf("Error creating local machine folder %v", r.LocalMachineFolder)
+		s.ns.FailStepf(r.JobId, constants.ActionPullValidateStage, "Error creating local machine folder %v", r.LocalMachineFolder)
 		return errors.Newf("Error creating local machine folder %v", r.LocalMachineFolder)
 	}
 
 	if err := helpers.CreateDirIfNotExist(r.LocalMachineFolder); err != nil {
-		s.ns.WithJob(r.JobId, constants.ActionCreatingDestinationFolder).NotifyErrorf("Error creating local machine folder %v: %v", r.LocalMachineFolder, err)
+		s.ns.FailStepf(r.JobId, constants.ActionPullValidateStage, "Error creating local machine folder %v: %v", r.LocalMachineFolder, err)
 		return err
 	}
 
-	s.ns.WithJob(r.JobId, constants.ActionCreatingDestinationFolder).NotifyInfof("Created local machine folder %v", r.LocalMachineFolder)
+	s.ns.UpdateStepMessagef(r.JobId, constants.ActionPullValidateStage, "Created local machine folder %v", r.LocalMachineFolder)
 	return nil
 }
 
 func (s *CatalogManifestService) pullFromCache(r *models.PullCatalogManifestRequest, manifest *models.VirtualMachineCatalogManifest, rss interfaces.RemoteStorageService) error {
 	cacheService, err := cacheservice.NewCacheService(s.ctx)
 	if err != nil {
-		s.ns.WithJob(r.JobId, constants.ActionCachingPackFile).NotifyErrorf("Error creating cache service: %v", err)
+		s.ns.FailStepf(r.JobId, constants.ActionPullCheckCacheStage, "Error creating cache service: %v", err)
 		return err
 	}
 
+	// Creating the cache request for the service
 	cacheRequest := cacheservice.NewCacheRequest(s.ctx, manifest, rss, r.JobId)
 	cacheService.WithRequest(cacheRequest)
 
+	// Caching the service if it is not cached, this is were we will be pulling the manifest pack
 	if !cacheService.IsCached() {
-		s.ns.WithJob(r.JobId, constants.ActionCachingPackFile).NotifyInfof("Manifest %v is not cached, caching it", manifest.Name)
+		s.ns.CompleteStep(r.JobId, constants.ActionPullCheckCacheStage, "Finished checking cache")
 		if err := cacheService.Cache(); err != nil {
-			s.ns.WithJob(r.JobId, constants.ActionCachingPackFile).NotifyErrorf("Error caching manifest %v: %v", manifest.Name, err)
+			s.ns.FailStepf(r.JobId, constants.ActionPullCheckCacheStage, "Error caching manifest %v: %v", manifest.Name, err)
 			return err
 		}
+	}
+
+	// if it is cached we need to skip the download and decompress steps
+	if cacheService.IsCached() {
+		s.ns.SkipStep(r.JobId, constants.ActionDecompressor, "Skipping decompress step")
+		s.ns.SkipStep(r.JobId, constants.ActionDownloader, "Skipping download step")
 	}
 
 	// We now need to copy the cached folder to the local machine folder
 	cacheResponse, err := cacheService.Get()
 	if err != nil {
-		s.ns.WithJob(r.JobId, constants.ActionCachingPackFile).NotifyErrorf("Error getting cache response: %v", err)
+		s.ns.FailStepf(r.JobId, constants.ActionPullCacheStage, "Error getting cache response: %v", err)
 		return err
 	}
 
-	s.ns.WithJob(r.JobId, constants.ActionCachingPackFile).NotifyInfof("Preparing to copy from cache...")
+	s.ns.CompleteStep(r.JobId, constants.ActionPullCheckCacheStage, "Finished checking cache")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Launch a goroutine to poll copy progress and update the job manager
-	if r.JobId != "" {
-		srcSize, err := helpers.DirSize(cacheResponse.PackFilePath)
-		if err == nil && srcSize > 0 {
-			copyStart := time.Now()
-			go func() {
-				ticker := time.NewTicker(1 * time.Second)
-				defer ticker.Stop()
-				for {
-					select {
-					case <-ctx.Done():
-						return
-					case <-ticker.C:
-						dstSize, err := helpers.DirSize(r.LocalMachineFolder)
-						if err == nil {
-							percentage := int((float64(dstSize) / float64(srcSize)) * 100)
-							if percentage > 100 {
-								percentage = 100
-							}
+	srcSize, err := helpers.DirSize(cacheResponse.PackFilePath)
+	if err == nil && srcSize > 0 {
+		copyStart := time.Now()
+		go func() {
+			ticker := time.NewTicker(1 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					dstSize, err := helpers.DirSize(r.LocalMachineFolder)
+					if err == nil {
+						percentage := int((float64(dstSize) / float64(srcSize)) * 100)
+						if percentage > 100 {
+							percentage = 100
+						}
 
-							if s.ns != nil {
-								msg := tracker.NewJobProgressMessage(
-									r.JobId,
-									constants.ActionCopyingFromCache,
-									float64(percentage),
-								).
-									SetCurrentSize(dstSize).
-									SetTotalSize(srcSize).
-									SetStartingTime(copyStart).
-									SetJobId(r.JobId).
-									SetCurrentAction(constants.ActionCopyingFromCache)
-								s.ns.Notify(msg)
-							}
+						if s.ns != nil {
+							s.ns.UpdateStepMessagef(r.JobId, constants.ActionPullCacheStage,
+								"Copying from cache")
+							msg := tracker.NewJobProgressMessage(
+								r.JobId,
+								constants.ActionPullCacheStage,
+								float64(percentage),
+							).
+								SetCurrentSize(dstSize).
+								SetTotalSize(srcSize).
+								SetStartingTime(copyStart).
+								SetJobId(r.JobId).
+								SetCurrentAction(constants.ActionPullCacheStage)
+							s.ns.Notify(msg)
 						}
 					}
 				}
-			}()
-		}
+			}
+		}()
 	}
 
 	if err := helpers.CopyDir(cacheResponse.PackFilePath, r.LocalMachineFolder); err != nil {
-		s.ns.WithJob(r.JobId, constants.ActionCopyingFromCache).NotifyErrorf("Error copying cached folder %v to %v: %v", cacheResponse.PackFilePath, r.LocalMachineFolder, err)
+		s.ns.WithJob(r.JobId, constants.ActionPullCacheStage).NotifyErrorf("Error copying cached folder %v to %v: %v", cacheResponse.PackFilePath, r.LocalMachineFolder, err)
 		return err
 	}
-	s.ctx.LogInfof("Finished copying cached folder %v to %v", cacheResponse.PackFilePath, r.LocalMachineFolder)
-
+	s.ns.CompleteStepf(r.JobId, constants.ActionPullCacheStage, "Finished copying cached folder %v to %v", cacheResponse.PackFilePath, r.LocalMachineFolder)
 	return nil
 }
 

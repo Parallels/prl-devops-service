@@ -24,6 +24,7 @@ type Job struct {
 
 type JobStep struct {
 	Name              string             `json:"name"`
+	DisplayName       string             `json:"display_name,omitempty"`
 	Weight            float64            `json:"weight"`
 	Parallel          bool               `json:"parallel"`
 	HasPercentage     bool               `json:"has_percentage"`

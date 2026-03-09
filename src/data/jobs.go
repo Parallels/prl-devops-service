@@ -128,17 +128,22 @@ func (j *JsonDatabase) DeleteJob(ctx basecontext.ApiContext, id string) error {
 	}
 
 	j.dataMutex.Lock()
-	defer j.dataMutex.Unlock()
-
+	found := false
 	for i, job := range j.data.Jobs {
 		if strings.EqualFold(job.ID, id) {
 			j.data.Jobs = append(j.data.Jobs[:i], j.data.Jobs[i+1:]...)
-			_ = j.SaveNow(ctx)
-			return nil
+			found = true
+			break
 		}
 	}
+	j.dataMutex.Unlock()
 
-	return ErrJobNotFound
+	if !found {
+		return ErrJobNotFound
+	}
+
+	_ = j.SaveNow(ctx)
+	return nil
 }
 
 func (j *JsonDatabase) DeleteJobsByState(ctx basecontext.ApiContext, states ...constants.JobState) error {

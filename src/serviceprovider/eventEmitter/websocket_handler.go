@@ -65,7 +65,7 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basec
 		ID:          uuid.NewString(),
 		User:        usr,
 		Conn:        conn,
-		Send:        make(chan *models.EventMessage, 1024),
+		done:        make(chan struct{}),
 		ConnectedAt: time.Now(),
 		LastPingAt:  time.Now(),
 		LastPongAt:  time.Now(),

@@ -18,9 +18,8 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/jobs"
-	global_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/jobs/tracker"
+	global_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/cjlapao/common-go/helper"
 )
@@ -51,7 +50,7 @@ func NewCacheRequest(ctx basecontext.ApiContext, catalogManifest *models.Virtual
 
 type CacheService struct {
 	notificationChannel chan string
-	notifications       *tracker.JobProgressService
+	ns                  *tracker.JobProgressService
 	cfg                 *config.Config
 	baseCtx             basecontext.ApiContext
 	rss                 interfaces.RemoteStorageService
@@ -79,7 +78,7 @@ func NewCacheService(ctx basecontext.ApiContext) (*CacheService, error) {
 		cfg:            config.Get(),
 		CacheType:      models.CatalogCacheTypeNone,
 		cleanupservice: cleanupservice.NewCleanupService(),
-		notifications:  tracker.GetProgressService(),
+		ns:             tracker.GetProgressService(),
 	}
 
 	// checking if we have a size for the vm, if not we will set a default size
@@ -151,7 +150,7 @@ func (cs *CacheService) cachedMetadataFilePath() string {
 }
 
 func (cs *CacheService) notify(message string) {
-	cs.notifications.NotifyInfo(message)
+	cs.ns.NotifyInfo(message)
 }
 
 func (cs *CacheService) getCacheTotalSize() (int64, error) {
@@ -832,15 +831,8 @@ func (cs *CacheService) Clean() error {
 }
 
 func (cs *CacheService) Cache() error {
-	// First let's get the catalog manifest file from the remote storage into memory as the local cache will be a different file based on this
-	cs.notify("Downloading catalog manifest file")
-	jobManager := jobs.Get(cs.baseCtx)
-	if cs.JobId != "" && jobManager != nil {
-		cs.notifications.Notify(tracker.NewJobProgressMessage(cs.JobId, constants.ActionDownloadingManifest, 100).
-			WithJob(cs.JobId, constants.ActionDownloadingManifest).
-			SetFilename(cs.manifest.Name))
-	}
-
+	// Setting the initial progress to 1 for the download step
+	cs.ns.UpdateStepMessagef(cs.JobId, constants.ActionDownloader, "Starting to download the pack file")
 	if err := cs.rss.PullFile(cs.baseCtx, cs.manifest.Path, cs.manifest.MetadataFile, cs.cacheFolder); err != nil {
 		return err
 	}

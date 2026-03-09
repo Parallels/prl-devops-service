@@ -315,6 +315,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 	for _, vm := range vms {
 		dtoVm := mappers.MapDtoVirtualMachineFromApi(vm)
 		dtoVm.HostId = host.ID
+		dtoVm.HostName = getHostName(host)
 		dtoVm.Host = host.GetHost()
 		dtoVm.HostUrl = host.GetHostUrl()
 		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
@@ -452,4 +453,11 @@ func (s *OrchestratorService) RefreshHostCache(hostId string) {
 
 func (s *OrchestratorService) SetHealthCheckTimeout(timeout time.Duration) {
 	s.healthCheckTimeout = timeout
+}
+
+func getHostName(host models.OrchestratorHost) string {
+	if host.Description != "" {
+		return host.Description
+	}
+	return host.Host
 }

@@ -250,6 +250,10 @@ func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, eve
 
 			ctx.LogInfof("[ParallelsDesktop] [Event] VM %s state changed: %s -> %s", vm.ID, prevState, newState)
 			s.cachedLocalVms[i].State = newState
+
+			// Add to fast state updates timestamp
+			s.fastStateUpdates[vm.ID] = time.Now()
+
 			found = true
 			break
 		}
@@ -424,13 +428,16 @@ func (s *ParallelsService) processPendingSyncs() {
 
 // syncVmTask handles the slow CLI execution and cache updating.
 func (s *ParallelsService) syncVmTask(vmID string) {
+	// Record exactly when we started asking PD for data
+	cmdStartTime := time.Now()
+
 	// 1. Fetch the new state (The slow path)
 	vm, err := s.getVmInMachine(s.ctx, vmID)
 
 	// 2. Update the cache
 	if err == nil {
 		s.ctx.LogDebugf("[ParallelsDesktop] [Debounce] Updating VM %s in cache", vm.ID)
-		s.updateVmInCache(s.ctx, vm)
+		s.updateVmInCache(s.ctx, vm, cmdStartTime)
 	} else {
 		s.ctx.LogErrorf("[ParallelsDesktop] [Debounce] Failed to get VM during debounce sync: %v", err)
 	}
