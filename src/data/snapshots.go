@@ -16,9 +16,9 @@ func (j *JsonDatabase) SetListSnapshotsByVMId(vmID string, listSnapshotResponse 
 	if j.data.VMSnapshots == nil {
 		j.data.VMSnapshots = make(map[string][]models.Snapshot)
 	}
-
+	snaps := []models.Snapshot{}
 	for _, snapshot := range listSnapshotResponse.Snapshots {
-		j.data.VMSnapshots[vmID] = append(j.data.VMSnapshots[vmID], models.Snapshot{
+		snaps = append(snaps, models.Snapshot{
 			ID:      snapshot.ID,
 			Name:    snapshot.Name,
 			Date:    snapshot.Date,
@@ -27,6 +27,7 @@ func (j *JsonDatabase) SetListSnapshotsByVMId(vmID string, listSnapshotResponse 
 			Parent:  snapshot.Parent,
 		})
 	}
+	j.data.VMSnapshots[vmID] = snaps
 	return nil
 }
 
