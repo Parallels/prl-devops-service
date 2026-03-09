@@ -354,7 +354,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 		if err != nil {
 			s.ctx.LogErrorf("[Orchestrator] Error getting snapshots for VM %s: %v", vm.ID, err.Error())
 		}
-		s.db.SetListSnapshotsByVMId(vm.ID, listSnapshotResponse)
+		s.db.SetOrchestratorSnapshots(s.ctx, host.ID, vm.ID, *listSnapshotResponse)
 	}
 	_ = s.persistHost(&host)
 
