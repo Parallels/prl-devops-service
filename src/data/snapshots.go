@@ -1,11 +1,12 @@
 package data
 
 import (
+	"errors"
+
 	"github.com/Parallels/prl-devops-service/data/models"
-	apiModels "github.com/Parallels/prl-devops-service/models"
 )
 
-func (j *JsonDatabase) SetListSnapshotsByVMId(vmID string, listSnapshotResponse *apiModels.ListSnapshotResponse) error {
+func (j *JsonDatabase) SetListSnapshotsByVMId(vmID string, vmSnap models.VMSnapshot) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
 	}
@@ -13,49 +14,27 @@ func (j *JsonDatabase) SetListSnapshotsByVMId(vmID string, listSnapshotResponse 
 	j.dataMutex.Lock()
 	defer j.dataMutex.Unlock()
 
-	if j.data.VMSnapshots == nil {
-		j.data.VMSnapshots = make(map[string][]models.Snapshot)
+	for i, vmSnap := range j.data.VMSnapshots {
+		if vmSnap.VMId == vmID {
+			j.data.VMSnapshots[i] = vmSnap
+			return nil
+		}
 	}
-
-	for _, snapshot := range listSnapshotResponse.Snapshots {
-		j.data.VMSnapshots[vmID] = append(j.data.VMSnapshots[vmID], models.Snapshot{
-			ID:      snapshot.ID,
-			Name:    snapshot.Name,
-			Date:    snapshot.Date,
-			State:   snapshot.State,
-			Current: snapshot.Current,
-			Parent:  snapshot.Parent,
-		})
-	}
+	j.data.VMSnapshots = append(j.data.VMSnapshots, vmSnap)
 	return nil
 }
 
-func (j *JsonDatabase) GetListSnapshotsByVMId(vmID string) (*apiModels.ListSnapshotResponse, error) {
+func (j *JsonDatabase) GetListSnapshotsByVMId(vmID string) ([]models.Snapshot, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
 	}
 
 	j.dataMutex.RLock()
 	defer j.dataMutex.RUnlock()
-
-	if j.data.VMSnapshots == nil {
-		return nil, nil
+	for _, vmSnap := range j.data.VMSnapshots {
+		if vmSnap.VMId == vmID {
+			return vmSnap.Snapshots, nil
+		}
 	}
-
-	snaps, ok := j.data.VMSnapshots[vmID]
-	if !ok {
-		return nil, nil
-	}
-	resp := apiModels.ListSnapshotResponse{}
-	for i := range snaps {
-		resp.Snapshots = append(resp.Snapshots, apiModels.Snapshot{
-			ID:      snaps[i].ID,
-			Name:    snaps[i].Name,
-			Date:    snaps[i].Date,
-			State:   snaps[i].State,
-			Current: snaps[i].Current,
-			Parent:  snaps[i].Parent,
-		})
-	}
-	return &resp, nil
+	return nil, errors.New("snapshots not found for VM ID: " + vmID)
 }

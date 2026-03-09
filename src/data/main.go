@@ -46,7 +46,7 @@ type Data struct {
 	ReverseProxyHosts     []models.ReverseProxyHost     `json:"reverse_proxy_hosts"`
 	CatalogManagers       []models.CatalogManager       `json:"catalog_managers"`
 	Jobs                  []models.Job                  `json:"jobs"`
-	VMSnapshots           map[string][]models.Snapshot  `json:"vm_snapshots"`
+	VMSnapshots           []models.VMSnapshot           `json:"vm_snapshots"`
 }
 
 type JsonDatabase struct {
@@ -610,7 +610,7 @@ func (j *JsonDatabase) loadFromEmpty(ctx basecontext.ApiContext) error {
 		ApiKeys:          make([]models.ApiKey, 0),
 		PackerTemplates:  make([]models.PackerTemplate, 0),
 		ManifestsCatalog: make([]models.CatalogManifest, 0),
-		VMSnapshots:      make(map[string][]models.Snapshot),
+		VMSnapshots:      make([]models.VMSnapshot, 0),
 		CatalogManagers:  make([]models.CatalogManager, 0),
 		Jobs:             make([]models.Job, 0),
 	}

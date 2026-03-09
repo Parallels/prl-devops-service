@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"io/ioutil"
@@ -584,7 +583,25 @@ func (s *ParallelsService) InitSnapshotTreeInDB(ctx basecontext.ApiContext) {
 			ctx.LogErrorf("[parallelsdesktop][snapshots] Database service not available")
 			return
 		}
-		s.databaseService.SetListSnapshotsByVMId(vm.ID, snapshots)
+
+		var dtoSnapshots []data_models.Snapshot
+		if snapshots != nil {
+			for _, snap := range snapshots.Snapshots {
+				dtoSnapshots = append(dtoSnapshots, data_models.Snapshot{
+					ID:      snap.ID,
+					Name:    snap.Name,
+					Date:    snap.Date,
+					State:   snap.State,
+					Current: snap.Current,
+					Parent:  snap.Parent,
+				})
+			}
+		}
+
+		s.databaseService.SetListSnapshotsByVMId(vm.ID, data_models.VMSnapshot{
+			VMId:      vm.ID,
+			Snapshots: dtoSnapshots,
+		})
 	}
 }
 
@@ -593,7 +610,24 @@ func (s *ParallelsService) GetSnapshotsFromDB(ctx basecontext.ApiContext, vmID s
 		ctx.LogErrorf("[parallelsdesktop][snapshots] Database service not available")
 		return nil, nil
 	}
-	return s.databaseService.GetListSnapshotsByVMId(vmID)
+	
+	dbSnaps, err := s.databaseService.GetListSnapshotsByVMId(vmID)
+	if err != nil {
+		return nil, err
+	}
+	
+	resp := &models.ListSnapshotResponse{}
+	for _, snap := range dbSnaps {
+		resp.Snapshots = append(resp.Snapshots, models.Snapshot{
+			ID:      snap.ID,
+			Name:    snap.Name,
+			Date:    snap.Date,
+			State:   snap.State,
+			Current: snap.Current,
+			Parent:  snap.Parent,
+		})
+	}
+	return resp, nil
 }
 
 func (s *ParallelsService) updateVMIPInCache(ctx basecontext.ApiContext, vmID string) {
@@ -2468,9 +2502,9 @@ func (s *ParallelsService) ReplaceMacAddressInConfigPvs(path string) error {
 
 	fileMode := fileInfo.Mode()
 	// Get the file owner
-	sys := fileInfo.Sys().(*syscall.Stat_t)
-	uid := sys.Uid
-	gid := int(sys.Gid)
+	//sys := fileInfo.Sys().(*syscall.Stat_t)
+	//uid := sys.Uid
+	//gid := int(sys.Gid)
 
 	file, err := os.Open(filepath.Clean(configPath))
 	if err != nil {
@@ -2500,7 +2534,7 @@ func (s *ParallelsService) ReplaceMacAddressInConfigPvs(path string) error {
 	if err != nil {
 		return err
 	}
-	err = os.Chown(configPath, int(uid), int(gid))
+	//err = os.Chown(configPath, int(uid), int(gid))
 	if err != nil {
 		return err
 	}

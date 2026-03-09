@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
@@ -325,7 +326,23 @@ func (s *ParallelsService) processVmSnapshotsTreeChanged(ctx basecontext.ApiCont
 		ctx.LogErrorf("[parallelsdesktop][snapshots] Database service not available")
 		return
 	}
-	s.databaseService.SetListSnapshotsByVMId(event.VMID, snapshots)
+	var dtoSnaps []data_models.Snapshot
+	if snapshots != nil {
+		for _, snap := range snapshots.Snapshots {
+			dtoSnaps = append(dtoSnaps, data_models.Snapshot{
+				ID:      snap.ID,
+				Name:    snap.Name,
+				Date:    snap.Date,
+				State:   snap.State,
+				Current: snap.Current,
+				Parent:  snap.Parent,
+			})
+		}
+	}
+	s.databaseService.SetListSnapshotsByVMId(event.VMID, data_models.VMSnapshot{
+		VMId:      event.VMID,
+		Snapshots: dtoSnaps,
+	})
 
 	VmSnapshotsUpdatedEvent := models.VmSnapshotsUpdated{
 		VmID:      event.VMID,

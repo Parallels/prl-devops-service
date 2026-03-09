@@ -298,8 +298,12 @@ func (h *PDfMEventHandler) handleSnapshotsUpdated(ctx basecontext.ApiContext, ho
 		return
 	}
 
-	err = dbService.SetOrchestratorSnapshots(ctx, hostID, snapshotsUpdated.VmID,
-		models.ListSnapshotResponse{Snapshots: snapshotsUpdated.Snapshots})
+	var dbSnapshots []data_models.Snapshot
+	for i := range snapshotsUpdated.Snapshots {
+		dbSnapshots = append(dbSnapshots, mappers.SnapshotsToDto(&snapshotsUpdated.Snapshots[i]))
+	}
+
+	err = dbService.SetOrchestratorSnapshots(ctx, hostID, snapshotsUpdated.VmID, dbSnapshots)
 	if err != nil {
 		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] [snapshots] Error updating snapshots in DB for VM %s: %v", snapshotsUpdated.VmID, err)
 		return

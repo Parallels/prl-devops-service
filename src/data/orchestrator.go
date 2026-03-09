@@ -7,7 +7,6 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
-	apiModels "github.com/Parallels/prl-devops-service/models"
 )
 
 var (
@@ -707,35 +706,29 @@ func (j *JsonDatabase) GetOrchestratorSnapshots(ctx basecontext.ApiContext, host
 	return nil, ErrOrchestratorSnapshotsNotFound
 }
 
-func (j *JsonDatabase) SetOrchestratorSnapshots(ctx basecontext.ApiContext, hostId string, vmId string, snapshots apiModels.ListSnapshotResponse) error {
+func (j *JsonDatabase) SetOrchestratorSnapshots(ctx basecontext.ApiContext, hostId string, vmId string, snapshots []models.Snapshot) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
 	}
 
 	j.dataMutex.Lock()
 	defer j.dataMutex.Unlock()
-	hostFound := false
 	for i, orchSnap := range j.data.OrchestratorSnapshots {
 		if orchSnap.HostId == hostId {
-			snaps := []models.Snapshot{}
-			for _, snapshot := range snapshots.Snapshots {
-				snaps = append(snaps, models.Snapshot{
-					ID:      snapshot.ID,
-					Name:    snapshot.Name,
-					Date:    snapshot.Date,
-					State:   snapshot.State,
-					Current: snapshot.Current,
-					Parent:  snapshot.Parent,
-				})
+			if j.data.OrchestratorSnapshots[i].Snapshots == nil {
+				j.data.OrchestratorSnapshots[i].Snapshots = make(map[string][]models.Snapshot)
 			}
-			j.data.OrchestratorSnapshots[i].Snapshots[vmId] = snaps
-			hostFound = true
-			break
+			j.data.OrchestratorSnapshots[i].Snapshots[vmId] = snapshots
+			return nil
 		}
 	}
-	if !hostFound {
-		return ErrOrchestratorHostNotFound
-	}
+
+	j.data.OrchestratorSnapshots = append(j.data.OrchestratorSnapshots, models.OrchestratorSnapshot{
+		HostId: hostId,
+		Snapshots: map[string][]models.Snapshot{
+			vmId: snapshots,
+		},
+	})
 
 	return nil
 }
