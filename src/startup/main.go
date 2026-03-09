@@ -8,11 +8,12 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	"github.com/Parallels/prl-devops-service/logs"
-	"github.com/Parallels/prl-devops-service/notifications"
 	"github.com/Parallels/prl-devops-service/orchestrator"
 	"github.com/Parallels/prl-devops-service/reverse_proxy"
 	bruteforceguard "github.com/Parallels/prl-devops-service/security/brute_force_guard"
@@ -39,7 +40,7 @@ func Init(ctx basecontext.ApiContext) {
 
 	logs.SetupFileLogger(constants.DEFAULT_LOG_FILE_NAME, ctx)
 
-	_ = notifications.New(ctx)
+	_ = tracker.NewProgressService(ctx)
 
 	password.New(ctx)
 	jwt.New(ctx)
@@ -238,6 +239,34 @@ func Start(ctx basecontext.ApiContext) {
 
 	ctx.LogInfof("Starting Job Manager Service")
 	jobManagerService := jobs.New(ctx)
+
+	// Wire up the NotificationService → JobManager callbacks.
+	// We use the combined OnUpdateJobProgressAndSteps callback so that progress
+	// and the step snapshot are written to the DB in a single operation, which
+	// prevents the race condition where a separate UpdateJobProgress read could
+	// see stale (empty) steps that were written by a concurrent UpdateJobSteps.
+	if ns := tracker.GetProgressService(); ns != nil {
+		ns.OnUpdateJobProgressAndSteps = func(jobId string, percent int, state string, steps []data_models.JobStep) {
+			jobManagerService.UpdateJobProgressAndSteps(jobId, percent, constants.JobState(state), steps)
+		}
+		// Keep the legacy callbacks as fallbacks (called only when OnUpdateJobProgressAndSteps is nil)
+		ns.OnUpdateJobSteps = func(jobId string, steps []data_models.JobStep) {
+			jobManagerService.UpdateJobSteps(jobId, steps)
+		}
+		ns.OnUpdateJobProgress = func(jobId string, percent int, status string) {
+			jobManagerService.UpdateJobProgress(jobId, percent, constants.JobState(status))
+		}
+		ns.OnUpdateJobMessage = func(jobId string, message string) {
+			jobManagerService.UpdateJobMessage(jobId, message)
+		}
+		ns.OnUpdateJobResultRecord = func(jobId string, recordId string, recordType string) {
+			jobManagerService.UpdateJobResultRecord(jobId, recordId, recordType)
+		}
+		ns.OnInitJob = func(jobId string) {
+			jobManagerService.InitJob(jobId)
+		}
+	}
+
 	go func() {
 		if err := jobManagerService.Start(); err != nil {
 			ctx.LogErrorf("Error starting job manager service: %v", err)

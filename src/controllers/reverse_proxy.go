@@ -688,6 +688,8 @@ func UpdateReverseProxyHostHttpRouteOrderHandler() restapi.ControllerHandler {
 			return
 		}
 
+		go rps.BroadcastHostUpdated(id)
+
 		response := mappers.DtoReverseProxyHostToApi(*resultDto)
 		enrichHostWithVmDetails(ctx, &response)
 

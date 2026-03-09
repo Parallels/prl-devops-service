@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 )
 
-func Compress(ctx basecontext.ApiContext, path string, compressedFilename string, destination string) (string, error) {
+func Compress(ctx basecontext.ApiContext, path string, compressedFilename string, destination string, action string) (string, error) {
 	startingTime := time.Now()
 	tarFilename := compressedFilename
 	tarFilePath := filepath.Join(destination, filepath.Clean(tarFilename))
@@ -74,11 +74,12 @@ func Compress(ctx basecontext.ApiContext, path string, compressedFilename string
 			return err
 		}
 		if info.Size() > 0 {
-			ns := notifications.Get()
+			ns := tracker.GetProgressService()
 			percentage := float64(n) * 100 / float64(info.Size())
 			if ns != nil {
 				prefix := "Compressing file " + machineFilePath
-				msg := notifications.NewProgressNotificationMessage(compressedFilename, prefix, percentage)
+				msg := tracker.NewJobProgressMessage(compressedFilename, prefix, percentage).
+					SetCurrentAction(action)
 				ns.Notify(msg)
 			}
 		}

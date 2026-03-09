@@ -3,29 +3,33 @@ package writers
 import (
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 )
 
 type ProgressWriter struct {
-	ns             *notifications.NotificationService
+	ns             *tracker.JobProgressService
 	writer         io.Writer
 	correlationId  string
 	totalProcessed int64
 	size           int64
 	filename       string
 	prefix         string
+	jobId          string
+	currentAction  string
 	mu             sync.Mutex
 }
 
-func NewProgressWriter(writer io.Writer, size int64) *ProgressWriter {
+func NewProgressWriter(writer io.Writer, size int64, action string) *ProgressWriter {
 	return &ProgressWriter{
 		correlationId: helpers.GenerateId(),
-		ns:            notifications.Get(),
+		ns:            tracker.GetProgressService(),
 		writer:        writer,
 		size:          size,
+		currentAction: action,
 	}
 }
 
@@ -39,6 +43,14 @@ func (pr *ProgressWriter) SetPrefix(prefix string) {
 
 func (pr *ProgressWriter) SetCorrelationId(correlationId string) {
 	pr.correlationId = correlationId
+}
+
+func (pr *ProgressWriter) SetJobId(jobId string) {
+	pr.jobId = jobId
+}
+
+func (pr *ProgressWriter) SetCurrentAction(action string) {
+	pr.currentAction = action
 }
 
 func (pr *ProgressWriter) CorrelationId() string {
@@ -70,15 +82,18 @@ func (pw *ProgressWriter) WriteAt(p []byte, off int64) (n int, err error) {
 			percentage := float64(off*100) / float64(pw.size)
 			if pw.ns != nil {
 				prefix := pw.prefix
-				if prefix == "" {
-					prefix = "Processing"
-				}
 				if pw.filename != "" {
 					prefix = fmt.Sprintf("%s %s", prefix, pw.filename)
 				}
-				msg := notifications.NewProgressNotificationMessage(pw.correlationId, prefix, percentage).
-					SetCurrentSize(off).
-					SetTotalSize(pw.size)
+
+				if pw.jobId != "" && !strings.HasPrefix(prefix, "["+pw.jobId+"]") {
+					prefix = fmt.Sprintf("[%s] %s", pw.jobId, prefix)
+				}
+
+				msg := tracker.NewJobProgressMessage(pw.correlationId, prefix, percentage).
+					WithTransfer(off, pw.size).
+					WithJob(pw.jobId, pw.currentAction).
+					SetFilename(pw.filename)
 				pw.ns.Notify(msg)
 			}
 		}
@@ -97,15 +112,18 @@ func (pw *ProgressWriter) Write(p []byte) (int, error) {
 			percentage := float64(pw.totalProcessed*100) / float64(pw.size)
 			if pw.ns != nil {
 				prefix := pw.prefix
-				if prefix == "" {
-					prefix = "Processing"
-				}
 				if pw.filename != "" {
 					prefix = fmt.Sprintf("%s %s", prefix, pw.filename)
 				}
-				msg := notifications.NewProgressNotificationMessage(pw.correlationId, prefix, percentage).
-					SetCurrentSize(pw.totalProcessed).
-					SetTotalSize(pw.size)
+
+				if pw.jobId != "" && !strings.HasPrefix(prefix, "["+pw.jobId+"]") {
+					prefix = fmt.Sprintf("[%s] %s", pw.jobId, prefix)
+				}
+
+				msg := tracker.NewJobProgressMessage(pw.correlationId, prefix, percentage).
+					WithTransfer(pw.totalProcessed, pw.size).
+					WithJob(pw.jobId, pw.currentAction).
+					SetFilename(pw.filename)
 
 				pw.ns.Notify(msg)
 			}

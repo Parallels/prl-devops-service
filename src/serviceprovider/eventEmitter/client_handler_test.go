@@ -1,7 +1,6 @@
 package eventemitter
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/models"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,7 +18,7 @@ func TestClient_HandleClientMessage_InvalidFormat(t *testing.T) {
 	client := &Client{
 		ctx:  ctx,
 		ID:   "test-client",
-		Send: make(chan *models.EventMessage, 10),
+		done: make(chan struct{}),
 	}
 
 	// Message without type field
@@ -31,14 +29,16 @@ func TestClient_HandleClientMessage_InvalidFormat(t *testing.T) {
 		client.handleClientMessage(msg)
 	})
 
-	// Should send an error message back to client
-	select {
-	case errMsg := <-client.Send:
-		assert.Equal(t, constants.EventTypeGlobal, errMsg.Type)
-		assert.Equal(t, "error", errMsg.Message)
-	default:
+	// Should enqueue an error message
+	client.pendingMu.Lock()
+	pending := client.pending
+	client.pendingMu.Unlock()
+	if len(pending) == 0 {
 		t.Fatal("Expected error message for invalid format")
 	}
+	errMsg := pending[0]
+	assert.Equal(t, constants.EventTypeGlobal, errMsg.Type)
+	assert.Equal(t, "error", errMsg.Message)
 }
 
 func TestClient_HandleClientMessage_UnknownType(t *testing.T) {
@@ -46,7 +46,7 @@ func TestClient_HandleClientMessage_UnknownType(t *testing.T) {
 	client := &Client{
 		ctx:  ctx,
 		ID:   "test-client",
-		Send: make(chan *models.EventMessage, 10),
+		done: make(chan struct{}),
 	}
 
 	msg := []byte(`{"type": "unknown-message-type"}`)
@@ -55,14 +55,16 @@ func TestClient_HandleClientMessage_UnknownType(t *testing.T) {
 		client.handleClientMessage(msg)
 	})
 
-	// Should send an error message back to client (invalid type)
-	select {
-	case errMsg := <-client.Send:
-		assert.Equal(t, constants.EventTypeGlobal, errMsg.Type)
-		assert.Equal(t, "error", errMsg.Message)
-	default:
+	// Should enqueue an error message (invalid type)
+	client.pendingMu.Lock()
+	pending := client.pending
+	client.pendingMu.Unlock()
+	if len(pending) == 0 {
 		t.Fatal("Expected error message for unknown type")
 	}
+	errMsg := pending[0]
+	assert.Equal(t, constants.EventTypeGlobal, errMsg.Type)
+	assert.Equal(t, "error", errMsg.Message)
 }
 
 func TestClient_HandleClientMessage_Success(t *testing.T) {
@@ -82,7 +84,7 @@ func TestClient_HandleClientMessage_Success(t *testing.T) {
 	client := &Client{
 		ctx:  ctx,
 		ID:   "test-client-success",
-		Send: make(chan *models.EventMessage, 10),
+		done: make(chan struct{}),
 	}
 
 	// Valid message
@@ -146,7 +148,7 @@ func TestClient_ClientReader(t *testing.T) {
 		ID:      "test-reader",
 		Conn:    conn,
 		IsAlive: true,
-		Send:    make(chan *models.EventMessage, 10),
+		done:    make(chan struct{}),
 	}
 
 	// Run reader
@@ -170,20 +172,18 @@ func TestClient_ClientReader(t *testing.T) {
 	client.mu.Unlock()
 }
 
-func TestClient_ClientWriter(t *testing.T) {
+func TestClient_ClientQueueWorker_StopsOnDone(t *testing.T) {
 	// Save original global instance
 	originalEE := globalEventEmitter
 	defer func() { globalEventEmitter = originalEE }()
 
-	// Setup mock Hub
 	mockHub := &Hub{
-		clientToHub: make(chan hubCommand, 10),
+		clientToHub:  make(chan hubCommand, 10),
+		shutdownChan: make(chan struct{}),
 	}
-	globalEventEmitter = &EventEmitter{
-		hub: mockHub,
-	}
+	globalEventEmitter = &EventEmitter{hub: mockHub}
 
-	// Start test server
+	// Start test server that stays open long enough
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upgrader := websocket.Upgrader{}
 		conn, err := upgrader.Upgrade(w, r, nil)
@@ -191,24 +191,10 @@ func TestClient_ClientWriter(t *testing.T) {
 			return
 		}
 		defer conn.Close()
-
-		// Read message from client
-		_, msg, err := conn.ReadMessage()
-		if err != nil {
-			return
-		}
-
-		// Verify message content
-		var receivedMsg models.EventMessage
-		if err := json.Unmarshal(msg, &receivedMsg); err == nil {
-			if receivedMsg.Message == "test-message" {
-				// Success
-			}
-		}
+		time.Sleep(2 * time.Second)
 	}))
 	defer s.Close()
 
-	// Connect to server
 	url := "ws" + strings.TrimPrefix(s.URL, "http")
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	assert.NoError(t, err)
@@ -216,26 +202,25 @@ func TestClient_ClientWriter(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
 	client := &Client{
 		ctx:     ctx,
-		ID:      "test-writer",
+		ID:      "test-queue-worker",
 		Conn:    conn,
 		IsAlive: true,
-		Send:    make(chan *models.EventMessage, 10),
+		done:    make(chan struct{}),
 	}
 
-	// Run writer
-	go client.clientWriter()
+	workerDone := make(chan struct{})
+	go func() {
+		client.clientQueueWorker()
+		close(workerDone)
+	}()
 
-	// Send message
-	msg := models.NewEventMessage(constants.EventTypeHealth, "test-writer", nil)
-	msg.Message = "test-message"
-	client.Send <- msg
+	// Signal worker to stop via done channel
+	client.closeOnce.Do(func() { close(client.done) })
 
-	// Give time for write
-	time.Sleep(100 * time.Millisecond)
-
-	// Cleanup (closes channel which stops writer)
-	close(client.Send)
-
-	// Give time for writer to close connection
-	time.Sleep(50 * time.Millisecond)
+	select {
+	case <-workerDone:
+		// Worker stopped as expected
+	case <-time.After(2 * time.Second):
+		t.Fatal("clientQueueWorker did not stop after done channel closed")
+	}
 }

@@ -6,13 +6,15 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/compressor"
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -46,14 +48,30 @@ func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, 
 	atomic.StoreInt64(&s.totalDownloaded, 0)
 
 	startTime := time.Now()
-	ctx.LogInfof("Starting download for %s", request.Filename)
+
+	var logger interface {
+		LogInfof(format string, args ...interface{})
+		LogErrorf(format string, args ...interface{})
+		LogDebugf(format string, args ...interface{})
+	} = ctx
+
+	if request.Action == "" {
+		request.Action = constants.ActionDownloadingPackFile
+	}
+	action := request.Action
+
+	if request.NotificationService != nil && request.JobId != "" {
+		logger = request.NotificationService.WithJob(request.JobId, action)
+	}
+
+	logger.LogInfof("[Catalog] Starting download for %s", request.Filename)
 
 	// Use ctx.Context() for the provider calls
 	totalSize, err := s.downloader.GetFileSize(ctx.Context(), filepath.Join(request.Path, request.Filename))
 	if err != nil {
-		return fmt.Errorf("failed to get file size: %w", err)
+		return fmt.Errorf("[Catalog] failed to get file size for %s: %w", request.Filename, err)
 	}
-	ctx.LogInfof("Remote file %s size: %d bytes", request.Filename, totalSize)
+	logger.LogInfof("[Catalog] Remote file %s size: %d bytes", request.Filename, totalSize)
 
 	// Calculate total chunks
 	chunkSize := request.ChunkSize
@@ -61,7 +79,7 @@ func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, 
 		chunkSize = 100 * 1024 * 1024 // default 100MB chunks
 	}
 	totalChunks := (totalSize + chunkSize - 1) / chunkSize
-	ctx.LogInfof("Will download %d chunks, chunkSize=%d, workerCount=%d",
+	logger.LogInfof("[Catalog] Will download %d chunks, chunkSize=%d, workerCount=%d",
 		totalChunks, chunkSize, s.workerCount)
 
 	// Create new channels for each download
@@ -112,33 +130,33 @@ func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, 
 	}
 
 	// Start all goroutines
-	s.runManagerGoroutine(ctx, group, groupCtx, st, totalChunks, totalSize, startTime, request, &mu, cond, setGlobalError)
-	s.runStreamerGoroutine(ctx, group, st, totalChunks, w, &mu, cond, setGlobalError)
-	s.runDecompressorGoroutine(ctx, group, r, request.Destination, setGlobalError)
+	s.runManagerGoroutine(logger, ctx, group, groupCtx, st, totalChunks, totalSize, startTime, request, &mu, cond, setGlobalError)
+	s.runStreamerGoroutine(logger, ctx, group, st, totalChunks, w, &mu, cond, setGlobalError)
+	s.runDecompressorGoroutine(logger, ctx, group, r, request, setGlobalError)
 
 	// Wait for all goroutines
 	if err := group.Wait(); err != nil {
-		ctx.LogInfof("DownloadAndDecompress: error from goroutines: %v", err)
+		logger.LogInfof("[Catalog] [DownloadAndDecompress] error from goroutines: %v", err)
 		cleanupChunks()
 		return err
 	}
 
 	// Handle global error if set
 	if st.globalErr != nil {
-		ctx.LogInfof("DownloadAndDecompress: global error set: %v", st.globalErr)
+		logger.LogInfof("[Catalog] [DownloadAndDecompress] global error set: %v", st.globalErr)
 		cleanupChunks()
 		return st.globalErr
 	}
 
 	// Send final notification and cleanup
 	if request.NotificationService != nil {
-		finalMsg := notifications.NewProgressNotificationMessage(
-			request.CorrelationID,
-			request.MessagePrefix,
-			100,
-		).
-			SetCurrentSize(s.totalDownloaded).
-			SetTotalSize(totalSize).
+		prefix := request.MessagePrefix
+		if request.JobId != "" && !strings.HasPrefix(prefix, "["+request.JobId+"]") {
+			prefix = fmt.Sprintf("[%s] %s", request.JobId, prefix)
+		}
+		finalMsg := tracker.NewJobProgressMessage(request.CorrelationID, prefix, 100).
+			WithJob(request.JobId, action).
+			WithTransfer(s.totalDownloaded, totalSize).
 			SetStartingTime(startTime)
 		request.NotificationService.Notify(finalMsg)
 
@@ -146,11 +164,16 @@ func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, 
 		request.NotificationService.CleanupNotifications(request.CorrelationID)
 	}
 
-	ctx.LogInfof("Successfully downloaded and decompressed %s in %v", request.Filename, time.Since(startTime))
+	logger.LogInfof("[Catalog] Successfully downloaded and decompressed %s in %v", request.Filename, time.Since(startTime))
 	return nil
 }
 
 func (s *ChunkManagerService) runManagerGoroutine(
+	logger interface {
+		LogInfof(format string, args ...interface{})
+		LogErrorf(format string, args ...interface{})
+		LogDebugf(format string, args ...interface{})
+	},
 	ctx basecontext.ApiContext,
 	group *errgroup.Group,
 	groupCtx context.Context,
@@ -164,7 +187,7 @@ func (s *ChunkManagerService) runManagerGoroutine(
 	setGlobalError func(error),
 ) {
 	group.Go(func() error {
-		defer ctx.LogInfof("Manager goroutine exited")
+		defer logger.LogInfof("[Catalog] Manager goroutine exited")
 
 		for idx := 0; idx < int(totalChunks); idx++ {
 			mu.Lock()
@@ -182,6 +205,8 @@ func (s *ChunkManagerService) runManagerGoroutine(
 			mu.Unlock()
 
 			go s.downloadChunk(
+				logger,
+				ctx,
 				groupCtx,
 				request,
 				idx,
@@ -198,6 +223,11 @@ func (s *ChunkManagerService) runManagerGoroutine(
 }
 
 func (s *ChunkManagerService) runStreamerGoroutine(
+	logger interface {
+		LogInfof(format string, args ...interface{})
+		LogErrorf(format string, args ...interface{})
+		LogDebugf(format string, args ...interface{})
+	},
 	ctx basecontext.ApiContext,
 	group *errgroup.Group,
 	st *sharedState,
@@ -209,7 +239,7 @@ func (s *ChunkManagerService) runStreamerGoroutine(
 ) {
 	group.Go(func() error {
 		defer func() {
-			ctx.LogInfof("Streamer goroutine done, closing pipe writer")
+			logger.LogInfof("[Catalog] Streamer goroutine done, closing pipe writer")
 			_ = w.Close()
 		}()
 
@@ -226,7 +256,7 @@ func (s *ChunkManagerService) runStreamerGoroutine(
 				return ci.err
 			}
 
-			if err := s.writeChunkToPipe(ctx, ci, w, st, mu, cond); err != nil {
+			if err := s.writeChunkToPipe(logger, ctx, ci, w, st, mu, cond); err != nil {
 				setGlobalError(err)
 				return err
 			}
@@ -236,6 +266,11 @@ func (s *ChunkManagerService) runStreamerGoroutine(
 }
 
 func (s *ChunkManagerService) writeChunkToPipe(
+	logger interface {
+		LogInfof(format string, args ...interface{})
+		LogErrorf(format string, args ...interface{})
+		LogDebugf(format string, args ...interface{})
+	},
 	ctx basecontext.ApiContext,
 	ci chunkInfo,
 	w *io.PipeWriter,
@@ -245,17 +280,17 @@ func (s *ChunkManagerService) writeChunkToPipe(
 ) error {
 	chunkFile, err := os.Open(ci.filePath)
 	if err != nil {
-		return fmt.Errorf("streamer failed opening chunk %d: %w", ci.index, err)
+		return fmt.Errorf("[Catalog] streamer failed opening chunk %d: %w", ci.index, err)
 	}
 	defer chunkFile.Close()
 
 	_, copyErr := io.Copy(w, chunkFile)
 	if copyErr != nil {
-		return fmt.Errorf("streamer failed copying chunk %d: %w", ci.index, copyErr)
+		return fmt.Errorf("[Catalog] streamer failed copying chunk %d: %w", ci.index, copyErr)
 	}
 
 	if rmErr := os.Remove(ci.filePath); rmErr != nil {
-		ctx.LogInfof("failed to remove chunk file %s: %v", ci.filePath, rmErr)
+		logger.LogInfof("[Catalog] failed to remove chunk file %s: %v", ci.filePath, rmErr)
 	}
 
 	mu.Lock()
@@ -268,6 +303,12 @@ func (s *ChunkManagerService) writeChunkToPipe(
 }
 
 func (s *ChunkManagerService) downloadChunk(
+	logger interface {
+		LogInfof(format string, args ...interface{})
+		LogErrorf(format string, args ...interface{})
+		LogDebugf(format string, args ...interface{})
+	},
+	apiCtx basecontext.ApiContext,
 	ctx context.Context,
 	request DownloadRequest,
 	chunkIndex int,
@@ -329,13 +370,13 @@ func (s *ChunkManagerService) downloadChunk(
 				if percent > 100 {
 					percent = 100 // Cap at 100%
 				}
-				msg := notifications.NewProgressNotificationMessage(
-					request.CorrelationID,
-					request.MessagePrefix,
-					percent,
-				).
-					SetCurrentSize(downloaded).
-					SetTotalSize(totalSize).
+				prefix := request.MessagePrefix
+				if request.JobId != "" && !strings.HasPrefix(prefix, "["+request.JobId+"]") {
+					prefix = fmt.Sprintf("[%s] %s", request.JobId, prefix)
+				}
+				msg := tracker.NewJobProgressMessage(request.CorrelationID, prefix, percent).
+					WithJob(request.JobId, request.Action).
+					WithTransfer(downloaded, totalSize).
 					SetStartingTime(startTime)
 				request.NotificationService.Notify(msg)
 			}
@@ -367,22 +408,39 @@ func (s *ChunkManagerService) downloadChunk(
 }
 
 func (s *ChunkManagerService) runDecompressorGoroutine(
+	logger interface {
+		LogInfof(format string, args ...interface{})
+		LogErrorf(format string, args ...interface{})
+		LogDebugf(format string, args ...interface{})
+	},
 	ctx basecontext.ApiContext,
 	group *errgroup.Group,
 	r *io.PipeReader,
-	destination string,
+	request DownloadRequest,
 	setGlobalError func(error),
 ) {
 	group.Go(func() error {
-		defer ctx.LogInfof("Decompressor goroutine exited")
 		defer r.Close()
 
-		ctx.LogInfof("Starting decompression process")
-		if err := compressor.DecompressFromReader(ctx, r, destination); err != nil {
-			setGlobalError(err)
-			return fmt.Errorf("decompression failed: %w", err)
+		decompLogger := logger
+		if request.NotificationService != nil && request.JobId != "" {
+			decompLogger = request.NotificationService.WithJob(request.JobId, constants.ActionDecompressor)
 		}
-		ctx.LogInfof("Decompression completed successfully")
+
+		decompLogger.LogInfof("Starting decompression process")
+		if request.JobId != "" {
+			err := compressor.DecompressTarGzStream(ctx, r, "", request.Destination, request.JobId, constants.ActionDecompressor)
+			if err != nil {
+				setGlobalError(err)
+				return fmt.Errorf("decompression failed: %w", err)
+			}
+		} else {
+			if err := compressor.DecompressFromReader(ctx, r, request.Destination); err != nil {
+				setGlobalError(err)
+				return fmt.Errorf("decompression failed: %w", err)
+			}
+		}
+		decompLogger.LogInfof("Decompression completed successfully")
 		return nil
 	})
 }

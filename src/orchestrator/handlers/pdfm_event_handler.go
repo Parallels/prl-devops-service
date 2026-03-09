@@ -185,6 +185,7 @@ func (h *PDfMEventHandler) handleVmAdded(ctx basecontext.ApiContext, hostID stri
 
 	dtoVm := mappers.MapDtoVirtualMachineFromApi(vmAdded.NewVm)
 	dtoVm.HostId = host.ID
+	dtoVm.HostName = getHostName(*host)
 	dtoVm.Host = host.GetHost()
 	dtoVm.HostUrl = host.GetHostUrl()
 	host.VirtualMachines = append(host.VirtualMachines, dtoVm)
@@ -237,6 +238,7 @@ func (h *PDfMEventHandler) handleVmUpdated(ctx basecontext.ApiContext, hostID st
 	vmIndex := findVMIndex(host.VirtualMachines, vmUpdated.VmID)
 	dtoVm := mappers.MapDtoVirtualMachineFromApi(vmUpdated.NewVm)
 	dtoVm.HostId = host.ID
+	dtoVm.HostName = getHostName(*host)
 	dtoVm.Host = host.GetHost()
 	dtoVm.HostUrl = host.GetHostUrl()
 
@@ -282,4 +284,11 @@ func (h *PDfMEventHandler) handleVmUptimeChanged(ctx basecontext.ApiContext, hos
 	}
 
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_UPTIME_CHANGED", *uptimeChanged)
+}
+
+func getHostName(host data_models.OrchestratorHost) string {
+	if host.Description != "" {
+		return host.Description
+	}
+	return host.Host
 }

@@ -6,6 +6,7 @@ type VirtualMachine struct {
 	ID                    string                             `json:"ID,omitempty"`
 	HostUrl               string                             `json:"host_url,omitempty"`
 	HostId                string                             `json:"host_id,omitempty"`
+	HostName              string                             `json:"host_name,omitempty"`
 	HostState             string                             `json:"host_state,omitempty"`
 	User                  string                             `json:"user,omitempty"`
 	HostExternalIpAddress string                             `json:"host_external_ip_address,omitempty"`

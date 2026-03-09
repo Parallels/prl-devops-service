@@ -628,6 +628,18 @@ func (rps *ReverseProxyService) Handle(ctx basecontext.ApiContext, clientID stri
 	}
 }
 
+func (rps *ReverseProxyService) BroadcastHostUpdated(hostId string) {
+	if rps.State != ReverseProxyServiceStateStarted {
+		return
+	}
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "Reverse Proxy Route Updated", global_models.ReverseProxyRouteUpdatedEvent{
+			ReverseProxyHostId: hostId,
+		})
+		go func() { _ = emitter.Broadcast(msg) }()
+	}
+}
+
 func (rps *ReverseProxyService) listenTcpRoute(host *data_models.ReverseProxyHost, errorChan chan error) error {
 	if host.TcpRoute.TargetPort == "" {
 		return fmt.Errorf("[TCP Route] port is required for starting a tcp route")
