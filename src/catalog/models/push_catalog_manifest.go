@@ -33,9 +33,7 @@ type PushCatalogManifestRequest struct {
 	Tags                    []string               `json:"tags,omitempty"`
 	MinimumSpecRequirements MinimumSpecRequirement `json:"minimum_requirements,omitempty"`
 	PackSize                int64                  `json:"pack_size,omitempty"`
-	ProgressChannel         chan int               `json:"-"`
-	FileNameChannel         chan string            `json:"-"`
-	StepChannel             chan string            `json:"-"`
+	JobId                   string                 `json:"-"`
 }
 
 type ImportRemoteMachineRequest struct {

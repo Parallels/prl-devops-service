@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -120,44 +121,46 @@ func (s *ParallelsService) processEventsChannel(ctx basecontext.ApiContext) {
 
 func (s *ParallelsService) startAutoCacheRefresh(ctx basecontext.ApiContext) {
 	if !s.eventsProcessing {
-		s.ctx.LogInfof("[ParallelsDesktop] [Events] eventsProcessing is false, not starting forced cache refresh")
+		s.ctx.LogInfof("[ParallelsDesktop] [Events] eventsProcessing is false, not starting auto cache refresh")
 		return
 	}
 	cfg := config.Get()
 	interval := cfg.ForceCacheRefreshInterval()
-	ctx.LogInfof("[ParallelsDesktop] [Events] Starting forced cache refresh for Parallels VMs every %v", interval)
+	ctx.LogInfof("[ParallelsDesktop] [Events] Starting auto cache refresh for Parallels VMs every %v", interval)
 	ticker := time.NewTicker(interval)
+
 	go func() {
 		for {
 			select {
 			case <-s.listenerCtx.Done():
-				ctx.LogInfof("[ParallelsDesktop] [Events] Stopping forced cache refresh for Parallels VMs")
+				ctx.LogInfof("[ParallelsDesktop] [Events] Stopping auto cache refresh for Parallels VMs")
 				ticker.Stop()
 				return
 			case <-ticker.C:
 				s.RLock()
-				cachedVMs := s.cachedLocalVms
+				// Make a safe copy of the cache to compare against
+				cachedVMs := make([]models.ParallelsVM, len(s.cachedLocalVms))
+				copy(cachedVMs, s.cachedLocalVms)
 				s.RUnlock()
+
 				currentVMs, err := s.GetVms(ctx, "")
 				if err != nil {
 					ctx.LogErrorf("[ParallelsDesktop] [Events] Error getting current VMs: %v", err)
 					continue
 				}
+
+				needsRefresh := false
+
+				// Check 1: Length mismatch (VM added or deleted)
 				if len(cachedVMs) != len(currentVMs) {
 					ctx.LogWarnf(
 						"[ParallelsDesktop] [Events] This shouldn't happen: Cached VMs count %d does not match current VMs count %d, refreshing cache",
 						len(cachedVMs),
 						len(currentVMs),
 					)
-					s.Lock()
-					s.cachedLocalVms = currentVMs
-					for i := range s.cachedLocalVms {
-						s.updateVmInCache(ctx, &s.cachedLocalVms[i])
-					}
-					s.Unlock()
-
+					needsRefresh = true
 				} else {
-					// Compare cached VMs with current VMs stsus, if there is a mismatch refresh the cache
+					// Check 2: State mismatch
 					for _, cachedVM := range cachedVMs {
 						for _, currentVM := range currentVMs {
 							if cachedVM.ID == currentVM.ID && cachedVM.State != currentVM.State {
@@ -167,16 +170,35 @@ func (s *ParallelsService) startAutoCacheRefresh(ctx basecontext.ApiContext) {
 									cachedVM.State,
 									currentVM.State,
 								)
-								// so no need to continue rest of the comparison refresh the cache and break the loop
-								s.Lock()
-								s.cachedLocalVms = currentVMs
-								for i := range s.cachedLocalVms {
-									s.updateVmInCache(ctx, &s.cachedLocalVms[i])
-								}
-								s.Unlock()
+								needsRefresh = true
+								break // Break inner loop
 							}
 						}
+						if needsRefresh {
+							break // Break outer loop to avoid redundant logs
+						}
 					}
+				}
+
+				// If we found a mismatch in either check, execute the safe refresh
+				if needsRefresh {
+					// 1. SAFELY SWAP THE CACHE (No nested function calls!)
+					s.Lock()
+					s.cachedLocalVms = currentVMs
+					s.Unlock()
+
+					// 2. BROADCAST UPDATES (Without holding the lock)
+					go func(vmsToBroadcast []models.ParallelsVM) {
+						ee := eventemitter.Get()
+						if ee != nil && ee.IsRunning() {
+							for _, vm := range vmsToBroadcast {
+								_ = ee.BroadcastMessage(models.NewEventMessage(constants.EventTypePDFM, "VM_UPDATED", models.VmUpdated{
+									VmID:  vm.ID,
+									NewVm: vm,
+								}))
+							}
+						}
+					}(currentVMs)
 				}
 			}
 		}
@@ -230,6 +252,10 @@ func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, eve
 
 			ctx.LogInfof("[ParallelsDesktop] [Event] VM %s state changed: %s -> %s", vm.ID, prevState, newState)
 			s.cachedLocalVms[i].State = newState
+
+			// Add to fast state updates timestamp
+			s.fastStateUpdates[vm.ID] = time.Now()
+
 			found = true
 			break
 		}
@@ -252,6 +278,27 @@ func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, eve
 			}))
 		}
 	}()
+
+	// When a macOS VM finishes starting up, kick off async IP resolution.
+	// waitForVMSSHReady will probe SSH readiness before fetching the IP,
+	// so this is safe to call immediately without any extra delay.
+	if newState == "running" {
+		s.RLock()
+		var isMacOS bool
+		var vmName string
+		for _, vm := range s.cachedLocalVms {
+			if vm.ID == event.VMID {
+				isMacOS = vm.OS == "macosx" || strings.Contains(strings.ToLower(vm.Name), "mac")
+				vmName = vm.Name
+				break
+			}
+		}
+		s.RUnlock()
+		if isMacOS {
+			ctx.LogInfof("[ParallelsDesktop] [IP] VM %s (%s) is now running, scheduling IP resolution", event.VMID, vmName)
+			go s.updateVMIPInCache(ctx, event.VMID)
+		}
+	}
 }
 
 func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
@@ -410,13 +457,16 @@ func (s *ParallelsService) processPendingSyncs() {
 
 // syncVmTask handles the slow CLI execution and cache updating.
 func (s *ParallelsService) syncVmTask(vmID string) {
+	// Record exactly when we started asking PD for data
+	cmdStartTime := time.Now()
+
 	// 1. Fetch the new state (The slow path)
 	vm, err := s.getVmInMachine(s.ctx, vmID)
 
 	// 2. Update the cache
 	if err == nil {
 		s.ctx.LogDebugf("[ParallelsDesktop] [Debounce] Updating VM %s in cache", vm.ID)
-		s.updateVmInCache(s.ctx, vm)
+		s.updateVmInCache(s.ctx, vm, cmdStartTime)
 	} else {
 		s.ctx.LogErrorf("[ParallelsDesktop] [Debounce] Failed to get VM during debounce sync: %v", err)
 	}

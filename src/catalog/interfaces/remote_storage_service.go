@@ -8,7 +8,7 @@ type RemoteStorageService interface {
 	Name() string
 	Check(ctx basecontext.ApiContext, connection string) (bool, error)
 	CanStream() bool
-	SetProgressChannel(fileNameChannel chan string, progressChannel chan int, stepChannel chan string)
+	SetJobId(jobId string)
 	GetProviderRootPath(ctx basecontext.ApiContext) string
 	FileChecksum(ctx basecontext.ApiContext, path string, fileName string) (string, error)
 	FileSize(ctx basecontext.ApiContext, path string, fileName string) (int64, error)

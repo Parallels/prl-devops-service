@@ -49,14 +49,14 @@ func TestIsCached() error {
 		return err
 	}
 
-	cr := cacheservice.NewCacheRequest(ctx, &m, rss)
+	cacheRequest := cacheservice.NewCacheRequest(ctx, &m, rss, "")
 
 	cacheSvc, err := cacheservice.NewCacheService(ctx)
 	if err != nil {
 		ctx.LogErrorf("Error creating cache request: %v", err)
 		return err
 	}
-	cacheSvc.WithRequest(cr)
+	cacheSvc.WithRequest(cacheRequest)
 
 	if cacheSvc.IsCached() {
 		ctx.LogInfof("Catalog is cached")

@@ -19,17 +19,6 @@ import (
 func (p *PDFileService) runPush(ctx basecontext.ApiContext) (interface{}, *diagnostics.PDFileDiagnostics) {
 	ctx.DisableLog()
 
-	progressChannel := make(chan int)
-	fileNameChannel := make(chan string)
-	stepChannel := make(chan string)
-
-	defer close(progressChannel)
-	defer close(fileNameChannel)
-
-	progress := 0
-	currentProgress := 0
-	fileName := ""
-
 	diag := diagnostics.NewPDFileDiagnostics()
 	body := models.PushCatalogManifestRequest{
 		CatalogId:         p.pdfile.CatalogId,
@@ -42,9 +31,6 @@ func (p *PDFileService) runPush(ctx basecontext.ApiContext) (interface{}, *diagn
 		Tags:              p.pdfile.Tags,
 		CompressPack:      p.pdfile.CompressPack,
 		CompressPackLevel: p.pdfile.CompressPackLevel,
-		ProgressChannel:   progressChannel,
-		FileNameChannel:   fileNameChannel,
-		StepChannel:       stepChannel,
 		Connection:        p.pdfile.GetConnectionString(),
 	}
 
@@ -55,31 +41,6 @@ func (p *PDFileService) runPush(ctx basecontext.ApiContext) (interface{}, *diagn
 			Disk:   p.pdfile.MinimumSpecRequirements.Disk,
 		}
 	}
-
-	go func() {
-		for {
-			fileName = <-fileNameChannel
-		}
-	}()
-
-	go func() {
-		for {
-			step := <-stepChannel
-			clearLine()
-			fmt.Printf("\r%s", step)
-		}
-	}()
-
-	go func() {
-		for {
-			currentProgress = <-progressChannel
-			if currentProgress > progress {
-				progress = currentProgress
-				clearLine()
-				fmt.Printf("\rUploading %s: %d%%", fileName, progress)
-			}
-		}
-	}()
 
 	manifest := catalog.NewManifestService(ctx)
 	resultManifest := manifest.Push(&body)

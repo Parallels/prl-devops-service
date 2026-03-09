@@ -62,7 +62,7 @@ func TestHub_Shutdown(t *testing.T) {
 	client := &Client{
 		ctx:  ctx,
 		ID:   "test-client",
-		Send: make(chan *models.EventMessage, 10),
+		done: make(chan struct{}),
 	}
 	hub.clients["test-client"] = client
 	hub.clientsByIP["192.168.1.1"] = "test-client"
@@ -74,9 +74,13 @@ func TestHub_Shutdown(t *testing.T) {
 	assert.Empty(t, hub.clientsByIP)
 	assert.Empty(t, hub.subscriptions)
 
-	// Channel should be closed
-	_, ok := <-client.Send
-	assert.False(t, ok)
+	// done channel should be closed
+	select {
+	case <-client.done:
+		// expected
+	default:
+		t.Fatal("Expected client.done to be closed after shutdown")
+	}
 }
 
 func TestHub_BroadcastMessage_NoSubscribers(t *testing.T) {
@@ -131,52 +135,26 @@ func TestHub_UnsubscribeClientFromTypes_NotSubscribed(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestEventEmitter_SendToType_NotRunning(t *testing.T) {
+func TestEventEmitter_Broadcast_NotRunning_Hub(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
 	emitter := &EventEmitter{
 		ctx:       ctx,
 		isRunning: 0,
 	}
 
-	err := emitter.SendToType(constants.EventTypePDFM, "test", nil)
+	msg := models.NewEventMessage(constants.EventTypePDFM, "test", nil)
+	err := emitter.Broadcast(msg)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not running")
 }
 
-func TestEventEmitter_SendToClient_NotRunning(t *testing.T) {
-	ctx := basecontext.NewBaseContext()
-	emitter := &EventEmitter{
-		ctx:       ctx,
-		isRunning: 0,
-	}
-
-	err := emitter.SendToClient("client1", constants.EventTypePDFM, "test", nil)
-
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not running")
-}
-
-func TestEventEmitter_SendToAll_NotRunning(t *testing.T) {
-	ctx := basecontext.NewBaseContext()
-	emitter := &EventEmitter{
-		ctx:       ctx,
-		isRunning: 0,
-	}
-
-	err := emitter.SendToAll("test", nil)
-
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not running")
-}
-
-func TestEventEmitter_SendToType_Running(t *testing.T) {
+func TestEventEmitter_Broadcast_Running_NoSubscribers(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
 	hub := &Hub{
 		ctx:           ctx,
 		clients:       make(map[string]*Client),
 		subscriptions: make(map[constants.EventType]map[string]bool),
-		broadcast:     make(chan *models.EventMessage, 10),
 	}
 
 	emitter := &EventEmitter{
@@ -185,25 +163,24 @@ func TestEventEmitter_SendToType_Running(t *testing.T) {
 		isRunning: 1,
 	}
 
-	err := emitter.SendToType(constants.EventTypeOrchestrator, "test message", map[string]string{"key": "value"})
+	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test message", map[string]string{"key": "value"})
+	err := emitter.Broadcast(msg)
 
 	assert.NoError(t, err)
 }
 
-func TestEventEmitter_SendToClient_Running(t *testing.T) {
+func TestEventEmitter_Broadcast_Running_WithClient(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
 	hub := &Hub{
 		ctx:           ctx,
 		clients:       make(map[string]*Client),
 		subscriptions: make(map[constants.EventType]map[string]bool),
-		broadcast:     make(chan *models.EventMessage, 10),
 	}
 
-	// Add client to hub
 	client := &Client{
 		ctx:  ctx,
 		ID:   "client1",
-		Send: make(chan *models.EventMessage, 10),
+		done: make(chan struct{}),
 	}
 	hub.clients["client1"] = client
 	hub.subscriptions[constants.EventTypeOrchestrator] = map[string]bool{"client1": true}
@@ -214,64 +191,14 @@ func TestEventEmitter_SendToClient_Running(t *testing.T) {
 		isRunning: 1,
 	}
 
-	err := emitter.SendToClient("client1", constants.EventTypeOrchestrator, "test message", map[string]string{"key": "value"})
+	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test message", nil)
+	msg.ClientID = "client1"
+	err := emitter.Broadcast(msg)
 
 	assert.NoError(t, err)
-}
-
-func TestEventEmitter_SendToAll_Running(t *testing.T) {
-	ctx := basecontext.NewBaseContext()
-	hub := &Hub{
-		ctx:           ctx,
-		clients:       make(map[string]*Client),
-		subscriptions: make(map[constants.EventType]map[string]bool),
-		broadcast:     make(chan *models.EventMessage, 10),
-	}
-
-	emitter := &EventEmitter{
-		ctx:       ctx,
-		hub:       hub,
-		isRunning: 1,
-	}
-
-	err := emitter.SendToAll("test message", map[string]string{"key": "value"})
-
-	assert.NoError(t, err)
-}
-
-func TestEventEmitter_BroadcastMessage_NotRunning(t *testing.T) {
-	ctx := basecontext.NewBaseContext()
-	emitter := &EventEmitter{
-		ctx:       ctx,
-		isRunning: 0,
-	}
-
-	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test", nil)
-	err := emitter.BroadcastMessage(msg)
-
-	// Returns nil but logs warning
-	assert.NoError(t, err)
-}
-
-func TestEventEmitter_BroadcastMessage_Running(t *testing.T) {
-	ctx := basecontext.NewBaseContext()
-	hub := &Hub{
-		ctx:           ctx,
-		clients:       make(map[string]*Client),
-		subscriptions: make(map[constants.EventType]map[string]bool),
-		broadcast:     make(chan *models.EventMessage, 10),
-	}
-
-	emitter := &EventEmitter{
-		ctx:       ctx,
-		hub:       hub,
-		isRunning: 1,
-	}
-
-	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "test", map[string]string{"key": "value"})
-	err := emitter.BroadcastMessage(msg)
-
-	assert.NoError(t, err)
+	client.pendingMu.Lock()
+	assert.Len(t, client.pending, 1)
+	client.pendingMu.Unlock()
 }
 
 func TestEventEmitter_Shutdown_NilHub(t *testing.T) {
@@ -300,7 +227,7 @@ func TestHub_UnregisterClient_CleansUpEmptySubscriptions(t *testing.T) {
 	client := &Client{
 		ctx:  ctx,
 		ID:   "test-client",
-		Send: make(chan *models.EventMessage, 10),
+		done: make(chan struct{}),
 	}
 
 	hub.clients["test-client"] = client
@@ -325,21 +252,9 @@ func TestHub_BroadcastMessage_MultipleSubscribers(t *testing.T) {
 		subscriptions: make(map[constants.EventType]map[string]bool),
 	}
 
-	client1 := &Client{
-		ctx:  ctx,
-		ID:   "client1",
-		Send: make(chan *models.EventMessage, 10),
-	}
-	client2 := &Client{
-		ctx:  ctx,
-		ID:   "client2",
-		Send: make(chan *models.EventMessage, 10),
-	}
-	client3 := &Client{
-		ctx:  ctx,
-		ID:   "client3",
-		Send: make(chan *models.EventMessage, 10),
-	}
+	client1 := &Client{ctx: ctx, ID: "client1"}
+	client2 := &Client{ctx: ctx, ID: "client2"}
+	client3 := &Client{ctx: ctx, ID: "client3"}
 
 	hub.clients["client1"] = client1
 	hub.clients["client2"] = client2
@@ -359,7 +274,13 @@ func TestHub_BroadcastMessage_MultipleSubscribers(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Only client1 and client2 should receive
-	assert.Len(t, client1.Send, 1)
-	assert.Len(t, client2.Send, 1)
-	assert.Len(t, client3.Send, 0)
+	client1.pendingMu.Lock()
+	assert.Len(t, client1.pending, 1)
+	client1.pendingMu.Unlock()
+	client2.pendingMu.Lock()
+	assert.Len(t, client2.pending, 1)
+	client2.pendingMu.Unlock()
+	client3.pendingMu.Lock()
+	assert.Len(t, client3.pending, 0)
+	client3.pendingMu.Unlock()
 }

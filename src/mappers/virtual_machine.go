@@ -8,6 +8,7 @@ import (
 func MapDtoVirtualMachineFromApi(m models.ParallelsVM) data_models.VirtualMachine {
 	mapped := data_models.VirtualMachine{
 		HostId:                m.HostId,
+		HostName:              m.HostName,
 		Host:                  m.Host,
 		HostState:             m.HostState,
 		HostExternalIpAddress: m.HostExternalIpAddress,
@@ -61,6 +62,7 @@ func MapDtoVirtualMachineFromApi(m models.ParallelsVM) data_models.VirtualMachin
 func MapDtoVirtualMachineToApi(m data_models.VirtualMachine) models.ParallelsVM {
 	mapped := models.ParallelsVM{
 		HostId:                m.HostId,
+		HostName:              m.HostName,
 		Host:                  m.Host,
 		HostUrl:               m.HostUrl,
 		HostState:             m.HostState,
