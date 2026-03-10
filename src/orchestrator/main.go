@@ -371,7 +371,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 	s.ctx.LogInfof("[Orchestrator] Host %s has %v CPU Cores and %v Mb of RAM, contains %v VMs of which %v are MacVMs", host.Host, host.Resources.Total.LogicalCpuCount, host.Resources.Total.MemorySize, len(host.VirtualMachines), host.Resources.TotalAppleVms)
 
 	for _, vm := range host.VirtualMachines {
-		listSnapshotResponse, err := s.GetHostVirtualMachineSnapshots(s.ctx, host.ID, vm.ID, false)
+		listSnapshotResponse, err := s.GetHostVirtualMachineSnapshotsWithAPI(s.ctx, host.ID, vm.ID, false)
 		if err != nil {
 			s.ctx.LogErrorf("[Orchestrator] Error getting snapshots for VM %s: %v", vm.ID, err.Error())
 		}

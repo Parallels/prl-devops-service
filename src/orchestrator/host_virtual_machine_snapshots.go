@@ -43,6 +43,29 @@ func (s *OrchestratorService) validateHostAndVM(ctx basecontext.ApiContext, host
 	return host, vm, nil
 }
 
+// GetHostVirtualMachineSnapshotsWithAPI lists all snapshots for a virtual machine on an orchestrator host
+func (s *OrchestratorService) GetHostVirtualMachineSnapshotsWithAPI(ctx basecontext.ApiContext, hostId string, vmId string, noCache bool) (*apimodels.ListSnapshotResponse, error) {
+	host, vm, err := s.validateHostAndVM(ctx, hostId, vmId, noCache)
+	if err != nil {
+		return nil, err
+	}
+
+	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(2 * time.Minute)
+	path := "/machines/" + vm.ID + "/snapshots"
+	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
+	if err != nil {
+		return nil, err
+	}
+
+	var response apimodels.ListSnapshotResponse
+	_, err = httpClient.Get(url.String(), &response)
+	if err != nil {
+		return nil, err
+	}
+	return &response, nil
+}
+
 // GetHostVirtualMachineSnapshots lists all snapshots for a virtual machine on an orchestrator host
 func (s *OrchestratorService) GetHostVirtualMachineSnapshots(ctx basecontext.ApiContext, hostId string, vmId string, noCache bool) (*apimodels.ListSnapshotResponse, error) {
 	orchestratorSnapshot, err := s.db.GetOrchestratorSnapshots(ctx, hostId)
