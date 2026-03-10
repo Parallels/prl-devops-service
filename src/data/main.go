@@ -604,15 +604,16 @@ func (j *JsonDatabase) loadFromEmpty(ctx basecontext.ApiContext) error {
 	ctx.LogInfof("[Database] Database file is empty, creating new file")
 	j.dataMutex.Lock()
 	j.data = Data{
-		Users:            make([]models.User, 0),
-		Claims:           make([]models.Claim, 0),
-		Roles:            make([]models.Role, 0),
-		ApiKeys:          make([]models.ApiKey, 0),
-		PackerTemplates:  make([]models.PackerTemplate, 0),
-		ManifestsCatalog: make([]models.CatalogManifest, 0),
-		VMSnapshots:      make([]models.VMSnapshot, 0),
-		CatalogManagers:  make([]models.CatalogManager, 0),
-		Jobs:             make([]models.Job, 0),
+		Users:                 make([]models.User, 0),
+		Claims:                make([]models.Claim, 0),
+		Roles:                 make([]models.Role, 0),
+		ApiKeys:               make([]models.ApiKey, 0),
+		PackerTemplates:       make([]models.PackerTemplate, 0),
+		ManifestsCatalog:      make([]models.CatalogManifest, 0),
+		OrchestratorSnapshots: make([]models.OrchestratorSnapshot, 0),
+		VMSnapshots:           make([]models.VMSnapshot, 0),
+		CatalogManagers:       make([]models.CatalogManager, 0),
+		Jobs:                  make([]models.Job, 0),
 	}
 	j.dataMutex.Unlock()
 

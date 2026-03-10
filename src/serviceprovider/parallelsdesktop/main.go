@@ -2696,7 +2696,7 @@ func (s *ParallelsService) ReplaceMacAddressInConfigPvs(path string) error {
 	if err != nil {
 		return err
 	}
-	//err = os.Chown(configPath, int(uid), int(gid))
+	err = os.Chown(configPath, int(uid), int(gid))
 	if err != nil {
 		return err
 	}
