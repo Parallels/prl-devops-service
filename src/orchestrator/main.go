@@ -315,6 +315,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 	for _, vm := range vms {
 		dtoVm := mappers.MapDtoVirtualMachineFromApi(vm)
 		dtoVm.HostId = host.ID
+		dtoVm.HostName = getHostName(host)
 		dtoVm.Host = host.GetHost()
 		dtoVm.HostUrl = host.GetHostUrl()
 		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
@@ -324,6 +325,26 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 	for _, vm := range host.VirtualMachines {
 		if vm.Type == "APPLE_VZ_VM" {
 			totalAppleVms++
+		}
+	}
+
+	host.ReverseProxyHosts = make([]*models.ReverseProxyHost, 0)
+	// Updating the reverse proxy hosts
+	rpConfig, err := s.CallGetHostReverseProxyConfig(&host)
+	if err == nil && rpConfig != nil {
+		host.ReverseProxy = &models.ReverseProxy{
+			ID:      rpConfig.ID,
+			Host:    rpConfig.Host,
+			Port:    rpConfig.Port,
+			HostID:  host.ID,
+			Enabled: rpConfig.Enabled,
+		}
+		// Getting all of the hosts in the reverse proxy config
+		hosts, err := s.CallGetHostReverseProxyHosts(&host)
+		if err == nil && hosts != nil {
+			for _, rpHost := range hosts {
+				host.ReverseProxyHosts = append(host.ReverseProxyHosts, rpHost)
+			}
 		}
 	}
 
@@ -443,4 +464,11 @@ func (s *OrchestratorService) RefreshHostCache(hostId string) {
 
 func (s *OrchestratorService) SetHealthCheckTimeout(timeout time.Duration) {
 	s.healthCheckTimeout = timeout
+}
+
+func getHostName(host models.OrchestratorHost) string {
+	if host.Description != "" {
+		return host.Description
+	}
+	return host.Host
 }

@@ -18,8 +18,8 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	global_models "github.com/Parallels/prl-devops-service/models"
-	"github.com/Parallels/prl-devops-service/notifications"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/cjlapao/common-go/helper"
 )
@@ -36,19 +36,21 @@ type CacheRequest struct {
 	ApiContext           basecontext.ApiContext
 	Manifest             *models.VirtualMachineCatalogManifest
 	RemoteStorageService interfaces.RemoteStorageService
+	JobId                string
 }
 
-func NewCacheRequest(ctx basecontext.ApiContext, catalogManifest *models.VirtualMachineCatalogManifest, rss interfaces.RemoteStorageService) CacheRequest {
+func NewCacheRequest(ctx basecontext.ApiContext, catalogManifest *models.VirtualMachineCatalogManifest, rss interfaces.RemoteStorageService, jobId string) CacheRequest {
 	return CacheRequest{
 		ApiContext:           ctx,
 		Manifest:             catalogManifest,
 		RemoteStorageService: rss,
+		JobId:                jobId,
 	}
 }
 
 type CacheService struct {
 	notificationChannel chan string
-	notifications       *notifications.NotificationService
+	ns                  *tracker.JobProgressService
 	cfg                 *config.Config
 	baseCtx             basecontext.ApiContext
 	rss                 interfaces.RemoteStorageService
@@ -67,6 +69,7 @@ type CacheService struct {
 	CacheManifest       models.VirtualMachineCatalogManifest
 	cacheData           *models.CacheResponse
 	cleanupservice      *cleanupservice.CleanupService
+	JobId               string
 }
 
 func NewCacheService(ctx basecontext.ApiContext) (*CacheService, error) {
@@ -75,7 +78,7 @@ func NewCacheService(ctx basecontext.ApiContext) (*CacheService, error) {
 		cfg:            config.Get(),
 		CacheType:      models.CatalogCacheTypeNone,
 		cleanupservice: cleanupservice.NewCleanupService(),
-		notifications:  notifications.Get(),
+		ns:             tracker.GetProgressService(),
 	}
 
 	// checking if we have a size for the vm, if not we will set a default size
@@ -109,6 +112,7 @@ func (cs *CacheService) WithRequest(r CacheRequest) error {
 	cs.baseCtx = r.ApiContext
 	cs.packFilename = r.Manifest.PackFile
 	cs.metadataFilename = r.Manifest.MetadataFile
+	cs.JobId = r.JobId
 	// getting the checksum of the file from the remote storage provider
 	if checksum, err := r.RemoteStorageService.FileChecksum(cs.baseCtx, r.Manifest.Path, r.Manifest.PackFile); err != nil {
 		err := errors.NewWithCode("Error getting checksum for file", 500)
@@ -146,7 +150,7 @@ func (cs *CacheService) cachedMetadataFilePath() string {
 }
 
 func (cs *CacheService) notify(message string) {
-	cs.notifications.NotifyInfo(message)
+	cs.ns.NotifyInfo(message)
 }
 
 func (cs *CacheService) getCacheTotalSize() (int64, error) {
@@ -516,7 +520,7 @@ func (cs *CacheService) processCacheFileWithoutStream() (string, error) {
 	// checking if the pack file is compressed or not if it is we will decompress it to the destination folder
 	// and remove the pack file from the cache folder if not we will just rename the pack file to the checksum
 	if cs.manifest.IsCompressed || strings.HasSuffix(cs.manifest.PackFile, ".pdpack") {
-		if err := compressor.DecompressFile(cs.baseCtx, destinationFile, tempDir); err != nil {
+		if err := compressor.DecompressFileWithStepChannel(cs.baseCtx, destinationFile, tempDir, nil, cs.JobId, constants.ActionDecompressingPackFile); err != nil {
 			return destinationFolder, err
 		}
 
@@ -827,9 +831,8 @@ func (cs *CacheService) Clean() error {
 }
 
 func (cs *CacheService) Cache() error {
-	// First let's get the catalog manifest file from the remote storage into memory as the local cache will be a different file based on this
-	cs.notify("Downloading catalog manifest file")
-
+	// Setting the initial progress to 1 for the download step
+	cs.ns.UpdateStepMessagef(cs.JobId, constants.ActionDownloader, "Starting to download the pack file")
 	if err := cs.rss.PullFile(cs.baseCtx, cs.manifest.Path, cs.manifest.MetadataFile, cs.cacheFolder); err != nil {
 		return err
 	}

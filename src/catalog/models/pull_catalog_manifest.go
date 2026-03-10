@@ -32,9 +32,6 @@ type PullCatalogManifestRequest struct {
 	StartAfterPull     bool              `json:"start_after_pull,omitempty"`
 	JobId              string            `json:"job_id,omitempty"`
 	LocalMachineFolder string            `json:"-"`
-	ProgressChannel    chan int          `json:"-"`
-	FileNameChannel    chan string       `json:"-"`
-	StepChannel        chan string       `json:"-"`
 	FromPdf            bool              `json:"-"`
 	AmplitudeEvent     string            `json:"client,omitempty"`
 }

@@ -3,7 +3,6 @@ package stats
 import (
 	"runtime"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -100,16 +99,11 @@ func (s *StatsService) collectAndBroadcast(ctx basecontext.ApiContext) {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 
-	var rUsage syscall.Rusage
-	err := syscall.Getrusage(syscall.RUSAGE_SELF, &rUsage)
+	userTime, systemTime, err := getCPUTimes()
 	if err != nil {
-		ctx.LogWarnf("[StatsService] Failed to get rusage: %v", err)
+		ctx.LogWarnf("[StatsService] Failed to get CPU times: %v", err)
 		return
 	}
-
-	// Convert Timeval to seconds (float64)
-	userTime := float64(rUsage.Utime.Sec) + float64(rUsage.Utime.Usec)/1e6
-	systemTime := float64(rUsage.Stime.Sec) + float64(rUsage.Stime.Usec)/1e6
 
 	stats := StatsMessage{
 		Memory:        memStats.Alloc,

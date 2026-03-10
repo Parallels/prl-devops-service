@@ -107,9 +107,9 @@ func (j *JsonDatabase) UpdateJob(ctx basecontext.ApiContext, key models.Job) err
 		if job.ID == key.ID {
 			j.data.Jobs[i].State = key.State
 			j.data.Jobs[i].Progress = key.Progress
-			j.data.Jobs[i].Action = key.Action
 			j.data.Jobs[i].Result = key.Result
 			j.data.Jobs[i].Error = key.Error
+			j.data.Jobs[i].Steps = key.Steps
 			j.data.Jobs[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
 			return nil
 		}
@@ -128,17 +128,22 @@ func (j *JsonDatabase) DeleteJob(ctx basecontext.ApiContext, id string) error {
 	}
 
 	j.dataMutex.Lock()
-	defer j.dataMutex.Unlock()
-
+	found := false
 	for i, job := range j.data.Jobs {
 		if strings.EqualFold(job.ID, id) {
 			j.data.Jobs = append(j.data.Jobs[:i], j.data.Jobs[i+1:]...)
-			_ = j.SaveNow(ctx)
-			return nil
+			found = true
+			break
 		}
 	}
+	j.dataMutex.Unlock()
 
-	return ErrJobNotFound
+	if !found {
+		return ErrJobNotFound
+	}
+
+	_ = j.SaveNow(ctx)
+	return nil
 }
 
 func (j *JsonDatabase) DeleteJobsByState(ctx basecontext.ApiContext, states ...constants.JobState) error {
@@ -171,6 +176,7 @@ func (j *JsonDatabase) RecoverOngoingJobs(ctx basecontext.ApiContext) {
 		return
 	}
 
+	j.dataMutex.Lock()
 	updated := false
 	for i, job := range j.data.Jobs {
 		if job.State == constants.JobStateRunning || job.State == constants.JobStatePending {
@@ -180,6 +186,7 @@ func (j *JsonDatabase) RecoverOngoingJobs(ctx basecontext.ApiContext) {
 			updated = true
 		}
 	}
+	j.dataMutex.Unlock()
 
 	if updated {
 		ctx.LogInfof("[Database] Recovered and failed ongoing jobs after restart")

@@ -52,6 +52,10 @@ var (
 const cooldownDelay = 2 * time.Second
 const eventWorkerTicker = 1 * time.Second
 
+// maxConcurrentSSH is the maximum number of simultaneous prlctl exec SSH logon
+// attempts. macOS enforces a hard cap on simultaneous logons, so we keep this low.
+const maxConcurrentSSH = 2
+
 type ParallelsService struct {
 	ctx              basecontext.ApiContext
 	eventsProcessing bool
@@ -64,7 +68,17 @@ type ParallelsService struct {
 	// inFlight tracks VMs currently running prlctl (prevents overlapping commands)
 	inFlight map[string]struct{}
 	// cooldown prevents the hypervisor echo loop
-	cooldown         map[string]time.Time
+	cooldown map[string]time.Time
+	// ipLastFetched tracks the last time we ran prlctl exec to fetch a macOS VM IP.
+	// This prevents concurrent SSH logon floods when many cache refreshes and events
+	// fire simultaneously (macOS enforces a hard cap on simultaneous logon attempts).
+	ipLastFetched map[string]time.Time
+	// sshSem is a semaphore that caps the number of simultaneous prlctl exec SSH
+	// operations (waitForVMSSHReady probes + IP fetches) across all VMs.
+	sshSem chan struct{}
+	// fastStateUpdates is used for the fast state updates that we do not need to the
+	// prlctl command and can update the database
+	fastStateUpdates map[string]time.Time
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
@@ -100,9 +114,12 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 		// Initialize maps for the debounce and cooldown logic
 		// this will allow us to deduplicate events and prevent the echo loop
 		// also will prevent multiple prlctl commands from being executed at the same time
-		pending:  make(map[string]struct{}),
-		inFlight: make(map[string]struct{}),
-		cooldown: make(map[string]time.Time),
+		pending:          make(map[string]struct{}),
+		inFlight:         make(map[string]struct{}),
+		cooldown:         make(map[string]time.Time),
+		ipLastFetched:    make(map[string]time.Time),
+		fastStateUpdates: make(map[string]time.Time),
+		sshSem:           make(chan struct{}, maxConcurrentSSH),
 
 		// registered to the event listener to allow us to cancel it when needed
 		listenerCtx: listenerCtx,
@@ -510,7 +527,7 @@ func (s *ParallelsService) IsLicensed() bool {
 	return s.isLicensed
 }
 
-func (s *ParallelsService) updateVmInCache(ctx basecontext.ApiContext, newVm *models.ParallelsVM) {
+func (s *ParallelsService) updateVmInCache(ctx basecontext.ApiContext, newVm *models.ParallelsVM, syncStartTime time.Time) {
 	s.Lock()
 	defer s.Unlock()
 	found := false
@@ -518,18 +535,28 @@ func (s *ParallelsService) updateVmInCache(ctx basecontext.ApiContext, newVm *mo
 
 	for i, cachedVm := range s.cachedLocalVms {
 		if cachedVm.ID == newVm.ID {
-			// RACE CONDITION PROTECTION:
-			// If the UI just set the state to "starting" (Fast Path), but our slow prlctl list
-			// finally returned and says it's "stopped", we KEEP the "starting" state because it's newer.
-			isCachedTransitional := cachedVm.State == "starting" || cachedVm.State == "stopping" ||
-				cachedVm.State == "resuming" || cachedVm.State == "suspending"
+			// // RACE CONDITION PROTECTION:
+			// // If the UI just set the state to "starting" (Fast Path), but our slow prlctl list
+			// // finally returned and says it's "stopped", we KEEP the "starting" state because it's newer.
+			// isCachedTransitional := cachedVm.State == "starting" || cachedVm.State == "stopping" ||
+			// 	cachedVm.State == "resuming" || cachedVm.State == "suspending"
 
-			isNewStatic := newVm.State == "stopped" || newVm.State == "running" ||
-				newVm.State == "paused" || newVm.State == "suspended"
+			// isNewStatic := newVm.State == "stopped" || newVm.State == "running" ||
+			// 	newVm.State == "paused" || newVm.State == "suspended"
 
-			if isCachedTransitional && isNewStatic {
-				ctx.LogInfof("[ParallelsDesktop] [Event] Preserving newer transitional state '%s' over older static state '%s'", cachedVm.State, newVm.State)
-				newVm.State = cachedVm.State // Preserve the intermediate state!
+			// if isCachedTransitional && isNewStatic {
+			// 	ctx.LogInfof("[ParallelsDesktop] [Event] Preserving newer transitional state '%s' over older static state '%s'", cachedVm.State, newVm.State)
+			// 	newVm.State = cachedVm.State // Preserve the intermediate state!
+			// }
+
+			// the deterministic timestamp shield to avoid loosing some of the fast path updates
+			if lastFastUpdate, exists := s.fastStateUpdates[newVm.ID]; exists {
+				// If the Fast Path updated the state AFTER we started our slow prlctl command...
+				// The Fast Path is newer and more accurate. Reject the slow path's state!
+				if lastFastUpdate.After(syncStartTime) {
+					ctx.LogInfof("[ParallelsDesktop] [Cache] Shielding newer fast-path state '%s' from older slow-path state '%s'", cachedVm.State, newVm.State)
+					newVm.State = cachedVm.State // Preserve the fast path state!
+				}
 			}
 
 			// DIFF ENGINE: Classify the change
@@ -610,12 +637,12 @@ func (s *ParallelsService) GetSnapshotsFromDB(ctx basecontext.ApiContext, vmID s
 		ctx.LogErrorf("[parallelsdesktop][snapshots] Database service not available")
 		return nil, nil
 	}
-	
+
 	dbSnaps, err := s.databaseService.GetListSnapshotsByVMId(vmID)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	resp := &models.ListSnapshotResponse{}
 	for _, snap := range dbSnaps {
 		resp.Snapshots = append(resp.Snapshots, models.Snapshot{
@@ -630,63 +657,137 @@ func (s *ParallelsService) GetSnapshotsFromDB(ctx basecontext.ApiContext, vmID s
 	return resp, nil
 }
 
-func (s *ParallelsService) updateVMIPInCache(ctx basecontext.ApiContext, vmID string) {
-	status, err := s.VmStatus(ctx, vmID)
-	if err != nil {
-		ctx.LogErrorf("Failed to get VM status for IP update: %v", err)
-		return
+// waitForVMSSHReady probes a macOS VM's SSH readiness by executing a trivial command
+// via prlctl exec. It retries every 3 seconds for up to 30 seconds total.
+// Returns true as soon as the command succeeds, false if the timeout is exceeded.
+// This is safe to call from any goroutine and has no side-effects on the cache.
+func (s *ParallelsService) waitForVMSSHReady(ctx basecontext.ApiContext, vmID, username string) bool {
+	const (
+		retryInterval = 5 * time.Second
+		totalTimeout  = 30 * time.Second
+	)
+	ctx.LogInfof("[ParallelsDesktop] [SSH] Waiting for VM %s SSH to become ready (timeout: %v)", vmID, totalTimeout)
+	deadline := time.Now().Add(totalTimeout)
+	for time.Now().Before(deadline) {
+		s.sshSem <- struct{}{}
+		cmd := helpers.Command{
+			Command: s.executable,
+			Args:    []string{"exec", vmID, "echo", "hello"},
+		}.AsUser(username)
+		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, retryInterval)
+		<-s.sshSem
+		if err == nil {
+			ctx.LogInfof("[ParallelsDesktop] [SSH] VM %s is ready for SSH commands", vmID)
+			return true
+		}
+		ctx.LogDebugf("[ParallelsDesktop] [SSH] VM %s not ready yet (%v), retrying in %v", vmID, err, retryInterval)
+		time.Sleep(retryInterval)
 	}
+	ctx.LogWarnf("[ParallelsDesktop] [SSH] VM %s did not become ready within %v", vmID, totalTimeout)
+	return false
+}
 
-	s.Lock()
-	defer s.Unlock()
-	for i, cachedVm := range s.cachedLocalVms {
-		if cachedVm.ID == vmID {
-			if len(s.cachedLocalVms[i].NetworkInformation.IPAddresses) == 0 && s.cachedLocalVms[i].State == "running" {
-				ctx.LogErrorf("VM %s is running but has no IP addresses seems like Prallels Tools is not installed", vmID)
-			}
-			for j, ip := range s.cachedLocalVms[i].NetworkInformation.IPAddresses {
-				if strings.ToLower(ip.Type) == "ipv4" {
-					s.cachedLocalVms[i].NetworkInformation.IPAddresses[j].IP = status.IPConfigured
-				}
-				if (s.cachedLocalVms[i].State == "running" && s.cachedLocalVms[i].NetworkInformation.IPAddresses[j].IP == "-") &&
-					(s.cachedLocalVms[i].OS == "macosx" || strings.Contains(s.cachedLocalVms[i].Name, "mac")) {
-					cmd := helpers.Command{
-						Command: s.executable,
-						Args:    []string{"exec", s.cachedLocalVms[i].ID, "ipconfig", "getifaddr", "en0"},
-					}.AsUser(s.cachedLocalVms[i].User)
-					ctx.LogDebugf("Executing command to get internal ip address: %s", cmd.String())
-					out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
-					if err == nil {
-						ip := strings.TrimSpace(out)
-						ctx.LogDebugf("Got internal IP address %s for VM %s using command execution", ip, vmID)
-						if ip != "" {
-							s.cachedLocalVms[i].InternalIpAddress = ip
-							ctx.LogInfof("Updated VM internal IP in cache for VM %s to %s", vmID, ip)
-						}
-					} else {
-						ctx.LogErrorf("Failed to get internal IP address for VM %s: %v", vmID, err)
-					}
-				}
-				break
-			}
-
-			ctx.LogInfof("Updated VM IP in cache for VM %s to %s", vmID, status.IPConfigured)
-			VmUpdatedEvent := models.VmUpdated{
-				VmID:  vmID,
-				NewVm: s.cachedLocalVms[i],
-			}
-
-			go func() {
-				if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
-					msg := models.NewEventMessage(constants.EventTypePDFM, "VM_UPDATED", VmUpdatedEvent)
-					if err := ee.BroadcastMessage(msg); err != nil {
-						ctx.LogErrorf("Error broadcasting VM updated event: %v", err)
-					}
-				}
-			}()
+// updateVMIPInCache resolves the internal IP of a macOS VM via `prlctl exec ipconfig getifaddr en0`
+// and updates the entry in the in-memory cache. It must be called in a goroutine as it blocks
+// until SSH is ready (up to 30s). Rate-limited to once per 30s per VM ID.
+func (s *ParallelsService) updateVMIPInCache(ctx basecontext.ApiContext, vmID string) {
+	// Snapshot the VM's username while holding the read lock, so we can release it
+	// before any slow SSH operations.
+	s.RLock()
+	var username string
+	var isMacOS bool
+	for _, vm := range s.cachedLocalVms {
+		if vm.ID == vmID {
+			username = vm.User
+			isMacOS = vm.OS == "macosx" || strings.Contains(strings.ToLower(vm.Name), "mac")
 			break
 		}
 	}
+	s.RUnlock()
+
+	if username == "" {
+		ctx.LogWarnf("[ParallelsDesktop] [IP] VM %s not found in cache, skipping IP update", vmID)
+		return
+	}
+
+	if !isMacOS {
+		// Only macOS VMs need the prlctl exec SSH path; other platforms expose their IP
+		// via prlctl list network info directly.
+		return
+	}
+
+	// Rate-limit: skip if we fetched this VM's IP less than 30 seconds ago.
+	const macOSIPFetchCooldown = 30 * time.Second
+	s.syncMu.Lock()
+	if last, ok := s.ipLastFetched[vmID]; ok && time.Since(last) < macOSIPFetchCooldown {
+		s.syncMu.Unlock()
+		ctx.LogDebugf("[ParallelsDesktop] [IP] Skipping IP fetch for VM %s (in cooldown, last fetched %v ago)", vmID, time.Since(last).Round(time.Second))
+		return
+	}
+	s.ipLastFetched[vmID] = time.Now()
+	s.syncMu.Unlock()
+
+	// Wait until the VM's SSH accepts commands before attempting to fetch the IP.
+	if !s.waitForVMSSHReady(ctx, vmID, username) {
+		ctx.LogWarnf("[ParallelsDesktop] [IP] Giving up on IP fetch for VM %s: SSH not ready within timeout", vmID)
+		return
+	}
+
+	// Fetch the internal IP via prlctl exec, holding the semaphore to avoid
+	// flooding macOS with simultaneous SSH logon attempts.
+	cmd := helpers.Command{
+		Command: s.executable,
+		Args:    []string{"exec", vmID, "ipconfig", "getifaddr", "en0"},
+	}.AsUser(username)
+	ctx.LogDebugf("[ParallelsDesktop] [IP] Fetching internal IP for VM %s: %s", vmID, cmd.String())
+	s.sshSem <- struct{}{}
+	out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	<-s.sshSem
+	if err != nil {
+		ctx.LogErrorf("[ParallelsDesktop] [IP] Failed to get internal IP for VM %s: %v", vmID, err)
+		return
+	}
+	ip := strings.TrimSpace(out)
+	if ip == "" {
+		ctx.LogDebugf("[ParallelsDesktop] [IP] Empty IP result for VM %s", vmID)
+		return
+	}
+	ctx.LogInfof("[ParallelsDesktop] [IP] Resolved internal IP for VM %s: %s", vmID, ip)
+
+	// Update the cache and broadcast the change.
+	s.Lock()
+	var updatedVm *models.ParallelsVM
+	for i, vm := range s.cachedLocalVms {
+		if vm.ID == vmID {
+			s.cachedLocalVms[i].InternalIpAddress = ip
+			// Also update the matching IPv4 entry in NetworkInformation so it stays consistent.
+			for j, addr := range s.cachedLocalVms[i].NetworkInformation.IPAddresses {
+				if strings.ToLower(addr.Type) == "ipv4" {
+					s.cachedLocalVms[i].NetworkInformation.IPAddresses[j].IP = ip
+					break // found and updated the IPv4 entry — done
+				}
+			}
+			copy := s.cachedLocalVms[i]
+			updatedVm = &copy
+			break
+		}
+	}
+	s.Unlock()
+
+	if updatedVm == nil {
+		return
+	}
+	go func() {
+		if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
+			msg := models.NewEventMessage(constants.EventTypePDFM, "VM_UPDATED", models.VmUpdated{
+				VmID:  vmID,
+				NewVm: *updatedVm,
+			})
+			if err := ee.BroadcastMessage(msg); err != nil {
+				ctx.LogErrorf("[ParallelsDesktop] [IP] Error broadcasting VM_UPDATED: %v", err)
+			}
+		}
+	}()
 }
 
 func (s *ParallelsService) getFilteredUsers(ctx basecontext.ApiContext) ([]models.SystemUser, error) {
@@ -759,94 +860,110 @@ func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
 		s.cachedLocalVms = vms
 	}
 	s.Unlock()
-}
 
-func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string, vmId string) ([]models.ParallelsVM, error) {
-	// vmId can be empty to get all VMs for the user
-	ctx.LogInfof("Getting VMs for user: %s", username)
-
-	// TODO: workaround for parallels bug (PDFM-126209) where some fields are not returned when vm id is not specified
-	vmIds := []string{}
-	if vmId == "" {
-		ctx.LogDebugf("Getting all VMs for user %s", username)
-		var err error
-		vmIds, err = s.getUserVmIds(ctx, username)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		vmIds = append(vmIds, vmId)
-	}
-
-	externalIp, _ := system.Get().GetExternalIp(ctx)
-	userMachines := []models.ParallelsVM{}
-	for _, id := range vmIds {
-		cmd := helpers.Command{
-			Command: s.executable,
-			Args:    []string{"list", id, "-a", "-i", "--json"},
-		}.AsUser(username)
-		ctx.LogDebugf("[ParallelsDesktop] Executing command: %s", cmd.String())
-		timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-
-		defer cancel()
-
-		stdout, err := helpers.ExecuteWithNoOutput(timeoutCtx, cmd, helpers.ExecutionTimeout)
-		if err != nil {
-			return nil, err
-		}
-		vms := []models.ParallelsVM{}
-		err = json.Unmarshal([]byte(stdout), &vms)
-		if err != nil {
-			return nil, err
-		}
-		vms[0].User = username
-		userMachines = append(userMachines, vms...)
-		s.setCooldown(id)
-	}
-
-	// updating the internal and external IP address
-	for i := range userMachines {
-		if externalIp != "" {
-			userMachines[i].HostExternalIpAddress = externalIp
-		}
-		if len(userMachines[i].NetworkInformation.IPAddresses) > 0 {
-			userMachines[i].InternalIpAddress = userMachines[i].NetworkInformation.IPAddresses[0].IP
-		}
-
-		if userMachines[i].InternalIpAddress == "" || userMachines[i].InternalIpAddress == "-" {
-			// If the machine is running and it is a macos machine we will try to get the ip address by running a command
-			// inside the machine
-			if userMachines[i].State == "running" && (userMachines[i].OS == "macosx" || strings.Contains(userMachines[i].Name, "mac")) {
-				cmd := helpers.Command{
-					Command: s.executable,
-					Args:    []string{"exec", userMachines[i].ID, "ipconfig", "getifaddr", "en0"},
-				}.AsUser(username)
-				ctx.LogDebugf("[ParallelsDesktop] Executing command to get internal ip address: %s", cmd.String())
-				out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
-				if err == nil {
-					ip := strings.TrimSpace(out)
-					if ip != "" {
-						userMachines[i].InternalIpAddress = ip
+	// For every running macOS VM that's already up when we first load the cache,
+	// kick off an async IP resolution so InternalIpAddress is populated quickly.
+	if err == nil {
+		stagger := 0
+		for _, vm := range vms {
+			if vm.State == "running" &&
+				(vm.OS == "macosx" || strings.Contains(strings.ToLower(vm.Name), "mac")) {
+				ctx.LogInfof("[ParallelsDesktop] [IP] Scheduling IP resolution for running macOS VM %s (%s)", vm.ID, vm.Name)
+				vmID := vm.ID
+				delay := time.Duration(stagger) * 3 * time.Second
+				stagger++
+				go func() {
+					if delay > 0 {
+						time.Sleep(delay)
 					}
-				}
+					s.updateVMIPInCache(ctx, vmID)
+				}()
 			}
 		}
 	}
-
-	if vmId == "" {
-		ctx.LogInfof("[ParallelsDesktop] User %s has %v VMs", username, len(userMachines))
-	} else if vmId != "" && len(userMachines) > 0 {
-		ctx.LogInfof("[ParallelsDesktop] User %s VM %s found", username, vmId)
-	} else {
-		ctx.LogInfof("[ParallelsDesktop] User %s VM %s not found", username, vmId)
-	}
-	return userMachines, nil
 }
 
-func (s *ParallelsService) getUserVmIds(ctx basecontext.ApiContext, username string) ([]string, error) {
+func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string, vmId string) ([]models.ParallelsVM, error) {
+	ctx.LogInfof("[ParallelsDesktop] [main] Getting VMs for user: %s", username)
+	var syncVms []models.ParallelsVM
+
+	// fetch the base data
+	if vmId == "" {
+		ctx.LogDebugf("[ParallelsDesktop] [main] Getting all VMs fast for user %s", username)
+		var err error
+		syncVms, err = s.getAllUserVmSync(ctx, username)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		vm, err := s.getUserVmSync(ctx, username, vmId)
+		if err != nil {
+			return nil, err
+		}
+		syncVms = append(syncVms, *vm)
+	}
+
+	// build a fast-lookup cache map
+	s.RLock()
+	cacheMap := make(map[string]models.ParallelsVM)
+	for _, cvm := range s.cachedLocalVms {
+		cacheMap[cvm.ID] = cvm
+	}
+	s.RUnlock()
+
+	// cache patching engine
+	for i := range syncVms {
+		// Parallels bug: Home is missing on fast bulk fetches
+		if syncVms[i].Home == "" {
+
+			// FAST PATH: Try to patch it from our memory cache Map
+			if cached, exists := cacheMap[syncVms[i].ID]; exists && cached.Home != "" {
+				ctx.LogTracef("[ParallelsDesktop] [main] Patched Home path for %s from cache", syncVms[i].ID)
+				syncVms[i].Home = cached.Home
+				syncVms[i].HomePath = cached.HomePath
+			} else {
+				// SLOW PATH FALLBACK: Not in cache! We must run the slow command.
+				ctx.LogDebugf("[ParallelsDesktop] [main] Cached vm is missing the Home path %s, executing fallback prlctl list...", syncVms[i].ID)
+				fallbackVm, err := s.getUserVmSync(ctx, username, syncVms[i].ID)
+				if err == nil {
+					syncVms[i].Home = fallbackVm.Home
+					syncVms[i].HomePath = fallbackVm.HomePath
+				}
+			}
+		}
+
+		// Ensure HomePath is set if Home exists but HomePath doesn't
+		if syncVms[i].Home != "" && syncVms[i].HomePath == "" {
+			syncVms[i].HomePath = fmt.Sprintf("%s/config.pvs", syncVms[i].Home)
+		}
+	}
+
+	// ip resolution
+	externalIp, _ := system.Get().GetExternalIp(ctx)
+	for i := range syncVms {
+		if externalIp != "" {
+			syncVms[i].HostExternalIpAddress = externalIp
+		}
+		if len(syncVms[i].NetworkInformation.IPAddresses) > 0 {
+			syncVms[i].InternalIpAddress = syncVms[i].NetworkInformation.IPAddresses[0].IP
+		}
+	}
+
+	if vmId == "" {
+		ctx.LogInfof("[ParallelsDesktop] [main] User %s has %v VMs", username, len(syncVms))
+	} else if len(syncVms) > 0 {
+		ctx.LogInfof("[ParallelsDesktop] [main] User %s VM %s found", username, vmId)
+	}
+
+	return syncVms, nil
+}
+
+// Fetches a single VM with full details, including the Home path.
+func (s *ParallelsService) getUserVmSync(ctx basecontext.ApiContext, username string, vmId string) (*models.ParallelsVM, error) {
+	ctx.LogDebugf("[ParallelsDesktop] [main] Getting VM %s for user %s", vmId, username)
 	cmd := helpers.Command{
 		Command: s.executable,
-		Args:    []string{"list", "-a", "-f", "--json"},
+		Args:    []string{"list", vmId, "-a", "-i", "--json"},
 	}.AsUser(username)
 
 	output, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
@@ -854,17 +971,41 @@ func (s *ParallelsService) getUserVmIds(ctx basecontext.ApiContext, username str
 		return nil, err
 	}
 
-	var status []models.VirtualMachineStatus
-	err = json.Unmarshal([]byte(output), &status)
+	var vms []models.ParallelsVM
+	if err = json.Unmarshal([]byte(output), &vms); err != nil || len(vms) == 0 {
+		return nil, errors.New("VM not found")
+	}
+	vms[0].User = username
+
+	// ARM THE SHIELD! Prevent this single execution from causing an echo loop
+	s.setCooldown(vmId)
+
+	return &vms[0], nil
+}
+
+// Fetches all VMs for a user quickly, but suffers from the PD bug where 'Home' is empty
+func (s *ParallelsService) getAllUserVmSync(ctx basecontext.ApiContext, username string) ([]models.ParallelsVM, error) {
+	ctx.LogDebugf("[ParallelsDesktop] [main] Getting all VMs for user %s", username)
+	cmd := helpers.Command{
+		Command: s.executable,
+		Args:    []string{"list", "-a", "-i", "--json"},
+	}.AsUser(username)
+
+	output, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return nil, err
 	}
-	listOfVms := make([]string, 0)
-	for _, vm := range status {
-		listOfVms = append(listOfVms, vm.UUID)
+
+	var vms []models.ParallelsVM
+	if err = json.Unmarshal([]byte(output), &vms); err != nil {
+		return nil, err
 	}
 
-	return listOfVms, nil
+	for i := range vms {
+		vms[i].User = username
+	}
+	ctx.LogDebugf("[ParallelsDesktop] [main] Found %v VMs for user %s", len(vms), username)
+	return vms, nil
 }
 
 func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter string) ([]models.ParallelsVM, error) {
@@ -875,7 +1016,10 @@ func (s *ParallelsService) GetCachedVms(ctx basecontext.ApiContext, filter strin
 	cfg := config.Get()
 	if cfg.IsApi() || cfg.IsOrchestrator() {
 		s.RLock()
-		systemMachines = s.cachedLocalVms
+		// Making a copy of the slice so we can release the lock IMMEDIATELY
+		// instead of holding it during the filter operations below.
+		systemMachines = make([]models.ParallelsVM, len(s.cachedLocalVms))
+		copy(systemMachines, s.cachedLocalVms)
 		s.RUnlock()
 	} else { // if not API or Orchestrator, we will not maintain the cache and get the VMs directly from the system
 		systemMachines, err = s.getVmsInMachineForCurrentUser(ctx)
@@ -1137,9 +1281,29 @@ func (s *ParallelsService) DeleteVm(ctx basecontext.ApiContext, id string) error
 		return errors.Newf("VM with id %s was not found", id)
 	}
 
-	if vm.State != "stopped" {
+	if vm.State != "stopped" && vm.State != "invalid" {
 		return errors.New("VM is not stopped")
 	}
+
+	// If the VM is in an invalid state, we need to destroy it first
+	if vm.State == "invalid" {
+		cmd := helpers.Command{
+			Command: s.executable,
+			Args:    []string{"unregister", id},
+		}.AsUser(vm.User)
+		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+		if err != nil {
+			return err
+		}
+		// now lets check if the folder exists and remove it
+		if vm.Home != "" {
+			if err := os.RemoveAll(vm.Home); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	cmd := helpers.Command{
 		Command: s.executable,
 		Args:    []string{"delete", id},
@@ -2501,10 +2665,8 @@ func (s *ParallelsService) ReplaceMacAddressInConfigPvs(path string) error {
 	}
 
 	fileMode := fileInfo.Mode()
-	// Get the file owner
-	//sys := fileInfo.Sys().(*syscall.Stat_t)
-	//uid := sys.Uid
-	//gid := int(sys.Gid)
+	// Get the file owner (platform-specific)
+	uid, gid := getFileOwner(fileInfo)
 
 	file, err := os.Open(filepath.Clean(configPath))
 	if err != nil {

@@ -1650,7 +1650,7 @@ func GetOrchestratorHostVirtualMachinesHandler() restapi.ControllerHandler {
 
 		w.WriteHeader(http.StatusAccepted)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfof("Returned successfully %s orchestrator virtual machines", len(response))
+		ctx.LogInfof("Returned successfully %v orchestrator virtual machines", len(response))
 	}
 }
 

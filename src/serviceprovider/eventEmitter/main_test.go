@@ -114,7 +114,7 @@ func TestHub_UnregisterClient_Success(t *testing.T) {
 	client := &Client{
 		ctx:  ctx,
 		ID:   "test-client",
-		Send: make(chan *models.EventMessage, 10),
+		done: make(chan struct{}),
 	}
 
 	hub.clients["test-client"] = client
@@ -153,7 +153,7 @@ func TestHub_BroadcastMessage_ToSpecificClient(t *testing.T) {
 	client := &Client{
 		ctx:  ctx,
 		ID:   "test-client",
-		Send: make(chan *models.EventMessage, 10),
+		done: make(chan struct{}),
 	}
 	hub.clients["test-client"] = client
 
@@ -163,12 +163,13 @@ func TestHub_BroadcastMessage_ToSpecificClient(t *testing.T) {
 	err := hub.broadcastMessage(msg)
 	assert.NoError(t, err)
 
-	select {
-	case received := <-client.Send:
-		assert.Equal(t, msg.ID, received.ID)
-	default:
+	client.pendingMu.Lock()
+	pending := client.pending
+	client.pendingMu.Unlock()
+	if len(pending) == 0 {
 		t.Fatal("Client should have received message")
 	}
+	assert.Equal(t, msg.ID, pending[0].ID)
 }
 
 func TestHub_BroadcastMessage_ClientNotFound(t *testing.T) {
@@ -194,16 +195,8 @@ func TestHub_BroadcastMessage_ToSubscribers(t *testing.T) {
 		subscriptions: make(map[constants.EventType]map[string]bool),
 	}
 
-	client1 := &Client{
-		ctx:  ctx,
-		ID:   "client1",
-		Send: make(chan *models.EventMessage, 10),
-	}
-	client2 := &Client{
-		ctx:  ctx,
-		ID:   "client2",
-		Send: make(chan *models.EventMessage, 10),
-	}
+	client1 := &Client{ctx: ctx, ID: "client1"}
+	client2 := &Client{ctx: ctx, ID: "client2"}
 
 	hub.clients["client1"] = client1
 	hub.clients["client2"] = client2
@@ -217,14 +210,16 @@ func TestHub_BroadcastMessage_ToSubscribers(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Both should receive
-	select {
-	case <-client1.Send:
-	default:
+	client1.pendingMu.Lock()
+	c1Pending := len(client1.pending)
+	client1.pendingMu.Unlock()
+	if c1Pending == 0 {
 		t.Fatal("Client1 should have received message")
 	}
-	select {
-	case <-client2.Send:
-	default:
+	client2.pendingMu.Lock()
+	c2Pending := len(client2.pending)
+	client2.pendingMu.Unlock()
+	if c2Pending == 0 {
 		t.Fatal("Client2 should have received message")
 	}
 }
@@ -241,7 +236,7 @@ func TestHub_BroadcastMessage_NilMessage(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestHub_BroadcastMessage_ChannelFull(t *testing.T) {
+func TestHub_BroadcastMessage_EnqueuesMessages(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
 	hub := &Hub{
 		ctx:           ctx,
@@ -249,21 +244,19 @@ func TestHub_BroadcastMessage_ChannelFull(t *testing.T) {
 		subscriptions: make(map[constants.EventType]map[string]bool),
 	}
 
-	client := &Client{
-		ctx:  ctx,
-		ID:   "test-client",
-		Send: make(chan *models.EventMessage, 1),
-	}
+	client := &Client{ctx: ctx, ID: "test-client"}
 	hub.clients["test-client"] = client
 	hub.subscriptions[constants.EventTypeOrchestrator] = map[string]bool{"test-client": true}
 
-	// Fill channel
-	client.Send <- models.NewEventMessage(constants.EventTypeOrchestrator, "fill", nil)
+	// Send two messages
+	msg1 := models.NewEventMessage(constants.EventTypeOrchestrator, "first", nil)
+	msg2 := models.NewEventMessage(constants.EventTypeOrchestrator, "second", nil)
+	assert.NoError(t, hub.broadcastMessage(msg1))
+	assert.NoError(t, hub.broadcastMessage(msg2))
 
-	// Try to send another - should drop
-	msg := models.NewEventMessage(constants.EventTypeOrchestrator, "overflow", nil)
-	err := hub.broadcastMessage(msg)
-	assert.NoError(t, err) // No error, just drops
+	client.pendingMu.Lock()
+	assert.Len(t, client.pending, 2)
+	client.pendingMu.Unlock()
 }
 
 func TestHub_HasActiveConnectionFromIP(t *testing.T) {
@@ -376,7 +369,7 @@ func TestUnregisterClientCmd_Execute(t *testing.T) {
 	client := &Client{
 		ctx:  ctx,
 		ID:   "test-client",
-		Send: make(chan *models.EventMessage, 10),
+		done: make(chan struct{}),
 	}
 	hub.clients["test-client"] = client
 

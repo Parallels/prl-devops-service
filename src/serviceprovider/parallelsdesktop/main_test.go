@@ -27,6 +27,10 @@ func createTestParallelsService() *ParallelsService {
 		cachedLocalVms:   []models.ParallelsVM{},
 		executable:       "/usr/local/bin/prlctl",
 		processLauncher:  &processlauncher.MockProcessLauncher{},
+		pending:          make(map[string]struct{}),
+		inFlight:         make(map[string]struct{}),
+		cooldown:         make(map[string]time.Time),
+		fastStateUpdates: make(map[string]time.Time),
 	}
 	return service
 }

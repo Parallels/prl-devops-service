@@ -1,5 +1,7 @@
 name: Release Beta Service
-
+permissions:
+  contents: read
+  
 on:
   push:
     tags:

@@ -1,5 +1,9 @@
 name: Bot
-
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  
 on:
   issues:
     types: [opened, reopened]

@@ -3,7 +3,7 @@ package chunkmanagerservice
 import (
 	"sync"
 
-	"github.com/Parallels/prl-devops-service/notifications"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 )
 
 // DownloadRequest contains all the parameters needed for a download operation
@@ -17,11 +17,15 @@ type DownloadRequest struct {
 	// Size of each chunk in bytes. If <= 0, a default of 100MB will be used
 	ChunkSize int64
 	// Notification related fields
-	NotificationService *notifications.NotificationService
+	NotificationService *tracker.JobProgressService
 	// Prefix for notification messages
 	MessagePrefix string
 	// Unique ID for correlating notifications
 	CorrelationID string
+	// Job ID for progress reporting
+	JobId string
+	// Action for progress notifications (e.g. constants.ActionDownloadingPackFile)
+	Action string
 }
 
 // chunkInfo tracks the state of an individual chunk during download

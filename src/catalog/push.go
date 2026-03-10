@@ -38,9 +38,9 @@ func (s *CatalogManifestService) Push(r *models.PushCatalogManifestRequest) *mod
 			continue
 		}
 		executed = true
-		if r.ProgressChannel != nil {
-			s.ns.NotifyDebugf("Setting progress channel for remote service %v", rs.Name())
-			rs.SetProgressChannel(r.FileNameChannel, r.ProgressChannel, r.StepChannel)
+		if r.JobId != "" {
+			s.ns.NotifyDebugf("Setting job id for remote service %v", rs.Name())
+			rs.SetJobId(r.JobId)
 		}
 		manifest.CleanupRequest.RemoteStorageService = rs
 		apiClient := apiclient.NewHttpClient(s.ctx)
