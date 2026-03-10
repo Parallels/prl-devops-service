@@ -356,9 +356,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 		}
 		var dbSnapshots []models.Snapshot
 		if listSnapshotResponse != nil {
-			for i := range listSnapshotResponse.Snapshots {
-				dbSnapshots = append(dbSnapshots, mappers.SnapshotsToDto(&listSnapshotResponse.Snapshots[i]))
-			}
+			dbSnapshots = mappers.SnapshotsToDto(listSnapshotResponse.Snapshots)
 		}
 		s.db.SetOrchestratorSnapshots(s.ctx, host.ID, vm.ID, dbSnapshots)
 	}
