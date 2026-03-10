@@ -2,6 +2,7 @@ package local
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -9,7 +10,10 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/common"
+	"github.com/Parallels/prl-devops-service/compressor"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/writers"
 
 	"github.com/cjlapao/common-go/helper"
 )
@@ -21,8 +25,9 @@ type LocalProviderConfig struct {
 }
 
 type LocalProvider struct {
-	Config LocalProviderConfig
-	JobId  string
+	Config        LocalProviderConfig
+	JobId         string
+	currentAction string
 }
 
 func NewLocalProvider() *LocalProvider {
@@ -58,15 +63,20 @@ func (s *LocalProvider) SetJobId(jobId string) {
 	s.JobId = jobId
 }
 
+func (s *LocalProvider) SetCurrentAction(action string) {
+	s.currentAction = action
+}
+
 func (s *LocalProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
 	parts := strings.Split(connection, ";")
 	provider := ""
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
-		if strings.Contains(strings.ToLower(part), common.PROVIDER_VAR_NAME+"=") {
-			provider = strings.ReplaceAll(part, common.PROVIDER_VAR_NAME+"=", "")
+		lowered := strings.ToLower(part)
+		if strings.Contains(lowered, common.PROVIDER_VAR_NAME+"=") {
+			provider = strings.ReplaceAll(lowered, common.PROVIDER_VAR_NAME+"=", "")
 		}
-		if strings.Contains(strings.ToLower(part), "catalog_path=") {
+		if strings.Contains(lowered, "catalog_path=") {
 			s.Config.Path = strings.ReplaceAll(part, "catalog_path=", "")
 		}
 	}
@@ -83,23 +93,12 @@ func (s *LocalProvider) Check(ctx basecontext.ApiContext, connection string) (bo
 		}
 
 		fullPath := filepath.Join(dir, "catalog")
-		// The following line was provided in the instruction but contains undefined variables (tempPath, destination)
-		// and an unimported package (compressor). To maintain syntactical correctness as per instructions,
-		// and given the original line was os.MkdirAll, this change cannot be applied directly without further context.
-		// Assuming the intent was to replace the directory creation with some other operation,
-		// but without the full context, the original os.MkdirAll is kept to ensure compilation.
-		// If the user intended to add a compressor import and define tempPath/destination,
-		// that information was not provided.
 		if err := os.MkdirAll(fullPath, os.ModePerm); err != nil {
 			ctx.LogErrorf("Error creating catalog directory: %v", err)
 			return false, err
 		}
 
 		s.Config.Path = fullPath
-	}
-
-	if s.Config.Path == "" {
-		return false, errors.New("missing catalog_path")
 	}
 
 	return true, nil
@@ -124,12 +123,22 @@ func (s *LocalProvider) PushFile(ctx basecontext.ApiContext, localRoot, path, fi
 	}
 	defer destFile.Close()
 
-	_, err = io.Copy(destFile, srcFile)
+	fileInfo, err := srcFile.Stat()
 	if err != nil {
+		_, err = io.Copy(destFile, srcFile)
 		return err
 	}
 
-	return nil
+	action := s.currentAction
+	if action == "" {
+		action = constants.ActionUploadingPackFile
+	}
+	pr := writers.NewProgressFileReader(srcFile, fileInfo.Size(), action)
+	pr.SetJobId(s.JobId)
+	pr.SetCorrelationId(s.JobId)
+	pr.SetPrefix("Uploading")
+	_, err = io.Copy(destFile, pr)
+	return err
 }
 
 func (s *LocalProvider) PullFile(ctx basecontext.ApiContext, path, filename, destination string) error {
@@ -152,19 +161,22 @@ func (s *LocalProvider) PullFile(ctx basecontext.ApiContext, path, filename, des
 	defer destFile.Close()
 
 	_, err = io.Copy(destFile, srcFile)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (s *LocalProvider) PullFileAndDecompress(ctx basecontext.ApiContext, path, filename, destination string) error {
 	srcPath := filepath.Join(path, filename)
-	destPath := filepath.Join(destination, filename)
 	if !strings.HasPrefix(srcPath, s.Config.Path) {
 		srcPath = filepath.Join(s.Config.Path, srcPath)
 	}
+
+	tempFile, err := os.CreateTemp("", "local-pull-decompress-*.tmp")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary file: %w", err)
+	}
+	tempPath := tempFile.Name()
+	tempFile.Close()
+	defer os.Remove(tempPath)
 
 	srcFile, err := os.Open(filepath.Clean(srcPath))
 	if err != nil {
@@ -172,15 +184,19 @@ func (s *LocalProvider) PullFileAndDecompress(ctx basecontext.ApiContext, path, 
 	}
 	defer srcFile.Close()
 
-	destFile, err := os.Create(filepath.Clean(destPath))
+	tmpFile, err := os.Create(filepath.Clean(tempPath))
 	if err != nil {
 		return err
 	}
-	defer destFile.Close()
+	defer tmpFile.Close()
 
-	_, err = io.Copy(destFile, srcFile)
-	if err != nil {
-		return err
+	if _, err = io.Copy(tmpFile, srcFile); err != nil {
+		return fmt.Errorf("failed to copy to temporary file: %w", err)
+	}
+	tmpFile.Close()
+
+	if err := compressor.DecompressFileWithStepChannel(ctx, tempPath, destination, nil, s.JobId, constants.ActionDecompressingPackFile); err != nil {
+		return fmt.Errorf("decompression failed: %w", err)
 	}
 
 	return nil
@@ -211,8 +227,7 @@ func (s *LocalProvider) PullFileToMemory(ctx basecontext.ApiContext, path string
 	}
 
 	fileContent := make([]byte, fileInfo.Size())
-	_, err = srcFile.Read(fileContent)
-	if err != nil {
+	if _, err = io.ReadFull(srcFile, fileContent); err != nil {
 		return nil, err
 	}
 
@@ -226,14 +241,9 @@ func (s *LocalProvider) DeleteFile(ctx basecontext.ApiContext, path string, file
 	}
 
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		// file does not exist, return nil
 		return nil
 	}
-	err := os.Remove(filePath)
-	if err != nil {
-		return err
-	}
-	return nil
+	return os.Remove(filePath)
 }
 
 func (s *LocalProvider) FileChecksum(ctx basecontext.ApiContext, path string, fileName string) (string, error) {
@@ -241,11 +251,7 @@ func (s *LocalProvider) FileChecksum(ctx basecontext.ApiContext, path string, fi
 	if !strings.HasPrefix(fullPath, s.Config.Path) {
 		fullPath = filepath.Join(s.Config.Path, fullPath)
 	}
-	checksum, err := helpers.GetFileChecksum(fullPath)
-	if err != nil {
-		return "", err
-	}
-	return checksum, nil
+	return helpers.GetFileMD5Checksum(fullPath)
 }
 
 func (s *LocalProvider) FileExists(ctx basecontext.ApiContext, path string, fileName string) (bool, error) {
@@ -263,8 +269,7 @@ func (s *LocalProvider) CreateFolder(ctx basecontext.ApiContext, path string, fo
 		folderPath = filepath.Join(s.Config.Path, folderPath)
 	}
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
-		err := os.MkdirAll(folderPath, os.ModePerm)
-		if err != nil {
+		if err := os.MkdirAll(folderPath, os.ModePerm); err != nil {
 			return err
 		}
 	}
@@ -278,28 +283,28 @@ func (s *LocalProvider) DeleteFolder(ctx basecontext.ApiContext, path string, fo
 	}
 
 	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
-		// folder does not exist, return nil
 		return nil
 	}
-	err := os.RemoveAll(folderPath)
-	if err != nil {
-		return err
-	}
-	return nil
+	return os.RemoveAll(folderPath)
 }
 
-func (s *LocalProvider) FolderExists(ctx basecontext.ApiContext, path string, fileName string) (bool, error) {
-	fullPath := filepath.Join(path, fileName)
+func (s *LocalProvider) FolderExists(ctx basecontext.ApiContext, path string, folderName string) (bool, error) {
+	fullPath := filepath.Join(path, folderName)
 	if !strings.HasPrefix(fullPath, s.Config.Path) {
 		fullPath = filepath.Join(s.Config.Path, fullPath)
 	}
-	exists := helper.FileExists(fullPath)
-	return exists, nil
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return info.IsDir(), nil
 }
 
 func (s *LocalProvider) FileSize(ctx basecontext.ApiContext, path string, fileName string) (int64, error) {
 	fullPath := filepath.Join(path, fileName)
-
 	if !strings.HasPrefix(fullPath, s.Config.Path) {
 		fullPath = filepath.Join(s.Config.Path, fullPath)
 	}

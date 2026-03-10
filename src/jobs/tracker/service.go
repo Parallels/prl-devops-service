@@ -588,6 +588,14 @@ func (p *JobProgressService) processSingleMessage(msg JobMessage) {
 				shouldLog = true
 			}
 		} else {
+			// If the action changed (e.g. compression tracker reused for upload), reset
+			// progress so the new step starts from 0 instead of inheriting the old 100%.
+			if pt.CurrentAction != p.CurrentMessage.CurrentAction && p.CurrentMessage.CurrentAction != "" {
+				pt.CurrentProgress = 0
+				pt.CurrentSize = 0
+				pt.StartTime = time.Now()
+				pt.RateSamples = make([]RateSample, 0, 60)
+			}
 			p.updateProgressTracker(pt, p.CurrentMessage.CurrentProgress, p.CurrentMessage.currentSize)
 
 			pt.CurrentAction = p.CurrentMessage.CurrentAction
