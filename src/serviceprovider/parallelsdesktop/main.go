@@ -26,7 +26,7 @@ import (
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/mappers"
+	"github.com/Parallels/prl-devops-service/mappers/snapshots"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/processlauncher"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
@@ -602,7 +602,7 @@ func (s *ParallelsService) InitSnapshotTreeInDB(ctx basecontext.ApiContext) {
 	s.RUnlock()
 
 	for _, vm := range cachedVMs {
-		snapshots, err := s.listSnapshots(ctx, vm.ID)
+		snapshotResponse, err := s.listSnapshots(ctx, vm.ID)
 		if err != nil {
 			ctx.LogErrorf("[parallelsdesktop][snapshots] Failed to get snapshots for VM %s: %v", vm.ID, err)
 			continue
@@ -612,7 +612,7 @@ func (s *ParallelsService) InitSnapshotTreeInDB(ctx basecontext.ApiContext) {
 			return
 		}
 
-		dtoSnapshots := mappers.SnapshotsToDto(snapshots.Snapshots)
+		dtoSnapshots := snapshots.ApiToDto(snapshotResponse.Snapshots)
 
 		s.databaseService.SetListSnapshotsByVMId(vm.ID, data_models.VMSnapshot{
 			VMId:      vm.ID,
@@ -631,7 +631,7 @@ func (s *ParallelsService) GetSnapshotsFromDB(ctx basecontext.ApiContext, vmID s
 	if err != nil {
 		return nil, err
 	}
-	mappedSnaps := mappers.DtoSnapshotToApi(dbSnaps)
+	mappedSnaps := snapshots.DtoToApi(dbSnaps)
 	resp := &models.ListSnapshotResponse{
 		Snapshots: mappedSnaps,
 	}

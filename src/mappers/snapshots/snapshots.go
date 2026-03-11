@@ -1,11 +1,11 @@
-package mappers
+package snapshots
 
 import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	apiModels "github.com/Parallels/prl-devops-service/models"
 )
 
-func DtoSnapshotToApi(dSnapshots []models.Snapshot) []apiModels.Snapshot {
+func DtoToApi(dSnapshots []models.Snapshot) []apiModels.Snapshot {
 	var apiSnapshots []apiModels.Snapshot
 	for _, dSnapshot := range dSnapshots {
 		apiSnapshots = append(apiSnapshots, apiModels.Snapshot{
@@ -20,7 +20,7 @@ func DtoSnapshotToApi(dSnapshots []models.Snapshot) []apiModels.Snapshot {
 	return apiSnapshots
 }
 
-func SnapshotsToDto(apiSnapshots []apiModels.Snapshot) []models.Snapshot {
+func ApiToDto(apiSnapshots []apiModels.Snapshot) []models.Snapshot {
 	var dSnapshots []models.Snapshot
 	for _, apiSnapshot := range apiSnapshots {
 		dSnapshots = append(dSnapshots, models.Snapshot{

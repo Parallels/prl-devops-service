@@ -9,6 +9,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/mappers"
+	"github.com/Parallels/prl-devops-service/mappers/snapshots"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -315,7 +316,7 @@ func (h *PDfMEventHandler) handleSnapshotsUpdated(ctx basecontext.ApiContext, ho
 		return
 	}
 
-	dbSnapshots := mappers.SnapshotsToDto(snapshotsUpdated.Snapshots)
+	dbSnapshots := snapshots.ApiToDto(snapshotsUpdated.Snapshots)
 
 	err = dbService.SetHostSnapshots(ctx, hostID, data_models.VMSnapshot{
 		VMId:      snapshotsUpdated.VmID,

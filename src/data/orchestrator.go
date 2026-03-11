@@ -716,9 +716,10 @@ func (j *JsonDatabase) SetHostSnapshots(ctx basecontext.ApiContext, hostId strin
 
 	for i, orchSnap := range j.data.HostsSnapshots {
 		if orchSnap.HostId == hostId {
-			j.data.HostsSnapshots[i].Snapshots = map[string][]models.Snapshot{
-				snapshots.VMId: snapshots.Snapshots,
+			if j.data.HostsSnapshots[i].Snapshots == nil {
+				j.data.HostsSnapshots[i].Snapshots = make(map[string][]models.Snapshot)
 			}
+			j.data.HostsSnapshots[i].Snapshots[snapshots.VMId] = snapshots.Snapshots
 			return nil
 		}
 	}

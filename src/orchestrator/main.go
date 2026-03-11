@@ -12,6 +12,7 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
+	"github.com/Parallels/prl-devops-service/mappers/snapshots"
 	apimodels "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/handlers"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -353,7 +354,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 		}
 		var dbSnapshots []models.Snapshot
 		if listSnapshotResponse != nil {
-			dbSnapshots = mappers.SnapshotsToDto(listSnapshotResponse.Snapshots)
+			dbSnapshots = snapshots.ApiToDto(listSnapshotResponse.Snapshots)
 		}
 		s.db.SetHostSnapshots(s.ctx, host.ID, models.VMSnapshot{
 			VMId:      vm.ID,

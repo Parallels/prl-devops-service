@@ -7,7 +7,7 @@ import (
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/mappers"
+	"github.com/Parallels/prl-devops-service/mappers/snapshots"
 	apimodels "github.com/Parallels/prl-devops-service/models"
 )
 
@@ -74,7 +74,7 @@ func (s *OrchestratorService) GetHostVirtualMachineSnapshots(ctx basecontext.Api
 		return nil, err
 	}
 	var response apimodels.ListSnapshotResponse
-	mapper := mappers.DtoSnapshotToApi(hostSnapshots.Snapshots[vmId])
+	mapper := snapshots.DtoToApi(hostSnapshots.Snapshots[vmId])
 	response.Snapshots = mapper
 
 	return &response, nil
