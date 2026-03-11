@@ -26,6 +26,7 @@ import (
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/processlauncher"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
@@ -611,19 +612,7 @@ func (s *ParallelsService) InitSnapshotTreeInDB(ctx basecontext.ApiContext) {
 			return
 		}
 
-		var dtoSnapshots []data_models.Snapshot
-		if snapshots != nil {
-			for _, snap := range snapshots.Snapshots {
-				dtoSnapshots = append(dtoSnapshots, data_models.Snapshot{
-					ID:      snap.ID,
-					Name:    snap.Name,
-					Date:    snap.Date,
-					State:   snap.State,
-					Current: snap.Current,
-					Parent:  snap.Parent,
-				})
-			}
-		}
+		dtoSnapshots := mappers.SnapshotsToDto(snapshots.Snapshots)
 
 		s.databaseService.SetListSnapshotsByVMId(vm.ID, data_models.VMSnapshot{
 			VMId:      vm.ID,
@@ -642,17 +631,9 @@ func (s *ParallelsService) GetSnapshotsFromDB(ctx basecontext.ApiContext, vmID s
 	if err != nil {
 		return nil, err
 	}
-
-	resp := &models.ListSnapshotResponse{}
-	for _, snap := range dbSnaps {
-		resp.Snapshots = append(resp.Snapshots, models.Snapshot{
-			ID:      snap.ID,
-			Name:    snap.Name,
-			Date:    snap.Date,
-			State:   snap.State,
-			Current: snap.Current,
-			Parent:  snap.Parent,
-		})
+	mappedSnaps := mappers.DtoSnapshotToApi(dbSnaps)
+	resp := &models.ListSnapshotResponse{
+		Snapshots: mappedSnaps,
 	}
 	return resp, nil
 }

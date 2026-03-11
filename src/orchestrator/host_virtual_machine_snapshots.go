@@ -7,6 +7,7 @@ import (
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/mappers"
 	apimodels "github.com/Parallels/prl-devops-service/models"
 )
 
@@ -67,22 +68,14 @@ func (s *OrchestratorService) GetHostVirtualMachineSnapshotsWithAPI(ctx basecont
 }
 
 // GetHostVirtualMachineSnapshots lists all snapshots for a virtual machine on an orchestrator host
-func (s *OrchestratorService) GetHostVirtualMachineSnapshots(ctx basecontext.ApiContext, hostId string, vmId string, noCache bool) (*apimodels.ListSnapshotResponse, error) {
-	orchestratorSnapshot, err := s.db.GetOrchestratorSnapshots(ctx, hostId)
+func (s *OrchestratorService) GetHostVirtualMachineSnapshots(ctx basecontext.ApiContext, hostId string, vmId string) (*apimodels.ListSnapshotResponse, error) {
+	hostSnapshots, err := s.db.GetHostSnapshots(ctx, hostId)
 	if err != nil {
 		return nil, err
 	}
 	var response apimodels.ListSnapshotResponse
-	for _, vmSnapshots := range orchestratorSnapshot.Snapshots[vmId] {
-		response.Snapshots = append(response.Snapshots, apimodels.Snapshot{
-			ID:      vmSnapshots.ID,
-			Name:    vmSnapshots.Name,
-			Date:    vmSnapshots.Date,
-			State:   vmSnapshots.State,
-			Current: vmSnapshots.Current,
-			Parent:  vmSnapshots.Parent,
-		})
-	}
+	mapper := mappers.DtoSnapshotToApi(hostSnapshots.Snapshots[vmId])
+	response.Snapshots = mapper
 
 	return &response, nil
 }

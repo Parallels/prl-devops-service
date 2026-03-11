@@ -32,21 +32,21 @@ var (
 )
 
 type Data struct {
-	Schema                models.DatabaseSchema         `json:"schema"`
-	Configuration         *models.Configuration         `json:"configuration"`
-	Users                 []models.User                 `json:"users"`
-	Claims                []models.Claim                `json:"claims"`
-	Roles                 []models.Role                 `json:"roles"`
-	ApiKeys               []models.ApiKey               `json:"api_keys"`
-	PackerTemplates       []models.PackerTemplate       `json:"virtual_machine_templates"`
-	ManifestsCatalog      []models.CatalogManifest      `json:"catalog_manifests"`
-	OrchestratorHosts     []models.OrchestratorHost     `json:"orchestrator_hosts"`
-	OrchestratorSnapshots []models.OrchestratorSnapshot `json:"orchestrator_snapshots"`
-	ReverseProxy          *models.ReverseProxy          `json:"reverse_proxy"`
-	ReverseProxyHosts     []models.ReverseProxyHost     `json:"reverse_proxy_hosts"`
-	CatalogManagers       []models.CatalogManager       `json:"catalog_managers"`
-	Jobs                  []models.Job                  `json:"jobs"`
-	VMSnapshots           []models.VMSnapshot           `json:"vm_snapshots"`
+	Schema            models.DatabaseSchema       `json:"schema"`
+	Configuration     *models.Configuration       `json:"configuration"`
+	Users             []models.User               `json:"users"`
+	Claims            []models.Claim              `json:"claims"`
+	Roles             []models.Role               `json:"roles"`
+	ApiKeys           []models.ApiKey             `json:"api_keys"`
+	PackerTemplates   []models.PackerTemplate     `json:"virtual_machine_templates"`
+	ManifestsCatalog  []models.CatalogManifest    `json:"catalog_manifests"`
+	OrchestratorHosts []models.OrchestratorHost   `json:"orchestrator_hosts"`
+	HostsSnapshots    []models.HostSnapshotRecord `json:"orchestrator_snapshots"`
+	ReverseProxy      *models.ReverseProxy        `json:"reverse_proxy"`
+	ReverseProxyHosts []models.ReverseProxyHost   `json:"reverse_proxy_hosts"`
+	CatalogManagers   []models.CatalogManager     `json:"catalog_managers"`
+	Jobs              []models.Job                `json:"jobs"`
+	VMSnapshots       []models.VMSnapshot         `json:"vm_snapshots"`
 }
 
 type JsonDatabase struct {
@@ -604,16 +604,16 @@ func (j *JsonDatabase) loadFromEmpty(ctx basecontext.ApiContext) error {
 	ctx.LogInfof("[Database] Database file is empty, creating new file")
 	j.dataMutex.Lock()
 	j.data = Data{
-		Users:                 make([]models.User, 0),
-		Claims:                make([]models.Claim, 0),
-		Roles:                 make([]models.Role, 0),
-		ApiKeys:               make([]models.ApiKey, 0),
-		PackerTemplates:       make([]models.PackerTemplate, 0),
-		ManifestsCatalog:      make([]models.CatalogManifest, 0),
-		OrchestratorSnapshots: make([]models.OrchestratorSnapshot, 0),
-		VMSnapshots:           make([]models.VMSnapshot, 0),
-		CatalogManagers:       make([]models.CatalogManager, 0),
-		Jobs:                  make([]models.Job, 0),
+		Users:            make([]models.User, 0),
+		Claims:           make([]models.Claim, 0),
+		Roles:            make([]models.Role, 0),
+		ApiKeys:          make([]models.ApiKey, 0),
+		PackerTemplates:  make([]models.PackerTemplate, 0),
+		ManifestsCatalog: make([]models.CatalogManifest, 0),
+		HostsSnapshots:   make([]models.HostSnapshotRecord, 0),
+		VMSnapshots:      make([]models.VMSnapshot, 0),
+		CatalogManagers:  make([]models.CatalogManager, 0),
+		Jobs:             make([]models.Job, 0),
 	}
 	j.dataMutex.Unlock()
 

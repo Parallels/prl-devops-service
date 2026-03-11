@@ -2287,14 +2287,10 @@ func ListOrchestratorHostVirtualMachineSnapshots() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		vmId := vars["vmId"]
-		noCache := false
-		if r.Header.Get("X-No-Cache") == "true" {
-			noCache = true
-		}
 
 		ctx.LogInfof("[controllers/orchestrator][snapshots] Listing snapshots for host %s machine %s", id, vmId)
 
-		response, err := orchestrator.GetHostVirtualMachineSnapshots(ctx, id, vmId, noCache)
+		response, err := orchestrator.GetHostVirtualMachineSnapshots(ctx, id, vmId)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return

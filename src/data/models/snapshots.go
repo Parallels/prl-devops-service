@@ -8,3 +8,8 @@ type Snapshot struct {
 	Current bool   `json:"current"`
 	Parent  string `json:"parent"`
 }
+
+type VMSnapshot struct {
+	VMId      string     `json:"vm_id"`
+	Snapshots []Snapshot `json:"snapshots"`
+}

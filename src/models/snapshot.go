@@ -23,8 +23,10 @@ type Snapshot struct {
 	Parent  string `json:"parent"`
 }
 
+type Snapshots []Snapshot
+
 type ListSnapshotResponse struct {
-	Snapshots []Snapshot `json:"snapshots,omitempty"`
+	Snapshots Snapshots `json:"snapshots,omitempty"`
 }
 
 type RevertSnapshotRequest struct {

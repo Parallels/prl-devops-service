@@ -379,7 +379,10 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 		if listSnapshotResponse != nil {
 			dbSnapshots = mappers.SnapshotsToDto(listSnapshotResponse.Snapshots)
 		}
-		s.db.SetOrchestratorSnapshots(s.ctx, host.ID, vm.ID, dbSnapshots)
+		s.db.SetHostSnapshots(s.ctx, host.ID, models.VMSnapshot{
+			VMId:      vm.ID,
+			Snapshots: dbSnapshots,
+		})
 	}
 	_ = s.persistHost(&host)
 
