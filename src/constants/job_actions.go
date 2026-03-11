@@ -31,4 +31,12 @@ const (
 	ActionPullRegisterVm      = "pull_register_stage"
 	ActionPullRenameVm        = "pull_rename_stage"
 	ActionPullStartVm         = "pull_start_stage"
+
+	// Push Actions
+	ActionPushValidateStage    = "push_validate_stage"
+	ActionPushCompressStage    = "push_compress_stage"
+	ActionPushCheckRemoteStage = "push_check_remote_stage"
+	ActionPushUploadPackStage  = "push_upload_pack_stage"
+	ActionPushUploadMetaStage  = "push_upload_meta_stage"
+	ActionPushRegisterStage    = "push_register_stage"
 )

@@ -67,7 +67,8 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 
 	// Initialize WebSocket Manager and Handlers
 	manager := NewHostWebSocketManager(s.ctx)
-	handlers.NewPDfMEventHandler(manager)
+	pdfmHandler := handlers.NewPDfMEventHandler(manager)
+	pdfmHandler.SetResourceUpdater(s)
 	handlers.NewHostHealthHandler(manager)
 	handlers.NewHostStatsHandler(manager)
 	handlers.NewHostLogsHandler(manager)
@@ -263,33 +264,8 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 		return
 	}
 
-	if host.Resources == nil {
-		host.Resources = &models.HostResources{}
-	}
-
-	dtoResources := mappers.MapHostResourcesFromSystemUsageResponse(*hardwareInfo)
-	host.DevOpsVersion = hardwareInfo.DevOpsVersion
-	host.OsName = hardwareInfo.OsName
-	host.OsVersion = hardwareInfo.OsVersion
-	host.ExternalIpAddress = hardwareInfo.ExternalIpAddress
-	host.Resources = &dtoResources
-	host.Architecture = hardwareInfo.CpuType
-	host.CpuModel = hardwareInfo.CpuBrand
-	host.ParallelsDesktopVersion = hardwareInfo.ParallelsDesktopVersion
-	host.ParallelsDesktopLicensed = hardwareInfo.ParallelsDesktopLicensed
-	host.IsReverseProxyEnabled = hardwareInfo.IsReverseProxyEnabled
-	host.CacheConfig = hardwareInfo.CacheConfig
-	if hardwareInfo.ReverseProxy != nil {
-		host.ReverseProxy = &models.ReverseProxy{
-			Host: hardwareInfo.ReverseProxy.Host,
-			Port: hardwareInfo.ReverseProxy.Port,
-		}
-		host.ReverseProxyHosts = make([]*models.ReverseProxyHost, 0)
-		for _, rpHost := range hardwareInfo.ReverseProxy.Hosts {
-			dtoHost := mappers.ApiReverseProxyHostToDto(rpHost)
-			host.ReverseProxyHosts = append(host.ReverseProxyHosts, &dtoHost)
-		}
-	}
+	// Update host with hardware information using common function
+	s.updateHostWithHardwareInfo(&host, hardwareInfo)
 
 	// Updating the Virtual Machines
 	vms, err := s.GetHostVirtualMachinesInfo(&host)
@@ -440,6 +416,61 @@ func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
 	hostToSave.ReverseProxyHosts = nil
 	hostToSave.CacheItems = nil
 
+	return nil
+}
+
+func (s *OrchestratorService) updateHostWithHardwareInfo(host *models.OrchestratorHost, hardwareInfo *apimodels.SystemUsageResponse) {
+	if host.Resources == nil {
+		host.Resources = &models.HostResources{}
+	}
+
+	dtoResources := mappers.MapHostResourcesFromSystemUsageResponse(*hardwareInfo)
+	host.DevOpsVersion = hardwareInfo.DevOpsVersion
+	host.OsName = hardwareInfo.OsName
+	host.OsVersion = hardwareInfo.OsVersion
+	host.ExternalIpAddress = hardwareInfo.ExternalIpAddress
+	host.Resources = &dtoResources
+	host.Architecture = hardwareInfo.CpuType
+	host.CpuModel = hardwareInfo.CpuBrand
+	host.ParallelsDesktopVersion = hardwareInfo.ParallelsDesktopVersion
+	host.ParallelsDesktopLicensed = hardwareInfo.ParallelsDesktopLicensed
+	host.IsReverseProxyEnabled = hardwareInfo.IsReverseProxyEnabled
+	host.CacheConfig = hardwareInfo.CacheConfig
+	if hardwareInfo.ReverseProxy != nil {
+		host.ReverseProxy = &models.ReverseProxy{
+			Host: hardwareInfo.ReverseProxy.Host,
+			Port: hardwareInfo.ReverseProxy.Port,
+		}
+		host.ReverseProxyHosts = make([]*models.ReverseProxyHost, 0)
+		for _, rpHost := range hardwareInfo.ReverseProxy.Hosts {
+			dtoHost := mappers.ApiReverseProxyHostToDto(rpHost)
+			host.ReverseProxyHosts = append(host.ReverseProxyHosts, &dtoHost)
+		}
+	}
+}
+
+func (s *OrchestratorService) UpdateHostResourcesForEvent(ctx basecontext.ApiContext, hostID string) error {
+	host, err := s.GetHost(ctx, hostID)
+	if err != nil {
+		return err
+	}
+
+	// Get hardware info using existing orchestrator service method
+	hardwareInfo, err := s.GetHostHardwareInfo(host)
+	if err != nil {
+		ctx.LogErrorf("[Orchestrator] Error getting hardware info for host %s: %v", hostID, err)
+		return err
+	}
+
+	// Update host with hardware information
+	s.updateHostWithHardwareInfo(host, hardwareInfo)
+
+	if err := s.persistHost(host); err != nil {
+		ctx.LogErrorf("[Orchestrator] Error persisting host %s: %v", hostID, err)
+		return err
+	}
+
+	ctx.LogInfof("[Orchestrator] Updated host %s resources after VM event", hostID)
 	return nil
 }
 

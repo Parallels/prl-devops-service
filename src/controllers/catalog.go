@@ -190,6 +190,14 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/catalog/push/async").
+		WithRequiredClaim(constants.PUSH_CATALOG_MANIFEST_CLAIM).
+		WithHandler(AsyncPushCatalogManifestHandler()).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/catalog/pull").
@@ -1924,6 +1932,70 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(resultData)
 		ctx.LogInfof("Manifest pushed: %v", resultData.ID)
+	}
+}
+
+// @Summary		Push a catalog manifest to the catalog inventory asynchronously
+// @Description	This endpoint pushes a catalog manifest to the catalog inventory in the background and returns a Job ID to track progress
+// @Tags			Catalogs
+// @Produce		json
+// @Param			pushRequest	body		catalog_models.PushCatalogManifestRequest	true	"Push request"
+// @Success		202			{object}	models.JobResponse
+// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		401			{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/push/async [post]
+func AsyncPushCatalogManifestHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		userContext := ctx.GetUser()
+		if userContext == nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		var request catalog_models.PushCatalogManifestRequest
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			return
+		}
+
+		job, err := jobManager.CreateNewJob(userContext.ID, "catalog", "push", "Initializing catalog push")
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		asyncCtx := basecontext.NewRootBaseContext()
+		manifest := catalog.NewManifestService(asyncCtx)
+		go manifest.AsyncPush(job.ID, &request)
+
+		response := mappers.MapJobToApiJob(*job)
+
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Async manifest push started, job ID: %v", response.ID)
 	}
 }
 

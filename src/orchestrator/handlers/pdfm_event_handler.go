@@ -15,7 +15,13 @@ import (
 )
 
 type PDfMEventHandler struct {
-	registrar interfaces.HostRegistrar
+	registrar       interfaces.HostRegistrar
+	resourceUpdater ResourceUpdater
+}
+
+// ResourceUpdater interface for updating host resources
+type ResourceUpdater interface {
+	UpdateHostResourcesForEvent(ctx basecontext.ApiContext, hostID string) error
 }
 
 var (
@@ -33,6 +39,11 @@ func NewPDfMEventHandler(registrar interfaces.HostRegistrar) *PDfMEventHandler {
 	return pdfmInstance
 }
 
+// SetResourceUpdater sets the resource updater dependency
+func (h *PDfMEventHandler) SetResourceUpdater(updater ResourceUpdater) {
+	h.resourceUpdater = updater
+}
+
 func (h *PDfMEventHandler) Handle(ctx basecontext.ApiContext, hostID string, eventType constants.EventType, payload []byte) {
 	if eventType != constants.EventTypePDFM {
 		return
@@ -47,12 +58,16 @@ func (h *PDfMEventHandler) Handle(ctx basecontext.ApiContext, hostID string, eve
 	switch event.Message {
 	case "VM_STATE_CHANGED":
 		h.handleVmStateChange(ctx, hostID, event)
+		h.updateHostResources(ctx, hostID)
 	case "VM_ADDED":
 		h.handleVmAdded(ctx, hostID, event)
+		h.updateHostResources(ctx, hostID)
 	case "VM_REMOVED":
 		h.handleVmRemoved(ctx, hostID, event)
+		h.updateHostResources(ctx, hostID)
 	case "VM_UPDATED":
 		h.handleVmUpdated(ctx, hostID, event)
+		h.updateHostResources(ctx, hostID)
 	case "VM_UPTIME_CHANGED":
 		h.handleVmUptimeChanged(ctx, hostID, event)
 	case "VM_SNAPSHOTS_UPDATED":
@@ -247,7 +262,7 @@ func (h *PDfMEventHandler) handleVmUpdated(ctx basecontext.ApiContext, hostID st
 	if vmIndex != -1 {
 		host.VirtualMachines[vmIndex] = dtoVm
 	} else {
-		ctx.LogWarnf("[PDfMEventHandler] VM %s not found in host %s for update", vmUpdated.VmID, hostID)
+		ctx.LogWarnf("[PDfMEventHandler] [orchestrator] VM %s not found in host %s for update", vmUpdated.VmID, hostID)
 		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
 	}
 
@@ -312,6 +327,18 @@ func (h *PDfMEventHandler) handleSnapshotsUpdated(ctx basecontext.ApiContext, ho
 	}
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] [snapshots] VM snapshots updated:(VM: %s, Host: %s)", snapshotsUpdated.VmID, hostID)
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_SNAPSHOTS_UPDATED", *snapshotsUpdated)
+}
+
+func (h *PDfMEventHandler) updateHostResources(ctx basecontext.ApiContext, hostID string) error {
+	if h.resourceUpdater == nil {
+		ctx.LogWarnf("[PDfMEventHandler] [orchestrator] No resource updater configured - skipping host resource update")
+		return nil
+	}
+	if err := h.resourceUpdater.UpdateHostResourcesForEvent(ctx, hostID); err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error updating host resources for host %s: %v", hostID, err)
+		return err
+	}
+	return nil
 }
 
 func getHostName(host data_models.OrchestratorHost) string {
