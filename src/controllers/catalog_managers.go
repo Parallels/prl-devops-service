@@ -293,6 +293,16 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/catalog-managers/{id}/catalog/push/async").
+		WithOrClaims().
+		WithRequiredClaim(constants.PUSH_CATALOG_MANIFEST_CLAIM).
+		WithRequiredClaim(constants.CATALOG_MANAGER_PUSH_CATALOG_MANIFEST_OWN_CLAIM).
+		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/push/async")).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/catalog-managers/{id}/catalog/import").

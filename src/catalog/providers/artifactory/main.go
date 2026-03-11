@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -14,7 +15,6 @@ import (
 	"github.com/Parallels/prl-devops-service/writers"
 	"github.com/jfrog/jfrog-client-go/artifactory"
 	"github.com/jfrog/jfrog-client-go/artifactory/auth"
-	"github.com/jfrog/jfrog-client-go/artifactory/services"
 	"github.com/jfrog/jfrog-client-go/config"
 )
 
@@ -39,8 +39,9 @@ type ArtifactoryRepo struct {
 const providerName = "artifactory"
 
 type ArtifactoryProvider struct {
-	Repo  ArtifactoryRepo
-	JobId string
+	Repo          ArtifactoryRepo
+	JobId         string
+	currentAction string
 }
 
 func NewArtifactoryProvider() *ArtifactoryProvider {
@@ -69,6 +70,10 @@ func (s *ArtifactoryProvider) GetProviderMeta(ctx basecontext.ApiContext) map[st
 
 func (s *ArtifactoryProvider) SetJobId(jobId string) {
 	s.JobId = jobId
+}
+
+func (s *ArtifactoryProvider) SetCurrentAction(action string) {
+	s.currentAction = action
 }
 
 func (s *ArtifactoryProvider) GetProviderRootPath(ctx basecontext.ApiContext) string {
@@ -152,34 +157,56 @@ func (s *ArtifactoryProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 	ctx.LogInfof("[%s] Pushing file %s", s.Name(), filename)
 	localFilePath := filepath.Join(rootLocalPath, filename)
 	remoteFilePath := filepath.Join(s.Repo.RepoName, path, filename)
-	if !strings.HasPrefix(remoteFilePath, "/") {
-		remoteFilePath = "/" + remoteFilePath
-	}
+	remoteFilePath = strings.TrimPrefix(remoteFilePath, "/")
 
-	manager, err := s.getClient(ctx)
+	host := s.getHost()
+	uploadURL := fmt.Sprintf("%s/%s", host, remoteFilePath)
+
+	file, err := os.Open(filepath.Clean(localFilePath))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open local file %s: %w", localFilePath, err)
 	}
+	defer file.Close()
 
-	params := services.NewUploadParams()
-	params.Pattern = localFilePath
-	params.Target = remoteFilePath
-	params.IncludeDirs = true
-	params.ChecksumsCalcEnabled = true
-
-	totalUploaded, totalFailed, err := manager.UploadFiles(params)
+	fileInfo, err := file.Stat()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to stat local file %s: %w", localFilePath, err)
 	}
-	if totalFailed > 0 {
-		return fmt.Errorf("failed to upload %s", filename)
+
+	action := s.currentAction
+	if action == "" {
+		action = "uploading"
 	}
-	if totalUploaded != 1 {
-		return fmt.Errorf("failed to upload %s", filename)
+	pr := writers.NewProgressFileReader(file, fileInfo.Size(), action)
+	pr.SetJobId(s.JobId)
+	pr.SetCorrelationId(s.JobId)
+	pr.SetPrefix("Uploading")
+
+	client := http.DefaultClient
+	request, err := http.NewRequestWithContext(ctx.Context(), http.MethodPut, uploadURL, pr)
+	if err != nil {
+		return fmt.Errorf("failed to create upload request: %w", err)
+	}
+	request.ContentLength = fileInfo.Size()
+	request.Header.Set("Content-Type", "application/octet-stream")
+
+	if s.getAuthenticationMethod() == ApiKeyMethod {
+		request.Header.Set("X-JFrog-Art-Api", s.Repo.ApiKey)
+	} else {
+		request.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(s.Repo.UserName+":"+s.Repo.Password)))
+	}
+
+	response, err := client.Do(request)
+	if err != nil {
+		return fmt.Errorf("failed to upload %s: %w", filename, err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return fmt.Errorf("failed to upload %s, status code: %d", filename, response.StatusCode)
 	}
 
 	ctx.LogInfof("[%s] Uploaded %s", s.Name(), filename)
-
 	return nil
 }
 

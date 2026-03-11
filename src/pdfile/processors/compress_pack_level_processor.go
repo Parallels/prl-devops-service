@@ -31,7 +31,7 @@ func (p CompressPackLevelCommandProcessor) Process(ctx basecontext.ApiContext, l
 		return false, diag
 	}
 
-	dest.CompressPackLevel = compressLevel
+	dest.CompressPackLevel = &compressLevel
 
 	ctx.LogDebugf("Processed by CompressPackLevelCommandProcessor, line %v", line)
 	return true, diag

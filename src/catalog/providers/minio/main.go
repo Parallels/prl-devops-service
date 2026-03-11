@@ -41,8 +41,9 @@ type MinioBucket struct {
 const providerName = "minio"
 
 type MinioBucketProvider struct {
-	Bucket MinioBucket
-	JobId  string
+	Bucket        MinioBucket
+	JobId         string
+	currentAction string
 }
 
 func NewMinioProvider() *MinioBucketProvider {
@@ -76,6 +77,10 @@ func (s *MinioBucketProvider) CanStream() bool {
 
 func (s *MinioBucketProvider) SetJobId(jobId string) {
 	s.JobId = jobId
+}
+
+func (s *MinioBucketProvider) SetCurrentAction(action string) {
+	s.currentAction = action
 }
 
 func (s *MinioBucketProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
@@ -162,9 +167,15 @@ func (s *MinioBucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 
 	defer file.Close()
 
-	cr := writers.NewProgressFileReader(file, fileInfo.Size(), constants.ActionUploadingPackFile)
+	action := s.currentAction
+	if action == "" {
+		action = constants.ActionUploadingPackFile
+	}
+	cr := writers.NewProgressFileReader(file, fileInfo.Size(), action)
+	cr.SetJobId(s.JobId)
+	cr.SetCorrelationId(s.JobId)
+	cr.SetPrefix("Uploading")
 	cid := cr.CorrelationId()
-	cr.SetPrefix("Reading file parts")
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s.Bucket.Name),

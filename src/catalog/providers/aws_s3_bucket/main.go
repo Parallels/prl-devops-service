@@ -38,9 +38,10 @@ type S3Bucket struct {
 const providerName = "aws-s3"
 
 type AwsS3BucketProvider struct {
-	Bucket S3Bucket
-	ctx    basecontext.ApiContext
-	JobId  string
+	Bucket        S3Bucket
+	ctx           basecontext.ApiContext
+	JobId         string
+	currentAction string
 }
 
 func NewAwsS3Provider() *AwsS3BucketProvider {
@@ -73,6 +74,10 @@ func (s *AwsS3BucketProvider) CanStream() bool {
 
 func (s *AwsS3BucketProvider) SetJobId(jobId string) {
 	s.JobId = jobId
+}
+
+func (s *AwsS3BucketProvider) SetCurrentAction(action string) {
+	s.currentAction = action
 }
 
 func (s *AwsS3BucketProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
@@ -156,9 +161,15 @@ func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 
 	defer file.Close()
 
-	cr := writers.NewProgressFileReader(file, fileInfo.Size(), constants.ActionUploadingPackFile)
+	action := s.currentAction
+	if action == "" {
+		action = constants.ActionUploadingPackFile
+	}
+	cr := writers.NewProgressFileReader(file, fileInfo.Size(), action)
+	cr.SetJobId(s.JobId)
+	cr.SetCorrelationId(s.JobId)
+	cr.SetPrefix("Uploading")
 	cid := cr.CorrelationId()
-	cr.SetPrefix("Reading file parts")
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s.Bucket.Name),
