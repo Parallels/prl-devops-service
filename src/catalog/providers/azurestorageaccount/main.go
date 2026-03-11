@@ -30,6 +30,7 @@ const providerName = "azure-storage-account"
 type AzureStorageAccountProvider struct {
 	StorageAccount AzureStorageAccount
 	JobId          string
+	currentAction  string
 }
 
 func NewAzureStorageAccountProvider() *AzureStorageAccountProvider {
@@ -59,6 +60,10 @@ func (s *AzureStorageAccountProvider) GetProviderRootPath(ctx basecontext.ApiCon
 
 func (s *AzureStorageAccountProvider) SetJobId(jobId string) {
 	s.JobId = jobId
+}
+
+func (s *AzureStorageAccountProvider) SetCurrentAction(action string) {
+	s.currentAction = action
 }
 
 func (s *AzureStorageAccountProvider) Check(ctx basecontext.ApiContext, connection string) (bool, error) {
@@ -114,8 +119,13 @@ func (s *AzureStorageAccountProvider) PushFile(ctx basecontext.ApiContext, rootL
 	if err != nil {
 		return err
 	}
-
 	defer file.Close()
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	fileSize := fileInfo.Size()
 
 	md5, err := helpers.GetFileMD5Checksum(localFilePath)
 	if err != nil {
@@ -123,9 +133,28 @@ func (s *AzureStorageAccountProvider) PushFile(ctx basecontext.ApiContext, rootL
 	}
 	// md5Hash := base64.StdEncoding.EncodeToString([]byte(md5))
 
+	action := s.currentAction
+	if action == "" {
+		action = constants.ActionUploadingPackFile
+	}
+	ns := tracker.GetProgressService()
+	startTime := time.Now()
 	_, err = azblob.UploadFileToBlockBlob(ctx.Context(), file, blobUrl, azblob.UploadToBlockBlobOptions{
 		BlockSize:   4 * 1024 * 1024,
 		Parallelism: 16,
+		Progress: func(bytesTransferred int64) {
+			if ns != nil && s.JobId != "" && fileSize > 0 {
+				pct := float64(bytesTransferred) / float64(fileSize) * 100.0
+				if pct > 100 {
+					pct = 100
+				}
+				msg := tracker.NewJobProgressMessage(s.JobId, "Uploading", pct).
+					WithJob(s.JobId, action).
+					WithTransfer(bytesTransferred, fileSize).
+					SetStartingTime(startTime)
+				ns.Notify(msg)
+			}
+		},
 	})
 	if err != nil {
 		return err

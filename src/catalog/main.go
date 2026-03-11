@@ -21,12 +21,41 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/providers/local"
 	"github.com/Parallels/prl-devops-service/catalog/providers/minio"
 	"github.com/Parallels/prl-devops-service/compressor"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs/tracker"
 
 	"github.com/cjlapao/common-go/helper"
 )
+
+// compressProgressReader wraps an io.Reader to report byte-level compression
+// progress to the job tracker using a shared written counter across all files.
+type compressProgressReader struct {
+	r          io.Reader
+	ns         *tracker.JobProgressService
+	jobId      string
+	totalBytes int64
+	written    *int64
+	startTime  time.Time
+}
+
+func (r *compressProgressReader) Read(p []byte) (int, error) {
+	n, err := r.r.Read(p)
+	if n > 0 && r.ns != nil && r.jobId != "" && r.totalBytes > 0 {
+		*r.written += int64(n)
+		pct := float64(*r.written) / float64(r.totalBytes) * 100.0
+		if pct > 100 {
+			pct = 100
+		}
+		msg := tracker.NewJobProgressMessage(r.jobId, "Compressing", pct).
+			WithJob(r.jobId, constants.ActionPushCompressStage).
+			WithTransfer(*r.written, r.totalBytes).
+			SetStartingTime(r.startTime)
+		r.ns.Notify(msg)
+	}
+	return n, err
+}
 
 type CompressorType int
 
@@ -100,6 +129,8 @@ func (s *CatalogManifestService) GenerateManifestContent(r *models.PushCatalogMa
 		manifest = models.NewVirtualMachineCatalogManifest()
 	}
 
+	r.LocalPath = strings.TrimRight(r.LocalPath, "/")
+
 	manifest.CleanupRequest = cleanupservice.NewCleanupService()
 	manifest.CreatedAt = helpers.GetUtcCurrentDateTime()
 	manifest.UpdatedAt = helpers.GetUtcCurrentDateTime()
@@ -126,7 +157,9 @@ func (s *CatalogManifestService) GenerateManifestContent(r *models.PushCatalogMa
 
 	_, file := filepath.Split(r.LocalPath)
 	ext := filepath.Ext(file)
-	manifest.Type = ext[1:]
+	if len(ext) > 1 {
+		manifest.Type = ext[1:]
+	}
 
 	isDir, err := helpers.IsDirectory(r.LocalPath)
 	if err != nil {
@@ -144,7 +177,7 @@ func (s *CatalogManifestService) GenerateManifestContent(r *models.PushCatalogMa
 
 	s.ns.NotifyInfof("Compressing manifest files for %v", r.CatalogId)
 	s.sendPushStepInfo(r, "Compressing manifest files")
-	packFilePath, err := s.compressMachine(r.LocalPath, manifestPackFileName, "/tmp", r.CompressPack, r.CompressPackLevel, nil)
+	packFilePath, err := s.compressMachine(r.LocalPath, manifestPackFileName, "/tmp", r.CompressPack, *r.CompressPackLevel, r.JobId, nil)
 	if err != nil {
 		return err
 	}
@@ -154,6 +187,7 @@ func (s *CatalogManifestService) GenerateManifestContent(r *models.PushCatalogMa
 	manifest.CompressedPath = packFilePath
 	manifest.PackFile = "/tmp/" + manifestPackFileName
 	manifest.IsCompressed = r.CompressPack
+	manifest.CompressLevel = *r.CompressPackLevel
 
 	fileInfo, err := os.Stat(packFilePath)
 	if err != nil {
@@ -299,7 +333,7 @@ func (s *CatalogManifestService) getPackFilename(name string) string {
 	return name
 }
 
-func (s *CatalogManifestService) compressMachine(path string, machineFileName string, destination string, enableCompression bool, compressLevel int, stepChannel chan string) (string, error) {
+func (s *CatalogManifestService) compressMachine(path string, machineFileName string, destination string, enableCompression bool, compressLevel int, jobId string, stepChannel chan string) (string, error) {
 	compressLevelStr, compressLevelErr := helpers.GetCompressRatioEnvValue(compressLevel)
 
 	// recovering to best compression if error
@@ -339,6 +373,7 @@ func (s *CatalogManifestService) compressMachine(path string, machineFileName st
 		defer gzipWriter.Close()
 	}
 
+	var totalBytes int64
 	countFiles := 0
 	if err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -348,11 +383,13 @@ func (s *CatalogManifestService) compressMachine(path string, machineFileName st
 			return nil
 		}
 		countFiles += 1
+		totalBytes += info.Size()
 		return nil
 	}); err != nil {
 		return "", err
 	}
 
+	var writtenBytes int64
 	compressed := 1
 	err = filepath.Walk(path, func(machineFilePath string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -385,7 +422,15 @@ func (s *CatalogManifestService) compressMachine(path string, machineFileName st
 			return err
 		}
 
-		_, err = io.Copy(tarWriter, f)
+		reader := &compressProgressReader{
+			r:          f,
+			ns:         s.ns,
+			jobId:      jobId,
+			totalBytes: totalBytes,
+			written:    &writtenBytes,
+			startTime:  startingTime,
+		}
+		_, err = io.Copy(tarWriter, reader)
 		return err
 	})
 	if err != nil {

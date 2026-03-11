@@ -25,9 +25,12 @@ type PushCatalogManifestRequest struct {
 	Version                 string                 `json:"version"`
 	Architecture            string                 `json:"architecture"`
 	Connection              string                 `json:"connection"`
+	Compress                bool                   `json:"compress,omitempty"`
+	CompressLevel           string                 `json:"compress_level,omitempty"`
 	CompressPack            bool                   `json:"compress_pack,omitempty"`
-	CompressPackLevel       int                    `json:"compress_pack_level,omitempty"`
+	CompressPackLevel       *int                   `json:"compress_pack_level,omitempty"`
 	Uuid                    string                 `json:"uuid,omitempty"`
+	OverrideExisting        bool                   `json:"override_existing,omitempty"`
 	RequiredRoles           []string               `json:"required_roles,omitempty"`
 	RequiredClaims          []string               `json:"required_claims,omitempty"`
 	Tags                    []string               `json:"tags,omitempty"`
@@ -87,6 +90,36 @@ func (r *PushCatalogManifestRequest) Validate() error {
 		if r.Architecture != "x86_64" && r.Architecture != "arm64" {
 			return ErrInvalidArchitecture
 		}
+	}
+
+	// Set compress pack level if compress is true and compress level is not set
+	if r.Compress {
+		r.CompressPack = true
+	}
+
+	if r.CompressPack {
+		r.Compress = true
+		if r.CompressLevel == "" && r.CompressPackLevel == nil {
+			r.CompressLevel = "balanced"
+			compressLevel := 5
+			r.CompressPackLevel = &compressLevel
+		}
+
+		if r.CompressLevel != "" {
+			compressLevel, err := helpers.ConvertCompressRatioFromString(r.CompressLevel)
+			if err != nil {
+				r.CompressLevel = "balanced"
+				compressLevel := 5
+				r.CompressPackLevel = &compressLevel
+			}
+			r.CompressPackLevel = &compressLevel
+		}
+	}
+
+	// Set default compress pack level if not set
+	if r.CompressPackLevel == nil {
+		defaultCompressLevel := -1
+		r.CompressPackLevel = &defaultCompressLevel
 	}
 
 	if helpers.ContainsIllegalChars(r.Version) {

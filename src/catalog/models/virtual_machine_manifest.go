@@ -30,6 +30,7 @@ type VirtualMachineCatalogManifest struct {
 	LastDownloadedAt        string                              `json:"last_downloaded_at"`
 	LastDownloadedUser      string                              `json:"last_downloaded_user"`
 	IsCompressed            bool                                `json:"is_compressed"`
+	CompressLevel           int                                 `json:"compress_level,omitempty"`
 	PackRelativePath        string                              `json:"pack_relative_path"`
 	DownloadCount           int                                 `json:"download_count"`
 	CompressedPath          string                              `json:"-"`

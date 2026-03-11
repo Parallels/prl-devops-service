@@ -42,6 +42,13 @@ func (s *CatalogManifestService) AsyncPull(jobId string, r *models.PullCatalogMa
 		return
 	}
 
+	defer func() {
+		if rec := recover(); rec != nil {
+			s.ns.NotifyErrorf("AsyncPull panic recovered for job %v: %v", jobId, rec)
+			jobManager.MarkJobError(jobId, fmt.Errorf("internal error: %v", rec))
+		}
+	}()
+
 	response := s.PullWithExistingJob(jobId, r)
 	if response.HasErrors() {
 		errorMessage := "Error pulling manifest:"
