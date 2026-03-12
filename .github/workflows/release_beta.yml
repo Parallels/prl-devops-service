@@ -1,6 +1,6 @@
 name: Release Beta Service
 permissions:
-  contents: read
+  contents: write
   
 on:
   push:

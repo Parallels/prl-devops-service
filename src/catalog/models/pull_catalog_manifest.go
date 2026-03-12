@@ -1,15 +1,10 @@
 package models
 
 import (
-	"fmt"
-
-	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
-	"github.com/Parallels/prl-devops-service/serviceprovider"
-	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 )
 
 var (
@@ -50,29 +45,9 @@ func (r *PullCatalogManifestRequest) Validate() error {
 		return ErrMissingConnection
 	}
 
-	ctx := basecontext.NewRootBaseContext()
-	svcCtl := system.Get()
 	cfg := config.Get()
-	arch, err := svcCtl.GetArchitecture(ctx)
-	if err != nil {
-		return errors.New("unable to determine architecture")
-	}
-	r.architecture = arch
-
 	if r.Owner == "" {
 		r.Owner = cfg.GetKey(constants.CURRENT_USER_ENV_VAR)
-	}
-
-	if r.Path == "" {
-		prl := serviceprovider.Get().ParallelsDesktopService
-		if prl == nil {
-			return errors.New("Local Path is required and we are unable to determine it without Parallels Desktop Service")
-		}
-		userPath, err := prl.GetUserHome(ctx, r.Owner)
-		if err != nil {
-			return fmt.Errorf("unable to determine user %v home for path", r.Owner)
-		}
-		r.Path = userPath
 	}
 
 	return nil

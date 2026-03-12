@@ -1072,7 +1072,8 @@ func GetOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 // @Description	This endpoint deletes orchestrator virtual machine
 // @Tags			Orchestrator
 // @Produce		json
-// @Param			id	path	string	true	"Virtual Machine ID"
+// @Param			id		path	string	true	"Virtual Machine ID"
+// @Param			force	query	bool	false	"Force Delete"
 // @Success		202
 // @Failure		400	{object}	models.ApiErrorResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
@@ -1089,7 +1090,12 @@ func DeleteOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		err := orchestratorSvc.DeleteVirtualMachine(ctx, id)
+		force := false
+		if r.URL.Query().Get("force") == "true" {
+			force = true
+		}
+
+		err := orchestratorSvc.DeleteVirtualMachine(ctx, id, force)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1701,6 +1707,7 @@ func GetOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id		path	string	true	"Host ID"
 // @Param			vmId	path	string	true	"Virtual Machine ID"
+// @Param			force	query	bool	false	"Force Delete"
 // @Success		202
 // @Failure		400	{object}	models.ApiErrorResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
@@ -1718,7 +1725,12 @@ func DeleteOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 		id := vars["id"]
 		vmId := vars["vmId"]
 
-		err := orchestratorSvc.DeleteHostVirtualMachine(ctx, id, vmId)
+		force := false
+		if r.URL.Query().Get("force") == "true" {
+			force = true
+		}
+
+		err := orchestratorSvc.DeleteHostVirtualMachine(ctx, id, vmId, force)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return

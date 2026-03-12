@@ -9,6 +9,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog"
+	catalog_helpers "github.com/Parallels/prl-devops-service/catalog/common"
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
@@ -637,7 +638,10 @@ func DeleteVirtualMachineHandler() restapi.ControllerHandler {
 		params := mux.Vars(r)
 		id := params["id"]
 
-		err := svc.DeleteVm(ctx, id)
+		// Get force parameter from query string
+		force := r.URL.Query().Get("force") == "true"
+
+		err := svc.DeleteVm(ctx, id, force)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1792,6 +1796,17 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 
 	pullRequest.StartAfterPull = request.StartOnCreate
 
+	// Validate architecture and path
+	arch, err := catalog_helpers.ValidateArch(pullRequest.Architecture)
+	if err != nil {
+		return nil, err
+	}
+	path, err := catalog_helpers.ValidatePath(pullRequest.Path, pullRequest.Owner)
+	if err != nil {
+		return nil, err
+	}
+	pullRequest.Architecture = arch
+	pullRequest.Path = path
 	if err := pullRequest.Validate(); err != nil {
 		return nil, err
 	}

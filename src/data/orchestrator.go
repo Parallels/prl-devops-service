@@ -179,15 +179,18 @@ func (j *JsonDatabase) DeleteOrchestratorVirtualMachine(ctx basecontext.ApiConte
 	j.dataMutex.Lock()
 	defer j.dataMutex.Unlock()
 
-	for _, host := range j.data.OrchestratorHosts {
+	for hostIdx, host := range j.data.OrchestratorHosts {
 		if strings.EqualFold(host.ID, idOrHost) || strings.EqualFold(host.Host, idOrHost) {
-			for j, vm := range host.VirtualMachines {
+			for vmIdx, vm := range host.VirtualMachines {
 				if strings.EqualFold(vm.ID, vmIdOrName) || strings.EqualFold(vm.Name, vmIdOrName) {
-					host.VirtualMachines = append(host.VirtualMachines[:j], host.VirtualMachines[j+1:]...)
+					j.data.OrchestratorHosts[hostIdx].VirtualMachines = append(
+						j.data.OrchestratorHosts[hostIdx].VirtualMachines[:vmIdx],
+						j.data.OrchestratorHosts[hostIdx].VirtualMachines[vmIdx+1:]...)
+					return nil
 				}
 			}
 
-			return nil
+			return ErrOrchestratorHostVirtualMachineNotFound
 		}
 	}
 
