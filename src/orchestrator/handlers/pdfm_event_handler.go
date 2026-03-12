@@ -70,6 +70,8 @@ func (h *PDfMEventHandler) Handle(ctx basecontext.ApiContext, hostID string, eve
 		h.updateHostResources(ctx, hostID)
 	case "VM_UPTIME_CHANGED":
 		h.handleVmUptimeChanged(ctx, hostID, event)
+	case "VM_SNAPSHOTS_UPDATED":
+		h.handleSnapshotsUpdated(ctx, hostID, event)
 	default:
 		ctx.LogWarnf("[PDfMEventHandler] Unknown event message : %s", event.Message)
 	}
@@ -299,6 +301,28 @@ func (h *PDfMEventHandler) handleVmUptimeChanged(ctx basecontext.ApiContext, hos
 	}
 
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_UPTIME_CHANGED", *uptimeChanged)
+}
+
+func (h *PDfMEventHandler) handleSnapshotsUpdated(ctx basecontext.ApiContext, hostID string, event models.EventMessage) {
+	snapshotsUpdated, err := unmarshalEventBody[models.VmSnapshotsUpdated](ctx, event, "VM snapshots updated event")
+	if err != nil {
+		return
+	}
+
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
+		return
+	}
+
+	err = dbService.SetOrchestratorSnapshots(ctx, hostID, snapshotsUpdated.VmID,
+		models.ListSnapshotResponse{Snapshots: snapshotsUpdated.Snapshots})
+	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] [snapshots] Error updating snapshots in DB for VM %s: %v", snapshotsUpdated.VmID, err)
+		return
+	}
+	ctx.LogInfof("[PDfMEventHandler] [orchestrator] [snapshots] VM snapshots updated:(VM: %s, Host: %s)", snapshotsUpdated.VmID, hostID)
+	h.emitHostVMEvent(ctx, hostID, "HOST_VM_SNAPSHOTS_UPDATED", *snapshotsUpdated)
 }
 
 func (h *PDfMEventHandler) updateHostResources(ctx basecontext.ApiContext, hostID string) error {
