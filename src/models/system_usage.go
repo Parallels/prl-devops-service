@@ -46,3 +46,14 @@ type SystemReverseProxy struct {
 	Port    string             `json:"port,omitempty"`
 	Hosts   []ReverseProxyHost `json:"hosts,omitempty"`
 }
+
+type DiskSpaceAvailableRequest struct {
+	UserName   string `json:"username,omitempty"`
+	FolderPath string `json:"folder_path,omitempty"`
+}
+
+type DiskSpaceAvailable struct {
+	CacheFolder   string `json:"cache_folder_size,omitempty"`
+	ParallelsHome string `json:"parallels_home_size,omitempty"`
+	Given         string `json:"given_path_size,omitempty"`
+}
