@@ -1252,7 +1252,7 @@ func (s *ParallelsService) PauseVm(ctx basecontext.ApiContext, id string) error 
 	return s.SetVmState(ctx, id, ParallelsVirtualMachineDesiredStatePause, DesiredStateFlags{})
 }
 
-func (s *ParallelsService) DeleteVm(ctx basecontext.ApiContext, id string) error {
+func (s *ParallelsService) DeleteVm(ctx basecontext.ApiContext, id string, force bool) error {
 	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return err
@@ -1262,8 +1262,16 @@ func (s *ParallelsService) DeleteVm(ctx basecontext.ApiContext, id string) error
 		return errors.Newf("VM with id %s was not found", id)
 	}
 
-	if vm.State != "stopped" && vm.State != "invalid" {
+	if vm.State != "stopped" && vm.State != "invalid" && !force {
 		return errors.New("VM is not stopped")
+	}
+
+	// we have a vm that is not stopped or invalid and force is true, we need to stop it first
+	if force && vm.State != "invalid" && vm.State != "stopped" {
+		forceFlag := DesiredStateFlags{flags: []string{"--force"}}
+		if err := s.StopVm(ctx, id, forceFlag); err != nil {
+			return err
+		}
 	}
 
 	// If the VM is in an invalid state, we need to destroy it first

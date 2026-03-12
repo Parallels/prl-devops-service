@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -10,7 +11,7 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
-func (s *OrchestratorService) DeleteVirtualMachine(ctx basecontext.ApiContext, vmId string) error {
+func (s *OrchestratorService) DeleteVirtualMachine(ctx basecontext.ApiContext, vmId string, force bool) error {
 	vm, err := s.GetVirtualMachine(ctx, vmId, false)
 	if err != nil {
 		return err
@@ -37,7 +38,7 @@ func (s *OrchestratorService) DeleteVirtualMachine(ctx basecontext.ApiContext, v
 		return errors.NewWithCodef(400, "Host %s is not healthy", vm.HostId)
 	}
 
-	err = s.DeleteHostVirtualMachine(ctx, vm.HostId, vmId)
+	err = s.DeleteHostVirtualMachine(ctx, vm.HostId, vmId, force)
 	if err != nil {
 		return err
 	}
@@ -45,7 +46,7 @@ func (s *OrchestratorService) DeleteVirtualMachine(ctx basecontext.ApiContext, v
 	return nil
 }
 
-func (s *OrchestratorService) DeleteHostVirtualMachine(ctx basecontext.ApiContext, hostId string, vmId string) error {
+func (s *OrchestratorService) DeleteHostVirtualMachine(ctx basecontext.ApiContext, hostId string, vmId string, force bool) error {
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return err
@@ -77,7 +78,7 @@ func (s *OrchestratorService) DeleteHostVirtualMachine(ctx basecontext.ApiContex
 		return errors.NewWithCodef(404, "Virtual machine %s not found on host %s", vmId, hostId)
 	}
 
-	err = s.CallDeleteHostVirtualMachine(host, vmId)
+	err = s.CallDeleteHostVirtualMachine(host, vmId, force)
 	if err != nil {
 		return err
 	}
@@ -91,11 +92,11 @@ func (s *OrchestratorService) DeleteHostVirtualMachine(ctx basecontext.ApiContex
 	return nil
 }
 
-func (s *OrchestratorService) CallDeleteHostVirtualMachine(host *models.OrchestratorHost, vmId string) error {
+func (s *OrchestratorService) CallDeleteHostVirtualMachine(host *models.OrchestratorHost, vmId string, force bool) error {
 	httpClient := s.getApiClient(*host)
 	httpClient.WithTimeout(10 * time.Minute) // deleting virtual machines can take a while, waiting for 10 minutes
 
-	path := "/v1/machines/" + vmId
+	path := "/v1/machines/" + vmId + "?force=" + strconv.FormatBool(force)
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {
 		return err

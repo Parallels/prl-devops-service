@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog"
 	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
+	catalog_helpers "github.com/Parallels/prl-devops-service/catalog/common"
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
@@ -1881,6 +1882,18 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+
+		// Validate architecture and path
+		arch, err := catalog_helpers.ValidateArch(request.Architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		request.Architecture = arch
+
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -1967,6 +1980,17 @@ func AsyncPushCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
+		// Validate architecture
+		arch, err := catalog_helpers.ValidateArch(request.Architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		request.Architecture = arch
+
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -2023,6 +2047,27 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+
+		// Validate architecture and path
+		arch, err := catalog_helpers.ValidateArch(request.Architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		path, err := catalog_helpers.ValidatePath(request.Path, request.Owner)
+		if err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		request.Architecture = arch
+		request.Path = path
+
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -2030,6 +2075,7 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+
 		sendTelemetry := false
 		var amplitudeEvent models.AmplitudeEvent
 		telemetryItem := telemetry.TelemetryItem{}
@@ -2125,6 +2171,27 @@ func AsyncPullCatalogManifestHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+
+		// Validate architecture and path
+		arch, err := catalog_helpers.ValidateArch(request.Architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		path, err := catalog_helpers.ValidatePath(request.Path, request.Owner)
+		if err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		request.Architecture = arch
+		request.Path = path
 
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{

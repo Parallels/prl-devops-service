@@ -1046,7 +1046,26 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 	}
 	defer response.Body.Close()
 
+	// Skip headers managed by local middleware to avoid duplicates
+	skipHeaders := map[string]bool{
+		"Access-Control-Allow-Origin":      true,
+		"Access-Control-Allow-Methods":     true,
+		"Access-Control-Allow-Headers":     true,
+		"Access-Control-Allow-Credentials": true,
+		"Access-Control-Expose-Headers":    true,
+		"Access-Control-Max-Age":           true,
+		"Permissions-Policy":               true,
+		"Referrer-Policy":                  true,
+		"Strict-Transport-Security":        true,
+		"X-Content-Type-Options":           true,
+		"X-Frame-Options":                  true,
+		"X-Robots-Tag":                     true,
+		"Via":                              true,
+	}
 	for key, values := range response.Header {
+		if skipHeaders[key] {
+			continue
+		}
 		for _, value := range values {
 			w.Header().Add(key, value)
 		}
