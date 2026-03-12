@@ -70,7 +70,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithOrClaims().
 		WithRequiredClaim(constants.CREATE_SNAPSHOT_VM_CLAIM).
 		WithRequiredClaim(constants.CREATE_OWN_VM_SNAPSHOT_CLAIM).
-		WithHandler(CreateSnapshot()).
+		WithHandler(CreateVMSnapshot()).
 		Register()
 
 	restapi.NewController().
@@ -80,7 +80,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithOrClaims().
 		WithRequiredClaim(constants.DELETE_SNAPSHOT_VM_CLAIM).
 		WithRequiredClaim(constants.DELETE_OWN_VM_SNAPSHOT_CLAIM).
-		WithHandler(DeleteSnapshot()).
+		WithHandler(DeleteVMSnapshot()).
 		Register()
 
 	restapi.NewController().
@@ -90,7 +90,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithOrClaims().
 		WithRequiredClaim(constants.DELETE_ALL_SNAPSHOTS_VM_CLAIM).
 		WithRequiredClaim(constants.DELETE_ALL_OWN_VM_SNAPSHOTS_CLAIM).
-		WithHandler(DeleteAllSnapshots()).
+		WithHandler(DeleteAllVMSnapshots()).
 		Register()
 
 	restapi.NewController().
@@ -100,7 +100,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithOrClaims().
 		WithRequiredClaim(constants.LIST_SNAPSHOT_VM_CLAIM).
 		WithRequiredClaim(constants.LIST_OWN_VM_SNAPSHOT_CLAIM).
-		WithHandler(ListSnapshot()).
+		WithHandler(ListVMSnapshot()).
 		Register()
 
 	restapi.NewController().
@@ -110,7 +110,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithPath("/machines/{id}/snapshots/{snapshot_id}/revert").
 		WithRequiredClaim(constants.REVERT_SNAPSHOT_VM_CLAIM).
 		WithRequiredClaim(constants.REVERT_OWN_VM_SNAPSHOT_CLAIM).
-		WithHandler(RevertSnapshot()).
+		WithHandler(RevertVMSnapshot()).
 		Register()
 
 	restapi.NewController().
@@ -1329,19 +1329,19 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 // @Tags			Machines
 // @Produce		json
 // @Param			id				path		string							true	"Machine ID"
-// @Param			createRequest	body		models.CreateSnapShotRequest	true	"Create Snapshot Request"
+// @Param			createRequest	body		models.CreateVMSnapshotRequest	true	"Create Snapshot Request"
 // @Success		202				{object}	models.ApiCommonResponse
 // @Failure		400				{object}	models.ApiErrorResponse
 // @Failure		401				{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/machines/{id}/snapshots [post]
-func CreateSnapshot() restapi.ControllerHandler {
+func CreateVMSnapshot() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		var request models.CreateSnapShotRequest
+		var request models.CreateVMSnapshotRequest
 		ctx.LogInfof("[controllers/machines][snapshots] Creating snapshot")
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -1356,15 +1356,15 @@ func CreateSnapshot() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		response, err := svc.CreateSnapshot(ctx, VMId, &request)
+		response, err := svc.CreateVMSnapshot(ctx, VMId, &request)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
-		var snapshots *models.ListSnapshotResponse
+		var snapshots *models.ListVMSnapshotResponse
 		for i := 0; i < 20; i++ {
 			time.Sleep(500 * time.Millisecond)
-			snapshots, err = svc.GetSnapshotsFromDB(ctx, VMId)
+			snapshots, err = svc.GetVMSnapshotsFromDB(ctx, VMId)
 			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
@@ -1397,12 +1397,12 @@ func CreateSnapshot() restapi.ControllerHandler {
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/machines/{id}/snapshots/{snapshot_id} [delete]
-func DeleteSnapshot() restapi.ControllerHandler {
+func DeleteVMSnapshot() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		var request models.DeleteSnapshotRequest
+		var request models.DeleteVMSnapshotRequest
 		ctx.LogInfof("[controllers/machines][snapshots] Deleting snapshot")
 
 		params := mux.Vars(r)
@@ -1412,7 +1412,7 @@ func DeleteSnapshot() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		err := svc.DeleteSnapshot(ctx, VMId, SnapshotId, &request)
+		err := svc.DeleteVMSnapshot(ctx, VMId, SnapshotId, &request)
 		if err != nil {
 			err = fmt.Errorf("please check snapshot id[%s]: %v", SnapshotId, err)
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -1424,7 +1424,7 @@ func DeleteSnapshot() restapi.ControllerHandler {
 
 		for i := 0; i < 20; i++ {
 			time.Sleep(500 * time.Millisecond)
-			snapshots, err := svc.GetSnapshotsFromDB(ctx, VMId)
+			snapshots, err := svc.GetVMSnapshotsFromDB(ctx, VMId)
 			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
@@ -1460,7 +1460,7 @@ func DeleteSnapshot() restapi.ControllerHandler {
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/machines/{id}/snapshots [delete]
-func DeleteAllSnapshots() restapi.ControllerHandler {
+func DeleteAllVMSnapshots() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
@@ -1474,14 +1474,14 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		snapshots, err := svc.GetSnapshotsFromDB(ctx, VMId)
+		snapshots, err := svc.GetVMSnapshotsFromDB(ctx, VMId)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
 
 		for _, snapshot := range snapshots.Snapshots {
-			err = svc.DeleteSnapshot(ctx, VMId, snapshot.ID, &models.DeleteSnapshotRequest{})
+			err = svc.DeleteVMSnapshot(ctx, VMId, snapshot.ID, &models.DeleteVMSnapshotRequest{})
 			if err != nil {
 				err = fmt.Errorf("please check snapshot id[%s]: %v", snapshot.ID, err)
 				ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -1494,7 +1494,7 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 
 		for i := 0; i < 20; i++ {
 			time.Sleep(500 * time.Millisecond)
-			snapshot, err := svc.GetSnapshotsFromDB(ctx, VMId)
+			snapshot, err := svc.GetVMSnapshotsFromDB(ctx, VMId)
 			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
@@ -1524,7 +1524,7 @@ func DeleteAllSnapshots() restapi.ControllerHandler {
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/machines/{id}/snapshots [get]
-func ListSnapshot() restapi.ControllerHandler {
+func ListVMSnapshot() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
@@ -1537,7 +1537,7 @@ func ListSnapshot() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		response, err := svc.GetSnapshotsFromDB(ctx, VMId)
+		response, err := svc.GetVMSnapshotsFromDB(ctx, VMId)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1555,19 +1555,19 @@ func ListSnapshot() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id				path		string							true	"Machine ID"
 // @Param			snapshot_id		path		string							true	"Snapshot ID"
-// @Param			revertRequest	body		models.RevertSnapshotRequest	false	"Revert Snapshot Request"
+// @Param			revertRequest	body		models.RevertVMSnapshotRequest	false	"Revert Snapshot Request"
 // @Success		202				{object}	models.ApiCommonResponse
 // @Failure		400				{object}	models.ApiErrorResponse
 // @Failure		401				{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/machines/{id}/snapshots/{snapshot_id}/revert [post]
-func RevertSnapshot() restapi.ControllerHandler {
+func RevertVMSnapshot() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		var request models.RevertSnapshotRequest
+		var request models.RevertVMSnapshotRequest
 		ctx.LogInfof("[controllers/machines][snapshots] Reverting snapshot")
 
 		params := mux.Vars(r)
@@ -1577,7 +1577,7 @@ func RevertSnapshot() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		err := svc.RevertSnapshot(ctx, VMId, SnapshotId, &request)
+		err := svc.RevertVMSnapshot(ctx, VMId, SnapshotId, &request)
 		if err != nil {
 			err = fmt.Errorf("please check snapshot id[%s]: %v", SnapshotId, err)
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -1586,10 +1586,10 @@ func RevertSnapshot() restapi.ControllerHandler {
 			})
 			return
 		}
-		var snapshot *models.ListSnapshotResponse
+		var snapshot *models.ListVMSnapshotResponse
 		for i := 0; i < 20; i++ {
 			time.Sleep(500 * time.Millisecond)
-			snapshot, err = svc.GetSnapshotsFromDB(ctx, VMId)
+			snapshot, err = svc.GetVMSnapshotsFromDB(ctx, VMId)
 			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return

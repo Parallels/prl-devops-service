@@ -13,6 +13,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
 )
@@ -364,7 +365,7 @@ func (s *ParallelsService) processVmToolsStateChanged(ctx basecontext.ApiContext
 }
 
 func (s *ParallelsService) processVmSnapshotsTreeChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
-	snapshots, err := s.listSnapshots(ctx, event.VMID)
+	VMSnapshots, err := s.listVMSnapshots(ctx, event.VMID)
 	if err != nil {
 		ctx.LogErrorf("[parallelsdesktop][snapshots] Failed to get snapshots for VM %s: %v", event.VMID, err)
 		return
@@ -373,10 +374,10 @@ func (s *ParallelsService) processVmSnapshotsTreeChanged(ctx basecontext.ApiCont
 		ctx.LogErrorf("[parallelsdesktop][snapshots] Database service not available")
 		return
 	}
-	var dtoSnaps []data_models.Snapshot
-	if snapshots != nil {
-		for _, snap := range snapshots.Snapshots {
-			dtoSnaps = append(dtoSnaps, data_models.Snapshot{
+	var dtoVMSnaps []data_models.VMSnapshot
+	if VMSnapshots != nil {
+		for _, snap := range VMSnapshots.Snapshots {
+			dtoVMSnaps = append(dtoVMSnaps, data_models.VMSnapshot{
 				ID:      snap.ID,
 				Name:    snap.Name,
 				Date:    snap.Date,
@@ -386,14 +387,14 @@ func (s *ParallelsService) processVmSnapshotsTreeChanged(ctx basecontext.ApiCont
 			})
 		}
 	}
-	s.databaseService.SetListSnapshotsByVMId(event.VMID, data_models.VMSnapshot{
-		VMId:      event.VMID,
-		Snapshots: dtoSnaps,
+	s.databaseService.SetListVMSnapshotsByVMId(event.VMID, data_models.VMSnapshots{
+		VMId:       event.VMID,
+		VMSnapshot: dtoVMSnaps,
 	})
 
 	VmSnapshotsUpdatedEvent := models.VmSnapshotsUpdated{
-		VmID:      event.VMID,
-		Snapshots: snapshots.Snapshots,
+		VmID:        event.VMID,
+		VMSnapshots: mappers.VMSnapshotsDtoToApi(dtoVMSnaps),
 	}
 
 	go func() {

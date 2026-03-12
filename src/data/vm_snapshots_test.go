@@ -4,19 +4,19 @@ import (
 	"testing"
 
 	data_models "github.com/Parallels/prl-devops-service/data/models"
-	"github.com/Parallels/prl-devops-service/mappers/snapshots"
+	"github.com/Parallels/prl-devops-service/mappers"
 	apiModels "github.com/Parallels/prl-devops-service/models"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSetListSnapshotsByVMId(t *testing.T) {
+func TestSetListVMSnapshotsByVMId(t *testing.T) {
 	//1. Create a new JsonDatabase
 	jsonDatabase := &JsonDatabase{
 		connected: true,
 	}
 
 	//2. Set list of snapshots for a VM
-	apiSnapshots := []apiModels.Snapshot{
+	apiSnapshots := []apiModels.VMSnapshot{
 		{
 			Name: "Snapshot1",
 			ID:   "Snapshot1",
@@ -27,27 +27,27 @@ func TestSetListSnapshotsByVMId(t *testing.T) {
 		},
 	}
 
-	dtoSnapshots := snapshots.ApiToDto(apiSnapshots)
-	jsonDatabase.SetListSnapshotsByVMId("VM123", data_models.VMSnapshot{
-		VMId:      "VM123",
-		Snapshots: dtoSnapshots,
+	dtoSnapshots := mappers.VMSnapshotsApiToDto(apiSnapshots)
+	jsonDatabase.SetListVMSnapshotsByVMId("VM123", data_models.VMSnapshots{
+		VMId:       "VM123",
+		VMSnapshot: dtoSnapshots,
 	})
 
 	//3. Get list of snapshots for a VM
-	snapshots, err := jsonDatabase.GetListSnapshotsByVMId("VM123")
+	snapshots, err := jsonDatabase.GetListVMSnapshotsByVMId("VM123")
 	assert.NoError(t, err)
 	assert.Len(t, snapshots, 2)
 	assert.Equal(t, "Snapshot1", snapshots[0].Name)
 	assert.Equal(t, "Snapshot2", snapshots[1].Name)
 }
-func TestGetListSnapshotsByVMId(t *testing.T) {
+func TestGetListVMSnapshotsByVMId(t *testing.T) {
 	//1. Create a new JsonDatabase
 	jsonDatabase := &JsonDatabase{
 		connected: true,
 	}
 
 	//2. Set list of snapshots for a VM
-	apiSnapshots := []apiModels.Snapshot{
+	apiSnapshots := []apiModels.VMSnapshot{
 		{
 			Name: "Snapshot1",
 			ID:   "1",
@@ -62,14 +62,14 @@ func TestGetListSnapshotsByVMId(t *testing.T) {
 		},
 	}
 
-	dtoSnapshots := snapshots.ApiToDto(apiSnapshots)
-	jsonDatabase.SetListSnapshotsByVMId("VM123", data_models.VMSnapshot{
-		VMId:      "VM123",
-		Snapshots: dtoSnapshots,
+	dtoSnapshots := mappers.VMSnapshotsApiToDto(apiSnapshots)
+	jsonDatabase.SetListVMSnapshotsByVMId("VM123", data_models.VMSnapshots{
+		VMId:       "VM123",
+		VMSnapshot: dtoSnapshots,
 	})
 
 	//3. Get list of snapshots for a VM
-	snapshots, err := jsonDatabase.GetListSnapshotsByVMId("VM123")
+	snapshots, err := jsonDatabase.GetListVMSnapshotsByVMId("VM123")
 	assert.NoError(t, err)
 	assert.Len(t, snapshots, 3)
 	assert.Equal(t, "Snapshot1", snapshots[0].Name)

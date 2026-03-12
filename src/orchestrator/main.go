@@ -12,7 +12,6 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
-	"github.com/Parallels/prl-devops-service/mappers/snapshots"
 	apimodels "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/handlers"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -348,17 +347,17 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 	s.ctx.LogInfof("[Orchestrator] Host %s has %v CPU Cores and %v Mb of RAM, contains %v VMs of which %v are MacVMs", host.Host, host.Resources.Total.LogicalCpuCount, host.Resources.Total.MemorySize, len(host.VirtualMachines), host.Resources.TotalAppleVms)
 
 	for _, vm := range host.VirtualMachines {
-		listSnapshotResponse, err := s.GetHostVirtualMachineSnapshotsWithAPI(s.ctx, host.ID, vm.ID, false)
+		listVMSnapshotResponse, err := s.GetHostVirtualMachineSnapshotsWithAPI(s.ctx, host.ID, vm.ID, false)
 		if err != nil {
 			s.ctx.LogErrorf("[Orchestrator] Error getting snapshots for VM %s: %v", vm.ID, err.Error())
 		}
-		var dbSnapshots []models.Snapshot
-		if listSnapshotResponse != nil {
-			dbSnapshots = snapshots.ApiToDto(listSnapshotResponse.Snapshots)
+		var dbVMSnapshots []models.VMSnapshot
+		if listVMSnapshotResponse != nil {
+			dbVMSnapshots = mappers.VMSnapshotsApiToDto(listVMSnapshotResponse.Snapshots)
 		}
-		s.db.SetHostSnapshots(s.ctx, host.ID, models.VMSnapshot{
-			VMId:      vm.ID,
-			Snapshots: dbSnapshots,
+		s.db.SetHostVMSnapshots(s.ctx, host.ID, models.VMSnapshots{
+			VMId:       vm.ID,
+			VMSnapshot: dbVMSnapshots,
 		})
 	}
 	_ = s.persistHost(&host)

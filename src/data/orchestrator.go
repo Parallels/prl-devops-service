@@ -15,7 +15,7 @@ var (
 	ErrOrchestratorHostNotFound               = errors.NewWithCode("host not found", 404)
 	ErrOrchestratorReverseProxyHostNotFound   = errors.NewWithCode("reverse proxy host not found", 404)
 	ErrOrchestratorHostVirtualMachineNotFound = errors.NewWithCode("host virtual machine not found", 404)
-	ErrOrchestratorHostSnapshotsNotFound      = errors.NewWithCode("snapshots not found for host", 404)
+	ErrOrchestratorHostsVMSnapshotsNotFound   = errors.NewWithCode("snapshots not found for host", 404)
 )
 
 func (j *JsonDatabase) GetOrchestratorHosts(ctx basecontext.ApiContext, filter string) ([]models.OrchestratorHost, error) {
@@ -692,7 +692,7 @@ func (j *JsonDatabase) GetOrchestratorReverseProxyConfig(ctx basecontext.ApiCont
 	return host.ReverseProxy, nil
 }
 
-func (j *JsonDatabase) GetHostSnapshots(ctx basecontext.ApiContext, hostId string) (*models.HostSnapshotRecord, error) {
+func (j *JsonDatabase) GetHostVMSnapshots(ctx basecontext.ApiContext, hostId string) (*models.HostsVMSnapshotsRecord, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
 	}
@@ -700,16 +700,16 @@ func (j *JsonDatabase) GetHostSnapshots(ctx basecontext.ApiContext, hostId strin
 	j.dataMutex.RLock()
 	defer j.dataMutex.RUnlock()
 
-	for _, snap := range j.data.HostsSnapshots {
+	for _, snap := range j.data.HostsVMSnapshots {
 		if snap.HostId == hostId {
 			return &snap, nil
 		}
 	}
 
-	return nil, ErrOrchestratorHostSnapshotsNotFound
+	return nil, ErrOrchestratorHostsVMSnapshotsNotFound
 }
 
-func (j *JsonDatabase) SetHostSnapshots(ctx basecontext.ApiContext, hostId string, snapshots models.VMSnapshot) error {
+func (j *JsonDatabase) SetHostVMSnapshots(ctx basecontext.ApiContext, hostId string, snapshots models.VMSnapshots) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
 	}
@@ -717,20 +717,20 @@ func (j *JsonDatabase) SetHostSnapshots(ctx basecontext.ApiContext, hostId strin
 	j.dataMutex.Lock()
 	defer j.dataMutex.Unlock()
 
-	for i, orchSnap := range j.data.HostsSnapshots {
+	for i, orchSnap := range j.data.HostsVMSnapshots {
 		if orchSnap.HostId == hostId {
-			if j.data.HostsSnapshots[i].Snapshots == nil {
-				j.data.HostsSnapshots[i].Snapshots = make(map[string][]models.Snapshot)
+			if j.data.HostsVMSnapshots[i].VMSnapshots == nil {
+				j.data.HostsVMSnapshots[i].VMSnapshots = make(map[string][]models.VMSnapshot)
 			}
-			j.data.HostsSnapshots[i].Snapshots[snapshots.VMId] = snapshots.Snapshots
+			j.data.HostsVMSnapshots[i].VMSnapshots[snapshots.VMId] = snapshots.VMSnapshot
 			return nil
 		}
 	}
 
-	j.data.HostsSnapshots = append(j.data.HostsSnapshots, models.HostSnapshotRecord{
+	j.data.HostsVMSnapshots = append(j.data.HostsVMSnapshots, models.HostsVMSnapshotsRecord{
 		HostId: hostId,
-		Snapshots: map[string][]models.Snapshot{
-			snapshots.VMId: snapshots.Snapshots,
+		VMSnapshots: map[string][]models.VMSnapshot{
+			snapshots.VMId: snapshots.VMSnapshot,
 		},
 	})
 

@@ -7,7 +7,7 @@ import (
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/mappers/snapshots"
+	"github.com/Parallels/prl-devops-service/mappers"
 	apimodels "github.com/Parallels/prl-devops-service/models"
 )
 
@@ -45,7 +45,7 @@ func (s *OrchestratorService) validateHostAndVM(ctx basecontext.ApiContext, host
 }
 
 // GetHostVirtualMachineSnapshotsWithAPI lists all snapshots for a virtual machine on an orchestrator host
-func (s *OrchestratorService) GetHostVirtualMachineSnapshotsWithAPI(ctx basecontext.ApiContext, hostId string, vmId string, noCache bool) (*apimodels.ListSnapshotResponse, error) {
+func (s *OrchestratorService) GetHostVirtualMachineSnapshotsWithAPI(ctx basecontext.ApiContext, hostId string, vmId string, noCache bool) (*apimodels.ListVMSnapshotResponse, error) {
 	host, vm, err := s.validateHostAndVM(ctx, hostId, vmId, noCache)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (s *OrchestratorService) GetHostVirtualMachineSnapshotsWithAPI(ctx basecont
 		return nil, err
 	}
 
-	var response apimodels.ListSnapshotResponse
+	var response apimodels.ListVMSnapshotResponse
 	_, err = httpClient.Get(url.String(), &response)
 	if err != nil {
 		return nil, err
@@ -68,20 +68,20 @@ func (s *OrchestratorService) GetHostVirtualMachineSnapshotsWithAPI(ctx basecont
 }
 
 // GetHostVirtualMachineSnapshots lists all snapshots for a virtual machine on an orchestrator host
-func (s *OrchestratorService) GetHostVirtualMachineSnapshots(ctx basecontext.ApiContext, hostId string, vmId string) (*apimodels.ListSnapshotResponse, error) {
-	hostSnapshots, err := s.db.GetHostSnapshots(ctx, hostId)
+func (s *OrchestratorService) GetHostVirtualMachineSnapshots(ctx basecontext.ApiContext, hostId string, vmId string) (*apimodels.ListVMSnapshotResponse, error) {
+	hostSnapshots, err := s.db.GetHostVMSnapshots(ctx, hostId)
 	if err != nil {
 		return nil, err
 	}
-	var response apimodels.ListSnapshotResponse
-	mapper := snapshots.DtoToApi(hostSnapshots.Snapshots[vmId])
+	var response apimodels.ListVMSnapshotResponse
+	mapper := mappers.VMSnapshotsDtoToApi(hostSnapshots.VMSnapshots[vmId])
 	response.Snapshots = mapper
 
 	return &response, nil
 }
 
 // CreateHostVirtualMachineSnapshot creates a new snapshot for a virtual machine on an orchestrator host
-func (s *OrchestratorService) CreateHostVirtualMachineSnapshot(ctx basecontext.ApiContext, hostId string, vmId string, request apimodels.CreateSnapShotRequest, noCache bool) (*apimodels.CreateSnapShotResponse, error) {
+func (s *OrchestratorService) CreateHostVirtualMachineSnapshot(ctx basecontext.ApiContext, hostId string, vmId string, request apimodels.CreateVMSnapshotRequest, noCache bool) (*apimodels.CreateVMSnapshotResponse, error) {
 	host, vm, err := s.validateHostAndVM(ctx, hostId, vmId, noCache)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (s *OrchestratorService) CreateHostVirtualMachineSnapshot(ctx basecontext.A
 		return nil, err
 	}
 
-	var response apimodels.CreateSnapShotResponse
+	var response apimodels.CreateVMSnapshotResponse
 	_, err = httpClient.Post(url.String(), request, &response)
 	if err != nil {
 		return nil, err
@@ -151,7 +151,7 @@ func (s *OrchestratorService) DeleteHostVirtualMachineSnapshot(ctx basecontext.A
 }
 
 // RevertHostVirtualMachineSnapshot reverts a virtual machine to a specific snapshot on an orchestrator host
-func (s *OrchestratorService) RevertHostVirtualMachineSnapshot(ctx basecontext.ApiContext, hostId string, vmId string, snapshotId string, request apimodels.RevertSnapshotRequest, noCache bool) error {
+func (s *OrchestratorService) RevertHostVirtualMachineSnapshot(ctx basecontext.ApiContext, hostId string, vmId string, snapshotId string, request apimodels.RevertVMSnapshotRequest, noCache bool) error {
 	host, vm, err := s.validateHostAndVM(ctx, hostId, vmId, noCache)
 	if err != nil {
 		return err

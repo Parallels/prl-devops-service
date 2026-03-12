@@ -6,7 +6,7 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 )
 
-func (j *JsonDatabase) SetListSnapshotsByVMId(vmID string, newVmSnap models.VMSnapshot) error {
+func (j *JsonDatabase) SetListVMSnapshotsByVMId(vmID string, newVmSnap models.VMSnapshots) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
 	}
@@ -24,7 +24,7 @@ func (j *JsonDatabase) SetListSnapshotsByVMId(vmID string, newVmSnap models.VMSn
 	return nil
 }
 
-func (j *JsonDatabase) GetListSnapshotsByVMId(vmID string) ([]models.Snapshot, error) {
+func (j *JsonDatabase) GetListVMSnapshotsByVMId(vmID string) ([]models.VMSnapshot, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
 	}
@@ -33,7 +33,7 @@ func (j *JsonDatabase) GetListSnapshotsByVMId(vmID string) ([]models.Snapshot, e
 	defer j.dataMutex.RUnlock()
 	for _, vmSnap := range j.data.VMSnapshots {
 		if vmSnap.VMId == vmID {
-			return vmSnap.Snapshots, nil
+			return vmSnap.VMSnapshot, nil
 		}
 	}
 	return nil, errors.New("snapshots not found for VM ID: " + vmID)
