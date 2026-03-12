@@ -89,9 +89,25 @@ func (pr *ProgressFileReader) ReadAt(p []byte, off int64) (int, error) {
 		return n, err
 	}
 
-	newRead := atomic.AddInt64(&pr.read, int64(n))
+	// Use CAS-based max instead of AddInt64: concurrent goroutines (e.g.
+	// s3manager multipart upload) each read different parts simultaneously.
+	// Summing all reads overcounts and reaches pr.size immediately. Tracking
+	// the furthest byte offset reached gives correct monotonic progress and
+	// also prevents retried parts from double-counting.
+	newEnd := off + int64(n)
+	for {
+		current := atomic.LoadInt64(&pr.read)
+		if newEnd <= current {
+			newEnd = current
+			break
+		}
+		if atomic.CompareAndSwapInt64(&pr.read, current, newEnd) {
+			break
+		}
+	}
 
 	if pr.size > 0 {
+		newRead := newEnd
 		if newRead > pr.size {
 			newRead = pr.size
 		}

@@ -1,6 +1,6 @@
 name: Release Service
 permissions:
-  contents: read
+  contents: write
   
 on:
   release:
