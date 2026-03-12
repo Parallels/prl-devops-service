@@ -2631,6 +2631,21 @@ func (s *ParallelsService) RegenerateMacAddress(ctx basecontext.ApiContext, vmID
 	return nil
 }
 
+func (s *ParallelsService) GetParallelsHomeDiskSpaceInfo(ctx basecontext.ApiContext, username string) (int64, error) {
+
+	if username == "" {
+		if user, err := system.Get().GetCurrentUser(ctx); err == nil {
+			ctx.LogInfof("No username provided, using current user %s for disk space info", user)
+			username = user
+		}
+	}
+	path, err := s.GetUserHome(ctx, username)
+	if err != nil {
+		return 0, err
+	}
+	return helpers.GetFreeDiskSpace(path)
+}
+
 func escapeForBashC(command string) string {
 	var escaped strings.Builder
 	for i := 0; i < len(command); i++ {

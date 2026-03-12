@@ -13,6 +13,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
+	diskspaceservice "github.com/Parallels/prl-devops-service/serviceprovider/diskSpace"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
 )
 
@@ -321,6 +322,7 @@ func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event mode
 				ctx.LogErrorf("[ParallelsDesktop] [Events] Error broadcasting VM added event: %v", err)
 			}
 		}
+		diskspaceservice.Get(ctx).CheckDiskSpaceAndBroadcast()
 	}()
 
 }
@@ -343,6 +345,7 @@ func (s *ParallelsService) processVmUnregistered(ctx basecontext.ApiContext, eve
 						ctx.LogErrorf("[ParallelsDesktop] [Events] Error broadcasting VM removed event: %v", err)
 					}
 				}
+				diskspaceservice.Get(ctx).CheckDiskSpaceAndBroadcast()
 			}()
 
 			break
