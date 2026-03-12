@@ -70,6 +70,19 @@ func (r *PushCatalogManifestRequest) Validate() error {
 		return ErrInvalidArchitecture
 	}
 
+	// Normalize architecture aliases
+	switch r.Architecture {
+	case "amd64":
+		r.Architecture = "x86_64"
+	case "arm", "aarch64":
+		r.Architecture = "arm64"
+	}
+
+	// Validate architecture
+	if r.Architecture != "x86_64" && r.Architecture != "arm64" {
+		return ErrInvalidArchitecture
+	}
+
 	// Set compress pack level if compress is true and compress level is not set
 	if r.Compress {
 		r.CompressPack = true
