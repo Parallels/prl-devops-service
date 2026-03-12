@@ -1,10 +1,8 @@
 package models
 
 import (
-	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
-	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 )
 
 var (
@@ -69,27 +67,7 @@ func (r *PushCatalogManifestRequest) Validate() error {
 	}
 
 	if r.Architecture == "" {
-		ctx := basecontext.NewRootBaseContext()
-		sysCtl := system.Get()
-		arch, err := sysCtl.GetArchitecture(ctx)
-		if err != nil {
-			return errors.NewWithCode("unable to determine architecture and none was set", 400)
-		}
-		r.Architecture = arch
-	} else {
-		if r.Architecture == "amd64" {
-			r.Architecture = "x86_64"
-		}
-		if r.Architecture == "arm" {
-			r.Architecture = "arm64"
-		}
-		if r.Architecture == "aarch64" {
-			r.Architecture = "arm64"
-		}
-
-		if r.Architecture != "x86_64" && r.Architecture != "arm64" {
-			return ErrInvalidArchitecture
-		}
+		return ErrInvalidArchitecture
 	}
 
 	// Set compress pack level if compress is true and compress level is not set
