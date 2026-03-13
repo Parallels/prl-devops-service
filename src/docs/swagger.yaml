@@ -2,16 +2,20 @@ basePath: /api
 definitions:
   constants.JobState:
     enum:
+    - init
     - pending
     - running
     - completed
     - failed
+    - skipped
     type: string
     x-enum-varnames:
+    - JobStateInit
     - JobStatePending
     - JobStateRunning
     - JobStateCompleted
     - JobStateFailed
+    - JobStateSkipped
   controllers.SshExecutionRequest:
     properties:
       command:
@@ -593,6 +597,8 @@ definitions:
         type: string
       host_id:
         type: string
+      host_name:
+        type: string
       host_state:
         type: string
       host_url:
@@ -835,6 +841,21 @@ definitions:
       Automatic sharing smart cards:
         type: string
       Support USB 3.0:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.VMSnapshot:
+    properties:
+      current:
+        type: boolean
+      date:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      parent:
+        type: string
+      state:
         type: string
     type: object
   github_com_Parallels_prl-devops-service_models.Video:
@@ -1086,14 +1107,14 @@ definitions:
       template:
         type: string
     type: object
-  models.CreateSnapShotRequest:
+  models.CreateVMSnapshotRequest:
     properties:
       snapshot_description:
         type: string
       snapshot_name:
         type: string
     type: object
-  models.CreateSnapShotResponse:
+  models.CreateVMSnapshotResponse:
     properties:
       snapshot_id:
         type: string
@@ -1292,8 +1313,6 @@ definitions:
     type: object
   models.JobResponse:
     properties:
-      action:
-        type: string
       created_at:
         type: string
       error:
@@ -1303,6 +1322,8 @@ definitions:
       job_operation:
         type: string
       job_type:
+        type: string
+      message:
         type: string
       owner:
         type: string
@@ -1314,16 +1335,55 @@ definitions:
         type: integer
       result:
         type: string
+      result_record_id:
+        type: string
+      result_record_type:
+        type: string
       state:
         $ref: '#/definitions/constants.JobState'
+      steps:
+        items:
+          $ref: '#/definitions/models.JobStepResponse'
+        type: array
       updated_at:
         type: string
     type: object
-  models.ListSnapshotResponse:
+  models.JobStepResponse:
+    properties:
+      current_percentage:
+        type: number
+      display_name:
+        type: string
+      error:
+        type: string
+      eta:
+        type: string
+      filename:
+        type: string
+      has_percentage:
+        type: boolean
+      message:
+        type: string
+      name:
+        type: string
+      parallel:
+        type: boolean
+      state:
+        $ref: '#/definitions/constants.JobState'
+      total:
+        type: integer
+      unit:
+        type: string
+      value:
+        type: integer
+      weight:
+        type: number
+    type: object
+  models.ListVMSnapshotResponse:
     properties:
       snapshots:
         items:
-          $ref: '#/definitions/models.Snapshot'
+          $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.VMSnapshot'
         type: array
     type: object
   models.LoginRequest:
@@ -1624,6 +1684,10 @@ definitions:
         type: string
       catalog_id:
         type: string
+      compress:
+        type: boolean
+      compress_level:
+        type: string
       compress_pack:
         type: boolean
       compress_pack_level:
@@ -1636,6 +1700,8 @@ definitions:
         type: string
       minimum_requirements:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_catalog_models.MinimumSpecRequirement'
+      override_existing:
+        type: boolean
       pack_size:
         type: integer
       required_claims:
@@ -1794,7 +1860,7 @@ definitions:
       uptime:
         type: string
     type: object
-  models.RevertSnapshotRequest:
+  models.RevertVMSnapshotRequest:
     properties:
       skip_resume:
         type: boolean
@@ -1824,21 +1890,6 @@ definitions:
       message:
         type: string
       name:
-        type: string
-    type: object
-  models.Snapshot:
-    properties:
-      current:
-        type: boolean
-      date:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      parent:
-        type: string
-      state:
         type: string
     type: object
   models.SystemReverseProxy:
@@ -4064,6 +4115,38 @@ paths:
       summary: Pushes a catalog manifest to the catalog inventory
       tags:
       - Catalogs
+  /v1/catalog/push/async:
+    post:
+      description: This endpoint pushes a catalog manifest to the catalog inventory
+        in the background and returns a Job ID to track progress
+      parameters:
+      - description: Push request
+        in: body
+        name: pushRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.PushCatalogManifestRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.JobResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Push a catalog manifest to the catalog inventory asynchronously
+      tags:
+      - Catalogs
   /v1/config/hardware:
     get:
       description: This endpoint returns the Hardware Info
@@ -4172,6 +4255,42 @@ paths:
       summary: Uninstalls API requires 3rd party tools
       tags:
       - Config
+  /v1/jobs/{id}:
+    delete:
+      description: This endpoint deletes a single job. Users with JOB_MANAGER_DELETE
+        can delete any job; users with JOB_MANAGER_LIST_OWN can only delete their
+        own.
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a job by ID
+      tags:
+      - Jobs
   /v1/machines:
     get:
       description: This endpoint returns all the virtual machines
@@ -4624,7 +4743,7 @@ paths:
         name: createRequest
         required: true
         schema:
-          $ref: '#/definitions/models.CreateSnapShotRequest'
+          $ref: '#/definitions/models.CreateVMSnapshotRequest'
       produces:
       - application/json
       responses:
@@ -4697,7 +4816,7 @@ paths:
         in: body
         name: revertRequest
         schema:
-          $ref: '#/definitions/models.RevertSnapshotRequest'
+          $ref: '#/definitions/models.RevertVMSnapshotRequest'
       produces:
       - application/json
       responses:
@@ -5439,6 +5558,10 @@ paths:
         name: vmId
         required: true
         type: string
+      - description: Force Delete
+        in: query
+        name: force
+        type: boolean
       produces:
       - application/json
       responses:
@@ -5832,7 +5955,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.ListSnapshotResponse'
+            $ref: '#/definitions/models.ListVMSnapshotResponse'
         "400":
           description: Bad Request
           schema:
@@ -5866,14 +5989,14 @@ paths:
         name: createRequest
         required: true
         schema:
-          $ref: '#/definitions/models.CreateSnapShotRequest'
+          $ref: '#/definitions/models.CreateVMSnapshotRequest'
       produces:
       - application/json
       responses:
         "202":
           description: Accepted
           schema:
-            $ref: '#/definitions/models.CreateSnapShotResponse'
+            $ref: '#/definitions/models.CreateVMSnapshotResponse'
         "400":
           description: Bad Request
           schema:
@@ -5949,7 +6072,7 @@ paths:
         in: body
         name: revertRequest
         schema:
-          $ref: '#/definitions/models.RevertSnapshotRequest'
+          $ref: '#/definitions/models.RevertVMSnapshotRequest'
       produces:
       - application/json
       responses:
@@ -6629,6 +6752,10 @@ paths:
         name: id
         required: true
         type: string
+      - description: Force Delete
+        in: query
+        name: force
+        type: boolean
       produces:
       - application/json
       responses:
