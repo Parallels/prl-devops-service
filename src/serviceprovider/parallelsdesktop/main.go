@@ -1744,16 +1744,10 @@ func (s *ParallelsService) GetUser(ctx basecontext.ApiContext, user string) (*mo
 }
 
 func (s *ParallelsService) GetUserHome(ctx basecontext.ApiContext, user string) (string, error) {
-	cfg := config.Get()
-	locationPath := cfg.GetKey(constants.VIRTUAL_MACHINES_FOLDER_ENV_VAR)
-	if locationPath != "" {
-		return locationPath, nil
-	}
 
-	fmt.Printf("%s\n", locationPath)
-
-	if s.Users != nil || len(s.Users) == 0 {
-		_, err := s.GetUsers(ctx)
+	if user == "" {
+		var err error
+		user, err = system.Get().GetCurrentUser(ctx)
 		if err != nil {
 			return "", err
 		}
@@ -2795,6 +2789,12 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	result.TotalAvailable.DiskSize = systemInfo.FreeDiskSize
 	result.TotalAvailable.MemorySize = result.Total.MemorySize - result.SystemReserved.MemorySize - result.TotalInUse.MemorySize
 	result.TotalAvailable.LogicalCpuCount = result.Total.LogicalCpuCount - result.SystemReserved.LogicalCpuCount - result.TotalInUse.LogicalCpuCount
+	result.TotalAvailable.PrlHomeFreeSize, _ = s.GetParallelsHomeDiskSpaceInfo(ctx, "")
+	homeDir, err := s.GetUserHome(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	result.TotalAvailable.PrlHomeTotalSize, _ = helpers.GetTotalDiskSpace(homeDir)
 
 	external_ip, err := systemSrv.GetExternalIp(ctx)
 	if err == nil {

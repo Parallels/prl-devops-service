@@ -101,7 +101,7 @@ func Start(ctx basecontext.ApiContext) {
 		ds := diskspace.New(ctx)
 		provider := serviceprovider.Get()
 		if provider.ParallelsDesktopService != nil {
-			ds.SetHomeDiskSpaceProvider(provider.ParallelsDesktopService.GetParallelsHomeDiskSpaceInfo)
+			ds.SetParallelsHomePathProvider(provider.ParallelsDesktopService.GetUserHome)
 		}
 		ds.Start()
 	}

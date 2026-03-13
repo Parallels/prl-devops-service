@@ -23,3 +23,17 @@ func GetFreeDiskSpace(folder string) (int64, error) {
 
 	return diskFreeSpaceInMb, nil
 }
+
+func GetTotalDiskSpace(folder string) (int64, error) {
+	var stat syscall.Statfs_t
+	err := syscall.Statfs(folder, &stat)
+	if err != nil {
+		return 0, errors.NewFromErrorWithCode(err, 500)
+	}
+
+	// Total blocks * size per block = total space in bytes
+	diskTotalSpaceInBytes := int64(stat.Blocks) * int64(stat.Bsize)
+	diskTotalSpaceInMb := diskTotalSpaceInBytes / (1024 * 1024)
+
+	return diskTotalSpaceInMb, nil
+}

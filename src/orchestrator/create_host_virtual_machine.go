@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -41,7 +42,7 @@ func (s *OrchestratorService) CreateVirtualMachine(ctx basecontext.ApiContext, r
 
 	var validHosts []data_models.OrchestratorHost
 	for _, orchestratorHost := range hosts {
-		isOk, err := s.validateHost(orchestratorHost, request.Architecture, specs)
+		isOk, err := s.validateHost(orchestratorHost, request, specs)
 		if err == nil && isOk {
 			validHosts = append(validHosts, orchestratorHost)
 		}
@@ -123,7 +124,7 @@ func (s *OrchestratorService) CreateHosVirtualMachine(ctx basecontext.ApiContext
 	}
 
 	var selectedHost *data_models.OrchestratorHost
-	isOk, validateErr := s.validateHost(*host, request.Architecture, specs)
+	isOk, validateErr := s.validateHost(*host, request, specs)
 	if validateErr != nil {
 		return nil, validateErr
 	}
@@ -319,7 +320,7 @@ func (s *OrchestratorService) getSpecsFromRequest(request models.CreateVirtualMa
 	return specs
 }
 
-func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, architecture string, specs *models.CreateVirtualMachineSpecs) (bool, *models.ApiErrorResponse) {
+func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest, specs *models.CreateVirtualMachineSpecs) (bool, *models.ApiErrorResponse) {
 	var apiError *models.ApiErrorResponse
 	if !host.Enabled {
 		apiError = &models.ApiErrorResponse{
@@ -345,7 +346,7 @@ func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, ar
 		return false, apiError
 	}
 
-	if !strings.EqualFold(host.Architecture, architecture) {
+	if !strings.EqualFold(host.Architecture, request.Architecture) {
 		apiError = &models.ApiErrorResponse{
 			Message: "Host does not have the same architecture",
 			Code:    400,
@@ -358,6 +359,37 @@ func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, ar
 	// otherwise we would potentially go above the reserved cpus
 	availableCpus := host.Resources.TotalAvailable.LogicalCpuCount
 	availableMemory := host.Resources.TotalAvailable.MemorySize
+
+	if specs.Size > 0 {
+		diskSpace, diskErr := s.getHostDiskSpace(s.ctx, host, request.Owner)
+		if diskErr != nil {
+			apiError = &models.ApiErrorResponse{
+				Message: "Host disk space information is not available returning error: " + diskErr.Error(),
+				Code:    400,
+			}
+			s.ctx.LogWarnf("[Orchestrator] Could not get disk space info for host %s: %v", host.Host, diskErr)
+		} else {
+			cacheFolder := ""
+			if host.CacheConfig != nil {
+				cacheFolder = host.CacheConfig.Folder
+			}
+			// Same volume: download + copy to cache + create = 3× size.
+			// Different volumes: only 2× size needed across the two volumes.
+			var requiredSpace int64
+			if isSameVolume(diskSpace.PrlHomePath, cacheFolder) {
+				requiredSpace = 3 * (specs.Size / 1024.0 / 1024.0) // Convert from bytes to MB
+			} else {
+				requiredSpace = 2 * (specs.Size / 1024.0 / 1024.0) // Convert from bytes to MB
+			}
+			if diskSpace.ParallelsHome < requiredSpace {
+				return false, &models.ApiErrorResponse{
+					Message: fmt.Sprintf("Host does not have enough disk space: available %d MB, required %d MB, "+
+						"we need 3x / 2x space of vm size depending on the volume configuration", diskSpace.ParallelsHome, requiredSpace),
+					Code: 400,
+				}
+			}
+		}
+	}
 
 	// Checking for the maximum number of Apple VMs
 	if strings.EqualFold(specs.Type, "macvm") {
@@ -433,6 +465,7 @@ func (s *OrchestratorService) getCatalogSpecs(connection string, catalogId strin
 		result.Cpu = strconv.Itoa(response.MinimumSpecRequirements.Cpu)
 		result.Memory = strconv.Itoa(response.MinimumSpecRequirements.Memory)
 		result.Disk = strconv.Itoa(response.MinimumSpecRequirements.Disk)
+		result.Size = response.Size
 	}
 
 	// Setting the default values
@@ -454,4 +487,19 @@ func (s *OrchestratorService) getCatalogSpecs(connection string, catalogId strin
 	}
 
 	return &result, nil
+}
+
+// isSameVolume reports whether two filesystem paths reside on the same volume.
+// On macOS, volumes under /Volumes/<name>/… are identified by their name.
+// Paths on the root volume (or empty paths) are treated as the root volume.
+func isSameVolume(path1, path2 string) bool {
+	getVolume := func(p string) string {
+		parts := strings.Split(p, "/")
+		// /Volumes/<name>/... → parts = ["", "Volumes", "<name>", ...]
+		if len(parts) > 2 && strings.EqualFold(parts[1], "Volumes") {
+			return strings.ToLower(parts[2])
+		}
+		return ""
+	}
+	return getVolume(path1) == getVolume(path2)
 }

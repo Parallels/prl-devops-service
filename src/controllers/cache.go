@@ -147,13 +147,12 @@ func GetCatalogCacheHandler() restapi.ControllerHandler {
 		if cfg.IsHost() {
 			responseManifests.CacheConfig = &models.CatalogCacheConfig{
 				Enabled:                 cfg.IsCatalogCachingEnable(),
-				Folder:                  cfg.GetKey(constants.CATALOG_CACHE_FOLDER_ENV_VAR),
 				KeepFreeDiskSpace:       cfg.CacheKeepFreeDiskSpace(),
 				MaxSize:                 cfg.CacheMaxSize(freeDiskSpace),
 				AllowAboveFreeDiskSpace: cfg.AllowCacheAboveFreeDiskSpace(),
 			}
-			if responseManifests.CacheConfig.Folder == "" {
-				responseManifests.CacheConfig.Folder = constants.DEFAULT_CATALOG_CACHE_FOLDER
+			if path, err := cfg.CatalogCacheFolder(); err == nil {
+				responseManifests.CacheConfig.Folder = path
 			}
 		}
 

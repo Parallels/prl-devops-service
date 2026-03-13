@@ -25,6 +25,8 @@ func MapHostResourceItemFromSystemUsageItem(m *models.SystemUsageItem) data_mode
 		LogicalCpuCount:  m.LogicalCpuCount,
 		MemorySize:       m.MemorySize,
 		DiskSize:         m.DiskSize,
+		PrlHomeSize:      m.PrlHomeTotalSize,
+		PrlHomeFreeSize:  m.PrlHomeFreeSize,
 	}
 
 	return result
@@ -66,6 +68,8 @@ func MapSystemUsageItemFromHostResourceItem(m *data_models.HostResourceItem) *mo
 		LogicalCpuCount:  m.LogicalCpuCount,
 		MemorySize:       m.MemorySize,
 		DiskSize:         m.DiskSize,
+		PrlHomeSize:      m.PrlHomeSize,
+		PrlHomeFreeSize:  m.PrlHomeFreeSize,
 	}
 
 	return &result

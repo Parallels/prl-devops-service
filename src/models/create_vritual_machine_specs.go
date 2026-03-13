@@ -7,6 +7,7 @@ type CreateVirtualMachineSpecs struct {
 	Cpu    string `json:"cpu,omitempty"`
 	Memory string `json:"memory,omitempty"`
 	Disk   string `json:"disk,omitempty"`
+	Size   int64  `json:"size,omitempty"` // Size is the size of the virtual machine in bytes
 }
 
 func (c *CreateVirtualMachineSpecs) GetCpuCount() int64 {
