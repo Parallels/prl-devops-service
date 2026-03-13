@@ -15,7 +15,7 @@ var (
 	ErrOrchestratorHostNotFound               = errors.NewWithCode("host not found", 404)
 	ErrOrchestratorReverseProxyHostNotFound   = errors.NewWithCode("reverse proxy host not found", 404)
 	ErrOrchestratorHostVirtualMachineNotFound = errors.NewWithCode("host virtual machine not found", 404)
-	ErrOrchestratorHostsVMSnapshotsNotFound   = errors.NewWithCode("snapshots not found for host", 404)
+	ErrOrchestratorHostsVMSnapshotsNotFound   = errors.NewWithCode("VM snapshots not found for host", 404)
 )
 
 func (j *JsonDatabase) GetOrchestratorHosts(ctx basecontext.ApiContext, filter string) ([]models.OrchestratorHost, error) {

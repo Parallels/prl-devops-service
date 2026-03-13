@@ -12,9 +12,9 @@ import (
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
+	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
-	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/cjlapao/common-go/helper/http_helper"
@@ -518,7 +518,7 @@ func runDebugProfilePullCache(jobId string, jobManager *jobs.JobManagerService) 
 	ns.WithJob(jobId, constants.ActionCopyingFromCache).NotifyInfof("Copying debug-vm from cache to /tmp/debug-vm.pvm")
 	for pct := 0.0; pct <= 100.0; pct += 1.0 {
 		ns.Notify(tracker.NewJobProgressMessage(cacheId, "Copying from cache", pct).
-			SetCurrentSize(int64(pct / 100.0 * float64(totalBytes))).
+			SetCurrentSize(int64(pct/100.0*float64(totalBytes))).
 			SetTotalSize(totalBytes).
 			SetStartingTime(startTime).
 			WithJob(jobId, constants.ActionCopyingFromCache).
@@ -606,7 +606,7 @@ func runDebugProfileSkippedSteps(jobId string, jobManager *jobs.JobManagerServic
 	ns.WithJob(jobId, constants.ActionCopyingFromCache).NotifyInfof("Copying from cache to /tmp/debug-vm.pvm")
 	for pct := 0.0; pct <= 100.0; pct += 2.0 {
 		ns.Notify(tracker.NewJobProgressMessage(cacheId, "Copying from cache", pct).
-			SetCurrentSize(int64(pct / 100.0 * float64(totalBytes))).
+			SetCurrentSize(int64(pct/100.0*float64(totalBytes))).
 			SetTotalSize(totalBytes).
 			SetStartingTime(startTime).
 			WithJob(jobId, constants.ActionCopyingFromCache).

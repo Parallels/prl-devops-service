@@ -2107,6 +2107,57 @@
                 }
             }
         },
+        "/v1/catalog/push/async": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint pushes a catalog manifest to the catalog inventory in the background and returns a Job ID to track progress",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Push a catalog manifest to the catalog inventory asynchronously",
+                "parameters": [
+                    {
+                        "description": "Push request",
+                        "name": "pushRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PushCatalogManifestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/models.JobResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/catalog/{catalogId}": {
             "get": {
                 "security": [
@@ -3274,6 +3325,61 @@
                 }
             }
         },
+        "/v1/jobs/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a single job. Users with JOB_MANAGER_DELETE can delete any job; users with JOB_MANAGER_LIST_OWN can only delete their own.",
+                "tags": [
+                    "Jobs"
+                ],
+                "summary": "Deletes a job by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/machines": {
             "get": {
                 "security": [
@@ -4083,7 +4189,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreateSnapShotRequest"
+                            "$ref": "#/definitions/models.CreateVMSnapshotRequest"
                         }
                     }
                 ],
@@ -4244,7 +4350,7 @@
                         "name": "revertRequest",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/models.RevertSnapshotRequest"
+                            "$ref": "#/definitions/models.RevertVMSnapshotRequest"
                         }
                     }
                 ],
@@ -5444,6 +5550,12 @@
                         "name": "vmId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Force Delete",
+                        "name": "force",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5960,7 +6072,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.ListSnapshotResponse"
+                            "$ref": "#/definitions/models.ListVMSnapshotResponse"
                         }
                     },
                     "400": {
@@ -6015,7 +6127,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreateSnapShotRequest"
+                            "$ref": "#/definitions/models.CreateVMSnapshotRequest"
                         }
                     }
                 ],
@@ -6023,7 +6135,7 @@
                     "202": {
                         "description": "Accepted",
                         "schema": {
-                            "$ref": "#/definitions/models.CreateSnapShotResponse"
+                            "$ref": "#/definitions/models.CreateVMSnapshotResponse"
                         }
                     },
                     "400": {
@@ -6197,7 +6309,7 @@
                         "name": "revertRequest",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/models.RevertSnapshotRequest"
+                            "$ref": "#/definitions/models.RevertVMSnapshotRequest"
                         }
                     }
                 ],
@@ -7272,6 +7384,12 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Force Delete",
+                        "name": "force",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -9055,16 +9173,20 @@
         "constants.JobState": {
             "type": "string",
             "enum": [
+                "init",
                 "pending",
                 "running",
                 "completed",
-                "failed"
+                "failed",
+                "skipped"
             ],
             "x-enum-varnames": [
+                "JobStateInit",
                 "JobStatePending",
                 "JobStateRunning",
                 "JobStateCompleted",
-                "JobStateFailed"
+                "JobStateFailed",
+                "JobStateSkipped"
             ]
         },
         "controllers.SshExecutionRequest": {
@@ -9952,6 +10074,9 @@
                 "host_id": {
                     "type": "string"
                 },
+                "host_name": {
+                    "type": "string"
+                },
                 "host_state": {
                     "type": "string"
                 },
@@ -10323,6 +10448,29 @@
                     "type": "string"
                 },
                 "Support USB 3.0": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.VMSnapshot": {
+            "type": "object",
+            "properties": {
+                "current": {
+                    "type": "boolean"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parent": {
+                    "type": "string"
+                },
+                "state": {
                     "type": "string"
                 }
             }
@@ -10707,7 +10855,7 @@
                 }
             }
         },
-        "models.CreateSnapShotRequest": {
+        "models.CreateVMSnapshotRequest": {
             "type": "object",
             "properties": {
                 "snapshot_description": {
@@ -10718,7 +10866,7 @@
                 }
             }
         },
-        "models.CreateSnapShotResponse": {
+        "models.CreateVMSnapshotResponse": {
             "type": "object",
             "properties": {
                 "snapshot_id": {
@@ -11023,9 +11171,6 @@
         "models.JobResponse": {
             "type": "object",
             "properties": {
-                "action": {
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -11039,6 +11184,9 @@
                     "type": "string"
                 },
                 "job_type": {
+                    "type": "string"
+                },
+                "message": {
                     "type": "string"
                 },
                 "owner": {
@@ -11056,21 +11204,80 @@
                 "result": {
                     "type": "string"
                 },
+                "result_record_id": {
+                    "type": "string"
+                },
+                "result_record_type": {
+                    "type": "string"
+                },
                 "state": {
                     "$ref": "#/definitions/constants.JobState"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.JobStepResponse"
+                    }
                 },
                 "updated_at": {
                     "type": "string"
                 }
             }
         },
-        "models.ListSnapshotResponse": {
+        "models.JobStepResponse": {
+            "type": "object",
+            "properties": {
+                "current_percentage": {
+                    "type": "number"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "eta": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "has_percentage": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parallel": {
+                    "type": "boolean"
+                },
+                "state": {
+                    "$ref": "#/definitions/constants.JobState"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "unit": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "integer"
+                },
+                "weight": {
+                    "type": "number"
+                }
+            }
+        },
+        "models.ListVMSnapshotResponse": {
             "type": "object",
             "properties": {
                 "snapshots": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.Snapshot"
+                        "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.VMSnapshot"
                     }
                 }
             }
@@ -11516,6 +11723,12 @@
                 "catalog_id": {
                     "type": "string"
                 },
+                "compress": {
+                    "type": "boolean"
+                },
+                "compress_level": {
+                    "type": "string"
+                },
                 "compress_pack": {
                     "type": "boolean"
                 },
@@ -11533,6 +11746,9 @@
                 },
                 "minimum_requirements": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_catalog_models.MinimumSpecRequirement"
+                },
+                "override_existing": {
+                    "type": "boolean"
                 },
                 "pack_size": {
                     "type": "integer"
@@ -11776,7 +11992,7 @@
                 }
             }
         },
-        "models.RevertSnapshotRequest": {
+        "models.RevertVMSnapshotRequest": {
             "type": "object",
             "properties": {
                 "skip_resume": {
@@ -11822,29 +12038,6 @@
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Snapshot": {
-            "type": "object",
-            "properties": {
-                "current": {
-                    "type": "boolean"
-                },
-                "date": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "parent": {
-                    "type": "string"
-                },
-                "state": {
                     "type": "string"
                 }
             }

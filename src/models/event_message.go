@@ -84,8 +84,8 @@ type VmUpdated struct {
 }
 
 type VmSnapshotsUpdated struct {
-	VmID      string     `json:"vm_id"`
-	Snapshots []Snapshot `json:"snapshots"`
+	VmID        string       `json:"vm_id"`
+	VMSnapshots []VMSnapshot `json:"snapshots"`
 }
 type VmUptimeChanged struct {
 	VmID   string `json:"vm_id"`
