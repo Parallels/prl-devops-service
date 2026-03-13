@@ -71,6 +71,9 @@ type HostResourceItem struct {
 	MemorySize       float64 `json:"memory_size,omitempty"`
 	DiskSize         float64 `json:"disk_size,omitempty"`
 	FreeDiskSize     float64 `json:"free_disk_size,omitempty"`
+
+	PrlHomeSize     int64 `json:"prl_home_size,omitempty"`
+	PrlHomeFreeSize int64 `json:"prl_home_free_size,omitempty"`
 }
 
 func (c *HostResourceItem) Diff(source HostResourceItem) bool {

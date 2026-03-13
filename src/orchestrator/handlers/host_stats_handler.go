@@ -54,4 +54,8 @@ func (h *HostStatsHandler) Handle(ctx basecontext.ApiContext, hostID string, eve
 			}
 		}()
 	}
+
+	if event.Message == "DISK_SPACE_CHANGED" {
+		
+	}
 }

@@ -93,7 +93,7 @@ func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
-		WithPath("/diskspace").
+		WithPath("/config/diskspace").
 		WithRequiredClaim(constants.LIST_VM_CLAIM).
 		WithHandler(GetSystemDiskSpace()).
 		Register()

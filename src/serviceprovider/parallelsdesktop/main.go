@@ -2578,6 +2578,8 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	result.TotalAvailable.DiskSize = systemInfo.FreeDiskSize
 	result.TotalAvailable.MemorySize = result.Total.MemorySize - result.SystemReserved.MemorySize - result.TotalInUse.MemorySize
 	result.TotalAvailable.LogicalCpuCount = result.Total.LogicalCpuCount - result.SystemReserved.LogicalCpuCount - result.TotalInUse.LogicalCpuCount
+	result.TotalAvailable.PrlHomeFreeSize, _ = s.GetParallelsHomeDiskSpaceInfo(ctx, "")
+	result.TotalAvailable.PrlHomeTotalSize = systemInfo.PrlHomeTotalSize
 
 	external_ip, err := systemSrv.GetExternalIp(ctx)
 	if err == nil {

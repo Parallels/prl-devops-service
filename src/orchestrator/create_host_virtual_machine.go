@@ -359,6 +359,11 @@ func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, ar
 	availableCpus := host.Resources.TotalAvailable.LogicalCpuCount
 	availableMemory := host.Resources.TotalAvailable.MemorySize
 
+	// go and check space we have on cache 3 times download, copy to cache, create from cache. if user folder is same as cache folder
+	// if cache folder volume is different from user folder volume,  we need 2 times the disk size.
+	// comapre prlHomeFreeSize && spec.size.
+	// request host fro free size via REST call, owner is empty use orch user.
+
 	// Checking for the maximum number of Apple VMs
 	if strings.EqualFold(specs.Type, "macvm") {
 		if host.Resources.TotalAppleVms >= MaxNumberAppleVms {

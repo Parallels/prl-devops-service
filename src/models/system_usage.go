@@ -26,6 +26,8 @@ type SystemUsageItem struct {
 	LogicalCpuCount  int64   `json:"logical_cpu_count"`
 	MemorySize       float64 `json:"memory_size"`
 	DiskSize         float64 `json:"disk_count"`
+	PrlHomeSize      int64   `json:"prl_home_size,omitempty"`
+	PrlHomeFreeSize  int64   `json:"prl_home_free_size,omitempty"`
 }
 
 type SystemHardwareInfo struct {
