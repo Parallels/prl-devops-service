@@ -7,7 +7,6 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
-	apiModels "github.com/Parallels/prl-devops-service/models"
 )
 
 var (
@@ -16,7 +15,7 @@ var (
 	ErrOrchestratorHostNotFound               = errors.NewWithCode("host not found", 404)
 	ErrOrchestratorReverseProxyHostNotFound   = errors.NewWithCode("reverse proxy host not found", 404)
 	ErrOrchestratorHostVirtualMachineNotFound = errors.NewWithCode("host virtual machine not found", 404)
-	ErrOrchestratorSnapshotsNotFound          = errors.NewWithCode("orchestrator snapshots not found for host", 404)
+	ErrOrchestratorHostsVMSnapshotsNotFound   = errors.NewWithCode("VM snapshots not found for host", 404)
 )
 
 func (j *JsonDatabase) GetOrchestratorHosts(ctx basecontext.ApiContext, filter string) ([]models.OrchestratorHost, error) {
@@ -693,7 +692,7 @@ func (j *JsonDatabase) GetOrchestratorReverseProxyConfig(ctx basecontext.ApiCont
 	return host.ReverseProxy, nil
 }
 
-func (j *JsonDatabase) GetOrchestratorSnapshots(ctx basecontext.ApiContext, hostId string) (*models.OrchestratorSnapshot, error) {
+func (j *JsonDatabase) GetHostVMSnapshots(ctx basecontext.ApiContext, hostId string) (*models.HostsVMSnapshotsRecord, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
 	}
@@ -701,44 +700,39 @@ func (j *JsonDatabase) GetOrchestratorSnapshots(ctx basecontext.ApiContext, host
 	j.dataMutex.RLock()
 	defer j.dataMutex.RUnlock()
 
-	for _, snap := range j.data.OrchestratorSnapshots {
+	for _, snap := range j.data.HostsVMSnapshots {
 		if snap.HostId == hostId {
 			return &snap, nil
 		}
 	}
 
-	return nil, ErrOrchestratorSnapshotsNotFound
+	return nil, ErrOrchestratorHostsVMSnapshotsNotFound
 }
 
-func (j *JsonDatabase) SetOrchestratorSnapshots(ctx basecontext.ApiContext, hostId string, vmId string, snapshots apiModels.ListSnapshotResponse) error {
+func (j *JsonDatabase) SetHostVMSnapshots(ctx basecontext.ApiContext, hostId string, snapshots models.VMSnapshots) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
 	}
 
 	j.dataMutex.Lock()
 	defer j.dataMutex.Unlock()
-	hostFound := false
-	for i, orchSnap := range j.data.OrchestratorSnapshots {
+
+	for i, orchSnap := range j.data.HostsVMSnapshots {
 		if orchSnap.HostId == hostId {
-			snaps := []models.Snapshot{}
-			for _, snapshot := range snapshots.Snapshots {
-				snaps = append(snaps, models.Snapshot{
-					ID:      snapshot.ID,
-					Name:    snapshot.Name,
-					Date:    snapshot.Date,
-					State:   snapshot.State,
-					Current: snapshot.Current,
-					Parent:  snapshot.Parent,
-				})
+			if j.data.HostsVMSnapshots[i].VMSnapshots == nil {
+				j.data.HostsVMSnapshots[i].VMSnapshots = make(map[string][]models.VMSnapshot)
 			}
-			j.data.OrchestratorSnapshots[i].Snapshots[vmId] = snaps
-			hostFound = true
-			break
+			j.data.HostsVMSnapshots[i].VMSnapshots[snapshots.VMId] = snapshots.VMSnapshot
+			return nil
 		}
 	}
-	if !hostFound {
-		return ErrOrchestratorHostNotFound
-	}
+
+	j.data.HostsVMSnapshots = append(j.data.HostsVMSnapshots, models.HostsVMSnapshotsRecord{
+		HostId: hostId,
+		VMSnapshots: map[string][]models.VMSnapshot{
+			snapshots.VMId: snapshots.VMSnapshot,
+		},
+	})
 
 	return nil
 }

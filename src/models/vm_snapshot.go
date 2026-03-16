@@ -1,20 +1,20 @@
 package models
 
-type CreateSnapShotRequest struct {
+type CreateVMSnapshotRequest struct {
 	SnapshotName        string `json:"snapshot_name,omitempty"`
 	SnapshotDescription string `json:"snapshot_description,omitempty"`
 }
 
-type CreateSnapShotResponse struct {
+type CreateVMSnapshotResponse struct {
 	SnapshotName string `json:"snapshot_name,omitempty"`
 	SnapshotId   string `json:"snapshot_id,omitempty"`
 }
 
-type DeleteSnapshotRequest struct {
+type DeleteVMSnapshotRequest struct {
 	DeleteChildren bool `json:"delete_children,omitempty"`
 }
 
-type Snapshot struct {
+type VMSnapshot struct {
 	ID      string `json:"id,omitempty"`
 	Name    string `json:"name"`
 	Date    string `json:"date"`
@@ -23,10 +23,12 @@ type Snapshot struct {
 	Parent  string `json:"parent"`
 }
 
-type ListSnapshotResponse struct {
-	Snapshots []Snapshot `json:"snapshots,omitempty"`
+type VMSnapshots []VMSnapshot
+
+type ListVMSnapshotResponse struct {
+	Snapshots VMSnapshots `json:"snapshots,omitempty"`
 }
 
-type RevertSnapshotRequest struct {
+type RevertVMSnapshotRequest struct {
 	SkipResume bool `json:"skip_resume,omitempty"`
 }

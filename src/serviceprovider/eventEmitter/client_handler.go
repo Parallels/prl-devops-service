@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	writeWait        = 10 * time.Second
-	pingInterval     = 30 * time.Second
-	pongWait         = 45 * time.Second
+	writeWait         = 10 * time.Second
+	pingInterval      = 30 * time.Second
+	pongWait          = 45 * time.Second
 	queueTickInterval = 100 * time.Millisecond
 	// maxClientQueue is the per-client queue cap. Oldest messages are evicted
 	// once this limit is reached (tail-drop prevention).

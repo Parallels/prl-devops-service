@@ -2283,7 +2283,7 @@ func ExecutesOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id		path		string	true	"Host ID"
 // @Param			vmId	path		string	true	"Virtual Machine ID"
-// @Success		200		{object}	models.ListSnapshotResponse
+// @Success		200		{object}	models.ListVMSnapshotResponse
 // @Failure		400		{object}	models.ApiErrorResponse
 // @Failure		401		{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
@@ -2299,14 +2299,10 @@ func ListOrchestratorHostVirtualMachineSnapshots() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		vmId := vars["vmId"]
-		noCache := false
-		if r.Header.Get("X-No-Cache") == "true" {
-			noCache = true
-		}
 
 		ctx.LogInfof("[controllers/orchestrator][snapshots] Listing snapshots for host %s machine %s", id, vmId)
 
-		response, err := orchestrator.GetHostVirtualMachineSnapshots(ctx, id, vmId, noCache)
+		response, err := orchestrator.GetHostVirtualMachineSnapshots(ctx, id, vmId)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -2324,8 +2320,8 @@ func ListOrchestratorHostVirtualMachineSnapshots() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id				path		string							true	"Host ID"
 // @Param			vmId			path		string							true	"Virtual Machine ID"
-// @Param			createRequest	body		models.CreateSnapShotRequest	true	"Create Snapshot Request"
-// @Success		202				{object}	models.CreateSnapShotResponse
+// @Param			createRequest	body		models.CreateVMSnapshotRequest	true	"Create Snapshot Request"
+// @Success		202				{object}	models.CreateVMSnapshotResponse
 // @Failure		400				{object}	models.ApiErrorResponse
 // @Failure		401				{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
@@ -2336,7 +2332,7 @@ func CreateOrchestratorHostVirtualMachineSnapshot() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		var request models.CreateSnapShotRequest
+		var request models.CreateVMSnapshotRequest
 		orchestrator := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
@@ -2459,7 +2455,7 @@ func DeleteOrchestratorHostVirtualMachineSnapshot() restapi.ControllerHandler {
 // @Param			id				path		string							true	"Host ID"
 // @Param			vmId			path		string							true	"Virtual Machine ID"
 // @Param			snapshot_id		path		string							true	"Snapshot ID"
-// @Param			revertRequest	body		models.RevertSnapshotRequest	false	"Revert Snapshot Request"
+// @Param			revertRequest	body		models.RevertVMSnapshotRequest	false	"Revert Snapshot Request"
 // @Success		202				{object}	models.ApiCommonResponse
 // @Failure		400				{object}	models.ApiErrorResponse
 // @Failure		401				{object}	models.OAuthErrorResponse
@@ -2471,7 +2467,7 @@ func RevertOrchestratorHostVirtualMachineSnapshot() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		var request models.RevertSnapshotRequest
+		var request models.RevertVMSnapshotRequest
 		orchestrator := orchestrator.NewOrchestratorService(ctx)
 
 		vars := mux.Vars(r)
