@@ -9,7 +9,6 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/install"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
-	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/cjlapao/common-go/helper"
 )
 
@@ -19,11 +18,6 @@ type InstallServiceResult struct {
 }
 
 func processInstall(ctx basecontext.ApiContext, cmd string) {
-	system := system.SystemService{}
-	if system.GetOperatingSystem() != "macos" {
-		ctx.LogErrorf("The install command is only available for macOS")
-		os.Exit(1)
-	}
 	_ = os.Setenv(constants.SOURCE_ENV_VAR, constants.INSTALL_SERVICE_COMMAND)
 
 	subcommand := helper.GetCommandAt(1)
@@ -57,6 +51,10 @@ func processInstall(ctx basecontext.ApiContext, cmd string) {
 	switch subcommand {
 	case "service":
 		filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
+		modulesFlag := helper.GetFlagValue("modules", "")
+		if modulesFlag != "" {
+			_ = os.Setenv(constants.ENABLED_MODULES_ENV_VAR, modulesFlag)
+		}
 		ctx.ToggleLogTimestamps(false)
 		if filePath != "" {
 			if err := install.InstallService(ctx, filePath); err != nil {
@@ -158,6 +156,7 @@ func processInstallHelp() {
 	fmt.Println("flags:")
 	fmt.Println("  user\t\twhat user would be used to install the service, by default the current user is defined")
 	fmt.Println("  version\t\tRequest a specific version to be installed")
+	fmt.Println("  modules\t\tComma-separated list of modules to enable (api,host,catalog,orchestrator). api is always included.")
 	fmt.Println()
 	fmt.Println("Example:")
 	fmt.Printf("  %v %v git --version=latest", constants.ExecutableName, constants.INSTALL_SERVICE_COMMAND)
