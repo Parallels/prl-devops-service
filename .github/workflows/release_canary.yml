@@ -94,6 +94,8 @@ jobs:
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Add Inbuilt Variables
         run: |
+          echo "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
           sed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
 
           go install github.com/swaggo/swag/cmd/swag@latest
@@ -112,7 +114,7 @@ jobs:
           project_path: "./src"
           binary_name: "prldevops"
           release_name: "v${{ env.EXT_VERSION }}-canary"
-          ldflags: "-s -w -X main.ver=${{ env.EXT_VERSION }} -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}' -X 'github.com/Parallels/prl-devops-service/config.canaryBuildFlag=true' -X 'github.com/Parallels/prl-devops-service/config.betaBuildFlag=false'"
+          ldflags: "-s -w -X 'github.com/Parallels/prl-devops-service/version.buildVersion=${{ env.EXT_VERSION }}' -X 'github.com/Parallels/prl-devops-service/version.buildChannel=canary' -X 'github.com/Parallels/prl-devops-service/version.buildDate=${{ env.BUILD_DATE }}' -X 'github.com/Parallels/prl-devops-service/version.buildCommit=${{ env.GIT_COMMIT }}' -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}'"
   canary-releases-macos:
     needs:
       - canary-release
@@ -143,6 +145,8 @@ jobs:
       - name: Add Inbuilt Variables
         run: |
           brew install gnu-sed
+          echo "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
 
           gsed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
 
@@ -157,7 +161,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
-          cd src && CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w -X main.ver=$EXT_VERSION -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY' -X 'github.com/Parallels/prl-devops-service/config.canaryBuildFlag=true' -X 'github.com/Parallels/prl-devops-service/config.betaBuildFlag=false'" -o prldevops
+          cd src && CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w -X 'github.com/Parallels/prl-devops-service/version.buildVersion=$EXT_VERSION' -X 'github.com/Parallels/prl-devops-service/version.buildChannel=canary' -X 'github.com/Parallels/prl-devops-service/version.buildDate=$BUILD_DATE' -X 'github.com/Parallels/prl-devops-service/version.buildCommit=$GIT_COMMIT' -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
       - name: Create and Unlock Temporary Keychain
         run: |
           security create-keychain -p "github" temp.keychain
@@ -252,6 +256,7 @@ jobs:
             VERSION=${{ env.EXT_VERSION }}
             AMPLITUDE_API_KEY=${{ env.AmplitudeApiKey }}
             BUILD_ENV=canary
+            GIT_COMMIT=${{ github.sha }}
           secrets: |
             amplitude_api_key=${{ secrets.AMPLITUDE_API_KEY }}
           tags: |

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -16,6 +17,38 @@ import (
 	"github.com/Parallels/prl-devops-service/logs"
 	"github.com/cjlapao/common-go/helper"
 )
+
+// normalizeModules validates and normalizes a comma-separated modules string.
+// "api" is always included. Unknown modules are silently dropped.
+// Returns a deduplicated, sorted comma-separated string, or "api" if nothing valid was provided.
+func normalizeModules(input string) string {
+	validSet := make(map[string]struct{}, len(constants.VALID_MODULES))
+	for _, m := range constants.VALID_MODULES {
+		validSet[m] = struct{}{}
+	}
+
+	seen := make(map[string]struct{})
+	seen[constants.API_MODE] = struct{}{} // api is always included
+
+	for _, raw := range strings.Split(input, ",") {
+		m := strings.TrimSpace(strings.ToLower(raw))
+		if m == "" {
+			continue
+		}
+		if _, ok := validSet[m]; ok {
+			seen[m] = struct{}{}
+		}
+	}
+
+	result := make([]string, 0, len(seen))
+	// Emit in VALID_MODULES order for determinism
+	for _, m := range constants.VALID_MODULES {
+		if _, ok := seen[m]; ok {
+			result = append(result, m)
+		}
+	}
+	return strings.Join(result, ",")
+}
 
 const (
 	MAC_PLIST_DAEMON_PATH = "/Library/LaunchDaemons"
@@ -164,11 +197,93 @@ func uninstallServiceOnWindows(ctx basecontext.ApiContext, removeDatabase bool) 
 }
 
 func installServiceOnLinux(ctx basecontext.ApiContext, config ApiServiceConfig) error {
-	return errors.New("not implemented")
+	execPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("could not determine executable path: %w", err)
+	}
+
+	unit, err := generateSystemdUnit(execPath, config)
+	if err != nil {
+		return fmt.Errorf("failed to generate systemd unit: %w", err)
+	}
+
+	unitPath := filepath.Join(LINUX_SYSTEMD_UNIT_DIR, LINUX_SYSTEMD_UNIT_NAME)
+
+	// Stop and disable any existing instance before replacing the unit file.
+	if helper.FileExists(unitPath) {
+		if err := uninstallServiceOnLinux(ctx, false); err != nil {
+			return err
+		}
+	}
+
+	if err := helper.WriteToFile(unit, unitPath); err != nil {
+		return fmt.Errorf("failed to write systemd unit to %s: %w", unitPath, err)
+	}
+
+	chmodCmd := helpers.Command{
+		Command: "chmod",
+		Args:    []string{"644", unitPath},
+	}
+	daemonReloadCmd := helpers.Command{
+		Command: "systemctl",
+		Args:    []string{"daemon-reload"},
+	}
+	enableCmd := helpers.Command{
+		Command: "systemctl",
+		Args:    []string{"enable", LINUX_SYSTEMD_UNIT_NAME},
+	}
+	startCmd := helpers.Command{
+		Command: "systemctl",
+		Args:    []string{"start", LINUX_SYSTEMD_UNIT_NAME},
+	}
+
+	for _, cmd := range []helpers.Command{chmodCmd, daemonReloadCmd, enableCmd, startCmd} {
+		if _, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout); err != nil {
+			return fmt.Errorf("command %q failed: %w", cmd.Command+" "+strings.Join(cmd.Args, " "), err)
+		}
+	}
+
+	ctx.LogInfof("Service installed successfully")
+	return nil
 }
 
 func uninstallServiceOnLinux(ctx basecontext.ApiContext, removeDatabase bool) error {
-	return errors.New("not implemented")
+	unitPath := filepath.Join(LINUX_SYSTEMD_UNIT_DIR, LINUX_SYSTEMD_UNIT_NAME)
+
+	stopCmd := helpers.Command{
+		Command: "systemctl",
+		Args:    []string{"stop", LINUX_SYSTEMD_UNIT_NAME},
+	}
+	disableCmd := helpers.Command{
+		Command: "systemctl",
+		Args:    []string{"disable", LINUX_SYSTEMD_UNIT_NAME},
+	}
+	daemonReloadCmd := helpers.Command{
+		Command: "systemctl",
+		Args:    []string{"daemon-reload"},
+	}
+
+	// Best-effort stop/disable — don't fail if the unit wasn't running.
+	for _, cmd := range []helpers.Command{stopCmd, disableCmd, daemonReloadCmd} {
+		if _, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout); err != nil {
+			ctx.LogWarnf("systemctl %s warning (continuing): %v", strings.Join(cmd.Args, " "), err)
+		}
+	}
+
+	if helper.FileExists(unitPath) {
+		if err := os.Remove(unitPath); err != nil {
+			ctx.LogWarnf("Could not remove unit file %s: %v", unitPath, err)
+		}
+	}
+
+	if removeDatabase && helper.FileExists(constants.ServiceDefaultDirectory) {
+		if err := os.RemoveAll(constants.ServiceDefaultDirectory); err != nil {
+			return err
+		}
+	}
+
+	ctx.LogInfof("Service uninstalled successfully")
+	return nil
 }
 
 func getConfigFromEnv() ApiServiceConfig {
@@ -215,11 +330,34 @@ func getConfigFromEnv() ApiServiceConfig {
 	if cfg.GetKey(constants.TOKEN_DURATION_MINUTES_ENV_VAR) != "" {
 		config.TokenDurationMinutes = cfg.GetKey(constants.TOKEN_DURATION_MINUTES_ENV_VAR)
 	}
-	if cfg.GetKey(constants.MODE_ENV_VAR) != "" {
-		config.Mode = cfg.GetKey(constants.MODE_ENV_VAR)
+	if cfg.GetKey(constants.ENABLED_MODULES_ENV_VAR) != "" {
+		config.EnabledModules = normalizeModules(cfg.GetKey(constants.ENABLED_MODULES_ENV_VAR))
+	} else if cfg.GetKey(constants.MODE_ENV_VAR) != "" {
+		// Backward compatibility: MODE contains a single mode value
+		config.EnabledModules = normalizeModules(cfg.GetKey(constants.MODE_ENV_VAR))
+	} else {
+		config.EnabledModules = constants.API_MODE
 	}
 	if cfg.GetKey(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR) != "" {
 		config.UseOrchestratorResources = cfg.GetKey(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR) == "true"
+	}
+
+	// CORS — enable by default with sensible defaults the UI needs
+	config.EnableCors = true
+	if cfg.GetKey(constants.CORS_ALLOWED_ORIGINS_ENV_VAR) != "" {
+		config.CorsAllowedOrigins = cfg.GetKey(constants.CORS_ALLOWED_ORIGINS_ENV_VAR)
+	} else {
+		config.CorsAllowedOrigins = "*"
+	}
+	if cfg.GetKey(constants.CORS_ALLOWED_METHODS_ENV_VAR) != "" {
+		config.CorsAllowedMethods = cfg.GetKey(constants.CORS_ALLOWED_METHODS_ENV_VAR)
+	} else {
+		config.CorsAllowedMethods = "GET,POST,PUT,DELETE,PATCH"
+	}
+	if cfg.GetKey(constants.CORS_ALLOWED_HEADERS_ENV_VAR) != "" {
+		config.CorsAllowedHeaders = cfg.GetKey(constants.CORS_ALLOWED_HEADERS_ENV_VAR)
+	} else {
+		config.CorsAllowedHeaders = "X-Requested-With,Accept,Authorization,Content-Type,Content-Length,Accept-Encoding,X-CSRF-Token,Origin,Access-Control-Request-Method,Access-Control-Request-Headers,x-source-id,X-Source-Id"
 	}
 
 	return config
@@ -239,6 +377,27 @@ func getConfigFromFile(filePath string) (ApiServiceConfig, error) {
 
 	if err := json.Unmarshal(content, &result); err != nil {
 		return result, err
+	}
+
+	// Normalise modules: prefer EnabledModules; fall back to Mode for backward compat.
+	if result.EnabledModules != "" {
+		result.EnabledModules = normalizeModules(result.EnabledModules)
+	} else if result.Mode != "" {
+		result.EnabledModules = normalizeModules(result.Mode)
+	} else {
+		result.EnabledModules = constants.API_MODE
+	}
+
+	// Apply CORS defaults when not set in the config file
+	result.EnableCors = true
+	if result.CorsAllowedOrigins == "" {
+		result.CorsAllowedOrigins = "*"
+	}
+	if result.CorsAllowedMethods == "" {
+		result.CorsAllowedMethods = "GET,POST,PUT,DELETE,PATCH"
+	}
+	if result.CorsAllowedHeaders == "" {
+		result.CorsAllowedHeaders = "X-Requested-With,Accept,Authorization,Content-Type,Content-Length,Accept-Encoding,X-CSRF-Token,Origin,Access-Control-Request-Method,Access-Control-Request-Headers,x-source-id,X-Source-Id"
 	}
 
 	return result, nil

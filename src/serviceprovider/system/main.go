@@ -13,10 +13,10 @@ import (
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
-	"github.com/cjlapao/common-go/version"
+	appversion "github.com/Parallels/prl-devops-service/version"
 )
 
-var VersionSvc = version.Get()
+var VersionSvc = appversion.Get()
 
 var globalSystemService *SystemService
 
