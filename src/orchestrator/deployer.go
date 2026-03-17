@@ -1,0 +1,184 @@
+package orchestrator
+
+import (
+	"fmt"
+	"net"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
+	apimodels "github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/serviceprovider/ssh"
+)
+
+// detectOutboundIP returns the first non-loopback, non-link-local IPv4 address
+// found on a local network interface, falling back to "127.0.0.1".
+func detectOutboundIP() string {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return "127.0.0.1"
+	}
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if ip == nil || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
+				continue
+			}
+			if ip4 := ip.To4(); ip4 != nil {
+				return ip4.String()
+			}
+		}
+	}
+	return "127.0.0.1"
+}
+
+// resolveOrchestratorBaseURL returns the orchestrator's publicly reachable URL.
+// It reads BASE_URL from config first; if not set it falls back to the first
+// non-loopback IPv4 interface address combined with the configured API port.
+func resolveOrchestratorBaseURL(ctx basecontext.ApiContext) string {
+	cfg := config.Get()
+	if base := cfg.GetKey(constants.BASE_URL_ENV_VAR); base != "" {
+		return strings.TrimRight(base, "/")
+	}
+
+	// Auto-detect
+	schema := "http"
+	if cfg.GetBoolKey(constants.TLS_ENABLED_ENV_VAR) {
+		schema = "https"
+	}
+	port := cfg.GetKey(constants.API_PORT_ENV_VAR)
+	if port == "" {
+		port = constants.DEFAULT_API_PORT
+	}
+
+	ip := detectOutboundIP()
+
+	return fmt.Sprintf("%s://%s:%s", schema, ip, port)
+}
+
+// DeployAndRegisterAgent installs the devops agent on a remote host via SSH and
+// registers it with this orchestrator instance.  It is called by both the
+// synchronous and asynchronous deploy handlers.
+func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext, req apimodels.DeployOrchestratorHostRequest) (*apimodels.DeployOrchestratorHostResponse, error) {
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("database unavailable: %w", err)
+	}
+
+	// 1. Generate a single-use enrollment token bound to the intended host name.
+	ttl := req.EnrollmentTokenTTL
+	if ttl <= 0 {
+		ttl = constants.DEFAULT_ENROLLMENT_TOKEN_TTL_MINUTES
+	}
+	enrollToken, err := dbService.CreateEnrollmentToken(ctx, req.HostName, ttl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create enrollment token: %w", err)
+	}
+
+	// 2. Determine the URL the agent will use to reach this orchestrator.
+	orchURL := resolveOrchestratorBaseURL(ctx)
+
+	// 3. Build the remote command sequence.
+	//    Step A – install the service.
+	installArgs := []string{}
+	if req.RootPassword != "" {
+		installArgs = append(installArgs, "--root-password", req.RootPassword)
+	}
+	if req.EnabledModules != "" {
+		installArgs = append(installArgs, "--mode", req.EnabledModules)
+	}
+	if req.PdVersion != "" {
+		installArgs = append(installArgs, "--pd-version", req.PdVersion)
+	}
+	if req.AgentVersion != "" {
+		installArgs = append(installArgs, "--version", req.AgentVersion)
+	} else if req.PreRelease {
+		installArgs = append(installArgs, "--pre-release")
+	}
+	installFlagsStr := strings.Join(installArgs, " ")
+
+	//    Step B – register the agent with this orchestrator.
+	tagsStr := strings.Join(req.Tags, ",")
+	registerCmd := fmt.Sprintf(
+		"prldevops register-with-orchestrator --orchestrator-url=%s --token=%s --name=%s",
+		orchURL, enrollToken.Token, req.HostName,
+	)
+	if tagsStr != "" {
+		registerCmd += " --tags=" + tagsStr
+	}
+
+	installCmd := fmt.Sprintf(
+		`curl -fsSL https://raw.githubusercontent.com/Parallels/prl-devops-service/main/scripts/install.sh | bash -s -- %s`,
+		installFlagsStr,
+	)
+
+	// Wait for the service to be reachable before registering.
+	port := config.Get().GetKey(constants.API_PORT_ENV_VAR)
+	if port == "" {
+		port = constants.DEFAULT_API_PORT
+	}
+	healthCmd := fmt.Sprintf(
+		`for i in $(seq 1 30); do curl -sf http://localhost:%s/health/probe && break || sleep 2; done`,
+		port,
+	)
+
+	fullCmd := fmt.Sprintf("%s && %s && %s", installCmd, healthCmd, registerCmd)
+
+	// 4. Execute over SSH.
+	sshPort, _ := strconv.Atoi(req.SshPort)
+	if sshPort == 0 {
+		sshPort = 22
+	}
+
+	sshSvc := ssh.New(ctx)
+	output, err := sshSvc.Execute(ctx, req.SshHost, sshPort, req.SshUser, req.SshPassword, req.SshKey, fullCmd, false)
+	if err != nil {
+		return nil, fmt.Errorf("SSH execution failed: %w\noutput: %s", err, output)
+	}
+
+	// 5. Extract the host ID printed by register-with-orchestrator.
+	hostID := ""
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "HOST_ID=") {
+			hostID = strings.TrimPrefix(line, "HOST_ID=")
+		}
+	}
+
+	// 6. Wait up to 30 s for the host to appear in the orchestrator's DB.
+	hostURL := ""
+	if hostID != "" {
+		deadline := time.Now().Add(30 * time.Second)
+		for time.Now().Before(deadline) {
+			h, err := dbService.GetOrchestratorHost(ctx, hostID)
+			if err == nil && h != nil {
+				hostURL = h.Host
+				break
+			}
+			time.Sleep(2 * time.Second)
+		}
+	}
+
+	return &apimodels.DeployOrchestratorHostResponse{
+		HostID:  hostID,
+		Host:    hostURL,
+		Message: "Agent deployed and registered successfully",
+	}, nil
+}

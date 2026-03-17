@@ -22,6 +22,10 @@ type Controller struct {
 	RequiredClaims           []string
 	RoleComparisonOperation  ComparisonOperation
 	ClaimComparisonOperation ComparisonOperation
+	// ExtraAdapters are injected into the middleware chain just before
+	// EndAuthorizationMiddlewareAdapter, allowing per-endpoint auth extensions
+	// such as enrollment-token support.
+	ExtraAdapters []Adapter
 }
 
 // NewController creates a new instance of the Controller struct with default values.
@@ -125,6 +129,11 @@ func (c *Controller) WithHandler(handler ControllerHandler) *Controller {
 	return c
 }
 
+func (c *Controller) WithExtraAdapter(adapter Adapter) *Controller {
+	c.ExtraAdapters = append(c.ExtraAdapters, adapter)
+	return c
+}
+
 func (c *Controller) Register() *Controller {
 	for _, controller := range c.listener.Controllers {
 		if strings.EqualFold(controller.Path(), c.Path()) && controller.Method == c.Method {
@@ -141,15 +150,31 @@ func (c *Controller) Serve() error {
 		return errors.NewWithCode("listener not found", http.StatusInternalServerError)
 	}
 
+	serveAuthorized := func(path string) {
+		if len(c.ExtraAdapters) > 0 {
+			c.listener.AddAuthorizedHandlerWithExtraAdapters(
+				c.Handler,
+				path,
+				c.RequiredRoles,
+				c.RequiredClaims,
+				c.RoleComparisonOperation,
+				c.ClaimComparisonOperation,
+				c.ExtraAdapters,
+				string(c.Method))
+		} else {
+			c.listener.AddAuthorizedHandlerWithRolesAndClaims(
+				c.Handler,
+				path,
+				c.RequiredRoles,
+				c.RequiredClaims,
+				c.RoleComparisonOperation,
+				c.ClaimComparisonOperation,
+				string(c.Method))
+		}
+	}
+
 	if c.NeedsAuthorization() {
-		c.listener.AddAuthorizedHandlerWithRolesAndClaims(
-			c.Handler,
-			c.Path(),
-			c.RequiredRoles,
-			c.RequiredClaims,
-			c.RoleComparisonOperation,
-			c.ClaimComparisonOperation,
-			string(c.Method))
+		serveAuthorized(c.Path())
 	} else {
 		c.listener.AddHandler(c.Handler, c.Path(), string(c.Method))
 	}
@@ -166,14 +191,7 @@ func (c *Controller) Serve() error {
 
 		if needsDefaultApiController {
 			if c.NeedsAuthorization() {
-				c.listener.AddAuthorizedHandlerWithRolesAndClaims(
-					c.Handler,
-					prefixPath,
-					c.RequiredRoles,
-					c.RequiredClaims,
-					c.RoleComparisonOperation,
-					c.ClaimComparisonOperation,
-					string(c.Method))
+				serveAuthorized(prefixPath)
 			} else {
 				c.listener.AddHandler(c.Handler, prefixPath, string(c.Method))
 			}

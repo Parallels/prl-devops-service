@@ -9,10 +9,12 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator"
 	"github.com/Parallels/prl-devops-service/restapi"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/gorilla/mux"
@@ -49,7 +51,39 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithVersion(version).
 		WithPath("/orchestrator/hosts").
 		WithRequiredClaim(constants.CREATE_CLAIM).
+		WithExtraAdapter(restapi.EnrollmentTokenAuthorizationMiddlewareAdapter()).
 		WithHandler(RegisterOrchestratorHostHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/orchestrator/enrollment-token").
+		WithRequiredClaim(constants.CREATE_CLAIM).
+		WithHandler(CreateEnrollmentTokenHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/orchestrator/enrollment-token/{token}/validate").
+		WithHandler(ValidateEnrollmentTokenHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/orchestrator/hosts/deploy").
+		WithRequiredClaim(constants.CREATE_CLAIM).
+		WithHandler(DeployOrchestratorHostHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/orchestrator/hosts/deploy/async").
+		WithRequiredClaim(constants.CREATE_CLAIM).
+		WithHandler(AsyncDeployOrchestratorHostHandler()).
 		Register()
 
 	restapi.NewController().
@@ -674,8 +708,35 @@ func RegisterOrchestratorHostHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+
+		// If the request was authenticated via an enrollment token, validate that
+		// the token's intended host_name matches the Description field and then
+		// mark the token as consumed so it cannot be reused.
+		if tokenValue := r.Header.Get(constants.ENROLLMENT_TOKEN_HEADER); tokenValue != "" {
+			db := serviceprovider.Get().JsonDatabase
+			_ = db.Connect(ctx)
+			token, err := db.ValidateEnrollmentToken(ctx, tokenValue)
+			if err != nil {
+				ReturnApiError(ctx, w, models.ApiErrorResponse{
+					Message: "Enrollment token validation failed: " + err.Error(),
+					Code:    http.StatusUnauthorized,
+				})
+				return
+			}
+			if token.HostName != "" && token.HostName != request.Description {
+				ReturnApiError(ctx, w, models.ApiErrorResponse{
+					Message: fmt.Sprintf("enrollment token is bound to host %q but request description is %q", token.HostName, request.Description),
+					Code:    http.StatusForbidden,
+				})
+				return
+			}
+			// Mark as used before registration to prevent races.
+			if err := db.MarkEnrollmentTokenUsed(ctx, token.ID); err != nil {
+				ctx.LogWarnf("Failed to mark enrollment token as used: %v", err)
+			}
+		}
+
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		// checking if we can connect to host before adding it
 		dtoRecord := mappers.ApiOrchestratorRequestToDto(request)
 
 		record, err := orchestratorSvc.RegisterHost(ctx, &dtoRecord)
@@ -3179,6 +3240,210 @@ func StreamOrchestratorHostSystemLogs() restapi.ControllerHandler {
 
 		// Wait for the other goroutine to finish before returning
 		<-done
+	}
+}
+
+// @Summary		Create an enrollment token
+// @Description	Generates a short-lived, single-use token that allows a freshly installed agent to register itself with the orchestrator without requiring a permanent credential.
+// @Tags			Orchestrator
+// @Accept		json
+// @Produce		json
+// @Param			request	body		models.CreateEnrollmentTokenRequest		true	"Enrollment token request"
+// @Success		201		{object}	models.CreateEnrollmentTokenResponse
+// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		401		{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/enrollment-token [post]
+func CreateEnrollmentTokenHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var req models.CreateEnrollmentTokenRequest
+		if err := http_helper.MapRequestBody(r, &req); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		if err := req.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		db := serviceprovider.Get().JsonDatabase
+		_ = db.Connect(ctx)
+		token, err := db.CreateEnrollmentToken(ctx, req.HostName, req.TTLMinutes)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(models.CreateEnrollmentTokenResponse{
+			Token:     token.Token,
+			HostName:  token.HostName,
+			ExpiresAt: token.ExpiresAt,
+		})
+		ctx.LogInfof("Enrollment token created for host %s", req.HostName)
+	}
+}
+
+// @Summary		Validate an enrollment token
+// @Description	Public endpoint that checks whether an enrollment token is valid, unused, and not expired. Used by agents before starting the registration flow.
+// @Tags			Orchestrator
+// @Produce		json
+// @Param			token	path		string	true	"Enrollment token value"
+// @Success		200		{object}	models.ValidateEnrollmentTokenResponse
+// @Router			/v1/orchestrator/enrollment-token/{token}/validate [get]
+func ValidateEnrollmentTokenHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		vars := mux.Vars(r)
+		tokenValue := vars["token"]
+
+		db := serviceprovider.Get().JsonDatabase
+		_ = db.Connect(ctx)
+		token, err := db.ValidateEnrollmentToken(ctx, tokenValue)
+
+		resp := models.ValidateEnrollmentTokenResponse{}
+		if err != nil {
+			resp.Valid = false
+			resp.Reason = err.Error()
+		} else {
+			resp.Valid = true
+			resp.HostName = token.HostName
+			resp.ExpiresAt = token.ExpiresAt
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(resp)
+	}
+}
+
+// @Summary		Deploy and register an agent via SSH (synchronous)
+// @Description	SSHes into a remote host, installs the devops agent, and registers it with this orchestrator. Blocks until the operation completes.
+// @Tags			Orchestrator
+// @Accept		json
+// @Produce		json
+// @Param			request	body		models.DeployOrchestratorHostRequest	true	"Deploy request"
+// @Success		201		{object}	models.DeployOrchestratorHostResponse
+// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		401		{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/hosts/deploy [post]
+func DeployOrchestratorHostHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var req models.DeployOrchestratorHostRequest
+		if err := http_helper.MapRequestBody(r, &req); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		if err := req.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		orchSvc := orchestrator.NewOrchestratorService(ctx)
+		resp, err := orchSvc.DeployAndRegisterAgent(ctx, req)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(resp)
+		ctx.LogInfof("Agent deployed successfully, host_id=%s", resp.HostID)
+	}
+}
+
+// @Summary		Deploy and register an agent via SSH (asynchronous)
+// @Description	SSHes into a remote host, installs the devops agent, and registers it with this orchestrator. Returns a job ID immediately; poll /jobs/{id} for status.
+// @Tags			Orchestrator
+// @Accept		json
+// @Produce		json
+// @Param			request	body		models.DeployOrchestratorHostRequest	true	"Deploy request"
+// @Success		202		{object}	models.BackgroundOperationResponse
+// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		401		{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/orchestrator/hosts/deploy/async [post]
+func AsyncDeployOrchestratorHostHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var req models.DeployOrchestratorHostRequest
+		if err := http_helper.MapRequestBody(r, &req); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		if err := req.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		userContext := ctx.GetUser()
+		if userContext == nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(fmt.Errorf("job manager not available"), http.StatusInternalServerError))
+			return
+		}
+
+		localJob, err := jobManager.CreateNewJob(userContext.ID, "orchestrator", "deploy", "Deploying agent "+req.HostName)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		asyncCtx := basecontext.NewRootBaseContext()
+		go func() {
+			orchSvc := orchestrator.NewOrchestratorService(asyncCtx)
+			resp, deployErr := orchSvc.DeployAndRegisterAgent(asyncCtx, req)
+			if deployErr != nil {
+				_ = jobManager.MarkJobError(localJob.ID, deployErr)
+				return
+			}
+			_ = jobManager.MarkJobComplete(localJob.ID, fmt.Sprintf("host_id=%s", resp.HostID))
+		}()
+
+		response := mappers.MapJobToApiJob(*localJob)
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Async deploy job %s started for host %s", localJob.ID, req.HostName)
 	}
 }
 
