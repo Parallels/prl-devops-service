@@ -9,6 +9,28 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 )
 
+const (
+	minPartSize int64 = 10 * 1024 * 1024 // 10 MB — well above the S3 5 MB protocol minimum
+	maxPartSize int64 = 64 * 1024 * 1024 // 64 MB — 5 concurrent parts = 320 MB in-flight; minio acks quickly
+	targetParts int64 = 200              // aim for ~200 parts to balance round-trip overhead vs. ack latency
+)
+
+// CalculatePartSize returns an upload part size appropriate for the given file
+// size. It targets ~200 parts, clamped between 10 MB and 64 MB.
+func CalculatePartSize(fileSize int64) int64 {
+	if fileSize <= 0 {
+		return minPartSize
+	}
+	size := fileSize / targetParts
+	if size < minPartSize {
+		return minPartSize
+	}
+	if size > maxPartSize {
+		return maxPartSize
+	}
+	return size
+}
+
 func ValidateArch(arch string) (string, error) {
 	currentArch := arch
 	if arch == "" {
