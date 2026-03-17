@@ -125,7 +125,7 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 	//    omit /usr/local/bin from PATH) can still find the binary.
 	tagsStr := strings.Join(req.Tags, ",")
 	registerCmd := fmt.Sprintf(
-		"/usr/local/bin/prldevops register-with-orchestrator --orchestrator-url=%s --token=%s --name=%s",
+		"/usr/local/bin/prldevops register-with-orchestrator --orchestrator-url=%s --orchestrator-token=%s --host-name=%s",
 		orchURL, enrollToken.Token, req.HostName,
 	)
 	if tagsStr != "" {
