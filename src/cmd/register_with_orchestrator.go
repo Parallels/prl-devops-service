@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -45,6 +46,7 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 	hostName := ""
 	tagsRaw := ""
 	pdVersion := "latest"
+	agentPort := ""
 
 	for _, arg := range os.Args {
 		if strings.HasPrefix(arg, "--"+constants.ORCHESTRATOR_URL_FLAG+"=") {
@@ -61,6 +63,9 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 		}
 		if strings.HasPrefix(arg, "--"+constants.PD_VERSION_FLAG+"=") {
 			pdVersion = strings.TrimPrefix(arg, "--"+constants.PD_VERSION_FLAG+"=")
+		}
+		if strings.HasPrefix(arg, "--"+constants.API_PORT_FLAG+"=") {
+			agentPort = strings.TrimPrefix(arg, "--"+constants.API_PORT_FLAG+"=")
 		}
 	}
 
@@ -122,7 +127,7 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 	}
 
 	// --- Resolve the self URL this agent will advertise ---
-	selfURL := resolveSelfBaseURL(ctx)
+	selfURL := resolveSelfBaseURL(ctx, agentPort)
 	ctx.LogInfof("Agent will advertise URL: %s", selfURL)
 
 	// --- Create a permanent local API key for the orchestrator to call back ---
@@ -188,7 +193,8 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 	defer regResp.Body.Close()
 
 	if regResp.StatusCode < 200 || regResp.StatusCode >= 300 {
-		ctx.LogErrorf("Orchestrator returned HTTP %d when registering host", regResp.StatusCode)
+		respBody, _ := io.ReadAll(regResp.Body)
+		ctx.LogErrorf("Orchestrator returned HTTP %d when registering host: %s", regResp.StatusCode, string(respBody))
 		os.Exit(1)
 	}
 
@@ -206,8 +212,8 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 }
 
 // resolveSelfBaseURL returns the URL this agent should advertise to the orchestrator.
-// Priority: BASE_URL env var → auto-detect from network interfaces + API port.
-func resolveSelfBaseURL(ctx basecontext.ApiContext) string {
+// Priority: BASE_URL env var → portOverride flag → API_PORT env var → DEFAULT_API_PORT.
+func resolveSelfBaseURL(ctx basecontext.ApiContext, portOverride string) string {
 	cfg := config.Get()
 	if base := cfg.GetKey(constants.BASE_URL_ENV_VAR); base != "" {
 		return strings.TrimRight(base, "/")
@@ -217,7 +223,10 @@ func resolveSelfBaseURL(ctx basecontext.ApiContext) string {
 	if cfg.GetBoolKey(constants.TLS_ENABLED_ENV_VAR) {
 		schema = "https"
 	}
-	port := cfg.GetKey(constants.API_PORT_ENV_VAR)
+	port := portOverride
+	if port == "" {
+		port = cfg.GetKey(constants.API_PORT_ENV_VAR)
+	}
 	if port == "" {
 		port = constants.DEFAULT_API_PORT
 	}

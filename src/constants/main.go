@@ -27,7 +27,7 @@ const (
 
 const (
 	DEFAULT_API_PREFIX                           = "/api"
-	DEFAULT_API_PORT                             = "80"
+	DEFAULT_API_PORT                             = "3080"
 	DEFAULT_API_TLS_PORT                         = "443"
 	CURRENT_USER_ENV_VAR                         = "PD_CURRENT_USER"
 	DEFAULT_TOKEN_DURATION_MINUTES               = 60

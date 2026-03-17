@@ -28,6 +28,8 @@ type DeployOrchestratorHostRequest struct {
 	// PreRelease instructs the install script to pick the latest pre-release tag
 	// instead of the latest stable release. Ignored when AgentVersion is set.
 	PreRelease bool `json:"pre_release,omitempty"`
+	// AgentPort is the port the installed agent listens on. Defaults to 3080.
+	AgentPort string `json:"agent_port,omitempty"`
 
 	// EnrollmentTokenTTL overrides the default 15-minute TTL (minutes)
 	EnrollmentTokenTTL int `json:"enrollment_token_ttl,omitempty"`

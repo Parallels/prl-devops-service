@@ -124,9 +124,15 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 	//    Use the absolute path so that non-interactive SSH sessions (which often
 	//    omit /usr/local/bin from PATH) can still find the binary.
 	tagsStr := strings.Join(req.Tags, ",")
+	// Resolve the port the agent will listen on: explicit field → default.
+	agentPort := req.AgentPort
+	if agentPort == "" {
+		agentPort = constants.DEFAULT_API_PORT
+	}
+
 	registerCmd := fmt.Sprintf(
-		"/usr/local/bin/prldevops register-with-orchestrator --orchestrator-url=%s --orchestrator-token=%s --host-name=%s",
-		orchURL, enrollToken.Token, req.HostName,
+		"/usr/local/bin/prldevops register-with-orchestrator --orchestrator-url=%s --orchestrator-token=%s --host-name=%s --port=%s",
+		orchURL, enrollToken.Token, req.HostName, agentPort,
 	)
 	if tagsStr != "" {
 		registerCmd += " --tags=" + tagsStr
@@ -138,13 +144,9 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 	)
 
 	// Wait for the service to be reachable before registering.
-	port := config.Get().GetKey(constants.API_PORT_ENV_VAR)
-	if port == "" {
-		port = constants.DEFAULT_API_PORT
-	}
 	healthCmd := fmt.Sprintf(
 		`for i in $(seq 1 30); do curl -sf http://localhost:%s/health/probe && break || sleep 2; done`,
-		port,
+		agentPort,
 	)
 
 	fullCmd := fmt.Sprintf("%s && %s && %s", installCmd, healthCmd, registerCmd)
