@@ -148,6 +148,10 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 		ctx.LogErrorf("Failed to create local API key: %v", err)
 		os.Exit(1)
 	}
+	if err := dbService.SaveNow(ctx); err != nil {
+		ctx.LogErrorf("Failed to persist API key to disk: %v", err)
+		os.Exit(1)
+	}
 
 	// --- Parse tags ---
 	var tags []string
