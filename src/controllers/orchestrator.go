@@ -3365,7 +3365,7 @@ func DeployOrchestratorHostHandler() restapi.ControllerHandler {
 		}
 
 		orchSvc := orchestrator.NewOrchestratorService(ctx)
-		resp, err := orchSvc.DeployAndRegisterAgent(ctx, req)
+		resp, err := orchSvc.DeployAndRegisterAgent(ctx, req, nil)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -3429,15 +3429,19 @@ func AsyncDeployOrchestratorHostHandler() restapi.ControllerHandler {
 			return
 		}
 
+		jobID := localJob.ID
 		asyncCtx := basecontext.NewRootBaseContext()
 		go func() {
 			orchSvc := orchestrator.NewOrchestratorService(asyncCtx)
-			resp, deployErr := orchSvc.DeployAndRegisterAgent(asyncCtx, req)
+			onOutput := func(line string) {
+				_, _ = jobManager.UpdateJobMessage(jobID, line)
+			}
+			resp, deployErr := orchSvc.DeployAndRegisterAgent(asyncCtx, req, onOutput)
 			if deployErr != nil {
-				_ = jobManager.MarkJobError(localJob.ID, deployErr)
+				_ = jobManager.MarkJobError(jobID, deployErr)
 				return
 			}
-			_ = jobManager.MarkJobComplete(localJob.ID, fmt.Sprintf("host_id=%s", resp.HostID))
+			_ = jobManager.MarkJobComplete(jobID, fmt.Sprintf("host_id=%s", resp.HostID))
 		}()
 
 		response := mappers.MapJobToApiJob(*localJob)

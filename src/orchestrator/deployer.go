@@ -15,6 +15,12 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider/ssh"
 )
 
+// shellSingleQuote wraps s in single quotes and escapes any embedded single
+// quotes so the result is safe to pass as a shell argument.
+func shellSingleQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
+}
+
 // detectOutboundIP returns the first non-loopback, non-link-local IPv4 address
 // found on a local network interface, falling back to "127.0.0.1".
 func detectOutboundIP() string {
@@ -76,7 +82,7 @@ func resolveOrchestratorBaseURL(ctx basecontext.ApiContext) string {
 // DeployAndRegisterAgent installs the devops agent on a remote host via SSH and
 // registers it with this orchestrator instance.  It is called by both the
 // synchronous and asynchronous deploy handlers.
-func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext, req apimodels.DeployOrchestratorHostRequest) (*apimodels.DeployOrchestratorHostResponse, error) {
+func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext, req apimodels.DeployOrchestratorHostRequest, onOutput func(string)) (*apimodels.DeployOrchestratorHostResponse, error) {
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("database unavailable: %w", err)
@@ -115,9 +121,11 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 	installFlagsStr := strings.Join(installArgs, " ")
 
 	//    Step B – register the agent with this orchestrator.
+	//    Use the absolute path so that non-interactive SSH sessions (which often
+	//    omit /usr/local/bin from PATH) can still find the binary.
 	tagsStr := strings.Join(req.Tags, ",")
 	registerCmd := fmt.Sprintf(
-		"prldevops register-with-orchestrator --orchestrator-url=%s --token=%s --name=%s",
+		"/usr/local/bin/prldevops register-with-orchestrator --orchestrator-url=%s --token=%s --name=%s",
 		orchURL, enrollToken.Token, req.HostName,
 	)
 	if tagsStr != "" {
@@ -147,8 +155,33 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 		sshPort = 22
 	}
 
+	// Resolve the sudo password: explicit field takes precedence, then fall
+	// back to the SSH login password (they're usually the same on macOS admin accounts).
+	sudoPassword := req.SudoPassword
+	if sudoPassword == "" {
+		sudoPassword = req.SshPassword
+	}
+
+	// Wrap the full command to run as root via sudo -S so that all internal
+	// sudo calls in the install script become no-ops and nothing blocks on a
+	// TTY password prompt.  sudo -S reads the password from stdin, which we
+	// pre-seed; no pseudo-terminal is required.
+	execCmd := fullCmd
+	if sudoPassword != "" {
+		execCmd = fmt.Sprintf("echo %s | sudo -S bash -c %s",
+			shellSingleQuote(sudoPassword), shellSingleQuote(fullCmd))
+	}
+
+	// Wrap the caller's callback so every line is also logged at info level.
+	lineHandler := func(line string) {
+		ctx.LogInfof("[deploy %s] %s", req.HostName, line)
+		if onOutput != nil {
+			onOutput(line)
+		}
+	}
+
 	sshSvc := ssh.New(ctx)
-	output, err := sshSvc.Execute(ctx, req.SshHost, sshPort, req.SshUser, req.SshPassword, req.SshKey, fullCmd, false)
+	output, err := sshSvc.ExecuteWithCallback(ctx, req.SshHost, sshPort, req.SshUser, req.SshPassword, req.SshKey, execCmd, req.SshInsecureHostKey, lineHandler)
 	if err != nil {
 		return nil, fmt.Errorf("SSH execution failed: %w\noutput: %s", err, output)
 	}

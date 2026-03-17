@@ -22,14 +22,22 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
+// minimalStartup initialises only what register-with-orchestrator needs:
+// security primitives + service provider (DB + PD).  It deliberately avoids
+// startup.Start so that background goroutines (EventEmitter, job manager,
+// orchestrator service, etc.) are never spun up.
+func minimalStartup(ctx basecontext.ApiContext) {
+	startup.Init(ctx)
+	serviceprovider.InitServices(ctx)
+}
+
 func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string) {
 	if runtime.GOOS != "darwin" {
 		ctx.LogErrorf("register-with-orchestrator is only supported on macOS systems.")
 		os.Exit(1)
 	}
 
-	startup.Init(ctx)
-	startup.Start(ctx)
+	minimalStartup(ctx)
 
 	// --- Parse flags ---
 	orchestratorURL := ""
