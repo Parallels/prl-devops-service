@@ -2012,6 +2012,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/catalog/pull/async": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint pulls a remote catalog manifest in the background and returns a Job ID to track progress",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Pull a remote catalog manifest asynchronously",
+                "parameters": [
+                    {
+                        "description": "Pull request",
+                        "name": "pullRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PullCatalogManifestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/models.JobResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/catalog/push": {
             "post": {
                 "security": [
@@ -2046,6 +2097,57 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/catalog/push/async": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint pushes a catalog manifest to the catalog inventory in the background and returns a Job ID to track progress",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Catalogs"
+                ],
+                "summary": "Push a catalog manifest to the catalog inventory asynchronously",
+                "parameters": [
+                    {
+                        "description": "Push request",
+                        "name": "pushRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PushCatalogManifestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/models.JobResponse"
                         }
                     },
                     "400": {
@@ -3230,6 +3332,61 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/jobs/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint deletes a single job. Users with JOB_MANAGER_DELETE can delete any job; users with JOB_MANAGER_LIST_OWN can only delete their own.",
+                "tags": [
+                    "Jobs"
+                ],
+                "summary": "Deletes a job by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/machines": {
             "get": {
                 "security": [
@@ -3313,6 +3470,57 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.CreateVirtualMachineResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/machines/async": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint creates a virtual machine in the background and returns a Job ID to track progress",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Machines"
+                ],
+                "summary": "Creates a virtual machine asynchronously",
+                "parameters": [
+                    {
+                        "description": "New Machine Request",
+                        "name": "createRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateVirtualMachineRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/models.JobResponse"
                         }
                     },
                     "400": {
@@ -4227,6 +4435,89 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/orchestrator/enrollment-token": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generates a short-lived, single-use token that allows a freshly installed agent to register itself with the orchestrator without requiring a permanent credential.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Create an enrollment token",
+                "parameters": [
+                    {
+                        "description": "Enrollment token request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateEnrollmentTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateEnrollmentTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/enrollment-token/{token}/validate": {
+            "get": {
+                "description": "Public endpoint that checks whether an enrollment token is valid, unused, and not expired. Used by agents before starting the registration flow.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Validate an enrollment token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Enrollment token value",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ValidateEnrollmentTokenResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/orchestrator/hosts": {
             "get": {
                 "security": [
@@ -4351,6 +4642,114 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.OrchestratorHostResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/deploy": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "SSHes into a remote host, installs the devops agent, and registers it with this orchestrator. Blocks until the operation completes.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Deploy and register an agent via SSH (synchronous)",
+                "parameters": [
+                    {
+                        "description": "Deploy request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.DeployOrchestratorHostRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.DeployOrchestratorHostResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/deploy/async": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "SSHes into a remote host, installs the devops agent, and registers it with this orchestrator. Returns a job ID immediately; poll /jobs/{id} for status.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Deploy and register an agent via SSH (asynchronous)",
+                "parameters": [
+                    {
+                        "description": "Deploy request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.DeployOrchestratorHostRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/models.JobResponse"
                         }
                     },
                     "400": {
@@ -5083,6 +5482,12 @@ const docTemplate = `{
                         "name": "vmId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Force Delete",
+                        "name": "force",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -6610,6 +7015,12 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Force Delete",
+                        "name": "force",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -7813,6 +8224,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/reverse-proxy/hosts/{id}/http_routes/order": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint reorders HTTP routes for a reverse proxy host",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReverseProxy"
+                ],
+                "summary": "Updates the order of a reverse proxy host HTTP route",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reverse Proxy Host ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Reverse Proxy Host HTTP Route Reorder Request",
+                        "name": "reverse_proxy_http_route_reorder_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ReverseProxyHostHttpRouteReorderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/reverse-proxy/hosts/{id}/http_routes/{http_route_id}": {
             "delete": {
                 "security": [
@@ -8332,6 +8801,25 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "constants.JobState": {
+            "type": "string",
+            "enum": [
+                "init",
+                "pending",
+                "running",
+                "completed",
+                "failed",
+                "skipped"
+            ],
+            "x-enum-varnames": [
+                "JobStateInit",
+                "JobStatePending",
+                "JobStateRunning",
+                "JobStateCompleted",
+                "JobStateFailed",
+                "JobStateSkipped"
+            ]
+        },
         "controllers.SshExecutionRequest": {
             "type": "object",
             "properties": {
@@ -8602,6 +9090,9 @@ const docTemplate = `{
                 "cache_file_name": {
                     "type": "string"
                 },
+                "cache_last_used": {
+                    "type": "string"
+                },
                 "cache_local_path": {
                     "type": "string"
                 },
@@ -8613,6 +9104,9 @@ const docTemplate = `{
                 },
                 "cache_type": {
                     "type": "string"
+                },
+                "cache_used_count": {
+                    "type": "integer"
                 },
                 "catalog_id": {
                     "type": "string"
@@ -9211,6 +9705,9 @@ const docTemplate = `{
                 "host_id": {
                     "type": "string"
                 },
+                "host_name": {
+                    "type": "string"
+                },
                 "host_state": {
                     "type": "string"
                 },
@@ -9336,6 +9833,9 @@ const docTemplate = `{
             "properties": {
                 "id": {
                     "type": "string"
+                },
+                "order": {
+                    "type": "integer"
                 },
                 "path": {
                     "type": "string"
@@ -9846,6 +10346,9 @@ const docTemplate = `{
                 "catalog_id": {
                     "type": "string"
                 },
+                "catalog_manager_id": {
+                    "type": "string"
+                },
                 "connection": {
                     "type": "string"
                 },
@@ -9871,6 +10374,32 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CreateEnrollmentTokenRequest": {
+            "type": "object",
+            "properties": {
+                "host_name": {
+                    "type": "string"
+                },
+                "ttl_minutes": {
+                    "description": "defaults to 15",
+                    "type": "integer"
+                }
+            }
+        },
+        "models.CreateEnrollmentTokenResponse": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "token": {
                     "type": "string"
                 }
             }
@@ -10010,6 +10539,12 @@ const docTemplate = `{
                 "packer_template": {
                     "$ref": "#/definitions/models.CreatePackerVirtualMachineRequest"
                 },
+                "selection_tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "start_on_create": {
                     "type": "boolean"
                 },
@@ -10051,6 +10586,109 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.DeployOrchestratorHostRequest": {
+            "type": "object",
+            "properties": {
+                "agent_version": {
+                    "description": "AgentVersion pins the prldevops binary version installed on the remote host\n(e.g. \"v0.7.0-beta\"). When empty the install script uses its own default (latest stable).",
+                    "type": "string"
+                },
+                "enabled_modules": {
+                    "description": "e.g. \"api,host,catalog\"",
+                    "type": "string"
+                },
+                "enrollment_token_ttl": {
+                    "description": "EnrollmentTokenTTL overrides the default 15-minute TTL (minutes)",
+                    "type": "integer"
+                },
+                "host_name": {
+                    "description": "Agent identity in the orchestrator",
+                    "type": "string"
+                },
+                "pd_version": {
+                    "description": "\"latest\" or explicit e.g. \"26.2.2-57373\"",
+                    "type": "string"
+                },
+                "pre_release": {
+                    "description": "PreRelease instructs the install script to pick the latest pre-release tag\ninstead of the latest stable release. Ignored when AgentVersion is set.",
+                    "type": "boolean"
+                },
+                "root_password": {
+                    "description": "Install options forwarded to the install script",
+                    "type": "string"
+                },
+                "ssh_host": {
+                    "description": "SSH connection details for the target host",
+                    "type": "string"
+                },
+                "ssh_insecure_host_key": {
+                    "description": "skip known_hosts verification",
+                    "type": "boolean"
+                },
+                "ssh_key": {
+                    "description": "PEM-encoded private key",
+                    "type": "string"
+                },
+                "ssh_password": {
+                    "description": "mutually exclusive with SshKey",
+                    "type": "string"
+                },
+                "ssh_port": {
+                    "description": "defaults to \"22\"",
+                    "type": "string"
+                },
+                "ssh_user": {
+                    "type": "string"
+                },
+                "sudo_password": {
+                    "description": "sudo password if different from ssh_password",
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "models.DeployOrchestratorHostResponse": {
+            "type": "object",
+            "properties": {
+                "host": {
+                    "type": "string"
+                },
+                "host_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.HostCatalogCacheItem": {
+            "type": "object",
+            "properties": {
+                "architecture": {
+                    "type": "string"
+                },
+                "cache_size": {
+                    "type": "integer"
+                },
+                "cache_type": {
+                    "type": "string"
+                },
+                "cached_date": {
+                    "type": "string"
+                },
+                "catalog_id": {
+                    "type": "string"
+                },
+                "version": {
                     "type": "string"
                 }
             }
@@ -10222,6 +10860,109 @@ const docTemplate = `{
                 }
             }
         },
+        "models.JobResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "job_operation": {
+                    "type": "string"
+                },
+                "job_type": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "owner_email": {
+                    "type": "string"
+                },
+                "owner_name": {
+                    "type": "string"
+                },
+                "progress": {
+                    "type": "integer"
+                },
+                "result": {
+                    "type": "string"
+                },
+                "result_record_id": {
+                    "type": "string"
+                },
+                "result_record_type": {
+                    "type": "string"
+                },
+                "state": {
+                    "$ref": "#/definitions/constants.JobState"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.JobStepResponse"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.JobStepResponse": {
+            "type": "object",
+            "properties": {
+                "current_percentage": {
+                    "type": "number"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "eta": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "has_percentage": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parallel": {
+                    "type": "boolean"
+                },
+                "state": {
+                    "$ref": "#/definitions/constants.JobState"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "unit": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "integer"
+                },
+                "weight": {
+                    "type": "number"
+                }
+            }
+        },
         "models.LoginRequest": {
             "type": "object",
             "properties": {
@@ -10308,7 +11049,6 @@ const docTemplate = `{
         },
         "models.OAuthErrorType": {
             "type": "integer",
-            "format": "int64",
             "enum": [
                 0,
                 1,
@@ -10403,6 +11143,12 @@ const docTemplate = `{
                 },
                 "cache_config": {
                     "$ref": "#/definitions/models.CatalogCacheConfig"
+                },
+                "cache_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.HostCatalogCacheItem"
+                    }
                 },
                 "cpu_model": {
                     "type": "string"
@@ -10622,6 +11368,9 @@ const docTemplate = `{
                 "connection": {
                     "type": "string"
                 },
+                "job_id": {
+                    "type": "string"
+                },
                 "machine_name": {
                     "type": "string"
                 },
@@ -10654,6 +11403,12 @@ const docTemplate = `{
                 "catalog_id": {
                     "type": "string"
                 },
+                "compress": {
+                    "type": "boolean"
+                },
+                "compress_level": {
+                    "type": "string"
+                },
                 "compress_pack": {
                     "type": "boolean"
                 },
@@ -10671,6 +11426,9 @@ const docTemplate = `{
                 },
                 "minimum_requirements": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_catalog_models.MinimumSpecRequirement"
+                },
+                "override_existing": {
+                    "type": "boolean"
                 },
                 "pack_size": {
                     "type": "integer"
@@ -10805,6 +11563,9 @@ const docTemplate = `{
         "models.ReverseProxyHostHttpRouteCreateRequest": {
             "type": "object",
             "properties": {
+                "order": {
+                    "type": "integer"
+                },
                 "path": {
                     "type": "string"
                 },
@@ -10834,6 +11595,17 @@ const docTemplate = `{
                 },
                 "target_vm_id": {
                     "type": "string"
+                }
+            }
+        },
+        "models.ReverseProxyHostHttpRouteReorderRequest": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "order": {
+                    "type": "integer"
                 }
             }
         },
@@ -11138,6 +11910,23 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "models.ValidateEnrollmentTokenResponse": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "valid": {
+                    "type": "boolean"
                 }
             }
         },

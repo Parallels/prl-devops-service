@@ -3383,7 +3383,7 @@ func DeployOrchestratorHostHandler() restapi.ControllerHandler {
 // @Accept		json
 // @Produce		json
 // @Param			request	body		models.DeployOrchestratorHostRequest	true	"Deploy request"
-// @Success		202		{object}	models.BackgroundOperationResponse
+// @Success		202		{object}	models.JobResponse
 // @Failure		400		{object}	models.ApiErrorResponse
 // @Failure		401		{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
