@@ -21,6 +21,11 @@ on:
         required: false
         type: boolean
         default: true
+      announce_discord:
+        description: "Announce on Discord"
+        required: false
+        type: boolean
+        default: true
 jobs:
   beta-release:
     name: Release Beta version
@@ -323,6 +328,7 @@ jobs:
               }
             }
   discord-announce:
+    if: ${{ inputs.announce_discord == true }}
     needs:
       - beta-release
       - beta-releases-matrix

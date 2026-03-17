@@ -21,6 +21,11 @@ on:
         required: false
         type: boolean
         default: true
+      announce_discord:
+        description: "Announce on Discord"
+        required: false
+        type: boolean
+        default: true
 jobs:
   canary-release:
     name: Release Canary version
@@ -323,6 +328,7 @@ jobs:
               }
             }
   discord-announce:
+    if: ${{ inputs.announce_discord == true }}
     needs:
       - canary-release
       - canary-releases-matrix
