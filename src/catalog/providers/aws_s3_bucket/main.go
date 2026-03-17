@@ -141,11 +141,6 @@ func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 		return err
 	}
 
-	uploader := s3manager.NewUploader(session, func(u *s3manager.Uploader) {
-		u.PartSize = 10 * 1024 * 1024 // The minimum/default allowed part size is 5MB
-		u.Concurrency = 5
-	})
-
 	// Open the file for reading.
 	file, err := os.Open(filepath.Clean(localFilePath))
 	if err != nil {
@@ -160,6 +155,11 @@ func (s *AwsS3BucketProvider) PushFile(ctx basecontext.ApiContext, rootLocalPath
 	}
 
 	defer file.Close()
+
+	uploader := s3manager.NewUploader(session, func(u *s3manager.Uploader) {
+		u.PartSize = common.CalculatePartSize(fileInfo.Size())
+		u.Concurrency = 2
+	})
 
 	action := s.currentAction
 	if action == "" {
@@ -520,7 +520,7 @@ func (s *AwsS3BucketProvider) generateNewCfg() *aws.Config {
 		Transport: &http.Transport{
 			IdleConnTimeout:       120 * time.Minute,
 			TLSHandshakeTimeout:   30 * time.Second,
-			ExpectContinueTimeout: 120 * time.Minute,
+			ExpectContinueTimeout: 5 * time.Second,
 			ResponseHeaderTimeout: 120 * time.Minute,
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				d := net.Dialer{

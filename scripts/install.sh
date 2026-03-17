@@ -3,6 +3,7 @@ MODE="INSTALL"
 INSTALL_SERVICE="true"
 STD_USER="false"
 PRE_RELEASE="false"
+MODULES=""
 while [[ $# -gt 0 ]]; do
   case $1 in
   -i)
@@ -19,6 +20,14 @@ while [[ $# -gt 0 ]]; do
     ;;
   --uninstall)
     MODE="UNINSTALL"
+    shift # past argument
+    ;;
+  -U)
+    MODE="UPDATE"
+    shift # past argument
+    ;;
+  --update)
+    MODE="UPDATE"
     shift # past argument
     ;;
   -p)
@@ -51,6 +60,11 @@ while [[ $# -gt 0 ]]; do
     ;;
   --pre-release)
     PRE_RELEASE="true"
+    shift # past argument
+    ;;
+  --modules)
+    MODULES=$2
+    shift # past argument
     shift # past argument
     ;;
   *)
@@ -163,11 +177,6 @@ function install() {
     exit 1
   fi
 
-  if [ $? -ne 0 ]; then
-    echo "Failed to extract prldevops"
-    exit 1
-  fi
-
   if [ ! -d "$DESTINATION" ]; then
     echo "Creating destination directory: $DESTINATION"
     mkdir -p "$DESTINATION"
@@ -185,26 +194,51 @@ function install() {
     if [ "$OS" = "darwin" ]; then
       SERVICE_PLIST="/Library/LaunchDaemons/com.parallels.prl-devops-service.plist"
       CONFIG_EXISTS="false"
-      
+
       if [ -f "$DESTINATION/config.yaml" ] || [ -f "$DESTINATION/config.yml" ]; then
         CONFIG_EXISTS="true"
       fi
 
       if [ -f "$SERVICE_PLIST" ] && [ "$CONFIG_EXISTS" = "true" ]; then
-         echo "Service already installed and configured. Updating binary and restarting service."
-         sudo launchctl unload "$SERVICE_PLIST"
-         sudo launchctl load "$SERVICE_PLIST"
+        echo "Service already installed and configured. Updating binary and restarting service."
+        sudo launchctl unload "$SERVICE_PLIST"
+        sudo launchctl load "$SERVICE_PLIST"
       else
-          echo "Installing prldevops service"
-          sudo "$DESTINATION"/prldevops install service
-          if [ -f "$SERVICE_PLIST" ]; then
-            echo "Restarting prl-devops-service"
-            sudo launchctl unload "$SERVICE_PLIST"
-            sudo launchctl load "$SERVICE_PLIST"
-          fi
+        echo "Installing prldevops service"
+        INSTALL_SVC_CMD=(sudo "$DESTINATION"/prldevops install service)
+        [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
+        "${INSTALL_SVC_CMD[@]}"
+        if [ -f "$SERVICE_PLIST" ]; then
+          echo "Restarting prl-devops-service"
+          sudo launchctl unload "$SERVICE_PLIST"
+          sudo launchctl load "$SERVICE_PLIST"
+        fi
       fi
 
       sudo xattr -d com.apple.quarantine "$DESTINATION"/prldevops
+    fi
+
+    if [ "$OS" = "linux" ]; then
+      SYSTEMD_UNIT="/etc/systemd/system/prl-devops-service.service"
+      CONFIG_EXISTS="false"
+
+      if [ -f "$DESTINATION/config.yaml" ] || [ -f "$DESTINATION/config.yml" ]; then
+        CONFIG_EXISTS="true"
+      fi
+
+      if [ -f "$SYSTEMD_UNIT" ] && [ "$CONFIG_EXISTS" = "true" ]; then
+        echo "Service already installed and configured. Updating binary and restarting service."
+        sudo systemctl restart prl-devops-service
+      else
+        echo "Installing prldevops service"
+        INSTALL_SVC_CMD=(sudo "$DESTINATION"/prldevops install service)
+        [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
+        "${INSTALL_SVC_CMD[@]}"
+        if [ -f "$SYSTEMD_UNIT" ]; then
+          echo "Restarting prl-devops-service"
+          sudo systemctl restart prl-devops-service
+        fi
+      fi
     fi
   fi
 
@@ -278,9 +312,7 @@ function install_standard() {
   fi
 
   echo "Extracting prldevops"
-  tar -xzf prldevops.tar.gz
-
-  if [ $? -ne 0 ]; then
+  if ! tar -xzf prldevops.tar.gz; then
     echo "Failed to extract prldevops"
     exit 1
   fi
@@ -302,26 +334,51 @@ function install_standard() {
     if [ "$OS" = "darwin" ]; then
       SERVICE_PLIST="/Library/LaunchDaemons/com.parallels.prl-devops-service.plist"
       CONFIG_EXISTS="false"
-      
+
       if [ -f "$DESTINATION/config.yaml" ] || [ -f "$DESTINATION/config.yml" ]; then
         CONFIG_EXISTS="true"
       fi
 
       if [ -f "$SERVICE_PLIST" ] && [ "$CONFIG_EXISTS" = "true" ]; then
-         echo "Service already installed and configured. Updating binary and restarting service."
-         launchctl unload "$SERVICE_PLIST"
-         launchctl load "$SERVICE_PLIST"
+        echo "Service already installed and configured. Updating binary and restarting service."
+        launchctl unload "$SERVICE_PLIST"
+        launchctl load "$SERVICE_PLIST"
       else
-          echo "Installing prldevops service"
-          "$DESTINATION"/prldevops install service
-          if [ -f "$SERVICE_PLIST" ]; then
-            echo "Restarting prl-devops-service"
-            launchctl unload "$SERVICE_PLIST"
-            launchctl load "$SERVICE_PLIST"
-          fi
+        echo "Installing prldevops service"
+        INSTALL_SVC_CMD=("$DESTINATION"/prldevops install service)
+        [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
+        "${INSTALL_SVC_CMD[@]}"
+        if [ -f "$SERVICE_PLIST" ]; then
+          echo "Restarting prl-devops-service"
+          launchctl unload "$SERVICE_PLIST"
+          launchctl load "$SERVICE_PLIST"
+        fi
       fi
 
       xattr -d com.apple.quarantine "$DESTINATION"/prldevops
+    fi
+
+    if [ "$OS" = "linux" ]; then
+      SYSTEMD_UNIT="/etc/systemd/system/prl-devops-service.service"
+      CONFIG_EXISTS="false"
+
+      if [ -f "$DESTINATION/config.yaml" ] || [ -f "$DESTINATION/config.yml" ]; then
+        CONFIG_EXISTS="true"
+      fi
+
+      if [ -f "$SYSTEMD_UNIT" ] && [ "$CONFIG_EXISTS" = "true" ]; then
+        echo "Service already installed and configured. Updating binary and restarting service."
+        systemctl restart prl-devops-service
+      else
+        echo "Installing prldevops service"
+        INSTALL_SVC_CMD=("$DESTINATION"/prldevops install service)
+        [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
+        "${INSTALL_SVC_CMD[@]}"
+        if [ -f "$SYSTEMD_UNIT" ]; then
+          echo "Restarting prl-devops-service"
+          systemctl restart prl-devops-service
+        fi
+      fi
     fi
   fi
 
@@ -344,6 +401,17 @@ function uninstall() {
       fi
     fi
 
+    if [ "$OS" = "linux" ]; then
+      if [ -f "/etc/systemd/system/prl-devops-service.service" ]; then
+        echo "Uninstalling prldevops service"
+        echo "Stopping prl-devops-service"
+        sudo systemctl stop prl-devops-service
+        sudo systemctl disable prl-devops-service
+        sudo rm /etc/systemd/system/prl-devops-service.service
+        sudo systemctl daemon-reload
+      fi
+    fi
+
     echo "Removing prldevops from $DESTINATION"
     sudo rm "$DESTINATION/prldevops"
     if [ -f "$DESTINATION/config.yml" ]; then
@@ -359,7 +427,7 @@ function uninstall() {
       sudo rm "$DESTINATION/config.json"
     fi
     echo "Removing current database"
-    if [ -f "/etc/prl-devops-service" ]; then
+    if [ -d "/etc/prl-devops-service" ]; then
       sudo rm -rf "/etc/prl-devops-service"
     fi
 
@@ -383,9 +451,19 @@ function uninstall_standard() {
       fi
     fi
 
+    if [ "$OS" = "linux" ]; then
+      if [ -f "/etc/systemd/system/prl-devops-service.service" ]; then
+        echo "Uninstalling prldevops service"
+        echo "Stopping prl-devops-service"
+        systemctl stop prl-devops-service
+        systemctl disable prl-devops-service
+        rm /etc/systemd/system/prl-devops-service.service
+        systemctl daemon-reload
+      fi
+    fi
+
     echo "Removing prldevops from $DESTINATION"
     rm "$DESTINATION/prldevops"
-    sudo rm "$DESTINATION/prldevops"
     if [ -f "$DESTINATION/config.yml" ]; then
       echo "Removing configuration file from $DESTINATION"
       rm "$DESTINATION/config.yml"
@@ -404,11 +482,237 @@ function uninstall_standard() {
   fi
 }
 
+function update() {
+  OS=$(uname -s)
+  OS=$(echo "$OS" | tr '[:upper:]' '[:lower:]')
+
+  if [ -z "$VERSION" ]; then
+    echo "Getting latest version from GitHub"
+    VERSION=$(get_latest_release)
+  fi
+
+  if [[ ! $VERSION == *-beta ]]; then
+    if [[ ! $VERSION == v* ]]; then
+      VERSION="v$VERSION"
+    fi
+    is_found=$(curl -s -o /dev/null -w "%{http_code}" https://github.com/Parallels/prl-devops-service/releases/$VERSION)
+    if [ "$is_found" != "200" ]; then
+      echo "Version not found with new format, attempting old format"
+      VERSION="release-$VERSION"
+      is_found=$(curl -s -o /dev/null -w "%{http_code}" https://github.com/Parallels/prl-devops-service/releases/$VERSION)
+      if [ "$is_found" != "200" ]; then
+        echo "Version $VERSION not found in GitHub releases"
+        exit 1
+      fi
+    fi
+    SHORT_VERSION="$(echo $VERSION | cut -d '-' -f 2)"
+  else
+    if [[ ! $VERSION == v* ]]; then
+      VERSION="v$VERSION"
+    fi
+    SHORT_VERSION=$VERSION
+  fi
+
+  ARCHITECTURE=$(uname -m)
+  if [ "$ARCHITECTURE" = "aarch64" ]; then
+    ARCHITECTURE="arm64"
+  fi
+  if [ "$ARCHITECTURE" = "x86_64" ]; then
+    ARCHITECTURE="amd64"
+  fi
+
+  echo "Updating prldevops to $SHORT_VERSION for $OS-$ARCHITECTURE"
+
+  # Stop the service before replacing the binary
+  if [ "$OS" = "darwin" ]; then
+    SERVICE_PLIST="/Library/LaunchDaemons/com.parallels.prl-devops-service.plist"
+    if [ -f "$SERVICE_PLIST" ]; then
+      echo "Stopping prl-devops-service"
+      sudo launchctl unload "$SERVICE_PLIST"
+    fi
+  fi
+  if [ "$OS" = "linux" ]; then
+    SYSTEMD_UNIT="/etc/systemd/system/prl-devops-service.service"
+    if [ -f "$SYSTEMD_UNIT" ]; then
+      echo "Stopping prl-devops-service"
+      sudo systemctl stop prl-devops-service
+    fi
+  fi
+
+  DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
+
+  echo "Downloading prldevops release from GitHub Releases"
+  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+
+  if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
+    echo "Error: GitHub API rate limit exceeded during download. Please try again later."
+    exit 1
+  fi
+
+  if [ "$HTTP_STATUS" != "200" ]; then
+    echo "Failed to download prldevops release from GitHub Releases (HTTP status: $HTTP_STATUS)"
+    exit 1
+  fi
+
+  if [ ! -s "prldevops.tar.gz" ]; then
+    echo "Downloaded file is empty or does not exist"
+    exit 1
+  fi
+
+  echo "Extracting prldevops"
+  if ! tar -xzf prldevops.tar.gz; then
+    echo "Failed to extract prldevops"
+    exit 1
+  fi
+
+  if [ -f "$DESTINATION/prldevops" ]; then
+    sudo rm "$DESTINATION/prldevops"
+  fi
+  echo "Installing updated prldevops to $DESTINATION"
+  sudo mv prldevops "$DESTINATION"/prldevops
+  sudo chmod +x "$DESTINATION"/prldevops
+
+  # Restart the service
+  if [ "$OS" = "darwin" ]; then
+    if [ -f "$SERVICE_PLIST" ]; then
+      echo "Restarting prl-devops-service"
+      sudo launchctl load "$SERVICE_PLIST"
+    fi
+    sudo xattr -d com.apple.quarantine "$DESTINATION"/prldevops 2>/dev/null || true
+  fi
+  if [ "$OS" = "linux" ]; then
+    if [ -f "$SYSTEMD_UNIT" ]; then
+      echo "Restarting prl-devops-service"
+      sudo systemctl start prl-devops-service
+    fi
+  fi
+
+  echo "Cleaning up"
+  rm prldevops.tar.gz
+  echo "prldevops has been updated to $SHORT_VERSION in $DESTINATION"
+}
+
+function update_standard() {
+  OS=$(uname -s)
+  OS=$(echo "$OS" | tr '[:upper:]' '[:lower:]')
+
+  if [ -z "$VERSION" ]; then
+    echo "Getting latest version from GitHub"
+    VERSION=$(get_latest_release)
+  fi
+
+  if [[ ! $VERSION == *-beta ]]; then
+    if [[ ! $VERSION == v* ]]; then
+      VERSION="v$VERSION"
+    fi
+    is_found=$(curl -s -o /dev/null -w "%{http_code}" https://github.com/Parallels/prl-devops-service/releases/$VERSION)
+    if [ "$is_found" != "200" ]; then
+      echo "Version not found with new format, attempting old format"
+      VERSION="release-$VERSION"
+      is_found=$(curl -s -o /dev/null -w "%{http_code}" https://github.com/Parallels/prl-devops-service/releases/$VERSION)
+      if [ "$is_found" != "200" ]; then
+        echo "Version $VERSION not found in GitHub releases"
+        exit 1
+      fi
+    fi
+    SHORT_VERSION="$(echo $VERSION | cut -d '-' -f 2)"
+  else
+    if [[ ! $VERSION == v* ]]; then
+      VERSION="v$VERSION"
+    fi
+    SHORT_VERSION=$VERSION
+  fi
+
+  ARCHITECTURE=$(uname -m)
+  if [ "$ARCHITECTURE" = "aarch64" ]; then
+    ARCHITECTURE="arm64"
+  fi
+  if [ "$ARCHITECTURE" = "x86_64" ]; then
+    ARCHITECTURE="amd64"
+  fi
+
+  echo "Updating prldevops to $SHORT_VERSION for $OS-$ARCHITECTURE"
+
+  # Stop the service before replacing the binary
+  if [ "$OS" = "darwin" ]; then
+    SERVICE_PLIST="/Library/LaunchDaemons/com.parallels.prl-devops-service.plist"
+    if [ -f "$SERVICE_PLIST" ]; then
+      echo "Stopping prl-devops-service"
+      launchctl unload "$SERVICE_PLIST"
+    fi
+  fi
+  if [ "$OS" = "linux" ]; then
+    SYSTEMD_UNIT="/etc/systemd/system/prl-devops-service.service"
+    if [ -f "$SYSTEMD_UNIT" ]; then
+      echo "Stopping prl-devops-service"
+      systemctl stop prl-devops-service
+    fi
+  fi
+
+  DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
+
+  echo "Downloading prldevops release from GitHub Releases"
+  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+
+  if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
+    echo "Error: GitHub API rate limit exceeded during download. Please try again later."
+    exit 1
+  fi
+
+  if [ "$HTTP_STATUS" != "200" ]; then
+    echo "Failed to download prldevops release from GitHub Releases (HTTP status: $HTTP_STATUS)"
+    exit 1
+  fi
+
+  if [ ! -s "prldevops.tar.gz" ]; then
+    echo "Downloaded file is empty or does not exist"
+    exit 1
+  fi
+
+  echo "Extracting prldevops"
+  if ! tar -xzf prldevops.tar.gz; then
+    echo "Failed to extract prldevops"
+    exit 1
+  fi
+
+  if [ -f "$DESTINATION/prldevops" ]; then
+    rm "$DESTINATION/prldevops"
+  fi
+  echo "Installing updated prldevops to $DESTINATION"
+  mv prldevops "$DESTINATION"/prldevops
+  chmod +x "$DESTINATION"/prldevops
+
+  # Restart the service
+  if [ "$OS" = "darwin" ]; then
+    if [ -f "$SERVICE_PLIST" ]; then
+      echo "Restarting prl-devops-service"
+      launchctl load "$SERVICE_PLIST"
+    fi
+    xattr -d com.apple.quarantine "$DESTINATION"/prldevops 2>/dev/null || true
+  fi
+  if [ "$OS" = "linux" ]; then
+    if [ -f "$SYSTEMD_UNIT" ]; then
+      echo "Restarting prl-devops-service"
+      systemctl start prl-devops-service
+    fi
+  fi
+
+  echo "Cleaning up"
+  rm prldevops.tar.gz
+  echo "prldevops has been updated to $SHORT_VERSION in $DESTINATION"
+}
+
 if [ "$MODE" = "UNINSTALL" ]; then
   if [ "$STD_USER" = "true" ]; then
     uninstall_standard
   else
     uninstall
+  fi
+elif [ "$MODE" = "UPDATE" ]; then
+  if [ "$STD_USER" = "true" ]; then
+    update_standard
+  else
+    update
   fi
 else
   if [ "$STD_USER" = "true" ]; then

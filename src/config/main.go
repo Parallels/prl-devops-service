@@ -14,6 +14,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
+	appversion "github.com/Parallels/prl-devops-service/version"
 	"gopkg.in/yaml.v3"
 
 	log "github.com/cjlapao/common-go-logger"
@@ -24,9 +25,7 @@ import (
 var globalConfig *Config
 
 var (
-	canaryBuildFlag = "false"
-	betaBuildFlag   = "false"
-	extensions      = []string{
+	extensions = []string{
 		".local.yaml",
 		".local.yml",
 		".local.json",
@@ -596,12 +595,10 @@ func (c *Config) IsRemoteProviderStreamEnabled() bool {
 }
 
 func (c *Config) IsCanaryEnabled() bool {
-	if canaryBuildFlag == "true" {
+	if appversion.Get().IsCanary() {
 		return true
 	}
-
-	enableCanary := c.GetBoolKey(constants.ENABLE_CANARY_ENV_VAR)
-	return enableCanary
+	return c.GetBoolKey(constants.ENABLE_CANARY_ENV_VAR)
 }
 
 func (c *Config) CatalogCompressVM() bool {
@@ -622,12 +619,10 @@ func (c *Config) CatalogCompressRatio() int {
 }
 
 func (c *Config) IsBetaEnabled() bool {
-	if betaBuildFlag == "true" {
+	if appversion.Get().IsBeta() {
 		return true
 	}
-
-	enableBeta := c.GetBoolKey(constants.ENABLE_BETA_ENV_VAR)
-	return enableBeta
+	return c.GetBoolKey(constants.ENABLE_BETA_ENV_VAR)
 }
 
 func (c *Config) IsCacheRefreshEnabled() bool {

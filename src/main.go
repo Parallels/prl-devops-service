@@ -15,13 +15,8 @@ import (
 	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
-	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 	"github.com/Parallels/prl-devops-service/telemetry"
-
-	"github.com/cjlapao/common-go/version"
 )
-
-var ver = "0.9.21"
 
 //	@title			Parallels Desktop DevOps Service
 //	@version		0.9.21
@@ -62,27 +57,6 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-	versionSvc := system.VersionSvc
-
-	versionSvc.Author = "Carlos Lapao"
-	versionSvc.Name = constants.Name
-	versionSvc.License = "Fair Source (https://fair.io)"
-
-	// Reading the version from a string
-	strVer, err := version.FromString(ver)
-
-	if err == nil {
-		versionSvc.Major = strVer.Major
-		versionSvc.Minor = strVer.Minor
-		versionSvc.Build = strVer.Build
-		versionSvc.Rev = strVer.Rev
-	}
-
-	// setting a build id for debug builds
-	if strings.Contains(os.Args[0], "__debug") {
-		versionSvc.Build = int(time.Now().Unix())
-	}
-
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 

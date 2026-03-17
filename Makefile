@@ -8,7 +8,14 @@ else
 	export BUILD_ID:=$(shell date +%s)
 	export SHORT_VERSION:=$(shell echo $(VERSION) | cut -d'.' -f1,2)
 	export BUILD_VERSION:=$(shell echo $(SHORT_VERSION).$(BUILD_ID))
+	export GIT_COMMIT:=$(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+	export BUILD_DATE:=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 endif
+
+VERSION_PKG = github.com/Parallels/prl-devops-service/version
+BASE_LDFLAGS = -X '$(VERSION_PKG).buildVersion=$(VERSION)' \
+               -X '$(VERSION_PKG).buildDate=$(BUILD_DATE)' \
+               -X '$(VERSION_PKG).buildCommit=$(GIT_COMMIT)'
 
 COBERTURA = cobertura
 
@@ -75,7 +82,7 @@ ifeq ($(wildcard ./out/.*),)
 	@mkdir out
 	@mkdir out/binaries
 endif
-	@cd src && go build -o ../out/binaries/$(PACKAGE_NAME)
+	@cd src && go build -ldflags="$(BASE_LDFLAGS) -X '$(VERSION_PKG).buildChannel=stable'" -o ../out/binaries/$(PACKAGE_NAME)
 	@echo "Build finished."
 
 .PHONY: build-canary
@@ -86,7 +93,7 @@ ifeq ($(wildcard ./out/.*),)
 	@mkdir out
 	@mkdir out/binaries
 endif
-	@cd src && go build -o ../out/binaries/$(PACKAGE_NAME) -ldflags="-X 'github.com/Parallels/prl-devops-service/config.canaryBuildFlag=true'"
+	@cd src && go build -ldflags="$(BASE_LDFLAGS) -X '$(VERSION_PKG).buildChannel=canary'" -o ../out/binaries/$(PACKAGE_NAME)
 	@echo "Build finished."
 
 .PHONY: build-beta
@@ -97,7 +104,7 @@ ifeq ($(wildcard ./out/.*),)
 	@mkdir out
 	@mkdir out/binaries
 endif
-	@cd src && go build -o ../out/binaries/$(PACKAGE_NAME) -ldflags="-X 'github.com/Parallels/prl-devops-service/config.betaBuildFlag=true'"
+	@cd src && go build -ldflags="$(BASE_LDFLAGS) -X '$(VERSION_PKG).buildChannel=beta'" -o ../out/binaries/$(PACKAGE_NAME)
 	@echo "Build finished."
 
 .PHONY: build-linux-amd64
@@ -108,7 +115,7 @@ ifeq ($(wildcard ./out/.*),)
 	@mkdir out
 	@mkdir out/binaries
 endif
-	@cd src && CGO_ENABLED=0 GOOS="linux" GOARCH="amd64" go build -o ../out/binaries/$(PACKAGE_NAME)-linux-amd64
+	@cd src && CGO_ENABLED=0 GOOS="linux" GOARCH="amd64" go build -ldflags="$(BASE_LDFLAGS) -X '$(VERSION_PKG).buildChannel=stable'" -o ../out/binaries/$(PACKAGE_NAME)-linux-amd64
 	@echo "Build finished."
 
 .PHONY: build-windows-amd64
@@ -119,7 +126,7 @@ ifeq ($(wildcard ./out/.*),)
 	@mkdir out
 	@mkdir out/binaries
 endif
-	@cd src && CGO_ENABLED=0 GOOS="windows" GOARCH="amd64" go build -o ../out/binaries/$(PACKAGE_NAME)-linux-amd64
+	@cd src && CGO_ENABLED=0 GOOS="windows" GOARCH="amd64" go build -ldflags="$(BASE_LDFLAGS) -X '$(VERSION_PKG).buildChannel=stable'" -o ../out/binaries/$(PACKAGE_NAME)-windows-amd64
 	@echo "Build finished."
 
 .PHONY: build-alpine
@@ -130,7 +137,7 @@ ifeq ($(wildcard ./out/.*),)
 	@mkdir out
 	@mkdir out/binaries
 endif
-	@cd src && CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o ../out/binaries/$(PACKAGE_NAME)-alpine
+	@cd src && CGO_ENABLED=0 GOOS=linux go build -ldflags="$(BASE_LDFLAGS) -w -s -X '$(VERSION_PKG).buildChannel=stable'" -o ../out/binaries/$(PACKAGE_NAME)-alpine
 	@echo "Build finished."
 
 .PHONY: push-alpha-container

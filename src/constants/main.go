@@ -3,7 +3,7 @@ package constants
 type AuthorizationContextKey string
 
 var (
-	Name                                              = "Parallels Desktop DevOps Service"
+	Name                                              = "Parallels DevOps Service"
 	ExecutableName                                    = "prldevops"
 	ServiceDefaultDirectory                           = "/etc/prl-devops-service"
 	AUTHORIZATION_CONTEXT_KEY AuthorizationContextKey = "AUTHORIZATION_CONTEXT"

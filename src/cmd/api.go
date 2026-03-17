@@ -22,7 +22,7 @@ func processApi(ctx basecontext.ApiContext, cmd string) {
 		processHelp(constants.API_COMMAND)
 		os.Exit(0)
 	}
-	versionSvc.PrintAnsiHeader()
+	versionSvc.PrintBanner(false)
 
 	cfg := config.Get()
 	_ = os.Setenv(constants.SOURCE_ENV_VAR, "api")
@@ -73,7 +73,7 @@ func processApi(ctx basecontext.ApiContext, cmd string) {
 	for {
 		listener := startup.InitApi()
 		restartChannel := restapi.GetRestartChannel()
-		listener.Start(versionSvc.Name, versionSvc.String())
+		listener.Start(versionSvc.AppName, versionSvc.String())
 
 		needsRestart := <-restartChannel
 		if !needsRestart {

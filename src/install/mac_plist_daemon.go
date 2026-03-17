@@ -23,8 +23,12 @@ type PlistTemplateData struct {
 	TlsPrivateKey            string
 	DisableCatalogCaching    string
 	TokenDurationMinutes     string
-	Mode                     string
+	EnabledModules           string
 	UseOrchestratorResources string
+	EnableCors               string
+	CorsAllowedOrigins       string
+	CorsAllowedMethods       string
+	CorsAllowedHeaders       string
 	LogOutput                bool
 }
 
@@ -94,13 +98,29 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     <key>` + constants.TOKEN_DURATION_MINUTES_ENV_VAR + `</key>
     <string>{{ .TokenDurationMinutes }}</string>
     {{- end }}
-    {{- if .Mode }}
-    <key>` + constants.MODE_ENV_VAR + `</key>
-    <string>{{ .Mode }}</string>
+    {{- if .EnabledModules }}
+    <key>` + constants.ENABLED_MODULES_ENV_VAR + `</key>
+    <string>{{ .EnabledModules }}</string>
     {{- end }}
     {{- if .UseOrchestratorResources }}
     <key>` + constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR + `</key>
     <string>{{ .UseOrchestratorResources }}</string>
+    {{- end }}
+    {{- if .EnableCors }}
+    <key>` + constants.ENABLE_CORS_ENV_VAR + `</key>
+    <string>{{ .EnableCors }}</string>
+    {{- end }}
+    {{- if .CorsAllowedOrigins }}
+    <key>` + constants.CORS_ALLOWED_ORIGINS_ENV_VAR + `</key>
+    <string>{{ .CorsAllowedOrigins }}</string>
+    {{- end }}
+    {{- if .CorsAllowedMethods }}
+    <key>` + constants.CORS_ALLOWED_METHODS_ENV_VAR + `</key>
+    <string>{{ .CorsAllowedMethods }}</string>
+    {{- end }}
+    {{- if .CorsAllowedHeaders }}
+    <key>` + constants.CORS_ALLOWED_HEADERS_ENV_VAR + `</key>
+    <string>{{ .CorsAllowedHeaders }}</string>
     {{- end }}
   </dict>
   <key>RunAtLoad</key>
@@ -141,8 +161,14 @@ func generatePlist(path string, config ApiServiceConfig) (string, error) {
 		TlsCertificate:       config.TLSCertificate,
 		TlsPrivateKey:        config.TLSPrivateKey,
 		TokenDurationMinutes: config.TokenDurationMinutes,
-		Mode:                 config.Mode,
-		LogOutput:            config.LogOutput,
+		EnabledModules:     config.EnabledModules,
+		CorsAllowedOrigins: config.CorsAllowedOrigins,
+		CorsAllowedMethods: config.CorsAllowedMethods,
+		CorsAllowedHeaders: config.CorsAllowedHeaders,
+		LogOutput:          config.LogOutput,
+	}
+	if config.DisableFileLogging {
+		templateData.DisableFileLogging = "true"
 	}
 	if config.EnableTLS {
 		templateData.EnableTLS = "true"
@@ -152,6 +178,9 @@ func generatePlist(path string, config ApiServiceConfig) (string, error) {
 	}
 	if config.UseOrchestratorResources {
 		templateData.UseOrchestratorResources = "true"
+	}
+	if config.EnableCors {
+		templateData.EnableCors = "true"
 	}
 
 	err = tmpl.Execute(&tpl, templateData)

@@ -969,6 +969,9 @@ func (m *VirtualMachineNetworkInformation) Diff(source VirtualMachineNetworkInfo
 		return true
 	}
 
+	if len(m.IPAddresses) != len(source.IPAddresses) {
+		return true
+	}
 	for i, v := range m.IPAddresses {
 		if v.Diff(source.IPAddresses[i]) {
 			return true
