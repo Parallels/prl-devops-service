@@ -148,4 +148,5 @@ func UpdateCatalogManagerFromRequest(mgr *data_models.CatalogManager, req *model
 			mgr.ApiKey = req.ApiKey
 		}
 	}
+
 }

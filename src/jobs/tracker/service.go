@@ -593,10 +593,16 @@ func (p *JobProgressService) processSingleMessage(msg JobMessage) {
 			if pt.CurrentAction != p.CurrentMessage.CurrentAction && p.CurrentMessage.CurrentAction != "" {
 				pt.CurrentProgress = 0
 				pt.CurrentSize = 0
+				pt.TotalSize = 0
 				pt.StartTime = time.Now()
 				pt.RateSamples = make([]RateSample, 0, 60)
 			}
 			p.updateProgressTracker(pt, p.CurrentMessage.CurrentProgress, p.CurrentMessage.currentSize)
+			// Propagate the message's total size so the new step's Total reflects the
+			// actual transfer size rather than a prior step's (e.g. compressed pack vs. raw VM).
+			if p.CurrentMessage.totalSize > 0 {
+				pt.TotalSize = p.CurrentMessage.totalSize
+			}
 
 			pt.CurrentAction = p.CurrentMessage.CurrentAction
 			pt.CurrentActionStep = p.CurrentMessage.CurrentActionStep

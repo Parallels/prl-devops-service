@@ -15,11 +15,14 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/catalog"
+	catalog_helpers "github.com/Parallels/prl-devops-service/catalog/common"
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -299,7 +302,7 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithOrClaims().
 		WithRequiredClaim(constants.PUSH_CATALOG_MANIFEST_CLAIM).
 		WithRequiredClaim(constants.CATALOG_MANAGER_PUSH_CATALOG_MANIFEST_OWN_CLAIM).
-		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/push/async")).
+		WithHandler(AsyncPushCatalogManifestToCatalogManagerHandler()).
 		Register()
 
 	restapi.NewController().
@@ -721,6 +724,99 @@ func DeleteCatalogManagerHandler() restapi.ControllerHandler {
 	}
 }
 
+// AsyncPushCatalogManifestToCatalogManagerHandler handles async catalog pushes
+// to a remote catalog manager. It runs the full push pipeline locally (compress,
+// upload to storage, register manifest) using the connection string stored on the
+// catalog manager, and tracks progress via the local job system.
+func AsyncPushCatalogManifestToCatalogManagerHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		userContext := ctx.GetUser()
+		if userContext == nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		vars := mux.Vars(r)
+		managerID := vars["id"]
+
+		mgr, errResp := getAuthorizedCatalogManagerForUse(ctx, managerID)
+		if errResp != nil {
+			ReturnApiError(ctx, w, *errResp)
+			return
+		}
+
+		var request catalog_models.PushCatalogManifestRequest
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		if request.Connection == "" {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Code:    http.StatusBadRequest,
+				Message: "connection is required in the request body (storage provider connection string, e.g. provider=minio;endpoint=...;bucket=...)",
+			})
+			return
+		}
+
+		// Build the host= part from the catalog manager credentials and merge with the
+		// user-provided storage connection (stripping any host= they may have included).
+		hostPart, err := buildCatalogManagerConnection(*mgr)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+			return
+		}
+		storageParts := stripHostFromConnection(request.Connection)
+		request.Connection = hostPart + ";" + storageParts
+
+		arch, err := catalog_helpers.ValidateArch(request.Architecture)
+		if err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid architecture: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		request.Architecture = arch
+
+		if err := request.Validate(); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			return
+		}
+
+		localJob, err := jobManager.CreateNewJob(userContext.ID, "catalog", "push", "Initializing catalog push to manager "+mgr.Name)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		asyncCtx := basecontext.NewRootBaseContext()
+		manifestService := catalog.NewManifestService(asyncCtx)
+		go manifestService.AsyncPush(localJob.ID, &request)
+
+		response := mappers.MapJobToApiJob(*localJob)
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("[CatalogManager] Async push to catalog manager %s started, job ID: %s", mgr.Name, localJob.ID)
+	}
+}
+
 func ForwardCatalogManagerCatalogRequestHandler(remotePathTemplate string) restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -943,6 +1039,19 @@ func buildCatalogManagerConnection(manager data_models.CatalogManager) (string, 
 	}
 
 	return "host=" + host, nil
+}
+
+// stripHostFromConnection removes any host= segment from a semicolon-separated
+// connection string, returning only the storage-provider parts.
+func stripHostFromConnection(connection string) string {
+	parts := strings.Split(connection, ";")
+	filtered := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if !strings.HasPrefix(strings.TrimSpace(strings.ToLower(p)), "host=") {
+			filtered = append(filtered, p)
+		}
+	}
+	return strings.Join(filtered, ";")
 }
 
 func validateCatalogManagerConnection(ctx basecontext.ApiContext, managerURL string, username string, password string, apiKey string) error {
