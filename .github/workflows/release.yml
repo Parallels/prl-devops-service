@@ -207,19 +207,17 @@ jobs:
       AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
     name: Build Docker Images
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Clean old canary images
-        run: |
-          ./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*canary.*$' --no-confirm
-      - name: Clean old beta images
-        run: |
-          ./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*beta.*$' --no-confirm
-      - uses: docker/login-action@v1
+      - uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -233,8 +231,8 @@ jobs:
           secrets: |
             amplitude_api_key=${{ secrets.AMPLITUDE_API_KEY }}
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:latest
-            ${{ secrets.DOCKER_USERNAME }}/prl-devops-service:${{ env.EXT_VERSION }}
+            ghcr.io/${{ github.repository_owner }}/prl-devops-service:latest
+            ghcr.io/${{ github.repository_owner }}/prl-devops-service:${{ env.EXT_VERSION }}
   remove-old-beta-release:
     name: Remove old beta release
     needs:
