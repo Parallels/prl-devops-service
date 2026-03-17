@@ -67,6 +67,16 @@ while [[ $# -gt 0 ]]; do
     shift # past argument
     shift # past argument
     ;;
+  -r)
+    ROOT_PASSWORD=$2
+    shift # past argument
+    shift # past argument
+    ;;
+  --root-password)
+    ROOT_PASSWORD=$2
+    shift # past argument
+    shift # past argument
+    ;;
   *)
     echo "Invalid option $1" >&2
     exit 1
@@ -205,7 +215,7 @@ function install() {
         sudo launchctl load "$SERVICE_PLIST"
       else
         echo "Installing prldevops service"
-        INSTALL_SVC_CMD=(sudo "$DESTINATION"/prldevops install service)
+        INSTALL_SVC_CMD=(sudo env ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
         [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SERVICE_PLIST" ]; then
@@ -231,7 +241,7 @@ function install() {
         sudo systemctl restart prl-devops-service
       else
         echo "Installing prldevops service"
-        INSTALL_SVC_CMD=(sudo "$DESTINATION"/prldevops install service)
+        INSTALL_SVC_CMD=(sudo env ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
         [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SYSTEMD_UNIT" ]; then
@@ -345,7 +355,7 @@ function install_standard() {
         launchctl load "$SERVICE_PLIST"
       else
         echo "Installing prldevops service"
-        INSTALL_SVC_CMD=("$DESTINATION"/prldevops install service)
+        INSTALL_SVC_CMD=(ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
         [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SERVICE_PLIST" ]; then
@@ -371,7 +381,7 @@ function install_standard() {
         systemctl restart prl-devops-service
       else
         echo "Installing prldevops service"
-        INSTALL_SVC_CMD=("$DESTINATION"/prldevops install service)
+        INSTALL_SVC_CMD=(ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
         [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SYSTEMD_UNIT" ]; then
@@ -587,6 +597,11 @@ function update() {
     fi
   fi
 
+  if [ -n "$ROOT_PASSWORD" ]; then
+    echo "Updating root user password"
+    sudo "$DESTINATION"/prldevops update-root-pass --password "$ROOT_PASSWORD"
+  fi
+
   echo "Cleaning up"
   rm prldevops.tar.gz
   echo "prldevops has been updated to $SHORT_VERSION in $DESTINATION"
@@ -695,6 +710,11 @@ function update_standard() {
       echo "Restarting prl-devops-service"
       systemctl start prl-devops-service
     fi
+  fi
+
+  if [ -n "$ROOT_PASSWORD" ]; then
+    echo "Updating root user password"
+    "$DESTINATION"/prldevops update-root-pass --password "$ROOT_PASSWORD"
   fi
 
   echo "Cleaning up"
