@@ -1,5 +1,21 @@
 basePath: /api
 definitions:
+  constants.JobState:
+    enum:
+    - init
+    - pending
+    - running
+    - completed
+    - failed
+    - skipped
+    type: string
+    x-enum-varnames:
+    - JobStateInit
+    - JobStatePending
+    - JobStateRunning
+    - JobStateCompleted
+    - JobStateFailed
+    - JobStateSkipped
   controllers.SshExecutionRequest:
     properties:
       command:
@@ -178,6 +194,8 @@ definitions:
         type: string
       cache_file_name:
         type: string
+      cache_last_used:
+        type: string
       cache_local_path:
         type: string
       cache_metadata_name:
@@ -186,6 +204,8 @@ definitions:
         type: integer
       cache_type:
         type: string
+      cache_used_count:
+        type: integer
       catalog_id:
         type: string
       created_at:
@@ -577,6 +597,8 @@ definitions:
         type: string
       host_id:
         type: string
+      host_name:
+        type: string
       host_state:
         type: string
       host_url:
@@ -659,6 +681,8 @@ definitions:
     properties:
       id:
         type: string
+      order:
+        type: integer
       path:
         type: string
       pattern:
@@ -817,6 +841,21 @@ definitions:
       Automatic sharing smart cards:
         type: string
       Support USB 3.0:
+        type: string
+    type: object
+  github_com_Parallels_prl-devops-service_models.VMSnapshot:
+    properties:
+      current:
+        type: boolean
+      date:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      parent:
+        type: string
+      state:
         type: string
     type: object
   github_com_Parallels_prl-devops-service_models.Video:
@@ -991,6 +1030,8 @@ definitions:
         type: string
       catalog_id:
         type: string
+      catalog_manager_id:
+        type: string
       connection:
         type: string
       machine_name:
@@ -1066,6 +1107,20 @@ definitions:
       template:
         type: string
     type: object
+  models.CreateVMSnapshotRequest:
+    properties:
+      snapshot_description:
+        type: string
+      snapshot_name:
+        type: string
+    type: object
+  models.CreateVMSnapshotResponse:
+    properties:
+      snapshot_id:
+        type: string
+      snapshot_name:
+        type: string
+    type: object
   models.CreateVagrantMachineRequest:
     properties:
       architecture:
@@ -1099,6 +1154,10 @@ definitions:
         type: string
       packer_template:
         $ref: '#/definitions/models.CreatePackerVirtualMachineRequest'
+      selection_tags:
+        items:
+          type: string
+        type: array
       start_on_create:
         type: boolean
       vagrant_box:
@@ -1126,6 +1185,21 @@ definitions:
       memory:
         type: string
       type:
+        type: string
+    type: object
+  models.HostCatalogCacheItem:
+    properties:
+      architecture:
+        type: string
+      cache_size:
+        type: integer
+      cache_type:
+        type: string
+      cached_date:
+        type: string
+      catalog_id:
+        type: string
+      version:
         type: string
     type: object
   models.HostResourceOverviewResponse:
@@ -1236,6 +1310,81 @@ definitions:
         type: boolean
       version:
         type: string
+    type: object
+  models.JobResponse:
+    properties:
+      created_at:
+        type: string
+      error:
+        type: string
+      id:
+        type: string
+      job_operation:
+        type: string
+      job_type:
+        type: string
+      message:
+        type: string
+      owner:
+        type: string
+      owner_email:
+        type: string
+      owner_name:
+        type: string
+      progress:
+        type: integer
+      result:
+        type: string
+      result_record_id:
+        type: string
+      result_record_type:
+        type: string
+      state:
+        $ref: '#/definitions/constants.JobState'
+      steps:
+        items:
+          $ref: '#/definitions/models.JobStepResponse'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  models.JobStepResponse:
+    properties:
+      current_percentage:
+        type: number
+      display_name:
+        type: string
+      error:
+        type: string
+      eta:
+        type: string
+      filename:
+        type: string
+      has_percentage:
+        type: boolean
+      message:
+        type: string
+      name:
+        type: string
+      parallel:
+        type: boolean
+      state:
+        $ref: '#/definitions/constants.JobState'
+      total:
+        type: integer
+      unit:
+        type: string
+      value:
+        type: integer
+      weight:
+        type: number
+    type: object
+  models.ListVMSnapshotResponse:
+    properties:
+      snapshots:
+        items:
+          $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.VMSnapshot'
+        type: array
     type: object
   models.LoginRequest:
     properties:
@@ -1364,6 +1513,10 @@ definitions:
         type: string
       cache_config:
         $ref: '#/definitions/models.CatalogCacheConfig'
+      cache_items:
+        items:
+          $ref: '#/definitions/models.HostCatalogCacheItem'
+        type: array
       cpu_model:
         type: string
       description:
@@ -1508,6 +1661,8 @@ definitions:
         type: string
       connection:
         type: string
+      job_id:
+        type: string
       machine_name:
         type: string
       owner:
@@ -1529,6 +1684,10 @@ definitions:
         type: string
       catalog_id:
         type: string
+      compress:
+        type: boolean
+      compress_level:
+        type: string
       compress_pack:
         type: boolean
       compress_pack_level:
@@ -1541,6 +1700,8 @@ definitions:
         type: string
       minimum_requirements:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_catalog_models.MinimumSpecRequirement'
+      override_existing:
+        type: boolean
       pack_size:
         type: integer
       required_claims:
@@ -1628,6 +1789,8 @@ definitions:
     type: object
   models.ReverseProxyHostHttpRouteCreateRequest:
     properties:
+      order:
+        type: integer
       path:
         type: string
       pattern:
@@ -1648,6 +1811,13 @@ definitions:
         type: string
       target_vm_id:
         type: string
+    type: object
+  models.ReverseProxyHostHttpRouteReorderRequest:
+    properties:
+      id:
+        type: string
+      order:
+        type: integer
     type: object
   models.ReverseProxyHostTcpRouteCreateRequest:
     properties:
@@ -1689,6 +1859,11 @@ definitions:
         type: string
       uptime:
         type: string
+    type: object
+  models.RevertVMSnapshotRequest:
+    properties:
+      skip_resume:
+        type: boolean
     type: object
   models.RoleRequest:
     properties:
@@ -3877,6 +4052,38 @@ paths:
       summary: Pull a remote catalog manifest
       tags:
       - Catalogs
+  /v1/catalog/pull/async:
+    put:
+      description: This endpoint pulls a remote catalog manifest in the background
+        and returns a Job ID to track progress
+      parameters:
+      - description: Pull request
+        in: body
+        name: pullRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.PullCatalogManifestRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.JobResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Pull a remote catalog manifest asynchronously
+      tags:
+      - Catalogs
   /v1/catalog/push:
     post:
       description: This endpoint pushes a catalog manifest to the catalog inventory
@@ -3906,6 +4113,38 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Pushes a catalog manifest to the catalog inventory
+      tags:
+      - Catalogs
+  /v1/catalog/push/async:
+    post:
+      description: This endpoint pushes a catalog manifest to the catalog inventory
+        in the background and returns a Job ID to track progress
+      parameters:
+      - description: Push request
+        in: body
+        name: pushRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.PushCatalogManifestRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.JobResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Push a catalog manifest to the catalog inventory asynchronously
       tags:
       - Catalogs
   /v1/config/hardware:
@@ -4016,6 +4255,42 @@ paths:
       summary: Uninstalls API requires 3rd party tools
       tags:
       - Config
+  /v1/jobs/{id}:
+    delete:
+      description: This endpoint deletes a single job. Users with JOB_MANAGER_DELETE
+        can delete any job; users with JOB_MANAGER_LIST_OWN can only delete their
+        own.
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a job by ID
+      tags:
+      - Jobs
   /v1/machines:
     get:
       description: This endpoint returns all the virtual machines
@@ -4398,6 +4673,171 @@ paths:
       summary: Configures a virtual machine
       tags:
       - Machines
+  /v1/machines/{id}/snapshots:
+    delete:
+      description: This endpoint deletes all snapshots of a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes all snapshots of a virtual machine
+      tags:
+      - Machines
+    get:
+      description: This endpoint lists snapshots of a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Lists snapshots of a virtual machine
+      tags:
+      - Machines
+    post:
+      description: This endpoint creates a snapshot for a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Create Snapshot Request
+        in: body
+        name: createRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateVMSnapshotRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a snapshot for a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/snapshots/{snapshot_id}:
+    delete:
+      description: This endpoint deletes a snapshot of a virtual machine
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Snapshot ID
+        in: path
+        name: snapshot_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a snapshot of a virtual machine
+      tags:
+      - Machines
+  /v1/machines/{id}/snapshots/{snapshot_id}/revert:
+    post:
+      description: This endpoint reverts a virtual machine to a snapshot
+      parameters:
+      - description: Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Snapshot ID
+        in: path
+        name: snapshot_id
+        required: true
+        type: string
+      - description: Revert Snapshot Request
+        in: body
+        name: revertRequest
+        schema:
+          $ref: '#/definitions/models.RevertVMSnapshotRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Reverts a virtual machine to a snapshot
+      tags:
+      - Machines
   /v1/machines/{id}/start:
     get:
       description: This endpoint starts a virtual machine
@@ -4592,6 +5032,38 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Uploads a file to a virtual machine
+      tags:
+      - Machines
+  /v1/machines/async:
+    post:
+      description: This endpoint creates a virtual machine in the background and returns
+        a Job ID to track progress
+      parameters:
+      - description: New Machine Request
+        in: body
+        name: createRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateVirtualMachineRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.JobResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a virtual machine asynchronously
       tags:
       - Machines
   /v1/machines/register:
@@ -5086,6 +5558,10 @@ paths:
         name: vmId
         required: true
         type: string
+      - description: Force Delete
+        in: query
+        name: force
+        type: boolean
       produces:
       - application/json
       responses:
@@ -5424,6 +5900,198 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Configures orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots:
+    delete:
+      description: This endpoint deletes all snapshots of orchestrator host virtual
+        machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes all snapshots of orchestrator host virtual machine
+      tags:
+      - Orchestrator
+    get:
+      description: This endpoint lists snapshots of orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ListVMSnapshotResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Lists snapshots of orchestrator host virtual machine
+      tags:
+      - Orchestrator
+    post:
+      description: This endpoint creates a snapshot for orchestrator host virtual
+        machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      - description: Create Snapshot Request
+        in: body
+        name: createRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateVMSnapshotRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.CreateVMSnapshotResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a snapshot for orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}:
+    delete:
+      description: This endpoint deletes a snapshot of orchestrator host virtual machine
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      - description: Snapshot ID
+        in: path
+        name: snapshot_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a snapshot of orchestrator host virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}/revert:
+    post:
+      description: This endpoint reverts orchestrator host virtual machine to a snapshot
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Virtual Machine ID
+        in: path
+        name: vmId
+        required: true
+        type: string
+      - description: Snapshot ID
+        in: path
+        name: snapshot_id
+        required: true
+        type: string
+      - description: Revert Snapshot Request
+        in: body
+        name: revertRequest
+        schema:
+          $ref: '#/definitions/models.RevertVMSnapshotRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Reverts orchestrator host virtual machine to a snapshot
       tags:
       - Orchestrator
   /v1/orchestrator/hosts/{id}/machines/{vmId}/start:
@@ -6084,6 +6752,10 @@ paths:
         name: id
         required: true
         type: string
+      - description: Force Delete
+        in: query
+        name: force
+        type: boolean
       produces:
       - application/json
       responses:
@@ -6878,6 +7550,42 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Delete a a reverse proxy host HTTP route
+      tags:
+      - ReverseProxy
+  /v1/reverse-proxy/hosts/{id}/http_routes/order:
+    put:
+      description: This endpoint reorders HTTP routes for a reverse proxy host
+      parameters:
+      - description: Reverse Proxy Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Reverse Proxy Host HTTP Route Reorder Request
+        in: body
+        name: reverse_proxy_http_route_reorder_request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ReverseProxyHostHttpRouteReorderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Updates the order of a reverse proxy host HTTP route
       tags:
       - ReverseProxy
   /v1/reverse-proxy/restart:

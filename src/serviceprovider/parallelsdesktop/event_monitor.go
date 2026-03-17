@@ -11,7 +11,9 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
 )
@@ -225,6 +227,8 @@ func (s *ParallelsService) processEvent(ctx basecontext.ApiContext, event models
 		s.processVmConfigChanged(ctx, event)
 	case "vm_tools_state_changed":
 		s.processVmToolsStateChanged(ctx, event)
+	case "vm_snapshots_tree_changed":
+		s.processVmSnapshotsTreeChanged(ctx, event)
 	default:
 		ctx.LogInfof("[ParallelsDesktop] [Event] Unhandled event: %v", event)
 	}
@@ -358,6 +362,49 @@ func (s *ParallelsService) processVmConfigChanged(ctx basecontext.ApiContext, ev
 func (s *ParallelsService) processVmToolsStateChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
 	ctx.LogInfof("[ParallelsDesktop] [Events] VM %s tools state changed, queuing for sync", event.VMID)
 	s.queueVmForSync(event.VMID, event.EventName)
+}
+
+func (s *ParallelsService) processVmSnapshotsTreeChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
+	VMSnapshots, err := s.listVMSnapshots(ctx, event.VMID)
+	if err != nil {
+		ctx.LogErrorf("[parallelsdesktop][snapshots] Failed to get snapshots for VM %s: %v", event.VMID, err)
+		return
+	}
+	if s.databaseService == nil {
+		ctx.LogErrorf("[parallelsdesktop][snapshots] Database service not available")
+		return
+	}
+	var dtoVMSnaps []data_models.VMSnapshot
+	if VMSnapshots != nil {
+		for _, snap := range VMSnapshots.Snapshots {
+			dtoVMSnaps = append(dtoVMSnaps, data_models.VMSnapshot{
+				ID:      snap.ID,
+				Name:    snap.Name,
+				Date:    snap.Date,
+				State:   snap.State,
+				Current: snap.Current,
+				Parent:  snap.Parent,
+			})
+		}
+	}
+	s.databaseService.SetListVMSnapshotsByVMId(event.VMID, data_models.VMSnapshots{
+		VMId:       event.VMID,
+		VMSnapshot: dtoVMSnaps,
+	})
+
+	VmSnapshotsUpdatedEvent := models.VmSnapshotsUpdated{
+		VmID:        event.VMID,
+		VMSnapshots: mappers.VMSnapshotsDtoToApi(dtoVMSnaps),
+	}
+
+	go func() {
+		if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
+			msg := models.NewEventMessage(constants.EventTypePDFM, "VM_SNAPSHOTS_UPDATED", VmSnapshotsUpdatedEvent)
+			if err := ee.BroadcastMessage(msg); err != nil {
+				ctx.LogErrorf("[parallelsdesktop][snapshots] Error broadcasting VM snapshots updated event: %v", err)
+			}
+		}
+	}()
 }
 
 // queueVmForSync safely adds a VM to the processing queue while protecting against echo loops.

@@ -631,11 +631,11 @@ func DeleteReverseProxyHostHttpRoutesHandler() restapi.ControllerHandler {
 // @Description	This endpoint reorders HTTP routes for a reverse proxy host
 // @Tags			ReverseProxy
 // @Produce		json
-// @Param			id	path		string	true	"Reverse Proxy Host ID"
+// @Param			id											path		string											true	"Reverse Proxy Host ID"
 // @Param			reverse_proxy_http_route_reorder_request	body		models.ReverseProxyHostHttpRouteReorderRequest	true	"Reverse Proxy Host HTTP Route Reorder Request"
-// @Success		200	{object}	models.ReverseProxyHost
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
+// @Success		200											{object}	models.ReverseProxyHost
+// @Failure		400											{object}	models.ApiErrorResponse
+// @Failure		401											{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/reverse-proxy/hosts/{id}/http_routes/order [put]

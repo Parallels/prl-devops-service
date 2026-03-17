@@ -235,6 +235,8 @@ func InitServices(ctx basecontext.ApiContext) {
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
+		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase)
+		globalProvider.ParallelsDesktopService.InitSnapshotTreeInDB(ctx)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 
