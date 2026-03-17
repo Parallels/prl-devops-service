@@ -22,13 +22,14 @@ type SystemUsageResponse struct {
 }
 
 type SystemUsageItem struct {
-	PhysicalCpuCount int64   `json:"physical_cpu_count,omitempty"`
-	LogicalCpuCount  int64   `json:"logical_cpu_count"`
-	MemorySize       float64 `json:"memory_size"`
-	DiskSize         float64 `json:"disk_count"`
-	PrlHomeSize      int64   `json:"prl_home_size,omitempty"`
-	PrlHomeFreeSize  int64   `json:"prl_home_free_size,omitempty"`
-	PrlHomeTotalSize int64   `json:"prl_home_total_size,omitempty"`
+	PhysicalCpuCount int64    `json:"physical_cpu_count,omitempty"`
+	LogicalCpuCount  int64    `json:"logical_cpu_count"`
+	MemorySize       float64  `json:"memory_size"`
+	DiskSize         float64  `json:"disk_count"`
+	PrlHomeSize      int64    `json:"prl_home_size,omitempty"`
+	PrlHomeFreeSize  int64    `json:"prl_home_free_size,omitempty"`
+	PrlHomeTotalSize int64    `json:"prl_home_total_size,omitempty"`
+	MacVMsRunning    []string `json:"mac_vms_running,omitempty"`
 }
 
 type SystemHardwareInfo struct {

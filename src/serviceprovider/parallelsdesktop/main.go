@@ -80,6 +80,8 @@ type ParallelsService struct {
 	// fastStateUpdates is used for the fast state updates that we do not need to the
 	// prlctl command and can update the database
 	fastStateUpdates map[string]time.Time
+	macVMsRunning    []string
+	macVMsRunningMu  sync.RWMutex
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
@@ -839,6 +841,7 @@ func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
 		s.cachedLocalVms = []models.ParallelsVM{} // Clear cache on error for consistency
 	} else {
 		s.cachedLocalVms = vms
+		go s.syncMacVmRunningStatus(ctx)
 	}
 	s.Unlock()
 
@@ -2762,6 +2765,7 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 			}
 		}
 	}
+	result.TotalInUse.MacVMsRunning = s.getMacVMsRunning()
 
 	cfg := config.Get()
 	systemSrv := system.Get()
@@ -2790,6 +2794,7 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	result.TotalAvailable.MemorySize = result.Total.MemorySize - result.SystemReserved.MemorySize - result.TotalInUse.MemorySize
 	result.TotalAvailable.LogicalCpuCount = result.Total.LogicalCpuCount - result.SystemReserved.LogicalCpuCount - result.TotalInUse.LogicalCpuCount
 	result.TotalAvailable.PrlHomeFreeSize, _ = s.GetParallelsHomeDiskSpaceInfo(ctx, "")
+
 	homeDir, err := s.GetUserHome(ctx, "")
 	if err != nil {
 		return nil, err
@@ -2861,6 +2866,56 @@ func (s *ParallelsService) GetParallelsHomeDiskSpaceInfo(ctx basecontext.ApiCont
 		return 0, err
 	}
 	return helpers.GetFreeDiskSpace(path)
+}
+func (s *ParallelsService) getMacVMsRunning() []string {
+	s.macVMsRunningMu.RLock()
+	defer s.macVMsRunningMu.RUnlock()
+	return append([]string(nil), s.macVMsRunning...)
+}
+
+// resetMacVMsRunning replaces the entire macVMsRunning list atomically.
+// Returns a snapshot and whether the list changed.
+func (s *ParallelsService) resetMacVMsRunning(ids []string) ([]string, bool) {
+	s.macVMsRunningMu.Lock()
+	defer s.macVMsRunningMu.Unlock()
+
+	changed := len(ids) != len(s.macVMsRunning)
+	if !changed {
+		existing := make(map[string]struct{}, len(s.macVMsRunning))
+		for _, id := range s.macVMsRunning {
+			existing[id] = struct{}{}
+		}
+		for _, id := range ids {
+			if _, ok := existing[id]; !ok {
+				changed = true
+				break
+			}
+		}
+	}
+
+	s.macVMsRunning = ids
+	return append([]string(nil), ids...), changed
+}
+
+func (s *ParallelsService) syncMacVmRunningStatus(ctx basecontext.ApiContext) {
+	s.RLock()
+	running := make([]string, 0)
+	for _, vm := range s.cachedLocalVms {
+		if (vm.OS == "macosx" || strings.Contains(strings.ToLower(vm.Name), "mac")) && vm.State == "running" {
+			running = append(running, vm.ID)
+		}
+	}
+	s.RUnlock()
+
+	snapshot, changed := s.resetMacVMsRunning(running)
+	ctx.LogInfof("[SyncMacVmRunningStatus] %d Mac VM(s) running: %v", len(snapshot), snapshot)
+	if changed {
+		if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
+			_ = ee.BroadcastMessage(models.NewEventMessage(constants.EventTypePDFM, "MAC_VMS_RUNNING_NOW", models.MacVMsRunningNowEvent{
+				MacVmsRunning: snapshot,
+			}))
+		}
+	}
 }
 
 func escapeForBashC(command string) string {

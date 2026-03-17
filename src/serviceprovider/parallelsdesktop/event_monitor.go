@@ -189,6 +189,7 @@ func (s *ParallelsService) startAutoCacheRefresh(ctx basecontext.ApiContext) {
 					s.Lock()
 					s.cachedLocalVms = currentVMs
 					s.Unlock()
+					go s.syncMacVmRunningStatus(ctx)
 
 					// 2. BROADCAST UPDATES (Without holding the lock)
 					go func(vmsToBroadcast []models.ParallelsVM) {
@@ -302,6 +303,7 @@ func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, eve
 			go s.updateVMIPInCache(ctx, event.VMID)
 		}
 	}
+	go s.syncMacVmRunningStatus(ctx)
 }
 
 func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {

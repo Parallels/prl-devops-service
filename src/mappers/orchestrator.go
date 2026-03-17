@@ -118,6 +118,9 @@ func DtoOrchestratorResourceItemToApi(dto data_models.HostResourceItem) models.H
 		MemorySize:       dto.MemorySize,
 		DiskSize:         dto.DiskSize,
 		FreeDiskSize:     dto.FreeDiskSize,
+		MacVmsRunning:    dto.MacVmsRunning,
+		PrlHomeSize:      dto.PrlHomeSize,
+		PrlHomeFreeSize:  dto.PrlHomeFreeSize,
 	}
 
 	return result
@@ -131,6 +134,9 @@ func ApiOrchestratorResourceItemToDto(request models.HostResourceItem) data_mode
 		MemorySize:       request.MemorySize,
 		DiskSize:         request.DiskSize,
 		FreeDiskSize:     request.FreeDiskSize,
+		MacVmsRunning:    request.MacVmsRunning,
+		PrlHomeSize:      request.PrlHomeSize,
+		PrlHomeFreeSize:  request.PrlHomeFreeSize,
 	}
 
 	return result

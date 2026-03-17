@@ -27,6 +27,7 @@ func MapHostResourceItemFromSystemUsageItem(m *models.SystemUsageItem) data_mode
 		DiskSize:         m.DiskSize,
 		PrlHomeSize:      m.PrlHomeTotalSize,
 		PrlHomeFreeSize:  m.PrlHomeFreeSize,
+		MacVmsRunning:    m.MacVMsRunning,
 	}
 
 	return result
