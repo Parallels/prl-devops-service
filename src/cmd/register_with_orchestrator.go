@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -158,7 +159,7 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 	}
 
 	// --- Build the registration request ---
-	apiKey := apiKeyReq.Key + ":" + apiKeyReq.Secret
+	apiKey := base64.StdEncoding.EncodeToString([]byte(apiKeyReq.Key + ":" + apiKeyReq.Secret))
 	regReq := models.OrchestratorHostRequest{
 		Host:        selfURL,
 		Description: hostName,

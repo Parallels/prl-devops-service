@@ -431,7 +431,9 @@ func LockRecord(ctx basecontext.ApiContext, dbRecord *models.DbRecord) {
 	}
 	dbRecord.IsLocked = true
 	dbRecord.LockedAt = helpers.GetUtcCurrentDateTime()
-	dbRecord.LockedBy = ctx.GetUser().Email
+	if user := ctx.GetUser(); user != nil {
+		dbRecord.LockedBy = user.Email
+	}
 	mutexLock.Unlock()
 }
 

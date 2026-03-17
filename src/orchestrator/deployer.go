@@ -130,9 +130,13 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 		agentPort = constants.DEFAULT_API_PORT
 	}
 
+	// Use the SSH host as the advertised agent URL — it's the address we already
+	// know is reachable from the outside.  Setting BASE_URL in the environment
+	// takes top priority in resolveSelfBaseURL on the remote side.
+	agentBaseURL := fmt.Sprintf("http://%s:%s", req.SshHost, agentPort)
 	registerCmd := fmt.Sprintf(
-		"/usr/local/bin/prldevops register-with-orchestrator --orchestrator-url=%s --orchestrator-token=%s --host-name=%s --port=%s",
-		orchURL, enrollToken.Token, req.HostName, agentPort,
+		"BASE_URL=%s /usr/local/bin/prldevops register-with-orchestrator --orchestrator-url=%s --orchestrator-token=%s --host-name=%s --port=%s",
+		agentBaseURL, orchURL, enrollToken.Token, req.HostName, agentPort,
 	)
 	if tagsStr != "" {
 		registerCmd += " --tags=" + tagsStr
