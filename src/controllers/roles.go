@@ -3,10 +3,12 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -57,25 +59,30 @@ func registerRolesHandlers(ctx basecontext.ApiContext, version string) {
 // @Tags			Roles
 // @Produce		json
 // @Success		200	{object}	[]models.RoleResponse
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/auth/roles  [get]
+// @Router			/auth/roles  [get]
 func GetRolesHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		getRolesDiag := errors.NewDiagnostics("/auth/roles [get]")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getRolesDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getRolesDiag, rsp.Code))
 			return
 		}
 
 		dtoRoles, err := dbService.GetRoles(ctx, GetFilterHeader(r))
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			getRolesDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getRolesDiag, rsp.Code))
 			return
 		}
 
@@ -102,19 +109,22 @@ func GetRolesHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path		string	true	"Role ID"
 // @Success		200	{object}	models.RoleResponse
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/auth/roles/{id}  [get]
+// @Router			/auth/roles/{id}  [get]
 func GetRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		getRoleDiag := errors.NewDiagnostics("/auth/roles/{id} [get]")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getRoleDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getRoleDiag, rsp.Code))
 			return
 		}
 
@@ -123,7 +133,9 @@ func GetRoleHandler() restapi.ControllerHandler {
 
 		dtoRole, err := dbService.GetRole(ctx, strings.ToUpper(helpers.NormalizeString(id)))
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
+			rsp := models.NewFromError(err)
+			getRoleDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getRoleDiag, rsp.Code))
 			return
 		}
 
@@ -141,35 +153,34 @@ func GetRoleHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			roleRequest	body		models.RoleRequest	true	"Role Request"
 // @Success		200			{object}	models.RoleResponse
-// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		400			{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401			{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/auth/roles  [post]
+// @Router			/auth/roles  [post]
 func CreateRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.RoleRequest
+		createRoleDiag := errors.NewDiagnostics("/auth/roles [post]")
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			createRoleDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createRoleDiag, http.StatusBadRequest))
 			return
 		}
 		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			createRoleDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createRoleDiag, http.StatusBadRequest))
 			return
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			createRoleDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createRoleDiag, rsp.Code))
 			return
 		}
 
@@ -177,7 +188,9 @@ func CreateRoleHandler() restapi.ControllerHandler {
 
 		role, err := dbService.CreateRole(ctx, dtoRole)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			createRoleDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createRoleDiag, rsp.Code))
 			return
 		}
 
@@ -195,19 +208,23 @@ func CreateRoleHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path	string	true	"Role ID"
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/auth/roles/{id}  [delete]
+// @Router			/auth/roles/{id}  [delete]
 func DeleteRoleHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		deleteRoleDiag := errors.NewDiagnostics("/auth/roles/{id} [delete]")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+
+			rsp := models.NewFromError(err)
+			deleteRoleDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteRoleDiag, rsp.Code))
 			return
 		}
 
@@ -216,7 +233,9 @@ func DeleteRoleHandler() restapi.ControllerHandler {
 
 		err = dbService.DeleteRole(ctx, id)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteRoleDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteRoleDiag, rsp.Code))
 			return
 		}
 
