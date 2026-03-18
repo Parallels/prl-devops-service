@@ -375,9 +375,17 @@ definitions:
         type: number
       logical_cpu_count:
         type: integer
+      mac_vms_running:
+        items:
+          type: string
+        type: array
       memory_size:
         type: number
       physical_cpu_count:
+        type: integer
+      prl_home_free_size:
+        type: integer
+      prl_home_size:
         type: integer
       total_apple_vms:
         type: integer
@@ -1201,6 +1209,9 @@ definitions:
         type: string
       memory:
         type: string
+      size:
+        description: Size is the size of the virtual machine in bytes
+        type: integer
       type:
         type: string
     type: object
@@ -1267,6 +1278,24 @@ definitions:
       host_id:
         type: string
       message:
+        type: string
+    type: object
+  models.DiskSpaceAvailable:
+    properties:
+      cache_folder_size:
+        type: integer
+      given_path_size:
+        type: integer
+      parallels_home_size:
+        type: integer
+      prl_home_path:
+        type: string
+    type: object
+  models.DiskSpaceAvailableRequest:
+    properties:
+      folder_path:
+        type: string
+      username:
         type: string
     type: object
   models.HostCatalogCacheItem:
@@ -1998,9 +2027,19 @@ definitions:
         type: number
       logical_cpu_count:
         type: integer
+      mac_vms_running:
+        items:
+          type: string
+        type: array
       memory_size:
         type: number
       physical_cpu_count:
+        type: integer
+      prl_home_free_size:
+        type: integer
+      prl_home_size:
+        type: integer
+      prl_home_total_size:
         type: integer
     type: object
   models.SystemUsageResponse:
@@ -2300,6 +2339,36 @@ info:
   title: Parallels Desktop DevOps Service
   version: 0.9.21
 paths:
+  /config/diskspace:
+    post:
+      description: This endpoint returns the available disk space for the cache folder.
+      parameters:
+      - description: Disk Space Available Request
+        in: body
+        name: createRequest
+        schema:
+          $ref: '#/definitions/models.DiskSpaceAvailableRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.DiskSpaceAvailable'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets the Parallels disk space information
+      tags:
+      - Config
   /health/probe:
     get:
       description: This endpoint returns the API Health Probe

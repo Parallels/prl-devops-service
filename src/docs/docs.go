@@ -24,6 +24,56 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/config/diskspace": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint returns the available disk space for the cache folder.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Gets the Parallels disk space information",
+                "parameters": [
+                    {
+                        "description": "Disk Space Available Request",
+                        "name": "createRequest",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/models.DiskSpaceAvailableRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.DiskSpaceAvailable"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/health/probe": {
             "get": {
                 "security": [
@@ -9933,10 +9983,22 @@ const docTemplate = `{
                 "logical_cpu_count": {
                     "type": "integer"
                 },
+                "mac_vms_running": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "memory_size": {
                     "type": "number"
                 },
                 "physical_cpu_count": {
+                    "type": "integer"
+                },
+                "prl_home_free_size": {
+                    "type": "integer"
+                },
+                "prl_home_size": {
                     "type": "integer"
                 },
                 "total_apple_vms": {
@@ -11197,6 +11259,10 @@ const docTemplate = `{
                 "memory": {
                     "type": "string"
                 },
+                "size": {
+                    "description": "Size is the size of the virtual machine in bytes",
+                    "type": "integer"
+                },
                 "type": {
                     "type": "string"
                 }
@@ -11282,6 +11348,34 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.DiskSpaceAvailable": {
+            "type": "object",
+            "properties": {
+                "cache_folder_size": {
+                    "type": "integer"
+                },
+                "given_path_size": {
+                    "type": "integer"
+                },
+                "parallels_home_size": {
+                    "type": "integer"
+                },
+                "prl_home_path": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.DiskSpaceAvailableRequest": {
+            "type": "object",
+            "properties": {
+                "folder_path": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }
@@ -12387,10 +12481,25 @@ const docTemplate = `{
                 "logical_cpu_count": {
                     "type": "integer"
                 },
+                "mac_vms_running": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "memory_size": {
                     "type": "number"
                 },
                 "physical_cpu_count": {
+                    "type": "integer"
+                },
+                "prl_home_free_size": {
+                    "type": "integer"
+                },
+                "prl_home_size": {
+                    "type": "integer"
+                },
+                "prl_home_total_size": {
                     "type": "integer"
                 }
             }

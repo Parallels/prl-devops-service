@@ -15,6 +15,7 @@ import (
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
+	diskspaceservice "github.com/Parallels/prl-devops-service/serviceprovider/diskSpace"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
 )
 
@@ -188,6 +189,7 @@ func (s *ParallelsService) startAutoCacheRefresh(ctx basecontext.ApiContext) {
 					s.Lock()
 					s.cachedLocalVms = currentVMs
 					s.Unlock()
+					go s.syncMacVmRunningStatus(ctx)
 
 					// 2. BROADCAST UPDATES (Without holding the lock)
 					go func(vmsToBroadcast []models.ParallelsVM) {
@@ -301,6 +303,7 @@ func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, eve
 			go s.updateVMIPInCache(ctx, event.VMID)
 		}
 	}
+	go s.syncMacVmRunningStatus(ctx)
 }
 
 func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
@@ -325,6 +328,7 @@ func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event mode
 				ctx.LogErrorf("[ParallelsDesktop] [Events] Error broadcasting VM added event: %v", err)
 			}
 		}
+		diskspaceservice.Get(ctx).CheckDiskSpaceAndBroadcast()
 	}()
 
 }
@@ -347,6 +351,7 @@ func (s *ParallelsService) processVmUnregistered(ctx basecontext.ApiContext, eve
 						ctx.LogErrorf("[ParallelsDesktop] [Events] Error broadcasting VM removed event: %v", err)
 					}
 				}
+				diskspaceservice.Get(ctx).CheckDiskSpaceAndBroadcast()
 			}()
 
 			break

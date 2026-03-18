@@ -72,6 +72,10 @@ func (h *PDfMEventHandler) Handle(ctx basecontext.ApiContext, hostID string, eve
 		h.handleVmUptimeChanged(ctx, hostID, event)
 	case "VM_SNAPSHOTS_UPDATED":
 		h.handleVMSnapshotsUpdated(ctx, hostID, event)
+		h.updateHostResources(ctx, hostID)
+	case "MAC_VMS_RUNNING_NOW":
+		h.handleMacVmsRunningNow(ctx, hostID, event)
+		h.updateHostResources(ctx, hostID)
 	default:
 		ctx.LogWarnf("[PDfMEventHandler] Unknown event message : %s", event.Message)
 	}
@@ -327,6 +331,16 @@ func (h *PDfMEventHandler) handleVMSnapshotsUpdated(ctx basecontext.ApiContext, 
 	}
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] [snapshots] VM snapshots updated:(VM: %s, Host: %s)", snapshotsUpdated.VmID, hostID)
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_SNAPSHOTS_UPDATED", *snapshotsUpdated)
+}
+
+func (h *PDfMEventHandler) handleMacVmsRunningNow(ctx basecontext.ApiContext, hostID string, event models.EventMessage) {
+	macVmsRunningNow, err := unmarshalEventBody[models.MacVMsRunningNowEvent](ctx, event, "MAC VMs running now event")
+	if err != nil {
+		return
+	}
+
+	ctx.LogInfof("[PDfMEventHandler] [orchestrator] MAC VMs running now: %v (Host: %s)", macVmsRunningNow, hostID)
+	h.emitHostVMEvent(ctx, hostID, "HOST_MAC_VMS_RUNNING_NOW", *macVmsRunningNow)
 }
 
 func (h *PDfMEventHandler) updateHostResources(ctx basecontext.ApiContext, hostID string) error {

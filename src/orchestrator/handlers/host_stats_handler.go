@@ -12,7 +12,8 @@ import (
 )
 
 type HostStatsHandler struct {
-	registrar interfaces.HostRegistrar
+	registrar       interfaces.HostRegistrar
+	resourceUpdater ResourceUpdater
 }
 
 var (
@@ -30,6 +31,10 @@ func NewHostStatsHandler(registrar interfaces.HostRegistrar) *HostStatsHandler {
 	return statsInstance
 }
 
+func (h *HostStatsHandler) SetResourceUpdater(updater ResourceUpdater) {
+	h.resourceUpdater = updater
+}
+
 func (h *HostStatsHandler) Handle(ctx basecontext.ApiContext, hostID string, eventType constants.EventType, payload []byte) {
 	if eventType != constants.EventTypeStats {
 		return
@@ -42,6 +47,9 @@ func (h *HostStatsHandler) Handle(ctx basecontext.ApiContext, hostID string, eve
 	}
 
 	ctx.LogDebugf("[HostStatsHandler] Received stats from host %s", hostID)
+	if event.Message == "DISK_SPACE_CHANGED" {
+		h.updateHostResources(ctx, hostID)
+	}
 
 	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
 		msg := models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_STATS_UPDATE", models.HostStatsUpdate{
@@ -54,4 +62,16 @@ func (h *HostStatsHandler) Handle(ctx basecontext.ApiContext, hostID string, eve
 			}
 		}()
 	}
+}
+
+func (h *HostStatsHandler) updateHostResources(ctx basecontext.ApiContext, hostID string) error {
+	if h.resourceUpdater == nil {
+		ctx.LogWarnf("[HostStatsHandler] [orchestrator] No resource updater configured - skipping host resource update")
+		return nil
+	}
+	if err := h.resourceUpdater.UpdateHostResourcesForEvent(ctx, hostID); err != nil {
+		ctx.LogErrorf("[HostStatsHandler] [orchestrator] Error updating host resources for host %s: %v", hostID, err)
+		return err
+	}
+	return nil
 }

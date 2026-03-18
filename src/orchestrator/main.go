@@ -70,7 +70,8 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	pdfmHandler := handlers.NewPDfMEventHandler(manager)
 	pdfmHandler.SetResourceUpdater(s)
 	handlers.NewHostHealthHandler(manager)
-	handlers.NewHostStatsHandler(manager)
+	statsHandler := handlers.NewHostStatsHandler(manager)
+	statsHandler.SetResourceUpdater(s)
 	handlers.NewHostLogsHandler(manager)
 	handlers.NewHostCatalogCacheEventHandler(manager, func(hostId string) {
 		go globalOrchestratorService.RefreshHostCache(hostId)
