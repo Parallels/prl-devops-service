@@ -149,7 +149,7 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 
 	// Wait for the service to be reachable before registering.
 	healthCmd := fmt.Sprintf(
-		`for i in $(seq 1 30); do curl -sf http://localhost:%s/health/probe && break || sleep 2; done`,
+		`for i in $(seq 1 30); do curl -sf http://localhost:%s/api/health/probe && break || sleep 2; done`,
 		agentPort,
 	)
 

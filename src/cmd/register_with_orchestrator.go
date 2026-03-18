@@ -182,7 +182,7 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 
 	// Wait for the service to be healthy again before registering.
 	ctx.LogInfof("Waiting for service to come back up...")
-	if err := waitForHealth(ctx, fmt.Sprintf("http://localhost:%s/health/probe", agentPort), 60*time.Second); err != nil {
+	if err := waitForHealth(ctx, fmt.Sprintf("http://localhost:%s/api/health/probe", agentPort), 60*time.Second); err != nil {
 		ctx.LogErrorf("Service did not become healthy after restart: %v", err)
 		os.Exit(1)
 	}
