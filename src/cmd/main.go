@@ -69,6 +69,8 @@ func Process() {
 		processParallelsDesktop(ctx, command)
 	case constants.INIT_ORCHESTRATOR_CLIENT_COMMAND:
 		processInitOrchestratorClient(ctx, command)
+	case constants.REGISTER_WITH_ORCHESTRATOR_COMMAND:
+		processRegisterWithOrchestrator(ctx, command)
 	default:
 		if helper.GetFlagSwitch("help", false) {
 			processHelp("")

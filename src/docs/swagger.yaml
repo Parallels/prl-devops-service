@@ -1059,6 +1059,23 @@ definitions:
       version:
         type: string
     type: object
+  models.CreateEnrollmentTokenRequest:
+    properties:
+      host_name:
+        type: string
+      ttl_minutes:
+        description: defaults to 15
+        type: integer
+    type: object
+  models.CreateEnrollmentTokenResponse:
+    properties:
+      expires_at:
+        type: string
+      host_name:
+        type: string
+      token:
+        type: string
+    type: object
   models.CreatePackerTemplateRequest:
     properties:
       addons:
@@ -1196,6 +1213,71 @@ definitions:
         description: Size is the size of the virtual machine in bytes
         type: integer
       type:
+        type: string
+    type: object
+  models.DeployOrchestratorHostRequest:
+    properties:
+      agent_port:
+        description: AgentPort is the port the installed agent listens on. Defaults
+          to 3080.
+        type: string
+      agent_version:
+        description: |-
+          AgentVersion pins the prldevops binary version installed on the remote host
+          (e.g. "v0.7.0-beta"). When empty the install script uses its own default (latest stable).
+        type: string
+      enabled_modules:
+        description: e.g. "api,host,catalog,cors"
+        type: string
+      enrollment_token_ttl:
+        description: EnrollmentTokenTTL overrides the default 15-minute TTL (minutes)
+        type: integer
+      host_name:
+        description: Agent identity in the orchestrator
+        type: string
+      pd_version:
+        description: '"latest" or explicit e.g. "26.2.2-57373"'
+        type: string
+      pre_release:
+        description: |-
+          PreRelease instructs the install script to pick the latest pre-release tag
+          instead of the latest stable release. Ignored when AgentVersion is set.
+        type: boolean
+      root_password:
+        description: Install options forwarded to the install script
+        type: string
+      ssh_host:
+        description: SSH connection details for the target host
+        type: string
+      ssh_insecure_host_key:
+        description: skip known_hosts verification
+        type: boolean
+      ssh_key:
+        description: PEM-encoded private key
+        type: string
+      ssh_password:
+        description: mutually exclusive with SshKey
+        type: string
+      ssh_port:
+        description: defaults to "22"
+        type: string
+      ssh_user:
+        type: string
+      sudo_password:
+        description: sudo password if different from ssh_password
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+    type: object
+  models.DeployOrchestratorHostResponse:
+    properties:
+      host:
+        type: string
+      host_id:
+        type: string
+      message:
         type: string
     type: object
   models.DiskSpaceAvailable:
@@ -1484,7 +1566,6 @@ definitions:
     - 10
     - 11
     - 12
-    format: int64
     type: integer
     x-enum-varnames:
     - OAuthInvalidRequestError
@@ -1556,6 +1637,10 @@ definitions:
         type: string
       enabled:
         type: boolean
+      enabled_modules:
+        items:
+          type: string
+        type: array
       external_ip_address:
         type: string
       has_websocket_events:
@@ -1564,6 +1649,8 @@ definitions:
         type: string
       id:
         type: string
+      is_log_streaming_enabled:
+        type: boolean
       is_reverse_proxy_enabled:
         type: boolean
       os_name:
@@ -2061,6 +2148,17 @@ definitions:
         type: array
       username:
         type: string
+    type: object
+  models.ValidateEnrollmentTokenResponse:
+    properties:
+      expires_at:
+        type: string
+      host_name:
+        type: string
+      reason:
+        type: string
+      valid:
+        type: boolean
     type: object
   models.ValidateTokenRequest:
     properties:
@@ -5171,6 +5269,61 @@ paths:
       summary: Registers a virtual machine
       tags:
       - Machines
+  /v1/orchestrator/enrollment-token:
+    post:
+      consumes:
+      - application/json
+      description: Generates a short-lived, single-use token that allows a freshly
+        installed agent to register itself with the orchestrator without requiring
+        a permanent credential.
+      parameters:
+      - description: Enrollment token request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateEnrollmentTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.CreateEnrollmentTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Create an enrollment token
+      tags:
+      - Orchestrator
+  /v1/orchestrator/enrollment-token/{token}/validate:
+    get:
+      description: Public endpoint that checks whether an enrollment token is valid,
+        unused, and not expired. Used by agents before starting the registration flow.
+      parameters:
+      - description: Enrollment token value
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ValidateEnrollmentTokenResponse'
+      summary: Validate an enrollment token
+      tags:
+      - Orchestrator
   /v1/orchestrator/hosts:
     get:
       description: This endpoint returns all hosts from the orchestrator
@@ -6753,6 +6906,75 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Restarts orchestrator host reverse proxy
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/deploy:
+    post:
+      consumes:
+      - application/json
+      description: SSHes into a remote host, installs the devops agent, and registers
+        it with this orchestrator. Blocks until the operation completes.
+      parameters:
+      - description: Deploy request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.DeployOrchestratorHostRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.DeployOrchestratorHostResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deploy and register an agent via SSH (synchronous)
+      tags:
+      - Orchestrator
+  /v1/orchestrator/hosts/deploy/async:
+    post:
+      consumes:
+      - application/json
+      description: SSHes into a remote host, installs the devops agent, and registers
+        it with this orchestrator. Returns a job ID immediately; poll /jobs/{id} for
+        status.
+      parameters:
+      - description: Deploy request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.DeployOrchestratorHostRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.JobResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deploy and register an agent via SSH (asynchronous)
       tags:
       - Orchestrator
   /v1/orchestrator/machines:

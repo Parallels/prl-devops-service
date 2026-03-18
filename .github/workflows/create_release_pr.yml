@@ -64,6 +64,7 @@ jobs:
           go mod tidy
           swag fmt
           swag init -g main.go
+          go run ./api_documentation/api_generate.go
           cd ..
 
           # Generate changelog for the new version

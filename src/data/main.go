@@ -47,6 +47,7 @@ type Data struct {
 	CatalogManagers   []models.CatalogManager         `json:"catalog_managers"`
 	Jobs              []models.Job                    `json:"jobs"`
 	VMSnapshots       []models.VMSnapshots            `json:"vm_snapshots"`
+  EnrollmentTokens     []models.OrchestratorEnrollmentToken   `json:"enrollment_tokens"`
 }
 
 type JsonDatabase struct {
@@ -432,7 +433,9 @@ func LockRecord(ctx basecontext.ApiContext, dbRecord *models.DbRecord) {
 	}
 	dbRecord.IsLocked = true
 	dbRecord.LockedAt = helpers.GetUtcCurrentDateTime()
-	dbRecord.LockedBy = ctx.GetUser().Email
+	if user := ctx.GetUser(); user != nil {
+		dbRecord.LockedBy = user.Email
+	}
 	mutexLock.Unlock()
 }
 

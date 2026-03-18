@@ -238,6 +238,44 @@ func (l *HttpListener) AddAuthorizedHandlerWithClaims(c ControllerHandler, path 
 		methods...)
 }
 
+// AddAuthorizedHandlerWithExtraAdapters is like AddAuthorizedHandlerWithRolesAndClaims but
+// inserts extraAdapters into the chain just before EndAuthorizationMiddlewareAdapter.
+// Use this to add per-endpoint auth extensions (e.g. enrollment-token support).
+func (l *HttpListener) AddAuthorizedHandlerWithExtraAdapters(
+	c ControllerHandler,
+	path string,
+	roles []string,
+	claims []string,
+	roleComparisonOperation ComparisonOperation,
+	claimComparisonOperation ComparisonOperation,
+	extraAdapters []Adapter,
+	methods ...string) {
+	l.ControllersHandlers = append(l.ControllersHandlers, c)
+	var subRouter *mux.Router
+	if len(methods) > 0 {
+		subRouter = l.Router.Methods(methods...).Subrouter()
+	} else {
+		subRouter = l.Router.Methods("GET").Subrouter()
+	}
+	adapters := make([]Adapter, 0)
+	adapters = append(adapters, l.DefaultAdapters...)
+	adapters = append(adapters,
+		AddAuthorizationContextMiddlewareAdapter(),
+		TokenAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation),
+		ApiKeyAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation))
+	adapters = append(adapters, extraAdapters...)
+	adapters = append(adapters, EndAuthorizationMiddlewareAdapter())
+
+	if l.GetApiPrefix() != "" && !strings.HasPrefix(path, l.Options.ApiPrefix) {
+		path = http_helper.JoinUrl(l.GetApiPrefix(), path)
+	}
+
+	subRouter.HandleFunc(path,
+		Adapt(
+			http.HandlerFunc(c),
+			adapters...).ServeHTTP)
+}
+
 func (l *HttpListener) AddAuthorizedHandlerWithRolesAndClaims(
 	c ControllerHandler,
 	path string,

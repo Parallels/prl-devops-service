@@ -22,6 +22,8 @@ func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.O
 		ParallelsDesktopVersion:  dto.ParallelsDesktopVersion,
 		ParallelsDesktopLicensed: dto.ParallelsDesktopLicensed,
 		IsReverseProxyEnabled:    dto.IsReverseProxyEnabled,
+		IsLogStreamingEnabled:    dto.IsLogStreamingEnabled,
+		EnabledModules:           dto.EnabledModules,
 		Tags:                     dto.Tags,
 		RequiredClaims:           dto.RequiredClaims,
 		RequiredRoles:            dto.RequiredRoles,

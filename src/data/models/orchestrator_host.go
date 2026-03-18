@@ -34,6 +34,8 @@ type OrchestratorHost struct {
 	HealthCheck               *models.ApiHealthCheck          `json:"-"`
 	VirtualMachines           []VirtualMachine                `json:"virtual_machines,omitempty"`
 	IsReverseProxyEnabled     bool                            `json:"is_reverse_proxy_enabled,omitempty"`
+	IsLogStreamingEnabled     bool                            `json:"is_log_streaming_enabled,omitempty"`
+	EnabledModules            []string                        `json:"enabled_modules,omitempty"`
 	ReverseProxy              *ReverseProxy                   `json:"reverse_proxy,omitempty"`
 	ReverseProxyHosts         []*ReverseProxyHost             `json:"reverse_proxy_hosts,omitempty"`
 	CacheConfig               *models.CatalogCacheConfig      `json:"cache_config,omitempty"`
@@ -224,6 +226,19 @@ func (o *OrchestratorHost) Diff(source OrchestratorHost) bool {
 
 	if o.IsReverseProxyEnabled != source.IsReverseProxyEnabled {
 		return true
+	}
+
+	if o.IsLogStreamingEnabled != source.IsLogStreamingEnabled {
+		return true
+	}
+
+	if len(o.EnabledModules) != len(source.EnabledModules) {
+		return true
+	}
+	for i, m := range o.EnabledModules {
+		if m != source.EnabledModules[i] {
+			return true
+		}
 	}
 
 	if o.HasWebsocketEvents != source.HasWebsocketEvents {

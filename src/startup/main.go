@@ -112,6 +112,13 @@ func Start(ctx basecontext.ApiContext) {
 		panic(err)
 	}
 
+	// Clean up expired/used enrollment tokens at startup
+	if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
+		if err := dbService.DeleteExpiredEnrollmentTokens(ctx); err != nil {
+			ctx.LogWarnf("Could not purge expired enrollment tokens: %v", err)
+		}
+	}
+
 	ctx.LogInfof("Applying migrations")
 	for _, migration := range schemaMigrations {
 		if err := migration.Apply(); err != nil {

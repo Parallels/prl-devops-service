@@ -4751,6 +4751,89 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/orchestrator/enrollment-token": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generates a short-lived, single-use token that allows a freshly installed agent to register itself with the orchestrator without requiring a permanent credential.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Create an enrollment token",
+                "parameters": [
+                    {
+                        "description": "Enrollment token request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateEnrollmentTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.CreateEnrollmentTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/enrollment-token/{token}/validate": {
+            "get": {
+                "description": "Public endpoint that checks whether an enrollment token is valid, unused, and not expired. Used by agents before starting the registration flow.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Validate an enrollment token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Enrollment token value",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ValidateEnrollmentTokenResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/orchestrator/hosts": {
             "get": {
                 "security": [
@@ -4875,6 +4958,114 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.OrchestratorHostResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/deploy": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "SSHes into a remote host, installs the devops agent, and registers it with this orchestrator. Blocks until the operation completes.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Deploy and register an agent via SSH (synchronous)",
+                "parameters": [
+                    {
+                        "description": "Deploy request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.DeployOrchestratorHostRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.DeployOrchestratorHostResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/orchestrator/hosts/deploy/async": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "SSHes into a remote host, installs the devops agent, and registers it with this orchestrator. Returns a job ID immediately; poll /jobs/{id} for status.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Deploy and register an agent via SSH (asynchronous)",
+                "parameters": [
+                    {
+                        "description": "Deploy request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.DeployOrchestratorHostRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/models.JobResponse"
                         }
                     },
                     "400": {
@@ -10839,6 +11030,32 @@ const docTemplate = `{
                 }
             }
         },
+        "models.CreateEnrollmentTokenRequest": {
+            "type": "object",
+            "properties": {
+                "host_name": {
+                    "type": "string"
+                },
+                "ttl_minutes": {
+                    "description": "defaults to 15",
+                    "type": "integer"
+                }
+            }
+        },
+        "models.CreateEnrollmentTokenResponse": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "models.CreatePackerTemplateRequest": {
             "type": "object",
             "properties": {
@@ -11047,6 +11264,90 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.DeployOrchestratorHostRequest": {
+            "type": "object",
+            "properties": {
+                "agent_port": {
+                    "description": "AgentPort is the port the installed agent listens on. Defaults to 3080.",
+                    "type": "string"
+                },
+                "agent_version": {
+                    "description": "AgentVersion pins the prldevops binary version installed on the remote host\n(e.g. \"v0.7.0-beta\"). When empty the install script uses its own default (latest stable).",
+                    "type": "string"
+                },
+                "enabled_modules": {
+                    "description": "e.g. \"api,host,catalog,cors\"",
+                    "type": "string"
+                },
+                "enrollment_token_ttl": {
+                    "description": "EnrollmentTokenTTL overrides the default 15-minute TTL (minutes)",
+                    "type": "integer"
+                },
+                "host_name": {
+                    "description": "Agent identity in the orchestrator",
+                    "type": "string"
+                },
+                "pd_version": {
+                    "description": "\"latest\" or explicit e.g. \"26.2.2-57373\"",
+                    "type": "string"
+                },
+                "pre_release": {
+                    "description": "PreRelease instructs the install script to pick the latest pre-release tag\ninstead of the latest stable release. Ignored when AgentVersion is set.",
+                    "type": "boolean"
+                },
+                "root_password": {
+                    "description": "Install options forwarded to the install script",
+                    "type": "string"
+                },
+                "ssh_host": {
+                    "description": "SSH connection details for the target host",
+                    "type": "string"
+                },
+                "ssh_insecure_host_key": {
+                    "description": "skip known_hosts verification",
+                    "type": "boolean"
+                },
+                "ssh_key": {
+                    "description": "PEM-encoded private key",
+                    "type": "string"
+                },
+                "ssh_password": {
+                    "description": "mutually exclusive with SshKey",
+                    "type": "string"
+                },
+                "ssh_port": {
+                    "description": "defaults to \"22\"",
+                    "type": "string"
+                },
+                "ssh_user": {
+                    "type": "string"
+                },
+                "sudo_password": {
+                    "description": "sudo password if different from ssh_password",
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "models.DeployOrchestratorHostResponse": {
+            "type": "object",
+            "properties": {
+                "host": {
+                    "type": "string"
+                },
+                "host_id": {
+                    "type": "string"
+                },
+                "message": {
                     "type": "string"
                 }
             }
@@ -11469,7 +11770,6 @@ const docTemplate = `{
         },
         "models.OAuthErrorType": {
             "type": "integer",
-            "format": "int64",
             "enum": [
                 0,
                 1,
@@ -11586,6 +11886,12 @@ const docTemplate = `{
                 "enabled": {
                     "type": "boolean"
                 },
+                "enabled_modules": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "external_ip_address": {
                     "type": "string"
                 },
@@ -11597,6 +11903,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "is_log_streaming_enabled": {
+                    "type": "boolean"
                 },
                 "is_reverse_proxy_enabled": {
                     "type": "boolean"
@@ -12354,6 +12663,23 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "models.ValidateEnrollmentTokenResponse": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "valid": {
+                    "type": "boolean"
                 }
             }
         },

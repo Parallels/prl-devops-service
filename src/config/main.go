@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -235,9 +236,9 @@ func (c *Config) LogLevel(silent bool) string {
 }
 
 func (c *Config) IsCorsEnabled() bool {
-	corsEnabled := c.GetBoolKey(constants.ENABLE_CORS_ENV_VAR)
-
-	return corsEnabled
+	// Module takes precedence; fall back to the direct env var for backward
+	// compatibility with plists that set ENABLE_CORS=true directly.
+	return c.IsModuleEnabled(constants.CORS_MODE) || c.GetBoolKey(constants.ENABLE_CORS_ENV_VAR)
 }
 
 func (c *Config) EncryptionPrivateKey() string {
@@ -651,6 +652,8 @@ func (c *Config) EnableCredentialsObfuscation() bool {
 }
 
 func (c *Config) GetEnabledModules() []string {
+	onDarwin := runtime.GOOS == "darwin"
+
 	modules := c.GetKey(constants.ENABLED_MODULES_ENV_VAR)
 	modulesList := []string{}
 
@@ -660,36 +663,34 @@ func (c *Config) GetEnabledModules() []string {
 			modulesList[i] = strings.TrimSpace(module)
 		}
 	} else {
-		// Fallback to MODE if ENABLED_MODULES is empty
-		// API and Host are enabled by default in all modes (Host subject to availability check later)
-		modulesList = append(modulesList, "api")
-		modulesList = append(modulesList, "host")
-
+		// Auto-detect based on OS and MODE when ENABLED_MODULES is not set.
+		modulesList = append(modulesList, constants.API_MODE)
+		modulesList = append(modulesList, constants.CORS_MODE) // enabled by default on all platforms
+		// host is only meaningful on darwin (requires Parallels Desktop).
+		if onDarwin {
+			modulesList = append(modulesList, constants.HOST_MODE)
+		}
 		mode := c.Mode()
 		if strings.EqualFold(mode, constants.CATALOG_MODE) {
-			modulesList = append(modulesList, "catalog")
+			modulesList = append(modulesList, constants.CATALOG_MODE)
 		} else if strings.EqualFold(mode, constants.ORCHESTRATOR_MODE) {
-			modulesList = append(modulesList, "orchestrator")
+			modulesList = append(modulesList, constants.ORCHESTRATOR_MODE)
 		}
 	}
 
-	// Validate modules
+	// Validate modules against the known-valid list.
 	validModules := []string{}
 	for _, module := range modulesList {
-		isValid := false
 		for _, validModule := range constants.VALID_MODULES {
 			if strings.EqualFold(module, validModule) {
-				isValid = true
+				validModules = append(validModules, module)
 				break
 			}
-		}
-		if isValid {
-			validModules = append(validModules, module)
 		}
 	}
 	modulesList = validModules
 
-	// Ensure API is always enabled
+	// Ensure API is always enabled.
 	apiFound := false
 	for _, module := range modulesList {
 		if strings.EqualFold(module, constants.API_MODE) {
@@ -697,56 +698,52 @@ func (c *Config) GetEnabledModules() []string {
 			break
 		}
 	}
-
 	if !apiFound {
 		modulesList = append(modulesList, constants.API_MODE)
 	}
 
-	// Add caching module if enabled and host is enabled
-	if c.IsCatalogCachingEnable() {
-		hostFound := false
+	// On non-darwin systems, remove modules that require the macOS/PD stack.
+	// This enforces the rule even when ENABLED_MODULES is set explicitly.
+	if !onDarwin {
+		darwinOnly := map[string]bool{
+			strings.ToLower(constants.HOST_MODE):          true,
+			strings.ToLower(constants.CACHE_MODE):         true,
+			strings.ToLower(constants.REVERSE_PROXY_MODE): true,
+		}
+		filtered := []string{}
 		for _, module := range modulesList {
-			if strings.EqualFold(module, constants.HOST_MODE) {
-				hostFound = true
+			if !darwinOnly[strings.ToLower(module)] {
+				filtered = append(filtered, module)
+			}
+		}
+		modulesList = filtered
+	}
+
+	// On darwin: auto-add cache unless explicitly disabled via env var.
+	if onDarwin && c.IsCatalogCachingEnable() {
+		cacheFound := false
+		for _, module := range modulesList {
+			if strings.EqualFold(module, constants.CACHE_MODE) {
+				cacheFound = true
 				break
 			}
 		}
-
-		if hostFound {
-			cacheFound := false
-			for _, module := range modulesList {
-				if strings.EqualFold(module, constants.CACHE_MODE) {
-					cacheFound = true
-					break
-				}
-			}
-			if !cacheFound {
-				modulesList = append(modulesList, constants.CACHE_MODE)
-			}
+		if !cacheFound {
+			modulesList = append(modulesList, constants.CACHE_MODE)
 		}
 	}
 
-	// Add reverse proxy module if enabled and host is enabled
-	if c.IsReverseProxyEnable() {
-		hostFound := false
+	// On darwin: auto-add reverse_proxy unless explicitly disabled via env var.
+	if onDarwin && c.IsReverseProxyEnable() {
+		proxyFound := false
 		for _, module := range modulesList {
-			if strings.EqualFold(module, constants.HOST_MODE) {
-				hostFound = true
+			if strings.EqualFold(module, constants.REVERSE_PROXY_MODE) {
+				proxyFound = true
 				break
 			}
 		}
-
-		if hostFound {
-			proxyFound := false
-			for _, module := range modulesList {
-				if strings.EqualFold(module, constants.REVERSE_PROXY_MODE) {
-					proxyFound = true
-					break
-				}
-			}
-			if !proxyFound {
-				modulesList = append(modulesList, constants.REVERSE_PROXY_MODE)
-			}
+		if !proxyFound {
+			modulesList = append(modulesList, constants.REVERSE_PROXY_MODE)
 		}
 	}
 

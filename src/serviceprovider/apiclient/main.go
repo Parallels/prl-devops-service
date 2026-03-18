@@ -84,13 +84,10 @@ func (c *HttpClientService) WithHeaders(headers map[string]string) *HttpClientSe
 }
 
 func (c *HttpClientService) WithTimeout(duration time.Duration) *HttpClientService {
-	c.ctx.LogInfof("[Api Client] Setting timeout to %v", duration)
-	context, _ := context.WithTimeout(context.Background(), duration)
-
-	c.context = context
 	c.timeout = duration
-	c.connTimeout = duration // Use the same timeout for connections
-	c.ctx.LogDebugf("[Api Client] Using connection timeout of %v", c.connTimeout)
+	c.connTimeout = duration
+	// RequestData creates a fresh context immediately before client.Do so the full duration is available.
+	c.context = nil
 	return c
 }
 
@@ -193,17 +190,17 @@ func (c *HttpClientService) RequestData(verb HttpClientServiceVerb, url string, 
 		Timeout:   c.timeout,
 	}
 
-	// Use the passed context if available, otherwise create new one
+	// Always create a fresh context immediately before the request so the full
+	// timeout is available regardless of when WithTimeout was called.
 	var ctx context.Context
 	var cancel context.CancelFunc
 	if c.context != nil {
+		// Caller supplied an explicit context (e.g. from WithContext); honour it.
 		ctx = c.context
 	} else {
 		ctx, cancel = context.WithTimeout(context.Background(), c.timeout)
 		defer cancel()
 	}
-
-	c.context = ctx
 
 	if data != nil {
 		reqBody, err := json.MarshalIndent(data, "", "  ")

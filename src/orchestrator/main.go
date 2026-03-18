@@ -436,6 +436,8 @@ func (s *OrchestratorService) updateHostWithHardwareInfo(host *models.Orchestrat
 	host.ParallelsDesktopVersion = hardwareInfo.ParallelsDesktopVersion
 	host.ParallelsDesktopLicensed = hardwareInfo.ParallelsDesktopLicensed
 	host.IsReverseProxyEnabled = hardwareInfo.IsReverseProxyEnabled
+	host.IsLogStreamingEnabled = hardwareInfo.IsLogStreamingEnabled
+	host.EnabledModules = hardwareInfo.EnabledModules
 	host.CacheConfig = hardwareInfo.CacheConfig
 	if hardwareInfo.ReverseProxy != nil {
 		host.ReverseProxy = &models.ReverseProxy{

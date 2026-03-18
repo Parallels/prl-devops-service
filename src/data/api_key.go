@@ -72,8 +72,7 @@ func (j *JsonDatabase) CreateApiKey(ctx basecontext.ApiContext, apiKey models.Ap
 	return &apiKey, nil
 }
 
-func (j *JsonDatabase) DeleteApiKey(ctx basecontext.ApiContext, id string) error {
-	if !j.IsConnected() {
+func (j *JsonDatabase) DeleteApiKey(ctx basecontext.ApiContext, id string) error {	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
 	}
 

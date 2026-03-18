@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"math/rand"
@@ -308,15 +309,87 @@ func (s *ParallelsService) Install(asUser, version string, flags map[string]stri
 	return nil
 }
 
+// parallelsLatestMajor is the current Parallels Desktop major version used to
+// construct the livecheck XML URL. Update this constant when Parallels ships a
+// new major release (e.g. 27, 28, …).
+const parallelsLatestMajor = 26
+
+// parallelsLivecheckURL is the update feed Parallels publishes for each major
+// release. Matches the URL used by the official Homebrew cask livecheck.
+const parallelsLivecheckURL = "https://update.parallels.com/desktop/v%d/parallels/parallels_updates.xml"
+
+// parallelsVersionRe extracts the full version string (e.g. "26.2.2-57373")
+// from a DMG file-path entry in the livecheck XML.
+var parallelsVersionRe = regexp.MustCompile(`(?i)ParallelsDesktop[._-]v?(\d+(?:[.\-]\d+)+)\.dmg`)
+
+// parallelsUpdateXML is the minimal XML structure we care about in the livecheck feed.
+type parallelsUpdateXML struct {
+	FilePath string `xml:"FilePath"`
+}
+
+// GetLatestVersion fetches the latest published Parallels Desktop version string
+// from the official Parallels update XML feed (same source the Homebrew cask
+// livecheck uses). Returns a version string such as "26.2.2-57373".
+func (s *ParallelsService) GetLatestVersion() (string, error) {
+	url := fmt.Sprintf(parallelsLivecheckURL, parallelsLatestMajor)
+	s.ctx.LogInfof("[ParallelsDesktop] Fetching latest version from %s", url)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch livecheck XML: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("livecheck XML request returned status %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read livecheck XML body: %w", err)
+	}
+
+	// The feed contains multiple FilePath elements; collect them all.
+	decoder := xml.NewDecoder(bytes.NewReader(body))
+	var latestVersion string
+	for {
+		tok, err := decoder.Token()
+		if err != nil {
+			break
+		}
+		se, ok := tok.(xml.StartElement)
+		if !ok || !strings.EqualFold(se.Name.Local, "FilePath") {
+			continue
+		}
+		var entry parallelsUpdateXML
+		if decErr := decoder.DecodeElement(&entry, &se); decErr != nil {
+			continue
+		}
+		if m := parallelsVersionRe.FindStringSubmatch(entry.FilePath); len(m) > 1 {
+			latestVersion = m[1]
+		}
+	}
+
+	if latestVersion == "" {
+		return "", fmt.Errorf("could not parse a version from livecheck XML at %s", url)
+	}
+
+	s.ctx.LogInfof("[ParallelsDesktop] Latest version from livecheck: %s", latestVersion)
+	return latestVersion, nil
+}
+
 func (s *ParallelsService) InstallFromDmg(asUser, version string, flags map[string]string) error {
 	if s.installed {
 		s.ctx.LogInfof("[ParallelsDesktop] [main] %s already installed", s.Name())
 	} else {
 		if version == "" || version == "latest" {
-			// fallback to a known default if latest is requested and we can't fetch the xml easily
-			// ideally we'd parse the livecheck xml, but for this iteration we'll use a hardcoded recent version or fail
-			version = "20.1.0-55732"
-			s.ctx.LogWarnf("[ParallelsDesktop] [main] Version not specified, defaulting to %s", version)
+			s.ctx.LogInfof("[ParallelsDesktop] [main] Version not specified, fetching latest from Parallels livecheck")
+			latest, err := s.GetLatestVersion()
+			if err != nil {
+				s.ctx.LogWarnf("[ParallelsDesktop] [main] Could not fetch latest version: %v — aborting install", err)
+				return fmt.Errorf("unable to determine latest Parallels Desktop version: %w", err)
+			}
+			version = latest
 		}
 
 		vParts := strings.Split(version, ".")

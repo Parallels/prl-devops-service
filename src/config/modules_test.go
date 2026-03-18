@@ -2,12 +2,18 @@ package config
 
 import (
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
 	str "github.com/stretchr/testify/assert"
 )
+
+// onDarwin reports whether the current platform is macOS.  The darwin-only
+// modules (host, cache, reverse_proxy) are stripped on every other OS, so
+// tests that check for them must guard with this helper.
+var onDarwin = runtime.GOOS == "darwin"
 
 func TestGetEnabledModules_Fallback(t *testing.T) {
 	// Setup
@@ -19,7 +25,12 @@ func TestGetEnabledModules_Fallback(t *testing.T) {
 	// Test Fallback to MODE=api
 	modules := cfg.GetEnabledModules()
 	str.Contains(t, modules, "api")
-	str.Contains(t, modules, "host")
+	str.Contains(t, modules, constants.CORS_MODE)
+	if onDarwin {
+		str.Contains(t, modules, "host")
+	} else {
+		str.NotContains(t, modules, "host")
+	}
 	str.NotContains(t, modules, "catalog")
 	str.NotContains(t, modules, "orchestrator")
 
@@ -28,8 +39,12 @@ func TestGetEnabledModules_Fallback(t *testing.T) {
 	cfg = New(ctx)
 	modules = cfg.GetEnabledModules()
 	str.Contains(t, modules, "api")
-	str.Contains(t, modules, "host")
 	str.Contains(t, modules, "catalog")
+	if onDarwin {
+		str.Contains(t, modules, "host")
+	} else {
+		str.NotContains(t, modules, "host")
+	}
 	str.NotContains(t, modules, "orchestrator")
 
 	// Test Fallback to MODE=orchestrator with different case
@@ -37,26 +52,35 @@ func TestGetEnabledModules_Fallback(t *testing.T) {
 	cfg = New(ctx)
 	modules = cfg.GetEnabledModules()
 	str.Contains(t, modules, "api")
-	str.Contains(t, modules, "host")
-	str.NotContains(t, modules, "catalog")
 	str.Contains(t, modules, "orchestrator")
+	if onDarwin {
+		str.Contains(t, modules, "host")
+	} else {
+		str.NotContains(t, modules, "host")
+	}
+	str.NotContains(t, modules, "catalog")
 }
 
 func TestGetEnabledModules_ReverseProxyFallback(t *testing.T) {
 	// Setup
 	os.Unsetenv(constants.ENABLED_MODULES_ENV_VAR)
-	os.Setenv(constants.MODE_ENV_VAR, "api")             // Ensure API/Host fallback
-	os.Unsetenv(constants.DISABLE_REVERSE_PROXY_ENV_VAR) // Proxy is enabled by default
+	os.Setenv(constants.MODE_ENV_VAR, "api")
+	os.Unsetenv(constants.DISABLE_REVERSE_PROXY_ENV_VAR) // Proxy enabled by default
 	ctx := basecontext.NewBaseContext()
 	cfg := New(ctx)
 
-	// Test Reverse Proxy Fallback (it should be enabled natively if host is enabled)
+	// reverse_proxy is auto-added on darwin when not disabled; stripped on other OSes.
 	modules := cfg.GetEnabledModules()
 	str.Contains(t, modules, "api")
-	str.Contains(t, modules, constants.REVERSE_PROXY_MODE)
-	str.True(t, cfg.IsReverseProxyEnabled())
+	if onDarwin {
+		str.Contains(t, modules, constants.REVERSE_PROXY_MODE)
+		str.True(t, cfg.IsReverseProxyEnabled())
+	} else {
+		str.NotContains(t, modules, constants.REVERSE_PROXY_MODE)
+		str.False(t, cfg.IsReverseProxyEnabled())
+	}
 
-	// Disable it specifically
+	// Disable reverse proxy explicitly — should never appear regardless of OS.
 	os.Setenv(constants.DISABLE_REVERSE_PROXY_ENV_VAR, "true")
 	cfg = New(ctx)
 	modules = cfg.GetEnabledModules()
@@ -65,19 +89,24 @@ func TestGetEnabledModules_ReverseProxyFallback(t *testing.T) {
 }
 
 func TestGetEnabledModules_Explicit(t *testing.T) {
-	// Setup
+	// Setup — explicitly request api, catalog, and reverse_proxy.
+	// On non-darwin systems, reverse_proxy is stripped even when explicitly set.
 	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,catalog,reverse_proxy")
 	ctx := basecontext.NewBaseContext()
 	cfg := New(ctx)
 
-	// Test Explicit
 	modules := cfg.GetEnabledModules()
 	str.Contains(t, modules, "api")
 	str.Contains(t, modules, "catalog")
-	str.Contains(t, modules, constants.REVERSE_PROXY_MODE)
 	str.NotContains(t, modules, "host")
 	str.NotContains(t, modules, "orchestrator")
-	str.True(t, cfg.IsReverseProxyEnabled())
+	if onDarwin {
+		str.Contains(t, modules, constants.REVERSE_PROXY_MODE)
+		str.True(t, cfg.IsReverseProxyEnabled())
+	} else {
+		str.NotContains(t, modules, constants.REVERSE_PROXY_MODE)
+		str.False(t, cfg.IsReverseProxyEnabled())
+	}
 }
 
 func TestGetEnabledModules_EnsureApi(t *testing.T) {
@@ -98,21 +127,11 @@ func TestGetEnabledModules_Validation(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
 	cfg := New(ctx)
 
-	// Test Validation
+	// Test Validation — invalid module is dropped
 	modules := cfg.GetEnabledModules()
 	str.Contains(t, modules, "api")
 	str.Contains(t, modules, "catalog")
 	str.NotContains(t, modules, "invalid_module")
-
-	// Ensure no duplicates if API is added twice or implicit
-	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,API")
-	cfg = New(ctx)
-	modules = cfg.GetEnabledModules()
-	// Count occurrences of api - logic deduplication is not explicitly in current code,
-	// but IsModuleEnabled handles check. However, list might have dupes if not handled.
-	// Current implementation: splitted list -> validation -> ensure api.
-	// Validation preserves duplicates if input has them. Ensure API adds check.
-	// Let's just check invalid removal for now.
 }
 
 func TestIsModuleEnabled(t *testing.T) {
