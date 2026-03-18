@@ -19,7 +19,7 @@ type DeployOrchestratorHostRequest struct {
 
 	// Install options forwarded to the install script
 	RootPassword   string `json:"root_password,omitempty"`
-	EnabledModules string `json:"enabled_modules,omitempty"` // e.g. "api,host,catalog"
+	EnabledModules string `json:"enabled_modules,omitempty"` // e.g. "api,host,catalog,cors"
 	PdVersion      string `json:"pd_version,omitempty"`      // "latest" or explicit e.g. "26.2.2-57373"
 
 	// AgentVersion pins the prldevops binary version installed on the remote host

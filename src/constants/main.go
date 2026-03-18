@@ -55,6 +55,7 @@ const (
 	HOST_MODE              = "host"
 	REVERSE_PROXY_MODE     = "reverse_proxy"
 	CACHE_MODE             = "cache"
+	CORS_MODE              = "cors"
 	VM_FORCE_CACHE_REFRESH = true
 
 	DEFAULT_LOG_FILE_NAME = "prldevops.log"
@@ -67,6 +68,7 @@ var VALID_MODULES = []string{
 	HOST_MODE,
 	REVERSE_PROXY_MODE,
 	CACHE_MODE,
+	CORS_MODE,
 }
 
 const (

@@ -12,7 +12,7 @@ func (s *OrchestratorService) GetHostHealthProbeCheck(host *models.OrchestratorH
 	httpClient := s.getApiClient(*host)
 	httpClient.WithTimeout(s.healthCheckTimeout)
 
-	path := "/api/health/probe"
+	path := "/health/probe"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {
 		return nil, err
