@@ -149,6 +149,15 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 		os.Exit(1)
 	}
 
+	// If a key with this host name already exists (re-deploy), replace it.
+	if existing, _ := dbService.GetApiKey(ctx, hostName); existing != nil {
+		ctx.LogInfof("Existing API key for %q found, replacing it...", hostName)
+		if err := dbService.DeleteApiKey(ctx, existing.ID); err != nil {
+			ctx.LogErrorf("Failed to delete existing API key: %v", err)
+			os.Exit(1)
+		}
+	}
+
 	apiKeyReq := models.ApiKeyRequest{
 		Name:   hostName,
 		Key:    helper.RandomString(32),
@@ -173,7 +182,7 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 
 	// Wait for the service to be healthy again before registering.
 	ctx.LogInfof("Waiting for service to come back up...")
-	if err := waitForHealth(httpClient, fmt.Sprintf("http://localhost:%s/health/probe", agentPort), 60*time.Second); err != nil {
+	if err := waitForHealth(ctx, fmt.Sprintf("http://localhost:%s/health/probe", agentPort), 60*time.Second); err != nil {
 		ctx.LogErrorf("Service did not become healthy after restart: %v", err)
 		os.Exit(1)
 	}
@@ -247,32 +256,46 @@ const launchdPlistPath = "/Library/LaunchDaemons/" + launchdServiceLabel + ".pli
 // restartService restarts the prldevops launchd service on macOS.
 func restartService(ctx basecontext.ApiContext) error {
 	ctx.LogInfof("Restarting %s via launchctl...", launchdServiceLabel)
-	// kickstart -k requires the plist to be loaded; fall back to unload+load which works even when
-	// the service is not yet bootstrapped into the current session.
+
+	// Try kickstart -k first (kills and restarts an already-running service).
 	out, err := exec.Command("launchctl", "kickstart", "-k", "system/"+launchdServiceLabel).CombinedOutput()
-	if err != nil {
-		ctx.LogInfof("kickstart failed (%v: %s), trying unload/load...", err, strings.TrimSpace(string(out)))
-		_ = exec.Command("launchctl", "unload", launchdPlistPath).Run()
-		time.Sleep(1 * time.Second)
-		if err2 := exec.Command("launchctl", "load", "-w", launchdPlistPath).Run(); err2 != nil {
-			return fmt.Errorf("launchctl load failed: %w", err2)
+	ctx.LogInfof("launchctl kickstart: %s", strings.TrimSpace(string(out)))
+	if err == nil {
+		return nil
+	}
+
+	// kickstart failed — the service may not be bootstrapped yet.
+	// Fall back to bootout (unload) + bootstrap (load).
+	ctx.LogInfof("kickstart failed (%v), trying bootout/bootstrap...", err)
+
+	outU, _ := exec.Command("launchctl", "bootout", "system", launchdPlistPath).CombinedOutput()
+	ctx.LogInfof("launchctl bootout: %s", strings.TrimSpace(string(outU)))
+	time.Sleep(1 * time.Second)
+
+	outL, err2 := exec.Command("launchctl", "bootstrap", "system", launchdPlistPath).CombinedOutput()
+	ctx.LogInfof("launchctl bootstrap: %s", strings.TrimSpace(string(outL)))
+	if err2 != nil {
+		// Last resort: legacy load (works on older macOS).
+		outLoad, err3 := exec.Command("launchctl", "load", "-w", launchdPlistPath).CombinedOutput()
+		ctx.LogInfof("launchctl load: %s", strings.TrimSpace(string(outLoad)))
+		if err3 != nil {
+			return fmt.Errorf("all launchctl restart methods failed: kickstart: %v, bootstrap: %v, load: %v", err, err2, err3)
 		}
 	}
 	return nil
 }
 
-// waitForHealth polls the health probe URL until it responds 2xx or the deadline passes.
-func waitForHealth(client *http.Client, probeURL string, timeout time.Duration) error {
+// waitForHealth polls the health probe URL using curl until it responds 2xx or the deadline passes.
+func waitForHealth(ctx basecontext.ApiContext, probeURL string, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
+	attempt := 0
 	for time.Now().Before(deadline) {
-		resp, err := client.Get(probeURL)
-		if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			resp.Body.Close()
+		attempt++
+		out, err := exec.Command("curl", "-sf", "--max-time", "4", probeURL).CombinedOutput()
+		if err == nil {
 			return nil
 		}
-		if resp != nil {
-			resp.Body.Close()
-		}
+		ctx.LogInfof("health check attempt %d: not ready (%v) %s", attempt, err, strings.TrimSpace(string(out)))
 		time.Sleep(2 * time.Second)
 	}
 	return fmt.Errorf("timed out after %s", timeout)
