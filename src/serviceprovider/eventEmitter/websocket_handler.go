@@ -35,6 +35,33 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basec
 			}
 		}
 	}
+	// Validate that the request has an authenticated user before upgrading the
+	// connection.  Checking here (before Upgrade) lets us return a proper HTTP
+	// 401 response instead of a WebSocket close frame, which some clients
+	// misinterpret as a generic error.
+	usr := ctx.GetUser()
+	if usr == nil {
+		// API key auth (IsMicroService=true) does not populate the user.
+		// Allow the connection with a synthetic identity so microservices can
+		// subscribe to events.
+		if authCtx := ctx.GetAuthorizationContext(); authCtx != nil && authCtx.IsMicroService {
+			keyName := authCtx.ApiKeyName
+			if keyName == "" {
+				keyName = "api-key-client"
+			}
+			usr = &models.ApiUser{
+				Username: keyName,
+				Name:     keyName,
+			}
+		} else {
+			ctx.LogErrorf("WebSocket connection attempt without authenticated user")
+			return &models.ApiErrorResponse{
+				Message: "authentication required",
+				Code:    http.StatusUnauthorized,
+			}
+		}
+	}
+
 	typesParam := r.URL.Query().Get("event_types")
 	subscriptions, _ := stringToEventTypes(strings.Split(typesParam, ","))
 
@@ -46,18 +73,6 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basec
 			Message: "Failed to upgrade connection: " + err.Error(),
 			Code:    http.StatusBadRequest,
 		}
-	}
-
-	usr := ctx.GetUser()
-	if usr == nil {
-		ctx.LogErrorf("WebSocket connection without authenticated user")
-		// Connection is already hijacked; send a WebSocket close frame instead of
-		// writing to the HTTP response writer (which would cause a 'hijacked
-		// connection' runtime warning).
-		_ = conn.WriteMessage(websocket.CloseMessage,
-			websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "authentication required"))
-		conn.Close()
-		return nil
 	}
 	// Create client
 	client := &Client{
@@ -117,7 +132,16 @@ func HandleUnsubscribe(w http.ResponseWriter, r *http.Request, ctx basecontext.A
 		return
 	}
 
-	unsubscribed, err := Get().hub.unsubscribeClientFromTypes(request.ClientID, ctx.GetUser().Username, eventTypesList)
+	username := ""
+	if u := ctx.GetUser(); u != nil {
+		username = u.Username
+	} else if authCtx := ctx.GetAuthorizationContext(); authCtx != nil && authCtx.IsMicroService {
+		username = authCtx.ApiKeyName
+		if username == "" {
+			username = "api-key-client"
+		}
+	}
+	unsubscribed, err := Get().hub.unsubscribeClientFromTypes(request.ClientID, username, eventTypesList)
 
 	if len(unsubscribed) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
