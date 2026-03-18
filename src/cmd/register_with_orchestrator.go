@@ -241,17 +241,21 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 	os.Exit(0)
 }
 
+const launchdServiceLabel = "com.parallels.prl-devops-service"
+const launchdPlistPath = "/Library/LaunchDaemons/" + launchdServiceLabel + ".plist"
+
 // restartService restarts the prldevops launchd service on macOS.
 func restartService(ctx basecontext.ApiContext) error {
-	ctx.LogInfof("Restarting prl-devops-service via launchctl...")
-	out, err := exec.Command("launchctl", "kickstart", "-k", "system/com.parallels.prl-devops-service").CombinedOutput()
+	ctx.LogInfof("Restarting %s via launchctl...", launchdServiceLabel)
+	// kickstart -k requires the plist to be loaded; fall back to unload+load which works even when
+	// the service is not yet bootstrapped into the current session.
+	out, err := exec.Command("launchctl", "kickstart", "-k", "system/"+launchdServiceLabel).CombinedOutput()
 	if err != nil {
-		// kickstart -k may fail on older macOS; fall back to stop+start.
-		ctx.LogInfof("kickstart failed (%v), trying stop/start: %s", err, string(out))
-		_ = exec.Command("launchctl", "stop", "com.parallels.prl-devops-service").Run()
-		time.Sleep(2 * time.Second)
-		if err2 := exec.Command("launchctl", "start", "com.parallels.prl-devops-service").Run(); err2 != nil {
-			return fmt.Errorf("launchctl start failed: %w", err2)
+		ctx.LogInfof("kickstart failed (%v: %s), trying unload/load...", err, strings.TrimSpace(string(out)))
+		_ = exec.Command("launchctl", "unload", launchdPlistPath).Run()
+		time.Sleep(1 * time.Second)
+		if err2 := exec.Command("launchctl", "load", "-w", launchdPlistPath).Run(); err2 != nil {
+			return fmt.Errorf("launchctl load failed: %w", err2)
 		}
 	}
 	return nil
