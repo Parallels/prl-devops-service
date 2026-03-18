@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 	"time"
@@ -75,8 +76,16 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 		os.Exit(1)
 	}
 	if enrollmentToken == "" {
-		ctx.LogErrorf("--token is required.")
+		ctx.LogErrorf("--orchestrator-token is required.")
 		os.Exit(1)
+	}
+
+	// Resolve agent port early.
+	if agentPort == "" {
+		agentPort = config.Get().GetKey(constants.API_PORT_ENV_VAR)
+	}
+	if agentPort == "" {
+		agentPort = constants.DEFAULT_API_PORT
 	}
 
 	// --- Parallels Desktop check / install ---
@@ -131,7 +140,9 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 	selfURL := resolveSelfBaseURL(ctx, agentPort)
 	ctx.LogInfof("Agent will advertise URL: %s", selfURL)
 
-	// --- Create a permanent local API key for the orchestrator to call back ---
+	// --- Create a permanent local API key and persist it to disk ---
+	// We write directly to the DB file and then restart the service so that
+	// the running process reloads from disk and sees the new key.
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("Failed to initialise database: %v", err)
@@ -152,6 +163,21 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 		ctx.LogErrorf("Failed to persist API key to disk: %v", err)
 		os.Exit(1)
 	}
+	ctx.LogInfof("API key persisted to disk, restarting service to reload...")
+
+	// Restart the service so it reloads the DB and picks up the new key.
+	if err := restartService(ctx); err != nil {
+		ctx.LogErrorf("Failed to restart service: %v", err)
+		os.Exit(1)
+	}
+
+	// Wait for the service to be healthy again before registering.
+	ctx.LogInfof("Waiting for service to come back up...")
+	if err := waitForHealth(httpClient, fmt.Sprintf("http://localhost:%s/health/probe", agentPort), 60*time.Second); err != nil {
+		ctx.LogErrorf("Service did not become healthy after restart: %v", err)
+		os.Exit(1)
+	}
+	ctx.LogInfof("Service is healthy.")
 
 	// --- Parse tags ---
 	var tags []string
@@ -210,10 +236,42 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 	}
 
 	ctx.LogInfof("Agent registered successfully")
-	// Print the host ID to stdout in a machine-readable form so callers can parse it.
 	fmt.Printf("HOST_ID=%s\n", hostResp.ID)
 
 	os.Exit(0)
+}
+
+// restartService restarts the prldevops launchd service on macOS.
+func restartService(ctx basecontext.ApiContext) error {
+	ctx.LogInfof("Restarting prl-devops-service via launchctl...")
+	out, err := exec.Command("launchctl", "kickstart", "-k", "system/com.parallels.prl-devops-service").CombinedOutput()
+	if err != nil {
+		// kickstart -k may fail on older macOS; fall back to stop+start.
+		ctx.LogInfof("kickstart failed (%v), trying stop/start: %s", err, string(out))
+		_ = exec.Command("launchctl", "stop", "com.parallels.prl-devops-service").Run()
+		time.Sleep(2 * time.Second)
+		if err2 := exec.Command("launchctl", "start", "com.parallels.prl-devops-service").Run(); err2 != nil {
+			return fmt.Errorf("launchctl start failed: %w", err2)
+		}
+	}
+	return nil
+}
+
+// waitForHealth polls the health probe URL until it responds 2xx or the deadline passes.
+func waitForHealth(client *http.Client, probeURL string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		resp, err := client.Get(probeURL)
+		if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			resp.Body.Close()
+			return nil
+		}
+		if resp != nil {
+			resp.Body.Close()
+		}
+		time.Sleep(2 * time.Second)
+	}
+	return fmt.Errorf("timed out after %s", timeout)
 }
 
 // resolveSelfBaseURL returns the URL this agent should advertise to the orchestrator.
