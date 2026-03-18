@@ -161,11 +161,11 @@ func generatePlist(path string, config ApiServiceConfig) (string, error) {
 		TlsCertificate:       config.TLSCertificate,
 		TlsPrivateKey:        config.TLSPrivateKey,
 		TokenDurationMinutes: config.TokenDurationMinutes,
-		EnabledModules:     config.EnabledModules,
-		CorsAllowedOrigins: config.CorsAllowedOrigins,
-		CorsAllowedMethods: config.CorsAllowedMethods,
-		CorsAllowedHeaders: config.CorsAllowedHeaders,
-		LogOutput:          config.LogOutput,
+		EnabledModules:       config.EnabledModules,
+		CorsAllowedOrigins:   config.CorsAllowedOrigins,
+		CorsAllowedMethods:   config.CorsAllowedMethods,
+		CorsAllowedHeaders:   config.CorsAllowedHeaders,
+		LogOutput:            config.LogOutput,
 	}
 	if config.DisableFileLogging {
 		templateData.DisableFileLogging = "true"

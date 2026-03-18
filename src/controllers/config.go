@@ -556,20 +556,22 @@ func StreamSystemLogs() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Gets the Parallels disk space information
-// @Description This endpoint returns the available disk space for the cache folder.
+//	@Summary		Gets the Parallels disk space information
+//	@Description	This endpoint returns the available disk space for the cache folder.
+//
 // It also returns the disk space available and home path configured for a specified user in the Parallels software.
 // If a username is not provided, the current user's home path configured in Parallels will be used.
 // Additionally, if a specific path is provided, the disk space for that path will be returned.
-// @Tags			Config
-// @Produce		json
-// @Param			createRequest	body		models.DiskSpaceAvailableRequest	false	"Disk Space Available Request"
-// @Success		200	{object}	models.DiskSpaceAvailable
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/config/diskspace [post]
+//
+//	@Tags			Config
+//	@Produce		json
+//	@Param			createRequest	body		models.DiskSpaceAvailableRequest	false	"Disk Space Available Request"
+//	@Success		200				{object}	models.DiskSpaceAvailable
+//	@Failure		400				{object}	models.ApiErrorResponse
+//	@Failure		401				{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/config/diskspace [post]
 func GetParallelsDiskSpace() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()

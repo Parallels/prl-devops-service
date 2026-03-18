@@ -129,11 +129,11 @@ func generateSystemdUnit(executablePath string, config ApiServiceConfig) (string
 		TlsCertificate:       config.TLSCertificate,
 		TlsPrivateKey:        config.TLSPrivateKey,
 		TokenDurationMinutes: config.TokenDurationMinutes,
-		EnabledModules:     config.EnabledModules,
-		CorsAllowedOrigins: config.CorsAllowedOrigins,
-		CorsAllowedMethods: config.CorsAllowedMethods,
-		CorsAllowedHeaders: config.CorsAllowedHeaders,
-		DisableFileLogging: config.DisableFileLogging,
+		EnabledModules:       config.EnabledModules,
+		CorsAllowedOrigins:   config.CorsAllowedOrigins,
+		CorsAllowedMethods:   config.CorsAllowedMethods,
+		CorsAllowedHeaders:   config.CorsAllowedHeaders,
+		DisableFileLogging:   config.DisableFileLogging,
 	}
 	if config.EnableTLS {
 		data.EnableTLS = "true"
