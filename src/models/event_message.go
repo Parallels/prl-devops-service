@@ -83,6 +83,10 @@ type VmUpdated struct {
 	NewVm ParallelsVM `json:"new_vm"`
 }
 
+type VmSnapshotsUpdated struct {
+	VmID        string       `json:"vm_id"`
+	VMSnapshots []VMSnapshot `json:"snapshots"`
+}
 type VmUptimeChanged struct {
 	VmID   string `json:"vm_id"`
 	Uptime string `json:"uptime"`

@@ -15,6 +15,7 @@ var (
 	ErrOrchestratorHostNotFound               = errors.NewWithCode("host not found", 404)
 	ErrOrchestratorReverseProxyHostNotFound   = errors.NewWithCode("reverse proxy host not found", 404)
 	ErrOrchestratorHostVirtualMachineNotFound = errors.NewWithCode("host virtual machine not found", 404)
+	ErrOrchestratorHostsVMSnapshotsNotFound   = errors.NewWithCode("VM snapshots not found for host", 404)
 )
 
 func (j *JsonDatabase) GetOrchestratorHosts(ctx basecontext.ApiContext, filter string) ([]models.OrchestratorHost, error) {
@@ -689,4 +690,49 @@ func (j *JsonDatabase) GetOrchestratorReverseProxyConfig(ctx basecontext.ApiCont
 	}
 
 	return host.ReverseProxy, nil
+}
+
+func (j *JsonDatabase) GetHostVMSnapshots(ctx basecontext.ApiContext, hostId string) (*models.HostsVMSnapshotsRecord, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
+	for _, snap := range j.data.HostsVMSnapshots {
+		if snap.HostId == hostId {
+			return &snap, nil
+		}
+	}
+
+	return nil, ErrOrchestratorHostsVMSnapshotsNotFound
+}
+
+func (j *JsonDatabase) SetHostVMSnapshots(ctx basecontext.ApiContext, hostId string, snapshots models.VMSnapshots) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+
+	for i, orchSnap := range j.data.HostsVMSnapshots {
+		if orchSnap.HostId == hostId {
+			if j.data.HostsVMSnapshots[i].VMSnapshots == nil {
+				j.data.HostsVMSnapshots[i].VMSnapshots = make(map[string][]models.VMSnapshot)
+			}
+			j.data.HostsVMSnapshots[i].VMSnapshots[snapshots.VMId] = snapshots.VMSnapshot
+			return nil
+		}
+	}
+
+	j.data.HostsVMSnapshots = append(j.data.HostsVMSnapshots, models.HostsVMSnapshotsRecord{
+		HostId: hostId,
+		VMSnapshots: map[string][]models.VMSnapshot{
+			snapshots.VMId: snapshots.VMSnapshot,
+		},
+	})
+
+	return nil
 }

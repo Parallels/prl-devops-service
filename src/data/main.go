@@ -32,20 +32,22 @@ var (
 )
 
 type Data struct {
-	Schema               models.DatabaseSchema                  `json:"schema"`
-	Configuration        *models.Configuration                  `json:"configuration"`
-	Users                []models.User                          `json:"users"`
-	Claims               []models.Claim                         `json:"claims"`
-	Roles                []models.Role                          `json:"roles"`
-	ApiKeys              []models.ApiKey                        `json:"api_keys"`
-	PackerTemplates      []models.PackerTemplate                `json:"virtual_machine_templates"`
-	ManifestsCatalog     []models.CatalogManifest               `json:"catalog_manifests"`
-	OrchestratorHosts    []models.OrchestratorHost              `json:"orchestrator_hosts"`
-	ReverseProxy         *models.ReverseProxy                   `json:"reverse_proxy"`
-	ReverseProxyHosts    []models.ReverseProxyHost              `json:"reverse_proxy_hosts"`
-	CatalogManagers      []models.CatalogManager                `json:"catalog_managers"`
-	Jobs                 []models.Job                           `json:"jobs"`
-	EnrollmentTokens     []models.OrchestratorEnrollmentToken   `json:"enrollment_tokens"`
+	Schema            models.DatabaseSchema           `json:"schema"`
+	Configuration     *models.Configuration           `json:"configuration"`
+	Users             []models.User                   `json:"users"`
+	Claims            []models.Claim                  `json:"claims"`
+	Roles             []models.Role                   `json:"roles"`
+	ApiKeys           []models.ApiKey                 `json:"api_keys"`
+	PackerTemplates   []models.PackerTemplate         `json:"virtual_machine_templates"`
+	ManifestsCatalog  []models.CatalogManifest        `json:"catalog_manifests"`
+	OrchestratorHosts []models.OrchestratorHost       `json:"orchestrator_hosts"`
+	HostsVMSnapshots  []models.HostsVMSnapshotsRecord `json:"orchestrator_snapshots"`
+	ReverseProxy      *models.ReverseProxy            `json:"reverse_proxy"`
+	ReverseProxyHosts []models.ReverseProxyHost       `json:"reverse_proxy_hosts"`
+	CatalogManagers   []models.CatalogManager         `json:"catalog_managers"`
+	Jobs              []models.Job                    `json:"jobs"`
+	VMSnapshots       []models.VMSnapshots            `json:"vm_snapshots"`
+  EnrollmentTokens     []models.OrchestratorEnrollmentToken   `json:"enrollment_tokens"`
 }
 
 type JsonDatabase struct {
@@ -611,6 +613,8 @@ func (j *JsonDatabase) loadFromEmpty(ctx basecontext.ApiContext) error {
 		ApiKeys:          make([]models.ApiKey, 0),
 		PackerTemplates:  make([]models.PackerTemplate, 0),
 		ManifestsCatalog: make([]models.CatalogManifest, 0),
+		HostsVMSnapshots: make([]models.HostsVMSnapshotsRecord, 0),
+		VMSnapshots:      make([]models.VMSnapshots, 0),
 		CatalogManagers:  make([]models.CatalogManager, 0),
 		Jobs:             make([]models.Job, 0),
 	}

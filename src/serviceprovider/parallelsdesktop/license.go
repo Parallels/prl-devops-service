@@ -90,7 +90,7 @@ func (s *ParallelsService) InstallLicense(licenseKey, username, password string)
 }
 
 func (s *ParallelsService) DeactivateLicense() error {
-	logger.Info("Deactivating Parallels Desktop license")
+	s.ctx.LogInfof("Deactivating Parallels Desktop license")
 	deactivateLicenseCmd := helpers.Command{
 		Command: s.serverExecutable,
 		Args:    []string{"deactivate-license", "--skip-network-errors"},
@@ -101,7 +101,7 @@ func (s *ParallelsService) DeactivateLicense() error {
 		return err
 	}
 
-	logger.Info("Parallels Desktop license deactivated successfully")
+	s.ctx.LogInfof("Parallels Desktop license deactivated successfully")
 
 	return nil
 }
