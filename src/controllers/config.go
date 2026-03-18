@@ -15,6 +15,7 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	diskspace "github.com/Parallels/prl-devops-service/serviceprovider/diskSpace"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 
 	log "github.com/cjlapao/common-go-logger"
@@ -88,6 +89,14 @@ func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 		WithRequiredRole(constants.SUPER_USER_ROLE).
 		WithHandler(GetSystemLogs()).
 		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/config/diskspace").
+		WithHandler(GetParallelsDiskSpace()).
+		Register()
+
 }
 
 // @Summary		Gets Parallels Desktop active license
@@ -337,8 +346,8 @@ func GetHardwareInfo() restapi.ControllerHandler {
 				MaxSize:                 cfg.CacheMaxSize(freeDiskSpace),
 				AllowAboveFreeDiskSpace: cfg.AllowCacheAboveFreeDiskSpace(),
 			}
-			if hardwareInfo.CacheConfig.Folder == "" {
-				hardwareInfo.CacheConfig.Folder = constants.DEFAULT_CATALOG_CACHE_FOLDER
+			if path, err := cfg.CatalogCacheFolder(); err == nil {
+				hardwareInfo.CacheConfig.Folder = path
 			}
 		}
 
@@ -544,5 +553,48 @@ func StreamSystemLogs() restapi.ControllerHandler {
 
 		<-done
 		ctx.Logger().RemoveMessageHandler(subscriptionId)
+	}
+}
+
+//	@Summary		Gets the Parallels disk space information
+//	@Description	This endpoint returns the available disk space for the cache folder.
+//
+// It also returns the disk space available and home path configured for a specified user in the Parallels software.
+// If a username is not provided, the current user's home path configured in Parallels will be used.
+// Additionally, if a specific path is provided, the disk space for that path will be returned.
+//
+//	@Tags			Config
+//	@Produce		json
+//	@Param			createRequest	body		models.DiskSpaceAvailableRequest	false	"Disk Space Available Request"
+//	@Success		200				{object}	models.DiskSpaceAvailable
+//	@Failure		400				{object}	models.ApiErrorResponse
+//	@Failure		401				{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/config/diskspace [post]
+func GetParallelsDiskSpace() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var request models.DiskSpaceAvailableRequest
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		response, err := diskspace.Get(ctx).GetDiskSpaceAvailable(ctx, request.UserName, request.FolderPath)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
 	}
 }
