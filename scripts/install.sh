@@ -243,8 +243,12 @@ function install() {
         CONFIG_EXISTS="true"
       fi
 
-      if [ -f "$SYSTEMD_UNIT" ] && [ "$CONFIG_EXISTS" = "true" ]; then
+      # Use the fast path (restart only) when the service is already fully configured
+      # AND no module override is requested. If --modules is set we must regenerate
+      # the systemd unit so the new ENABLED_MODULES env var is picked up.
+      if [ -f "$SYSTEMD_UNIT" ] && [ "$CONFIG_EXISTS" = "true" ] && [ -z "$MODULES" ]; then
         echo "Service already installed and configured. Updating binary and restarting service."
+        sudo systemctl daemon-reload
         sudo systemctl restart prl-devops-service
       else
         echo "Installing prldevops service"
@@ -254,6 +258,7 @@ function install() {
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SYSTEMD_UNIT" ]; then
           echo "Restarting prl-devops-service"
+          sudo systemctl daemon-reload
           sudo systemctl restart prl-devops-service
         fi
       fi
