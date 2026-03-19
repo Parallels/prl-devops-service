@@ -157,6 +157,7 @@ func processInstallHelp() {
 	fmt.Println("  user\t\twhat user would be used to install the service, by default the current user is defined")
 	fmt.Println("  version\t\tRequest a specific version to be installed")
 	fmt.Println("  modules\t\tComma-separated list of modules to enable (api,host,catalog,orchestrator). api is always included.")
+	fmt.Println("  api-port\t\tPort the API service will listen on (default: 3080)")
 	fmt.Println()
 	fmt.Println("Example:")
 	fmt.Printf("  %v %v git --version=latest", constants.ExecutableName, constants.INSTALL_SERVICE_COMMAND)

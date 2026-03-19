@@ -47,7 +47,8 @@ type Data struct {
 	CatalogManagers   []models.CatalogManager         `json:"catalog_managers"`
 	Jobs              []models.Job                    `json:"jobs"`
 	VMSnapshots       []models.VMSnapshots            `json:"vm_snapshots"`
-  EnrollmentTokens     []models.OrchestratorEnrollmentToken   `json:"enrollment_tokens"`
+  EnrollmentTokens  []models.OrchestratorEnrollmentToken   `json:"enrollment_tokens"`
+  UserConfigs       []models.UserConfig                    `json:"user_configs"`
 }
 
 type JsonDatabase struct {

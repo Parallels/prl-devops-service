@@ -25,7 +25,8 @@ type Controller struct {
 	// ExtraAdapters are injected into the middleware chain just before
 	// EndAuthorizationMiddlewareAdapter, allowing per-endpoint auth extensions
 	// such as enrollment-token support.
-	ExtraAdapters []Adapter
+	ExtraAdapters        []Adapter
+	requiresAuthorization bool
 }
 
 // NewController creates a new instance of the Controller struct with default values.
@@ -134,6 +135,15 @@ func (c *Controller) WithExtraAdapter(adapter Adapter) *Controller {
 	return c
 }
 
+// WithAuthorization marks the controller as requiring authentication even when
+// no specific roles or claims are needed. Use this for endpoints that are
+// user-scoped (e.g. a user reading their own configs) where any valid token
+// should be accepted but the auth middleware must still run to populate GetUser().
+func (c *Controller) WithAuthorization() *Controller {
+	c.requiresAuthorization = true
+	return c
+}
+
 func (c *Controller) Register() *Controller {
 	for _, controller := range c.listener.Controllers {
 		if strings.EqualFold(controller.Path(), c.Path()) && controller.Method == c.Method {
@@ -225,7 +235,7 @@ func (c *Controller) Path() string {
 }
 
 func (c *Controller) NeedsAuthorization() bool {
-	if len(c.RequiredRoles) > 0 || len(c.RequiredClaims) > 0 {
+	if c.requiresAuthorization || len(c.RequiredRoles) > 0 || len(c.RequiredClaims) > 0 {
 		return true
 	}
 

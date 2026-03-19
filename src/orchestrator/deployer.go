@@ -88,6 +88,21 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 		return nil, fmt.Errorf("database unavailable: %w", err)
 	}
 
+	// 0. Guard against duplicate deployments: reject if a host with the same
+	//    description (HostName) or the same SSH host address already exists.
+	existingHosts, err := dbService.GetOrchestratorHosts(ctx, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to check existing hosts: %w", err)
+	}
+	for _, h := range existingHosts {
+		if strings.EqualFold(h.Description, req.HostName) {
+			return nil, fmt.Errorf("a host with the name %q already exists (id: %s)", req.HostName, h.ID)
+		}
+		if strings.EqualFold(h.Host, req.SshHost) {
+			return nil, fmt.Errorf("a host with the address %q already exists (id: %s)", req.SshHost, h.ID)
+		}
+	}
+
 	// 1. Generate a single-use enrollment token bound to the intended host name.
 	ttl := req.EnrollmentTokenTTL
 	if ttl <= 0 {
