@@ -4,6 +4,7 @@ INSTALL_SERVICE="true"
 STD_USER="false"
 PRE_RELEASE="false"
 MODULES=""
+API_PORT=""
 while [[ $# -gt 0 ]]; do
   case $1 in
   -i)
@@ -64,6 +65,11 @@ while [[ $# -gt 0 ]]; do
     ;;
   --modules)
     MODULES=$2
+    shift # past argument
+    shift # past argument
+    ;;
+  --api-port)
+    API_PORT=$2
     shift # past argument
     shift # past argument
     ;;
@@ -217,6 +223,7 @@ function install() {
         echo "Installing prldevops service"
         INSTALL_SVC_CMD=(sudo env ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
         [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
+        [ -n "$API_PORT" ] && INSTALL_SVC_CMD+=(--api-port "$API_PORT")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SERVICE_PLIST" ]; then
           echo "Restarting prl-devops-service"
@@ -243,6 +250,7 @@ function install() {
         echo "Installing prldevops service"
         INSTALL_SVC_CMD=(sudo env ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
         [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
+        [ -n "$API_PORT" ] && INSTALL_SVC_CMD+=(--api-port "$API_PORT")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SYSTEMD_UNIT" ]; then
           echo "Restarting prl-devops-service"
@@ -357,6 +365,7 @@ function install_standard() {
         echo "Installing prldevops service"
         INSTALL_SVC_CMD=(ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
         [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
+        [ -n "$API_PORT" ] && INSTALL_SVC_CMD+=(--api-port "$API_PORT")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SERVICE_PLIST" ]; then
           echo "Restarting prl-devops-service"
@@ -383,6 +392,7 @@ function install_standard() {
         echo "Installing prldevops service"
         INSTALL_SVC_CMD=(ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
         [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
+        [ -n "$API_PORT" ] && INSTALL_SVC_CMD+=(--api-port "$API_PORT")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SYSTEMD_UNIT" ]; then
           echo "Restarting prl-devops-service"
