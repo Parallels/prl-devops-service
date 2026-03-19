@@ -222,8 +222,8 @@ function install() {
       else
         echo "Installing prldevops service"
         INSTALL_SVC_CMD=(sudo env ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
-        [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
-        [ -n "$API_PORT" ] && INSTALL_SVC_CMD+=(--api-port "$API_PORT")
+        [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules="$MODULES")
+        [ -n "$API_PORT" ] && INSTALL_SVC_CMD+=(--api-port="$API_PORT")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SERVICE_PLIST" ]; then
           echo "Restarting prl-devops-service"
@@ -253,8 +253,8 @@ function install() {
       else
         echo "Installing prldevops service"
         INSTALL_SVC_CMD=(sudo env ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
-        [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
-        [ -n "$API_PORT" ] && INSTALL_SVC_CMD+=(--api-port "$API_PORT")
+        [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules="$MODULES")
+        [ -n "$API_PORT" ] && INSTALL_SVC_CMD+=(--api-port="$API_PORT")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SYSTEMD_UNIT" ]; then
           echo "Restarting prl-devops-service"
