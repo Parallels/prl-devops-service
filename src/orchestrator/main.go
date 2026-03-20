@@ -393,11 +393,18 @@ func (s *OrchestratorService) fullRefreshHost(host models.OrchestratorHost, load
 		})
 	}
 
+	// Atomically replace the VM list in the DB. This is the only place that bulk-replaces
+	// VMs; PDFM event handlers use targeted per-VM atomic methods.
+	if err := s.db.ReplaceOrchestratorHostVMs(s.ctx, host.ID, host.VirtualMachines); err != nil {
+		s.ctx.LogErrorf("[Orchestrator] Full refresh: failed to replace VMs for host %s: %v", host.Host, err)
+	}
+
+	// Persist health/resources/config — VMs are managed separately above.
+	host.VirtualMachines = nil
 	_ = s.persistHost(&host)
 
 	host.HealthCheck = nil
 	host.Resources = nil
-	host.VirtualMachines = nil
 	host.ReverseProxy = nil
 	host.ReverseProxyHosts = nil
 	host.CacheItems = nil
