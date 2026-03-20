@@ -36,6 +36,7 @@ type HostWebSocketClient struct {
 	isConnected bool
 	mu          sync.RWMutex
 	stopChan    chan struct{}
+	pingStop    chan struct{}
 	pingTicker  *time.Ticker
 	pongWait    time.Duration
 }
@@ -141,22 +142,6 @@ func (c *HostWebSocketClient) establishConnection(events []constants.EventType) 
 	}
 
 	c.conn = conn
-
-	// Set pong handler: when the host responds to our WebSocket-level ping frame,
-	// dispatch a synthetic health-pong event through the existing handler machinery.
-	// This bypasses the host's application message queue entirely, making the
-	// ping/pong roundtrip much faster than the previous JSON message approach.
-	c.conn.SetPongHandler(func(_ string) error {
-		pongPayload, _ := json.Marshal(api_models.EventMessage{
-			Type:    constants.EventTypeHealth,
-			Message: "pong",
-		})
-		if manager := GetHostWebSocketManager(); manager != nil {
-			manager.DispatchMessage(c.hostID, constants.EventTypeHealth, pongPayload)
-		}
-		return nil
-	})
-
 	c.setConnected(true)
 	c.ctx.LogInfof("[HostWebSocketClient] Connected to host %s", c.hostName)
 

@@ -18,6 +18,8 @@ import (
 	"github.com/Parallels/prl-devops-service/telemetry"
 )
 
+const stalenessMultiplier = 3
+
 var globalOrchestratorService *OrchestratorService
 
 type OrchestratorService struct {
@@ -225,7 +227,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 
 	if manager != nil && manager.IsConnected(host.ID) && host.State == "healthy" {
 		lastUpdated, err := time.Parse(time.RFC3339Nano, host.UpdatedAt)
-		stalenessThreshold := s.refreshInterval * stalenessMultipler
+		stalenessThreshold := s.refreshInterval * stalenessMultiplier
 
 		if err == nil && time.Since(lastUpdated) < stalenessThreshold && !forceRefresh {
 			s.ctx.LogDebugf("[Orchestrator] Host %s is connected and fresh (last updated: %s). Skipping health check.", host.Host, host.UpdatedAt)
