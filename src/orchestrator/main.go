@@ -351,6 +351,8 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 		listVMSnapshotResponse, err := s.GetHostVirtualMachineSnapshotsWithAPI(s.ctx, host.ID, vm.ID, false)
 		if err != nil {
 			s.ctx.LogErrorf("[Orchestrator] Error getting snapshots for VM %s: %v", vm.ID, err.Error())
+			// host might not support snapshots so we will break the loop
+			break
 		}
 		var dbVMSnapshots []models.VMSnapshot
 		if listVMSnapshotResponse != nil {
