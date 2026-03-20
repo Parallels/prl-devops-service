@@ -15,13 +15,19 @@ import (
 )
 
 type PDfMEventHandler struct {
-	registrar       interfaces.HostRegistrar
-	resourceUpdater ResourceUpdater
+	registrar   interfaces.HostRegistrar
+	vmRefresher VMRefresher
 }
 
-// ResourceUpdater interface for updating host resources
+// ResourceUpdater interface for updating host resources (used by HostStatsHandler)
 type ResourceUpdater interface {
 	UpdateHostResourcesForEvent(ctx basecontext.ApiContext, hostID string) error
+}
+
+// VMRefresher fetches a single VM from the host and syncs it to the DB.
+// Called after VM_STATE_CHANGED to capture config that may have changed with the transition.
+type VMRefresher interface {
+	UpdateHostVMForEvent(ctx basecontext.ApiContext, hostID string, vmID string) error
 }
 
 var (
@@ -39,9 +45,9 @@ func NewPDfMEventHandler(registrar interfaces.HostRegistrar) *PDfMEventHandler {
 	return pdfmInstance
 }
 
-// SetResourceUpdater sets the resource updater dependency
-func (h *PDfMEventHandler) SetResourceUpdater(updater ResourceUpdater) {
-	h.resourceUpdater = updater
+// SetVMRefresher sets the VM refresher dependency
+func (h *PDfMEventHandler) SetVMRefresher(refresher VMRefresher) {
+	h.vmRefresher = refresher
 }
 
 func (h *PDfMEventHandler) Handle(ctx basecontext.ApiContext, hostID string, eventType constants.EventType, payload []byte) {
@@ -58,24 +64,18 @@ func (h *PDfMEventHandler) Handle(ctx basecontext.ApiContext, hostID string, eve
 	switch event.Message {
 	case "VM_STATE_CHANGED":
 		h.handleVmStateChange(ctx, hostID, event)
-		h.updateHostResources(ctx, hostID)
 	case "VM_ADDED":
 		h.handleVmAdded(ctx, hostID, event)
-		h.updateHostResources(ctx, hostID)
 	case "VM_REMOVED":
 		h.handleVmRemoved(ctx, hostID, event)
-		h.updateHostResources(ctx, hostID)
 	case "VM_UPDATED":
 		h.handleVmUpdated(ctx, hostID, event)
-		h.updateHostResources(ctx, hostID)
 	case "VM_UPTIME_CHANGED":
 		h.handleVmUptimeChanged(ctx, hostID, event)
 	case "VM_SNAPSHOTS_UPDATED":
 		h.handleVMSnapshotsUpdated(ctx, hostID, event)
-		h.updateHostResources(ctx, hostID)
 	case "MAC_VMS_RUNNING_NOW":
 		h.handleMacVmsRunningNow(ctx, hostID, event)
-		h.updateHostResources(ctx, hostID)
 	default:
 		ctx.LogWarnf("[PDfMEventHandler] Unknown event message : %s", event.Message)
 	}
@@ -182,6 +182,7 @@ func (h *PDfMEventHandler) handleVmStateChange(ctx basecontext.ApiContext, hostI
 		return
 	}
 
+	// Fast path: update state immediately so the UI sees it right away.
 	host.VirtualMachines[vmIndex].State = stateChange.CurrentState
 
 	if err := h.updateHostInDatabase(ctx, host, stateChange.VmID, fmt.Sprintf("state updated to %s", stateChange.CurrentState)); err != nil {
@@ -189,6 +190,16 @@ func (h *PDfMEventHandler) handleVmStateChange(ctx basecontext.ApiContext, hostI
 	}
 
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_STATE_CHANGED", *stateChange)
+
+	// Async full-VM sync: fetch the current VM config from the host to capture any
+	// settings that changed alongside the state transition (IP, RAM, CPU, etc.).
+	if h.vmRefresher != nil {
+		go func() {
+			if err := h.vmRefresher.UpdateHostVMForEvent(ctx, hostID, stateChange.VmID); err != nil {
+				ctx.LogWarnf("[PDfMEventHandler] [orchestrator] Could not sync VM %s config after state change: %v", stateChange.VmID, err)
+			}
+		}()
+	}
 }
 
 func (h *PDfMEventHandler) handleVmAdded(ctx basecontext.ApiContext, hostID string, event models.EventMessage) {
@@ -343,17 +354,6 @@ func (h *PDfMEventHandler) handleMacVmsRunningNow(ctx basecontext.ApiContext, ho
 	h.emitHostVMEvent(ctx, hostID, "HOST_MAC_VMS_RUNNING_NOW", *macVmsRunningNow)
 }
 
-func (h *PDfMEventHandler) updateHostResources(ctx basecontext.ApiContext, hostID string) error {
-	if h.resourceUpdater == nil {
-		ctx.LogWarnf("[PDfMEventHandler] [orchestrator] No resource updater configured - skipping host resource update")
-		return nil
-	}
-	if err := h.resourceUpdater.UpdateHostResourcesForEvent(ctx, hostID); err != nil {
-		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error updating host resources for host %s: %v", hostID, err)
-		return err
-	}
-	return nil
-}
 
 func getHostName(host data_models.OrchestratorHost) string {
 	if host.Description != "" {

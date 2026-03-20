@@ -11,11 +11,6 @@ import (
 )
 
 func (s *OrchestratorService) GetHostReverseProxyConfig(ctx basecontext.ApiContext, hostId string, filter string, useCache bool) (*models.ReverseProxy, error) {
-	if !useCache {
-		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
-		s.Refresh()
-	}
-
 	host, err := s.GetHost(ctx, hostId)
 	if err != nil {
 		return nil, err

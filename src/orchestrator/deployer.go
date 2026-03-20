@@ -230,6 +230,17 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 		}
 	}
 
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_DEPLOYED", apimodels.HostDeployedEvent{
+			HostID:  hostID,
+			Host:    hostURL,
+			Message: "Agent deployed and registered successfully",
+		})
+		if err := emitter.Broadcast(msg); err != nil {
+			ctx.LogInfof("[Orchestrator] Failed to broadcast HOST_DEPLOYED for host %s: %v", hostID, err)
+		}
+	}
+
 	return &apimodels.DeployOrchestratorHostResponse{
 		HostID:  hostID,
 		Host:    hostURL,

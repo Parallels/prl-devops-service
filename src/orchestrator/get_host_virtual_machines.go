@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -138,4 +139,27 @@ func (s *OrchestratorService) GetHostVirtualMachinesInfo(host *models.Orchestrat
 	}
 
 	return response, nil
+}
+
+// CallGetHostVirtualMachineInfo fetches a single VM from the host by ID via HTTP.
+// Used to sync VM config after a state-change event where only partial data is received.
+func (s *OrchestratorService) CallGetHostVirtualMachineInfo(host *models.OrchestratorHost, vmID string) (*api_models.ParallelsVM, error) {
+	httpClient := s.getApiClient(*host)
+	path := fmt.Sprintf("/v1/machines/%s", vmID)
+	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
+	if err != nil {
+		return nil, err
+	}
+
+	var response api_models.ParallelsVM
+	apiResponse, err := httpClient.Get(url.String(), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	if apiResponse.StatusCode != 200 {
+		return nil, errors.NewWithCodef(400, "Error getting virtual machine %s for host %s: %v", vmID, host.Host, apiResponse.StatusCode)
+	}
+
+	return &response, nil
 }
