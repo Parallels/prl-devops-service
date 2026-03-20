@@ -160,7 +160,7 @@ func (s *OrchestratorService) runFullRefreshLoop() {
 			}
 			s.ctx.LogInfof("[Orchestrator] Periodic full refresh for %d hosts", len(dtoOrchestratorHosts))
 			for _, host := range dtoOrchestratorHosts {
-				go s.fullRefreshHost(host, false)
+				go s.fullRefreshHost(host, true)
 			}
 		}
 	}
@@ -317,6 +317,10 @@ func (s *OrchestratorService) fullRefreshHost(host models.OrchestratorHost, load
 		s.ctx.LogErrorf("[Orchestrator] Full refresh: hardware info error for host %s: %v", host.Host, err)
 		return
 	}
+	// Hardware info fetch succeeded — the host is reachable, so mark it healthy
+	// before proceeding. This ensures CallGetHostReverseProxyConfig (which guards
+	// on host.State == HealthyState) can run during the same refresh pass.
+	host.State = HealthyState
 	s.updateHostWithHardwareInfo(&host, hardwareInfo)
 
 	vms, err := s.GetHostVirtualMachinesInfo(&host)
@@ -466,8 +470,9 @@ func (s *OrchestratorService) updateHostWithHardwareInfo(host *models.Orchestrat
 	host.CacheConfig = hardwareInfo.CacheConfig
 	if hardwareInfo.ReverseProxy != nil {
 		host.ReverseProxy = &models.ReverseProxy{
-			Host: hardwareInfo.ReverseProxy.Host,
-			Port: hardwareInfo.ReverseProxy.Port,
+			Host:    hardwareInfo.ReverseProxy.Host,
+			Port:    hardwareInfo.ReverseProxy.Port,
+			Enabled: hardwareInfo.ReverseProxy.Enabled,
 		}
 		host.ReverseProxyHosts = make([]*models.ReverseProxyHost, 0)
 		for _, rpHost := range hardwareInfo.ReverseProxy.Hosts {

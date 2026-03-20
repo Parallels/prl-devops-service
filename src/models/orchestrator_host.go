@@ -127,6 +127,7 @@ type OrchestratorHostResponse struct {
 	ParallelsDesktopVersion  string                 `json:"parallels_desktop_version,omitempty"`
 	ParallelsDesktopLicensed bool                   `json:"parallels_desktop_licensed,omitempty"`
 	HasWebsocketEvents       bool                   `json:"has_websocket_events"`
+	IsLocal                  bool                   `json:"is_local,omitempty"`
 	IsReverseProxyEnabled    bool                   `json:"is_reverse_proxy_enabled"`
 	IsLogStreamingEnabled    bool                   `json:"is_log_streaming_enabled"`
 	EnabledModules           []string               `json:"enabled_modules,omitempty"`

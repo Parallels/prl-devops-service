@@ -198,6 +198,8 @@ func Start(ctx basecontext.ApiContext) {
 					ctx.LogInfof("Creating local orchestrator host")
 					_, _ = dbService.CreateOrchestratorHost(ctx, models.OrchestratorHost{
 						ID:          helpers.GenerateId(),
+						Enabled:     true,
+						IsLocal:     true,
 						Host:        "localhost",
 						Description: constants.LOCAL_ORCHESTRATOR_DESCRIPTION,
 						Tags:        []string{"localhost", "local"},
@@ -209,6 +211,9 @@ func Start(ctx basecontext.ApiContext) {
 						},
 					})
 				} else {
+					// Ensure existing local host has the correct flags, regardless of how it was created
+					localhost.Enabled = true
+					localhost.IsLocal = true
 					if createdKey {
 						secret, err := cryptorand.GetAlphaNumericRandomString(32)
 						if err != nil {
@@ -219,11 +224,11 @@ func Start(ctx basecontext.ApiContext) {
 						localhost.Authentication = &models.OrchestratorHostAuthentication{
 							ApiKey: base64.StdEncoding.EncodeToString([]byte(ORCHESTRATOR_KEY_NAME + ":" + secret)),
 						}
-						_, _ = dbService.UpdateOrchestratorHost(
-							ctx,
-							localhost,
-						)
 					}
+					_, _ = dbService.UpdateOrchestratorHost(
+						ctx,
+						localhost,
+					)
 				}
 			}
 		} else {
