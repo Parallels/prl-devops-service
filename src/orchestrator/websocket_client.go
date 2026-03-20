@@ -20,8 +20,10 @@ import (
 )
 
 const (
-	reconnectInterval = 5 * time.Second
-	maxReconnectDelay = 1 * time.Minute
+	reconnectInterval  = 5 * time.Second
+	maxReconnectDelay  = 1 * time.Minute
+	wsWriteDeadline    = 10 * time.Second
+	stalenessMultipler = 5 // staleness = refreshInterval * stalenessMultipler
 )
 
 type HostWebSocketClient struct {
@@ -36,6 +38,7 @@ type HostWebSocketClient struct {
 	mu          sync.RWMutex
 	stopChan    chan struct{}
 	pingTicker  *time.Ticker
+	pingStop    chan struct{} // closed to stop the current ping goroutine on reconnect
 }
 
 func NewHostWebSocketClient(ctx basecontext.ApiContext, host *models.OrchestratorHost, manager *HostWebSocketManager) *HostWebSocketClient {
@@ -139,6 +142,22 @@ func (c *HostWebSocketClient) establishConnection(events []constants.EventType) 
 	}
 
 	c.conn = conn
+
+	// Set pong handler: when the host responds to our WebSocket-level ping frame,
+	// dispatch a synthetic health-pong event through the existing handler machinery.
+	// This bypasses the host's application message queue entirely, making the
+	// ping/pong roundtrip much faster than the previous JSON message approach.
+	c.conn.SetPongHandler(func(_ string) error {
+		pongPayload, _ := json.Marshal(api_models.EventMessage{
+			Type:    constants.EventTypeHealth,
+			Message: "pong",
+		})
+		if manager := GetHostWebSocketManager(); manager != nil {
+			manager.DispatchMessage(c.hostID, constants.EventTypeHealth, pongPayload)
+		}
+		return nil
+	})
+
 	c.setConnected(true)
 	c.ctx.LogInfof("[HostWebSocketClient] Connected to host %s", c.hostName)
 
@@ -191,25 +210,38 @@ func (c *HostWebSocketClient) Send(message interface{}) error {
 	if c.conn == nil {
 		return fmt.Errorf("not connected")
 	}
+	c.conn.SetWriteDeadline(time.Now().Add(wsWriteDeadline))
 	return c.conn.WriteJSON(message)
 }
 
 func (c *HostWebSocketClient) SendPing() error {
-	pingMsg := map[string]string{
-		"event_type": string(constants.EventTypeHealth),
-		"message":    "ping",
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.conn == nil {
+		return fmt.Errorf("not connected")
 	}
-	c.ctx.LogInfof("[HostWebSocketClient] Sending ping to host %s", c.hostID)
-	return c.Send(pingMsg)
+	c.ctx.LogDebugf("[HostWebSocketClient] Sending ping to host %s", c.hostID)
+	c.conn.SetWriteDeadline(time.Now().Add(wsWriteDeadline))
+	return c.conn.WriteMessage(websocket.PingMessage, nil)
 }
 
 func (c *HostWebSocketClient) startPingRoutine() {
 	c.mu.Lock()
+	// Stop the previous ping goroutine by closing its dedicated stop channel.
+	// This prevents goroutine accumulation across reconnects where old goroutines
+	// would otherwise continue competing for the new ticker.
+	if c.pingStop != nil {
+		close(c.pingStop)
+	}
+	c.pingStop = make(chan struct{})
+	pingStop := c.pingStop // capture by value so the goroutine owns this reference
+
 	if c.pingTicker != nil {
 		c.pingTicker.Stop()
 	}
 	cfg := config.Get()
 	c.pingTicker = time.NewTicker(time.Duration(cfg.OrchestratorPullFrequency()) * time.Second)
+	ticker := c.pingTicker // capture by value to avoid the goroutine reading c.pingTicker after replacement
 	c.mu.Unlock()
 
 	go func() {
@@ -222,7 +254,9 @@ func (c *HostWebSocketClient) startPingRoutine() {
 			select {
 			case <-c.stopChan:
 				return
-			case <-c.pingTicker.C:
+			case <-pingStop:
+				return
+			case <-ticker.C:
 				if err := c.SendPing(); err != nil {
 					c.ctx.LogDebugf("[HostWebSocketClient] Failed to send periodic ping to host %s: %v", c.hostName, err)
 				}

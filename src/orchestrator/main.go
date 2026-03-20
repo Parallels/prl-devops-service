@@ -177,7 +177,7 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 		// Check for staleness
 		// If the host hasn't updated its status (via pong) in a while, we should verify health via HTTP
 		lastUpdated, err := time.Parse(time.RFC3339Nano, host.UpdatedAt)
-		stalenessThreshold := s.refreshInterval * 3
+		stalenessThreshold := s.refreshInterval * stalenessMultipler
 
 		if err == nil && time.Since(lastUpdated) < stalenessThreshold && !forceRefresh {
 			s.ctx.LogDebugf("[Orchestrator] Host %s is connected and fresh (last updated: %s). Skipping HTTP health check.", host.Host, host.UpdatedAt)

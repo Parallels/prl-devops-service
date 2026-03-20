@@ -40,6 +40,7 @@ type EventClientInfo struct {
 	LastPongAt    time.Time             `json:"last_pong_at"`        // Last pong received
 	Subscriptions []constants.EventType `json:"event_subscriptions"` // List of type subscriptions
 	IsAlive       bool                  `json:"is_alive"`            // Connection health status
+	QueueDepth    int                   `json:"queue_depth"`         // Number of pending outbound messages
 }
 
 // EventEmitterStats represents statistics about the event emitter

@@ -101,6 +101,22 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basec
 	return nil
 }
 
+// HandleGetClients writes the list of connected clients (with queue depths) as JSON.
+func HandleGetClients(w http.ResponseWriter, r *http.Request, ctx basecontext.ApiContext) {
+	clients := Get().GetClients()
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(clients)
+}
+
+// HandleGetStats writes aggregate event emitter statistics as JSON.
+func HandleGetStats(w http.ResponseWriter, r *http.Request, ctx basecontext.ApiContext) {
+	stats := Get().GetStats()
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(stats)
+}
+
 func HandleUnsubscribe(w http.ResponseWriter, r *http.Request, ctx basecontext.ApiContext) {
 	var request models.UnsubscribeRequest
 	if err := http_helper.MapRequestBody(r, &request); err != nil {
