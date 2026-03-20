@@ -72,8 +72,7 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 
 	// Initialize WebSocket Manager and Handlers
 	manager := NewHostWebSocketManager(s.ctx)
-	pdfmHandler := handlers.NewPDfMEventHandler(manager)
-	pdfmHandler.SetVMRefresher(s)
+	handlers.NewPDfMEventHandler(manager)
 	handlers.NewHostHealthHandler(manager)
 	statsHandler := handlers.NewHostStatsHandler(manager)
 	statsHandler.SetResourceUpdater(s)
@@ -499,19 +498,39 @@ func (s *OrchestratorService) UpdateHostResourcesForEvent(ctx basecontext.ApiCon
 // Called after VM_STATE_CHANGED so that any config differences (RAM, CPU, IP, etc.)
 // that arrived with or just before the state transition are captured without
 // pulling the entire hardware info or all VMs from the host.
+//
+// IMPORTANT: the HTTP call to the host is made first (slow path), and only THEN
+// do we re-read the host from the DB. This avoids overwriting concurrent DB changes
+// (e.g. a VM_ADDED written by handleVmAdded while the HTTP call was in flight).
 func (s *OrchestratorService) UpdateHostVMForEvent(ctx basecontext.ApiContext, hostID string, vmID string) error {
+	// We need the host's connection info to make the HTTP call, but we must not hold
+	// a stale snapshot of VirtualMachines across the slow network round-trip.
+	// Read a minimal host just for the URL/auth, make the call, then re-read fresh.
+	connHost, err := s.GetDatabaseHost(ctx, hostID)
+	if err != nil {
+		return err
+	}
+	if connHost == nil {
+		return nil
+	}
+
+	// Slow path: fetch the VM from the host. Other events (VM_ADDED, VM_REMOVED, etc.)
+	// may update the DB while we wait here — that is expected and correct.
+	vm, err := s.CallGetHostVirtualMachineInfo(connHost, vmID)
+	if err != nil {
+		ctx.LogErrorf("[Orchestrator] Error fetching VM %s from host %s: %v", vmID, hostID, err)
+		return err
+	}
+
+	// Re-read the host from DB after the HTTP call so we have the latest VirtualMachines
+	// list — any VM_ADDED / VM_REMOVED events that fired during the HTTP call will
+	// already be reflected here, and we won't overwrite them.
 	host, err := s.GetDatabaseHost(ctx, hostID)
 	if err != nil {
 		return err
 	}
 	if host == nil {
 		return nil
-	}
-
-	vm, err := s.CallGetHostVirtualMachineInfo(host, vmID)
-	if err != nil {
-		ctx.LogErrorf("[Orchestrator] Error fetching VM %s from host %s: %v", vmID, hostID, err)
-		return err
 	}
 
 	dtoVm := mappers.MapDtoVirtualMachineFromApi(*vm)
