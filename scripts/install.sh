@@ -94,6 +94,8 @@ if [ -z "$DESTINATION" ]; then
   DESTINATION="/usr/local/bin"
 fi
 
+WORK_DIR=$(mktemp -d)
+trap 'rm -rf "$WORK_DIR"' EXIT
 
 function get_latest_release() {
   if [ "$PRE_RELEASE" = "true" ]; then
@@ -168,7 +170,7 @@ function install() {
 
   echo "Downloading prldevops release from GitHub Releases"
   # Download the file and capture HTTP status code
-  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o "$WORK_DIR/prldevops.tar.gz")
 
   if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
     echo "Error: GitHub API rate limit exceeded during download. Please try again later."
@@ -182,13 +184,13 @@ function install() {
   fi
 
   # Check if the file exists and has content
-  if [ ! -s "prldevops.tar.gz" ]; then
+  if [ ! -s "$WORK_DIR/prldevops.tar.gz" ]; then
     echo "Downloaded file is empty or does not exist"
     exit 1
   fi
 
   echo "Extracting prldevops"
-  if ! tar -xzf prldevops.tar.gz; then
+  if ! tar -xzf "$WORK_DIR/prldevops.tar.gz" -C "$WORK_DIR"; then
     echo "Failed to extract prldevops"
     exit 1
   fi
@@ -203,7 +205,7 @@ function install() {
     sudo rm "$DESTINATION/prldevops"
   fi
   echo "Moving prldevops to $DESTINATION"
-  sudo mv prldevops "$DESTINATION"/prldevops
+  sudo mv "$WORK_DIR/prldevops" "$DESTINATION"/prldevops
   sudo chmod +x "$DESTINATION"/prldevops
 
   if [ "$INSTALL_SERVICE" = "true" ]; then
@@ -265,8 +267,6 @@ function install() {
     fi
   fi
 
-  echo "Cleaning up"
-  rm prldevops.tar.gz
   echo "prldevops $SHORT_VERSION has been installed to $DESTINATION"
 }
 
@@ -315,7 +315,7 @@ function install_standard() {
 
   echo "Downloading prldevops release from GitHub Releases"
   # Download the file and capture HTTP status code
-  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o "$WORK_DIR/prldevops.tar.gz")
 
   if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
     echo "Error: GitHub API rate limit exceeded during download. Please try again later."
@@ -329,13 +329,13 @@ function install_standard() {
   fi
 
   # Check if the file exists and has content
-  if [ ! -s "prldevops.tar.gz" ]; then
+  if [ ! -s "$WORK_DIR/prldevops.tar.gz" ]; then
     echo "Downloaded file is empty or does not exist"
     exit 1
   fi
 
   echo "Extracting prldevops"
-  if ! tar -xzf prldevops.tar.gz; then
+  if ! tar -xzf "$WORK_DIR/prldevops.tar.gz" -C "$WORK_DIR"; then
     echo "Failed to extract prldevops"
     exit 1
   fi
@@ -350,7 +350,7 @@ function install_standard() {
     rm "$DESTINATION/prldevops"
   fi
   echo "Moving prldevops to $DESTINATION"
-  mv prldevops "$DESTINATION"/prldevops
+  mv "$WORK_DIR/prldevops" "$DESTINATION"/prldevops
   chmod +x "$DESTINATION"/prldevops
 
   if [ "$INSTALL_SERVICE" = "true" ]; then
@@ -407,8 +407,6 @@ function install_standard() {
     fi
   fi
 
-  echo "Cleaning up"
-  rm prldevops.tar.gz
   echo "prldevops $SHORT_VERSION has been installed to $DESTINATION"
 }
 
@@ -567,7 +565,7 @@ function update() {
   DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
 
   echo "Downloading prldevops release from GitHub Releases"
-  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o "$WORK_DIR/prldevops.tar.gz")
 
   if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
     echo "Error: GitHub API rate limit exceeded during download. Please try again later."
@@ -579,13 +577,13 @@ function update() {
     exit 1
   fi
 
-  if [ ! -s "prldevops.tar.gz" ]; then
+  if [ ! -s "$WORK_DIR/prldevops.tar.gz" ]; then
     echo "Downloaded file is empty or does not exist"
     exit 1
   fi
 
   echo "Extracting prldevops"
-  if ! tar -xzf prldevops.tar.gz; then
+  if ! tar -xzf "$WORK_DIR/prldevops.tar.gz" -C "$WORK_DIR"; then
     echo "Failed to extract prldevops"
     exit 1
   fi
@@ -594,7 +592,7 @@ function update() {
     sudo rm "$DESTINATION/prldevops"
   fi
   echo "Installing updated prldevops to $DESTINATION"
-  sudo mv prldevops "$DESTINATION"/prldevops
+  sudo mv "$WORK_DIR/prldevops" "$DESTINATION"/prldevops
   sudo chmod +x "$DESTINATION"/prldevops
 
   # Restart the service
@@ -617,8 +615,6 @@ function update() {
     sudo "$DESTINATION"/prldevops update-root-pass --password "$ROOT_PASSWORD"
   fi
 
-  echo "Cleaning up"
-  rm prldevops.tar.gz
   echo "prldevops has been updated to $SHORT_VERSION in $DESTINATION"
 }
 
@@ -682,7 +678,7 @@ function update_standard() {
   DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
 
   echo "Downloading prldevops release from GitHub Releases"
-  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o "$WORK_DIR/prldevops.tar.gz")
 
   if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
     echo "Error: GitHub API rate limit exceeded during download. Please try again later."
@@ -694,13 +690,13 @@ function update_standard() {
     exit 1
   fi
 
-  if [ ! -s "prldevops.tar.gz" ]; then
+  if [ ! -s "$WORK_DIR/prldevops.tar.gz" ]; then
     echo "Downloaded file is empty or does not exist"
     exit 1
   fi
 
   echo "Extracting prldevops"
-  if ! tar -xzf prldevops.tar.gz; then
+  if ! tar -xzf "$WORK_DIR/prldevops.tar.gz" -C "$WORK_DIR"; then
     echo "Failed to extract prldevops"
     exit 1
   fi
@@ -709,7 +705,7 @@ function update_standard() {
     rm "$DESTINATION/prldevops"
   fi
   echo "Installing updated prldevops to $DESTINATION"
-  mv prldevops "$DESTINATION"/prldevops
+  mv "$WORK_DIR/prldevops" "$DESTINATION"/prldevops
   chmod +x "$DESTINATION"/prldevops
 
   # Restart the service
@@ -732,8 +728,6 @@ function update_standard() {
     "$DESTINATION"/prldevops update-root-pass --password "$ROOT_PASSWORD"
   fi
 
-  echo "Cleaning up"
-  rm prldevops.tar.gz
   echo "prldevops has been updated to $SHORT_VERSION in $DESTINATION"
 }
 
