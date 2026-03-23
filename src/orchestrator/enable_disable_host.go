@@ -27,7 +27,8 @@ func (s *OrchestratorService) EnableHost(ctx basecontext.ApiContext, hostIdOrHos
 		return nil, err
 	}
 
-	s.Refresh()
+	// Refresh only this host (hardware info, VMs, reverse proxy, cache)
+	go s.fullRefreshHost(*updatedHost, true)
 
 	manager := GetHostWebSocketManager()
 	if manager != nil {
@@ -56,8 +57,6 @@ func (s *OrchestratorService) DisableHost(ctx basecontext.ApiContext, hostIdOrHo
 	if err != nil {
 		return nil, err
 	}
-
-	s.Refresh()
 
 	manager := GetHostWebSocketManager()
 	if manager != nil {

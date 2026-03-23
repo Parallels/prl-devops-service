@@ -246,7 +246,8 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 				j.data.OrchestratorHosts[i].IsReverseProxyEnabled = host.IsReverseProxyEnabled
 				j.data.OrchestratorHosts[i].IsLogStreamingEnabled = host.IsLogStreamingEnabled
 				j.data.OrchestratorHosts[i].EnabledModules = host.EnabledModules
-				j.data.OrchestratorHosts[i].HasWebsocketEvents = host.HasWebsocketEvents
+				// HasWebsocketEvents is managed exclusively by UpdateOrchestratorHostWebsocketStatus.
+				// Never overwrite here: a stale snapshot fetched before a pong would clobber the correct true value.
 				j.data.OrchestratorHosts[i].ReverseProxy = host.ReverseProxy
 				j.data.OrchestratorHosts[i].ReverseProxyHosts = host.ReverseProxyHosts
 				j.data.OrchestratorHosts[i].CacheConfig = host.CacheConfig

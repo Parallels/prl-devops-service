@@ -221,6 +221,10 @@ func (s *OrchestratorService) processHostWaitingGroup(host models.OrchestratorHo
 // and, when stale, performs an HTTP health probe. Heavy data work (VMs, snapshots,
 // hardware, cache) lives in fullRefreshHost which runs at startup and on a longer interval.
 func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRefresh bool) {
+	if !host.Enabled {
+		return
+	}
+
 	manager := GetHostWebSocketManager()
 	websocketPingFailed := false
 
@@ -237,24 +241,12 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 			return
 		}
 
+		// Host is connected but pong is late — fall back to HTTP for this tick.
+		// Do NOT clear HasWebsocketEvents: the connection is still alive; staleness
+		// only means we haven't received a pong recently. The flag is cleared only
+		// when the connection actually drops (notifyDisconnection / DisconnectHost).
 		s.ctx.LogWarnf("[Orchestrator] Host %s is connected but stale (last updated: %s). Falling back to HTTP health check.", host.Host, host.UpdatedAt)
 		websocketPingFailed = true
-		if host.HasWebsocketEvents {
-			host.HasWebsocketEvents = false
-			if updated, _ := s.db.UpdateOrchestratorHostWebsocketStatus(s.ctx, host.ID, false); updated {
-				if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
-					msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_DISCONNECTED", apimodels.HostHealthUpdate{
-						HostID: host.ID,
-						State:  "websocket_disconnected",
-					})
-					go func() {
-						if err := emitter.Broadcast(msg); err != nil {
-							s.ctx.LogErrorf("[Orchestrator] Failed to broadcast HOST_WEBSOCKET_DISCONNECTED: %v", err)
-						}
-					}()
-				}
-			}
-		}
 	}
 
 	s.ctx.LogDebugf("[Orchestrator] Health checking host %s", host.Host)

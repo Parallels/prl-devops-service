@@ -163,9 +163,19 @@ func Start(ctx basecontext.ApiContext) {
 		// Checking if we need to add the current host to the orchestrator hosts
 		if cfg.UseOrchestratorResources() && canUseOwnResources {
 			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
-				hostName := cfg.Localhost()
 				createdKey := false
-				localhost, _ := dbService.GetOrchestratorHost(ctx, hostName)
+				// Find the local host by description or IsLocal flag — URL matching via
+				// GetOrchestratorHost is unreliable here because the stored host includes
+				// PathPrefix in GetHost() while cfg.Localhost() does not.
+				var localhost *models.OrchestratorHost
+				if allHosts, hErr := dbService.GetOrchestratorHosts(ctx, ""); hErr == nil {
+					for i := range allHosts {
+						if allHosts[i].IsLocal || allHosts[i].Description == constants.LOCAL_ORCHESTRATOR_DESCRIPTION {
+							localhost = &allHosts[i]
+							break
+						}
+					}
+				}
 				apiKey, err := dbService.GetApiKey(ctx, ORCHESTRATOR_KEY_NAME)
 				if err != nil {
 					if errors.GetSystemErrorCode(err) != 404 {
@@ -234,11 +244,14 @@ func Start(ctx basecontext.ApiContext) {
 		} else {
 			// checking if we need to remove the current host from the orchestrator hosts
 			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
-				hostName := cfg.Localhost()
-				localhost, _ := dbService.GetOrchestratorHost(ctx, hostName)
-				if localhost != nil {
-					ctx.LogInfof("Removing local orchestrator host")
-					_ = dbService.DeleteOrchestratorHost(ctx, localhost.ID)
+				if allHosts, hErr := dbService.GetOrchestratorHosts(ctx, ""); hErr == nil {
+					for _, h := range allHosts {
+						if h.IsLocal || h.Description == constants.LOCAL_ORCHESTRATOR_DESCRIPTION {
+							ctx.LogInfof("Removing local orchestrator host")
+							_ = dbService.DeleteOrchestratorHost(ctx, h.ID)
+							break
+						}
+					}
 				}
 				apiKey, _ := dbService.GetApiKey(ctx, ORCHESTRATOR_KEY_NAME)
 				if apiKey != nil {
