@@ -236,7 +236,9 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 				j.data.OrchestratorHosts[i].LastUnhealthy = host.LastUnhealthy
 				j.data.OrchestratorHosts[i].LastUnhealthyErrorMessage = host.LastUnhealthyErrorMessage
 				j.data.OrchestratorHosts[i].HealthCheck = host.HealthCheck
-				j.data.OrchestratorHosts[i].VirtualMachines = host.VirtualMachines
+				// VirtualMachines are managed by atomic per-VM methods (UpsertOrchestratorHostVM,
+				// RemoveOrchestratorHostVM, ReplaceOrchestratorHostVMs). Never overwrite here to
+				// prevent read-modify-write races with concurrent PDFM event handlers.
 				// Other Data
 				j.data.OrchestratorHosts[i].ParallelsDesktopVersion = host.ParallelsDesktopVersion
 				j.data.OrchestratorHosts[i].ParallelsDesktopLicensed = host.ParallelsDesktopLicensed
@@ -244,7 +246,8 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 				j.data.OrchestratorHosts[i].IsReverseProxyEnabled = host.IsReverseProxyEnabled
 				j.data.OrchestratorHosts[i].IsLogStreamingEnabled = host.IsLogStreamingEnabled
 				j.data.OrchestratorHosts[i].EnabledModules = host.EnabledModules
-				j.data.OrchestratorHosts[i].HasWebsocketEvents = host.HasWebsocketEvents
+				// HasWebsocketEvents is managed exclusively by UpdateOrchestratorHostWebsocketStatus.
+				// Never overwrite here: a stale snapshot fetched before a pong would clobber the correct true value.
 				j.data.OrchestratorHosts[i].ReverseProxy = host.ReverseProxy
 				j.data.OrchestratorHosts[i].ReverseProxyHosts = host.ReverseProxyHosts
 				j.data.OrchestratorHosts[i].CacheConfig = host.CacheConfig
@@ -692,6 +695,137 @@ func (j *JsonDatabase) GetOrchestratorReverseProxyConfig(ctx basecontext.ApiCont
 	}
 
 	return host.ReverseProxy, nil
+}
+
+// UpsertOrchestratorHostVM atomically adds or replaces a single VM on a host.
+// If a VM with the same ID exists it is replaced in-place; otherwise it is appended.
+// Holds dataMutex for the entire read-modify-write to eliminate concurrent races.
+func (j *JsonDatabase) UpsertOrchestratorHostVM(ctx basecontext.ApiContext, hostID string, vm models.VirtualMachine) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+
+	for i, host := range j.data.OrchestratorHosts {
+		if strings.EqualFold(host.ID, hostID) {
+			for k, existing := range j.data.OrchestratorHosts[i].VirtualMachines {
+				if existing.ID == vm.ID {
+					j.data.OrchestratorHosts[i].VirtualMachines[k] = vm
+					ctx.LogDebugf("[Database] VM %s updated on host %s", vm.ID, hostID)
+					return nil
+				}
+			}
+			j.data.OrchestratorHosts[i].VirtualMachines = append(j.data.OrchestratorHosts[i].VirtualMachines, vm)
+			ctx.LogDebugf("[Database] VM %s added to host %s", vm.ID, hostID)
+			return nil
+		}
+	}
+
+	return ErrOrchestratorHostNotFound
+}
+
+// RemoveOrchestratorHostVM atomically removes a single VM from a host.
+// Idempotent: returns nil if the VM is not found.
+func (j *JsonDatabase) RemoveOrchestratorHostVM(ctx basecontext.ApiContext, hostID string, vmID string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+
+	for i, host := range j.data.OrchestratorHosts {
+		if strings.EqualFold(host.ID, hostID) {
+			for k, vm := range j.data.OrchestratorHosts[i].VirtualMachines {
+				if vm.ID == vmID {
+					j.data.OrchestratorHosts[i].VirtualMachines = append(
+						j.data.OrchestratorHosts[i].VirtualMachines[:k],
+						j.data.OrchestratorHosts[i].VirtualMachines[k+1:]...)
+					ctx.LogDebugf("[Database] VM %s removed from host %s", vmID, hostID)
+					return nil
+				}
+			}
+			ctx.LogDebugf("[Database] VM %s not found on host %s (already removed)", vmID, hostID)
+			return nil
+		}
+	}
+
+	return ErrOrchestratorHostNotFound
+}
+
+// UpdateOrchestratorHostVMState atomically updates only the State field of a single VM.
+func (j *JsonDatabase) UpdateOrchestratorHostVMState(ctx basecontext.ApiContext, hostID string, vmID string, state string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+
+	for i, host := range j.data.OrchestratorHosts {
+		if strings.EqualFold(host.ID, hostID) {
+			for k, vm := range j.data.OrchestratorHosts[i].VirtualMachines {
+				if vm.ID == vmID {
+					j.data.OrchestratorHosts[i].VirtualMachines[k].State = state
+					ctx.LogDebugf("[Database] VM %s state updated to %s on host %s", vmID, state, hostID)
+					return nil
+				}
+			}
+			ctx.LogWarnf("[Database] VM %s not found on host %s for state update", vmID, hostID)
+			return nil
+		}
+	}
+
+	return ErrOrchestratorHostNotFound
+}
+
+// UpdateOrchestratorHostVMUptime atomically updates only the Uptime field of a single VM.
+func (j *JsonDatabase) UpdateOrchestratorHostVMUptime(ctx basecontext.ApiContext, hostID string, vmID string, uptime string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+
+	for i, host := range j.data.OrchestratorHosts {
+		if strings.EqualFold(host.ID, hostID) {
+			for k, vm := range j.data.OrchestratorHosts[i].VirtualMachines {
+				if vm.ID == vmID {
+					j.data.OrchestratorHosts[i].VirtualMachines[k].Uptime = uptime
+					ctx.LogDebugf("[Database] VM %s uptime updated on host %s", vmID, hostID)
+					return nil
+				}
+			}
+			ctx.LogWarnf("[Database] VM %s not found on host %s for uptime update", vmID, hostID)
+			return nil
+		}
+	}
+
+	return ErrOrchestratorHostNotFound
+}
+
+// ReplaceOrchestratorHostVMs atomically replaces the entire VM list for a host.
+// Used by fullRefreshHost after a complete VM sync from the host API.
+func (j *JsonDatabase) ReplaceOrchestratorHostVMs(ctx basecontext.ApiContext, hostID string, vms []models.VirtualMachine) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+
+	for i, host := range j.data.OrchestratorHosts {
+		if strings.EqualFold(host.ID, hostID) {
+			j.data.OrchestratorHosts[i].VirtualMachines = vms
+			ctx.LogDebugf("[Database] Replaced %d VMs on host %s", len(vms), hostID)
+			return nil
+		}
+	}
+
+	return ErrOrchestratorHostNotFound
 }
 
 func (j *JsonDatabase) GetHostVMSnapshots(ctx basecontext.ApiContext, hostId string) (*models.HostsVMSnapshotsRecord, error) {

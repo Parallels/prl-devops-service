@@ -11,11 +11,6 @@ import (
 )
 
 func (s *OrchestratorService) ConfigureVirtualMachine(ctx basecontext.ApiContext, vmId string, request models.VirtualMachineConfigRequest, noCache bool) (*models.VirtualMachineConfigResponse, error) {
-	if noCache {
-		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
-		s.Refresh()
-	}
-
 	vm, err := s.GetVirtualMachine(ctx, vmId, false)
 	if err != nil {
 		return nil, err
@@ -24,7 +19,7 @@ func (s *OrchestratorService) ConfigureVirtualMachine(ctx basecontext.ApiContext
 		return nil, errors.NewWithCodef(404, "Virtual machine %s not found", vmId)
 	}
 
-	host, err := s.GetHost(ctx, vm.HostId)
+	host, err := s.GetDatabaseHost(ctx, vm.HostId)
 	if err != nil {
 		return nil, err
 	}
@@ -50,11 +45,7 @@ func (s *OrchestratorService) ConfigureVirtualMachine(ctx basecontext.ApiContext
 }
 
 func (s *OrchestratorService) ConfigureHostVirtualMachine(ctx basecontext.ApiContext, hostId string, vmId string, request models.VirtualMachineConfigRequest, useCache bool) (*models.VirtualMachineConfigResponse, error) {
-	if !useCache {
-		s.Refresh()
-	}
-
-	host, err := s.GetHost(ctx, hostId)
+	host, err := s.GetDatabaseHost(ctx, hostId)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +94,5 @@ func (s *OrchestratorService) CallConfigureHostVirtualMachine(host *data_models.
 		return nil, err
 	}
 
-	s.Refresh()
 	return &response, nil
 }

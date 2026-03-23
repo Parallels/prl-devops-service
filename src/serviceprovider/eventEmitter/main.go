@@ -196,6 +196,22 @@ func (e *EventEmitter) IsRunning() bool {
 	return atomic.LoadInt32(&e.isRunning) == 1
 }
 
+// GetClients returns a snapshot of all currently connected clients with their queue depths.
+func (e *EventEmitter) GetClients() []models.EventClientInfo {
+	if !e.IsRunning() || e.hub == nil {
+		return []models.EventClientInfo{}
+	}
+	return e.hub.getClientInfos()
+}
+
+// GetStats returns aggregate statistics about the event emitter and all connected clients.
+func (e *EventEmitter) GetStats() models.EventEmitterStats {
+	if !e.IsRunning() || e.hub == nil {
+		return models.EventEmitterStats{StartTime: e.startTime, Uptime: time.Since(e.startTime).Round(time.Second).String()}
+	}
+	return e.hub.getStats(e.startTime)
+}
+
 // run is the main loop for the hub, managing client registration and command routing.
 func (h *Hub) run() {
 	h.ctx.LogInfof("[Hub] Starting hub message routing")
@@ -479,6 +495,122 @@ func (h *Hub) shutdown() {
 	h.subscriptions = make(map[constants.EventType]map[string]bool)
 	h.ctx.LogInfof("[Hub] All clients disconnected")
 	close(h.shutdownChan)
+}
+
+// getClientInfos returns a snapshot of all connected clients with per-client queue depth.
+// Two-phase approach: collect pointers + subscription index under hub.mu.RLock, then read
+// per-client fields without holding the hub lock to avoid nesting with broadcastMessage's
+// hub.mu.RLock + client.pendingMu path.
+func (h *Hub) getClientInfos() []models.EventClientInfo {
+	h.mu.RLock()
+	clientPtrs := make([]*Client, 0, len(h.clients))
+	for _, c := range h.clients {
+		clientPtrs = append(clientPtrs, c)
+	}
+	// Build reverse subscription index: clientID -> []EventType
+	clientSubs := make(map[string][]constants.EventType, len(h.clients))
+	for eventType, clientSet := range h.subscriptions {
+		for clientID := range clientSet {
+			clientSubs[clientID] = append(clientSubs[clientID], eventType)
+		}
+	}
+	h.mu.RUnlock()
+
+	infos := make([]models.EventClientInfo, 0, len(clientPtrs))
+	for _, c := range clientPtrs {
+		c.mu.RLock()
+		isAlive := c.IsAlive
+		lastPing := c.LastPingAt
+		lastPong := c.LastPongAt
+		c.mu.RUnlock()
+
+		c.pendingMu.Lock()
+		qDepth := len(c.pending)
+		c.pendingMu.Unlock()
+
+		userID := ""
+		username := ""
+		if c.User != nil {
+			userID = c.User.ID
+			username = c.User.Username
+		}
+
+		infos = append(infos, models.EventClientInfo{
+			ID:            c.ID,
+			UserID:        userID,
+			Username:      username,
+			ConnectedAt:   c.ConnectedAt,
+			LastPingAt:    lastPing,
+			LastPongAt:    lastPong,
+			IsAlive:       isAlive,
+			QueueDepth:    qDepth,
+			Subscriptions: clientSubs[c.ID],
+		})
+	}
+	return infos
+}
+
+// getStats returns aggregate statistics about the hub and all connected clients.
+func (h *Hub) getStats(startTime time.Time) models.EventEmitterStats {
+	h.mu.RLock()
+	totalClients := len(h.clients)
+	typeStats := make(map[constants.EventType]int, len(h.subscriptions))
+	totalSubs := 0
+	clientPtrs := make([]*Client, 0, len(h.clients))
+	clientSubs := make(map[string][]constants.EventType, len(h.clients))
+	for eventType, clientSet := range h.subscriptions {
+		count := len(clientSet)
+		typeStats[eventType] = count
+		totalSubs += count
+		for clientID := range clientSet {
+			clientSubs[clientID] = append(clientSubs[clientID], eventType)
+		}
+	}
+	for _, c := range h.clients {
+		clientPtrs = append(clientPtrs, c)
+	}
+	h.mu.RUnlock()
+
+	clientInfos := make([]models.EventClientInfo, 0, len(clientPtrs))
+	for _, c := range clientPtrs {
+		c.mu.RLock()
+		isAlive := c.IsAlive
+		lastPing := c.LastPingAt
+		lastPong := c.LastPongAt
+		c.mu.RUnlock()
+
+		c.pendingMu.Lock()
+		qDepth := len(c.pending)
+		c.pendingMu.Unlock()
+
+		userID := ""
+		username := ""
+		if c.User != nil {
+			userID = c.User.ID
+			username = c.User.Username
+		}
+
+		clientInfos = append(clientInfos, models.EventClientInfo{
+			ID:            c.ID,
+			UserID:        userID,
+			Username:      username,
+			ConnectedAt:   c.ConnectedAt,
+			LastPingAt:    lastPing,
+			LastPongAt:    lastPong,
+			IsAlive:       isAlive,
+			QueueDepth:    qDepth,
+			Subscriptions: clientSubs[c.ID],
+		})
+	}
+
+	return models.EventEmitterStats{
+		TotalClients:       totalClients,
+		TotalSubscriptions: totalSubs,
+		TypeStats:          typeStats,
+		Clients:            clientInfos,
+		StartTime:          startTime,
+		Uptime:             time.Since(startTime).Round(time.Second).String(),
+	}
 }
 
 // RegisterHandler allows services to register for specific message types

@@ -29,6 +29,7 @@ func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.O
 		RequiredRoles:            dto.RequiredRoles,
 		State:                    dto.State,
 		HasWebsocketEvents:       dto.HasWebsocketEvents,
+		IsLocal:                  dto.IsLocal,
 		CacheConfig:              dto.CacheConfig,
 		CacheItems:               dto.CacheItems,
 	}

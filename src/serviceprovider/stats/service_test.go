@@ -58,7 +58,7 @@ func TestStatsService_Run(t *testing.T) {
 		statsBody := msg.Body.(StatsMessage) // Type assertion works because we are in the same package
 
 		assert.Greater(t, statsBody.Memory, uint64(0), "Memory should be greater than 0")
-		assert.GreaterOrEqual(t, statsBody.CpuUserTime, float64(0), "CpuUserTime should be >= 0")
+		assert.GreaterOrEqual(t, statsBody.CPUUserTime, float64(0), "CpuUserTime should be >= 0")
 		assert.Greater(t, statsBody.Goroutines, 0, "Goroutines should be > 0")
 
 	case <-time.After(1 * time.Second):

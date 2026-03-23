@@ -163,9 +163,19 @@ func Start(ctx basecontext.ApiContext) {
 		// Checking if we need to add the current host to the orchestrator hosts
 		if cfg.UseOrchestratorResources() && canUseOwnResources {
 			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
-				hostName := cfg.Localhost()
 				createdKey := false
-				localhost, _ := dbService.GetOrchestratorHost(ctx, hostName)
+				// Find the local host by description or IsLocal flag — URL matching via
+				// GetOrchestratorHost is unreliable here because the stored host includes
+				// PathPrefix in GetHost() while cfg.Localhost() does not.
+				var localhost *models.OrchestratorHost
+				if allHosts, hErr := dbService.GetOrchestratorHosts(ctx, ""); hErr == nil {
+					for i := range allHosts {
+						if allHosts[i].IsLocal || allHosts[i].Description == constants.LOCAL_ORCHESTRATOR_DESCRIPTION {
+							localhost = &allHosts[i]
+							break
+						}
+					}
+				}
 				apiKey, err := dbService.GetApiKey(ctx, ORCHESTRATOR_KEY_NAME)
 				if err != nil {
 					if errors.GetSystemErrorCode(err) != 404 {
@@ -198,6 +208,8 @@ func Start(ctx basecontext.ApiContext) {
 					ctx.LogInfof("Creating local orchestrator host")
 					_, _ = dbService.CreateOrchestratorHost(ctx, models.OrchestratorHost{
 						ID:          helpers.GenerateId(),
+						Enabled:     true,
+						IsLocal:     true,
 						Host:        "localhost",
 						Description: constants.LOCAL_ORCHESTRATOR_DESCRIPTION,
 						Tags:        []string{"localhost", "local"},
@@ -209,6 +221,9 @@ func Start(ctx basecontext.ApiContext) {
 						},
 					})
 				} else {
+					// Ensure existing local host has the correct flags, regardless of how it was created
+					localhost.Enabled = true
+					localhost.IsLocal = true
 					if createdKey {
 						secret, err := cryptorand.GetAlphaNumericRandomString(32)
 						if err != nil {
@@ -219,21 +234,24 @@ func Start(ctx basecontext.ApiContext) {
 						localhost.Authentication = &models.OrchestratorHostAuthentication{
 							ApiKey: base64.StdEncoding.EncodeToString([]byte(ORCHESTRATOR_KEY_NAME + ":" + secret)),
 						}
-						_, _ = dbService.UpdateOrchestratorHost(
-							ctx,
-							localhost,
-						)
 					}
+					_, _ = dbService.UpdateOrchestratorHost(
+						ctx,
+						localhost,
+					)
 				}
 			}
 		} else {
 			// checking if we need to remove the current host from the orchestrator hosts
 			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
-				hostName := cfg.Localhost()
-				localhost, _ := dbService.GetOrchestratorHost(ctx, hostName)
-				if localhost != nil {
-					ctx.LogInfof("Removing local orchestrator host")
-					_ = dbService.DeleteOrchestratorHost(ctx, localhost.ID)
+				if allHosts, hErr := dbService.GetOrchestratorHosts(ctx, ""); hErr == nil {
+					for _, h := range allHosts {
+						if h.IsLocal || h.Description == constants.LOCAL_ORCHESTRATOR_DESCRIPTION {
+							ctx.LogInfof("Removing local orchestrator host")
+							_ = dbService.DeleteOrchestratorHost(ctx, h.ID)
+							break
+						}
+					}
 				}
 				apiKey, _ := dbService.GetApiKey(ctx, ORCHESTRATOR_KEY_NAME)
 				if apiKey != nil {

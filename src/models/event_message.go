@@ -40,6 +40,7 @@ type EventClientInfo struct {
 	LastPongAt    time.Time             `json:"last_pong_at"`        // Last pong received
 	Subscriptions []constants.EventType `json:"event_subscriptions"` // List of type subscriptions
 	IsAlive       bool                  `json:"is_alive"`            // Connection health status
+	QueueDepth    int                   `json:"queue_depth"`         // Number of pending outbound messages
 }
 
 // EventEmitterStats represents statistics about the event emitter
@@ -153,4 +154,21 @@ type CacheItemRemovedEvent struct {
 
 type MacVMsRunningNowEvent struct {
 	MacVmsRunning []string `json:"mac_vms_running"`
+}
+
+type HostAddedEvent struct {
+	HostID      string `json:"host_id"`
+	Host        string `json:"host"`
+	Description string `json:"description,omitempty"`
+}
+
+type HostRemovedEvent struct {
+	HostID string `json:"host_id"`
+	Host   string `json:"host,omitempty"`
+}
+
+type HostDeployedEvent struct {
+	HostID  string `json:"host_id"`
+	Host    string `json:"host,omitempty"`
+	Message string `json:"message,omitempty"`
 }

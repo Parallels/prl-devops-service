@@ -524,7 +524,7 @@ func (s *SystemService) GetHardwareInfo(ctx basecontext.ApiContext) (*models.Sys
 	case "macos":
 		response, err = s.getMacSystemHardwareInfo(ctx)
 	case "linux":
-		return nil, errors.New("Not implemented")
+		response, err = s.getLinuxSystemHardwareInfo(ctx)
 	default:
 		return nil, errors.New("Not implemented")
 	}
@@ -606,6 +606,83 @@ func (s *SystemService) getMacSystemHardwareInfo(ctx basecontext.ApiContext) (*m
 	}
 	result.DiskSize = helpers.ConvertByteToMegabyte(totalDiskInt)
 	result.FreeDiskSize = helpers.ConvertByteToMegabyte(diskAvailableInt)
+
+	return &result, nil
+}
+
+func (s *SystemService) getLinuxSystemHardwareInfo(ctx basecontext.ApiContext) (*models.SystemHardwareInfo, error) {
+	result := models.SystemHardwareInfo{}
+
+	// CPU type (architecture) — reuse the existing Linux helper
+	cpuType, err := s.getLinuxArchitecture(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("linux hardware info: failed to get architecture: %w", err)
+	}
+	result.CpuType = cpuType
+
+	// Parse /proc/cpuinfo for brand, logical CPU count, and physical CPU count
+	cpuInfoBytes, err := os.ReadFile("/proc/cpuinfo")
+	if err != nil {
+		return nil, fmt.Errorf("linux hardware info: failed to read /proc/cpuinfo: %w", err)
+	}
+	cpuInfo := string(cpuInfoBytes)
+
+	physicalIDs := make(map[string]bool)
+	logicalCount := 0
+	for _, line := range strings.Split(cpuInfo, "\n") {
+		switch {
+		case strings.HasPrefix(line, "model name") && result.CpuBrand == "":
+			if parts := strings.SplitN(line, ":", 2); len(parts) == 2 {
+				result.CpuBrand = strings.TrimSpace(parts[1])
+			}
+		case strings.HasPrefix(line, "processor"):
+			logicalCount++
+		case strings.HasPrefix(line, "physical id"):
+			if parts := strings.SplitN(line, ":", 2); len(parts) == 2 {
+				physicalIDs[strings.TrimSpace(parts[1])] = true
+			}
+		}
+	}
+	result.LogicalCpuCount = logicalCount
+	if len(physicalIDs) > 0 {
+		result.PhysicalCpuCount = len(physicalIDs)
+	} else {
+		// Containers often omit physical id — treat all logical CPUs as one socket
+		result.PhysicalCpuCount = 1
+	}
+
+	// Parse /proc/meminfo for total memory (MemTotal is in kB)
+	memInfoBytes, err := os.ReadFile("/proc/meminfo")
+	if err != nil {
+		return nil, fmt.Errorf("linux hardware info: failed to read /proc/meminfo: %w", err)
+	}
+	for _, line := range strings.Split(string(memInfoBytes), "\n") {
+		if strings.HasPrefix(line, "MemTotal:") {
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				kbVal, parseErr := strconv.ParseFloat(fields[1], 64)
+				if parseErr == nil {
+					// /proc/meminfo reports in kB; convert to MB
+					result.MemorySize = kbVal / 1024
+				}
+			}
+			break
+		}
+	}
+
+	// Disk — reuse the existing Unix syscall helpers (work on both Linux and Darwin)
+	totalDiskMB, err := helpers.GetTotalDiskSpace("/")
+	if err != nil {
+		ctx.LogWarnf("[SYSTEM] Linux hardware info: failed to get total disk space: %v", err)
+	} else {
+		result.DiskSize = float64(totalDiskMB)
+	}
+	freeDiskMB, err := helpers.GetFreeDiskSpace("/")
+	if err != nil {
+		ctx.LogWarnf("[SYSTEM] Linux hardware info: failed to get free disk space: %v", err)
+	} else {
+		result.FreeDiskSize = float64(freeDiskMB)
+	}
 
 	return &result, nil
 }
@@ -696,6 +773,28 @@ func (s *SystemService) GetHardwareUsage(ctx basecontext.ApiContext) (*models.Sy
 	}
 
 	result.OsName = s.GetOSName()
+
+	// Populate resource totals from hardware info so the orchestrator can see
+	// CPU and memory for Linux hosts (including containers).
+	hwInfo, err := s.GetHardwareInfo(ctx)
+	if err != nil {
+		ctx.LogWarnf("[SYSTEM] GetHardwareUsage: could not get hardware info: %v", err)
+	} else if hwInfo != nil {
+		result.CpuBrand = hwInfo.CpuBrand
+		result.Total = &models.SystemUsageItem{
+			PhysicalCpuCount: int64(hwInfo.PhysicalCpuCount),
+			LogicalCpuCount:  int64(hwInfo.LogicalCpuCount),
+			MemorySize:       hwInfo.MemorySize,
+			DiskSize:         hwInfo.DiskSize,
+		}
+		// No VMs running on a plain Linux host — available == total
+		result.TotalAvailable = &models.SystemUsageItem{
+			PhysicalCpuCount: int64(hwInfo.PhysicalCpuCount),
+			LogicalCpuCount:  int64(hwInfo.LogicalCpuCount),
+			MemorySize:       hwInfo.MemorySize,
+			DiskSize:         hwInfo.DiskSize,
+		}
+	}
 
 	return result, nil
 }

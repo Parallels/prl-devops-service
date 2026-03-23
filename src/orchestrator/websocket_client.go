@@ -22,6 +22,7 @@ import (
 const (
 	reconnectInterval = 5 * time.Second
 	maxReconnectDelay = 1 * time.Minute
+	wsWriteDeadline   = 10 * time.Second
 )
 
 type HostWebSocketClient struct {
@@ -35,7 +36,9 @@ type HostWebSocketClient struct {
 	isConnected bool
 	mu          sync.RWMutex
 	stopChan    chan struct{}
+	pingStop    chan struct{}
 	pingTicker  *time.Ticker
+	pongWait    time.Duration
 }
 
 func NewHostWebSocketClient(ctx basecontext.ApiContext, host *models.OrchestratorHost, manager *HostWebSocketManager) *HostWebSocketClient {
@@ -142,6 +145,26 @@ func (c *HostWebSocketClient) establishConnection(events []constants.EventType) 
 	c.setConnected(true)
 	c.ctx.LogInfof("[HostWebSocketClient] Connected to host %s", c.hostName)
 
+	// Compute pong wait from config (3× ping interval gives us headroom for 2 missed pings)
+	cfg := config.Get()
+	pingInterval := time.Duration(cfg.OrchestratorPullFrequency()) * time.Second
+	c.pongWait = pingInterval * 3
+
+	// Set pong handler: extend read deadline and dispatch a synthetic pong event so that
+	// HostHealthHandler.handlePong updates UpdatedAt in the DB. This is the ONLY place
+	// that should update UpdatedAt — all other direct writes have been removed.
+	c.conn.SetPongHandler(func(_ string) error {
+		_ = c.conn.SetReadDeadline(time.Now().Add(c.pongWait))
+		manager := GetHostWebSocketManager()
+		if manager != nil {
+			manager.DispatchMessage(c.hostID, constants.EventTypeHealth, []byte(`{"message":"pong"}`))
+		}
+		return nil
+	})
+
+	// Set an initial read deadline; the pong handler will keep extending it.
+	_ = c.conn.SetReadDeadline(time.Now().Add(c.pongWait))
+
 	return nil
 }
 
@@ -191,25 +214,37 @@ func (c *HostWebSocketClient) Send(message interface{}) error {
 	if c.conn == nil {
 		return fmt.Errorf("not connected")
 	}
+	c.conn.SetWriteDeadline(time.Now().Add(wsWriteDeadline))
 	return c.conn.WriteJSON(message)
 }
 
 func (c *HostWebSocketClient) SendPing() error {
-	pingMsg := map[string]string{
-		"event_type": string(constants.EventTypeHealth),
-		"message":    "ping",
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.conn == nil {
+		return fmt.Errorf("not connected")
 	}
-	c.ctx.LogInfof("[HostWebSocketClient] Sending ping to host %s", c.hostID)
-	return c.Send(pingMsg)
+	c.ctx.LogDebugf("[HostWebSocketClient] Sending ping to host %s", c.hostID)
+	return c.conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(wsWriteDeadline))
 }
 
 func (c *HostWebSocketClient) startPingRoutine() {
 	c.mu.Lock()
+	// Stop the previous ping goroutine by closing its dedicated stop channel.
+	// This prevents goroutine accumulation across reconnects where old goroutines
+	// would otherwise continue competing for the new ticker.
+	if c.pingStop != nil {
+		close(c.pingStop)
+	}
+	c.pingStop = make(chan struct{})
+	pingStop := c.pingStop // capture by value so the goroutine owns this reference
+
 	if c.pingTicker != nil {
 		c.pingTicker.Stop()
 	}
 	cfg := config.Get()
 	c.pingTicker = time.NewTicker(time.Duration(cfg.OrchestratorPullFrequency()) * time.Second)
+	ticker := c.pingTicker // capture by value to avoid the goroutine reading c.pingTicker after replacement
 	c.mu.Unlock()
 
 	go func() {
@@ -222,7 +257,9 @@ func (c *HostWebSocketClient) startPingRoutine() {
 			select {
 			case <-c.stopChan:
 				return
-			case <-c.pingTicker.C:
+			case <-pingStop:
+				return
+			case <-ticker.C:
 				if err := c.SendPing(); err != nil {
 					c.ctx.LogDebugf("[HostWebSocketClient] Failed to send periodic ping to host %s: %v", c.hostName, err)
 				}
@@ -354,25 +391,37 @@ func (c *HostWebSocketClient) Probe() bool {
 	}
 	defer conn.Close()
 
-	// Send Ping
-	pingMsg := map[string]string{
-		"type":    string(constants.EventTypeHealth),
-		"message": "ping",
-	}
-	if err := conn.WriteJSON(pingMsg); err != nil {
+	// Use a protocol-level ping; the host auto-responds with a pong frame.
+	pongCh := make(chan struct{}, 1)
+	conn.SetPongHandler(func(_ string) error {
+		select {
+		case pongCh <- struct{}{}:
+		default:
+		}
+		return nil
+	})
+
+	// Drive reads in a goroutine so the pong handler fires
+	_ = conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	go func() {
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}()
+
+	if err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(wsWriteDeadline)); err != nil {
 		c.ctx.LogWarnf("[HostWebSocketClient] Probe failed: write error: %v", err)
 		return false
 	}
 
-	// Wait for Pong (Read message)
-	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
-	_, _, err = conn.ReadMessage()
-	if err != nil {
-		c.ctx.LogWarnf("[HostWebSocketClient] Probe failed: read error (timeout or closed): %v", err)
+	select {
+	case <-pongCh:
+		c.ctx.LogInfof("[HostWebSocketClient] Probe successful for host %s", c.hostName)
+		return true
+	case <-time.After(3 * time.Second):
+		c.ctx.LogWarnf("[HostWebSocketClient] Probe failed: no pong received from host %s", c.hostName)
 		return false
 	}
-
-	// We received a message, assuming it's a pong or at least the connection works
-	c.ctx.LogInfof("[HostWebSocketClient] Probe successful for host %s", c.hostName)
-	return true
 }
