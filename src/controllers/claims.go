@@ -3,10 +3,12 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -56,7 +58,7 @@ func registerClaimsHandlers(ctx basecontext.ApiContext, version string) {
 // @Tags			Claims
 // @Produce		json
 // @Success		200	{object}	[]models.ClaimResponse
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -66,15 +68,20 @@ func GetClaimsHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		getClaimsDiag := errors.NewDiagnostics("/auth/claims [get]")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getClaimsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getClaimsDiag, rsp.Code))
 			return
 		}
 
 		dtoClaims, err := dbService.GetClaims(ctx, GetFilterHeader(r))
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			getClaimsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetClaims")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getClaimsDiag, rsp.Code))
 			return
 		}
 
@@ -101,7 +108,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path		string	true	"Claim ID"
 // @Success		200	{object}	models.ClaimResponse
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -111,9 +118,12 @@ func GetClaimHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		getClaimDiag := errors.NewDiagnostics("/auth/claims/{id} [get]")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getClaimDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getClaimDiag, rsp.Code))
 			return
 		}
 
@@ -122,7 +132,9 @@ func GetClaimHandler() restapi.ControllerHandler {
 
 		dtoClaim, err := dbService.GetClaim(ctx, strings.ToUpper(helpers.NormalizeString(id)))
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
+			rsp := models.NewFromError(err)
+			getClaimDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetClaim")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getClaimDiag, rsp.Code))
 			return
 		}
 
@@ -140,7 +152,7 @@ func GetClaimHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			claimRequest	body		models.ClaimRequest	true	"Claim Request"
 // @Success		200				{object}	models.ClaimResponse
-// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		400				{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401				{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -150,25 +162,24 @@ func CreateClaimHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		createClaimDiag := errors.NewDiagnostics("/auth/claims [post]")
 		var request models.ClaimRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			createClaimDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "MapRequestBody")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createClaimDiag, http.StatusBadRequest))
 			return
 		}
 		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			createClaimDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "Validate")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createClaimDiag, http.StatusBadRequest))
 			return
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			createClaimDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createClaimDiag, rsp.Code))
 			return
 		}
 
@@ -176,7 +187,9 @@ func CreateClaimHandler() restapi.ControllerHandler {
 
 		claim, err := dbService.CreateClaim(ctx, dtoClaim)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			createClaimDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "CreateClaim")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createClaimDiag, rsp.Code))
 			return
 		}
 
@@ -194,7 +207,7 @@ func CreateClaimHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path	string	true	"Claim ID"
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -204,9 +217,12 @@ func DeleteClaimHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		deleteClaimDiag := errors.NewDiagnostics("/auth/claims/{id} [delete]")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			deleteClaimDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteClaimDiag, rsp.Code))
 			return
 		}
 
@@ -215,7 +231,9 @@ func DeleteClaimHandler() restapi.ControllerHandler {
 
 		err = dbService.DeleteClaim(ctx, id)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteClaimDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DeleteClaim")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteClaimDiag, rsp.Code))
 			return
 		}
 
