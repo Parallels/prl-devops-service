@@ -39,6 +39,9 @@ jobs:
           go mod download
       - name: Build
         working-directory: ${{ github.workspace }}/src
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
         run: go build -v ./...
   test:
     needs: build

@@ -269,7 +269,7 @@ func TokenAuthorizationMiddlewareAdapter(
 				user := mappers.DtoUserToApiResponse(*dbUser)
 				authorizationContext.User = &user
 				for _, role := range dbUser.Roles {
-					if strings.EqualFold(role.ID, constants.SUPER_USER_ROLE) {
+					if strings.EqualFold(role.Name, constants.SUPER_USER_ROLE) {
 						authorizationContext.IsSuperUser = true
 						authorizationContext.User.IsSuperUser = true
 						break

@@ -150,3 +150,7 @@ type CacheItemRemovedEvent struct {
 	Version      string `json:"version"`
 	Architecture string `json:"architecture,omitempty"`
 }
+
+type MacVMsRunningNowEvent struct {
+	MacVmsRunning []string `json:"mac_vms_running"`
+}

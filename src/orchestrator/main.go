@@ -70,7 +70,8 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	pdfmHandler := handlers.NewPDfMEventHandler(manager)
 	pdfmHandler.SetResourceUpdater(s)
 	handlers.NewHostHealthHandler(manager)
-	handlers.NewHostStatsHandler(manager)
+	statsHandler := handlers.NewHostStatsHandler(manager)
+	statsHandler.SetResourceUpdater(s)
 	handlers.NewHostLogsHandler(manager)
 	handlers.NewHostCatalogCacheEventHandler(manager, func(hostId string) {
 		go globalOrchestratorService.RefreshHostCache(hostId)
@@ -435,6 +436,8 @@ func (s *OrchestratorService) updateHostWithHardwareInfo(host *models.Orchestrat
 	host.ParallelsDesktopVersion = hardwareInfo.ParallelsDesktopVersion
 	host.ParallelsDesktopLicensed = hardwareInfo.ParallelsDesktopLicensed
 	host.IsReverseProxyEnabled = hardwareInfo.IsReverseProxyEnabled
+	host.IsLogStreamingEnabled = hardwareInfo.IsLogStreamingEnabled
+	host.EnabledModules = hardwareInfo.EnabledModules
 	host.CacheConfig = hardwareInfo.CacheConfig
 	if hardwareInfo.ReverseProxy != nil {
 		host.ReverseProxy = &models.ReverseProxy{

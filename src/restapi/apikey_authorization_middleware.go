@@ -101,6 +101,7 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string, roleC
 			authorizationContext.IsAuthorized = true
 			authorizationContext.IsMicroService = true
 			authorizationContext.AuthorizedBy = "ApiKeyAuthorization"
+			authorizationContext.ApiKeyName = dbApiKey.Name
 			authorizationContext.AuthorizationError = nil
 			ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
 			baseCtx.LogInfof("ApiKey Authorization layer finished")

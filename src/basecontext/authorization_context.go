@@ -18,6 +18,7 @@ type AuthorizationContext struct {
 	IsMicroService     bool
 	IsSuperUser        bool
 	AuthorizedBy       string
+	ApiKeyName         string
 	User               *models.ApiUser
 	AuthorizationError *models.OAuthErrorResponse
 }

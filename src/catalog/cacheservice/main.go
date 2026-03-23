@@ -21,6 +21,7 @@ import (
 	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	global_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	diskspaceservice "github.com/Parallels/prl-devops-service/serviceprovider/diskSpace"
 	"github.com/cjlapao/common-go/helper"
 )
 
@@ -926,7 +927,7 @@ func (cs *CacheService) Cache() error {
 			CacheType:    cs.CacheManifest.CacheType,
 			CachedDate:   cs.CacheManifest.CachedDate,
 		})
-		go func() { _ = emitter.Broadcast(msg) }()
+		go func() { _ = emitter.Broadcast(msg); diskspaceservice.Get(cs.baseCtx).CheckDiskSpaceAndBroadcast() }()
 	}
 	return nil
 }

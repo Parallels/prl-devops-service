@@ -18,12 +18,15 @@ type HostCatalogCacheItem struct {
 }
 
 type HostResourceItem struct {
-	TotalAppleVms    int64   `json:"total_apple_vms,omitempty"`
-	PhysicalCpuCount int64   `json:"physical_cpu_count,omitempty"`
-	LogicalCpuCount  int64   `json:"logical_cpu_count"`
-	MemorySize       float64 `json:"memory_size"`
-	DiskSize         float64 `json:"disk_size,omitempty"`
-	FreeDiskSize     float64 `json:"free_disk_size,omitempty"`
+	TotalAppleVms    int64    `json:"total_apple_vms,omitempty"`
+	PhysicalCpuCount int64    `json:"physical_cpu_count,omitempty"`
+	LogicalCpuCount  int64    `json:"logical_cpu_count"`
+	MemorySize       float64  `json:"memory_size"`
+	DiskSize         float64  `json:"disk_size,omitempty"`
+	FreeDiskSize     float64  `json:"free_disk_size,omitempty"`
+	MacVmsRunning    []string `json:"mac_vms_running,omitempty"`
+	PrlHomeSize      int64    `json:"prl_home_size,omitempty"`
+	PrlHomeFreeSize  int64    `json:"prl_home_free_size,omitempty"`
 }
 
 type HostResources struct {
@@ -125,6 +128,8 @@ type OrchestratorHostResponse struct {
 	ParallelsDesktopLicensed bool                   `json:"parallels_desktop_licensed,omitempty"`
 	HasWebsocketEvents       bool                   `json:"has_websocket_events"`
 	IsReverseProxyEnabled    bool                   `json:"is_reverse_proxy_enabled"`
+	IsLogStreamingEnabled    bool                   `json:"is_log_streaming_enabled"`
+	EnabledModules           []string               `json:"enabled_modules,omitempty"`
 	ReverseProxy             *HostReverseProxy      `json:"reverse_proxy,omitempty"`
 	ReverseProxyHosts        []*ReverseProxyHost    `json:"reverse_proxy_hosts,omitempty"`
 	Resources                HostResourceItem       `json:"resources,omitempty"`

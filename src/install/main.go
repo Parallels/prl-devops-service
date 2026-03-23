@@ -335,29 +335,34 @@ func getConfigFromEnv() ApiServiceConfig {
 	} else if cfg.GetKey(constants.MODE_ENV_VAR) != "" {
 		// Backward compatibility: MODE contains a single mode value
 		config.EnabledModules = normalizeModules(cfg.GetKey(constants.MODE_ENV_VAR))
-	} else {
-		config.EnabledModules = constants.API_MODE
 	}
+	// If neither is set, leave EnabledModules empty so the plist omits the key
+	// entirely and the runtime auto-detects modules based on OS and PD availability.
 	if cfg.GetKey(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR) != "" {
 		config.UseOrchestratorResources = cfg.GetKey(constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR) == "true"
 	}
 
-	// CORS — enable by default with sensible defaults the UI needs
-	config.EnableCors = true
-	if cfg.GetKey(constants.CORS_ALLOWED_ORIGINS_ENV_VAR) != "" {
-		config.CorsAllowedOrigins = cfg.GetKey(constants.CORS_ALLOWED_ORIGINS_ENV_VAR)
-	} else {
-		config.CorsAllowedOrigins = "*"
-	}
-	if cfg.GetKey(constants.CORS_ALLOWED_METHODS_ENV_VAR) != "" {
-		config.CorsAllowedMethods = cfg.GetKey(constants.CORS_ALLOWED_METHODS_ENV_VAR)
-	} else {
-		config.CorsAllowedMethods = "GET,POST,PUT,DELETE,PATCH"
-	}
-	if cfg.GetKey(constants.CORS_ALLOWED_HEADERS_ENV_VAR) != "" {
-		config.CorsAllowedHeaders = cfg.GetKey(constants.CORS_ALLOWED_HEADERS_ENV_VAR)
-	} else {
-		config.CorsAllowedHeaders = "X-Requested-With,Accept,Authorization,Content-Type,Content-Length,Accept-Encoding,X-CSRF-Token,Origin,Access-Control-Request-Method,Access-Control-Request-Headers,x-source-id,X-Source-Id"
+	// CORS — enabled when the cors module is present, or when ENABLE_CORS is
+	// explicitly set, or when no modules are specified (auto-detect at runtime
+	// will include cors by default).
+	corsInModules := strings.Contains(","+strings.ToLower(config.EnabledModules)+",", ","+constants.CORS_MODE+",")
+	if corsInModules || cfg.GetBoolKey(constants.ENABLE_CORS_ENV_VAR) || config.EnabledModules == "" {
+		config.EnableCors = true
+		if cfg.GetKey(constants.CORS_ALLOWED_ORIGINS_ENV_VAR) != "" {
+			config.CorsAllowedOrigins = cfg.GetKey(constants.CORS_ALLOWED_ORIGINS_ENV_VAR)
+		} else {
+			config.CorsAllowedOrigins = "*"
+		}
+		if cfg.GetKey(constants.CORS_ALLOWED_METHODS_ENV_VAR) != "" {
+			config.CorsAllowedMethods = cfg.GetKey(constants.CORS_ALLOWED_METHODS_ENV_VAR)
+		} else {
+			config.CorsAllowedMethods = "GET,POST,PUT,DELETE,PATCH"
+		}
+		if cfg.GetKey(constants.CORS_ALLOWED_HEADERS_ENV_VAR) != "" {
+			config.CorsAllowedHeaders = cfg.GetKey(constants.CORS_ALLOWED_HEADERS_ENV_VAR)
+		} else {
+			config.CorsAllowedHeaders = "X-Requested-With,Accept,Authorization,Content-Type,Content-Length,Accept-Encoding,X-CSRF-Token,Origin,Access-Control-Request-Method,Access-Control-Request-Headers,x-source-id,X-Source-Id"
+		}
 	}
 
 	return config
@@ -380,24 +385,28 @@ func getConfigFromFile(filePath string) (ApiServiceConfig, error) {
 	}
 
 	// Normalise modules: prefer EnabledModules; fall back to Mode for backward compat.
+	// If neither is set, leave empty so the plist omits the key and the runtime
+	// auto-detects modules based on OS and PD availability.
 	if result.EnabledModules != "" {
 		result.EnabledModules = normalizeModules(result.EnabledModules)
 	} else if result.Mode != "" {
 		result.EnabledModules = normalizeModules(result.Mode)
-	} else {
-		result.EnabledModules = constants.API_MODE
 	}
 
-	// Apply CORS defaults when not set in the config file
-	result.EnableCors = true
-	if result.CorsAllowedOrigins == "" {
-		result.CorsAllowedOrigins = "*"
-	}
-	if result.CorsAllowedMethods == "" {
-		result.CorsAllowedMethods = "GET,POST,PUT,DELETE,PATCH"
-	}
-	if result.CorsAllowedHeaders == "" {
-		result.CorsAllowedHeaders = "X-Requested-With,Accept,Authorization,Content-Type,Content-Length,Accept-Encoding,X-CSRF-Token,Origin,Access-Control-Request-Method,Access-Control-Request-Headers,x-source-id,X-Source-Id"
+	// CORS — enabled when the cors module is present, or when EnableCors is
+	// already set in the config file, or when no modules are specified.
+	corsInModules := strings.Contains(","+strings.ToLower(result.EnabledModules)+",", ","+constants.CORS_MODE+",")
+	if corsInModules || result.EnableCors || result.EnabledModules == "" {
+		result.EnableCors = true
+		if result.CorsAllowedOrigins == "" {
+			result.CorsAllowedOrigins = "*"
+		}
+		if result.CorsAllowedMethods == "" {
+			result.CorsAllowedMethods = "GET,POST,PUT,DELETE,PATCH"
+		}
+		if result.CorsAllowedHeaders == "" {
+			result.CorsAllowedHeaders = "X-Requested-With,Accept,Authorization,Content-Type,Content-Length,Accept-Encoding,X-CSRF-Token,Origin,Access-Control-Request-Method,Access-Control-Request-Headers,x-source-id,X-Source-Id"
+		}
 	}
 
 	return result, nil

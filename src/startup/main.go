@@ -20,6 +20,7 @@ import (
 	"github.com/Parallels/prl-devops-service/security/jwt"
 	"github.com/Parallels/prl-devops-service/security/password"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	diskspace "github.com/Parallels/prl-devops-service/serviceprovider/diskSpace"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
 	"github.com/Parallels/prl-devops-service/serviceprovider/health"
 	providerlogs "github.com/Parallels/prl-devops-service/serviceprovider/logs"
@@ -95,10 +96,27 @@ func Start(ctx basecontext.ApiContext) {
 		}
 	}
 
+	// Initialize DiskSpace Service (for Host and Orchestrator modes)
+	if cfg.IsHost() || cfg.IsOrchestrator() {
+		ds := diskspace.New(ctx)
+		provider := serviceprovider.Get()
+		if provider.ParallelsDesktopService != nil {
+			ds.SetParallelsHomePathProvider(provider.ParallelsDesktopService.GetUserHome)
+		}
+		ds.Start()
+	}
+
 	// Seeding defaults
 	ctx.LogInfof("Seeding defaults")
 	if err := SeedDefaults(); err != nil {
 		panic(err)
+	}
+
+	// Clean up expired/used enrollment tokens at startup
+	if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
+		if err := dbService.DeleteExpiredEnrollmentTokens(ctx); err != nil {
+			ctx.LogWarnf("Could not purge expired enrollment tokens: %v", err)
+		}
 	}
 
 	ctx.LogInfof("Applying migrations")

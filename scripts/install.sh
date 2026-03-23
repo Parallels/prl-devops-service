@@ -4,6 +4,7 @@ INSTALL_SERVICE="true"
 STD_USER="false"
 PRE_RELEASE="false"
 MODULES=""
+API_PORT=""
 while [[ $# -gt 0 ]]; do
   case $1 in
   -i)
@@ -67,6 +68,11 @@ while [[ $# -gt 0 ]]; do
     shift # past argument
     shift # past argument
     ;;
+  --api-port)
+    API_PORT=$2
+    shift # past argument
+    shift # past argument
+    ;;
   -r)
     ROOT_PASSWORD=$2
     shift # past argument
@@ -88,6 +94,8 @@ if [ -z "$DESTINATION" ]; then
   DESTINATION="/usr/local/bin"
 fi
 
+WORK_DIR=$(mktemp -d)
+trap 'rm -rf "$WORK_DIR"' EXIT
 
 function get_latest_release() {
   if [ "$PRE_RELEASE" = "true" ]; then
@@ -162,7 +170,7 @@ function install() {
 
   echo "Downloading prldevops release from GitHub Releases"
   # Download the file and capture HTTP status code
-  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o "$WORK_DIR/prldevops.tar.gz")
 
   if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
     echo "Error: GitHub API rate limit exceeded during download. Please try again later."
@@ -176,13 +184,13 @@ function install() {
   fi
 
   # Check if the file exists and has content
-  if [ ! -s "prldevops.tar.gz" ]; then
+  if [ ! -s "$WORK_DIR/prldevops.tar.gz" ]; then
     echo "Downloaded file is empty or does not exist"
     exit 1
   fi
 
   echo "Extracting prldevops"
-  if ! tar -xzf prldevops.tar.gz; then
+  if ! tar -xzf "$WORK_DIR/prldevops.tar.gz" -C "$WORK_DIR"; then
     echo "Failed to extract prldevops"
     exit 1
   fi
@@ -197,7 +205,7 @@ function install() {
     sudo rm "$DESTINATION/prldevops"
   fi
   echo "Moving prldevops to $DESTINATION"
-  sudo mv prldevops "$DESTINATION"/prldevops
+  sudo mv "$WORK_DIR/prldevops" "$DESTINATION"/prldevops
   sudo chmod +x "$DESTINATION"/prldevops
 
   if [ "$INSTALL_SERVICE" = "true" ]; then
@@ -216,7 +224,8 @@ function install() {
       else
         echo "Installing prldevops service"
         INSTALL_SVC_CMD=(sudo env ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
-        [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
+        [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules="$MODULES")
+        [ -n "$API_PORT" ] && INSTALL_SVC_CMD+=(--api-port="$API_PORT")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SERVICE_PLIST" ]; then
           echo "Restarting prl-devops-service"
@@ -236,24 +245,28 @@ function install() {
         CONFIG_EXISTS="true"
       fi
 
-      if [ -f "$SYSTEMD_UNIT" ] && [ "$CONFIG_EXISTS" = "true" ]; then
+      # Use the fast path (restart only) when the service is already fully configured
+      # AND no module override is requested. If --modules is set we must regenerate
+      # the systemd unit so the new ENABLED_MODULES env var is picked up.
+      if [ -f "$SYSTEMD_UNIT" ] && [ "$CONFIG_EXISTS" = "true" ] && [ -z "$MODULES" ]; then
         echo "Service already installed and configured. Updating binary and restarting service."
+        sudo systemctl daemon-reload
         sudo systemctl restart prl-devops-service
       else
         echo "Installing prldevops service"
         INSTALL_SVC_CMD=(sudo env ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
-        [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
+        [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules="$MODULES")
+        [ -n "$API_PORT" ] && INSTALL_SVC_CMD+=(--api-port="$API_PORT")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SYSTEMD_UNIT" ]; then
           echo "Restarting prl-devops-service"
+          sudo systemctl daemon-reload
           sudo systemctl restart prl-devops-service
         fi
       fi
     fi
   fi
 
-  echo "Cleaning up"
-  rm prldevops.tar.gz
   echo "prldevops $SHORT_VERSION has been installed to $DESTINATION"
 }
 
@@ -302,7 +315,7 @@ function install_standard() {
 
   echo "Downloading prldevops release from GitHub Releases"
   # Download the file and capture HTTP status code
-  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o "$WORK_DIR/prldevops.tar.gz")
 
   if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
     echo "Error: GitHub API rate limit exceeded during download. Please try again later."
@@ -316,13 +329,13 @@ function install_standard() {
   fi
 
   # Check if the file exists and has content
-  if [ ! -s "prldevops.tar.gz" ]; then
+  if [ ! -s "$WORK_DIR/prldevops.tar.gz" ]; then
     echo "Downloaded file is empty or does not exist"
     exit 1
   fi
 
   echo "Extracting prldevops"
-  if ! tar -xzf prldevops.tar.gz; then
+  if ! tar -xzf "$WORK_DIR/prldevops.tar.gz" -C "$WORK_DIR"; then
     echo "Failed to extract prldevops"
     exit 1
   fi
@@ -337,7 +350,7 @@ function install_standard() {
     rm "$DESTINATION/prldevops"
   fi
   echo "Moving prldevops to $DESTINATION"
-  mv prldevops "$DESTINATION"/prldevops
+  mv "$WORK_DIR/prldevops" "$DESTINATION"/prldevops
   chmod +x "$DESTINATION"/prldevops
 
   if [ "$INSTALL_SERVICE" = "true" ]; then
@@ -357,6 +370,7 @@ function install_standard() {
         echo "Installing prldevops service"
         INSTALL_SVC_CMD=(ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
         [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
+        [ -n "$API_PORT" ] && INSTALL_SVC_CMD+=(--api-port "$API_PORT")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SERVICE_PLIST" ]; then
           echo "Restarting prl-devops-service"
@@ -383,6 +397,7 @@ function install_standard() {
         echo "Installing prldevops service"
         INSTALL_SVC_CMD=(ROOT_PASSWORD="$ROOT_PASSWORD" "$DESTINATION"/prldevops install service)
         [ -n "$MODULES" ] && INSTALL_SVC_CMD+=(--modules "$MODULES")
+        [ -n "$API_PORT" ] && INSTALL_SVC_CMD+=(--api-port "$API_PORT")
         "${INSTALL_SVC_CMD[@]}"
         if [ -f "$SYSTEMD_UNIT" ]; then
           echo "Restarting prl-devops-service"
@@ -392,8 +407,6 @@ function install_standard() {
     fi
   fi
 
-  echo "Cleaning up"
-  rm prldevops.tar.gz
   echo "prldevops $SHORT_VERSION has been installed to $DESTINATION"
 }
 
@@ -552,7 +565,7 @@ function update() {
   DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
 
   echo "Downloading prldevops release from GitHub Releases"
-  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o "$WORK_DIR/prldevops.tar.gz")
 
   if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
     echo "Error: GitHub API rate limit exceeded during download. Please try again later."
@@ -564,13 +577,13 @@ function update() {
     exit 1
   fi
 
-  if [ ! -s "prldevops.tar.gz" ]; then
+  if [ ! -s "$WORK_DIR/prldevops.tar.gz" ]; then
     echo "Downloaded file is empty or does not exist"
     exit 1
   fi
 
   echo "Extracting prldevops"
-  if ! tar -xzf prldevops.tar.gz; then
+  if ! tar -xzf "$WORK_DIR/prldevops.tar.gz" -C "$WORK_DIR"; then
     echo "Failed to extract prldevops"
     exit 1
   fi
@@ -579,7 +592,7 @@ function update() {
     sudo rm "$DESTINATION/prldevops"
   fi
   echo "Installing updated prldevops to $DESTINATION"
-  sudo mv prldevops "$DESTINATION"/prldevops
+  sudo mv "$WORK_DIR/prldevops" "$DESTINATION"/prldevops
   sudo chmod +x "$DESTINATION"/prldevops
 
   # Restart the service
@@ -602,8 +615,6 @@ function update() {
     sudo "$DESTINATION"/prldevops update-root-pass --password "$ROOT_PASSWORD"
   fi
 
-  echo "Cleaning up"
-  rm prldevops.tar.gz
   echo "prldevops has been updated to $SHORT_VERSION in $DESTINATION"
 }
 
@@ -667,7 +678,7 @@ function update_standard() {
   DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
 
   echo "Downloading prldevops release from GitHub Releases"
-  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o prldevops.tar.gz)
+  HTTP_STATUS=$(curl -sL -w "%{http_code}" "$DOWNLOAD_URL" -o "$WORK_DIR/prldevops.tar.gz")
 
   if [ "$HTTP_STATUS" = "403" ] || [ "$HTTP_STATUS" = "429" ]; then
     echo "Error: GitHub API rate limit exceeded during download. Please try again later."
@@ -679,13 +690,13 @@ function update_standard() {
     exit 1
   fi
 
-  if [ ! -s "prldevops.tar.gz" ]; then
+  if [ ! -s "$WORK_DIR/prldevops.tar.gz" ]; then
     echo "Downloaded file is empty or does not exist"
     exit 1
   fi
 
   echo "Extracting prldevops"
-  if ! tar -xzf prldevops.tar.gz; then
+  if ! tar -xzf "$WORK_DIR/prldevops.tar.gz" -C "$WORK_DIR"; then
     echo "Failed to extract prldevops"
     exit 1
   fi
@@ -694,7 +705,7 @@ function update_standard() {
     rm "$DESTINATION/prldevops"
   fi
   echo "Installing updated prldevops to $DESTINATION"
-  mv prldevops "$DESTINATION"/prldevops
+  mv "$WORK_DIR/prldevops" "$DESTINATION"/prldevops
   chmod +x "$DESTINATION"/prldevops
 
   # Restart the service
@@ -717,8 +728,6 @@ function update_standard() {
     "$DESTINATION"/prldevops update-root-pass --password "$ROOT_PASSWORD"
   fi
 
-  echo "Cleaning up"
-  rm prldevops.tar.gz
   echo "prldevops has been updated to $SHORT_VERSION in $DESTINATION"
 }
 

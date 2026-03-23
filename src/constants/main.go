@@ -27,7 +27,7 @@ const (
 
 const (
 	DEFAULT_API_PREFIX                           = "/api"
-	DEFAULT_API_PORT                             = "80"
+	DEFAULT_API_PORT                             = "3080"
 	DEFAULT_API_TLS_PORT                         = "443"
 	CURRENT_USER_ENV_VAR                         = "PD_CURRENT_USER"
 	DEFAULT_TOKEN_DURATION_MINUTES               = 60
@@ -55,6 +55,7 @@ const (
 	HOST_MODE              = "host"
 	REVERSE_PROXY_MODE     = "reverse_proxy"
 	CACHE_MODE             = "cache"
+	CORS_MODE              = "cors"
 	VM_FORCE_CACHE_REFRESH = true
 
 	DEFAULT_LOG_FILE_NAME = "prldevops.log"
@@ -67,6 +68,7 @@ var VALID_MODULES = []string{
 	HOST_MODE,
 	REVERSE_PROXY_MODE,
 	CACHE_MODE,
+	CORS_MODE,
 }
 
 const (
@@ -122,6 +124,7 @@ const (
 	VM_CACHE_REFRESH_INTERVAL_SECONDS_ENV_VAR               = "VM_CACHE_REFRESH_INTERVAL_SECONDS"
 	ENABLED_MODULES_ENV_VAR                                 = "ENABLED_MODULES"
 	ENABLE_INSECURE_KEY_SSH_ENV_VAR                         = "ENABLE_SSH_INSECURE_KEY"
+	BASE_URL_ENV_VAR                                        = "BASE_URL"
 )
 
 const (
@@ -142,7 +145,8 @@ const (
 	STOP_COMMAND                     = "stop"
 	EXEC_COMMAND                     = "exec"
 	CLONE_COMMAND                    = "clone"
-	INIT_ORCHESTRATOR_CLIENT_COMMAND = "init-orchestrator-client"
+	INIT_ORCHESTRATOR_CLIENT_COMMAND         = "init-orchestrator-client"
+	REGISTER_WITH_ORCHESTRATOR_COMMAND       = "register-with-orchestrator"
 
 	TEST_FLAG                       = "test"
 	TEST_CATALOG_PROVIDERS_FLAG     = "catalog-providers"
@@ -158,6 +162,11 @@ const (
 	ORCHESTRATOR_URL_FLAG           = "orchestrator-url"
 	ORCHESTRATOR_TOKEN_FLAG         = "orchestrator-token"
 	HOST_NAME_FLAG                  = "host-name"
+	TAGS_FLAG                       = "tags"
+	PD_VERSION_FLAG                 = "pd-version"
+
+	ENROLLMENT_TOKEN_HEADER              = "X-Enrollment-Token"
+	DEFAULT_ENROLLMENT_TOKEN_TTL_MINUTES = 15
 )
 
 const (
