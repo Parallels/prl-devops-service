@@ -26,6 +26,8 @@ func TestGetEnabledModules_Fallback(t *testing.T) {
 	modules := cfg.GetEnabledModules()
 	str.Contains(t, modules, "api")
 	str.Contains(t, modules, constants.CORS_MODE)
+	// catalog_manager is auto-enabled when catalog is absent
+	str.Contains(t, modules, constants.CATALOG_MANAGER_MODE)
 	if onDarwin {
 		str.Contains(t, modules, "host")
 	} else {
@@ -34,7 +36,10 @@ func TestGetEnabledModules_Fallback(t *testing.T) {
 	str.NotContains(t, modules, "catalog")
 	str.NotContains(t, modules, "orchestrator")
 
-	// Test Fallback to MODE=catalog
+	// Test Fallback to MODE=catalog.
+	// On macOS, host is also auto-added, so catalog_manager is NOT suppressed
+	// (host + catalog → manager enabled).  On other platforms, catalog is
+	// the sole primary module → manager suppressed.
 	os.Setenv(constants.MODE_ENV_VAR, "catalog")
 	cfg = New(ctx)
 	modules = cfg.GetEnabledModules()
@@ -42,8 +47,10 @@ func TestGetEnabledModules_Fallback(t *testing.T) {
 	str.Contains(t, modules, "catalog")
 	if onDarwin {
 		str.Contains(t, modules, "host")
+		str.Contains(t, modules, constants.CATALOG_MANAGER_MODE)
 	} else {
 		str.NotContains(t, modules, "host")
+		str.NotContains(t, modules, constants.CATALOG_MANAGER_MODE)
 	}
 	str.NotContains(t, modules, "orchestrator")
 
@@ -53,6 +60,8 @@ func TestGetEnabledModules_Fallback(t *testing.T) {
 	modules = cfg.GetEnabledModules()
 	str.Contains(t, modules, "api")
 	str.Contains(t, modules, "orchestrator")
+	// catalog_manager is auto-enabled when catalog is absent
+	str.Contains(t, modules, constants.CATALOG_MANAGER_MODE)
 	if onDarwin {
 		str.Contains(t, modules, "host")
 	} else {
@@ -98,6 +107,8 @@ func TestGetEnabledModules_Explicit(t *testing.T) {
 	modules := cfg.GetEnabledModules()
 	str.Contains(t, modules, "api")
 	str.Contains(t, modules, "catalog")
+	// catalog only (no host/orchestrator) → catalog_manager suppressed
+	str.NotContains(t, modules, constants.CATALOG_MANAGER_MODE)
 	str.NotContains(t, modules, "host")
 	str.NotContains(t, modules, "orchestrator")
 	if onDarwin {
@@ -107,6 +118,65 @@ func TestGetEnabledModules_Explicit(t *testing.T) {
 		str.NotContains(t, modules, constants.REVERSE_PROXY_MODE)
 		str.False(t, cfg.IsReverseProxyEnabled())
 	}
+}
+
+func TestGetEnabledModules_CatalogManagerAutoEnable(t *testing.T) {
+	ctx := basecontext.NewBaseContext()
+
+	// host + orchestrator only (no catalog) — auto-enabled
+	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,host,orchestrator")
+	cfg := New(ctx)
+	modules := cfg.GetEnabledModules()
+	str.Contains(t, modules, constants.CATALOG_MANAGER_MODE)
+	str.True(t, cfg.IsCatalogManager())
+
+	// catalog alone (pure catalog server) — suppressed
+	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,catalog")
+	cfg = New(ctx)
+	modules = cfg.GetEnabledModules()
+	str.NotContains(t, modules, constants.CATALOG_MANAGER_MODE)
+	str.False(t, cfg.IsCatalogManager())
+
+	// catalog + host — host is darwin-only; on Linux it is stripped leaving a
+	// pure catalog node where catalog_manager is suppressed.
+	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,catalog,host")
+	cfg = New(ctx)
+	modules = cfg.GetEnabledModules()
+	if onDarwin {
+		str.Contains(t, modules, constants.CATALOG_MANAGER_MODE)
+		str.True(t, cfg.IsCatalogManager())
+	} else {
+		str.NotContains(t, modules, constants.CATALOG_MANAGER_MODE)
+		str.False(t, cfg.IsCatalogManager())
+	}
+
+	// catalog + orchestrator — orchestrator present so catalog_manager is enabled
+	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,catalog,orchestrator")
+	cfg = New(ctx)
+	modules = cfg.GetEnabledModules()
+	str.Contains(t, modules, constants.CATALOG_MANAGER_MODE)
+	str.True(t, cfg.IsCatalogManager())
+
+	// all three primary modules — catalog_manager is enabled
+	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,host,catalog,orchestrator")
+	cfg = New(ctx)
+	modules = cfg.GetEnabledModules()
+	str.Contains(t, modules, constants.CATALOG_MANAGER_MODE)
+	str.True(t, cfg.IsCatalogManager())
+
+	// catalog_manager explicitly listed without catalog — must remain
+	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,catalog_manager")
+	cfg = New(ctx)
+	modules = cfg.GetEnabledModules()
+	str.Contains(t, modules, constants.CATALOG_MANAGER_MODE)
+	str.True(t, cfg.IsCatalogManager())
+
+	// catalog alone + catalog_manager explicitly — pure catalog server wins, manager stripped
+	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,catalog,catalog_manager")
+	cfg = New(ctx)
+	modules = cfg.GetEnabledModules()
+	str.NotContains(t, modules, constants.CATALOG_MANAGER_MODE)
+	str.False(t, cfg.IsCatalogManager())
 }
 
 func TestGetEnabledModules_EnsureApi(t *testing.T) {

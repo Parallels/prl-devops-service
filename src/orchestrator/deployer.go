@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,31 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/serviceprovider/ssh"
 )
+
+// ansiEscape matches ANSI/VT100 escape sequences (colors, cursor moves, etc.)
+var ansiEscape = regexp.MustCompile(`\x1b(\[[0-9;]*[A-Za-z]|[^[]|]|\][^\x07]*\x07)`)
+
+// stripAnsiCodes removes all ANSI escape sequences from s.
+func stripAnsiCodes(s string) string {
+	return ansiEscape.ReplaceAllString(s, "")
+}
+
+// cleanOutput strips ANSI codes, normalises \r\n → \n, trims each line, and
+// drops blank lines so the result is human-readable plain text.
+func cleanOutput(s string) string {
+	s = stripAnsiCodes(s)
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	lines := strings.Split(s, "\n")
+	out := make([]string, 0, len(lines))
+	for _, l := range lines {
+		l = strings.TrimSpace(l)
+		if l != "" {
+			out = append(out, l)
+		}
+	}
+	return strings.Join(out, "\n")
+}
 
 // shellSingleQuote wraps s in single quotes and escapes any embedded single
 // quotes so the result is safe to pass as a shell argument.
@@ -82,7 +108,15 @@ func resolveOrchestratorBaseURL(ctx basecontext.ApiContext) string {
 // DeployAndRegisterAgent installs the devops agent on a remote host via SSH and
 // registers it with this orchestrator instance.  It is called by both the
 // synchronous and asynchronous deploy handlers.
-func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext, req apimodels.DeployOrchestratorHostRequest, onOutput func(string)) (*apimodels.DeployOrchestratorHostResponse, error) {
+// onProgress is an optional callback invoked at key stages with a completion
+// percentage (0–100) and a short status message.
+func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext, req apimodels.DeployOrchestratorHostRequest, onOutput func(string), onProgress func(int, string)) (*apimodels.DeployOrchestratorHostResponse, error) {
+	progress := func(pct int, msg string) {
+		if onProgress != nil {
+			onProgress(pct, msg)
+		}
+	}
+
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("database unavailable: %w", err)
@@ -102,6 +136,7 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 			return nil, fmt.Errorf("a host with the address %q already exists (id: %s)", req.SshHost, h.ID)
 		}
 	}
+	progress(5, "Configuration validated")
 
 	// 1. Generate a single-use enrollment token bound to the intended host name.
 	ttl := req.EnrollmentTokenTTL
@@ -112,24 +147,24 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 	if err != nil {
 		return nil, fmt.Errorf("failed to create enrollment token: %w", err)
 	}
+	progress(10, "Enrollment token generated")
 
 	// 2. Determine the URL the agent will use to reach this orchestrator.
 	orchURL := resolveOrchestratorBaseURL(ctx)
 
 	// 3. Build the remote command sequence.
 	//    Step A – install the service.
+	//    Values are shell-quoted so that passwords or module names containing
+	//    special characters or spaces don't break the remote shell command.
 	installArgs := []string{}
 	if req.RootPassword != "" {
-		installArgs = append(installArgs, "--root-password", req.RootPassword)
+		installArgs = append(installArgs, "--root-password", shellSingleQuote(req.RootPassword))
 	}
 	if req.EnabledModules != "" {
-		installArgs = append(installArgs, "--modules", req.EnabledModules)
-	}
-	if req.PdVersion != "" {
-		installArgs = append(installArgs, "--pd-version", req.PdVersion)
+		installArgs = append(installArgs, "--modules", shellSingleQuote(req.EnabledModules))
 	}
 	if req.AgentVersion != "" {
-		installArgs = append(installArgs, "--version", req.AgentVersion)
+		installArgs = append(installArgs, "--version", shellSingleQuote(req.AgentVersion))
 	} else if req.PreRelease {
 		installArgs = append(installArgs, "--pre-release")
 	}
@@ -163,9 +198,12 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 	)
 
 	// Wait for the service to be reachable before registering.
+	// The loop explicitly exits 1 on the final attempt so that the && chain
+	// short-circuits and the job is marked failed instead of silently continuing
+	// to the register step against a dead agent.
 	healthCmd := fmt.Sprintf(
-		`for i in $(seq 1 30); do curl -sf http://localhost:%s/api/health/probe && break || sleep 2; done`,
-		agentPort,
+		`for i in $(seq 1 30); do curl -sf http://localhost:%s/api/health/probe && break; if [ "$i" -eq 30 ]; then echo "Agent did not become reachable on port %s after 30 attempts" >&2; exit 1; fi; sleep 2; done`,
+		agentPort, agentPort,
 	)
 
 	fullCmd := fmt.Sprintf("%s && %s && %s", installCmd, healthCmd, registerCmd)
@@ -194,18 +232,28 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 	}
 
 	// Wrap the caller's callback so every line is also logged at info level.
+	// ANSI color codes and trailing carriage returns are stripped before
+	// logging or forwarding so that job messages are plain text regardless
+	// of the remote terminal's color output.
 	lineHandler := func(line string) {
-		ctx.LogInfof("[deploy %s] %s", req.HostName, line)
+		clean := strings.TrimRight(stripAnsiCodes(line), "\r")
+		if clean == "" {
+			return
+		}
+		ctx.LogInfof("[deploy %s] %s", req.HostName, clean)
 		if onOutput != nil {
-			onOutput(line)
+			onOutput(clean)
 		}
 	}
 
+	progress(15, "Connecting to host via SSH")
 	sshSvc := ssh.New(ctx)
 	output, err := sshSvc.ExecuteWithCallback(ctx, req.SshHost, sshPort, req.SshUser, req.SshPassword, req.SshKey, execCmd, req.SshInsecureHostKey, lineHandler)
 	if err != nil {
-		return nil, fmt.Errorf("SSH execution failed: %w\noutput: %s", err, output)
+		cleaned := cleanOutput(output)
+		return nil, fmt.Errorf("SSH execution failed: %w\n\nOutput:\n%s", err, cleaned)
 	}
+	progress(80, "Agent installed, verifying startup")
 
 	// 5. Extract the host ID printed by register-with-orchestrator.
 	hostID := ""
@@ -219,13 +267,16 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 	// 6. Wait up to 30 s for the host to appear in the orchestrator's DB.
 	hostURL := ""
 	if hostID != "" {
-		deadline := time.Now().Add(30 * time.Second)
-		for time.Now().Before(deadline) {
+		const maxAttempts = 15
+		for attempt := 0; attempt < maxAttempts; attempt++ {
 			h, err := dbService.GetOrchestratorHost(ctx, hostID)
 			if err == nil && h != nil {
 				hostURL = h.Host
+				progress(95, "Host registered successfully")
 				break
 			}
+			pct := 80 + (attempt+1)*15/maxAttempts
+			progress(pct, "Waiting for host registration")
 			time.Sleep(2 * time.Second)
 		}
 	}

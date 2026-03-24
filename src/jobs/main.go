@@ -219,6 +219,27 @@ func (jms *JobManagerService) MarkJobComplete(jobId string, result string) error
 	return nil
 }
 
+func (jms *JobManagerService) MarkJobCompleteWithRecord(jobId string, result string, recordId string, recordType string) error {
+	job, err := jms.db.GetJob(jms.apiCtx, jobId)
+	if err != nil {
+		return err
+	}
+
+	job.State = constants.JobStateCompleted
+	job.Progress = 100
+	job.Result = result
+	job.ResultRecordId = recordId
+	job.ResultRecordType = recordType
+
+	err = jms.db.UpdateJob(jms.apiCtx, *job)
+	if err != nil {
+		return err
+	}
+
+	jms.emitEvent("JOB_UPDATED", job)
+	return nil
+}
+
 func (jms *JobManagerService) MarkJobError(jobId string, jobErr error) error {
 	job, err := jms.db.GetJob(jms.apiCtx, jobId)
 	if err != nil {

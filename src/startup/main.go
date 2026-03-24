@@ -11,6 +11,7 @@ import (
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	"github.com/Parallels/prl-devops-service/install"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/jobs/tracker"
 	"github.com/Parallels/prl-devops-service/logs"
@@ -63,12 +64,23 @@ func Start(ctx basecontext.ApiContext) {
 	// initializing telemetry with default context
 	_ = telemetry.New(ctx)
 
-	// Validate Host Module
-	if cfg.IsModuleEnabled(constants.HOST_MODE) {
+	// Keep HOST_MODE in sync with actual Parallels Desktop availability.
+	// We check both directions so that a freshly deployed agent that just had
+	// PD installed (and may not have included "host" in ENABLED_MODULES, or
+	// where PD was not ready at the previous boot) gets the module enabled
+	// automatically.
+	if system.GetOperatingSystem() == "macos" || system.GetOperatingSystem() == "darwin" {
 		provider := serviceprovider.Get()
-		if !provider.IsParallelsDesktopAvailable() {
+		pdAvailable := provider.IsParallelsDesktopAvailable()
+		if cfg.IsModuleEnabled(constants.HOST_MODE) && !pdAvailable {
 			ctx.LogWarnf("Parallels Desktop is not available, disabling host module")
 			cfg.DisableModule(constants.HOST_MODE)
+		} else if !cfg.IsModuleEnabled(constants.HOST_MODE) && pdAvailable {
+			ctx.LogInfof("Parallels Desktop is available; auto-enabling host module")
+			cfg.EnableModule(constants.HOST_MODE)
+			// Persist the updated module list to the service config file so
+			// the setting survives a service restart.
+			install.PersistEnabledModules(ctx)
 		}
 	}
 
