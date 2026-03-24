@@ -137,12 +137,18 @@ func TestGetEnabledModules_CatalogManagerAutoEnable(t *testing.T) {
 	str.NotContains(t, modules, constants.CATALOG_MANAGER_MODE)
 	str.False(t, cfg.IsCatalogManager())
 
-	// catalog + host — host present so catalog_manager is enabled
+	// catalog + host — host is darwin-only; on Linux it is stripped leaving a
+	// pure catalog node where catalog_manager is suppressed.
 	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,catalog,host")
 	cfg = New(ctx)
 	modules = cfg.GetEnabledModules()
-	str.Contains(t, modules, constants.CATALOG_MANAGER_MODE)
-	str.True(t, cfg.IsCatalogManager())
+	if onDarwin {
+		str.Contains(t, modules, constants.CATALOG_MANAGER_MODE)
+		str.True(t, cfg.IsCatalogManager())
+	} else {
+		str.NotContains(t, modules, constants.CATALOG_MANAGER_MODE)
+		str.False(t, cfg.IsCatalogManager())
+	}
 
 	// catalog + orchestrator — orchestrator present so catalog_manager is enabled
 	os.Setenv(constants.ENABLED_MODULES_ENV_VAR, "api,catalog,orchestrator")
