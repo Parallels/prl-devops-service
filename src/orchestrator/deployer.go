@@ -154,18 +154,17 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 
 	// 3. Build the remote command sequence.
 	//    Step A – install the service.
+	//    Values are shell-quoted so that passwords or module names containing
+	//    special characters or spaces don't break the remote shell command.
 	installArgs := []string{}
 	if req.RootPassword != "" {
-		installArgs = append(installArgs, "--root-password", req.RootPassword)
+		installArgs = append(installArgs, "--root-password", shellSingleQuote(req.RootPassword))
 	}
 	if req.EnabledModules != "" {
-		installArgs = append(installArgs, "--modules", req.EnabledModules)
-	}
-	if req.PdVersion != "" {
-		installArgs = append(installArgs, "--pd-version", req.PdVersion)
+		installArgs = append(installArgs, "--modules", shellSingleQuote(req.EnabledModules))
 	}
 	if req.AgentVersion != "" {
-		installArgs = append(installArgs, "--version", req.AgentVersion)
+		installArgs = append(installArgs, "--version", shellSingleQuote(req.AgentVersion))
 	} else if req.PreRelease {
 		installArgs = append(installArgs, "--pre-release")
 	}
