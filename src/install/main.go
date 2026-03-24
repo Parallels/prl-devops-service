@@ -421,3 +421,34 @@ func getExecutablePath() (string, error) {
 	}
 	return filepath.Dir(exePath), nil
 }
+
+// PersistEnabledModules rewrites the service config file (plist on macOS) with
+// the current ENABLED_MODULES env var value so the module list survives a service
+// restart.  The running service is NOT stopped or reloaded — the change takes
+// effect the next time the service starts.
+//
+// This is called from startup when the host module is auto-enabled because
+// Parallels Desktop is available but was missing from the stored module list
+// (e.g. because the service started before PD finished installing).
+func PersistEnabledModules(ctx basecontext.ApiContext) {
+	switch runtime.GOOS {
+	case "darwin":
+		path, err := getExecutablePath()
+		if err != nil {
+			ctx.LogWarnf("[startup] Could not determine executable path for plist update: %v", err)
+			return
+		}
+		cfg := getConfigFromEnv()
+		plist, err := generatePlist(path, cfg)
+		if err != nil {
+			ctx.LogWarnf("[startup] Could not generate updated plist: %v", err)
+			return
+		}
+		daemonPath := filepath.Join(MAC_PLIST_DAEMON_PATH, MAC_PLIST_DAEMON_NAME)
+		if err := helper.WriteToFile(plist, daemonPath); err != nil {
+			ctx.LogWarnf("[startup] Could not write updated plist to %s: %v", daemonPath, err)
+			return
+		}
+		ctx.LogInfof("[startup] Persisted updated module list to %s", daemonPath)
+	}
+}

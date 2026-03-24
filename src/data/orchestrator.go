@@ -211,7 +211,7 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 	var result *models.OrchestratorHost
 
 	for i, dbHost := range j.data.OrchestratorHosts {
-		if strings.EqualFold(dbHost.ID, host.ID) || strings.EqualFold(dbHost.Host, host.Host) {
+		if strings.EqualFold(dbHost.ID, host.ID) {
 			ctx.LogDebugf("[Database] Host %s already exists with ID %s", host.Host, dbHost.ID)
 			if host.Diff(j.data.OrchestratorHosts[i]) {
 				j.data.OrchestratorHosts[i].Enabled = host.Enabled

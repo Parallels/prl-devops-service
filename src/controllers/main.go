@@ -13,7 +13,9 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 	registerApiKeysHandlers(ctx, version)
 	registerClaimsHandlers(ctx, version)
 	registerRolesHandlers(ctx, version)
-	registerCatalogManagerHandlers(ctx, version)
+	if config.Get().IsCatalogManager() {
+		registerCatalogManagerHandlers(ctx, version)
+	}
 	registerJobsHandlers(ctx, version)
 
 	if config.Get().IsHost() {

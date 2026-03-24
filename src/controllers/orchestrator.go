@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
@@ -3604,6 +3605,27 @@ func ValidateEnrollmentTokenHandler() restapi.ControllerHandler {
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
 //	@Router			/v1/orchestrator/hosts/deploy [post]
+// checkDuplicateDeployHost returns a non-nil error if a host with the same
+// name or SSH address already exists, so both sync and async handlers can
+// reject the request before doing any work.
+func checkDuplicateDeployHost(ctx basecontext.ApiContext, hostName, sshHost string) error {
+	db := serviceprovider.Get().JsonDatabase
+	_ = db.Connect(ctx)
+	existing, err := db.GetOrchestratorHosts(ctx, "")
+	if err != nil {
+		return fmt.Errorf("failed to check existing hosts: %w", err)
+	}
+	for _, h := range existing {
+		if strings.EqualFold(h.Description, hostName) {
+			return fmt.Errorf("a host with the name %q already exists (id: %s)", hostName, h.ID)
+		}
+		if strings.EqualFold(h.Host, sshHost) {
+			return fmt.Errorf("a host with the address %q already exists (id: %s)", sshHost, h.ID)
+		}
+	}
+	return nil
+}
+
 func DeployOrchestratorHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -3626,8 +3648,16 @@ func DeployOrchestratorHostHandler() restapi.ControllerHandler {
 			return
 		}
 
+		if err := checkDuplicateDeployHost(ctx, req.HostName, req.SshHost); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: err.Error(),
+				Code:    http.StatusConflict,
+			})
+			return
+		}
+
 		orchSvc := orchestrator.NewOrchestratorService(ctx)
-		resp, err := orchSvc.DeployAndRegisterAgent(ctx, req, nil)
+		resp, err := orchSvc.DeployAndRegisterAgent(ctx, req, nil, nil)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -3679,6 +3709,14 @@ func AsyncDeployOrchestratorHostHandler() restapi.ControllerHandler {
 			return
 		}
 
+		if err := checkDuplicateDeployHost(ctx, req.HostName, req.SshHost); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: err.Error(),
+				Code:    http.StatusConflict,
+			})
+			return
+		}
+
 		jobManager := jobs.Get(ctx)
 		if jobManager == nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(fmt.Errorf("job manager not available"), http.StatusInternalServerError))
@@ -3695,16 +3733,23 @@ func AsyncDeployOrchestratorHostHandler() restapi.ControllerHandler {
 		asyncCtx := basecontext.NewRootBaseContext()
 		go func() {
 			_, _ = jobManager.InitJob(jobID)
+			_, _ = jobManager.UpdateJobProgress(jobID, 0, constants.JobStateRunning)
 			orchSvc := orchestrator.NewOrchestratorService(asyncCtx)
 			onOutput := func(line string) {
 				_, _ = jobManager.UpdateJobMessage(jobID, line)
 			}
-			resp, deployErr := orchSvc.DeployAndRegisterAgent(asyncCtx, req, onOutput)
+			onProgress := func(pct int, msg string) {
+				_, _ = jobManager.UpdateJobProgress(jobID, pct, constants.JobStateRunning)
+				if msg != "" {
+					_, _ = jobManager.UpdateJobMessage(jobID, msg)
+				}
+			}
+			resp, deployErr := orchSvc.DeployAndRegisterAgent(asyncCtx, req, onOutput, onProgress)
 			if deployErr != nil {
 				_ = jobManager.MarkJobError(jobID, deployErr)
 				return
 			}
-			_ = jobManager.MarkJobComplete(jobID, fmt.Sprintf("host_id=%s", resp.HostID))
+			_ = jobManager.MarkJobCompleteWithRecord(jobID, fmt.Sprintf("host_id=%s", resp.HostID), resp.HostID, "orchestrator_host")
 		}()
 
 		response := mappers.MapJobToApiJob(*localJob)

@@ -517,6 +517,10 @@ func (c *Config) IsCatalog() bool {
 	return c.IsModuleEnabled(constants.CATALOG_MODE)
 }
 
+func (c *Config) IsCatalogManager() bool {
+	return c.IsModuleEnabled(constants.CATALOG_MANAGER_MODE)
+}
+
 func (c *Config) IsHost() bool {
 	return c.IsModuleEnabled(constants.HOST_MODE)
 }
@@ -744,6 +748,43 @@ func (c *Config) GetEnabledModules() []string {
 		}
 		if !proxyFound {
 			modulesList = append(modulesList, constants.REVERSE_PROXY_MODE)
+		}
+	}
+
+	// catalog_manager is disabled only when the node is a pure catalog server —
+	// i.e. catalog is enabled but neither host nor orchestrator is.
+	// If host or orchestrator accompanies catalog the node is also an agent/
+	// provider and still needs catalog_manager.
+	catalogActive := false
+	hostOrOrchestratorActive := false
+	for _, module := range modulesList {
+		switch strings.ToLower(module) {
+		case constants.CATALOG_MODE:
+			catalogActive = true
+		case constants.HOST_MODE, constants.ORCHESTRATOR_MODE:
+			hostOrOrchestratorActive = true
+		}
+	}
+	suppressCatalogManager := catalogActive && !hostOrOrchestratorActive
+	if suppressCatalogManager {
+		// Strip catalog_manager even if it was listed explicitly.
+		filtered := modulesList[:0]
+		for _, module := range modulesList {
+			if !strings.EqualFold(module, constants.CATALOG_MANAGER_MODE) {
+				filtered = append(filtered, module)
+			}
+		}
+		modulesList = filtered
+	} else {
+		catalogManagerFound := false
+		for _, module := range modulesList {
+			if strings.EqualFold(module, constants.CATALOG_MANAGER_MODE) {
+				catalogManagerFound = true
+				break
+			}
+		}
+		if !catalogManagerFound {
+			modulesList = append(modulesList, constants.CATALOG_MANAGER_MODE)
 		}
 	}
 

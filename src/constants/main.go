@@ -52,6 +52,7 @@ const (
 	CLI_MODE               = "cli"
 	ORCHESTRATOR_MODE      = "orchestrator"
 	CATALOG_MODE           = "catalog"
+	CATALOG_MANAGER_MODE   = "catalog_manager"
 	HOST_MODE              = "host"
 	REVERSE_PROXY_MODE     = "reverse_proxy"
 	CACHE_MODE             = "cache"
@@ -65,6 +66,7 @@ var VALID_MODULES = []string{
 	API_MODE,
 	ORCHESTRATOR_MODE,
 	CATALOG_MODE,
+	CATALOG_MANAGER_MODE,
 	HOST_MODE,
 	REVERSE_PROXY_MODE,
 	CACHE_MODE,

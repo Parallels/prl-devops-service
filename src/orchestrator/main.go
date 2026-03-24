@@ -247,6 +247,12 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 		// when the connection actually drops (notifyDisconnection / DisconnectHost).
 		s.ctx.LogWarnf("[Orchestrator] Host %s is connected but stale (last updated: %s). Falling back to HTTP health check.", host.Host, host.UpdatedAt)
 		websocketPingFailed = true
+		// Defensive: if the flag was incorrectly cleared while the connection is
+		// still alive (e.g. due to a previous bug or a concurrent race), restore it
+		// now so the UI reflects the actual connection state.
+		if !host.HasWebsocketEvents {
+			_, _ = s.db.UpdateOrchestratorHostWebsocketStatus(s.ctx, host.ID, true)
+		}
 	}
 
 	s.ctx.LogDebugf("[Orchestrator] Health checking host %s", host.Host)
