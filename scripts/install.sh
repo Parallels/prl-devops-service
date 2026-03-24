@@ -217,7 +217,7 @@ function install() {
         CONFIG_EXISTS="true"
       fi
 
-      if [ -f "$SERVICE_PLIST" ] && [ "$CONFIG_EXISTS" = "true" ]; then
+      if [ -f "$SERVICE_PLIST" ] && [ "$CONFIG_EXISTS" = "true" ] && [ -z "$MODULES" ]; then
         echo "Service already installed and configured. Updating binary and restarting service."
         sudo launchctl unload "$SERVICE_PLIST"
         sudo launchctl load "$SERVICE_PLIST"
