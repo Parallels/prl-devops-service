@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
@@ -51,7 +52,20 @@ func processInstall(ctx basecontext.ApiContext, cmd string) {
 	switch subcommand {
 	case "service":
 		filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
-		modulesFlag := helper.GetFlagValue("modules", "")
+		// helper.GetFlagValue has an off-by-one bug when parsing space-separated flags
+		// (e.g. --modules orchestrator).  Scan os.Args directly to support both
+		// --modules=value and --modules value formats reliably.
+		modulesFlag := ""
+		for i, arg := range os.Args {
+			if arg == "--modules" && i+1 < len(os.Args) && !strings.HasPrefix(os.Args[i+1], "--") {
+				modulesFlag = os.Args[i+1]
+				break
+			}
+			if strings.HasPrefix(arg, "--modules=") {
+				modulesFlag = strings.TrimPrefix(arg, "--modules=")
+				break
+			}
+		}
 		if modulesFlag != "" {
 			_ = os.Setenv(constants.ENABLED_MODULES_ENV_VAR, modulesFlag)
 		}
@@ -157,6 +171,7 @@ func processInstallHelp() {
 	fmt.Println("  user\t\twhat user would be used to install the service, by default the current user is defined")
 	fmt.Println("  version\t\tRequest a specific version to be installed")
 	fmt.Println("  modules\t\tComma-separated list of modules to enable (api,host,catalog,orchestrator). api is always included.")
+	fmt.Println("  api-port\t\tPort the API service will listen on (default: 3080)")
 	fmt.Println()
 	fmt.Println("Example:")
 	fmt.Printf("  %v %v git --version=latest", constants.ExecutableName, constants.INSTALL_SERVICE_COMMAND)

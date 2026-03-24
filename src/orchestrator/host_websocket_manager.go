@@ -186,6 +186,24 @@ func (m *HostWebSocketManager) ProbeAndConnect(host models.OrchestratorHost) {
 		}
 		m.handlersMu.RUnlock()
 		m.ConnectHost(&host, eventTypes)
+
+		// Probe confirmed WebSocket support — update the flag immediately so that
+		// the API reflects the capability before the first pong comes in.
+		if dbService, err := serviceprovider.GetDatabaseService(m.ctx); err == nil {
+			if updated, _ := dbService.UpdateOrchestratorHostWebsocketStatus(m.ctx, host.ID, true); updated {
+				if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+					msg := event.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_CONNECTED", event.HostHealthUpdate{
+						HostID: host.ID,
+						State:  "websocket_connected",
+					})
+					go func() {
+						if err := emitter.Broadcast(msg); err != nil {
+							m.ctx.LogErrorf("[HostWebSocketManager] Failed to broadcast HOST_WEBSOCKET_CONNECTED event: %v", err)
+						}
+					}()
+				}
+			}
+		}
 	} else {
 		m.ctx.LogDebugf("[HostWebSocketManager] Probe failed for host %s, skipping WebSocket connection", host.Host)
 	}

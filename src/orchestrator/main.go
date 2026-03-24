@@ -10,7 +10,6 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/data/models"
-	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	apimodels "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/handlers"
@@ -19,16 +18,19 @@ import (
 	"github.com/Parallels/prl-devops-service/telemetry"
 )
 
+const stalenessMultiplier = 3
+
 var globalOrchestratorService *OrchestratorService
 
 type OrchestratorService struct {
-	ctx                basecontext.ApiContext
-	timeout            time.Duration
-	healthCheckTimeout time.Duration
-	refreshInterval    time.Duration
-	syncContext        context.Context
-	cancel             context.CancelFunc
-	db                 *data.JsonDatabase
+	ctx                 basecontext.ApiContext
+	timeout             time.Duration
+	healthCheckTimeout  time.Duration
+	refreshInterval     time.Duration
+	fullRefreshInterval time.Duration
+	syncContext         context.Context
+	cancel              context.CancelFunc
+	db                  *data.JsonDatabase
 }
 
 func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
@@ -39,7 +41,10 @@ func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
 			healthCheckTimeout: 3 * time.Second,
 		}
 		cfg := config.Get()
-		globalOrchestratorService.refreshInterval = time.Duration(cfg.OrchestratorPullFrequency()) * time.Second
+		pullFreq := time.Duration(cfg.OrchestratorPullFrequency()) * time.Second
+		globalOrchestratorService.refreshInterval = pullFreq
+		// Full refresh (VMs + snapshots + hardware) runs every 10× the health-check interval.
+		globalOrchestratorService.fullRefreshInterval = pullFreq * 10
 	} else {
 		globalOrchestratorService.ctx = ctx
 	}
@@ -67,8 +72,7 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 
 	// Initialize WebSocket Manager and Handlers
 	manager := NewHostWebSocketManager(s.ctx)
-	pdfmHandler := handlers.NewPDfMEventHandler(manager)
-	pdfmHandler.SetResourceUpdater(s)
+	handlers.NewPDfMEventHandler(manager)
 	handlers.NewHostHealthHandler(manager)
 	statsHandler := handlers.NewHostStatsHandler(manager)
 	statsHandler.SetResourceUpdater(s)
@@ -76,6 +80,8 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	handlers.NewHostCatalogCacheEventHandler(manager, func(hostId string) {
 		go globalOrchestratorService.RefreshHostCache(hostId)
 	})
+	rpHandler := handlers.NewHostReverseProxyEventHandler(manager)
+	rpHandler.SetReverseProxyUpdater(s)
 
 	// Initial refresh of connections
 	if hosts, err := s.db.GetOrchestratorHosts(s.ctx, ""); err == nil {
@@ -91,31 +97,71 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	}
 
 	s.ctx.LogInfof("[Orchestrator] Starting Orchestrator Background Service")
-	firstRun := true
+
+	// Startup: full data load for every host (hardware, VMs, snapshots, cache, reverse proxy).
+	if startupHosts, err := s.db.GetOrchestratorHosts(s.ctx, ""); err == nil && len(startupHosts) > 0 {
+		var wg sync.WaitGroup
+		for _, host := range startupHosts {
+			wg.Add(1)
+			go func(h models.OrchestratorHost) {
+				defer wg.Done()
+				select {
+				case <-s.syncContext.Done():
+				default:
+					s.fullRefreshHost(h, true)
+				}
+			}(host)
+		}
+		wg.Wait()
+		s.ctx.LogInfof("[Orchestrator] Startup full refresh complete for %d hosts", len(startupHosts))
+	}
+
+	// Background: periodic full refresh (self-healing) on a longer interval.
+	go s.runFullRefreshLoop()
+
+	// Background: lightweight health check on every refreshInterval tick.
 	for {
 		select {
 		case <-s.syncContext.Done():
 			return
 		default:
-			var wg sync.WaitGroup
+			time.Sleep(s.refreshInterval)
+
 			dtoOrchestratorHosts, err := s.db.GetOrchestratorHosts(s.ctx, "")
 			if err != nil {
-				return
+				continue
 			}
 
+			var wg sync.WaitGroup
 			for _, host := range dtoOrchestratorHosts {
 				wg.Add(1)
-				go s.processHostWaitingGroup(host, firstRun, &wg)
+				go s.processHostWaitingGroup(host, false, &wg)
 			}
 			wg.Wait()
+		}
+	}
+}
 
-			if len(dtoOrchestratorHosts) > 0 {
-				s.ctx.LogInfof("[Orchestrator] processed %v hosts", len(dtoOrchestratorHosts))
-				s.ctx.LogInfof("[Orchestrator] Sleeping for %s seconds", s.refreshInterval)
+// runFullRefreshLoop runs a full data refresh for all hosts every fullRefreshInterval.
+// This is the self-healing mechanism that re-syncs VMs, snapshots, hardware, and cache
+// in case any WebSocket events were missed.
+func (s *OrchestratorService) runFullRefreshLoop() {
+	ticker := time.NewTicker(s.fullRefreshInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-s.syncContext.Done():
+			return
+		case <-ticker.C:
+			dtoOrchestratorHosts, err := s.db.GetOrchestratorHosts(s.ctx, "")
+			if err != nil {
+				continue
 			}
-
-			firstRun = false
-			time.Sleep(s.refreshInterval)
+			s.ctx.LogInfof("[Orchestrator] Periodic full refresh for %d hosts", len(dtoOrchestratorHosts))
+			for _, host := range dtoOrchestratorHosts {
+				go s.fullRefreshHost(host, true)
+			}
 		}
 	}
 }
@@ -146,6 +192,9 @@ func (s *OrchestratorService) Stop() {
 	s.ctx.LogInfof("[Orchestrator] Orchestrator Background Service Stopped")
 }
 
+// Refresh forces a full data sync for all hosts. Called when noCache=true is passed to
+// the read APIs (e.g. GetVirtualMachines). Delegates to fullRefreshHost so that VMs,
+// snapshots, hardware, and cache are all refreshed in one pass.
 func (s *OrchestratorService) Refresh() {
 	dtoOrchestratorHosts, err := s.db.GetOrchestratorHosts(s.ctx, "")
 	if err != nil {
@@ -153,7 +202,7 @@ func (s *OrchestratorService) Refresh() {
 	}
 
 	for _, host := range dtoOrchestratorHosts {
-		go s.processHost(host, true)
+		go s.fullRefreshHost(host, false)
 	}
 }
 
@@ -168,127 +217,112 @@ func (s *OrchestratorService) processHostWaitingGroup(host models.OrchestratorHo
 	}
 }
 
+// processHost is the lightweight health-check tick. It only verifies WebSocket freshness
+// and, when stale, performs an HTTP health probe. Heavy data work (VMs, snapshots,
+// hardware, cache) lives in fullRefreshHost which runs at startup and on a longer interval.
 func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRefresh bool) {
-	// Check if host is connected via WebSocket
+	if !host.Enabled {
+		return
+	}
+
 	manager := GetHostWebSocketManager()
 	websocketPingFailed := false
 
 	if manager != nil && manager.IsConnected(host.ID) && host.State == "healthy" {
-		// Check for staleness
-		// If the host hasn't updated its status (via pong) in a while, we should verify health via HTTP
 		lastUpdated, err := time.Parse(time.RFC3339Nano, host.UpdatedAt)
-		stalenessThreshold := s.refreshInterval * 3
+		stalenessThreshold := s.refreshInterval * stalenessMultiplier
 
 		if err == nil && time.Since(lastUpdated) < stalenessThreshold && !forceRefresh {
-			s.ctx.LogDebugf("[Orchestrator] Host %s is connected and fresh (last updated: %s). Skipping HTTP health check.", host.Host, host.UpdatedAt)
-			// Ping successful (implied by freshness), skip HTTP health check
+			s.ctx.LogDebugf("[Orchestrator] Host %s is connected and fresh (last updated: %s). Skipping health check.", host.Host, host.UpdatedAt)
 			if !host.HasWebsocketEvents {
 				host.HasWebsocketEvents = true
 				_, _ = s.db.UpdateOrchestratorHostWebsocketStatus(s.ctx, host.ID, true)
 			}
 			return
-		} else {
-			s.ctx.LogWarnf("[Orchestrator] Host %s is connected but stale (last updated: %s). Falling back to HTTP health check.", host.Host, host.UpdatedAt)
-			websocketPingFailed = true
-			if host.HasWebsocketEvents {
-				host.HasWebsocketEvents = false
-				updated, _ := s.db.UpdateOrchestratorHostWebsocketStatus(s.ctx, host.ID, false)
-				if updated {
-					if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
-						msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_DISCONNECTED", apimodels.HostHealthUpdate{
-							HostID: host.ID,
-							State:  "websocket_disconnected",
-						})
-						go func() {
-							if err := emitter.Broadcast(msg); err != nil {
-								s.ctx.LogErrorf("[Orchestrator] Failed to broadcast event %s: %v", "HOST_WEBSOCKET_DISCONNECTED", err)
-							} else {
-								s.ctx.LogInfof("[Orchestrator] Broadcasted HOST_WEBSOCKET_DISCONNECTED event for host %s (detected staleness in processHost)", host.Host)
-							}
-						}()
-					}
-				}
-			}
 		}
+
+		// Host is connected but pong is late — fall back to HTTP for this tick.
+		// Do NOT clear HasWebsocketEvents: the connection is still alive; staleness
+		// only means we haven't received a pong recently. The flag is cleared only
+		// when the connection actually drops (notifyDisconnection / DisconnectHost).
+		s.ctx.LogWarnf("[Orchestrator] Host %s is connected but stale (last updated: %s). Falling back to HTTP health check.", host.Host, host.UpdatedAt)
+		websocketPingFailed = true
 	}
 
-	s.ctx.LogInfof("[Orchestrator] Processing host %s", host.Host)
+	s.ctx.LogDebugf("[Orchestrator] Health checking host %s", host.Host)
 
 	host.HealthCheck = &apimodels.ApiHealthCheck{}
-	if healthCheck, err := s.GetHostSystemHealthCheck(&host); err != nil {
+	healthCheck, err := s.GetHostSystemHealthCheck(&host)
+	if err != nil {
 		s.ctx.LogErrorf("[Orchestrator] Error getting health check for host %s: %v", host.Host, err.Error())
 		host.SetUnhealthy(err.Error())
 		_ = s.persistHost(&host)
-
-		// Broadcast host unhealthy event
 		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
 			msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_HEALTH_UPDATE", apimodels.HostHealthUpdate{
 				HostID: host.ID,
 				State:  host.State,
 			})
-			go func() {
-				if err := emitter.Broadcast(msg); err != nil {
-					s.ctx.LogErrorf("[Orchestrator] Failed to broadcast HOST_HEALTH_UPDATE event: %v", err)
-				}
-			}()
+			go func() { _ = emitter.Broadcast(msg) }()
 		}
 		return
-	} else {
-		s.ctx.LogInfof("[Orchestrator] host %s is alive and well: %s", host.Host, healthCheck.Message)
-		host.SetHealthy()
-		host.HealthCheck = healthCheck
+	}
 
-		// If WebSocket ping failed but HTTP health check succeeded, broadcast degraded WebSocket event
-		if websocketPingFailed {
-			s.ctx.LogWarnf("[Orchestrator] Host %s has degraded WebSocket connection, using HTTP fallback", host.Host)
-			if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
-				msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_DEGRADED", apimodels.HostHealthUpdate{
-					HostID: host.ID,
-					State:  host.State,
-				})
-				go func() {
-					if err := emitter.Broadcast(msg); err != nil {
-						s.ctx.LogErrorf("[Orchestrator] Failed to broadcast HOST_WEBSOCKET_DEGRADED event: %v", err)
-					}
-				}()
-			}
+	host.SetHealthy()
+	host.HealthCheck = healthCheck
+
+	if websocketPingFailed {
+		s.ctx.LogWarnf("[Orchestrator] Host %s has degraded WebSocket connection, using HTTP fallback", host.Host)
+		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+			msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_DEGRADED", apimodels.HostHealthUpdate{
+				HostID: host.ID,
+				State:  host.State,
+			})
+			go func() { _ = emitter.Broadcast(msg) }()
 		}
 	}
 
-	s.ctx.LogInfof("[Orchestrator] Getting hardware info for host %s", host.Host)
-	// Updating the host resources
+	_ = s.persistHost(&host)
+	host.HealthCheck = nil
+
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_HEALTH_UPDATE", apimodels.HostHealthUpdate{
+			HostID: host.ID,
+			State:  host.State,
+		})
+		go func() { _ = emitter.Broadcast(msg) }()
+	}
+}
+
+// fullRefreshHost performs a complete data sync for one host: hardware info, all VMs,
+// snapshots for each VM, cache items, and optionally reverse proxy config.
+// It is called at startup, by the periodic full-refresh loop, and by Refresh().
+// Snapshots are fetched directly from the host (no per-VM health probe).
+func (s *OrchestratorService) fullRefreshHost(host models.OrchestratorHost, loadReverseProxy bool) {
+	if !host.Enabled {
+		return
+	}
+
+	s.ctx.LogInfof("[Orchestrator] Full refresh: host %s", host.Host)
+
 	hardwareInfo, err := s.GetHostHardwareInfo(&host)
 	if err != nil {
-		s.ctx.LogErrorf("[Orchestrator] Error getting hardware info for host %s: %v", host.Host, err.Error())
-		host.SetUnhealthy(err.Error())
-		_ = s.persistHost(&host)
+		s.ctx.LogErrorf("[Orchestrator] Full refresh: hardware info error for host %s: %v", host.Host, err)
 		return
 	}
-
-	// Update host with hardware information using common function
+	// Hardware info fetch succeeded — the host is reachable, so mark it healthy
+	// before proceeding. This ensures CallGetHostReverseProxyConfig (which guards
+	// on host.State == HealthyState) can run during the same refresh pass.
+	host.State = HealthyState
 	s.updateHostWithHardwareInfo(&host, hardwareInfo)
 
-	// Updating the Virtual Machines
 	vms, err := s.GetHostVirtualMachinesInfo(&host)
 	if err != nil {
-		s.ctx.LogErrorf("[Orchestrator] Error getting virtual machines for host %s: %v", host.Host, err.Error())
-		host.SetUnhealthy(err.Error())
-		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
-			msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_HEALTH_UPDATE", apimodels.HostHealthUpdate{
-				HostID: host.ID,
-				State:  host.State,
-			})
-			go func() {
-				if err := emitter.Broadcast(msg); err != nil {
-					s.ctx.LogErrorf("[Orchestrator] Failed to broadcast event %s: %v", "HOST_HEALTH_UPDATE", err)
-				}
-			}()
-		}
-		_ = s.persistHost(&host)
+		s.ctx.LogErrorf("[Orchestrator] Full refresh: VMs error for host %s: %v", host.Host, err)
 		return
 	}
 
-	host.VirtualMachines = make([]models.VirtualMachine, 0)
+	host.VirtualMachines = make([]models.VirtualMachine, 0, len(vms))
+	totalAppleVms := 0
 	for _, vm := range vms {
 		dtoVm := mappers.MapDtoVirtualMachineFromApi(vm)
 		dtoVm.HostId = host.ID
@@ -296,41 +330,30 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 		dtoVm.Host = host.GetHost()
 		dtoVm.HostUrl = host.GetHostUrl()
 		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
-	}
-
-	totalAppleVms := 0
-	for _, vm := range host.VirtualMachines {
 		if vm.Type == "APPLE_VZ_VM" {
 			totalAppleVms++
 		}
 	}
+	host.Resources.TotalAppleVms = int64(totalAppleVms)
 
-	host.ReverseProxyHosts = make([]*models.ReverseProxyHost, 0)
-	// Updating the reverse proxy hosts
-	rpConfig, err := s.CallGetHostReverseProxyConfig(&host)
-	if err == nil && rpConfig != nil {
-		host.ReverseProxy = &models.ReverseProxy{
-			ID:      rpConfig.ID,
-			Host:    rpConfig.Host,
-			Port:    rpConfig.Port,
-			HostID:  host.ID,
-			Enabled: rpConfig.Enabled,
-		}
-		// Getting all of the hosts in the reverse proxy config
-		hosts, err := s.CallGetHostReverseProxyHosts(&host)
-		if err == nil && hosts != nil {
-			for _, rpHost := range hosts {
-				host.ReverseProxyHosts = append(host.ReverseProxyHosts, rpHost)
+	if loadReverseProxy {
+		host.ReverseProxyHosts = make([]*models.ReverseProxyHost, 0)
+		if rpConfig, err := s.CallGetHostReverseProxyConfig(&host); err == nil && rpConfig != nil {
+			host.ReverseProxy = &models.ReverseProxy{
+				ID:      rpConfig.ID,
+				Host:    rpConfig.Host,
+				Port:    rpConfig.Port,
+				HostID:  host.ID,
+				Enabled: rpConfig.Enabled,
+			}
+			if rpHosts, err := s.CallGetHostReverseProxyHosts(&host); err == nil && rpHosts != nil {
+				host.ReverseProxyHosts = rpHosts
 			}
 		}
 	}
 
-	host.Resources.TotalAppleVms = int64(totalAppleVms)
-	host.UpdatedAt = helpers.GetUtcCurrentDateTime()
-
-	// Getting Cache Items
 	if cacheList, err := s.CallGetHostCatalogCache(&host); err == nil && cacheList != nil {
-		host.CacheItems = make([]apimodels.HostCatalogCacheItem, 0)
+		host.CacheItems = make([]apimodels.HostCatalogCacheItem, 0, len(cacheList.Manifests))
 		for _, manifest := range cacheList.Manifests {
 			host.CacheItems = append(host.CacheItems, apimodels.HostCatalogCacheItem{
 				CatalogId:    manifest.CatalogId,
@@ -342,47 +365,45 @@ func (s *OrchestratorService) processHost(host models.OrchestratorHost, forceRef
 			})
 		}
 	} else {
-		s.ctx.LogWarnf("[Orchestrator] Defaulting or error getting cache items for host %s: %v", host.Host, err)
+		s.ctx.LogWarnf("[Orchestrator] Full refresh: cache error for host %s: %v", host.Host, err)
 	}
 
-	s.ctx.LogInfof("[Orchestrator] Host %s has %v CPU Cores and %v Mb of RAM, contains %v VMs of which %v are MacVMs", host.Host, host.Resources.Total.LogicalCpuCount, host.Resources.Total.MemorySize, len(host.VirtualMachines), host.Resources.TotalAppleVms)
+	s.ctx.LogInfof("[Orchestrator] Host %s: %v CPU, %v MB RAM, %v VMs (%v MacVMs)",
+		host.Host, host.Resources.Total.LogicalCpuCount, host.Resources.Total.MemorySize,
+		len(host.VirtualMachines), host.Resources.TotalAppleVms)
 
+	// Fetch snapshots directly — no health probe per VM.
 	for _, vm := range host.VirtualMachines {
-		listVMSnapshotResponse, err := s.GetHostVirtualMachineSnapshotsWithAPI(s.ctx, host.ID, vm.ID, false)
+		snapshots, err := s.callGetVMSnapshotsFromHost(&host, vm.ID)
 		if err != nil {
-			s.ctx.LogErrorf("[Orchestrator] Error getting snapshots for VM %s: %v", vm.ID, err.Error())
+			s.ctx.LogErrorf("[Orchestrator] Full refresh: snapshots error for VM %s on host %s: %v", vm.ID, host.Host, err)
+			continue
 		}
 		var dbVMSnapshots []models.VMSnapshot
-		if listVMSnapshotResponse != nil {
-			dbVMSnapshots = mappers.VMSnapshotsApiToDto(listVMSnapshotResponse.Snapshots)
+		if snapshots != nil {
+			dbVMSnapshots = mappers.VMSnapshotsApiToDto(snapshots.Snapshots)
 		}
 		s.db.SetHostVMSnapshots(s.ctx, host.ID, models.VMSnapshots{
 			VMId:       vm.ID,
 			VMSnapshot: dbVMSnapshots,
 		})
 	}
+
+	// Atomically replace the VM list in the DB. This is the only place that bulk-replaces
+	// VMs; PDFM event handlers use targeted per-VM atomic methods.
+	if err := s.db.ReplaceOrchestratorHostVMs(s.ctx, host.ID, host.VirtualMachines); err != nil {
+		s.ctx.LogErrorf("[Orchestrator] Full refresh: failed to replace VMs for host %s: %v", host.Host, err)
+	}
+
+	// Persist health/resources/config — VMs are managed separately above.
+	host.VirtualMachines = nil
 	_ = s.persistHost(&host)
 
-	// Free up memory
 	host.HealthCheck = nil
 	host.Resources = nil
-	host.VirtualMachines = nil
 	host.ReverseProxy = nil
 	host.ReverseProxyHosts = nil
 	host.CacheItems = nil
-
-	// Emit host health update event
-	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
-		msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_HEALTH_UPDATE", apimodels.HostHealthUpdate{
-			HostID: host.ID,
-			State:  host.State,
-		})
-		go func() {
-			if err := emitter.Broadcast(msg); err != nil {
-				s.ctx.LogErrorf("[Orchestrator] Failed to broadcast event %s: %v", "HOST_HEALTH_UPDATE", err)
-			}
-		}()
-	}
 }
 
 func (s *OrchestratorService) persistHost(host *models.OrchestratorHost) error {
@@ -441,8 +462,9 @@ func (s *OrchestratorService) updateHostWithHardwareInfo(host *models.Orchestrat
 	host.CacheConfig = hardwareInfo.CacheConfig
 	if hardwareInfo.ReverseProxy != nil {
 		host.ReverseProxy = &models.ReverseProxy{
-			Host: hardwareInfo.ReverseProxy.Host,
-			Port: hardwareInfo.ReverseProxy.Port,
+			Host:    hardwareInfo.ReverseProxy.Host,
+			Port:    hardwareInfo.ReverseProxy.Port,
+			Enabled: hardwareInfo.ReverseProxy.Enabled,
 		}
 		host.ReverseProxyHosts = make([]*models.ReverseProxyHost, 0)
 		for _, rpHost := range hardwareInfo.ReverseProxy.Hosts {
@@ -453,19 +475,18 @@ func (s *OrchestratorService) updateHostWithHardwareInfo(host *models.Orchestrat
 }
 
 func (s *OrchestratorService) UpdateHostResourcesForEvent(ctx basecontext.ApiContext, hostID string) error {
-	host, err := s.GetHost(ctx, hostID)
+	// Use GetDatabaseHost to avoid a live /health/probe HTTP call on every stats event.
+	host, err := s.GetDatabaseHost(ctx, hostID)
 	if err != nil {
 		return err
 	}
 
-	// Get hardware info using existing orchestrator service method
 	hardwareInfo, err := s.GetHostHardwareInfo(host)
 	if err != nil {
 		ctx.LogErrorf("[Orchestrator] Error getting hardware info for host %s: %v", hostID, err)
 		return err
 	}
 
-	// Update host with hardware information
 	s.updateHostWithHardwareInfo(host, hardwareInfo)
 
 	if err := s.persistHost(host); err != nil {
@@ -473,7 +494,114 @@ func (s *OrchestratorService) UpdateHostResourcesForEvent(ctx basecontext.ApiCon
 		return err
 	}
 
-	ctx.LogInfof("[Orchestrator] Updated host %s resources after VM event", hostID)
+	ctx.LogInfof("[Orchestrator] Updated host %s resources after stats event", hostID)
+	return nil
+}
+
+// UpdateHostVMForEvent fetches a single VM from the host and updates its record in the DB.
+// Called after VM_STATE_CHANGED so that any config differences (RAM, CPU, IP, etc.)
+// that arrived with or just before the state transition are captured without
+// pulling the entire hardware info or all VMs from the host.
+//
+// IMPORTANT: the HTTP call to the host is made first (slow path), and only THEN
+// do we re-read the host from the DB. This avoids overwriting concurrent DB changes
+// (e.g. a VM_ADDED written by handleVmAdded while the HTTP call was in flight).
+func (s *OrchestratorService) UpdateHostVMForEvent(ctx basecontext.ApiContext, hostID string, vmID string) error {
+	// We need the host's connection info to make the HTTP call, but we must not hold
+	// a stale snapshot of VirtualMachines across the slow network round-trip.
+	// Read a minimal host just for the URL/auth, make the call, then re-read fresh.
+	connHost, err := s.GetDatabaseHost(ctx, hostID)
+	if err != nil {
+		return err
+	}
+	if connHost == nil {
+		return nil
+	}
+
+	// Slow path: fetch the VM from the host. Other events (VM_ADDED, VM_REMOVED, etc.)
+	// may update the DB while we wait here — that is expected and correct.
+	vm, err := s.CallGetHostVirtualMachineInfo(connHost, vmID)
+	if err != nil {
+		ctx.LogErrorf("[Orchestrator] Error fetching VM %s from host %s: %v", vmID, hostID, err)
+		return err
+	}
+
+	// Re-read the host from DB after the HTTP call so we have the latest VirtualMachines
+	// list — any VM_ADDED / VM_REMOVED events that fired during the HTTP call will
+	// already be reflected here, and we won't overwrite them.
+	host, err := s.GetDatabaseHost(ctx, hostID)
+	if err != nil {
+		return err
+	}
+	if host == nil {
+		return nil
+	}
+
+	dtoVm := mappers.MapDtoVirtualMachineFromApi(*vm)
+	dtoVm.HostId = host.ID
+	dtoVm.HostName = getHostName(*host)
+	dtoVm.Host = host.GetHost()
+	dtoVm.HostUrl = host.GetHostUrl()
+
+	vmIndex := -1
+	for i, v := range host.VirtualMachines {
+		if v.ID == vmID {
+			vmIndex = i
+			break
+		}
+	}
+	if vmIndex != -1 {
+		host.VirtualMachines[vmIndex] = dtoVm
+	} else {
+		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
+	}
+
+	// Use persistHost so we don't overwrite a fresher UpdatedAt that handlePong may have just written.
+	if err := s.persistHost(host); err != nil {
+		ctx.LogErrorf("[Orchestrator] Error persisting VM %s update for host %s: %v", vmID, hostID, err)
+		return err
+	}
+
+	ctx.LogInfof("[Orchestrator] Synced VM %s on host %s after state change", vmID, hostID)
+	return nil
+}
+
+// UpdateHostReverseProxyForEvent implements handlers.ReverseProxyUpdater.
+// It fetches the current reverse proxy config and hosts for a single host via HTTP
+// and persists the result to the DB. Called by HostReverseProxyEventHandler when
+// a reverse_proxy event arrives over WebSocket.
+func (s *OrchestratorService) UpdateHostReverseProxyForEvent(ctx basecontext.ApiContext, hostID string) error {
+	host, err := s.GetDatabaseHost(ctx, hostID)
+	if err != nil {
+		ctx.LogErrorf("[Orchestrator] Error getting host %s for reverse proxy update: %v", hostID, err)
+		return err
+	}
+	if host == nil {
+		ctx.LogWarnf("[Orchestrator] Host %s not found for reverse proxy update", hostID)
+		return nil
+	}
+
+	rpConfig, err := s.CallGetHostReverseProxyConfig(host)
+	if err == nil && rpConfig != nil {
+		host.ReverseProxy = &models.ReverseProxy{
+			ID:      rpConfig.ID,
+			Host:    rpConfig.Host,
+			Port:    rpConfig.Port,
+			HostID:  host.ID,
+			Enabled: rpConfig.Enabled,
+		}
+		rpHosts, err := s.CallGetHostReverseProxyHosts(host)
+		if err == nil && rpHosts != nil {
+			host.ReverseProxyHosts = rpHosts
+		}
+	}
+
+	if err := s.persistHost(host); err != nil {
+		ctx.LogErrorf("[Orchestrator] Error persisting reverse proxy update for host %s: %v", hostID, err)
+		return err
+	}
+
+	ctx.LogInfof("[Orchestrator] Updated reverse proxy config for host %s", hostID)
 	return nil
 }
 
@@ -491,7 +619,6 @@ func (s *OrchestratorService) RefreshHostCache(hostId string) {
 					CachedDate:   manifest.CacheDate,
 				})
 			}
-			host.UpdatedAt = helpers.GetUtcCurrentDateTime()
 			_ = s.persistHost(host)
 		} else {
 			s.ctx.LogWarnf("[Orchestrator] Error doing real-time cache refresh for host %s: %v", host.Host, err)

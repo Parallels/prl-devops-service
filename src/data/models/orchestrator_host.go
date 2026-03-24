@@ -26,6 +26,7 @@ type OrchestratorHost struct {
 	ParallelsDesktopVersion   string                          `json:"parallels_desktop_version,omitempty"`
 	ParallelsDesktopLicensed  bool                            `json:"parallels_desktop_licensed,omitempty"`
 	HasWebsocketEvents        bool                            `json:"has_websocket_events"`
+	IsLocal                   bool                            `json:"is_local,omitempty"`
 	Authentication            *OrchestratorHostAuthentication `json:"authentication,omitempty"`
 	Resources                 *HostResources                  `json:"resources,omitempty"`
 	State                     string                          `json:"state,omitempty"`
@@ -242,6 +243,10 @@ func (o *OrchestratorHost) Diff(source OrchestratorHost) bool {
 	}
 
 	if o.HasWebsocketEvents != source.HasWebsocketEvents {
+		return true
+	}
+
+	if o.IsLocal != source.IsLocal {
 		return true
 	}
 

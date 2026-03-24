@@ -11,11 +11,6 @@ import (
 )
 
 func (s *OrchestratorService) ExecuteOnVirtualMachine(ctx basecontext.ApiContext, vmId string, request models.VirtualMachineExecuteCommandRequest, noCache bool) (*models.VirtualMachineExecuteCommandResponse, error) {
-	if noCache {
-		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
-		s.Refresh()
-	}
-
 	vm, err := s.GetVirtualMachine(ctx, vmId, false)
 	if err != nil {
 		return nil, err
@@ -24,7 +19,7 @@ func (s *OrchestratorService) ExecuteOnVirtualMachine(ctx basecontext.ApiContext
 		return nil, errors.NewWithCodef(404, "Virtual machine %s not found", vmId)
 	}
 
-	host, err := s.GetHost(ctx, vm.HostId)
+	host, err := s.GetDatabaseHost(ctx, vm.HostId)
 	if err != nil {
 		return nil, err
 	}
@@ -43,11 +38,6 @@ func (s *OrchestratorService) ExecuteOnVirtualMachine(ctx basecontext.ApiContext
 }
 
 func (s *OrchestratorService) ExecuteOnHostVirtualMachine(ctx basecontext.ApiContext, hostId string, vmId string, request models.VirtualMachineExecuteCommandRequest, noCache bool) (*models.VirtualMachineExecuteCommandResponse, error) {
-	if noCache {
-		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
-		s.Refresh()
-	}
-
 	vm, err := s.GetVirtualMachine(ctx, vmId, false)
 	if err != nil {
 		return nil, err
@@ -56,7 +46,7 @@ func (s *OrchestratorService) ExecuteOnHostVirtualMachine(ctx basecontext.ApiCon
 		return nil, errors.NewWithCodef(404, "Virtual machine %s not found", vmId)
 	}
 
-	host, err := s.GetHost(ctx, hostId)
+	host, err := s.GetDatabaseHost(ctx, hostId)
 	if err != nil {
 		return nil, err
 	}

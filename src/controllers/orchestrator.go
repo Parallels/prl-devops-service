@@ -2779,13 +2779,9 @@ func GetOrchestratorHostReverseProxyConfigHandler() restapi.ControllerHandler {
 
 		vars := mux.Vars(r)
 		id := vars["id"]
-		noCache := false
-		if r.Header.Get("X-No-Cache") == "true" {
-			noCache = true
-		}
 
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.GetHostReverseProxyConfig(ctx, id, "", noCache)
+		response, err := orchestratorSvc.GetHostReverseProxyConfig(ctx, id, "", true)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -2816,13 +2812,9 @@ func GetOrchestratorHostReverseProxyHostsHandler() restapi.ControllerHandler {
 
 		vars := mux.Vars(r)
 		id := vars["id"]
-		noCache := false
-		if r.Header.Get("X-No-Cache") == "true" {
-			noCache = true
-		}
 
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.GetHostReverseProxyHosts(ctx, id, "", noCache)
+		response, err := orchestratorSvc.GetHostReverseProxyHosts(ctx, id, "", true)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -2854,13 +2846,9 @@ func GetOrchestratorHostReverseProxyHostHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		reverseProxyHostId := vars["reverse_proxy_host_id"]
-		noCache := false
-		if r.Header.Get("X-No-Cache") == "true" {
-			noCache = true
-		}
 
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.GetHostReverseProxyHost(ctx, id, reverseProxyHostId, noCache)
+		response, err := orchestratorSvc.GetHostReverseProxyHost(ctx, id, reverseProxyHostId, true)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -3706,6 +3694,7 @@ func AsyncDeployOrchestratorHostHandler() restapi.ControllerHandler {
 		jobID := localJob.ID
 		asyncCtx := basecontext.NewRootBaseContext()
 		go func() {
+			_, _ = jobManager.InitJob(jobID)
 			orchSvc := orchestrator.NewOrchestratorService(asyncCtx)
 			onOutput := func(line string) {
 				_, _ = jobManager.UpdateJobMessage(jobID, line)

@@ -289,7 +289,9 @@ func uninstallServiceOnLinux(ctx basecontext.ApiContext, removeDatabase bool) er
 func getConfigFromEnv() ApiServiceConfig {
 	cfg := config.Get()
 	config := ApiServiceConfig{}
-	if cfg.GetKey(constants.API_PORT_ENV_VAR) != "" {
+	if apiPort := helper.GetFlagValue("api-port", ""); apiPort != "" {
+		config.Port = apiPort
+	} else if cfg.GetKey(constants.API_PORT_ENV_VAR) != "" {
 		config.Port = cfg.GetKey(constants.API_PORT_ENV_VAR)
 	} else {
 		config.Port = constants.DEFAULT_API_PORT

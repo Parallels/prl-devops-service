@@ -15,11 +15,10 @@ import (
 )
 
 type PDfMEventHandler struct {
-	registrar       interfaces.HostRegistrar
-	resourceUpdater ResourceUpdater
+	registrar interfaces.HostRegistrar
 }
 
-// ResourceUpdater interface for updating host resources
+// ResourceUpdater interface for updating host resources (used by HostStatsHandler)
 type ResourceUpdater interface {
 	UpdateHostResourcesForEvent(ctx basecontext.ApiContext, hostID string) error
 }
@@ -39,11 +38,6 @@ func NewPDfMEventHandler(registrar interfaces.HostRegistrar) *PDfMEventHandler {
 	return pdfmInstance
 }
 
-// SetResourceUpdater sets the resource updater dependency
-func (h *PDfMEventHandler) SetResourceUpdater(updater ResourceUpdater) {
-	h.resourceUpdater = updater
-}
-
 func (h *PDfMEventHandler) Handle(ctx basecontext.ApiContext, hostID string, eventType constants.EventType, payload []byte) {
 	if eventType != constants.EventTypePDFM {
 		return
@@ -58,24 +52,18 @@ func (h *PDfMEventHandler) Handle(ctx basecontext.ApiContext, hostID string, eve
 	switch event.Message {
 	case "VM_STATE_CHANGED":
 		h.handleVmStateChange(ctx, hostID, event)
-		h.updateHostResources(ctx, hostID)
 	case "VM_ADDED":
 		h.handleVmAdded(ctx, hostID, event)
-		h.updateHostResources(ctx, hostID)
 	case "VM_REMOVED":
 		h.handleVmRemoved(ctx, hostID, event)
-		h.updateHostResources(ctx, hostID)
 	case "VM_UPDATED":
 		h.handleVmUpdated(ctx, hostID, event)
-		h.updateHostResources(ctx, hostID)
 	case "VM_UPTIME_CHANGED":
 		h.handleVmUptimeChanged(ctx, hostID, event)
 	case "VM_SNAPSHOTS_UPDATED":
 		h.handleVMSnapshotsUpdated(ctx, hostID, event)
-		h.updateHostResources(ctx, hostID)
 	case "MAC_VMS_RUNNING_NOW":
 		h.handleMacVmsRunningNow(ctx, hostID, event)
-		h.updateHostResources(ctx, hostID)
 	default:
 		ctx.LogWarnf("[PDfMEventHandler] Unknown event message : %s", event.Message)
 	}
@@ -98,8 +86,9 @@ func unmarshalEventBody[T any](ctx basecontext.ApiContext, event models.EventMes
 	return &result, nil
 }
 
-// getHostFromDatabase retrieves host from database with error handling
-func (h *PDfMEventHandler) getHostFromDatabase(ctx basecontext.ApiContext, hostID string) (*data_models.OrchestratorHost, error) {
+// getHostConnectionInfo retrieves the host record to populate VM metadata fields.
+// Returns an error if the host is not found or the DB is unavailable.
+func (h *PDfMEventHandler) getHostConnectionInfo(ctx basecontext.ApiContext, hostID string) (*data_models.OrchestratorHost, error) {
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
@@ -118,33 +107,6 @@ func (h *PDfMEventHandler) getHostFromDatabase(ctx basecontext.ApiContext, hostI
 	}
 
 	return host, nil
-}
-
-// findVMIndex finds the index of a VM in the host's VMs slice
-func findVMIndex(vms []data_models.VirtualMachine, vmID string) int {
-	for i, vm := range vms {
-		if vm.ID == vmID {
-			return i
-		}
-	}
-	return -1
-}
-
-// updateHostInDatabase updates host in database with error handling and logging
-func (h *PDfMEventHandler) updateHostInDatabase(ctx basecontext.ApiContext, host *data_models.OrchestratorHost, vmID, operation string) error {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
-	if err != nil {
-		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
-		return err
-	}
-
-	if _, err := dbService.UpdateOrchestratorHost(ctx, host); err != nil {
-		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error updating VM %s %s in DB: %v", vmID, operation, err)
-		return err
-	}
-
-	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM %s %s", vmID, operation)
-	return nil
 }
 
 // emitHostVMEvent emits orchestrator events with standardized error handling
@@ -171,23 +133,18 @@ func (h *PDfMEventHandler) handleVmStateChange(ctx basecontext.ApiContext, hostI
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM state changed: %s -> %s (VM: %s, Host: %s)",
 		stateChange.PreviousState, stateChange.CurrentState, stateChange.VmID, hostID)
 
-	host, err := h.getHostFromDatabase(ctx, hostID)
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
 		return
 	}
 
-	vmIndex := findVMIndex(host.VirtualMachines, stateChange.VmID)
-	if vmIndex == -1 {
-		ctx.LogWarnf("[PDfMEventHandler] [orchestrator] VM %s not found in host %s", stateChange.VmID, hostID)
+	if err := dbService.UpdateOrchestratorHostVMState(ctx, hostID, stateChange.VmID, stateChange.CurrentState); err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error updating VM %s state: %v", stateChange.VmID, err)
 		return
 	}
 
-	host.VirtualMachines[vmIndex].State = stateChange.CurrentState
-
-	if err := h.updateHostInDatabase(ctx, host, stateChange.VmID, fmt.Sprintf("state updated to %s", stateChange.CurrentState)); err != nil {
-		return
-	}
-
+	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM %s state updated to %s", stateChange.VmID, stateChange.CurrentState)
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_STATE_CHANGED", *stateChange)
 }
 
@@ -199,8 +156,15 @@ func (h *PDfMEventHandler) handleVmAdded(ctx basecontext.ApiContext, hostID stri
 
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM added: %s (VM: %s, Host: %s)", vmAdded.NewVm.Name, vmAdded.VmID, hostID)
 
-	host, err := h.getHostFromDatabase(ctx, hostID)
+	// Read host connection info to populate VM metadata fields.
+	host, err := h.getHostConnectionInfo(ctx, hostID)
 	if err != nil {
+		return
+	}
+
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
 		return
 	}
 
@@ -209,12 +173,13 @@ func (h *PDfMEventHandler) handleVmAdded(ctx basecontext.ApiContext, hostID stri
 	dtoVm.HostName = getHostName(*host)
 	dtoVm.Host = host.GetHost()
 	dtoVm.HostUrl = host.GetHostUrl()
-	host.VirtualMachines = append(host.VirtualMachines, dtoVm)
 
-	if err := h.updateHostInDatabase(ctx, host, vmAdded.VmID, "added"); err != nil {
+	if err := dbService.UpsertOrchestratorHostVM(ctx, hostID, dtoVm); err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error upserting VM %s: %v", vmAdded.VmID, err)
 		return
 	}
 
+	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM %s added", vmAdded.VmID)
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_ADDED", *vmAdded)
 }
 
@@ -224,22 +189,20 @@ func (h *PDfMEventHandler) handleVmRemoved(ctx basecontext.ApiContext, hostID st
 		return
 	}
 
-	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM removed: %s (VM: %s, Host: %s)", vmRemoved.VmID, vmRemoved.VmID, hostID)
+	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM removed: %s (Host: %s)", vmRemoved.VmID, hostID)
 
-	host, err := h.getHostFromDatabase(ctx, hostID)
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
 		return
 	}
 
-	vmIndex := findVMIndex(host.VirtualMachines, vmRemoved.VmID)
-	if vmIndex != -1 {
-		host.VirtualMachines = append(host.VirtualMachines[:vmIndex], host.VirtualMachines[vmIndex+1:]...)
-	}
-
-	if err := h.updateHostInDatabase(ctx, host, vmRemoved.VmID, "removed"); err != nil {
+	if err := dbService.RemoveOrchestratorHostVM(ctx, hostID, vmRemoved.VmID); err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error removing VM %s: %v", vmRemoved.VmID, err)
 		return
 	}
 
+	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM %s removed", vmRemoved.VmID)
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_REMOVED", *vmRemoved)
 }
 
@@ -251,29 +214,30 @@ func (h *PDfMEventHandler) handleVmUpdated(ctx basecontext.ApiContext, hostID st
 
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM updated: %s (VM: %s, Host: %s)", vmUpdated.NewVm.Name, vmUpdated.VmID, hostID)
 
-	host, err := h.getHostFromDatabase(ctx, hostID)
+	// Read host connection info to populate VM metadata fields.
+	host, err := h.getHostConnectionInfo(ctx, hostID)
 	if err != nil {
 		return
 	}
 
-	vmIndex := findVMIndex(host.VirtualMachines, vmUpdated.VmID)
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
+		return
+	}
+
 	dtoVm := mappers.MapDtoVirtualMachineFromApi(vmUpdated.NewVm)
 	dtoVm.HostId = host.ID
 	dtoVm.HostName = getHostName(*host)
 	dtoVm.Host = host.GetHost()
 	dtoVm.HostUrl = host.GetHostUrl()
 
-	if vmIndex != -1 {
-		host.VirtualMachines[vmIndex] = dtoVm
-	} else {
-		ctx.LogWarnf("[PDfMEventHandler] [orchestrator] VM %s not found in host %s for update", vmUpdated.VmID, hostID)
-		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
-	}
-
-	if err := h.updateHostInDatabase(ctx, host, vmUpdated.VmID, "updated"); err != nil {
+	if err := dbService.UpsertOrchestratorHostVM(ctx, hostID, dtoVm); err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error upserting VM %s: %v", vmUpdated.VmID, err)
 		return
 	}
 
+	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM %s updated", vmUpdated.VmID)
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_UPDATED", *vmUpdated)
 }
 
@@ -286,24 +250,18 @@ func (h *PDfMEventHandler) handleVmUptimeChanged(ctx basecontext.ApiContext, hos
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] [uptime] VM uptime changed: %s (VM: %s, Host: %s)",
 		uptimeChanged.Uptime, uptimeChanged.VmID, hostID)
 
-	host, err := h.getHostFromDatabase(ctx, hostID)
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
 		return
 	}
 
-	vmIndex := findVMIndex(host.VirtualMachines, uptimeChanged.VmID)
-	if vmIndex == -1 {
-		ctx.LogWarnf("[PDfMEventHandler] [orchestrator] [uptime] VM %s not found in host %s for uptime update",
-			uptimeChanged.VmID, hostID)
+	if err := dbService.UpdateOrchestratorHostVMUptime(ctx, hostID, uptimeChanged.VmID, uptimeChanged.Uptime); err != nil {
+		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error updating VM %s uptime: %v", uptimeChanged.VmID, err)
 		return
 	}
 
-	host.VirtualMachines[vmIndex].Uptime = uptimeChanged.Uptime
-
-	if err := h.updateHostInDatabase(ctx, host, uptimeChanged.VmID, fmt.Sprintf("uptime updated: %s", uptimeChanged.Uptime)); err != nil {
-		return
-	}
-
+	ctx.LogInfof("[PDfMEventHandler] [orchestrator] [uptime] VM %s uptime updated: %s", uptimeChanged.VmID, uptimeChanged.Uptime)
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_UPTIME_CHANGED", *uptimeChanged)
 }
 
@@ -341,18 +299,6 @@ func (h *PDfMEventHandler) handleMacVmsRunningNow(ctx basecontext.ApiContext, ho
 
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] MAC VMs running now: %v (Host: %s)", macVmsRunningNow, hostID)
 	h.emitHostVMEvent(ctx, hostID, "HOST_MAC_VMS_RUNNING_NOW", *macVmsRunningNow)
-}
-
-func (h *PDfMEventHandler) updateHostResources(ctx basecontext.ApiContext, hostID string) error {
-	if h.resourceUpdater == nil {
-		ctx.LogWarnf("[PDfMEventHandler] [orchestrator] No resource updater configured - skipping host resource update")
-		return nil
-	}
-	if err := h.resourceUpdater.UpdateHostResourcesForEvent(ctx, hostID); err != nil {
-		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error updating host resources for host %s: %v", hostID, err)
-		return err
-	}
-	return nil
 }
 
 func getHostName(host data_models.OrchestratorHost) string {

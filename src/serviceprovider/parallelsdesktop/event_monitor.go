@@ -20,6 +20,12 @@ import (
 )
 
 func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
+	// Parallels Desktop is not available on this host — nothing to listen to.
+	if !s.installed {
+		ctx.LogInfof("[ParallelsDesktop] [Events] Parallels Desktop not installed, skipping event listener")
+		return
+	}
+
 	// Lock this check so concurrent startup calls don't spawn duplicate listeners!
 	s.Lock()
 	if s.eventsProcessing {
@@ -87,8 +93,8 @@ func (s *ParallelsService) listenToParallelsEvents(ctx basecontext.ApiContext) {
 						if err != io.EOF {
 							ctx.LogErrorf("[ParallelsDesktop] [Events] Error reading output for user %s: %v\n", u.Username, err)
 						}
-						// Break out of the loop if the PTY dies
-						break
+						// Exit the goroutine â the PTY has closed or errored.
+						return
 					}
 
 					var event models.ParallelsServiceEvent

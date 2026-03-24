@@ -69,4 +69,5 @@ func (h *SystemHandler) Handle(ctx basecontext.ApiContext, clientID string, even
 			h.broadcaster.BroadcastMessage(cidMsg)
 		}
 	}
+
 }

@@ -27,6 +27,7 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 		registerVirtualMachinesHandlers(ctx, version)
 	}
 	registerConfigHandlers(ctx, version)
+	registerUserConfigsHandlers(ctx, version)
 	if config.Get().IsOrchestrator() {
 		registerOrchestratorHostsHandlers(ctx, version)
 	}

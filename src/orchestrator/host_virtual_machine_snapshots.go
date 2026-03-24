@@ -26,7 +26,8 @@ func (s *OrchestratorService) validateHostAndVM(ctx basecontext.ApiContext, host
 		return nil, nil, errors.NewWithCodef(404, "Virtual machine %s not found", vmId)
 	}
 
-	host, err := s.GetHost(ctx, hostId)
+	// Use GetDatabaseHost to avoid a live /health/probe HTTP call per snapshot operation.
+	host, err := s.GetDatabaseHost(ctx, hostId)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -51,9 +52,16 @@ func (s *OrchestratorService) GetHostVirtualMachineSnapshotsWithAPI(ctx basecont
 		return nil, err
 	}
 
+	return s.callGetVMSnapshotsFromHost(host, vm.ID)
+}
+
+// callGetVMSnapshotsFromHost fetches snapshots for a single VM directly from the host
+// without performing a health probe. Used by fullRefreshHost to avoid an extra HTTP
+// round-trip per VM during the snapshot sync loop.
+func (s *OrchestratorService) callGetVMSnapshotsFromHost(host *data_models.OrchestratorHost, vmID string) (*apimodels.ListVMSnapshotResponse, error) {
 	httpClient := s.getApiClient(*host)
 	httpClient.WithTimeout(2 * time.Minute)
-	path := "/machines/" + vm.ID + "/snapshots"
+	path := "/machines/" + vmID + "/snapshots"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {
 		return nil, err

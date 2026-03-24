@@ -27,6 +27,22 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 		WithRequiredClaim(constants.READ_ONLY_CLAIM).
 		WithHandler(WebSocketUnsubscribeHandler()).
 		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/ws/clients").
+		WithRequiredClaim(constants.READ_ONLY_CLAIM).
+		WithHandler(WebSocketClientsHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/ws/stats").
+		WithRequiredClaim(constants.READ_ONLY_CLAIM).
+		WithHandler(WebSocketStatsHandler()).
+		Register()
 }
 
 // @Summary		Subscribe to event notifications via WebSocket
@@ -59,6 +75,58 @@ func WebSocketSubscribeHandler() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, *err)
 			return
 		}
+	}
+}
+
+// @Summary		List connected WebSocket clients
+// @Description	Returns all currently connected WebSocket clients with queue depth and ping/pong timestamps. Useful for diagnosing stale or dead clients whose queues are filling up.
+// @Tags			Events
+// @Produce		json
+// @Success		200	{array}		models.EventClientInfo
+// @Failure		503	{object}	models.ApiErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/ws/clients [get]
+func WebSocketClientsHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		emitter := eventemitter.Get()
+		if emitter == nil || !emitter.IsRunning() {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "EventEmitter service is not available",
+				Code:    http.StatusServiceUnavailable,
+			})
+			return
+		}
+		eventemitter.HandleGetClients(w, r, ctx)
+	}
+}
+
+// @Summary		Get WebSocket event emitter statistics
+// @Description	Returns aggregate statistics including total connected clients, subscription counts per event type, uptime, and per-client details with queue depths.
+// @Tags			Events
+// @Produce		json
+// @Success		200	{object}	models.EventEmitterStats
+// @Failure		503	{object}	models.ApiErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/ws/stats [get]
+func WebSocketStatsHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		emitter := eventemitter.Get()
+		if emitter == nil || !emitter.IsRunning() {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "EventEmitter service is not available",
+				Code:    http.StatusServiceUnavailable,
+			})
+			return
+		}
+		eventemitter.HandleGetStats(w, r, ctx)
 	}
 }
 
