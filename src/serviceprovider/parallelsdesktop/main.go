@@ -2561,25 +2561,36 @@ func (s *ParallelsService) LocalUploadToVm(ctx basecontext.ApiContext, id string
 			inPipe.Close()
 		}()
 
-		// Start second command
+		// Acquire the SSH semaphore before starting the prlctl exec logon.
+		// This keeps us within maxConcurrentSSH simultaneous SSH sessions,
+		// preventing the "maximum number of simultaneous logon attempts" error
+		// that macOS (and Linux guests) enforce at the hypervisor level.
+		s.sshSem <- struct{}{}
+
+		// Start second command (prlctl exec — opens an SSH session to the VM)
 		if err := cmd2.Start(); err != nil {
-			response.Error = "q" + err.Error()
+			<-s.sshSem
+			response.Error = err.Error()
 			return &response, err
 		}
 
 		// Wait for first command to finish
 		if err := cmd1.Wait(); err != nil {
+			cmd2.Wait() //nolint:errcheck // drain so the SSH session closes cleanly
+			<-s.sshSem
 			ctx.LogInfof("Compressing the file/dir failed: %s Error : %s", err.Error(), stderr1.String())
 			response.Error = err.Error()
 			return &response, err
 		}
 
-		// Wait for second command to finish
+		// Wait for second command to finish, then release the semaphore
 		if err := cmd2.Wait(); err != nil {
+			<-s.sshSem
 			ctx.LogInfof("Copy file to VM failed: %s Error : %s", err.Error(), stderr2.String())
 			response.Error = err.Error()
 			return &response, err
 		}
+		<-s.sshSem
 
 	} else {
 		cmd := helpers.Command{
@@ -2651,7 +2662,9 @@ func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id str
 	cmd.Args = append(cmd.Args, "exec", vm.ID, bashCommand)
 	cmd = cmd.AsUser(vm.User)
 	ctx.LogInfof("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
+	s.sshSem <- struct{}{}
 	stdout, stderr, exitCode, cmdError := helpers.ExecuteWithOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
+	<-s.sshSem
 	response.Stdout = stdout
 	response.Stderr = stderr
 	response.ExitCode = exitCode

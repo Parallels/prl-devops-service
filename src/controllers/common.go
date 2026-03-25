@@ -6,8 +6,10 @@ import (
 	"runtime/debug"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
 func GetFilterHeader(r *http.Request) string {
@@ -68,6 +70,17 @@ func ReturnApiCommonResponseWithData(w http.ResponseWriter, data interface{}) {
 		Data:    data,
 	}
 	_ = json.NewEncoder(w).Encode(responseData)
+}
+
+// emitAuthEvent fires an EventTypeAuth event in a goroutine. It is a no-op
+// when the event emitter is unavailable, so callers never need to guard it.
+func emitAuthEvent(message string, body interface{}) {
+	emitter := serviceprovider.GetEventEmitter()
+	if emitter == nil || !emitter.IsRunning() {
+		return
+	}
+	msg := models.NewEventMessage(constants.EventTypeAuth, message, body)
+	go func() { _ = emitter.Broadcast(msg) }()
 }
 
 func ReturnApiCommonResponseWithDataAndCode(w http.ResponseWriter, data interface{}, code int) {

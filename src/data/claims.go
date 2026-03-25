@@ -124,10 +124,21 @@ func (j *JsonDatabase) DeleteClaim(ctx basecontext.ApiContext, idOrName string) 
 			}
 
 			j.data.Claims = append(j.data.Claims[:i], j.data.Claims[i+1:]...)
-			for _, user := range j.data.Users {
-				for j, userClaim := range user.Claims {
-					if userClaim.ID == claim.ID {
-						user.Claims = append(user.Claims[:j], user.Claims[j+1:]...)
+
+			// Cascade: remove from all users (fix: use index to mutate in place).
+			for u := range j.data.Users {
+				for k := len(j.data.Users[u].Claims) - 1; k >= 0; k-- {
+					if strings.EqualFold(j.data.Users[u].Claims[k].ID, claim.ID) {
+						j.data.Users[u].Claims = append(j.data.Users[u].Claims[:k], j.data.Users[u].Claims[k+1:]...)
+					}
+				}
+			}
+
+			// Cascade: remove from all roles.
+			for r := range j.data.Roles {
+				for k := len(j.data.Roles[r].Claims) - 1; k >= 0; k-- {
+					if strings.EqualFold(j.data.Roles[r].Claims[k].ID, claim.ID) {
+						j.data.Roles[r].Claims = append(j.data.Roles[r].Claims[:k], j.data.Roles[r].Claims[k+1:]...)
 					}
 				}
 			}
@@ -136,6 +147,28 @@ func (j *JsonDatabase) DeleteClaim(ctx basecontext.ApiContext, idOrName string) 
 		}
 	}
 
+	return ErrClaimNotFound
+}
+
+// UpdateClaimMetadata sets the Description/Group/Resource/Action fields on a
+// claim without triggering the internal-claim guard. Used on startup to
+// backfill existing installations with display metadata.
+func (j *JsonDatabase) UpdateClaimMetadata(ctx basecontext.ApiContext, idOrName, description, group, resource, action string) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+	if idOrName == "" {
+		return ErrClaimEmptyNameOrId
+	}
+	for i, c := range j.data.Claims {
+		if strings.EqualFold(c.ID, idOrName) || strings.EqualFold(c.Name, idOrName) {
+			j.data.Claims[i].Description = description
+			j.data.Claims[i].Group = group
+			j.data.Claims[i].Resource = resource
+			j.data.Claims[i].Action = action
+			return nil
+		}
+	}
 	return ErrClaimNotFound
 }
 
@@ -156,10 +189,21 @@ func (j *JsonDatabase) UpdateClaim(ctx basecontext.ApiContext, claim *models.Cla
 			oldClaim := j.data.Claims[i]
 			claim.ID = strings.ToUpper(helpers.NormalizeString(claim.Name))
 			j.data.Claims[i] = *claim
-			for _, user := range j.data.Users {
-				for j, userClaim := range user.Claims {
-					if userClaim.ID == oldClaim.ID {
-						user.Claims[j] = *claim
+
+			// Cascade update to users (fix: use index to mutate in place).
+			for u := range j.data.Users {
+				for k, userClaim := range j.data.Users[u].Claims {
+					if strings.EqualFold(userClaim.ID, oldClaim.ID) {
+						j.data.Users[u].Claims[k] = *claim
+					}
+				}
+			}
+
+			// Cascade update to roles.
+			for r := range j.data.Roles {
+				for k, roleClaim := range j.data.Roles[r].Claims {
+					if strings.EqualFold(roleClaim.ID, oldClaim.ID) {
+						j.data.Roles[r].Claims[k] = *claim
 					}
 				}
 			}

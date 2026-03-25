@@ -10,9 +10,24 @@ import (
 
 func DtoRoleToApi(model data_models.Role) models.RoleResponse {
 	role := models.RoleResponse{
-		ID:   model.ID,
-		Name: model.Name,
+		ID:          model.ID,
+		Name:        model.Name,
+		Description: model.Description,
+		Claims:      []models.ClaimResponse{},
+		Users:       []models.ApiUser{},
 	}
+
+	for _, c := range model.Claims {
+		role.Claims = append(role.Claims, models.ClaimResponse{
+			ID:          c.ID,
+			Name:        c.Name,
+			Description: c.Description,
+			Group:       c.Group,
+			Resource:    c.Resource,
+			Action:      c.Action,
+		})
+	}
+
 	for _, user := range model.Users {
 		role.Users = append(role.Users, models.ApiUser{
 			ID:       user.ID,
@@ -35,10 +50,20 @@ func DtoRolesToApi(m []data_models.Role) []models.RoleResponse {
 }
 
 func ApiRoleToDto(model models.RoleRequest) data_models.Role {
-	return data_models.Role{
+	role := data_models.Role{
 		ID:   strings.ToUpper(helpers.NormalizeString(model.Name)),
 		Name: model.Name,
 	}
+
+	for _, claimName := range model.Claims {
+		normalized := strings.ToUpper(helpers.NormalizeString(claimName))
+		role.Claims = append(role.Claims, data_models.Claim{
+			ID:   normalized,
+			Name: normalized,
+		})
+	}
+
+	return role
 }
 
 func ApiRolesToDto(m []models.RoleRequest) []data_models.Role {

@@ -19,18 +19,39 @@ func SeedDefaultClaims() error {
 
 	allSystemClaims := constants.AllSystemClaims
 
-	for _, claim := range allSystemClaims {
-		if exists, _ := db.GetClaim(ctx, claim); exists == nil {
+	for _, claimID := range allSystemClaims {
+		meta, hasMeta := constants.ClaimCategoryMap[claimID]
+		group := constants.ClaimGroupCustom
+		resource := ""
+		action := ""
+		if hasMeta {
+			group = meta.Group
+			resource = meta.Resource
+			action = meta.Action
+		}
+		description := constants.ClaimDescriptionMap[claimID] // "" if not found
+
+		if exists, _ := db.GetClaim(ctx, claimID); exists == nil {
 			if _, err := db.CreateClaim(ctx, models.Claim{
-				ID:       claim,
-				Name:     claim,
-				Internal: true,
+				ID:          claimID,
+				Name:        claimID,
+				Internal:    true,
+				Description: description,
+				Group:       group,
+				Resource:    resource,
+				Action:      action,
 			}); err != nil {
 				common.Logger.Error("Error adding claim: %s", err.Error())
 				return err
 			}
 		} else {
-			ctx.LogDebugf("Claim already exists: %s", claim)
+			// Backfill metadata on already-seeded claims that are missing it.
+			if exists.Group == "" || exists.Description == "" {
+				if err := db.UpdateClaimMetadata(ctx, claimID, description, group, resource, action); err != nil {
+					common.Logger.Error("Error backfilling claim metadata for %s: %s", claimID, err.Error())
+					return err
+				}
+			}
 		}
 	}
 

@@ -27,6 +27,10 @@ func SeedDefaults() (err error) {
 		common.Logger.Error("Error seeding default roles: %s", err.Error())
 		return fmt.Errorf("SeedDefaultRoles failed: %w", err)
 	}
+	if err = seeds.SeedDefaultRoleClaims(); err != nil {
+		common.Logger.Error("Error seeding default role claims: %s", err.Error())
+		return fmt.Errorf("SeedDefaultRoleClaims failed: %w", err)
+	}
 	if err = seeds.SeedDefaultUsers(); err != nil {
 		common.Logger.Error("Error seeding admin user: %s", err.Error())
 		return fmt.Errorf("SeedDefaultUsers failed: %w", err)

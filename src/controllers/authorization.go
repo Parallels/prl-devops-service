@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
 	bruteforceguard "github.com/Parallels/prl-devops-service/security/brute_force_guard"
@@ -102,13 +103,12 @@ func GetTokenHandler() restapi.ControllerHandler {
 		}
 
 		userRoles := make([]string, 0)
-		userClaims := make([]string, 0)
 		for _, userRole := range user.Roles {
 			userRoles = append(userRoles, userRole.Name)
 		}
-		for _, userClaim := range user.Claims {
-			userClaims = append(userClaims, userClaim.Name)
-		}
+		// Use effective claims (direct + role-inherited, deduplicated) so the JWT
+		// reflects the user's full permission set.
+		userClaims := mappers.ComputeEffectiveClaimIDs(*user)
 
 		claims := map[string]interface{}{
 			"email":    user.Email,

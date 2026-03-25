@@ -31,6 +31,14 @@ func registerClaimsHandlers(ctx basecontext.ApiContext, version string) {
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).
+		WithPath("/auth/claims/grouped").
+		WithRequiredClaim(constants.LIST_CLAIM_CLAIM).
+		WithHandler(GetGroupedClaimsHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
 		WithPath("/auth/claims/{id}").
 		WithRequiredClaim(constants.LIST_CLAIM_CLAIM).
 		WithHandler(GetClaimHandler()).
@@ -99,6 +107,46 @@ func GetClaimsHandler() restapi.ControllerHandler {
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
 		ctx.LogInfof("Claims returned successfully")
+	}
+}
+
+// @Summary		Gets all claims grouped for the matrix UI
+// @Description	This endpoint returns all claims organised by group and resource
+// @Tags			Claims
+// @Produce		json
+// @Success		200	{object}	[]models.ClaimGroupResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/claims/grouped [get]
+func GetGroupedClaimsHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		diag := errors.NewDiagnostics("/auth/claims/grouped [get]")
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			rsp := models.NewFromError(err)
+			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, rsp.Code))
+			return
+		}
+
+		dtoClaims, err := dbService.GetClaims(ctx, "")
+		if err != nil {
+			rsp := models.NewFromError(err)
+			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetClaims")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, rsp.Code))
+			return
+		}
+
+		result := mappers.DtoClaimsToGrouped(dtoClaims)
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(result)
+		ctx.LogInfof("Grouped claims returned successfully")
 	}
 }
 
@@ -195,6 +243,7 @@ func CreateClaimHandler() restapi.ControllerHandler {
 
 		response := mappers.DtoClaimToApi(*claim)
 
+		emitAuthEvent(constants.EventAuthClaimAdded, models.AuthClaimEvent{ClaimID: claim.ID})
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Claim created successfully")
@@ -237,6 +286,7 @@ func DeleteClaimHandler() restapi.ControllerHandler {
 			return
 		}
 
+		emitAuthEvent(constants.EventAuthClaimRemoved, models.AuthClaimEvent{ClaimID: id})
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("Claim deleted successfully")
 	}
