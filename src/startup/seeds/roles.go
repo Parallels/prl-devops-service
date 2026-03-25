@@ -20,17 +20,25 @@ func SeedDefaultRoles() error {
 	allSystemRoles := constants.AllSystemRoles
 
 	for _, role := range allSystemRoles {
+		description := constants.RoleDescriptionMap[role] // "" if not found
 		if exists, _ := db.GetRole(ctx, role); exists == nil {
 			if _, err := db.CreateRole(ctx, models.Role{
-				ID:       role,
-				Name:     role,
-				Internal: true,
+				ID:          role,
+				Name:        role,
+				Description: description,
+				Internal:    true,
 			}); err != nil {
 				common.Logger.Error("Error adding role: %s", err.Error())
 				return err
 			}
 		} else {
-			ctx.LogDebugf("Role already exists: %s", role)
+			// Backfill description on already-seeded roles that are missing it.
+			if exists.Description == "" && description != "" {
+				if err := db.UpdateRoleDescription(ctx, role, description); err != nil {
+					common.Logger.Error("Error backfilling description for role %s: %s", role, err.Error())
+					return err
+				}
+			}
 		}
 	}
 

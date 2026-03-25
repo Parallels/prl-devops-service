@@ -41,14 +41,24 @@ func (r *UserCreateRequest) Validate() error {
 	return nil
 }
 
+// UserClaimResponse represents a single claim in the merged effective claims list,
+// tagged with its origin so UIs can distinguish direct from role-inherited claims.
+type UserClaimResponse struct {
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name"`
+	IsInherited bool   `json:"is_inherited"`
+	SourceRole  string `json:"source_role,omitempty"`
+}
+
 type ApiUser struct {
-	ID          string   `json:"id,omitempty"`
-	Username    string   `json:"username"`
-	Name        string   `json:"name,omitempty"`
-	Email       string   `json:"email"`
-	Roles       []string `json:"roles,omitempty"`
-	Claims      []string `json:"claims,omitempty"`
-	IsSuperUser bool     `json:"isSuperUser"`
+	ID              string              `json:"id,omitempty"`
+	Username        string              `json:"username"`
+	Name            string              `json:"name,omitempty"`
+	Email           string              `json:"email"`
+	Roles           []string            `json:"roles,omitempty"`
+	Claims          []string            `json:"claims,omitempty"`
+	EffectiveClaims []UserClaimResponse `json:"effective_claims"`
+	IsSuperUser     bool                `json:"isSuperUser"`
 }
 
 type UserUpdateRequest struct {

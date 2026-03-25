@@ -201,6 +201,7 @@ const (
 
 const (
 	USER_ROLE       = "USER"
+	ADMIN_ROLE      = "ADMIN"
 	SUPER_USER_ROLE = "SUPER_USER"
 	READ_ONLY_CLAIM = "READ_ONLY"
 
@@ -308,6 +309,7 @@ const (
 
 var AllSystemRoles = []string{
 	USER_ROLE,
+	ADMIN_ROLE,
 	SUPER_USER_ROLE,
 }
 
@@ -481,8 +483,22 @@ var AllSuperUserClaims = []string{
 	REVERT_OWN_VM_SNAPSHOT_CLAIM,
 }
 
+// AllAdminClaims is the full claim set for the ADMIN role.
+// It mirrors AllSuperUserClaims so that admins have the same operational
+// reach as super-users. Adjust here if finer-grained separation is needed.
+var AllAdminClaims = AllSuperUserClaims
+
 var DefaultRoles = []string{
 	USER_ROLE,
+}
+
+// RoleClaimsMap defines the canonical claims each built-in role grants.
+// Used by seeds to populate role claims and by the effective-claims helper
+// as a fallback for roles that have no persisted claims yet.
+var RoleClaimsMap = map[string][]string{
+	USER_ROLE:       DefaultClaims,
+	ADMIN_ROLE:      AllAdminClaims,
+	SUPER_USER_ROLE: AllSuperUserClaims,
 }
 
 var DefaultClaims = []string{

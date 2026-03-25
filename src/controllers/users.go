@@ -311,6 +311,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 
 		response := mappers.DtoUserToApiResponse(*dtoUser)
 
+		emitAuthEvent(constants.EventAuthUserAdded, models.AuthUserEvent{UserID: response.ID})
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("User created: %v", response.ID)
@@ -348,6 +349,7 @@ func DeleteUserHandler() restapi.ControllerHandler {
 			return
 		}
 
+		emitAuthEvent(constants.EventAuthUserRemoved, models.AuthUserEvent{UserID: id})
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("User deleted: %v", id)
 	}
@@ -402,6 +404,7 @@ func UpdateUserHandler() restapi.ControllerHandler {
 			return
 		}
 
+		emitAuthEvent(constants.EventAuthUserUpdated, models.AuthUserEvent{UserID: id})
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("User updated: %v", id)
 	}
@@ -494,6 +497,7 @@ func AddRoleToUserHandler() restapi.ControllerHandler {
 			return
 		}
 
+		emitAuthEvent(constants.EventAuthUserRoleAdded, models.AuthUserRoleEvent{UserID: id, RoleID: request.Name})
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(request)
 		ctx.LogInfof("Role added to user: %v", id)
@@ -532,6 +536,7 @@ func RemoveRoleFromUserHandler() restapi.ControllerHandler {
 			return
 		}
 
+		emitAuthEvent(constants.EventAuthUserRoleRemoved, models.AuthUserRoleEvent{UserID: id, RoleID: roleId})
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("Role removed from user: %v", id)
 	}
@@ -624,6 +629,7 @@ func AddClaimToUserHandler() restapi.ControllerHandler {
 			return
 		}
 
+		emitAuthEvent(constants.EventAuthUserClaimAdded, models.AuthUserClaimEvent{UserID: id, ClaimID: request.Name})
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(request)
 		ctx.LogInfof("Claim added to user: %v", id)
@@ -662,6 +668,7 @@ func RemoveClaimFromUserHandler() restapi.ControllerHandler {
 			return
 		}
 
+		emitAuthEvent(constants.EventAuthUserClaimRemoved, models.AuthUserClaimEvent{UserID: id, ClaimID: claimId})
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("Claim removed from user: %v", id)
 	}

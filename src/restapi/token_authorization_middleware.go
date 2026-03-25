@@ -230,16 +230,21 @@ func TokenAuthorizationMiddlewareAdapter(
 						}
 
 						if authorized {
-							// Validating if the user has the correct claims
+							// Validating if the user has the correct claims.
+							// Effective claims include both the user's direct claims and
+							// any claims inherited from their roles.
 							if len(claims) > 0 {
+								effectiveClaimIDs := mappers.ComputeEffectiveClaimIDs(*dbUser)
+								effectiveSet := make(map[string]bool, len(effectiveClaimIDs))
+								for _, id := range effectiveClaimIDs {
+									effectiveSet[strings.ToUpper(id)] = true
+								}
+
 								claimsCheck := TokenRoleClaimValidationList{}
 								for _, claim := range claims {
 									claimCheck := &TokenRoleClaimValidation{Name: claim}
-									for _, userClaim := range dbUser.Claims {
-										if strings.EqualFold(claim, userClaim.Name) {
-											claimCheck.SetExists(true)
-											break
-										}
+									if effectiveSet[strings.ToUpper(claim)] {
+										claimCheck.SetExists(true)
 									}
 									claimsCheck = append(claimsCheck, claimCheck)
 								}

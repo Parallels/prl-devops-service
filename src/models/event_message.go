@@ -156,6 +156,35 @@ type MacVMsRunningNowEvent struct {
 	MacVmsRunning []string `json:"mac_vms_running"`
 }
 
+// ── Auth event bodies ──────────────────────────────────────────────────────
+
+type AuthUserEvent struct {
+	UserID string `json:"user_id"`
+}
+
+type AuthRoleEvent struct {
+	RoleID string `json:"role_id"`
+}
+
+type AuthClaimEvent struct {
+	ClaimID string `json:"claim_id"`
+}
+
+type AuthRoleClaimEvent struct {
+	RoleID  string `json:"role_id"`
+	ClaimID string `json:"claim_id"`
+}
+
+type AuthUserRoleEvent struct {
+	UserID string `json:"user_id"`
+	RoleID string `json:"role_id"`
+}
+
+type AuthUserClaimEvent struct {
+	UserID  string `json:"user_id"`
+	ClaimID string `json:"claim_id"`
+}
+
 type HostAddedEvent struct {
 	HostID      string `json:"host_id"`
 	Host        string `json:"host"`
