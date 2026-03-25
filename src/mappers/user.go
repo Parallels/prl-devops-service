@@ -58,6 +58,11 @@ func DtoUserToApiResponse(model data_models.User) models.ApiUser {
 		user.Roles = []string{}
 	}
 
+	user.EffectiveClaims = ComputeEffectiveClaims(model)
+	if user.EffectiveClaims == nil {
+		user.EffectiveClaims = []models.UserClaimResponse{}
+	}
+
 	return user
 }
 

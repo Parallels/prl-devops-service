@@ -52,6 +52,30 @@ func registerRolesHandlers(ctx basecontext.ApiContext, version string) {
 		WithRequiredClaim(constants.DELETE_ROLE_CLAIM).
 		WithHandler(DeleteRoleHandler()).
 		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithPath("/auth/roles/{id}/claims").
+		WithRequiredClaim(constants.LIST_ROLE_CLAIM).
+		WithHandler(GetRoleClaimsHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithPath("/auth/roles/{id}/claims").
+		WithRequiredClaim(constants.UPDATE_ROLE_CLAIM).
+		WithHandler(AddClaimToRoleHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithPath("/auth/roles/{id}/claims/{claim_id}").
+		WithRequiredClaim(constants.UPDATE_ROLE_CLAIM).
+		WithHandler(RemoveClaimFromRoleHandler()).
+		Register()
 }
 
 // @Summary		Gets all the roles
@@ -147,12 +171,12 @@ func GetRoleHandler() restapi.ControllerHandler {
 	}
 }
 
-// @Summary		Gets a role
-// @Description	This endpoint returns a role
+// @Summary		Creates a role
+// @Description	This endpoint creates a role
 // @Tags			Roles
 // @Produce		json
 // @Param			roleRequest	body		models.RoleRequest	true	"Role Request"
-// @Success		200			{object}	models.RoleResponse
+// @Success		201			{object}	models.RoleResponse
 // @Failure		400			{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401			{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
@@ -196,6 +220,7 @@ func CreateRoleHandler() restapi.ControllerHandler {
 
 		response := mappers.DtoRoleToApi(*role)
 
+		emitAuthEvent(constants.EventAuthRoleAdded, models.AuthRoleEvent{RoleID: response.ID})
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Role created successfully")
@@ -239,7 +264,171 @@ func DeleteRoleHandler() restapi.ControllerHandler {
 			return
 		}
 
+		emitAuthEvent(constants.EventAuthRoleRemoved, models.AuthRoleEvent{RoleID: id})
 		w.WriteHeader(http.StatusAccepted)
 		ctx.LogInfof("Role deleted successfully")
+	}
+}
+
+// @Summary		Gets all claims for a role
+// @Description	This endpoint returns all claims associated with a role
+// @Tags			Roles
+// @Produce		json
+// @Param			id	path		string	true	"Role ID"
+// @Success		200	{object}	[]models.ClaimResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/roles/{id}/claims  [get]
+func GetRoleClaimsHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		diag := errors.NewDiagnostics("/auth/roles/{id}/claims [get]")
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			rsp := models.NewFromError(err)
+			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, rsp.Code))
+			return
+		}
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		dtoRole, err := dbService.GetRole(ctx, strings.ToUpper(helpers.NormalizeString(id)))
+		if err != nil {
+			rsp := models.NewFromError(err)
+			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, rsp.Code))
+			return
+		}
+
+		result := mappers.DtoClaimsToApi(dtoRole.Claims)
+		if result == nil {
+			result = []models.ClaimResponse{}
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(result)
+		ctx.LogInfof("Role claims returned successfully")
+	}
+}
+
+// @Summary		Adds a claim to a role
+// @Description	This endpoint adds a claim to a role
+// @Tags			Roles
+// @Produce		json
+// @Param			id			path		string					true	"Role ID"
+// @Param			body		body		models.RoleClaimRequest	true	"Claim Name"
+// @Success		201			{object}	models.ClaimResponse
+// @Failure		400			{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401			{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/roles/{id}/claims  [post]
+func AddClaimToRoleHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		diag := errors.NewDiagnostics("/auth/roles/{id}/claims [post]")
+		var request models.RoleClaimRequest
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			diag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, http.StatusBadRequest))
+			return
+		}
+		if err := request.Validate(); err != nil {
+			diag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, http.StatusBadRequest))
+			return
+		}
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			rsp := models.NewFromError(err)
+			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, rsp.Code))
+			return
+		}
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+
+		if err := dbService.AddClaimToRole(ctx, id, request.Name); err != nil {
+			rsp := models.NewFromError(err)
+			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, rsp.Code))
+			return
+		}
+
+		dtoRole, err := dbService.GetRole(ctx, id)
+		if err != nil {
+			rsp := models.NewFromError(err)
+			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, rsp.Code))
+			return
+		}
+
+		// Return the specific claim that was added.
+		claimName := strings.ToUpper(helpers.NormalizeString(request.Name))
+		for _, c := range dtoRole.Claims {
+			if strings.EqualFold(c.ID, claimName) {
+				w.WriteHeader(http.StatusCreated)
+				_ = json.NewEncoder(w).Encode(models.ClaimResponse{ID: c.ID, Name: c.Name})
+				ctx.LogInfof("Claim %s added to role %s", request.Name, id)
+				return
+			}
+		}
+
+		emitAuthEvent(constants.EventAuthRoleClaimAdded, models.AuthRoleClaimEvent{RoleID: id, ClaimID: request.Name})
+		w.WriteHeader(http.StatusCreated)
+		ctx.LogInfof("Claim %s added to role %s", request.Name, id)
+	}
+}
+
+// @Summary		Removes a claim from a role
+// @Description	This endpoint removes a claim from a role
+// @Tags			Roles
+// @Produce		json
+// @Param			id			path	string	true	"Role ID"
+// @Param			claim_id	path	string	true	"Claim ID"
+// @Success		202
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401	{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/auth/roles/{id}/claims/{claim_id}  [delete]
+func RemoveClaimFromRoleHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		diag := errors.NewDiagnostics("/auth/roles/{id}/claims/{claim_id} [delete]")
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			rsp := models.NewFromError(err)
+			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, rsp.Code))
+			return
+		}
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+		claimId := vars["claim_id"]
+
+		if err := dbService.RemoveClaimFromRole(ctx, id, claimId); err != nil {
+			rsp := models.NewFromError(err)
+			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, rsp.Code))
+			return
+		}
+
+		emitAuthEvent(constants.EventAuthRoleClaimRemoved, models.AuthRoleClaimEvent{RoleID: id, ClaimID: claimId})
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfof("Claim %s removed from role %s", claimId, id)
 	}
 }

@@ -41,6 +41,20 @@ func (j *JsonDatabase) GetUsers(ctx basecontext.ApiContext, filter string) ([]mo
 		return nil, err
 	}
 
+	// Re-hydrate each user's role claims from the live roles table so that
+	// ComputeEffectiveClaims always reflects the current state of each role,
+	// even when role claims are added or removed after the user was created.
+	for u := range filteredData {
+		for r := range filteredData[u].Roles {
+			for _, dbRole := range j.data.Roles {
+				if strings.EqualFold(dbRole.ID, filteredData[u].Roles[r].ID) {
+					filteredData[u].Roles[r].Claims = dbRole.Claims
+					break
+				}
+			}
+		}
+	}
+
 	return filteredData, nil
 }
 
