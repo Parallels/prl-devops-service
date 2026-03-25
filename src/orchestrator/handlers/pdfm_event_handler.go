@@ -15,7 +15,8 @@ import (
 )
 
 type PDfMEventHandler struct {
-	registrar interfaces.HostRegistrar
+	registrar  interfaces.HostRegistrar
+	hwEnqueuer interfaces.HardwareEnqueuer
 }
 
 // ResourceUpdater interface for updating host resources (used by HostStatsHandler)
@@ -36,6 +37,24 @@ func NewPDfMEventHandler(registrar interfaces.HostRegistrar) *PDfMEventHandler {
 		registrar.RegisterHandler([]constants.EventType{constants.EventTypePDFM}, pdfmInstance)
 	})
 	return pdfmInstance
+}
+
+// SetHardwareEnqueuer injects the hardware update queue after construction.
+// Must be called before any events are dispatched (i.e. immediately after
+// NewPDfMEventHandler in OrchestratorService.Start).
+func (h *PDfMEventHandler) SetHardwareEnqueuer(enqueuer interfaces.HardwareEnqueuer) {
+	h.hwEnqueuer = enqueuer
+}
+
+// enqueueHardwareUpdate requests a hardware refresh for the host. Called at the
+// end of every VM event handler so that Resources (disk space, CPU/memory,
+// MacVmsRunning) are updated immediately after each VM state change.
+func (h *PDfMEventHandler) enqueueHardwareUpdate(ctx basecontext.ApiContext, hostID string) {
+	if h.hwEnqueuer == nil {
+		ctx.LogWarnf("[PDfMEventHandler] No hardware enqueuer configured — skipping for host %s", hostID)
+		return
+	}
+	h.hwEnqueuer.Enqueue(hostID)
 }
 
 func (h *PDfMEventHandler) Handle(ctx basecontext.ApiContext, hostID string, eventType constants.EventType, payload []byte) {
@@ -146,6 +165,7 @@ func (h *PDfMEventHandler) handleVmStateChange(ctx basecontext.ApiContext, hostI
 
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM %s state updated to %s", stateChange.VmID, stateChange.CurrentState)
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_STATE_CHANGED", *stateChange)
+	h.enqueueHardwareUpdate(ctx, hostID)
 }
 
 func (h *PDfMEventHandler) handleVmAdded(ctx basecontext.ApiContext, hostID string, event models.EventMessage) {
@@ -181,6 +201,7 @@ func (h *PDfMEventHandler) handleVmAdded(ctx basecontext.ApiContext, hostID stri
 
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM %s added", vmAdded.VmID)
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_ADDED", *vmAdded)
+	h.enqueueHardwareUpdate(ctx, hostID)
 }
 
 func (h *PDfMEventHandler) handleVmRemoved(ctx basecontext.ApiContext, hostID string, event models.EventMessage) {
@@ -204,6 +225,7 @@ func (h *PDfMEventHandler) handleVmRemoved(ctx basecontext.ApiContext, hostID st
 
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM %s removed", vmRemoved.VmID)
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_REMOVED", *vmRemoved)
+	h.enqueueHardwareUpdate(ctx, hostID)
 }
 
 func (h *PDfMEventHandler) handleVmUpdated(ctx basecontext.ApiContext, hostID string, event models.EventMessage) {
@@ -239,6 +261,7 @@ func (h *PDfMEventHandler) handleVmUpdated(ctx basecontext.ApiContext, hostID st
 
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM %s updated", vmUpdated.VmID)
 	h.emitHostVMEvent(ctx, hostID, "HOST_VM_UPDATED", *vmUpdated)
+	h.enqueueHardwareUpdate(ctx, hostID)
 }
 
 func (h *PDfMEventHandler) handleVmUptimeChanged(ctx basecontext.ApiContext, hostID string, event models.EventMessage) {
@@ -299,6 +322,7 @@ func (h *PDfMEventHandler) handleMacVmsRunningNow(ctx basecontext.ApiContext, ho
 
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] MAC VMs running now: %v (Host: %s)", macVmsRunningNow, hostID)
 	h.emitHostVMEvent(ctx, hostID, "HOST_MAC_VMS_RUNNING_NOW", *macVmsRunningNow)
+	h.enqueueHardwareUpdate(ctx, hostID)
 }
 
 func getHostName(host data_models.OrchestratorHost) string {

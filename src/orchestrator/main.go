@@ -31,6 +31,7 @@ type OrchestratorService struct {
 	syncContext         context.Context
 	cancel              context.CancelFunc
 	db                  *data.JsonDatabase
+	hwQueue             *hardwareUpdateQueue
 }
 
 func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
@@ -72,7 +73,7 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 
 	// Initialize WebSocket Manager and Handlers
 	manager := NewHostWebSocketManager(s.ctx)
-	handlers.NewPDfMEventHandler(manager)
+	pdfmHandler := handlers.NewPDfMEventHandler(manager)
 	handlers.NewHostHealthHandler(manager)
 	statsHandler := handlers.NewHostStatsHandler(manager)
 	statsHandler.SetResourceUpdater(s)
@@ -82,6 +83,11 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	})
 	rpHandler := handlers.NewHostReverseProxyEventHandler(manager)
 	rpHandler.SetReverseProxyUpdater(s)
+
+	// Initialize per-host hardware update queue and wire it to the PDFM handler.
+	s.hwQueue = newHardwareUpdateQueue(s)
+	pdfmHandler.SetHardwareEnqueuer(s.hwQueue)
+	s.hwQueue.Start(s.ctx)
 
 	// Initial refresh of connections
 	if hosts, err := s.db.GetOrchestratorHosts(s.ctx, ""); err == nil {
@@ -183,6 +189,10 @@ func (s *OrchestratorService) Stop() {
 	}
 	s.cancel()
 	s.syncContext.Done()
+
+	if s.hwQueue != nil {
+		s.hwQueue.Stop()
+	}
 
 	manager := GetHostWebSocketManager()
 	if manager != nil {
