@@ -807,6 +807,38 @@ func (j *JsonDatabase) UpdateOrchestratorHostVMUptime(ctx basecontext.ApiContext
 	return ErrOrchestratorHostNotFound
 }
 
+// UpdateOrchestratorHostResources atomically overwrites only the Resources field
+// of a host record. Called by HardwareUpdateQueue after a hardware fetch triggered
+// by a VM event (VM_STATE_CHANGED, VM_ADDED, VM_REMOVED, VM_UPDATED,
+// MAC_VMS_RUNNING_NOW).
+//
+// Does NOT update UpdatedAt — resources are not health-state data and must not
+// disturb the staleness check in processHost.
+// Does NOT call SaveNow — this is called on every VM event; the periodic
+// background save is sufficient.
+func (j *JsonDatabase) UpdateOrchestratorHostResources(ctx basecontext.ApiContext, hostID string, resources *models.HostResources) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	if hostID == "" {
+		return ErrOrchestratorHostEmptyIdOrHost
+	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+
+	for i, host := range j.data.OrchestratorHosts {
+		if strings.EqualFold(host.ID, hostID) {
+			j.data.OrchestratorHosts[i].Resources = resources
+			ctx.LogDebugf("[Database] Host %s resources updated", host.Host)
+			return nil
+		}
+	}
+
+	return ErrOrchestratorHostNotFound
+}
+
 // ReplaceOrchestratorHostVMs atomically replaces the entire VM list for a host.
 // Used by fullRefreshHost after a complete VM sync from the host API.
 func (j *JsonDatabase) ReplaceOrchestratorHostVMs(ctx basecontext.ApiContext, hostID string, vms []models.VirtualMachine) error {

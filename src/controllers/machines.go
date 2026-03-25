@@ -1314,7 +1314,7 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 			}
 
 			resultMessage := fmt.Sprintf("Virtual machine %s created", result.ID)
-			_ = jobManager.MarkJobComplete(jobID, resultMessage)
+			_ = jobManager.MarkJobCompleteWithRecord(jobID, resultMessage, result.ID, "virtual_machine")
 		}(job.ID, request)
 
 		response := mappers.MapJobToApiJob(*job)

@@ -14,3 +14,10 @@ type HostEventHandler interface {
 type HostRegistrar interface {
 	RegisterHandler(eventType []constants.EventType, handler HostEventHandler)
 }
+
+// HardwareEnqueuer is implemented by HardwareUpdateQueue.
+// PDfMEventHandler uses this to request a hardware refresh without knowing
+// about the queue implementation.
+type HardwareEnqueuer interface {
+	Enqueue(hostID string)
+}

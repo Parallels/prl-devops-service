@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
@@ -200,8 +201,13 @@ func (jms *JobManagerService) UpdateJobResultRecord(jobId string, recordId strin
 	return job, nil
 }
 
-func (jms *JobManagerService) MarkJobComplete(jobId string, result string) error {
-	job, err := jms.db.GetJob(jms.apiCtx, jobId)
+func (jms *JobManagerService) MarkJobComplete(jobID string, result string) error {
+  // Applying a slowdown to allow other messages for this job
+  // to be processed before the "completed" event is emitted,
+  // so the UI can show the final progress and steps before
+  // transitioning to completed. 
+	time.Sleep(50 * time.Millisecond)
+	job, err := jms.db.GetJob(jms.apiCtx, jobID)
 	if err != nil {
 		return err
 	}
@@ -216,11 +222,22 @@ func (jms *JobManagerService) MarkJobComplete(jobId string, result string) error
 	}
 
 	jms.emitEvent("JOB_UPDATED", job)
+  // Applying a slowdown to allow other messages for this job
+  // to be processed before the "completed" event is emitted,
+  // so the UI can show the final progress and steps before
+  // transitioning to completed. 
+	time.Sleep(500 * time.Millisecond)
+  jms.emitEvent("JOB_COMPLETED", job)
 	return nil
 }
 
-func (jms *JobManagerService) MarkJobCompleteWithRecord(jobId string, result string, recordId string, recordType string) error {
-	job, err := jms.db.GetJob(jms.apiCtx, jobId)
+func (jms *JobManagerService) MarkJobCompleteWithRecord(jobID string, result string, recordID string, recordType string) error {
+  // Applying a slowdown to allow other messages for this job
+  // to be processed before the "completed" event is emitted,
+  // so the UI can show the final progress and steps before
+  // transitioning to completed. 
+	time.Sleep(50 * time.Millisecond)
+  job, err := jms.db.GetJob(jms.apiCtx, jobID)
 	if err != nil {
 		return err
 	}
@@ -228,7 +245,7 @@ func (jms *JobManagerService) MarkJobCompleteWithRecord(jobId string, result str
 	job.State = constants.JobStateCompleted
 	job.Progress = 100
 	job.Result = result
-	job.ResultRecordId = recordId
+	job.ResultRecordId = recordID
 	job.ResultRecordType = recordType
 
 	err = jms.db.UpdateJob(jms.apiCtx, *job)
@@ -237,6 +254,12 @@ func (jms *JobManagerService) MarkJobCompleteWithRecord(jobId string, result str
 	}
 
 	jms.emitEvent("JOB_UPDATED", job)
+    // Applying a slowdown to allow other messages for this job
+  // to be processed before the "completed" event is emitted,
+  // so the UI can show the final progress and steps before
+  // transitioning to completed. 
+	time.Sleep(500 * time.Millisecond)
+  jms.emitEvent("JOB_COMPLETED", job)
 	return nil
 }
 

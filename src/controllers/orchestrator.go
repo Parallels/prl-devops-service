@@ -3749,7 +3749,9 @@ func AsyncDeployOrchestratorHostHandler() restapi.ControllerHandler {
 				_ = jobManager.MarkJobError(jobID, deployErr)
 				return
 			}
-			_ = jobManager.MarkJobCompleteWithRecord(jobID, fmt.Sprintf("host_id=%s", resp.HostID), resp.HostID, "orchestrator_host")
+      
+			deploymentMessage := fmt.Sprintf("Agent %s deployed successfully", req.HostName)
+			_ = jobManager.MarkJobCompleteWithRecord(jobID, deploymentMessage, resp.HostID, "orchestrator_host")
 		}()
 
 		response := mappers.MapJobToApiJob(*localJob)
