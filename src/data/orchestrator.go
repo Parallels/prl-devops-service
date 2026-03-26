@@ -7,6 +7,7 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
+	apimodels "github.com/Parallels/prl-devops-service/models"
 )
 
 var (
@@ -832,6 +833,32 @@ func (j *JsonDatabase) UpdateOrchestratorHostResources(ctx basecontext.ApiContex
 		if strings.EqualFold(host.ID, hostID) {
 			j.data.OrchestratorHosts[i].Resources = resources
 			ctx.LogDebugf("[Database] Host %s resources updated", host.Host)
+			return nil
+		}
+	}
+
+	return ErrOrchestratorHostNotFound
+}
+
+// UpdateOrchestratorHostCacheConfig atomically overwrites only the CacheConfig field
+// of a host record. Called by HardwareUpdateQueue alongside UpdateOrchestratorHostResources
+// so that cache configuration stays current after background hardware fetches.
+func (j *JsonDatabase) UpdateOrchestratorHostCacheConfig(ctx basecontext.ApiContext, hostID string, cacheConfig *apimodels.CatalogCacheConfig) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+
+	if hostID == "" {
+		return ErrOrchestratorHostEmptyIdOrHost
+	}
+
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+
+	for i, host := range j.data.OrchestratorHosts {
+		if strings.EqualFold(host.ID, hostID) {
+			j.data.OrchestratorHosts[i].CacheConfig = cacheConfig
+			ctx.LogDebugf("[Database] Host %s cache config updated", host.Host)
 			return nil
 		}
 	}

@@ -86,14 +86,7 @@ func NewCacheService(ctx basecontext.ApiContext) (*CacheService, error) {
 	if svc.manifest.Size == 0 {
 		svc.manifest.Size = DEFAULT_PACKAGE_SIZE
 	}
-	keepFreeDiskSpace := svc.cfg.GetIntKey(constants.CATALOG_CACHE_KEEP_FREE_DISK_SPACE_ENV_VAR)
-	if keepFreeDiskSpace > 0 {
-		svc.keepFreeDiskSpace = int64(keepFreeDiskSpace)
-	}
-	maxCacheSize := svc.cfg.GetIntKey(constants.CATALOG_CACHE_MAX_SIZE_ENV_VAR)
-	if maxCacheSize > 0 {
-		svc.maxCacheSize = int64(maxCacheSize)
-	}
+	svc.keepFreeDiskSpace = svc.cfg.CacheKeepFreeDiskSpace()
 
 	cacheFolder, err := svc.cfg.CatalogCacheFolder()
 	if err != nil {
@@ -101,6 +94,10 @@ func NewCacheService(ctx basecontext.ApiContext) (*CacheService, error) {
 		return nil, err
 	}
 	svc.cacheFolder = cacheFolder
+
+	if freeDiskSpace, err := diskspaceservice.Get(ctx).GetCacheDiskSpace(ctx); err == nil {
+		svc.maxCacheSize = svc.cfg.CacheMaxSize(freeDiskSpace)
+	}
 
 	return svc, nil
 }

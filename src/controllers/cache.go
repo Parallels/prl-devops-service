@@ -13,6 +13,7 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	diskspace "github.com/Parallels/prl-devops-service/serviceprovider/diskSpace"
 	"github.com/gorilla/mux"
 )
 
@@ -142,6 +143,8 @@ func GetCatalogCacheHandler() restapi.ControllerHandler {
 		var freeDiskSpace int64
 		if hwInfo, err := serviceprovider.Get().System.GetHardwareInfo(ctx); err == nil {
 			freeDiskSpace = int64(hwInfo.FreeDiskSize)
+		} else if ds, err := diskspace.Get(ctx).GetCacheDiskSpace(ctx); err == nil {
+			freeDiskSpace = ds
 		}
 
 		if cfg.IsHost() {
