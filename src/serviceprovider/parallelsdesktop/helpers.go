@@ -81,3 +81,26 @@ func (s *ParallelsService) evaluateVmChanges(oldVm, newVm models.ParallelsVM) Ch
 	// 4. Otherwise, something real changed (IP, State, RAM, etc.)
 	return MeaningfulChange
 }
+
+// unflattenVMSnapshots takes a flat list of snapshots and builds a tree structure based on Parent field.
+func unflattenVMSnapshots(input []models.VMSnapshot) []models.VMSnapshot {
+	// 1. Group snapshots by Parent ID for O(N) access
+	childrenMap := make(map[string][]models.VMSnapshot)
+	for _, snap := range input {
+		childrenMap[snap.Parent] = append(childrenMap[snap.Parent], snap)
+	}
+
+	// 2. Recursive function to build the tree
+	var buildTree func(parentID string) []models.VMSnapshot
+	buildTree = func(parentID string) []models.VMSnapshot {
+		children := childrenMap[parentID]
+		// For each child in this list, populate its own children recursively
+		for i := range children {
+			children[i].Children = buildTree(children[i].ID)
+		}
+		return children
+	}
+
+	// 3. Start building from root nodes (those with empty Parent)
+	return buildTree("")
+}

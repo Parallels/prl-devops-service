@@ -83,6 +83,7 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	})
 	rpHandler := handlers.NewHostReverseProxyEventHandler(manager)
 	rpHandler.SetReverseProxyUpdater(s)
+	handlers.NewHostJobEventHandler(manager)
 
 	// Initialize per-host hardware update queue and wire it to the PDFM handler.
 	s.hwQueue = newHardwareUpdateQueue(s)

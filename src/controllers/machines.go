@@ -1306,6 +1306,12 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 
 		go func(jobID string, req models.CreateVirtualMachineRequest) {
 			asyncCtx := basecontext.NewRootBaseContext()
+			defer func() {
+				if rec := recover(); rec != nil {
+					asyncCtx.LogErrorf("[Machines] Panic in async create goroutine for job %s: %v", jobID, rec)
+					_ = jobManager.MarkJobError(jobID, fmt.Errorf("internal error: %v", rec))
+				}
+			}()
 			_, _ = jobManager.UpdateJobProgress(jobID, 1, constants.JobStateRunning)
 			result, err := createCatalogMachine(asyncCtx, req, jobID)
 			if err != nil {
@@ -1533,11 +1539,22 @@ func ListVMSnapshot() restapi.ControllerHandler {
 
 		params := mux.Vars(r)
 		VMId := params["id"]
+    //qeury params for grouping snapshots by parent or not
+    query := r.URL.Query()
+    groupByParent := query.Get("group")
+
 
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		response, err := svc.GetVMSnapshotsFromDB(ctx, VMId)
+    var response *models.ListVMSnapshotResponse
+    var err error
+    if groupByParent == "true" {
+      response, err = svc.GetVMSnapshotsTreeFromDB(ctx, VMId)
+    } else {
+		response, err = svc.GetVMSnapshotsFromDB(ctx, VMId)
+    }
+    
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1921,7 +1938,10 @@ func resolveCatalogMachineConnection(ctx basecontext.ApiContext, request *models
 	}
 
 	if connection == "" {
-		return "", errors.NewWithCode("missing connection or catalog_manager_id", http.StatusBadRequest)
+		if config.Get().IsCatalog() {
+			return "", nil
+		}
+		return "", errors.NewWithCode("missing connection or catalog_manager_id; local catalog is not enabled", http.StatusBadRequest)
 	}
 
 	return connection, nil

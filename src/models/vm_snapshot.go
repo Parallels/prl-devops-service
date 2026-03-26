@@ -21,6 +21,7 @@ type VMSnapshot struct {
 	State   string `json:"state"`
 	Current bool   `json:"current"`
 	Parent  string `json:"parent"`
+  Children []VMSnapshot `json:"children,omitempty"`
 }
 
 type VMSnapshots []VMSnapshot
