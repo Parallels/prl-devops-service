@@ -4,9 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -73,7 +75,7 @@ func registerApiKeysHandlers(ctx basecontext.ApiContext, version string) {
 // @Param			apiKey		body			models.ApiKeyRequest	true	"Body"
 // @HeaderParam	x-filter	string  false	"Filter entities"
 // @Success		200			{object}		models.ApiKeyResponse
-// @Failure		400			{object}		models.ApiErrorResponse
+// @Failure		400			{object}		models.ApiErrorDiagnosticsResponse
 // @Failure		401			{object}		models.OAuthErrorResponse
 // @Examples		{
 // @Examples		"key": "Some Key",
@@ -87,26 +89,25 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		createApiKeyDiag := errors.NewDiagnostics("/auth/api_keys [post]")
 		var request models.ApiKeyRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			createApiKeyDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createApiKeyDiag, http.StatusBadRequest))
 			return
 		}
 
 		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			createApiKeyDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createApiKeyDiag, http.StatusBadRequest))
 			return
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			createApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createApiKeyDiag, rsp.Code))
 			return
 		}
 
@@ -114,15 +115,13 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 
 		dtoApiKeyResult, err := dbService.CreateApiKey(ctx, dtoApiKey)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			createApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "CreateApiKey")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createApiKeyDiag, rsp.Code))
 			return
 		}
 		response := mappers.ApiKeyDtoToApiKeyResponse(*dtoApiKeyResult)
 		response.Encoded = base64.StdEncoding.EncodeToString([]byte(request.Key + ":" + request.Secret))
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
-		}
 
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(response)
@@ -136,7 +135,7 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Claims			"LIST_API_KEY"
 // @Success		200	{object}	[]models.ApiKeyResponse
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -146,15 +145,20 @@ func GetApiKeysHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		getApiKeysDiag := errors.NewDiagnostics("/auth/api_keys [get]")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getApiKeysDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeysDiag, rsp.Code))
 			return
 		}
 
 		dtoApiKeys, err := dbService.GetApiKeys(ctx, GetFilterHeader(r))
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			getApiKeysDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetApiKeys")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeysDiag, rsp.Code))
 			return
 		}
 
@@ -173,7 +177,7 @@ func GetApiKeysHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Claims			"DELETE_API_KEY"
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -183,9 +187,12 @@ func DeleteApiKeyHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		deleteApiKeyDiag := errors.NewDiagnostics("/auth/api_keys/{id} [delete]")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			deleteApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteApiKeyDiag, rsp.Code))
 			return
 		}
 
@@ -194,7 +201,9 @@ func DeleteApiKeyHandler() restapi.ControllerHandler {
 
 		err = dbService.DeleteApiKey(ctx, id)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DeleteApiKey")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteApiKeyDiag, rsp.Code))
 			return
 		}
 
@@ -210,7 +219,7 @@ func DeleteApiKeyHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Claims			"LIST_API_KEY"
 // @Success		200	{object}	models.ApiKeyResponse
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -220,9 +229,12 @@ func GetApiKeyHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		getApiKeyDiag := errors.NewDiagnostics("/auth/api_keys/{id} [get]")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeyDiag, rsp.Code))
 			return
 		}
 
@@ -231,7 +243,9 @@ func GetApiKeyHandler() restapi.ControllerHandler {
 
 		dtoApiKey, err := dbService.GetApiKey(ctx, id)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 404))
+			rsp := models.NewFromError(err)
+			getApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetApiKey")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeyDiag, rsp.Code))
 			return
 		}
 
@@ -252,7 +266,7 @@ func GetApiKeyHandler() restapi.ControllerHandler {
 // @Roles			"SUPER_USER"
 // @Param			id	path	string	true	"Api Key ID"
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -262,9 +276,12 @@ func RevokeApiKeyHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		revokeApiKeyDiag := errors.NewDiagnostics("/auth/api_keys/{id}/revoke [put]")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			revokeApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(revokeApiKeyDiag, rsp.Code))
 			return
 		}
 
@@ -273,7 +290,9 @@ func RevokeApiKeyHandler() restapi.ControllerHandler {
 
 		err = dbService.RevokeKey(ctx, id)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			revokeApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "RevokeKey")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(revokeApiKeyDiag, rsp.Code))
 			return
 		}
 
