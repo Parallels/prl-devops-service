@@ -7,6 +7,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/interfaces"
@@ -102,16 +103,45 @@ func (h *HostJobEventHandler) Handle(ctx basecontext.ApiContext, hostID string, 
 		reg.Remove(hostJob.ID)
 
 	default:
-		// Intermediate progress update — mirror to the orchestrator job.
-		if hostJob.Progress > 0 {
-			_, _ = jobManager.UpdateJobProgress(link.OrchestratorJobID, hostJob.Progress, constants.JobStateRunning)
-		}
-		if hostJob.Message != "" {
-			_, _ = jobManager.UpdateJobMessage(link.OrchestratorJobID, hostJob.Message)
-		}
+		// Intermediate progress update — mirror the full host job state (progress,
+		// steps, message) into the orchestrator job in one atomic write so the UI
+		// sees the rich step data instead of a plain percentage.
+		steps := mapJobStepResponsesToDataSteps(hostJob.Steps)
+		_, _ = jobManager.UpdateJobProgressStepsAndMessage(
+			link.OrchestratorJobID,
+			hostJob.Progress,
+			constants.JobStateRunning,
+			steps,
+			hostJob.Message,
+		)
 	}
 	// Do NOT forward the raw event — the job manager already emitted a
 	// translated JOB_UPDATED / JOB_COMPLETED event for the orchestrator job.
+}
+
+// mapJobStepResponsesToDataSteps converts the API-level step slice received
+// from the host into the DB-level slice expected by the job manager.
+func mapJobStepResponsesToDataSteps(src []models.JobStepResponse) []data_models.JobStep {
+	steps := make([]data_models.JobStep, 0, len(src))
+	for _, s := range src {
+		steps = append(steps, data_models.JobStep{
+			Name:              s.Name,
+			DisplayName:       s.DisplayName,
+			Weight:            s.Weight,
+			Parallel:          s.Parallel,
+			HasPercentage:     s.HasPercentage,
+			State:             s.State,
+			CurrentPercentage: s.CurrentPercentage,
+			Value:             s.Value,
+			Total:             s.Total,
+			ETA:               s.ETA,
+			Message:           s.Message,
+			Error:             s.Error,
+			Filename:          s.Filename,
+			Unit:              s.Unit,
+		})
+	}
+	return steps
 }
 
 // forwardRaw broadcasts the host job event to the local UI unchanged.
