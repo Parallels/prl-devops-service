@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -14,12 +15,12 @@ import (
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/orchestrator/registry"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
 func (s *OrchestratorService) CreateVirtualMachine(ctx basecontext.ApiContext, jobID string, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, *models.ApiErrorResponse) {
 	var apiError *models.ApiErrorResponse
-	var response models.CreateVirtualMachineResponse
 
 	jobManager := jobs.Get(ctx)
 	updateJob := func(msg string) {
@@ -80,40 +81,35 @@ func (s *OrchestratorService) CreateVirtualMachine(ctx basecontext.ApiContext, j
 		return nil, filterErr
 	}
 
-	// Stage 5: Target Execution
-	var selectedHost *data_models.OrchestratorHost
+	// Stage 5: Target Execution — dispatch async to the first willing host.
+	reg := registry.Get()
 	for _, host := range validHosts {
-		updateJob(fmt.Sprintf("Attempting to create virtual machine on host %s", host.Host))
-		resp, err := s.CallCreateHostVirtualMachine(host, request)
+		updateJob(fmt.Sprintf("Dispatching to host %s", host.Host))
+		hostJob, err := s.CallCreateHostVirtualMachineAsync(host, request)
 		if err != nil {
 			e := models.NewFromError(err)
 			apiError = &e
 			updateJob(fmt.Sprintf("Host %s failed: %s — trying next host", host.Host, e.Message))
 			continue
 		}
-		response = *resp
-		selectedHost = &host
-		break
+		reg.Register(hostJob.ID, jobID, host.ID)
+		updateJob(fmt.Sprintf("Dispatched to host %s, tracking progress via job %s", host.Host, hostJob.ID))
+		// Completion (success or failure) is forwarded by HostJobEventHandler.
+		return nil, nil
 	}
 
-	if selectedHost == nil {
-		if apiError == nil {
-			apiError = &models.ApiErrorResponse{
-				Message: "Failed to dispatch VM to any of the selected hosts",
-				Code:    500,
-			}
+	// All hosts failed.
+	if apiError == nil {
+		apiError = &models.ApiErrorResponse{
+			Message: "Failed to dispatch VM to any of the selected hosts",
+			Code:    500,
 		}
-		updateJob(apiError.Message)
-		return nil, apiError
 	}
-
-	s.Refresh()
-	return &response, nil
+	updateJob(apiError.Message)
+	return nil, apiError
 }
 
 func (s *OrchestratorService) CreateHosVirtualMachine(ctx basecontext.ApiContext, jobID string, hostId string, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, *models.ApiErrorResponse) {
-	var response models.CreateVirtualMachineResponse
-
 	jobManager := jobs.Get(ctx)
 	updateJob := func(msg string) {
 		if jobID != "" && jobManager != nil {
@@ -167,18 +163,21 @@ func (s *OrchestratorService) CreateHosVirtualMachine(ctx basecontext.ApiContext
 		return nil, apiError
 	}
 
-	updateJob(fmt.Sprintf("Creating virtual machine on host %s", host.Host))
-	ctx.LogInfof("Creating virtual machine on host %s", host.Host)
-	resp, err := s.CallCreateHostVirtualMachine(*host, request)
+	updateJob(fmt.Sprintf("Dispatching to host %s", host.Host))
+	ctx.LogInfof("[Orchestrator] Dispatching async VM creation to host %s", host.Host)
+	reg := registry.Get()
+	hostJob, err := s.CallCreateHostVirtualMachineAsync(*host, request)
 	if err != nil {
 		e := models.NewFromError(err)
 		updateJob(fmt.Sprintf("Host %s failed: %s", host.Host, e.Message))
+		s.Refresh()
 		return nil, &e
 	}
 
-	response = *resp
-	s.Refresh()
-	return &response, nil
+	reg.Register(hostJob.ID, jobID, host.ID)
+	updateJob(fmt.Sprintf("Dispatched to host %s, tracking progress via job %s", host.Host, hostJob.ID))
+	// Completion (success or failure) is forwarded by HostJobEventHandler.
+	return nil, nil
 }
 
 func (s *OrchestratorService) pingHostForLatency(host data_models.OrchestratorHost) time.Duration {
@@ -280,6 +279,35 @@ func filterAndSortHosts(validHosts []data_models.OrchestratorHost, request model
 	}
 
 	return sortedHosts, nil
+}
+
+// CallCreateHostVirtualMachineAsync calls the host's async machine-creation
+// endpoint and returns the host job response immediately (HTTP 202).
+func (s *OrchestratorService) CallCreateHostVirtualMachineAsync(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest) (*models.JobResponse, error) {
+	httpClient := s.getApiClient(host)
+	httpClient.WithTimeout(30 * time.Second)
+
+	path := "/machines/async"
+	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
+	if err != nil {
+		return nil, err
+	}
+
+  tempPayload, _ := json.Marshal(request)
+  s.ctx.LogInfof("[Orchestrator] Sending async VM creation request to %s with payload: %s", url, string(tempPayload))
+
+	var response models.JobResponse
+	apiResponse, err := httpClient.Post(url.String(), request, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	if apiResponse.StatusCode != 202 {
+		return nil, errors.NewWithCodef(apiResponse.StatusCode, "error dispatching async VM creation to host %s: status %d", host.Host, apiResponse.StatusCode)
+	}
+
+	s.ctx.LogInfof("[Orchestrator] Dispatched async VM creation to host %s, host job ID: %s", host.Host, response.ID)
+	return &response, nil
 }
 
 func (s *OrchestratorService) CallCreateHostVirtualMachine(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {

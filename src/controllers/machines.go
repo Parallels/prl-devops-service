@@ -1245,8 +1245,8 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
-		userContext := ctx.GetUser()
-		if userContext == nil {
+		callerID, ok := getEffectiveCallerID(ctx)
+		if !ok {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
 			return
 		}
@@ -1298,7 +1298,7 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		job, err := jobManager.CreateNewJob(userContext.ID, "machines", "create", "Initializing catalog machine creation")
+		job, err := jobManager.CreateNewJob(callerID, "machines", "create", "Initializing catalog machine creation")
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return

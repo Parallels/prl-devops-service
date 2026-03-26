@@ -2,19 +2,27 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/interfaces"
+	"github.com/Parallels/prl-devops-service/orchestrator/registry"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
 // HostJobEventHandler listens for job_manager events arriving from a connected
-// orchestrator host over WebSocket and forwards them to the local UI event emitter.
-// This allows the UI's existing job_manager subscription to receive job progress
-// updates originating from operations running on a remote host.
+// orchestrator host over WebSocket.
+//
+// For host jobs that are linked to an orchestrator job (created via the async
+// dispatch path), it translates progress/completion/failure into updates on the
+// orchestrator job so the UI sees a single coherent job stream.
+//
+// For all other host job events it forwards them to the local UI event emitter
+// unchanged (preserving the existing behaviour for direct host jobs).
 type HostJobEventHandler struct {
 	registrar interfaces.HostRegistrar
 }
@@ -48,8 +56,69 @@ func (h *HostJobEventHandler) Handle(ctx basecontext.ApiContext, hostID string, 
 		return
 	}
 
-	// Forward the host job event to the local UI, tagging it with the originating host ID.
-	// The UI's job_manager subscription will receive this alongside local job events.
+	// Re-marshal the body so we can decode it as a JobResponse.
+	bodyBytes, err := json.Marshal(event.Body)
+	if err != nil {
+		h.forwardRaw(ctx, hostID, event, emitter)
+		return
+	}
+	var hostJob models.JobResponse
+	if err := json.Unmarshal(bodyBytes, &hostJob); err != nil || hostJob.ID == "" {
+		h.forwardRaw(ctx, hostID, event, emitter)
+		return
+	}
+
+	// Check whether this host job is linked to an orchestrator job.
+	reg := registry.Get()
+	link, linked := reg.Lookup(hostJob.ID)
+	if !linked {
+		// Not dispatched by this orchestrator — forward as-is.
+		h.forwardRaw(ctx, hostID, event, emitter)
+		return
+	}
+
+	// Translate the host job event into an orchestrator job update.
+	jobManager := jobs.Get(ctx)
+	if jobManager == nil {
+		return
+	}
+
+	switch {
+	case event.Message == "JOB_COMPLETED":
+		vmID := hostJob.ResultRecordId
+		msg := fmt.Sprintf("Virtual machine created on host %s", hostID)
+		if vmID != "" {
+			msg = fmt.Sprintf("Virtual machine %s created on host %s", vmID, hostID)
+		}
+		_ = jobManager.MarkJobCompleteWithRecord(link.OrchestratorJobID, msg, vmID, "virtual_machine")
+		reg.Remove(hostJob.ID)
+
+	case hostJob.State == constants.JobStateFailed:
+		errMsg := hostJob.Error
+		if errMsg == "" {
+			errMsg = fmt.Sprintf("host job %s on host %s failed", hostJob.ID, hostID)
+		}
+		_ = jobManager.MarkJobError(link.OrchestratorJobID, fmt.Errorf("%s", errMsg))
+		reg.Remove(hostJob.ID)
+
+	default:
+		// Intermediate progress update — mirror to the orchestrator job.
+		if hostJob.Progress > 0 {
+			_, _ = jobManager.UpdateJobProgress(link.OrchestratorJobID, hostJob.Progress, constants.JobStateRunning)
+		}
+		if hostJob.Message != "" {
+			_, _ = jobManager.UpdateJobMessage(link.OrchestratorJobID, hostJob.Message)
+		}
+	}
+	// Do NOT forward the raw event — the job manager already emitted a
+	// translated JOB_UPDATED / JOB_COMPLETED event for the orchestrator job.
+}
+
+// forwardRaw broadcasts the host job event to the local UI unchanged.
+func (h *HostJobEventHandler) forwardRaw(ctx basecontext.ApiContext, hostID string, event models.EventMessage, emitter interface {
+	Broadcast(*models.EventMessage) error
+	IsRunning() bool
+}) {
 	msg := models.NewEventMessage(constants.EventTypeJobManager, event.Message, models.HostJobEvent{
 		HostID: hostID,
 		Event:  event.Body,

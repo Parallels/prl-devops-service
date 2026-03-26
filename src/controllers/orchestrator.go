@@ -2707,12 +2707,19 @@ func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			})
 			return
 		}
+		ownerWasEmpty := request.Owner == ""
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
+		}
+		if ownerWasEmpty {
+			request.Owner = ""
+			if request.CatalogManifest != nil {
+				request.CatalogManifest.Owner = ""
+			}
 		}
 
 		if request.CatalogManifest != nil {
@@ -2764,12 +2771,19 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
+		ownerWasEmpty := request.Owner == ""
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
+		}
+		if ownerWasEmpty {
+			request.Owner = ""
+			if request.CatalogManifest != nil {
+				request.CatalogManifest.Owner = ""
+			}
 		}
 
 		if request.CatalogManifest != nil {
@@ -3739,8 +3753,8 @@ func AsyncDeployOrchestratorHostHandler() restapi.ControllerHandler {
 			return
 		}
 
-		userContext := ctx.GetUser()
-		if userContext == nil {
+		callerID, ok := getEffectiveCallerID(ctx)
+		if !ok {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
 			return
 		}
@@ -3759,7 +3773,7 @@ func AsyncDeployOrchestratorHostHandler() restapi.ControllerHandler {
 			return
 		}
 
-		localJob, err := jobManager.CreateNewJob(userContext.ID, "orchestrator", "deploy", "Deploying agent "+req.HostName)
+		localJob, err := jobManager.CreateNewJob(callerID, "orchestrator", "deploy", "Deploying agent "+req.HostName)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -3818,8 +3832,8 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
-		userContext := ctx.GetUser()
-		if userContext == nil {
+		callerID, ok := getEffectiveCallerID(ctx)
+		if !ok {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
 			return
 		}
@@ -3833,12 +3847,19 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
+		ownerWasEmpty := request.Owner == ""
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
+		}
+		if ownerWasEmpty {
+			request.Owner = ""
+			if request.CatalogManifest != nil {
+				request.CatalogManifest.Owner = ""
+			}
 		}
 
 		if request.CatalogManifest != nil {
@@ -3857,7 +3878,7 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		job, err := jobManager.CreateNewJob(userContext.ID, "orchestrator", "create", "Initializing orchestrator virtual machine creation")
+		job, err := jobManager.CreateNewJob(callerID, "orchestrator", "create", "Initializing orchestrator virtual machine creation")
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -3876,6 +3897,10 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			result, apiErr := orchSvc.CreateVirtualMachine(asyncCtx, jobID, req)
 			if apiErr != nil {
 				_ = jobManager.MarkJobError(jobID, fmt.Errorf("%s", apiErr.Message))
+				return
+			}
+			if result == nil {
+				// Async dispatch succeeded — HostJobEventHandler will complete the job.
 				return
 			}
 			_ = jobManager.MarkJobCompleteWithRecord(jobID, fmt.Sprintf("Virtual machine %s created", result.ID), result.ID, "virtual_machine")
@@ -3906,8 +3931,8 @@ func AsyncCreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandle
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 
-		userContext := ctx.GetUser()
-		if userContext == nil {
+		callerID, ok := getEffectiveCallerID(ctx)
+		if !ok {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
 			return
 		}
@@ -3924,12 +3949,19 @@ func AsyncCreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandle
 			return
 		}
 
+		ownerWasEmpty := request.Owner == ""
 		if err := request.Validate(); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
 				Code:    http.StatusBadRequest,
 			})
 			return
+		}
+		if ownerWasEmpty {
+			request.Owner = ""
+			if request.CatalogManifest != nil {
+				request.CatalogManifest.Owner = ""
+			}
 		}
 
 		if request.CatalogManifest != nil {
@@ -3948,7 +3980,7 @@ func AsyncCreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandle
 			return
 		}
 
-		job, err := jobManager.CreateNewJob(userContext.ID, "orchestrator", "create", fmt.Sprintf("Initializing virtual machine creation on host %s", id))
+		job, err := jobManager.CreateNewJob(callerID, "orchestrator", "create", fmt.Sprintf("Initializing virtual machine creation on host %s", id))
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -3967,6 +3999,10 @@ func AsyncCreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandle
 			result, apiErr := orchSvc.CreateHosVirtualMachine(asyncCtx, jobID, hostID, req)
 			if apiErr != nil {
 				_ = jobManager.MarkJobError(jobID, fmt.Errorf("%s", apiErr.Message))
+				return
+			}
+			if result == nil {
+				// Async dispatch succeeded — HostJobEventHandler will complete the job.
 				return
 			}
 			_ = jobManager.MarkJobCompleteWithRecord(jobID, fmt.Sprintf("Virtual machine %s created on host %s", result.ID, hostID), result.ID, "virtual_machine")
