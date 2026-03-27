@@ -14,6 +14,7 @@ func DtoClaimToApi(model data_models.Claim) models.ClaimResponse {
 		ID:          model.ID,
 		Name:        model.Name,
 		Description: model.Description,
+		Internal:    model.Internal,
 		Group:       model.Group,
 		Resource:    model.Resource,
 		Action:      model.Action,

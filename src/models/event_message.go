@@ -142,6 +142,19 @@ type ReverseProxyRouteFailedEvent struct {
 	InternalIpAddress  string `json:"internal_ip_address,omitempty"`
 }
 
+type ReverseProxyStateChangedEvent struct {
+	Enabled bool   `json:"enabled"`
+	State   string `json:"state"` // "started" | "stopped"
+}
+
+type ReverseProxyHostStateChangedEvent struct {
+	ReverseProxyHostId string `json:"reverse_proxy_host_id,omitempty"`
+	State              string `json:"state"` // "starting" | "started" | "stopped" | "ip_changed" | "error"
+	OldIp              string `json:"old_ip,omitempty"`
+	NewIp              string `json:"new_ip,omitempty"`
+	ErrorMessage       string `json:"error_message,omitempty"`
+}
+
 type CacheItemAddedEvent struct {
 	CatalogId    string `json:"catalog_id"`
 	Version      string `json:"version"`

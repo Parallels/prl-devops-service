@@ -3,7 +3,7 @@
 [![License: Fair Source](https://img.shields.io/badge/license-fair-source.svg)](https://fair.io/)
 [![Builds](https://github.com/Parallels/prl-devops-service/actions/workflows/pull_request.yml/badge.svg)](https://github.com/Parallels/prl-devops-service/actions/workflows/pull_request.yml)
 [![Release](https://github.com/Parallels/prl-devops-service/actions/workflows/release.yml/badge.svg)](https://github.com/Parallels/prl-devops-service/actions/workflows/release.yml)
-[![discord](https://dcbadge.vercel.app/api/server/pEwZ254C3d?style=flat&theme=default)](https://discord.gg/pEwZ254C3d)
+[![discord](https://dcbadge.limes.pink/api/server/https://discord.gg/pEwZ254C3d?style=flat&theme=default)](https://discord.gg/pEwZ254C3d)
 
 ## Description
 

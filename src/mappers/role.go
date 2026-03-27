@@ -13,6 +13,7 @@ func DtoRoleToApi(model data_models.Role) models.RoleResponse {
 		ID:          model.ID,
 		Name:        model.Name,
 		Description: model.Description,
+		Internal:    model.Internal,
 		Claims:      []models.ClaimResponse{},
 		Users:       []models.ApiUser{},
 	}
@@ -22,6 +23,7 @@ func DtoRoleToApi(model data_models.Role) models.RoleResponse {
 			ID:          c.ID,
 			Name:        c.Name,
 			Description: c.Description,
+			Internal:    c.Internal,
 			Group:       c.Group,
 			Resource:    c.Resource,
 			Action:      c.Action,

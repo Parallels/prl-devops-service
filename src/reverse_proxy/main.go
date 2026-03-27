@@ -85,6 +85,9 @@ type ReverseProxyService struct {
 	wg                *sync.WaitGroup
 	activeConnections sync.WaitGroup
 
+	hostCancelFuncs map[string]context.CancelFunc
+	hostMu          sync.Mutex
+
 	opQueue   chan reverseProxyOperationRequest
 	queueOnce sync.Once
 }
@@ -141,12 +144,13 @@ func New(ctx basecontext.ApiContext) *ReverseProxyService {
 	}
 
 	globalReverseProxyService = &ReverseProxyService{
-		api_ctx:       ctx,
-		db:            db,
-		tcpListeners:  []net.Listener{},
-		httpListeners: []*http.Server{},
-		wg:            &sync.WaitGroup{},
-		State:         ReverseProxyServiceStateStopped,
+		api_ctx:         ctx,
+		db:              db,
+		tcpListeners:    []net.Listener{},
+		httpListeners:   []*http.Server{},
+		wg:              &sync.WaitGroup{},
+		State:           ReverseProxyServiceStateStopped,
+		hostCancelFuncs: make(map[string]context.CancelFunc),
 	}
 
 	return globalReverseProxyService
@@ -333,6 +337,9 @@ func (rps *ReverseProxyService) startInternal() error {
 	rps.tcpListeners = make([]net.Listener, 0)
 	rps.httpListeners = make([]*http.Server, 0)
 	rps.wg = &sync.WaitGroup{}
+	rps.hostMu.Lock()
+	rps.hostCancelFuncs = make(map[string]context.CancelFunc)
+	rps.hostMu.Unlock()
 
 	if err := rps.ImportFromConfig(); err != nil {
 		rps.api_ctx.LogErrorf("Error importing reverse proxy config: %s", err)
@@ -376,6 +383,13 @@ func (rps *ReverseProxyService) startInternal() error {
 
 	rps.api_ctx.LogInfof("[Reverse Proxy] Reverse proxy started")
 	rps.State = ReverseProxyServiceStateStarted
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "REVERSE_PROXY_STATE_CHANGED", global_models.ReverseProxyStateChangedEvent{
+			Enabled: true,
+			State:   "started",
+		})
+		go func() { _ = emitter.Broadcast(msg) }()
+	}
 	return nil
 }
 
@@ -383,10 +397,18 @@ func (rps *ReverseProxyService) Stop() error {
 	rps.api_ctx.LogInfof("[Reverse Proxy] Stopping reverse proxy service...")
 	rps.State = ReverseProxyServiceStateStopping
 
-	// Cancel the main context to stop new connections
+	// Cancel the main context to stop new connections (cascades to all per-host contexts)
 	if rps.cancelFunc != nil {
 		rps.cancelFunc()
 	}
+
+	// Cancel any remaining per-host contexts
+	rps.hostMu.Lock()
+	for _, cancel := range rps.hostCancelFuncs {
+		cancel()
+	}
+	rps.hostCancelFuncs = make(map[string]context.CancelFunc)
+	rps.hostMu.Unlock()
 
 	// Create shutdown context with timeout
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
@@ -448,6 +470,13 @@ func (rps *ReverseProxyService) Stop() error {
 
 	rps.State = ReverseProxyServiceStateStopped
 	rps.api_ctx.LogInfof("[Reverse Proxy] Service stopped")
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "REVERSE_PROXY_STATE_CHANGED", global_models.ReverseProxyStateChangedEvent{
+			Enabled: false,
+			State:   "stopped",
+		})
+		go func() { _ = emitter.Broadcast(msg) }()
+	}
 	return nil
 }
 
@@ -508,28 +537,58 @@ func (rps *ReverseProxyService) restartInternal() error {
 func (rps *ReverseProxyService) startServer(errorChan chan error) {
 	for _, host := range rps.forwarding_hosts {
 		h := host
-		if h.TcpRoute != nil {
-			if h.TcpRoute.TargetHost == "" || h.TcpRoute.TargetPort == "---" {
-				rps.api_ctx.LogErrorf("[TCP Route] target host is required for starting a tcp route, skipping host %s", h.GetHost())
-				continue
-			}
+		rps.startHostListeners(h, errorChan)
+	}
+}
 
-			rps.wg.Add(1)
-			go func(h *data_models.ReverseProxyHost) {
-				defer rps.wg.Done()
-				if err := rps.listenTcpRoute(h, errorChan); err != nil {
-					errorChan <- err
-				}
-			}(h)
-		} else {
-			rps.wg.Add(1)
-			go func(h *data_models.ReverseProxyHost) {
-				defer rps.wg.Done()
-				if err := rps.listenHttpRoute(h, errorChan); err != nil {
-					errorChan <- err
-				}
-			}(h)
+func (rps *ReverseProxyService) startHostListeners(h *data_models.ReverseProxyHost, errorChan chan error) {
+	hostCtx, hostCancel := context.WithCancel(rps.ctx)
+	rps.hostMu.Lock()
+	if old, ok := rps.hostCancelFuncs[h.ID]; ok {
+		old()
+	}
+	rps.hostCancelFuncs[h.ID] = hostCancel
+	rps.hostMu.Unlock()
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "REVERSE_PROXY_HOST_STATE_CHANGED", global_models.ReverseProxyHostStateChangedEvent{
+			ReverseProxyHostId: h.ID,
+			State:              "starting",
+		})
+		go func() { _ = emitter.Broadcast(msg) }()
+	}
+
+	if h.TcpRoute != nil {
+		if h.TcpRoute.TargetHost == "" || h.TcpRoute.TargetPort == "---" {
+			rps.api_ctx.LogErrorf("[TCP Route] target host is required for starting a tcp route, skipping host %s", h.GetHost())
+			hostCancel()
+			rps.hostMu.Lock()
+			delete(rps.hostCancelFuncs, h.ID)
+			rps.hostMu.Unlock()
+			return
 		}
+
+		rps.wg.Add(1)
+		go func() {
+			defer rps.wg.Done()
+			if err := rps.listenTcpRoute(h, hostCtx, errorChan); err != nil {
+				errorChan <- err
+			}
+		}()
+	} else {
+		rps.wg.Add(1)
+		go func() {
+			defer rps.wg.Done()
+			if err := rps.listenHttpRoute(h, hostCtx, errorChan); err != nil {
+				errorChan <- err
+			}
+		}()
+	}
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "REVERSE_PROXY_HOST_STATE_CHANGED", global_models.ReverseProxyHostStateChangedEvent{
+			ReverseProxyHostId: h.ID,
+			State:              "started",
+		})
+		go func() { _ = emitter.Broadcast(msg) }()
 	}
 }
 
@@ -563,7 +622,7 @@ func (rps *ReverseProxyService) Handle(ctx basecontext.ApiContext, clientID stri
 		}
 
 		if stateChange.CurrentState == "stopped" || stateChange.CurrentState == "paused" || stateChange.CurrentState == "suspended" {
-			// Find route by TargetVmId and emit route failed event
+			// Find route by TargetVmId and emit route failed + host state events
 			for _, host := range rps.forwarding_hosts {
 				failed := false
 				if host.TcpRoute != nil && host.TcpRoute.TargetVmId == stateChange.VmID {
@@ -583,6 +642,11 @@ func (rps *ReverseProxyService) Handle(ctx basecontext.ApiContext, clientID stri
 							TargetVmId:         stateChange.VmID,
 						})
 						go func() { _ = emitter.Broadcast(msg) }()
+						stateMsg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "REVERSE_PROXY_HOST_STATE_CHANGED", global_models.ReverseProxyHostStateChangedEvent{
+							ReverseProxyHostId: host.ID,
+							State:              "stopped",
+						})
+						go func() { _ = emitter.Broadcast(stateMsg) }()
 					}
 				}
 			}
@@ -605,17 +669,26 @@ func (rps *ReverseProxyService) Handle(ctx basecontext.ApiContext, clientID stri
 					affectedHostIds = append(affectedHostIds, host.ID)
 				}
 			}
-			// IP might have changed. Reload config from DB which re-resolves VM IPs.
 			go func() {
-				// Avoid deadlock or fast flip-flopping by waiting a bit for DB/IP sync
+				// Wait for the VM's IP to stabilize before checking
 				time.Sleep(2 * time.Second)
-				rps.api_ctx.LogInfof("[Reverse Proxy] Refreshing configuration for VM %s state change...", stateChange.VmID)
-				_ = rps.Restart()
+				rps.api_ctx.LogInfof("[Reverse Proxy] Checking IP change for VM %s...", stateChange.VmID)
 				for _, rpHostId := range affectedHostIds {
+					changed, newIp := rps.checkVmIpChanged(rpHostId, stateChange.VmID)
+					if !changed {
+						rps.api_ctx.LogInfof("[Reverse Proxy] VM %s IP unchanged for host %s, skipping restart", stateChange.VmID, rpHostId)
+						continue
+					}
+					rps.api_ctx.LogInfof("[Reverse Proxy] VM %s IP changed for host %s, restarting host listeners...", stateChange.VmID, rpHostId)
+					if err := rps.RestartHost(rpHostId); err != nil {
+						rps.api_ctx.LogErrorf("[Reverse Proxy] Error restarting host %s: %v", rpHostId, err)
+						continue
+					}
 					if emitter != nil && emitter.IsRunning() {
 						msg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "Reverse Proxy Route Updated", global_models.ReverseProxyRouteUpdatedEvent{
 							ReverseProxyHostId: rpHostId,
 							TargetVmId:         stateChange.VmID,
+							InternalIpAddress:  newIp,
 						})
 						go func() { _ = emitter.Broadcast(msg) }()
 					}
@@ -640,7 +713,154 @@ func (rps *ReverseProxyService) BroadcastHostUpdated(hostId string) {
 	}
 }
 
-func (rps *ReverseProxyService) listenTcpRoute(host *data_models.ReverseProxyHost, errorChan chan error) error {
+// checkVmIpChanged returns true if the VM's current IP differs from what is
+// stored in the in-memory forwarding_hosts entry for hostID. Returns false when
+// the VM cannot be resolved or is not running.
+func (rps *ReverseProxyService) checkVmIpChanged(hostID, vmID string) (bool, string) {
+	prl_svc := serviceprovider.Get().ParallelsDesktopService
+	vm, err := prl_svc.GetVm(rps.api_ctx, vmID)
+	if err != nil || vm == nil || vm.State != "running" {
+		return false, ""
+	}
+	newIP := vm.InternalIpAddress
+	if newIP == "" || newIP == "-" {
+		return false, ""
+	}
+	for _, host := range rps.forwarding_hosts {
+		if host.ID != hostID {
+			continue
+		}
+		if host.TcpRoute != nil && host.TcpRoute.TargetVmId == vmID {
+			return host.TcpRoute.TargetHost != newIP, newIP
+		}
+		for _, route := range host.HttpRoutes {
+			if route.TargetVmId == vmID {
+				return route.TargetHost != newIP, newIP
+			}
+		}
+	}
+	// Host not found in memory — treat as changed so it gets refreshed
+	return true, newIP
+}
+
+// reloadHostFromDb fetches one host from the DB and re-resolves VM IPs.
+func (rps *ReverseProxyService) reloadHostFromDb(hostID string) (*data_models.ReverseProxyHost, error) {
+	prl_svc := serviceprovider.Get().ParallelsDesktopService
+	dtoHost, err := rps.db.GetReverseProxyHost(rps.api_ctx, hostID)
+	if err != nil || dtoHost == nil {
+		return nil, fmt.Errorf("host %s not found in DB", hostID)
+	}
+	hostCopy := *dtoHost
+	for i, route := range hostCopy.HttpRoutes {
+		if route.TargetVmId == "" {
+			continue
+		}
+		vm, err := prl_svc.GetVm(rps.api_ctx, route.TargetVmId)
+		if err != nil || vm == nil || vm.InternalIpAddress == "" || vm.InternalIpAddress == "-" || vm.State != "running" {
+			hostCopy.HttpRoutes[i].TargetHost = "---"
+		} else {
+			hostCopy.HttpRoutes[i].TargetHost = vm.InternalIpAddress
+		}
+	}
+	if hostCopy.TcpRoute != nil && hostCopy.TcpRoute.TargetVmId != "" {
+		vm, err := prl_svc.GetVm(rps.api_ctx, hostCopy.TcpRoute.TargetVmId)
+		if err != nil || vm == nil || vm.InternalIpAddress == "" || vm.InternalIpAddress == "-" || vm.State != "running" {
+			hostCopy.TcpRoute.TargetHost = "---"
+		} else {
+			hostCopy.TcpRoute.TargetHost = vm.InternalIpAddress
+		}
+	}
+	return &hostCopy, nil
+}
+
+// RestartHost queues a per-host restart through the operation queue so it
+// never races with a concurrent Restart or Stop.
+func (rps *ReverseProxyService) RestartHost(hostID string) error {
+	rps.initQueue()
+	resultChan := make(chan error)
+	rps.opQueue <- reverseProxyOperationRequest{
+		operation: func() error { return rps.restartHostInternal(hostID) },
+		result:    resultChan,
+	}
+	return <-resultChan
+}
+
+func (rps *ReverseProxyService) restartHostInternal(hostID string) error {
+	rps.api_ctx.LogInfof("[Reverse Proxy] Restarting listeners for host %s...", hostID)
+
+	// Cancel the existing per-host context so current listeners shut down.
+	rps.hostMu.Lock()
+	if cancel, ok := rps.hostCancelFuncs[hostID]; ok {
+		cancel()
+		delete(rps.hostCancelFuncs, hostID)
+	}
+	rps.hostMu.Unlock()
+	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+		msg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "REVERSE_PROXY_HOST_STATE_CHANGED", global_models.ReverseProxyHostStateChangedEvent{
+			ReverseProxyHostId: hostID,
+			State:              "stopped",
+		})
+		go func() { _ = emitter.Broadcast(msg) }()
+	}
+
+	// Brief pause to let the goroutines observe the cancellation.
+	time.Sleep(100 * time.Millisecond)
+
+	newHost, err := rps.reloadHostFromDb(hostID)
+	if err != nil {
+		rps.api_ctx.LogErrorf("[Reverse Proxy] Failed to reload host %s: %v", hostID, err)
+		return err
+	}
+
+	// Collect old IP for the changed-IP event before overwriting.
+	oldIp := ""
+	newIp := ""
+	for _, h := range rps.forwarding_hosts {
+		if h.ID == hostID {
+			if h.TcpRoute != nil {
+				oldIp = h.TcpRoute.TargetHost
+			} else if len(h.HttpRoutes) > 0 {
+				oldIp = h.HttpRoutes[0].TargetHost
+			}
+			break
+		}
+	}
+	if newHost.TcpRoute != nil {
+		newIp = newHost.TcpRoute.TargetHost
+	} else if len(newHost.HttpRoutes) > 0 {
+		newIp = newHost.HttpRoutes[0].TargetHost
+	}
+
+	// Update the in-memory forwarding_hosts entry.
+	for i, h := range rps.forwarding_hosts {
+		if h.ID == hostID {
+			rps.forwarding_hosts[i] = newHost
+			break
+		}
+	}
+
+	if oldIp != newIp {
+		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
+			msg := global_models.NewEventMessage(constants.EventTypeReverseProxy, "REVERSE_PROXY_HOST_STATE_CHANGED", global_models.ReverseProxyHostStateChangedEvent{
+				ReverseProxyHostId: hostID,
+				State:              "ip_changed",
+				OldIp:              oldIp,
+				NewIp:              newIp,
+			})
+			go func() { _ = emitter.Broadcast(msg) }()
+		}
+	}
+
+	// Spawn new listeners for this host. Use a buffered channel so the
+	// goroutines do not block if nobody drains the channel.
+	errorChan := make(chan error, 1)
+	rps.startHostListeners(newHost, errorChan)
+
+	rps.api_ctx.LogInfof("[Reverse Proxy] Listeners restarted for host %s", hostID)
+	return nil
+}
+
+func (rps *ReverseProxyService) listenTcpRoute(host *data_models.ReverseProxyHost, hostCtx context.Context, errorChan chan error) error {
 	if host.TcpRoute.TargetPort == "" {
 		return fmt.Errorf("[TCP Route] port is required for starting a tcp route")
 	}
@@ -657,7 +877,7 @@ func (rps *ReverseProxyService) listenTcpRoute(host *data_models.ReverseProxyHos
 	rps.api_ctx.LogInfof("[Reverse Proxy] [TCP Route] Listening on %s:%s", host.Host, host.Port)
 	for {
 		select {
-		case <-rps.ctx.Done():
+		case <-hostCtx.Done():
 			rps.api_ctx.LogDebugf("[Reverse Proxy] [TCP Route] Shutting down listener for %s:%s", host.Host, host.Port)
 			return nil
 		default:
@@ -666,7 +886,7 @@ func (rps *ReverseProxyService) listenTcpRoute(host *data_models.ReverseProxyHos
 		conn, err := listener.Accept()
 		if err != nil {
 			select {
-			case <-rps.ctx.Done():
+			case <-hostCtx.Done():
 				return nil
 			default:
 				if opErr, ok := err.(*net.OpError); ok && opErr.Err.Error() == "use of closed network connection" {
@@ -686,7 +906,7 @@ func (rps *ReverseProxyService) listenTcpRoute(host *data_models.ReverseProxyHos
 	}
 }
 
-func (rps *ReverseProxyService) listenHttpRoute(host *data_models.ReverseProxyHost, errorChan chan error) error {
+func (rps *ReverseProxyService) listenHttpRoute(host *data_models.ReverseProxyHost, hostCtx context.Context, errorChan chan error) error {
 	if host.Port == "" {
 		host.Port = "80"
 	}
@@ -939,7 +1159,7 @@ func (rps *ReverseProxyService) listenHttpRoute(host *data_models.ReverseProxyHo
 		}
 	}()
 
-	<-rps.ctx.Done()
+	<-hostCtx.Done()
 
 	ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

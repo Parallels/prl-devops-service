@@ -183,7 +183,7 @@ func (j *JsonDatabase) UpdateClaim(ctx basecontext.ApiContext, claim *models.Cla
 
 	for i, c := range j.data.Claims {
 		if strings.EqualFold(c.ID, claim.ID) || strings.EqualFold(c.Name, claim.Name) {
-			if claim.Internal {
+			if c.Internal && !IsRootUser(ctx) {
 				return nil, ErrUpdateInternalClaim
 			}
 			oldClaim := j.data.Claims[i]
