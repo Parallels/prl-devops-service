@@ -336,6 +336,8 @@ func GetHardwareInfo() restapi.ControllerHandler {
 		var freeDiskSpace int64
 		if hwInfo, err := provider.System.GetHardwareInfo(ctx); err == nil {
 			freeDiskSpace = int64(hwInfo.FreeDiskSize)
+		} else if ds, err := diskspace.Get(ctx).GetCacheDiskSpace(ctx); err == nil {
+			freeDiskSpace = ds
 		}
 
 		if cfg.IsHost() {

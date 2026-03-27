@@ -41,11 +41,10 @@ func (r *PullCatalogManifestRequest) Validate() error {
 	if r.MachineName == "" {
 		return ErrPullMissingMachineName
 	}
-	if r.Connection == "" {
+	cfg := config.Get()
+	if r.Connection == "" && !cfg.IsCatalog() {
 		return ErrMissingConnection
 	}
-
-	cfg := config.Get()
 	if r.Owner == "" {
 		r.Owner = cfg.GetKey(constants.CURRENT_USER_ENV_VAR)
 	}

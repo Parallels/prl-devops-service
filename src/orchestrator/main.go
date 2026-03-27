@@ -83,6 +83,7 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	})
 	rpHandler := handlers.NewHostReverseProxyEventHandler(manager)
 	rpHandler.SetReverseProxyUpdater(s)
+	handlers.NewHostJobEventHandler(manager)
 
 	// Initialize per-host hardware update queue and wire it to the PDFM handler.
 	s.hwQueue = newHardwareUpdateQueue(s)
@@ -380,6 +381,9 @@ func (s *OrchestratorService) fullRefreshHost(host models.OrchestratorHost, load
 				CachedDate:   manifest.CacheDate,
 			})
 		}
+		if cacheList.CacheConfig != nil {
+			host.CacheConfig = cacheList.CacheConfig
+		}
 	} else {
 		s.ctx.LogWarnf("[Orchestrator] Full refresh: cache error for host %s: %v", host.Host, err)
 	}
@@ -634,6 +638,9 @@ func (s *OrchestratorService) RefreshHostCache(hostId string) {
 					CacheType:    manifest.CacheType,
 					CachedDate:   manifest.CacheDate,
 				})
+			}
+			if cacheList.CacheConfig != nil {
+				host.CacheConfig = cacheList.CacheConfig
 			}
 			_ = s.persistHost(host)
 		} else {

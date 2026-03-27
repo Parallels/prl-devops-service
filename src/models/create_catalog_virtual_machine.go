@@ -39,10 +39,6 @@ func (r *CreateCatalogVirtualMachineRequest) Validate() error {
 	if connection != "" && catalogManagerId != "" {
 		return errors.NewWithCode("connection and catalog_manager_id cannot both be provided", 400)
 	}
-	if connection == "" && catalogManagerId == "" {
-		return errors.NewWithCode("missing connection or catalog_manager_id", 400)
-	}
-
 	if r.Owner == "" {
 		owner := os.Getenv(constants.CURRENT_USER_ENV_VAR)
 		if owner == "" {

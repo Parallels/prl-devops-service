@@ -166,6 +166,36 @@ func (jms *JobManagerService) UpdateJobProgressAndSteps(jobId string, progress i
 	return job, nil
 }
 
+// UpdateJobProgressStepsAndMessage atomically syncs progress, state, steps,
+// and message in a single DB write and a single JOB_UPDATED event. This is
+// used when mirroring a host job into an orchestrator job so the UI sees the
+// full rich body (steps, percentages, filenames, etc.) in one update.
+func (jms *JobManagerService) UpdateJobProgressStepsAndMessage(jobId string, progress int, state constants.JobState, steps []data_models.JobStep, message string) (*data_models.Job, error) {
+	job, err := jms.db.GetJob(jms.apiCtx, jobId)
+	if err != nil {
+		return nil, err
+	}
+
+	if job.State == constants.JobStateCompleted || job.State == constants.JobStateFailed {
+		return job, nil
+	}
+
+	job.Progress = progress
+	job.State = state
+	job.Steps = steps
+	if message != "" {
+		job.Message = message
+	}
+
+	err = jms.db.UpdateJob(jms.apiCtx, *job)
+	if err != nil {
+		return nil, err
+	}
+
+	jms.emitEvent("JOB_UPDATED", job)
+	return job, nil
+}
+
 func (jms *JobManagerService) UpdateJobMessage(jobId string, message string) (*data_models.Job, error) {
 	job, err := jms.db.GetJob(jms.apiCtx, jobId)
 	if err != nil {
