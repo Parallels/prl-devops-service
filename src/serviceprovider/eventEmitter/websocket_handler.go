@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/cjlapao/common-go/helper/http_helper"
 	"github.com/google/uuid"
@@ -22,17 +24,16 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basecontext.ApiContext) *models.ApiErrorResponse {
+func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basecontext.ApiContext) *models.ApiErrorDiagnosticsResponse {
 	clientIP := extractClientIP(r)
 	ctx.LogInfof("WebSocket connection attempt from IP: %s", clientIP)
-
+	wsHandleDiag := errors.NewDiagnostics("HandleWebSocketConnection")
 	if !isMultipleConnectionsPerIPAllowed() && clientIP != "" {
 		if Get().hub.HasActiveConnectionFromIP(clientIP) {
 			ctx.LogWarnf("Connection rejected: IP %s already has an active connection", clientIP)
-			return &models.ApiErrorResponse{
-				Message: fmt.Sprintf("IP address %s already has an active WebSocket connection", clientIP),
-				Code:    http.StatusConflict,
-			}
+			wsHandleDiag.AddError(strconv.Itoa(http.StatusConflict), fmt.Sprintf("IP address %s already has an active WebSocket connection", clientIP), "HandleWebSocketConnection")
+			resp := models.NewDiagnosticsWithCode(wsHandleDiag, http.StatusConflict)
+			return &resp
 		}
 	}
 	// Validate that the request has an authenticated user before upgrading the
@@ -55,10 +56,9 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basec
 			}
 		} else {
 			ctx.LogErrorf("WebSocket connection attempt without authenticated user")
-			return &models.ApiErrorResponse{
-				Message: "authentication required",
-				Code:    http.StatusUnauthorized,
-			}
+			wsHandleDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "authentication required", "")
+			resp := models.NewDiagnosticsWithCode(wsHandleDiag, http.StatusUnauthorized)
+			return &resp
 		}
 	}
 
@@ -69,10 +69,9 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basec
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		ctx.LogErrorf("Failed to upgrade WebSocket connection: %v", err)
-		return &models.ApiErrorResponse{
-			Message: "Failed to upgrade connection: " + err.Error(),
-			Code:    http.StatusBadRequest,
-		}
+		wsHandleDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Failed to upgrade connection: "+err.Error(), "")
+		resp := models.NewDiagnosticsWithCode(wsHandleDiag, http.StatusBadRequest)
+		return &resp
 	}
 	// Create client
 	client := &Client{
@@ -102,6 +101,16 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basec
 }
 
 // HandleGetClients writes the list of connected clients (with queue depths) as JSON.
+// returnApiErrorWithDiagnostics is a package-local helper that writes the
+// HTTP status code and JSON-encodes the diagnostics response. It mirrors
+// controllers.ReturnApiErrorWithDiagnostics without creating a cross-package
+// import cycle.
+func returnApiErrorWithDiagnostics(ctx basecontext.ApiContext, w http.ResponseWriter, err models.ApiErrorDiagnosticsResponse) {
+	ctx.LogErrorf("Error: %v", err.Message)
+	w.WriteHeader(err.Code)
+	_ = json.NewEncoder(w).Encode(err)
+}
+
 func HandleGetClients(w http.ResponseWriter, r *http.Request, ctx basecontext.ApiContext) {
 	clients := Get().GetClients()
 	w.Header().Set("Content-Type", "application/json")
@@ -119,32 +128,26 @@ func HandleGetStats(w http.ResponseWriter, r *http.Request, ctx basecontext.ApiC
 
 func HandleUnsubscribe(w http.ResponseWriter, r *http.Request, ctx basecontext.ApiContext) {
 	var request models.UnsubscribeRequest
+	unsubscribeHandleDiag := errors.NewDiagnostics("HandleUnsubscribe")
 	if err := http_helper.MapRequestBody(r, &request); err != nil {
 		ctx.LogWarnf("Invalid unsubscribe request body: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(models.ApiErrorResponse{
-			Message: "Invalid request body: " + err.Error(),
-			Code:    http.StatusBadRequest,
-		})
+		unsubscribeHandleDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+		returnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(unsubscribeHandleDiag, http.StatusBadRequest))
+		return
 	}
 
 	if len(request.EventTypes) == 0 {
 		ctx.LogInfof("No event_types specified")
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(models.ApiErrorResponse{
-			Message: "Invalid event_types body parameter",
-			Code:    http.StatusBadRequest,
-		})
+		unsubscribeHandleDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid event_types body parameter", "")
+		returnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(unsubscribeHandleDiag, http.StatusBadRequest))
+		return
 	}
 
 	eventTypesList, err := stringToEventTypes(request.EventTypes)
 	if len(eventTypesList) <= 0 {
 		ctx.LogWarnf("No valid event types to unsubscribe: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(models.ApiErrorResponse{
-			Message: "No valid event types to unsubscribe: " + err.Error(),
-			Code:    http.StatusBadRequest,
-		})
+		unsubscribeHandleDiag.AddError(strconv.Itoa(http.StatusBadRequest), "No valid event types to unsubscribe: "+err.Error(), "")
+		returnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(unsubscribeHandleDiag, http.StatusBadRequest))
 		return
 	}
 
@@ -160,11 +163,8 @@ func HandleUnsubscribe(w http.ResponseWriter, r *http.Request, ctx basecontext.A
 	unsubscribed, err := Get().hub.unsubscribeClientFromTypes(request.ClientID, username, eventTypesList)
 
 	if len(unsubscribed) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(models.ApiErrorResponse{
-			Message: err.Error(),
-			Code:    http.StatusBadRequest,
-		})
+		unsubscribeHandleDiag.AddError(strconv.Itoa(http.StatusBadRequest), err.Error(), "")
+		returnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(unsubscribeHandleDiag, http.StatusBadRequest))
 		return
 	}
 
