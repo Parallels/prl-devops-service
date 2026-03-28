@@ -114,7 +114,7 @@ func registerUsersHandlers(ctx basecontext.ApiContext, version string) {
 // @Tags			Users
 // @Produce		json
 // @Success		200	{object}	[]models.ApiUser
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -124,15 +124,20 @@ func GetUsersHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		getUserDiag := errors.NewDiagnostics("/auth/users")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserDiag, rsp.Code))
 			return
 		}
 
 		users, err := dbService.GetUsers(ctx, GetFilterHeader(r))
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			getUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUsers")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserDiag, rsp.Code))
 			return
 		}
 
@@ -159,7 +164,7 @@ func GetUsersHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path		string	true	"User ID"
 // @Success		200	{object}	models.ApiUser
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -169,18 +174,22 @@ func GetUserHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		id := vars["id"]
+		getUserDiag := errors.NewDiagnostics("/auth/users/" + id)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserDiag, rsp.Code))
 			return
 		}
 
-		vars := mux.Vars(r)
-		id := vars["id"]
-
 		user, err := dbService.GetUser(ctx, id)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			getUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserDiag, rsp.Code))
 			return
 		}
 
@@ -209,7 +218,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.UserCreateRequest
-		userCreationDiag := errors.NewDiagnostics("create user")
+		userCreationDiag := errors.NewDiagnostics("/auth/users")
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			userCreationDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, http.StatusBadRequest))
@@ -246,7 +255,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 		dtoUser, err := dbService.CreateUser(ctx, mappers.ApiUserCreateRequestToDto(request))
 		if err != nil {
 			rsp := models.NewFromError(err)
-			userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+			userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "CreateUser")
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, rsp.Code))
 			return
 		}
@@ -273,7 +282,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 				if err != nil {
 					_ = dbService.DeleteUser(ctx, dtoUser.ID)
 					rsp := models.NewFromError(err)
-					userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+					userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "AddClaimToUser")
 					ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, rsp.Code))
 					return
 				}
@@ -294,7 +303,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 				if err != nil {
 					_ = dbService.DeleteUser(ctx, dtoUser.ID)
 					rsp := models.NewFromError(err)
-					userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+					userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "AddRoleToUser")
 					ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, rsp.Code))
 					return
 				}
@@ -303,7 +312,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 			dtoUser, err = dbService.GetUser(ctx, dtoUser.ID)
 			if err != nil {
 				rsp := models.NewFromError(err)
-				userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DatabaseService")
+				userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUser")
 				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(userCreationDiag, rsp.Code))
 				return
 			}
@@ -324,7 +333,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path	string	true	"User ID"
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -334,18 +343,22 @@ func DeleteUserHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		id := vars["id"]
+		deleteUserDiag := errors.NewDiagnostics("/auth/users/" + id)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			deleteUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteUserDiag, rsp.Code))
 			return
 		}
 
-		vars := mux.Vars(r)
-		id := vars["id"]
-
 		err = dbService.DeleteUser(ctx, id)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DeleteUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteUserDiag, rsp.Code))
 			return
 		}
 
@@ -361,7 +374,7 @@ func DeleteUserHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			body	body		models.UserCreateRequest	true	"User"
 // @Success		202		{object}	models.ApiUser
-// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		400		{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401		{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -371,36 +384,36 @@ func UpdateUserHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		id := vars["id"]
+		updateUserDiag := errors.NewDiagnostics("/auth/users/" + id)
 		var request models.UserUpdateRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			updateUserDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserDiag, http.StatusBadRequest))
 			return
 		}
 		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			updateUserDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserDiag, http.StatusBadRequest))
 			return
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			updateUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserDiag, rsp.Code))
 			return
 		}
-
-		vars := mux.Vars(r)
-		id := vars["id"]
 
 		dtoUser := mappers.ApiUserUpdateRequestToDto(request)
 		dtoUser.ID = id
 		err = dbService.UpdateUser(ctx, dtoUser)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			updateUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "UpdateUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserDiag, rsp.Code))
 			return
 		}
 
@@ -416,7 +429,7 @@ func UpdateUserHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path		string	true	"User ID"
 // @Success		200	{object}	models.RoleResponse
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -426,18 +439,22 @@ func GetUserRolesHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		id := vars["id"]
+		getUserRolesDiag := errors.NewDiagnostics("/auth/users/" + id + "/roles")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getUserRolesDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserRolesDiag, rsp.Code))
 			return
 		}
 
-		vars := mux.Vars(r)
-		id := vars["id"]
-
 		dtoUser, err := dbService.GetUser(ctx, id)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			getUserRolesDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserRolesDiag, rsp.Code))
 			return
 		}
 
@@ -457,7 +474,7 @@ func GetUserRolesHandler() restapi.ControllerHandler {
 // @Param			id		path		string				true	"User ID"
 // @Param			body	body		models.RoleRequest	true	"Role Name"
 // @Success		201		{object}	models.RoleRequest
-// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		400		{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401		{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -467,33 +484,33 @@ func AddRoleToUserHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		id := vars["id"]
+		addRoleToUserDiag := errors.NewDiagnostics("/auth/users/" + id + "/roles")
 		var request models.RoleRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			addRoleToUserDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(addRoleToUserDiag, http.StatusBadRequest))
 			return
 		}
 		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			addRoleToUserDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(addRoleToUserDiag, http.StatusBadRequest))
 			return
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			addRoleToUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(addRoleToUserDiag, rsp.Code))
 			return
 		}
 
-		vars := mux.Vars(r)
-		id := vars["id"]
-
 		if err := dbService.AddRoleToUser(ctx, id, request.Name); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			addRoleToUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "AddRoleToUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(addRoleToUserDiag, rsp.Code))
 			return
 		}
 
@@ -511,7 +528,7 @@ func AddRoleToUserHandler() restapi.ControllerHandler {
 // @Param			id		path	string	true	"User ID"
 // @Param			role_id	path	string	true	"Role ID"
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -521,18 +538,22 @@ func RemoveRoleFromUserHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
-
 		vars := mux.Vars(r)
 		id := vars["id"]
 		roleId := vars["role_id"]
+		removeRoleFromUserDiag := errors.NewDiagnostics("/auth/users/" + id + "/roles/" + roleId)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			rsp := models.NewFromError(err)
+			removeRoleFromUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(removeRoleFromUserDiag, rsp.Code))
+			return
+		}
 
 		if err = dbService.RemoveRoleFromUser(ctx, id, roleId); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			removeRoleFromUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "RemoveRoleFromUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(removeRoleFromUserDiag, rsp.Code))
 			return
 		}
 
@@ -548,7 +569,7 @@ func RemoveRoleFromUserHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path		string	true	"User ID"
 // @Success		200	{object}	models.ClaimResponse
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -558,18 +579,22 @@ func GetUserClaimsHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		id := vars["id"]
+		getUserClaimsDiag := errors.NewDiagnostics("/auth/users/" + id + "/claims")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getUserClaimsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserClaimsDiag, rsp.Code))
 			return
 		}
 
-		vars := mux.Vars(r)
-		id := vars["id"]
-
 		dtoUser, err := dbService.GetUser(ctx, id)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			getUserClaimsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserClaimsDiag, rsp.Code))
 			return
 		}
 
@@ -589,7 +614,7 @@ func GetUserClaimsHandler() restapi.ControllerHandler {
 // @Param			id		path		string				true	"User ID"
 // @Param			body	body		models.ClaimRequest	true	"Claim Name"
 // @Success		201		{object}	models.ClaimRequest
-// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		400		{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401		{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -599,33 +624,33 @@ func AddClaimToUserHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		id := vars["id"]
+		addClaimToUserDiag := errors.NewDiagnostics("/auth/users/" + id + "/claims")
 		var request models.ClaimRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			addClaimToUserDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(addClaimToUserDiag, http.StatusBadRequest))
 			return
 		}
 		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			addClaimToUserDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(addClaimToUserDiag, http.StatusBadRequest))
 			return
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			addClaimToUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(addClaimToUserDiag, rsp.Code))
 			return
 		}
 
-		vars := mux.Vars(r)
-		id := vars["id"]
-
 		if err := dbService.AddClaimToUser(ctx, id, request.Name); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			addClaimToUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "AddClaimToUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(addClaimToUserDiag, rsp.Code))
 			return
 		}
 
@@ -643,7 +668,7 @@ func AddClaimToUserHandler() restapi.ControllerHandler {
 // @Param			id			path	string	true	"User ID"
 // @Param			claim_id	path	string	true	"Claim ID"
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -653,18 +678,22 @@ func RemoveClaimFromUserHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
-			return
-		}
-
 		vars := mux.Vars(r)
 		id := vars["id"]
 		claimId := vars["claim_id"]
+		removeClaimFromUserDiag := errors.NewDiagnostics("/auth/users/" + id + "/claims/" + claimId)
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			rsp := models.NewFromError(err)
+			removeClaimFromUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(removeClaimFromUserDiag, rsp.Code))
+			return
+		}
 
 		if err = dbService.RemoveClaimFromUser(ctx, id, claimId); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			removeClaimFromUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "RemoveClaimFromUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(removeClaimFromUserDiag, rsp.Code))
 			return
 		}
 
