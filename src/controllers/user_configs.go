@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"html"
 	"net/http"
+	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -65,8 +67,8 @@ func registerUserConfigsHandlers(ctx basecontext.ApiContext, version string) {
 // @Tags			User Configs
 // @Produce		json
 // @Success		200	{object}	[]models.UserConfigResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401	{object}	models.ApiErrorDiagnosticsResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/user/configs [get]
@@ -75,22 +77,27 @@ func GetUserConfigsHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		getUserConfigsDiag := errors.NewDiagnostics("/user/configs")
 		userContext := ctx.GetUser()
 		if userContext == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "user not found"})
+			getUserConfigsDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "user not found", "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigsDiag, http.StatusUnauthorized))
 			return
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getUserConfigsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigsDiag, rsp.Code))
 			return
 		}
 
 		dtoConfigs, err := dbService.GetUserConfigs(ctx, userContext.ID, GetFilterHeader(r))
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			getUserConfigsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUserConfigs")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigsDiag, rsp.Code))
 			return
 		}
 
@@ -108,9 +115,9 @@ func GetUserConfigsHandler() restapi.ControllerHandler {
 // @Param			id	path	string	true	"Config ID or Slug"
 // @Produce		json
 // @Success		200	{object}	models.UserConfigResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Failure		404	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		404	{object}	models.ApiErrorDiagnosticsResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/user/configs/{id} [get]
@@ -119,25 +126,29 @@ func GetUserConfigHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		vars := mux.Vars(r)
+		id := html.UnescapeString(vars["id"])
+		getUserConfigDiag := errors.NewDiagnostics("/user/configs/" + id)
 		userContext := ctx.GetUser()
 		if userContext == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "user not found"})
+			getUserConfigDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "user not found", "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigDiag, http.StatusUnauthorized))
 			return
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigDiag, rsp.Code))
 			return
 		}
 
-		vars := mux.Vars(r)
-		id := html.UnescapeString(vars["id"])
-
 		dtoConfig, err := dbService.GetUserConfig(ctx, userContext.ID, id)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusNotFound))
+			rsp := models.NewFromError(err)
+			getUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUserConfig")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigDiag, rsp.Code))
 			return
 		}
 
@@ -155,8 +166,8 @@ func GetUserConfigHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			userConfig	body	models.UserConfigRequest	true	"Body"
 // @Success		201	{object}	models.UserConfigResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401	{object}	models.ApiErrorDiagnosticsResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/user/configs [post]
@@ -165,33 +176,32 @@ func CreateUserConfigHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		createUserConfigDiag := errors.NewDiagnostics("/user/configs")
 		userContext := ctx.GetUser()
 		if userContext == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "user not found"})
+			createUserConfigDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "user not found", "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createUserConfigDiag, http.StatusUnauthorized))
 			return
 		}
 
 		var request models.UserConfigRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			createUserConfigDiag.AddError(strconv.Itoa(http.StatusBadRequest), "invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createUserConfigDiag, http.StatusBadRequest))
 			return
 		}
 
 		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			createUserConfigDiag.AddError(strconv.Itoa(http.StatusBadRequest), "invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createUserConfigDiag, http.StatusBadRequest))
 			return
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			createUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createUserConfigDiag, rsp.Code))
 			return
 		}
 
@@ -201,7 +211,9 @@ func CreateUserConfigHandler() restapi.ControllerHandler {
 
 		dtoResult, err := dbService.UpsertUserConfig(ctx, dtoConfig)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			createUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "UpsertUserConfig")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createUserConfigDiag, rsp.Code))
 			return
 		}
 
@@ -225,9 +237,9 @@ func CreateUserConfigHandler() restapi.ControllerHandler {
 // @Param			userConfig	body	models.UserConfigUpdateRequest	true	"Body"
 // @Produce		json
 // @Success		200	{object}	models.UserConfigResponse
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Failure		404	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		404	{object}	models.ApiErrorDiagnosticsResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/user/configs/{id} [put]
@@ -236,36 +248,34 @@ func UpdateUserConfigHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		vars := mux.Vars(r)
+		id := html.UnescapeString(vars["id"])
+		updateUserConfigDiag := errors.NewDiagnostics("/user/configs/" + id)
 		userContext := ctx.GetUser()
 		if userContext == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "user not found"})
+			updateUserConfigDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "user not found", "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, http.StatusUnauthorized))
 			return
 		}
 
-		vars := mux.Vars(r)
-		id := html.UnescapeString(vars["id"])
-
 		var request models.UserConfigUpdateRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			updateUserConfigDiag.AddError(strconv.Itoa(http.StatusBadRequest), "invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, http.StatusBadRequest))
 			return
 		}
 
 		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			updateUserConfigDiag.AddError(strconv.Itoa(http.StatusBadRequest), "invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, http.StatusBadRequest))
 			return
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			updateUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, rsp.Code))
 			return
 		}
 
@@ -289,7 +299,9 @@ func UpdateUserConfigHandler() restapi.ControllerHandler {
 			}
 			dtoResult, createErr := dbService.UpsertUserConfig(ctx, newCfg)
 			if createErr != nil {
-				ReturnApiError(ctx, w, models.NewFromError(createErr))
+				rsp := models.NewFromError(createErr)
+				updateUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "UpsertUserConfig")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, rsp.Code))
 				return
 			}
 			response := mappers.UserConfigDtoToResponse(*dtoResult)
@@ -311,7 +323,9 @@ func UpdateUserConfigHandler() restapi.ControllerHandler {
 
 		dtoResult, err := dbService.UpdateUserConfig(ctx, *existing)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			updateUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "UpdateUserConfig")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, rsp.Code))
 			return
 		}
 
@@ -329,9 +343,9 @@ func UpdateUserConfigHandler() restapi.ControllerHandler {
 // @Param			id	path	string	true	"Config ID or Slug"
 // @Produce		json
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
-// @Failure		404	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		404	{object}	models.ApiErrorDiagnosticsResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/user/configs/{id} [delete]
@@ -340,24 +354,28 @@ func DeleteUserConfigHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		vars := mux.Vars(r)
+		id := html.UnescapeString(vars["id"])
+		deleteUserConfigDiag := errors.NewDiagnostics("/user/configs/" + id)
 		userContext := ctx.GetUser()
 		if userContext == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "user not found"})
+			deleteUserConfigDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "user not found", "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteUserConfigDiag, http.StatusUnauthorized))
 			return
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			deleteUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteUserConfigDiag, rsp.Code))
 			return
 		}
 
-		vars := mux.Vars(r)
-		id := html.UnescapeString(vars["id"])
-
 		if err := dbService.DeleteUserConfig(ctx, userContext.ID, id); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DeleteUserConfig")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteUserConfigDiag, rsp.Code))
 			return
 		}
 
