@@ -10,7 +10,33 @@ import (
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 )
+
+// getEffectiveCallerID returns the user ID to associate with a job.
+// For requests authenticated via API key (IsMicroService == true), such as
+// orchestrator-to-host calls, there is no user account on the target, so
+// "system" is used as a fallback owner. Returns ("", false) when the request
+// is not authenticated at all.
+func getEffectiveCallerID(ctx *basecontext.BaseContext) (string, bool) {
+	if user := ctx.GetUser(); user != nil {
+		return user.ID, true
+	}
+	authCtx := ctx.GetAuthorizationContext()
+	if authCtx != nil && authCtx.IsMicroService {
+    // Getting the user based on the user we are logged in as
+    // in the service using the system service
+    sysSvc := system.Get()
+    sysUser, err := sysSvc.GetCurrentUser(ctx)
+    currentUser := "root"
+    if err == nil {
+      currentUser = sysUser
+    }
+    return currentUser, true
+  }
+
+	return "", false
+}
 
 func GetFilterHeader(r *http.Request) string {
 	return r.Header.Get("X-Filter")

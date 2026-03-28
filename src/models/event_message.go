@@ -103,6 +103,11 @@ type HostVmEvent struct {
 	Event  interface{} `json:"event"` // VmStateChange, VmAdded, or VmRemoved
 }
 
+type HostJobEvent struct {
+	HostID string      `json:"host_id"`
+	Event  interface{} `json:"event"` // Job event forwarded from the remote host
+}
+
 type HostStatsUpdate struct {
 	HostID string      `json:"host_id"`
 	Stats  interface{} `json:"stats"`

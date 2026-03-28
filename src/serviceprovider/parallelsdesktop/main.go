@@ -713,6 +713,27 @@ func (s *ParallelsService) GetVMSnapshotsFromDB(ctx basecontext.ApiContext, vmID
 	return resp, nil
 }
 
+func (s *ParallelsService) GetVMSnapshotsTreeFromDB(ctx basecontext.ApiContext, vmID string) (*models.ListVMSnapshotResponse, error) {
+	if s.databaseService == nil {
+		ctx.LogErrorf("[parallelsdesktop][snapshots] Database service not available")
+		return nil, nil
+	}
+
+	dbSnaps, err := s.databaseService.GetListVMSnapshotsByVMId(vmID)
+	if err != nil {
+		return nil, err
+	}
+	mappedSnaps := mappers.VMSnapshotsDtoToApi(dbSnaps)
+  // Creating a tree like response for the flat snapshots
+  // Using the unflattenVMSnapshots helper to create the recursive tree
+  resultTree := unflattenVMSnapshots(mappedSnaps)
+
+	resp := &models.ListVMSnapshotResponse{
+		Snapshots: resultTree,
+	}
+	return resp, nil
+}
+
 // waitForVMSSHReady probes a macOS VM's SSH readiness by executing a trivial command
 // via prlctl exec. It retries every 3 seconds for up to 30 seconds total.
 // Returns true as soon as the command succeeds, false if the timeout is exceeded.

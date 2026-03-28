@@ -142,5 +142,11 @@ func (q *hardwareUpdateQueue) fetchAndPersist(ctx basecontext.ApiContext, hostID
 		return
 	}
 
+	if host.CacheConfig != nil {
+		if err := q.svc.db.UpdateOrchestratorHostCacheConfig(ctx, hostID, host.CacheConfig); err != nil {
+			ctx.LogErrorf("[HardwareUpdateQueue] Error persisting cache config for host %s: %v", hostID, err)
+		}
+	}
+
 	ctx.LogInfof("[HardwareUpdateQueue] Hardware resources updated for host %s", hostID)
 }
