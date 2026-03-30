@@ -1375,6 +1375,10 @@ func CreateVMSnapshot() restapi.ControllerHandler {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
+			if snapshots == nil {
+				ReturnApiError(ctx, w, models.NewFromError(errors.NewWithCodef(http.StatusInternalServerError, "snapshot database is unavailable for virtual machine %s", VMId)))
+				return
+			}
 			for _, snapshot := range snapshots.Snapshots {
 				if snapshot.ID == response.SnapshotId {
 					w.WriteHeader(http.StatusAccepted)
@@ -1435,6 +1439,10 @@ func DeleteVMSnapshot() restapi.ControllerHandler {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
+			if snapshots == nil {
+				ReturnApiError(ctx, w, models.NewFromError(errors.NewWithCodef(http.StatusInternalServerError, "snapshot database is unavailable for virtual machine %s", VMId)))
+				return
+			}
 			found := false
 			for _, snapshot := range snapshots.Snapshots {
 				if snapshot.ID == SnapshotId {
@@ -1485,6 +1493,10 @@ func DeleteAllVMSnapshots() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
+		if snapshots == nil {
+			ReturnApiError(ctx, w, models.NewFromError(errors.NewWithCodef(http.StatusInternalServerError, "snapshot database is unavailable for virtual machine %s", VMId)))
+			return
+		}
 
 		for _, snapshot := range snapshots.Snapshots {
 			err = svc.DeleteVMSnapshot(ctx, VMId, snapshot.ID, &models.DeleteVMSnapshotRequest{})
@@ -1503,6 +1515,10 @@ func DeleteAllVMSnapshots() restapi.ControllerHandler {
 			snapshot, err := svc.GetVMSnapshotsFromDB(ctx, VMId)
 			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			if snapshot == nil {
+				ReturnApiError(ctx, w, models.NewFromError(errors.NewWithCodef(http.StatusInternalServerError, "snapshot database is unavailable for virtual machine %s", VMId)))
 				return
 			}
 			if len(snapshot.Snapshots) == 0 {
@@ -1539,24 +1555,27 @@ func ListVMSnapshot() restapi.ControllerHandler {
 
 		params := mux.Vars(r)
 		VMId := params["id"]
-    //qeury params for grouping snapshots by parent or not
-    query := r.URL.Query()
-    groupByParent := query.Get("group")
-
+		//qeury params for grouping snapshots by parent or not
+		query := r.URL.Query()
+		groupByParent := query.Get("group")
 
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-    var response *models.ListVMSnapshotResponse
-    var err error
-    if groupByParent == "true" {
-      response, err = svc.GetVMSnapshotsTreeFromDB(ctx, VMId)
-    } else {
-		response, err = svc.GetVMSnapshotsFromDB(ctx, VMId)
-    }
-    
+		var response *models.ListVMSnapshotResponse
+		var err error
+		if groupByParent == "true" {
+			response, err = svc.GetVMSnapshotsTreeFromDB(ctx, VMId)
+		} else {
+			response, err = svc.GetVMSnapshotsFromDB(ctx, VMId)
+		}
+
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+		if response == nil {
+			ReturnApiError(ctx, w, models.NewFromError(errors.NewWithCodef(http.StatusInternalServerError, "snapshot database is unavailable for virtual machine %s", VMId)))
 			return
 		}
 
@@ -1609,6 +1628,10 @@ func RevertVMSnapshot() restapi.ControllerHandler {
 			snapshot, err = svc.GetVMSnapshotsFromDB(ctx, VMId)
 			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			if snapshot == nil {
+				ReturnApiError(ctx, w, models.NewFromError(errors.NewWithCodef(http.StatusInternalServerError, "snapshot database is unavailable for virtual machine %s", VMId)))
 				return
 			}
 			for _, snapshot := range snapshot.Snapshots {

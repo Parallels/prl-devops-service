@@ -699,7 +699,7 @@ func (s *ParallelsService) InitSnapshotTreeInDB(ctx basecontext.ApiContext) {
 func (s *ParallelsService) GetVMSnapshotsFromDB(ctx basecontext.ApiContext, vmID string) (*models.ListVMSnapshotResponse, error) {
 	if s.databaseService == nil {
 		ctx.LogErrorf("[parallelsdesktop][snapshots] Database service not available")
-		return nil, nil
+		return nil, errors.NewWithCodef(500, "snapshot database service is not available")
 	}
 
 	dbSnaps, err := s.databaseService.GetListVMSnapshotsByVMId(vmID)
@@ -716,7 +716,7 @@ func (s *ParallelsService) GetVMSnapshotsFromDB(ctx basecontext.ApiContext, vmID
 func (s *ParallelsService) GetVMSnapshotsTreeFromDB(ctx basecontext.ApiContext, vmID string) (*models.ListVMSnapshotResponse, error) {
 	if s.databaseService == nil {
 		ctx.LogErrorf("[parallelsdesktop][snapshots] Database service not available")
-		return nil, nil
+		return nil, errors.NewWithCodef(500, "snapshot database service is not available")
 	}
 
 	dbSnaps, err := s.databaseService.GetListVMSnapshotsByVMId(vmID)
@@ -724,9 +724,9 @@ func (s *ParallelsService) GetVMSnapshotsTreeFromDB(ctx basecontext.ApiContext, 
 		return nil, err
 	}
 	mappedSnaps := mappers.VMSnapshotsDtoToApi(dbSnaps)
-  // Creating a tree like response for the flat snapshots
-  // Using the unflattenVMSnapshots helper to create the recursive tree
-  resultTree := unflattenVMSnapshots(mappedSnaps)
+	// Creating a tree like response for the flat snapshots
+	// Using the unflattenVMSnapshots helper to create the recursive tree
+	resultTree := unflattenVMSnapshots(mappedSnaps)
 
 	resp := &models.ListVMSnapshotResponse{
 		Snapshots: resultTree,

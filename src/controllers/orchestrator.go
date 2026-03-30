@@ -3926,24 +3926,6 @@ func ValidateEnrollmentTokenHandler() restapi.ControllerHandler {
 // checkDuplicateDeployHost returns a non-nil error if a host with the same
 // name or SSH address already exists, so both sync and async handlers can
 // reject the request before doing any work.
-func checkDuplicateDeployHost(ctx basecontext.ApiContext, hostName, sshHost string) error {
-	db := serviceprovider.Get().JsonDatabase
-	_ = db.Connect(ctx)
-	existing, err := db.GetOrchestratorHosts(ctx, "")
-	if err != nil {
-		return fmt.Errorf("failed to check existing hosts: %w", err)
-	}
-	for _, h := range existing {
-		if strings.EqualFold(h.Description, hostName) {
-			return fmt.Errorf("a host with the name %q already exists (id: %s)", hostName, h.ID)
-		}
-		if strings.EqualFold(h.Host, sshHost) {
-			return fmt.Errorf("a host with the address %q already exists (id: %s)", sshHost, h.ID)
-		}
-	}
-	return nil
-}
-
 func DeployOrchestratorHostHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -4282,5 +4264,22 @@ func AsyncCreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandle
 		ctx.LogInfof("Async orchestrator host machine create started on host %s, job ID: %v", id, response.ID)
 	}
 }
-
 // endregion Orchestrator Async Machine Creation
+
+func checkDuplicateDeployHost(ctx basecontext.ApiContext, hostName, sshHost string) error {
+	db := serviceprovider.Get().JsonDatabase
+	_ = db.Connect(ctx)
+	existing, err := db.GetOrchestratorHosts(ctx, "")
+	if err != nil {
+		return fmt.Errorf("failed to check existing hosts: %w", err)
+	}
+	for _, h := range existing {
+		if strings.EqualFold(h.Description, hostName) {
+			return fmt.Errorf("a host with the name %q already exists (id: %s)", hostName, h.ID)
+		}
+		if strings.EqualFold(h.Host, sshHost) {
+			return fmt.Errorf("a host with the address %q already exists (id: %s)", sshHost, h.ID)
+		}
+	}
+	return nil
+}
