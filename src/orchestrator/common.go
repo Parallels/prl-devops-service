@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data/models"
@@ -58,4 +59,15 @@ func getAuthHeaderForWebSocket(ctx basecontext.ApiContext, host models.Orchestra
 // OrchestratorService method wrapper for backward compatibility
 func (s *OrchestratorService) getApiClient(request models.OrchestratorHost) *apiclient.HttpClientService {
 	return getApiClient(s.ctx, request)
+}
+
+// hasModule reports whether name is present in the enabled modules list,
+// using case-insensitive comparison.
+func hasModule(modules []string, name string) bool {
+	for _, m := range modules {
+		if strings.EqualFold(m, name) {
+			return true
+		}
+	}
+	return false
 }

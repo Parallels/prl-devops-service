@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
@@ -52,23 +51,6 @@ func processInstall(ctx basecontext.ApiContext, cmd string) {
 	switch subcommand {
 	case "service":
 		filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
-		// helper.GetFlagValue has an off-by-one bug when parsing space-separated flags
-		// (e.g. --modules orchestrator).  Scan os.Args directly to support both
-		// --modules=value and --modules value formats reliably.
-		modulesFlag := ""
-		for i, arg := range os.Args {
-			if arg == "--modules" && i+1 < len(os.Args) && !strings.HasPrefix(os.Args[i+1], "--") {
-				modulesFlag = os.Args[i+1]
-				break
-			}
-			if strings.HasPrefix(arg, "--modules=") {
-				modulesFlag = strings.TrimPrefix(arg, "--modules=")
-				break
-			}
-		}
-		if modulesFlag != "" {
-			_ = os.Setenv(constants.ENABLED_MODULES_ENV_VAR, modulesFlag)
-		}
 		ctx.ToggleLogTimestamps(false)
 		if filePath != "" {
 			if err := install.InstallService(ctx, filePath); err != nil {

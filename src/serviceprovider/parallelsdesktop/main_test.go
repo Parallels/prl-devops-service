@@ -251,6 +251,30 @@ func TestProcessVmStateChanged(t *testing.T) {
 	})
 }
 
+func TestSnapshotAccessorsRequireDatabaseService(t *testing.T) {
+	service := createTestParallelsService()
+
+	t.Run("GetVMSnapshotsFromDB", func(t *testing.T) {
+		response, err := service.GetVMSnapshotsFromDB(service.ctx, "vm-test-123")
+		if err == nil {
+			t.Fatal("expected an error when the snapshot database service is unavailable")
+		}
+		if response != nil {
+			t.Fatal("expected nil snapshot response when the snapshot database service is unavailable")
+		}
+	})
+
+	t.Run("GetVMSnapshotsTreeFromDB", func(t *testing.T) {
+		response, err := service.GetVMSnapshotsTreeFromDB(service.ctx, "vm-test-123")
+		if err == nil {
+			t.Fatal("expected an error when the snapshot database service is unavailable")
+		}
+		if response != nil {
+			t.Fatal("expected nil snapshot tree response when the snapshot database service is unavailable")
+		}
+	})
+}
+
 func BenchmarkProcessVmStateChanged(b *testing.B) {
 	service := createTestParallelsService()
 	service.cachedLocalVms = createMockVMs()

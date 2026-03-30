@@ -17,6 +17,7 @@ var (
 	ErrUpdateInternalRole       = errors.NewWithCode("role is internal and cannot be updated", 400)
 	ErrRoleAlreadyContainsClaim = errors.NewWithCode("role already contains claim", 400)
 	ErrRoleDoesNotContainClaim  = errors.NewWithCode("role does not contain claim", 404)
+	ErrRoleHasUsers             = errors.NewWithCode("role has users assigned and cannot be removed", 400)
 )
 
 func (j *JsonDatabase) GetRoles(ctx basecontext.ApiContext, filter string) ([]models.Role, error) {
@@ -187,6 +188,15 @@ func (j *JsonDatabase) DeleteRole(ctx basecontext.ApiContext, idOrName string) e
 			if role.Internal && !IsRootUser(ctx) {
 				return ErrRemoveInternalRole
 			}
+
+			for _, user := range j.data.Users {
+				for _, r := range user.Roles {
+					if strings.EqualFold(r.ID, role.ID) {
+						return ErrRoleHasUsers
+					}
+				}
+			}
+
 			j.data.Roles = append(j.data.Roles[:i], j.data.Roles[i+1:]...)
 			return nil
 		}

@@ -206,19 +206,21 @@ func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifes
 		return r, nil
 	}
 
+  // This is disabled for now to allow the new flow with the catalog manager to work
+
 	// Checking the the required claims and roles exist
-	for _, claim := range manifest.RequiredClaims {
-		_, err := j.GetClaim(ctx, claim)
-		if err != nil {
-			return nil, err
-		}
-	}
-	for _, role := range manifest.RequiredRoles {
-		_, err := j.GetRole(ctx, role)
-		if err != nil {
-			return nil, err
-		}
-	}
+	// for _, claim := range manifest.RequiredClaims {
+	// 	_, err := j.GetClaim(ctx, claim)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
+	// for _, role := range manifest.RequiredRoles {
+	// 	_, err := j.GetRole(ctx, role)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
 
 	manifest.CreatedAt = helpers.GetUtcCurrentDateTime()
 	manifest.UpdatedAt = helpers.GetUtcCurrentDateTime()

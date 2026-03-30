@@ -161,7 +161,7 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 		installArgs = append(installArgs, "--root-password", shellSingleQuote(req.RootPassword))
 	}
 	if req.EnabledModules != "" {
-		installArgs = append(installArgs, "--modules", shellSingleQuote(req.EnabledModules))
+		installArgs = append(installArgs, "--modules", req.EnabledModules)
 	}
 	if req.AgentVersion != "" {
 		installArgs = append(installArgs, "--version", shellSingleQuote(req.AgentVersion))

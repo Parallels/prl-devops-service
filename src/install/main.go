@@ -50,6 +50,21 @@ func normalizeModules(input string) string {
 	return strings.Join(result, ",")
 }
 
+func getRawFlagValue(flagName string) string {
+	longFlag := "--" + strings.TrimSpace(flagName)
+
+	for i, arg := range os.Args {
+		if arg == longFlag && i+1 < len(os.Args) && !strings.HasPrefix(os.Args[i+1], "--") {
+			return os.Args[i+1]
+		}
+		if strings.HasPrefix(arg, longFlag+"=") {
+			return strings.TrimPrefix(arg, longFlag+"=")
+		}
+	}
+
+	return ""
+}
+
 const (
 	MAC_PLIST_DAEMON_PATH = "/Library/LaunchDaemons"
 	MAC_PLIST_DAEMON_NAME = "com.parallels.prl-devops-service.plist"
@@ -289,7 +304,7 @@ func uninstallServiceOnLinux(ctx basecontext.ApiContext, removeDatabase bool) er
 func getConfigFromEnv() ApiServiceConfig {
 	cfg := config.Get()
 	config := ApiServiceConfig{}
-	if apiPort := helper.GetFlagValue("api-port", ""); apiPort != "" {
+	if apiPort := getRawFlagValue("api-port"); apiPort != "" {
 		config.Port = apiPort
 	} else if cfg.GetKey(constants.API_PORT_ENV_VAR) != "" {
 		config.Port = cfg.GetKey(constants.API_PORT_ENV_VAR)
@@ -332,7 +347,9 @@ func getConfigFromEnv() ApiServiceConfig {
 	if cfg.GetKey(constants.TOKEN_DURATION_MINUTES_ENV_VAR) != "" {
 		config.TokenDurationMinutes = cfg.GetKey(constants.TOKEN_DURATION_MINUTES_ENV_VAR)
 	}
-	if cfg.GetKey(constants.ENABLED_MODULES_ENV_VAR) != "" {
+	if modules := getRawFlagValue("modules"); modules != "" {
+		config.EnabledModules = normalizeModules(modules)
+	} else if cfg.GetKey(constants.ENABLED_MODULES_ENV_VAR) != "" {
 		config.EnabledModules = normalizeModules(cfg.GetKey(constants.ENABLED_MODULES_ENV_VAR))
 	} else if cfg.GetKey(constants.MODE_ENV_VAR) != "" {
 		// Backward compatibility: MODE contains a single mode value
