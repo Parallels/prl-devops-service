@@ -706,7 +706,8 @@ func (j *JsonDatabase) UpdateCatalogManifestMetadata(ctx basecontext.ApiContext,
 			}
 			j.data.ManifestsCatalog[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
 
-			return &j.data.ManifestsCatalog[i], nil
+			result := j.data.ManifestsCatalog[i]
+			return &result, nil
 		}
 	}
 

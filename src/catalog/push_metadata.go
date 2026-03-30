@@ -20,7 +20,10 @@ func (s *CatalogManifestService) PushMetadata(r *models.VirtualMachineCatalogMan
 	}
 	executed := false
 	manifest := r
-	var err error
+	if r.Provider == nil {
+		s.ns.NotifyInfof("Manifest %v has no provider configured, skipping remote metadata push", r.CatalogId)
+		return manifest
+	}
 	connection := r.Provider.String()
 	for _, rs := range s.remoteServices {
 		check, checkErr := rs.Check(s.ctx, connection)
@@ -59,8 +62,7 @@ func (s *CatalogManifestService) PushMetadata(r *models.VirtualMachineCatalogMan
 		exists, _ := rs.FileExists(s.ctx, manifestPath, s.getMetaFilename(manifest.Name))
 		if !exists {
 			s.ns.NotifyInfof("Remote metadata does not exist, creating it")
-			s.ns.NotifyErrorf("Error Remote metadata does not exist %v", manifest.CatalogId)
-			manifest.AddError(err)
+			manifest.AddError(errors.Newf("remote metadata does not exist for manifest %v", manifest.CatalogId))
 			break
 		}
 
