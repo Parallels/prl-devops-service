@@ -220,8 +220,8 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithVersion(version).
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/claims").
 		WithOrClaims().
+    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/claims")).
 		Register()
 
@@ -231,7 +231,7 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/claims").
 		WithOrClaims().
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/claims")).
 		Register()
 
@@ -241,7 +241,7 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/roles").
 		WithOrClaims().
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/roles")).
 		Register()
 
@@ -251,7 +251,7 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/roles").
 		WithOrClaims().
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/roles")).
 		Register()
 
@@ -261,7 +261,7 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/tags").
 		WithOrClaims().
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/tags")).
 		Register()
 
@@ -281,7 +281,7 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/metadata").
 		WithOrClaims().
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/metadata")).
 		Register()
 
@@ -291,7 +291,7 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/tags").
 		WithOrClaims().
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/tags")).
 		Register()
 
