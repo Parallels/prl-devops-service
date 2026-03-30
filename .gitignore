@@ -27,5 +27,17 @@ _site/
 commit.msg
 .cache/
 .ai/
-.claude/
-.claude-flow/
+.swarm/
+.claude-flow/data/
+.claude-flow/logs/
+.claude-flow/daemon.pid
+.claude-flow/sessions/
+.claude-flow/metrics/ 
+.claude-flow/security/ 
+*.db
+node_modules/
+# RuFlo runtime
+package-lock.json
+package.json
+.claude-flow/daemon-state.json
+.claude-flow/swarm/swarm-state.json
