@@ -96,6 +96,7 @@ func (s *CatalogManifestService) PushMetadata(r *models.VirtualMachineCatalogMan
 		catalogManifest.RequiredClaims = r.RequiredClaims
 		catalogManifest.RequiredRoles = r.RequiredRoles
 		catalogManifest.Tags = r.Tags
+		catalogManifest.Description = r.Description
 		catalogManifest.Provider = nil
 
 		tempManifestContentFilePath := filepath.Join("/tmp", catalogManifest.MetadataFile)

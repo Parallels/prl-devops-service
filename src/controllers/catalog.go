@@ -175,6 +175,14 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/catalog/{catalogId}/{version}/{architecture}/metadata").
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(UpdateCatalogManifestMetadataHandler()).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/tags").
@@ -2450,5 +2458,99 @@ func UpdateCatalogManifestProviderHandler() restapi.ControllerHandler {
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(manifest)
 		ctx.LogInfof("Manifest Claims Updated: %v", manifest.ID)
+	}
+}
+
+// @Summary		Updates metadata for a catalog manifest version
+// @Description	This endpoint atomically updates description, tags, required claims, and required roles for a catalog manifest version. Omit a field to leave it unchanged.
+// @Tags			Catalogs
+// @Accept			json
+// @Produce		json
+// @Param			catalogId		path		string										true	"Catalog ID"
+// @Param			version			path		string										true	"Version"
+// @Param			architecture	path		string										true	"Architecture"
+// @Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/metadata [put]
+func UpdateCatalogManifestMetadataHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var request catalog_models.UpdateCatalogManifestMetadataRequest
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		vars := mux.Vars(r)
+		catalogId := vars["catalogId"]
+		version := vars["version"]
+		architecture := vars["architecture"]
+
+		updatedManifest, err := dbService.UpdateCatalogManifestMetadata(ctx, catalogId, version, architecture, request.Description, request.Tags, request.RequiredClaims, request.RequiredRoles)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		catalogRequest := mappers.DtoCatalogManifestToBase(*updatedManifest)
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupService()
+		catalogRequest.Errors = []error{}
+
+		resultOp := catalogSvc.PushMetadata(&catalogRequest)
+		if resultOp.HasErrors() {
+			errorMessage := "Error pushing manifest: \n"
+			for _, err := range resultOp.Errors {
+				errorMessage += "\n" + err.Error() + " "
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" && enableObfuscation {
+			if updatedManifest.Provider != nil {
+				newProvider := &data_models.CatalogManifestProvider{}
+				newProvider.Type = updatedManifest.Provider.Type
+				newProvider.Host = updatedManifest.Provider.Host
+				newProvider.Port = updatedManifest.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(updatedManifest.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(updatedManifest.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(updatedManifest.Provider.ApiKey)
+				if updatedManifest.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range updatedManifest.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				updatedManifest.Provider = newProvider
+			}
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(updatedManifest)
+		ctx.LogInfof("Manifest Metadata Updated: %v", updatedManifest.ID)
 	}
 }

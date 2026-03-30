@@ -425,17 +425,6 @@ func (j *JsonDatabase) AddCatalogManifestRequiredClaims(ctx basecontext.ApiConte
 		if strings.EqualFold(manifest.ID, recordId) {
 			found := false
 			for _, claim := range claims {
-				claimExists := false
-				for _, existClaim := range j.data.Claims {
-					if strings.EqualFold(existClaim.ID, claim) {
-						claimExists = true
-						break
-					}
-				}
-				if !claimExists {
-					return errors.Newf("claim %s does not exist in the system", claim)
-				}
-
 				for _, r := range manifest.RequiredClaims {
 					if strings.EqualFold(r, claim) {
 						found = true
@@ -491,17 +480,6 @@ func (j *JsonDatabase) AddCatalogManifestRequiredRoles(ctx basecontext.ApiContex
 		if strings.EqualFold(manifest.ID, recordId) {
 			found := false
 			for _, role := range roles {
-				roleExists := false
-				for _, existRole := range j.data.Roles {
-					if strings.EqualFold(existRole.ID, role) {
-						roleExists = true
-						break
-					}
-				}
-				if !roleExists {
-					return errors.Newf("role %s does not exist in the system", role)
-				}
-
 				for _, r := range manifest.RequiredRoles {
 					if strings.EqualFold(r, role) {
 						found = true
@@ -694,6 +672,39 @@ func (j *JsonDatabase) RevokeCatalogManifestVersion(ctx basecontext.ApiContext, 
 			j.data.ManifestsCatalog[i].RevokedAt = helpers.GetUtcCurrentDateTime()
 			j.data.ManifestsCatalog[i].Revoked = true
 			j.data.ManifestsCatalog[i].RevokedBy = revokeUser
+
+			return &j.data.ManifestsCatalog[i], nil
+		}
+	}
+
+	return nil, ErrCatalogManifestNotFound
+}
+
+func (j *JsonDatabase) UpdateCatalogManifestMetadata(ctx basecontext.ApiContext, catalogId, version, architecture string, description *string, tags, claims, roles []string) (*models.CatalogManifest, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	for i, manifest := range j.data.ManifestsCatalog {
+		if (strings.EqualFold(manifest.ID, helpers.NormalizeString(catalogId)) ||
+			strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) ||
+			strings.EqualFold(manifest.Name, helpers.NormalizeString(catalogId))) &&
+			strings.EqualFold(manifest.Version, version) &&
+			strings.EqualFold(manifest.Architecture, architecture) {
+
+			if description != nil {
+				j.data.ManifestsCatalog[i].Description = *description
+			}
+			if tags != nil {
+				j.data.ManifestsCatalog[i].Tags = tags
+			}
+			if claims != nil {
+				j.data.ManifestsCatalog[i].RequiredClaims = claims
+			}
+			if roles != nil {
+				j.data.ManifestsCatalog[i].RequiredRoles = roles
+			}
+			j.data.ManifestsCatalog[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
 
 			return &j.data.ManifestsCatalog[i], nil
 		}

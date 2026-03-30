@@ -276,6 +276,16 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/metadata").
+		WithOrClaims().
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
+		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/metadata")).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/tags").

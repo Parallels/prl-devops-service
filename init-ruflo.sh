@@ -54,6 +54,10 @@ fi
 
 npm install --save-dev ruflo@latest
 success "ruflo installed to node_modules"
+npm install --save-dev agentic-flow@latest
+success "agentic-flow installed to node_modules"
+npm install --save-dev agentdb@latest
+success "agentdb installed to node_modules"
 
 # ─── Register MCP servers ─────────────────────────────────────────────────────
 info "Registering MCP servers with Claude Code..."
