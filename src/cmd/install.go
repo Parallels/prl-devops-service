@@ -26,6 +26,20 @@ func processInstall(ctx basecontext.ApiContext, cmd string) {
 		processHelp(constants.INSTALL_SERVICE_COMMAND)
 		os.Exit(0)
 	}
+
+	if subcommand == "service" {
+		filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
+		ctx.ToggleLogTimestamps(false)
+		if err := install.InstallService(ctx, filePath); err != nil {
+			ctx.LogErrorf(err.Error())
+			os.Exit(1)
+		}
+
+		cmdResult := InstallServiceResult{Success: true, Message: "Service installed successfully"}
+		_ = json.NewEncoder(os.Stdout).Encode(cmdResult)
+		os.Exit(0)
+	}
+
 	ctx.ToggleLogTimestamps(false)
 	ctx.DisableLog()
 	serviceprovider.InitServices(ctx)
@@ -49,23 +63,6 @@ func processInstall(ctx basecontext.ApiContext, cmd string) {
 	flags := make(map[string]string)
 
 	switch subcommand {
-	case "service":
-		filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
-		ctx.ToggleLogTimestamps(false)
-		if filePath != "" {
-			if err := install.InstallService(ctx, filePath); err != nil {
-				ctx.LogErrorf(err.Error())
-				os.Exit(1)
-			}
-		} else {
-			if err := install.InstallService(ctx, ""); err != nil {
-				ctx.LogErrorf(err.Error())
-				os.Exit(1)
-			} else {
-				cmdResult := InstallServiceResult{Success: true, Message: "Service installed successfully"}
-				_ = json.NewEncoder(os.Stdout).Encode(cmdResult)
-			}
-		}
 	case "brew":
 		result := providerSvc.InstallTool(userFlag, "brew", versionFlag, flags)
 		if !result.Result {

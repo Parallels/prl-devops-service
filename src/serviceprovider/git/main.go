@@ -35,7 +35,8 @@ func New(ctx basecontext.ApiContext) *GitService {
 	}
 	if globalGitService.FindPath() == "" {
 		ctx.LogWarnf("Running without support for git")
-		return nil
+		globalGitService.SetDependencies([]interfaces.Service{})
+		return globalGitService
 	} else {
 		globalGitService.installed = true
 	}
