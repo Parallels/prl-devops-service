@@ -458,6 +458,57 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithHandler(RevertOrchestratorHostVirtualMachineSnapshot()).
 		Register()
 
+	// Snapshot endpoints for orchestrator virtual machines (host resolved automatically)
+	restapi.NewController().
+		WithMethod(restapi.GET).
+		WithVersion(version).
+		WithOrClaims().
+		WithPath("/orchestrator/machines/{id}/snapshots").
+		WithRequiredClaim(constants.LIST_SNAPSHOT_VM_CLAIM).
+		WithRequiredClaim(constants.LIST_OWN_VM_SNAPSHOT_CLAIM).
+		WithHandler(ListOrchestratorVirtualMachineSnapshots()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithOrClaims().
+		WithPath("/orchestrator/machines/{id}/snapshots").
+		WithRequiredClaim(constants.CREATE_SNAPSHOT_VM_CLAIM).
+		WithRequiredClaim(constants.CREATE_OWN_VM_SNAPSHOT_CLAIM).
+		WithHandler(CreateOrchestratorVirtualMachineSnapshot()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithOrClaims().
+		WithPath("/orchestrator/machines/{id}/snapshots").
+		WithRequiredClaim(constants.DELETE_ALL_SNAPSHOTS_VM_CLAIM).
+		WithRequiredClaim(constants.DELETE_ALL_OWN_VM_SNAPSHOTS_CLAIM).
+		WithHandler(DeleteAllOrchestratorVirtualMachineSnapshots()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.DELETE).
+		WithVersion(version).
+		WithOrClaims().
+		WithPath("/orchestrator/machines/{id}/snapshots/{snapshot_id}").
+		WithRequiredClaim(constants.DELETE_SNAPSHOT_VM_CLAIM).
+		WithRequiredClaim(constants.DELETE_OWN_VM_SNAPSHOT_CLAIM).
+		WithHandler(DeleteOrchestratorVirtualMachineSnapshot()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.POST).
+		WithVersion(version).
+		WithOrClaims().
+		WithPath("/orchestrator/machines/{id}/snapshots/{snapshot_id}/revert").
+		WithRequiredClaim(constants.REVERT_SNAPSHOT_VM_CLAIM).
+		WithRequiredClaim(constants.REVERT_OWN_VM_SNAPSHOT_CLAIM).
+		WithHandler(RevertOrchestratorVirtualMachineSnapshot()).
+		Register()
+
 	restapi.NewController().
 		WithMethod(restapi.POST).
 		WithVersion(version).
@@ -2575,6 +2626,223 @@ func RevertOrchestratorHostVirtualMachineSnapshot() restapi.ControllerHandler {
 			Data:    "Snapshot revert operation completed successfully",
 		})
 		ctx.LogInfof("[controllers/orchestrator][snapshots] Successfully reverted to snapshot %s for orchestrator host %s virtual machine %s", snapshotId, id, vmId)
+	}
+}
+
+//	@Summary		Lists snapshots of an orchestrator virtual machine
+//	@Description	This endpoint lists snapshots of an orchestrator virtual machine (host resolved automatically)
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id	path		string	true	"Virtual Machine ID"
+//	@Success		200	{object}	models.ListVMSnapshotResponse
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines/{id}/snapshots [get]
+func ListOrchestratorVirtualMachineSnapshots() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
+
+		ctx.LogInfof("[controllers/orchestrator][snapshots] Listing snapshots for machine %s", id)
+
+		response, err := orchestratorSvc.GetVirtualMachineSnapshots(ctx, id, noCache)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("[controllers/orchestrator][snapshots] Successfully listed snapshots for orchestrator virtual machine %s", id)
+	}
+}
+
+//	@Summary		Creates a snapshot for an orchestrator virtual machine
+//	@Description	This endpoint creates a snapshot for an orchestrator virtual machine (host resolved automatically)
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id				path		string							true	"Virtual Machine ID"
+//	@Param			createRequest	body		models.CreateVMSnapshotRequest	true	"Create Snapshot Request"
+//	@Success		202				{object}	models.CreateVMSnapshotResponse
+//	@Failure		400				{object}	models.ApiErrorResponse
+//	@Failure		401				{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines/{id}/snapshots [post]
+func CreateOrchestratorVirtualMachineSnapshot() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.CreateVMSnapshotRequest
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			ctx.LogErrorf("[controllers/orchestrator][snapshots] Error decoding JSON: %v", err)
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		ctx.LogInfof("[controllers/orchestrator][snapshots] Creating snapshot for machine %s", id)
+
+		response, err := orchestratorSvc.CreateVirtualMachineSnapshot(ctx, id, request, noCache)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("[controllers/orchestrator][snapshots] Successfully created snapshot for orchestrator virtual machine %s", id)
+	}
+}
+
+//	@Summary		Deletes all snapshots of an orchestrator virtual machine
+//	@Description	This endpoint deletes all snapshots of an orchestrator virtual machine (host resolved automatically)
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id	path	string	true	"Virtual Machine ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines/{id}/snapshots [delete]
+func DeleteAllOrchestratorVirtualMachineSnapshots() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
+
+		ctx.LogInfof("[controllers/orchestrator][snapshots] Deleting all snapshots for machine %s", id)
+
+		err := orchestratorSvc.DeleteAllVirtualMachineSnapshots(ctx, id, noCache)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfof("[controllers/orchestrator][snapshots] Successfully deleted all snapshots for orchestrator virtual machine %s", id)
+	}
+}
+
+//	@Summary		Deletes a snapshot of an orchestrator virtual machine
+//	@Description	This endpoint deletes a snapshot of an orchestrator virtual machine (host resolved automatically)
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id			path	string	true	"Virtual Machine ID"
+//	@Param			snapshot_id	path	string	true	"Snapshot ID"
+//	@Success		202
+//	@Failure		400	{object}	models.ApiErrorResponse
+//	@Failure		401	{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines/{id}/snapshots/{snapshot_id} [delete]
+func DeleteOrchestratorVirtualMachineSnapshot() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+		snapshotId := vars["snapshot_id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
+
+		ctx.LogInfof("[controllers/orchestrator][snapshots] Deleting snapshot %s for machine %s", snapshotId, id)
+
+		err := orchestratorSvc.DeleteVirtualMachineSnapshot(ctx, id, snapshotId, noCache)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		ctx.LogInfof("[controllers/orchestrator][snapshots] Successfully deleted snapshot %s for orchestrator virtual machine %s", snapshotId, id)
+	}
+}
+
+//	@Summary		Reverts an orchestrator virtual machine to a snapshot
+//	@Description	This endpoint reverts an orchestrator virtual machine to a snapshot (host resolved automatically)
+//	@Tags			Orchestrator
+//	@Produce		json
+//	@Param			id				path		string							true	"Virtual Machine ID"
+//	@Param			snapshot_id		path		string							true	"Snapshot ID"
+//	@Param			revertRequest	body		models.RevertVMSnapshotRequest	false	"Revert Snapshot Request"
+//	@Success		202				{object}	models.ApiCommonResponse
+//	@Failure		400				{object}	models.ApiErrorResponse
+//	@Failure		401				{object}	models.OAuthErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines/{id}/snapshots/{snapshot_id}/revert [post]
+func RevertOrchestratorVirtualMachineSnapshot() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+		var request models.RevertVMSnapshotRequest
+		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
+
+		vars := mux.Vars(r)
+		id := vars["id"]
+		snapshotId := vars["snapshot_id"]
+		noCache := false
+		if r.Header.Get("X-No-Cache") == "true" {
+			noCache = true
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			ctx.LogDebugf("[controllers/orchestrator][snapshots] No request body provided for revert, proceeding with empty request")
+		}
+
+		ctx.LogInfof("[controllers/orchestrator][snapshots] Reverting to snapshot %s for machine %s", snapshotId, id)
+
+		err := orchestratorSvc.RevertVirtualMachineSnapshot(ctx, id, snapshotId, request, noCache)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		_ = json.NewEncoder(w).Encode(models.ApiCommonResponse{
+			Success: true,
+			Data:    "Snapshot revert operation completed successfully",
+		})
+		ctx.LogInfof("[controllers/orchestrator][snapshots] Successfully reverted to snapshot %s for orchestrator virtual machine %s", snapshotId, id)
 	}
 }
 

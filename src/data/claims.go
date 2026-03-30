@@ -15,6 +15,7 @@ var (
 	ErrClaimNotFound       = errors.NewWithCode("claim not found", 404)
 	ErrRemoveInternalClaim = errors.NewWithCode("claim is internal and cannot be removed", 400)
 	ErrUpdateInternalClaim = errors.NewWithCode("claim is internal and cannot be updated", 400)
+	ErrClaimHasUsers       = errors.NewWithCode("claim has users assigned and cannot be removed", 400)
 )
 
 func (j *JsonDatabase) GetClaims(ctx basecontext.ApiContext, filter string) ([]models.Claim, error) {
@@ -121,6 +122,14 @@ func (j *JsonDatabase) DeleteClaim(ctx basecontext.ApiContext, idOrName string) 
 		if strings.EqualFold(claim.ID, idOrName) || strings.EqualFold(claim.Name, idOrName) {
 			if claim.Internal && !IsRootUser(ctx) {
 				return ErrRemoveInternalClaim
+			}
+
+			for _, user := range j.data.Users {
+				for _, c := range user.Claims {
+					if strings.EqualFold(c.ID, claim.ID) {
+						return ErrClaimHasUsers
+					}
+				}
 			}
 
 			j.data.Claims = append(j.data.Claims[:i], j.data.Claims[i+1:]...)
