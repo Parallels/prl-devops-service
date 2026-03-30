@@ -31,6 +31,7 @@ type RoleResponse struct {
 	ID          string          `json:"id,omitempty"`
 	Name        string          `json:"name"`
 	Description string          `json:"description,omitempty"`
+	Internal    bool            `json:"internal"`
 	Claims      []ClaimResponse `json:"claims"`
 	Users       []ApiUser       `json:"users"`
 }

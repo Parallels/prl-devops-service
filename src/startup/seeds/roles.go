@@ -19,14 +19,22 @@ func SeedDefaultRoles() error {
 
 	allSystemRoles := constants.AllSystemRoles
 
+	// Only SUPER_USER is locked; USER and ADMIN remain editable by administrators.
+	internalRoles := map[string]bool{
+		constants.SUPER_USER_ROLE: true,
+		constants.ADMIN_ROLE:      false,
+		constants.USER_ROLE:       false,
+	}
+
 	for _, role := range allSystemRoles {
 		description := constants.RoleDescriptionMap[role] // "" if not found
+		isInternal := internalRoles[role]
 		if exists, _ := db.GetRole(ctx, role); exists == nil {
 			if _, err := db.CreateRole(ctx, models.Role{
 				ID:          role,
 				Name:        role,
 				Description: description,
-				Internal:    true,
+				Internal:    isInternal,
 			}); err != nil {
 				common.Logger.Error("Error adding role: %s", err.Error())
 				return err
@@ -39,7 +47,20 @@ func SeedDefaultRoles() error {
 					return err
 				}
 			}
+			// Backfill Internal flag if it differs from the intended value
+			// (e.g., USER and ADMIN were previously seeded as Internal: true).
+			if exists.Internal != isInternal {
+				if err := db.UpdateRoleInternalFlag(ctx, role, isInternal); err != nil {
+					common.Logger.Error("Error backfilling internal flag for role %s: %s", role, err.Error())
+					return err
+				}
+			}
 		}
+	}
+
+	if err := db.SaveNow(ctx); err != nil {
+		common.Logger.Error("Error saving roles: %s", err.Error())
+		return err
 	}
 
 	_ = db.Disconnect(ctx)

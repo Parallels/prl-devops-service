@@ -134,6 +134,9 @@ func (j *JsonDatabase) AddClaimToRole(ctx basecontext.ApiContext, roleIdOrName s
 
 	for i, role := range j.data.Roles {
 		if strings.EqualFold(role.ID, roleIdOrName) || strings.EqualFold(role.Name, roleIdOrName) {
+			if role.Internal && !IsRootUser(ctx) {
+				return ErrUpdateInternalRole
+			}
 			for _, existing := range role.Claims {
 				if strings.EqualFold(existing.ID, dbClaim.ID) {
 					return ErrRoleAlreadyContainsClaim
@@ -154,6 +157,9 @@ func (j *JsonDatabase) RemoveClaimFromRole(ctx basecontext.ApiContext, roleIdOrN
 
 	for i, role := range j.data.Roles {
 		if strings.EqualFold(role.ID, roleIdOrName) || strings.EqualFold(role.Name, roleIdOrName) {
+			if role.Internal && !IsRootUser(ctx) {
+				return ErrUpdateInternalRole
+			}
 			for k, existing := range j.data.Roles[i].Claims {
 				if strings.EqualFold(existing.ID, claimIdOrName) || strings.EqualFold(existing.Name, claimIdOrName) {
 					j.data.Roles[i].Claims = append(j.data.Roles[i].Claims[:k], j.data.Roles[i].Claims[k+1:]...)
@@ -189,6 +195,24 @@ func (j *JsonDatabase) DeleteRole(ctx basecontext.ApiContext, idOrName string) e
 	return ErrRoleNotFound
 }
 
+// UpdateRoleInternalFlag sets the Internal field on a role without triggering
+// the internal-role guard. Used on startup to correct seeded roles.
+func (j *JsonDatabase) UpdateRoleInternalFlag(ctx basecontext.ApiContext, idOrName string, internal bool) error {
+	if !j.IsConnected() {
+		return ErrDatabaseNotConnected
+	}
+	if idOrName == "" {
+		return ErrRoleEmptyNameOrId
+	}
+	for i, r := range j.data.Roles {
+		if strings.EqualFold(r.ID, idOrName) || strings.EqualFold(r.Name, idOrName) {
+			j.data.Roles[i].Internal = internal
+			return nil
+		}
+	}
+	return ErrRoleNotFound
+}
+
 // UpdateRoleDescription sets the Description field on a role without triggering
 // the internal-role guard. Used on startup to backfill existing installations.
 func (j *JsonDatabase) UpdateRoleDescription(ctx basecontext.ApiContext, idOrName, description string) error {
@@ -218,7 +242,7 @@ func (j *JsonDatabase) UpdateRole(ctx basecontext.ApiContext, role *models.Role)
 
 	for i, c := range j.data.Roles {
 		if strings.EqualFold(c.ID, role.ID) || strings.EqualFold(c.Name, role.Name) {
-			if role.Internal {
+			if c.Internal && !IsRootUser(ctx) {
 				return nil, ErrUpdateInternalRole
 			}
 
