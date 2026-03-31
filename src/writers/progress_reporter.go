@@ -35,6 +35,8 @@ type ProgressReporter struct {
 	Size                 int64
 	JobId                string
 	Action               string
+	Prefix               string
+	Filename             string
 	ActionUpdateCallback func(jobId, prefix string, current int64, percent int, total int64)
 }
 
@@ -47,6 +49,18 @@ func NewProgressReporter(size int64, progressChannel chan int) *ProgressReporter
 
 func (pr *ProgressReporter) SetJobId(jobId string) {
 	pr.JobId = jobId
+}
+
+func (pr *ProgressReporter) SetCurrentAction(action string) {
+	pr.Action = action
+}
+
+func (pr *ProgressReporter) SetPrefix(prefix string) {
+	pr.Prefix = prefix
+}
+
+func (pr *ProgressReporter) SetFilename(filename string) {
+	pr.Filename = filename
 }
 
 func (pr *ProgressReporter) SetActionUpdateCallback(callback func(jobId, prefix string, current int64, percent int, total int64)) {

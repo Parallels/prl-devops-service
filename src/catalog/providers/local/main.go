@@ -195,7 +195,7 @@ func (s *LocalProvider) PullFileAndDecompress(ctx basecontext.ApiContext, path, 
 	}
 	tmpFile.Close()
 
-	if err := compressor.DecompressFileWithStepChannel(ctx, tempPath, destination, nil, s.JobId, constants.ActionDecompressingPackFile); err != nil {
+	if err := compressor.DecompressFileWithStepChannel(ctx, tempPath, destination, nil, s.JobId, constants.ActionDecompressor); err != nil {
 		return fmt.Errorf("decompression failed: %w", err)
 	}
 

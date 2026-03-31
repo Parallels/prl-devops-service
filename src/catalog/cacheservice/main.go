@@ -484,6 +484,7 @@ func (cs *CacheService) processCacheFileWithStream() (string, error) {
 	}
 	defer os.RemoveAll(tempDir)
 
+	cs.rss.SetCurrentAction(constants.ActionDownloader)
 	if err := cs.rss.PullFileAndDecompress(cs.baseCtx, cs.manifest.Path, cs.manifest.PackFile, tempDir); err != nil {
 		return destinationFolder, err
 	}
@@ -511,6 +512,7 @@ func (cs *CacheService) processCacheFileWithoutStream() (string, error) {
 
 	destinationFile := filepath.Join(tempDir, cs.manifest.PackFile)
 
+	cs.rss.SetCurrentAction(constants.ActionDownloader)
 	if err := cs.rss.PullFile(cs.baseCtx, cs.manifest.Path, cs.manifest.PackFile, tempDir); err != nil {
 		cs.cleanupservice.Clean(cs.baseCtx)
 		return destinationFolder, err
@@ -518,7 +520,7 @@ func (cs *CacheService) processCacheFileWithoutStream() (string, error) {
 	// checking if the pack file is compressed or not if it is we will decompress it to the destination folder
 	// and remove the pack file from the cache folder if not we will just rename the pack file to the checksum
 	if cs.manifest.IsCompressed || strings.HasSuffix(cs.manifest.PackFile, ".pdpack") {
-		if err := compressor.DecompressFileWithStepChannel(cs.baseCtx, destinationFile, tempDir, nil, cs.JobId, constants.ActionDecompressingPackFile); err != nil {
+		if err := compressor.DecompressFileWithStepChannel(cs.baseCtx, destinationFile, tempDir, nil, cs.JobId, constants.ActionDecompressor); err != nil {
 			return destinationFolder, err
 		}
 

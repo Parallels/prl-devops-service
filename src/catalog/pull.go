@@ -394,7 +394,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 		systemSrv := serviceProvider.System
 		if r.Owner != "" && r.Owner != "root" {
 			if err := systemSrv.ChangeFileUserOwner(s.ctx, r.Owner, r.LocalMachineFolder); err != nil {
-				s.ns.WithJob(r.JobId, constants.ActionDownloadingPackFile).NotifyErrorf("Error changing file %v owner to %v: %v", r.LocalMachineFolder, r.Owner, err)
+				s.ns.WithJob(r.JobId, constants.ActionDownloader).NotifyErrorf("Error changing file %v owner to %v: %v", r.LocalMachineFolder, r.Owner, err)
 				response.AddError(err)
 				break
 			}
@@ -405,7 +405,7 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 			break
 		}
 
-		s.ns.WithJob(r.JobId, constants.ActionDownloadingPackFile).NotifyInfof("Finished pulling pack file for manifest %v", manifest.Name)
+		s.ns.WithJob(r.JobId, constants.ActionDownloader).NotifyInfof("Finished pulling pack file for manifest %v", manifest.Name)
 		break
 	}
 
@@ -747,6 +747,7 @@ func (s *CatalogManifestService) pullAndDecompressPackFile(r *models.PullCatalog
 
 func (s *CatalogManifestService) processFileWithStream(r *models.PullCatalogManifestRequest, rss interfaces.RemoteStorageService, manifest *models.VirtualMachineCatalogManifest, cleanupSvc *cleanupservice.CleanupService) error {
 	destinationFolder := r.LocalMachineFolder
+	rss.SetCurrentAction(constants.ActionDownloader)
 	if err := rss.PullFileAndDecompress(s.ctx, manifest.Path, manifest.PackFile, destinationFolder); err != nil {
 		s.ctx.LogErrorf("Error pulling and decompressing pack file for manifest ID %v, Name %v: %v adding folder: %v to cleanup", manifest.ID, manifest.Name, err, destinationFolder)
 		cleanupSvc.AddLocalFileCleanupOperation(destinationFolder, true)
@@ -774,6 +775,7 @@ func (s *CatalogManifestService) processFileWithoutStream(r *models.PullCatalogM
 	s.ctx.LogInfof("Added temporary folder %v to cleanup operations", tempDestinationFolder)
 
 	// Pulling the file to the temporary folder
+	rss.SetCurrentAction(constants.ActionDownloader)
 	if err := rss.PullFile(s.ctx, manifest.Path, manifest.PackFile, tempDestinationFolder); err != nil {
 		s.ctx.LogErrorf("Error pulling file for manifest ID %v, Name %v: %v adding folder: %v to cleanup", manifest.ID, manifest.Name, err, tempDestinationFolder)
 		cleanupSvc.Clean(s.ctx)
@@ -790,7 +792,7 @@ func (s *CatalogManifestService) processFileWithoutStream(r *models.PullCatalogM
 			// Job management is now handled exclusively through NotificationService
 		}
 
-		if err := compressor.DecompressFileWithStepChannel(s.ctx, compressedFilePath, destinationFolder, nil, r.JobId, constants.ActionDecompressingPackFile); err != nil {
+		if err := compressor.DecompressFileWithStepChannel(s.ctx, compressedFilePath, destinationFolder, nil, r.JobId, constants.ActionDecompressor); err != nil {
 			cleanupSvc.AddLocalFileCleanupOperation(destinationFolder, true)
 			s.ctx.LogErrorf("Error decompressing file for manifest ID %v, Name %v: %v adding folder: %v to cleanup", manifest.ID, manifest.Name, err, destinationFolder)
 			cleanupSvc.Clean(s.ctx)
