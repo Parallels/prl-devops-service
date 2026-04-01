@@ -38,5 +38,3 @@ func (j *JsonDatabase) GetListVMSnapshotsByVMId(vmID string) ([]models.VMSnapsho
 	}
 	return nil, errors.New("snapshots not found for VM ID: " + vmID)
 }
-
-

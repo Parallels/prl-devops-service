@@ -4066,7 +4066,7 @@ func AsyncDeployOrchestratorHostHandler() restapi.ControllerHandler {
 			}
 
 			deploymentMessage := fmt.Sprintf("Agent %s deployed successfully", req.HostName)
-			_ = jobManager.MarkJobCompleteWithRecord(jobID, deploymentMessage, resp.HostID, "orchestrator_host")
+			_ = jobManager.MarkJobCompleteWithRecord(jobID, deploymentMessage, resp.HostID, resp.Host, "orchestrator_host", "")
 		}()
 
 		response := mappers.MapJobToApiJob(*localJob)
@@ -4168,7 +4168,7 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 				// Async dispatch succeeded — HostJobEventHandler will complete the job.
 				return
 			}
-			_ = jobManager.MarkJobCompleteWithRecord(jobID, fmt.Sprintf("Virtual machine %s created", result.ID), result.ID, "virtual_machine")
+			_ = jobManager.MarkJobCompleteWithRecord(jobID, fmt.Sprintf("Virtual machine %s created", result.ID), result.ID, result.Name, "virtual_machine", result.Host)
 		}(job.ID, request)
 
 		response := mappers.MapJobToApiJob(*job)
@@ -4270,7 +4270,13 @@ func AsyncCreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandle
 				// Async dispatch succeeded — HostJobEventHandler will complete the job.
 				return
 			}
-			_ = jobManager.MarkJobCompleteWithRecord(jobID, fmt.Sprintf("Virtual machine %s created on host %s", result.ID, hostID), result.ID, "virtual_machine")
+			// Try to get the host description for a more user-friendly completion message. If that fails, just use the host ID.
+			dbHost, err := orchSvc.GetHost(ctx, hostID)
+			hostName := hostID
+			if err == nil {
+				hostName = dbHost.Description
+			}
+			_ = jobManager.MarkJobCompleteWithRecord(jobID, fmt.Sprintf("Virtual machine %s created on host %s", result.Name, hostName), result.ID, result.Name, "virtual_machine", result.Host)
 		}(job.ID, id, request)
 
 		response := mappers.MapJobToApiJob(*job)

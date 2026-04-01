@@ -57,7 +57,7 @@ func (s *CatalogManifestService) AsyncPull(jobId string, r *models.PullCatalogMa
 		}
 		jobManager.MarkJobError(jobId, errors.New(errorMessage))
 	} else {
-		jobManager.MarkJobCompleteWithRecord(jobId, "Virtual Machine Pulled and Registered", response.MachineID, "virtual_machine")
+		jobManager.MarkJobCompleteWithRecord(jobId, "Virtual Machine Pulled and Registered", response.MachineID, response.MachineName, "virtual_machine", "")
 	}
 }
 

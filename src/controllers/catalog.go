@@ -130,7 +130,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.PATCH).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/claims").
-    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(AddClaimsToCatalogManifestHandler()).
 		Register()
 
@@ -138,7 +138,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/claims").
-    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(RemoveClaimsToCatalogManifestHandler()).
 		Register()
 
@@ -146,7 +146,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.PATCH).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/roles").
-    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(AddRolesToCatalogManifestHandler()).
 		Register()
 
@@ -154,7 +154,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/roles").
-    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(RemoveRolesToCatalogManifestHandler()).
 		Register()
 
@@ -162,7 +162,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.PATCH).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/tags").
-    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(AddTagsToCatalogManifestHandler()).
 		Register()
 
@@ -170,7 +170,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.PATCH).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/connection").
-    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(UpdateCatalogManifestProviderHandler()).
 		Register()
 
@@ -178,7 +178,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/metadata").
-    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(UpdateCatalogManifestMetadataHandler()).
 		Register()
 
@@ -186,7 +186,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/tags").
-    WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(RemoveTagsToCatalogManifestHandler()).
 		Register()
 

@@ -307,8 +307,8 @@ func Start(ctx basecontext.ApiContext) {
 		ns.OnUpdateJobMessage = func(jobId string, message string) {
 			jobManagerService.UpdateJobMessage(jobId, message)
 		}
-		ns.OnUpdateJobResultRecord = func(jobId string, recordId string, recordType string) {
-			jobManagerService.UpdateJobResultRecord(jobId, recordId, recordType)
+		ns.OnUpdateJobResultRecord = func(jobId string, recordId string, recordName string, recordType string, recordLinkId string) {
+			jobManagerService.UpdateJobResultRecord(jobId, recordId, recordName, recordType, recordLinkId)
 		}
 		ns.OnInitJob = func(jobId string) {
 			jobManagerService.InitJob(jobId)

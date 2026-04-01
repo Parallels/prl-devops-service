@@ -356,7 +356,7 @@ func runDebugProfileSimple(jobId string, jobManager *jobs.JobManagerService) {
 	}
 
 	recordId := "rec_" + helpers.GenerateId()[:8]
-	_, _ = jobManager.UpdateJobResultRecord(jobId, recordId, "debug_simple_report")
+	_, _ = jobManager.UpdateJobResultRecord(jobId, recordId, "test", "debug_simple_report", "debug_simple_link_id")
 	_ = jobManager.MarkJobComplete(jobId, "Simple debug task finished")
 	bCtx.LogInfof("[Debug/simple] Job %s completed", jobId)
 }
@@ -462,7 +462,8 @@ func runDebugProfilePullRemote(jobId string, jobManager *jobs.JobManagerService)
 	instantStep(constants.ActionStartingMachine, "debug-vm started")
 
 	recordId := "rec_remote_" + helpers.GenerateId()[:8]
-	_, _ = jobManager.UpdateJobResultRecord(jobId, recordId, "vm_deployment_record")
+  recordName := "debug-vm"
+	_, _ = jobManager.UpdateJobResultRecord(jobId, recordId, recordName, "vm_deployment_record", "debug-vm-link-id")
 
 	_ = jobManager.MarkJobComplete(jobId, "pull_remote debug task finished")
 	bCtx.LogInfof("[Debug/pull_remote] Job %s completed", jobId)
@@ -534,7 +535,9 @@ func runDebugProfilePullCache(jobId string, jobManager *jobs.JobManagerService) 
 	instantStep(constants.ActionStartingMachine, "debug-vm started")
 
 	recordId := "rec_cache_" + helpers.GenerateId()[:8]
-	_, _ = jobManager.UpdateJobResultRecord(jobId, recordId, "vm_deployment_record")
+	recordName := "debug-vm"
+	recordLinkId := "debug-vm-link-id"
+	_, _ = jobManager.UpdateJobResultRecord(jobId, recordId, recordName, "vm_deployment_record", recordLinkId)
 
 	_ = jobManager.MarkJobComplete(jobId, "pull_cache debug task finished")
 	bCtx.LogInfof("[Debug/pull_cache] Job %s completed", jobId)
@@ -621,7 +624,9 @@ func runDebugProfileSkippedSteps(jobId string, jobManager *jobs.JobManagerServic
 	instantStep(constants.ActionStartingMachine, "debug-vm started")
 
 	recordId := "rec_fast_" + helpers.GenerateId()[:8]
-	_, _ = jobManager.UpdateJobResultRecord(jobId, recordId, "vm_deployment_record")
+	recordName := "debug-vm"
+	recordLinkId := "debug-vm-link-id"
+	_, _ = jobManager.UpdateJobResultRecord(jobId, recordId, recordName, "vm_deployment_record", recordLinkId)
 
 	_ = jobManager.MarkJobComplete(jobId, "skipped_steps debug task finished")
 	bCtx.LogInfof("[Debug/skipped_steps] Job %s completed", jobId)

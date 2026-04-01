@@ -43,7 +43,7 @@ func (s *OrchestratorService) CreateVirtualMachine(ctx basecontext.ApiContext, j
 			continue
 		}
 
-		updateJob(fmt.Sprintf("Virtual machine %s created on host %s", response.ID, host.Host))
+		updateJob(fmt.Sprintf("Virtual machine %s created on host %s", response.Name, host.Host))
 		return response, nil
 	}
 
@@ -169,7 +169,7 @@ func (s *OrchestratorService) CreateHosVirtualMachine(ctx basecontext.ApiContext
 		return nil, &e
 	}
 
-	updateJob(fmt.Sprintf("Virtual machine %s created on host %s", response.ID, host.Host))
+	updateJob(fmt.Sprintf("Virtual machine %s created on host %s", response.Name, host.Host))
 	return response, nil
 }
 
@@ -657,10 +657,10 @@ func (s *OrchestratorService) getCatalogSpecs(connection string, catalogId strin
 		result.Memory = strconv.Itoa(response.MinimumSpecRequirements.Memory)
 		result.Disk = strconv.Itoa(response.MinimumSpecRequirements.Disk)
 	}
-  // setting the size of the VM reported in the catalog
-  if response.Size > 0 {
-    result.Size = response.Size
-  }
+	// setting the size of the VM reported in the catalog
+	if response.Size > 0 {
+		result.Size = response.Size
+	}
 
 	// Setting the default values
 	if response.Type == "" {

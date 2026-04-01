@@ -15,13 +15,13 @@ type DeleteVMSnapshotRequest struct {
 }
 
 type VMSnapshot struct {
-	ID      string `json:"id,omitempty"`
-	Name    string `json:"name"`
-	Date    string `json:"date"`
-	State   string `json:"state"`
-	Current bool   `json:"current"`
-	Parent  string `json:"parent"`
-  Children []VMSnapshot `json:"children,omitempty"`
+	ID       string       `json:"id,omitempty"`
+	Name     string       `json:"name"`
+	Date     string       `json:"date"`
+	State    string       `json:"state"`
+	Current  bool         `json:"current"`
+	Parent   string       `json:"parent"`
+	Children []VMSnapshot `json:"children,omitempty"`
 }
 
 type VMSnapshots []VMSnapshot

@@ -206,7 +206,7 @@ func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifes
 		return r, nil
 	}
 
-  // This is disabled for now to allow the new flow with the catalog manager to work
+	// This is disabled for now to allow the new flow with the catalog manager to work
 
 	// Checking the the required claims and roles exist
 	// for _, claim := range manifest.RequiredClaims {

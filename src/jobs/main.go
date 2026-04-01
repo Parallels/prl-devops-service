@@ -213,7 +213,7 @@ func (jms *JobManagerService) UpdateJobMessage(jobId string, message string) (*d
 	return job, nil
 }
 
-func (jms *JobManagerService) UpdateJobResultRecord(jobId string, recordId string, recordType string) (*data_models.Job, error) {
+func (jms *JobManagerService) UpdateJobResultRecord(jobId string, recordId string, recordName string, recordType string, recordLinkId string) (*data_models.Job, error) {
 	job, err := jms.db.GetJob(jms.apiCtx, jobId)
 	if err != nil {
 		return nil, err
@@ -221,6 +221,8 @@ func (jms *JobManagerService) UpdateJobResultRecord(jobId string, recordId strin
 
 	job.ResultRecordId = recordId
 	job.ResultRecordType = recordType
+  job.ResultRecordName = recordName
+  job.ResultRecordLinkId = recordLinkId
 
 	err = jms.db.UpdateJob(jms.apiCtx, *job)
 	if err != nil {
@@ -232,10 +234,10 @@ func (jms *JobManagerService) UpdateJobResultRecord(jobId string, recordId strin
 }
 
 func (jms *JobManagerService) MarkJobComplete(jobID string, result string) error {
-  // Applying a slowdown to allow other messages for this job
-  // to be processed before the "completed" event is emitted,
-  // so the UI can show the final progress and steps before
-  // transitioning to completed. 
+	// Applying a slowdown to allow other messages for this job
+	// to be processed before the "completed" event is emitted,
+	// so the UI can show the final progress and steps before
+	// transitioning to completed.
 	time.Sleep(50 * time.Millisecond)
 	job, err := jms.db.GetJob(jms.apiCtx, jobID)
 	if err != nil {
@@ -252,22 +254,22 @@ func (jms *JobManagerService) MarkJobComplete(jobID string, result string) error
 	}
 
 	jms.emitEvent("JOB_UPDATED", job)
-  // Applying a slowdown to allow other messages for this job
-  // to be processed before the "completed" event is emitted,
-  // so the UI can show the final progress and steps before
-  // transitioning to completed. 
+	// Applying a slowdown to allow other messages for this job
+	// to be processed before the "completed" event is emitted,
+	// so the UI can show the final progress and steps before
+	// transitioning to completed.
 	time.Sleep(500 * time.Millisecond)
-  jms.emitEvent("JOB_COMPLETED", job)
+	jms.emitEvent("JOB_COMPLETED", job)
 	return nil
 }
 
-func (jms *JobManagerService) MarkJobCompleteWithRecord(jobID string, result string, recordID string, recordType string) error {
-  // Applying a slowdown to allow other messages for this job
-  // to be processed before the "completed" event is emitted,
-  // so the UI can show the final progress and steps before
-  // transitioning to completed. 
+func (jms *JobManagerService) MarkJobCompleteWithRecord(jobID string, result string, recordID string, recordName string, recordType string, recordLinkId string) error {
+	// Applying a slowdown to allow other messages for this job
+	// to be processed before the "completed" event is emitted,
+	// so the UI can show the final progress and steps before
+	// transitioning to completed.
 	time.Sleep(50 * time.Millisecond)
-  job, err := jms.db.GetJob(jms.apiCtx, jobID)
+	job, err := jms.db.GetJob(jms.apiCtx, jobID)
 	if err != nil {
 		return err
 	}
@@ -277,6 +279,9 @@ func (jms *JobManagerService) MarkJobCompleteWithRecord(jobID string, result str
 	job.Result = result
 	job.ResultRecordId = recordID
 	job.ResultRecordType = recordType
+  job.ResultRecordName = recordName
+  job.ResultRecordLinkId = recordLinkId
+
 
 	err = jms.db.UpdateJob(jms.apiCtx, *job)
 	if err != nil {
@@ -284,12 +289,12 @@ func (jms *JobManagerService) MarkJobCompleteWithRecord(jobID string, result str
 	}
 
 	jms.emitEvent("JOB_UPDATED", job)
-    // Applying a slowdown to allow other messages for this job
-  // to be processed before the "completed" event is emitted,
-  // so the UI can show the final progress and steps before
-  // transitioning to completed. 
+	// Applying a slowdown to allow other messages for this job
+	// to be processed before the "completed" event is emitted,
+	// so the UI can show the final progress and steps before
+	// transitioning to completed.
 	time.Sleep(500 * time.Millisecond)
-  jms.emitEvent("JOB_COMPLETED", job)
+	jms.emitEvent("JOB_COMPLETED", job)
 	return nil
 }
 

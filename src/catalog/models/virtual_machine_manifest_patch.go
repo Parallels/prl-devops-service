@@ -67,8 +67,8 @@ func (m *VirtualMachineCatalogManifestPatch) NeedsCleanup() bool {
 // UpdateCatalogManifestMetadataRequest is used for the PUT /metadata endpoint.
 // Pointer fields allow partial updates: nil means "do not change", non-nil means "replace with this value".
 type UpdateCatalogManifestMetadataRequest struct {
-	Description    *string   `json:"description,omitempty"`
-	RequiredRoles  []string  `json:"required_roles,omitempty"`
-	RequiredClaims []string  `json:"required_claims,omitempty"`
-	Tags           []string  `json:"tags,omitempty"`
+	Description    *string  `json:"description,omitempty"`
+	RequiredRoles  []string `json:"required_roles,omitempty"`
+	RequiredClaims []string `json:"required_claims,omitempty"`
+	Tags           []string `json:"tags,omitempty"`
 }

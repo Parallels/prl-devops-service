@@ -32,23 +32,23 @@ var (
 )
 
 type Data struct {
-	Schema            models.DatabaseSchema           `json:"schema"`
-	Configuration     *models.Configuration           `json:"configuration"`
-	Users             []models.User                   `json:"users"`
-	Claims            []models.Claim                  `json:"claims"`
-	Roles             []models.Role                   `json:"roles"`
-	ApiKeys           []models.ApiKey                 `json:"api_keys"`
-	PackerTemplates   []models.PackerTemplate         `json:"virtual_machine_templates"`
-	ManifestsCatalog  []models.CatalogManifest        `json:"catalog_manifests"`
-	OrchestratorHosts []models.OrchestratorHost       `json:"orchestrator_hosts"`
-	HostsVMSnapshots  []models.HostsVMSnapshotsRecord `json:"orchestrator_snapshots"`
-	ReverseProxy      *models.ReverseProxy            `json:"reverse_proxy"`
-	ReverseProxyHosts []models.ReverseProxyHost       `json:"reverse_proxy_hosts"`
-	CatalogManagers   []models.CatalogManager         `json:"catalog_managers"`
-	Jobs              []models.Job                    `json:"jobs"`
-	VMSnapshots       []models.VMSnapshots            `json:"vm_snapshots"`
-  EnrollmentTokens  []models.OrchestratorEnrollmentToken   `json:"enrollment_tokens"`
-  UserConfigs       []models.UserConfig                    `json:"user_configs"`
+	Schema            models.DatabaseSchema                `json:"schema"`
+	Configuration     *models.Configuration                `json:"configuration"`
+	Users             []models.User                        `json:"users"`
+	Claims            []models.Claim                       `json:"claims"`
+	Roles             []models.Role                        `json:"roles"`
+	ApiKeys           []models.ApiKey                      `json:"api_keys"`
+	PackerTemplates   []models.PackerTemplate              `json:"virtual_machine_templates"`
+	ManifestsCatalog  []models.CatalogManifest             `json:"catalog_manifests"`
+	OrchestratorHosts []models.OrchestratorHost            `json:"orchestrator_hosts"`
+	HostsVMSnapshots  []models.HostsVMSnapshotsRecord      `json:"orchestrator_snapshots"`
+	ReverseProxy      *models.ReverseProxy                 `json:"reverse_proxy"`
+	ReverseProxyHosts []models.ReverseProxyHost            `json:"reverse_proxy_hosts"`
+	CatalogManagers   []models.CatalogManager              `json:"catalog_managers"`
+	Jobs              []models.Job                         `json:"jobs"`
+	VMSnapshots       []models.VMSnapshots                 `json:"vm_snapshots"`
+	EnrollmentTokens  []models.OrchestratorEnrollmentToken `json:"enrollment_tokens"`
+	UserConfigs       []models.UserConfig                  `json:"user_configs"`
 }
 
 type JsonDatabase struct {
