@@ -10,6 +10,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
+	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -35,7 +36,7 @@ func (s *OrchestratorService) CreateVirtualMachine(ctx basecontext.ApiContext, j
 	var lastError *models.ApiErrorResponse
 	for _, host := range validHosts {
 		updateJob(fmt.Sprintf("Creating virtual machine on host %s", host.Host))
-		response, err := s.CallCreateHostVirtualMachine(host, request)
+		response, err := s.CallCreateHostVirtualMachine(host, jobID, request)
 		if err != nil {
 			e := models.NewFromError(err)
 			lastError = &e
@@ -161,7 +162,7 @@ func (s *OrchestratorService) CreateHosVirtualMachine(ctx basecontext.ApiContext
 	}
 
 	updateJob(fmt.Sprintf("Creating virtual machine on host %s", host.Host))
-	response, err := s.CallCreateHostVirtualMachine(*host, request)
+	response, err := s.CallCreateHostVirtualMachine(*host, jobID, request)
 	if err != nil {
 		e := models.NewFromError(err)
 		updateJob(fmt.Sprintf("Host %s failed: %s", host.Host, e.Message))
@@ -439,11 +440,14 @@ func (s *OrchestratorService) CallCreateHostVirtualMachineAsync(host data_models
 	return &response, nil
 }
 
-func (s *OrchestratorService) CallCreateHostVirtualMachine(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
+func (s *OrchestratorService) CallCreateHostVirtualMachine(host data_models.OrchestratorHost, jobID string, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {
 	httpClient := s.getApiClient(host)
 	timeout := 5 * time.Hour
 	s.ctx.LogInfof("[Orchestrator] Setting timeout of %v for VM creation request to host %s", timeout, host.Host)
 	httpClient.WithTimeout(timeout)
+	if jobID != "" {
+		httpClient.WithHeader(constants.ORCHESTRATOR_JOB_ID_HEADER, jobID)
+	}
 
 	path := "/machines"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})

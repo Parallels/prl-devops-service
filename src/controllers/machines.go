@@ -1207,6 +1207,24 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			ctx.LogInfof("Machine created using vagrant box: %v", response.ID)
 			return
 		} else if request.CatalogManifest != nil {
+			// When called internally by the orchestrator, use the orchestrator's job ID
+			// (passed via header) so the single orchestrator job gets step-level updates.
+			// No separate job is created on the host side.
+			isInternalCall := r.Header.Get(constants.INTERNAL_API_CLIENT) == "true"
+			if isInternalCall {
+				orchestratorJobID := r.Header.Get(constants.ORCHESTRATOR_JOB_ID_HEADER)
+				response, err := createCatalogMachine(ctx, request, orchestratorJobID)
+				if err != nil {
+					ReturnApiError(ctx, w, models.NewFromError(err))
+					return
+				}
+				w.WriteHeader(http.StatusOK)
+				defer r.Body.Close()
+				_ = json.NewEncoder(w).Encode(response)
+				ctx.LogInfof("Machine created using catalog: %v", response.ID)
+				return
+			}
+
 			callerID, ok := getEffectiveCallerID(ctx)
 			if !ok {
 				ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
