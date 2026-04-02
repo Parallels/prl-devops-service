@@ -1,13 +1,19 @@
 {
-    "markdownlint.lintWorkspaceGlobs": [
-        "**/*.{md1,mkd,mdwn,mdown,markdown,markdn,mdtxt,mdtext,workbook}",
-        "!**/bower_components",
-        "!**/node_modules",
-        "!**/vendor",
-        "!**/.git",
-    ],
-    "markdownlint.ignore": [
-        "docs/**/*.md",
-    ],
-    "makefile.configureOnOpen": false
+  "markdownlint.lintWorkspaceGlobs": [
+    "**/*.{md1,mkd,mdwn,mdown,markdown,markdn,mdtxt,mdtext,workbook}",
+    "!**/bower_components",
+    "!**/node_modules",
+    "!**/vendor",
+    "!**/.git",
+  ],
+  "markdownlint.ignore": [
+    "docs/**/*.md",
+  ],
+  "makefile.configureOnOpen": false,
+  "gopls": {
+    "analyses": {
+      "ST1003": false,
+      "ST1000": false
+    }
+  }
 }
