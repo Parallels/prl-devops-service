@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -136,8 +137,16 @@ func (c *HostWebSocketClient) establishConnection(events []constants.EventType) 
 	}
 
 	c.ctx.LogInfof("[HostWebSocketClient] Connecting to %s", u.String())
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), header)
+	conn, resp, err := websocket.DefaultDialer.Dial(u.String(), header)
 	if err != nil {
+		if resp != nil {
+			body := readHandshakeBody(resp)
+			if body != "" {
+				c.ctx.LogWarnf("[HostWebSocketClient] Connection to host %s failed with status %d: %s", c.hostName, resp.StatusCode, body)
+			} else {
+				c.ctx.LogWarnf("[HostWebSocketClient] Connection to host %s failed with status %d", c.hostName, resp.StatusCode)
+			}
+		}
 		return err
 	}
 
@@ -384,9 +393,18 @@ func (c *HostWebSocketClient) Probe() bool {
 	dialer := *websocket.DefaultDialer
 	dialer.HandshakeTimeout = 2 * time.Second
 
-	conn, _, err := dialer.Dial(u.String(), header)
+	conn, resp, err := dialer.Dial(u.String(), header)
 	if err != nil {
-		c.ctx.LogWarnf("[HostWebSocketClient] Probe failed: connection error: %v", err)
+		if resp != nil {
+			body := readHandshakeBody(resp)
+			if body != "" {
+				c.ctx.LogWarnf("[HostWebSocketClient] Probe failed: connection error: %v (status: %d, body: %s)", err, resp.StatusCode, body)
+			} else {
+				c.ctx.LogWarnf("[HostWebSocketClient] Probe failed: connection error: %v (status: %d)", err, resp.StatusCode)
+			}
+		} else {
+			c.ctx.LogWarnf("[HostWebSocketClient] Probe failed: connection error: %v", err)
+		}
 		return false
 	}
 	defer conn.Close()
@@ -424,4 +442,18 @@ func (c *HostWebSocketClient) Probe() bool {
 		c.ctx.LogWarnf("[HostWebSocketClient] Probe failed: no pong received from host %s", c.hostName)
 		return false
 	}
+}
+
+func readHandshakeBody(resp *http.Response) string {
+	if resp == nil || resp.Body == nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 512))
+	if err != nil {
+		return ""
+	}
+
+	return helpers.CleanOutputString(string(body))
 }
