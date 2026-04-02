@@ -1910,19 +1910,40 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
+		userContext := ctx.GetUser()
+		if userContext == nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			return
+		}
+
+		job, err := jobManager.CreateNewJob(userContext.ID, "catalog", "push", "Initializing catalog push")
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
 		manifest := catalog.NewManifestService(ctx)
-		resultManifest := manifest.Push(&request)
+		resultManifest := manifest.PushWithExistingJob(job.ID, &request)
 		if resultManifest.HasErrors() {
 			errorMessage := "Error pushing manifest: \n"
 			for _, err := range resultManifest.Errors {
 				errorMessage += "\n" + err.Error() + " "
 			}
+			_ = jobManager.MarkJobError(job.ID, errors.New(errorMessage))
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: errorMessage,
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
+
+		_ = jobManager.MarkJobCompleteWithRecord(job.ID, "Catalog Manifest Pushed", resultManifest.ID, resultManifest.Name, "catalog_manifest", "")
 
 		resultData := mappers.DtoCatalogManifestToApi(mappers.CatalogManifestToDto(*resultManifest))
 		resultData.ID = resultManifest.ID
@@ -2114,8 +2135,26 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 			}
 		}
 
+		userContext := ctx.GetUser()
+		if userContext == nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			return
+		}
+
+		job, err := jobManager.CreateNewJob(userContext.ID, "catalog", "pull", "Initializing repository pull")
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
 		manifest := catalog.NewManifestService(ctx)
-		resultManifest := manifest.Pull(&request)
+		resultManifest := manifest.PullWithExistingJob(job.ID, &request)
 
 		if resultManifest.HasErrors() {
 			if sendTelemetry && amplitudeEvent.EventProperties != nil {
@@ -2127,12 +2166,15 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 			for _, err := range resultManifest.Errors {
 				errorMessage += "\n" + err.Error() + " "
 			}
+			_ = jobManager.MarkJobError(job.ID, errors.New(errorMessage))
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: errorMessage,
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
+
+		_ = jobManager.MarkJobCompleteWithRecord(job.ID, "Virtual Machine Pulled and Registered", resultManifest.MachineID, resultManifest.MachineName, "virtual_machine", "")
 
 		if sendTelemetry && amplitudeEvent.EventProperties != nil {
 			telemetryItem.Properties["success"] = "true"

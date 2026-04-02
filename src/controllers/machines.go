@@ -1207,11 +1207,34 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			ctx.LogInfof("Machine created using vagrant box: %v", response.ID)
 			return
 		} else if request.CatalogManifest != nil {
-			response, err := createCatalogMachine(ctx, request, "")
+			callerID, ok := getEffectiveCallerID(ctx)
+			if !ok {
+				ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+				return
+			}
+
+			jobManager := jobs.Get(ctx)
+			if jobManager == nil {
+				ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+				return
+			}
+
+			job, err := jobManager.CreateNewJob(callerID, "machines", "create", "Initializing catalog machine creation")
 			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+				return
+			}
+
+			_, _ = jobManager.UpdateJobProgress(job.ID, 1, constants.JobStateRunning)
+			response, err := createCatalogMachine(ctx, request, job.ID)
+			if err != nil {
+				_ = jobManager.MarkJobError(job.ID, err)
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
+
+			resultMessage := fmt.Sprintf("Virtual machine %s created", response.ID)
+			_ = jobManager.MarkJobCompleteWithRecord(job.ID, resultMessage, response.ID, response.Name, "virtual_machine", response.Host)
 
 			w.WriteHeader(http.StatusOK)
 			defer r.Body.Close()
