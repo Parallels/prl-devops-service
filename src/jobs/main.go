@@ -23,8 +23,19 @@ type JobManagerService struct {
 }
 
 func Get(ctx basecontext.ApiContext) *JobManagerService {
-	if globalJobManagerService == nil {
-		globalJobManagerService = New(ctx)
+	db, err := serviceprovider.GetDatabaseService(ctx)
+	if err != nil {
+		globalJobManagerService = nil
+		return nil
+	}
+
+	if globalJobManagerService == nil || globalJobManagerService.db != db {
+		globalJobManagerService = &JobManagerService{
+			apiCtx: ctx,
+			db:     db,
+		}
+	} else {
+		globalJobManagerService.apiCtx = ctx
 	}
 
 	return globalJobManagerService
@@ -33,6 +44,7 @@ func Get(ctx basecontext.ApiContext) *JobManagerService {
 func New(ctx basecontext.ApiContext) *JobManagerService {
 	db, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
+		globalJobManagerService = nil
 		ctx.LogErrorf("Error getting database service for job manager: %v", err)
 		return nil
 	}

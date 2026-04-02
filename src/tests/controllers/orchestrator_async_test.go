@@ -8,11 +8,13 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/controllers"
 	"github.com/Parallels/prl-devops-service/data"
+	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/gorilla/mux"
@@ -32,10 +34,30 @@ func setupDB(t *testing.T) func() {
 
 	sp := serviceprovider.NewMockProvider()
 	sp.JsonDatabase = db
+	jobs.New(ctx)
 
 	return func() {
 		// Nothing to clean up — the temp dir is removed by t.TempDir automatically.
 	}
+}
+
+func waitForJobToSettle(t *testing.T, jobID string) {
+	t.Helper()
+
+	ctx := basecontext.NewBaseContext()
+	ctx.DisableLog()
+	db := serviceprovider.Get().JsonDatabase
+	require.NotNil(t, db)
+
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		job, err := db.GetJob(ctx, jobID)
+		if err == nil && job.State != constants.JobStatePending && job.State != constants.JobStateRunning && job.State != constants.JobStateInit {
+			return
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	t.Fatalf("job %s did not settle before timeout", jobID)
 }
 
 // authRequest creates a request carrying a user in the authorization context.
@@ -161,6 +183,7 @@ func TestAsyncCreateOrchestratorVirtualMachineHandler_Success(t *testing.T) {
 	assert.NotEmpty(t, resp.ID, "response must contain a job ID")
 	assert.Equal(t, "orchestrator", resp.JobType)
 	assert.Equal(t, "create", resp.JobOperation)
+	waitForJobToSettle(t, resp.ID)
 }
 
 // --- AsyncCreateOrchestratorHostVirtualMachineHandler ---
@@ -226,4 +249,5 @@ func TestAsyncCreateOrchestratorHostVirtualMachineHandler_Success(t *testing.T) 
 	assert.NotEmpty(t, resp.ID, "response must contain a job ID")
 	assert.Equal(t, "orchestrator", resp.JobType)
 	assert.Equal(t, "create", resp.JobOperation)
+	waitForJobToSettle(t, resp.ID)
 }
