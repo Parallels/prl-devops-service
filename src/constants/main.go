@@ -47,6 +47,8 @@ const (
 
 	INTERNAL_API_CLIENT                          = "X-INTERNAL-API-CLIENT"
 	ORCHESTRATOR_JOB_ID_HEADER                   = "X-ORCHESTRATOR-JOB-ID"
+	X_CLAIMS_HEADER                              = "X-Claims"
+	X_ROLES_HEADER                               = "X-Roles"
 	ENABLE_CREDENTIALS_OBFUSCATION_DEFAULT_VALUE = true
 
 	API_MODE               = "api"

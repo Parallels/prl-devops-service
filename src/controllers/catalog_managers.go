@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -383,9 +384,12 @@ func GetCatalogManagersHandler() restapi.ControllerHandler {
 			return
 		}
 
+		authCtx := ctx.GetAuthorizationContext()
+		effectiveClaims := authCtx.GetEffectiveClaims()
+
 		canListAll := false
 		canListOwn := false
-		for _, claim := range user.Claims {
+		for _, claim := range effectiveClaims {
 			if claim == constants.CATALOG_MANAGER_LIST_CLAIM {
 				canListAll = true
 			}
@@ -419,7 +423,7 @@ func GetCatalogManagersHandler() restapi.ControllerHandler {
 				if len(mgr.RequiredClaims) > 0 {
 					for _, reqClaim := range mgr.RequiredClaims {
 						found := false
-						for _, userClaim := range user.Claims {
+						for _, userClaim := range effectiveClaims {
 							if userClaim == reqClaim {
 								found = true
 								break
@@ -483,9 +487,12 @@ func GetCatalogManagerByIdHandler() restapi.ControllerHandler {
 			return
 		}
 
+		authCtx := ctx.GetAuthorizationContext()
+		effectiveClaims := authCtx.GetEffectiveClaims()
+
 		canListAll := false
 		canListOwn := false
-		for _, claim := range user.Claims {
+		for _, claim := range effectiveClaims {
 			if claim == constants.CATALOG_MANAGER_LIST_CLAIM {
 				canListAll = true
 			}
@@ -500,7 +507,7 @@ func GetCatalogManagerByIdHandler() restapi.ControllerHandler {
 			if len(mgr.RequiredClaims) > 0 {
 				for _, reqClaim := range mgr.RequiredClaims {
 					found := false
-					for _, userClaim := range user.Claims {
+					for _, userClaim := range effectiveClaims {
 						if userClaim == reqClaim {
 							found = true
 							break
@@ -631,13 +638,16 @@ func UpdateCatalogManagerHandler() restapi.ControllerHandler {
 		}
 
 		user := ctx.GetUser()
+		authCtxUpdate := ctx.GetAuthorizationContext()
+		effectiveClaimsUpdate := authCtxUpdate.GetEffectiveClaims()
+		effectiveRolesUpdate := authCtxUpdate.GetEffectiveRoles()
 		canSystemUpdate := false
-		for _, claim := range user.Claims {
+		for _, claim := range effectiveClaimsUpdate {
 			if claim == constants.CATALOG_MANAGER_UPDATE_CLAIM {
 				canSystemUpdate = true
 			}
 		}
-		for _, role := range user.Roles {
+		for _, role := range effectiveRolesUpdate {
 			if role == constants.SUPER_USER_ROLE {
 				canSystemUpdate = true
 			}
@@ -702,13 +712,16 @@ func DeleteCatalogManagerHandler() restapi.ControllerHandler {
 		}
 
 		user := ctx.GetUser()
+		authCtxDelete := ctx.GetAuthorizationContext()
+		effectiveClaimsDelete := authCtxDelete.GetEffectiveClaims()
+		effectiveRolesDelete := authCtxDelete.GetEffectiveRoles()
 		canSystemDelete := false
-		for _, claim := range user.Claims {
+		for _, claim := range effectiveClaimsDelete {
 			if claim == constants.CATALOG_MANAGER_DELETE_CLAIM {
 				canSystemDelete = true
 			}
 		}
-		for _, role := range user.Roles {
+		for _, role := range effectiveRolesDelete {
 			if role == constants.SUPER_USER_ROLE {
 				canSystemDelete = true
 			}
@@ -930,8 +943,12 @@ func getAuthorizedCatalogManagerForUse(ctx basecontext.ApiContext, managerID str
 		return nil, &apiErr
 	}
 
+	authCtxUse := ctx.GetAuthorizationContext()
+	effectiveClaimsUse := authCtxUse.GetEffectiveClaims()
+	effectiveRolesUse := authCtxUse.GetEffectiveRoles()
+
 	isSuperUser := false
-	for _, role := range user.Roles {
+	for _, role := range effectiveRolesUse {
 		if role == constants.SUPER_USER_ROLE {
 			isSuperUser = true
 			break
@@ -946,7 +963,7 @@ func getAuthorizedCatalogManagerForUse(ctx basecontext.ApiContext, managerID str
 		hasAllRequiredClaims := true
 		for _, requiredClaim := range mgr.RequiredClaims {
 			found := false
-			for _, userClaim := range user.Claims {
+			for _, userClaim := range effectiveClaimsUse {
 				if userClaim == requiredClaim {
 					found = true
 					break
@@ -1119,7 +1136,11 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 	}
 
 	for headerKey, values := range r.Header {
-		if strings.EqualFold(headerKey, "Authorization") || strings.EqualFold(headerKey, "X-Api-Key") || strings.EqualFold(headerKey, constants.INTERNAL_API_CLIENT) {
+		if strings.EqualFold(headerKey, "Authorization") ||
+			strings.EqualFold(headerKey, "X-Api-Key") ||
+			strings.EqualFold(headerKey, constants.INTERNAL_API_CLIENT) ||
+			strings.EqualFold(headerKey, constants.X_CLAIMS_HEADER) ||
+			strings.EqualFold(headerKey, constants.X_ROLES_HEADER) {
 			continue
 		}
 		for _, value := range values {
@@ -1128,6 +1149,23 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 	}
 	outboundRequest.Header.Set("X-SOURCE", "CATALOG_MANAGER_REQUEST")
 	outboundRequest.Header.Set(constants.INTERNAL_API_CLIENT, "false")
+
+	// Inject the current user's effective claims and roles so the downstream
+	// catalog service can filter results using the calling user's permissions
+	// rather than the stored catalog-manager credentials.
+	if fwdUser := ctx.GetUser(); fwdUser != nil {
+		fwdAuthCtx := ctx.GetAuthorizationContext()
+		claims := fwdAuthCtx.GetEffectiveClaims()
+		roles := fwdAuthCtx.GetEffectiveRoles()
+		if len(claims) > 0 {
+			outboundRequest.Header.Set(constants.X_CLAIMS_HEADER,
+				base64.StdEncoding.EncodeToString([]byte(strings.Join(claims, ","))))
+		}
+		if len(roles) > 0 {
+			outboundRequest.Header.Set(constants.X_ROLES_HEADER,
+				base64.StdEncoding.EncodeToString([]byte(strings.Join(roles, ","))))
+		}
+	}
 
 	if authorizer != nil {
 		if authorizer.BearerToken != "" {

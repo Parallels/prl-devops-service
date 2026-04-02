@@ -351,7 +351,8 @@ func (l *HttpListener) AddAuthorizedHandlerWithExtraAdapters(
 	adapters = append(adapters,
 		AddAuthorizationContextMiddlewareAdapter(),
 		TokenAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation),
-		ApiKeyAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation))
+		ApiKeyAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation),
+		XClaimsMiddlewareAdapter())
 	adapters = append(adapters, extraAdapters...)
 	adapters = append(adapters, EndAuthorizationMiddlewareAdapter())
 
@@ -386,6 +387,7 @@ func (l *HttpListener) AddAuthorizedHandlerWithRolesAndClaims(
 		AddAuthorizationContextMiddlewareAdapter(),
 		TokenAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation),
 		ApiKeyAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation),
+		XClaimsMiddlewareAdapter(),
 		EndAuthorizationMiddlewareAdapter())
 
 	if l.GetApiPrefix() != "" && !strings.HasPrefix(path, l.Options.ApiPrefix) {

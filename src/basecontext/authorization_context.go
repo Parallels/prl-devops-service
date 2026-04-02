@@ -21,6 +21,11 @@ type AuthorizationContext struct {
 	ApiKeyName         string
 	User               *models.ApiUser
 	AuthorizationError *models.OAuthErrorResponse
+	// InjectedClaims/InjectedRoles are set from X-Claims/X-Roles headers on
+	// trusted requests (microservices, catalog manager forwards). When present
+	// they override the user's JWT-based claims/roles for handler-level checks.
+	InjectedClaims []string
+	InjectedRoles  []string
 }
 
 var baseAuthorizationCtx *AuthorizationContext
@@ -78,6 +83,30 @@ func (c *AuthorizationContext) UserHasClaim(claim string) bool {
 	}
 
 	return false
+}
+
+// GetEffectiveClaims returns InjectedClaims if present (from a trusted X-Claims
+// header), otherwise the user's own claims from their JWT.
+func (c *AuthorizationContext) GetEffectiveClaims() []string {
+	if len(c.InjectedClaims) > 0 {
+		return c.InjectedClaims
+	}
+	if c.User == nil {
+		return []string{}
+	}
+	return c.User.Claims
+}
+
+// GetEffectiveRoles returns InjectedRoles if present (from a trusted X-Roles
+// header), otherwise the user's own roles from their JWT.
+func (c *AuthorizationContext) GetEffectiveRoles() []string {
+	if len(c.InjectedRoles) > 0 {
+		return c.InjectedRoles
+	}
+	if c.User == nil {
+		return []string{}
+	}
+	return c.User.Roles
 }
 
 func CloneAuthorizationContext() *AuthorizationContext {
