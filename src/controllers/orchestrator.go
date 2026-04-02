@@ -3000,19 +3000,42 @@ func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			request.CatalogManifest.CatalogManagerId = ""
 		}
 
+		callerID, ok := getEffectiveCallerID(ctx)
+		if !ok {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(fmt.Errorf("job manager not available"), http.StatusInternalServerError))
+			return
+		}
+
+		job, jobErr := jobManager.CreateNewJob(callerID, "orchestrator", "create", fmt.Sprintf("Initializing virtual machine creation on host %s", id))
+		if jobErr != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(jobErr, http.StatusInternalServerError))
+			return
+		}
+
+		_, _ = jobManager.UpdateJobProgress(job.ID, 1, constants.JobStateRunning)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.CreateHosVirtualMachine(ctx, "", id, request)
+		response, err := orchestratorSvc.CreateHosVirtualMachine(ctx, job.ID, id, request)
 		if err != nil {
+			_ = jobManager.MarkJobError(job.ID, fmt.Errorf("%s", err.Message))
 			ReturnApiError(ctx, w, *err)
 			return
 		}
 		if response == nil {
+			_ = jobManager.MarkJobError(job.ID, fmt.Errorf("virtual machine creation returned no result"))
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Virtual machine creation returned no result",
 				Code:    http.StatusInternalServerError,
 			})
 			return
 		}
+
+		_ = jobManager.MarkJobCompleteWithRecord(job.ID, fmt.Sprintf("Virtual machine %s created on host %s", response.Name, id), response.ID, response.Name, "virtual_machine", response.Host)
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
@@ -3071,19 +3094,42 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			request.CatalogManifest.CatalogManagerId = ""
 		}
 
+		callerID, ok := getEffectiveCallerID(ctx)
+		if !ok {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(fmt.Errorf("job manager not available"), http.StatusInternalServerError))
+			return
+		}
+
+		job, jobErr := jobManager.CreateNewJob(callerID, "orchestrator", "create", "Initializing orchestrator virtual machine creation")
+		if jobErr != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(jobErr, http.StatusInternalServerError))
+			return
+		}
+
+		_, _ = jobManager.UpdateJobProgress(job.ID, 1, constants.JobStateRunning)
 		orchestratorSvc := orchestrator.NewOrchestratorService(ctx)
-		response, err := orchestratorSvc.CreateVirtualMachine(ctx, "", request)
+		response, err := orchestratorSvc.CreateVirtualMachine(ctx, job.ID, request)
 		if err != nil {
+			_ = jobManager.MarkJobError(job.ID, fmt.Errorf("%s", err.Message))
 			ReturnApiError(ctx, w, *err)
 			return
 		}
 		if response == nil {
+			_ = jobManager.MarkJobError(job.ID, fmt.Errorf("virtual machine creation returned no result"))
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Virtual machine creation returned no result",
 				Code:    http.StatusInternalServerError,
 			})
 			return
 		}
+
+		_ = jobManager.MarkJobCompleteWithRecord(job.ID, fmt.Sprintf("Virtual machine %s created", response.ID), response.ID, response.Name, "virtual_machine", response.Host)
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
@@ -3971,12 +4017,46 @@ func DeployOrchestratorHostHandler() restapi.ControllerHandler {
 			return
 		}
 
+		callerID, ok := getEffectiveCallerID(ctx)
+		if !ok {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(fmt.Errorf("job manager not available"), http.StatusInternalServerError))
+			return
+		}
+
+		job, jobErr := jobManager.CreateNewJob(callerID, "orchestrator", "deploy", "Deploying agent "+req.HostName)
+		if jobErr != nil {
+			ReturnApiError(ctx, w, models.NewFromError(jobErr))
+			return
+		}
+
+		_, _ = jobManager.InitJob(job.ID)
+		_, _ = jobManager.UpdateJobProgress(job.ID, 0, constants.JobStateRunning)
+		onOutput := func(line string) {
+			_, _ = jobManager.UpdateJobMessage(job.ID, line)
+		}
+		onProgress := func(pct int, msg string) {
+			_, _ = jobManager.UpdateJobProgress(job.ID, pct, constants.JobStateRunning)
+			if msg != "" {
+				_, _ = jobManager.UpdateJobMessage(job.ID, msg)
+			}
+		}
+
 		orchSvc := orchestrator.NewOrchestratorService(ctx)
-		resp, err := orchSvc.DeployAndRegisterAgent(ctx, req, nil, nil)
+		resp, err := orchSvc.DeployAndRegisterAgent(ctx, req, onOutput, onProgress)
 		if err != nil {
+			_ = jobManager.MarkJobError(job.ID, err)
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
+
+		deploymentMessage := fmt.Sprintf("Agent %s deployed successfully", req.HostName)
+		_ = jobManager.MarkJobCompleteWithRecord(job.ID, deploymentMessage, resp.HostID, resp.Host, "orchestrator_host", "")
 
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(resp)
