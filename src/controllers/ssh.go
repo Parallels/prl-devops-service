@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
@@ -61,39 +62,32 @@ func (r *SshExecutionRequest) Validate() error {
 // @Produce		json
 // @Param			sshRequest	body		SshExecutionRequest	true	"Body"
 // @Success		200			{object}	SshExecutionResponse
-// @Failure		400			{object}	models.ApiErrorResponse
+// @Failure		400			{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401			{object}	models.OAuthErrorResponse
-// @Failure		403			{object}	models.ApiErrorResponse
-// @Failure		500			{object}	models.ApiErrorResponse
+// @Failure		500			{object}	models.ApiErrorDiagnosticsResponse
 // @Router			/v1/ssh/execute [post]
 func ExecuteSshHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		executeSshDiag := errors.NewDiagnostics("/ssh/execute")
 		var request SshExecutionRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			executeSshDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "MapRequestBody")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(executeSshDiag, http.StatusBadRequest))
 			return
 		}
 		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			executeSshDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "Validate")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(executeSshDiag, http.StatusBadRequest))
 			return
 		}
 
 		provider := serviceprovider.Get()
 		if provider.SshService == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "SSH Service not available",
-				Code:    http.StatusInternalServerError,
-			})
+			executeSshDiag.AddError(strconv.Itoa(http.StatusInternalServerError), "SSH Service not available", "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(executeSshDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -112,10 +106,8 @@ func ExecuteSshHandler() restapi.ControllerHandler {
 			// The service returns error for both connection and run errors.
 			// Let's return 500 if there is an err.
 
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: err.Error(),
-				Code:    http.StatusInternalServerError,
-			})
+			executeSshDiag.AddError(strconv.Itoa(http.StatusInternalServerError), "SSH execution failed: "+err.Error(), "Execute")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(executeSshDiag, http.StatusInternalServerError))
 			return
 		}
 
