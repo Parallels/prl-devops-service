@@ -1114,6 +1114,132 @@ func validateCatalogManagerConnection(ctx basecontext.ApiContext, managerURL str
 	return nil
 }
 
+// isCatalogManifestVisible returns true if the calling user's effective
+// claims/roles satisfy the manifest's RequiredRoles and RequiredClaims.
+// Super-user status is intentionally NOT a bypass here: catalog access controls
+// should be respected regardless of system-level role.
+func isCatalogManifestVisible(authCtx *basecontext.AuthorizationContext, manifest models.CatalogManifest) bool {
+	requiredRoles := manifest.RequiredRoles
+	requiredClaims := manifest.RequiredClaims
+
+	if len(requiredRoles) == 0 && len(requiredClaims) == 0 {
+		return true
+	}
+
+	effectiveRoles := authCtx.GetEffectiveRoles()
+	effectiveClaims := authCtx.GetEffectiveClaims()
+
+	isAuthorized := len(requiredRoles) == 0
+	if !isAuthorized {
+		for _, role := range requiredRoles {
+			for _, eff := range effectiveRoles {
+				if strings.EqualFold(role, eff) {
+					isAuthorized = true
+					break
+				}
+			}
+			if isAuthorized {
+				break
+			}
+		}
+	}
+
+	hasClaims := len(requiredClaims) == 0
+	if !hasClaims {
+		for _, claim := range requiredClaims {
+			for _, eff := range effectiveClaims {
+				if strings.EqualFold(claim, eff) {
+					hasClaims = true
+					break
+				}
+			}
+			if hasClaims {
+				break
+			}
+		}
+	}
+
+	return isAuthorized && hasClaims
+}
+
+// filterCatalogManifestResponse inspects a catalog-endpoint response body and
+// removes any manifests the calling user is not allowed to see.  It handles
+// three shapes:
+//
+//   - []map[string][]CatalogManifest  — the /catalog list response
+//   - []CatalogManifest               — per-catalogId / per-version responses
+//   - CatalogManifest                 — single architecture response (returns empty
+//     body with status 404 if the user cannot see it)
+//
+// Returns the (possibly filtered) body and the HTTP status to use.
+// If the body cannot be parsed as any recognised shape it is returned unchanged.
+func filterCatalogManifestResponse(authCtx *basecontext.AuthorizationContext, body []byte, originalStatus int) ([]byte, int) {
+	if authCtx == nil || len(body) == 0 {
+		return body, originalStatus
+	}
+
+	trimmed := bytes.TrimSpace(body)
+
+	// Shape 1: []map[string][]CatalogManifest  (the /catalog root endpoint)
+	if len(trimmed) > 0 && trimmed[0] == '[' {
+		var grouped []map[string][]models.CatalogManifest
+		if json.Unmarshal(trimmed, &grouped) == nil {
+			filtered := make([]map[string][]models.CatalogManifest, 0, len(grouped))
+			for _, group := range grouped {
+				filteredGroup := make(map[string][]models.CatalogManifest)
+				for catalogID, manifests := range group {
+					kept := make([]models.CatalogManifest, 0, len(manifests))
+					for _, m := range manifests {
+						if isCatalogManifestVisible(authCtx, m) {
+							kept = append(kept, m)
+						}
+					}
+					if len(kept) > 0 {
+						filteredGroup[catalogID] = kept
+					}
+				}
+				if len(filteredGroup) > 0 {
+					filtered = append(filtered, filteredGroup)
+				}
+			}
+			out, err := json.Marshal(filtered)
+			if err != nil {
+				return body, originalStatus
+			}
+			return out, originalStatus
+		}
+
+		// Shape 2: []CatalogManifest  (per-catalogId / per-version)
+		var list []models.CatalogManifest
+		if json.Unmarshal(trimmed, &list) == nil {
+			kept := make([]models.CatalogManifest, 0, len(list))
+			for _, m := range list {
+				if isCatalogManifestVisible(authCtx, m) {
+					kept = append(kept, m)
+				}
+			}
+			out, err := json.Marshal(kept)
+			if err != nil {
+				return body, originalStatus
+			}
+			return out, originalStatus
+		}
+	}
+
+	// Shape 3: single CatalogManifest object
+	if len(trimmed) > 0 && trimmed[0] == '{' {
+		var single models.CatalogManifest
+		if json.Unmarshal(trimmed, &single) == nil && single.ID != "" {
+			if !isCatalogManifestVisible(authCtx, single) {
+				return []byte(`{"code":404,"message":"not found"}`), http.StatusNotFound
+			}
+			return body, originalStatus
+		}
+	}
+
+	return body, originalStatus
+}
+
 func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWriter, r *http.Request, manager *data_models.CatalogManager, endpointPath string) error {
 	targetURL, err := buildCatalogManagerTargetUrl(manager.URL, endpointPath, r.URL.RawQuery)
 	if err != nil {
@@ -1226,6 +1352,22 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 		for _, value := range values {
 			w.Header().Add(key, value)
 		}
+	}
+
+	// For successful GET responses, apply a secondary defense-in-depth filter so
+	// that manifests the calling user cannot access are stripped even if the
+	// remote catalog service returns them (e.g. older service version, or a
+	// super-user identity being used for the stored catalog credentials).
+	if r.Method == http.MethodGet && response.StatusCode == http.StatusOK {
+		bodyBytes, readErr := io.ReadAll(response.Body)
+		if readErr != nil {
+			return readErr
+		}
+		authCtx := ctx.GetAuthorizationContext()
+		filteredBody, filteredStatus := filterCatalogManifestResponse(authCtx, bodyBytes, response.StatusCode)
+		w.WriteHeader(filteredStatus)
+		_, err = w.Write(filteredBody)
+		return err
 	}
 
 	w.WriteHeader(response.StatusCode)

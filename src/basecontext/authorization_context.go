@@ -108,13 +108,24 @@ func (c *AuthorizationContext) HasEffectiveClaim(claim string) bool {
 }
 
 // GetEffectiveClaims returns InjectedClaims if present (from a trusted X-Claims
-// header), otherwise the user's own claims from their JWT.
+// header). Otherwise it returns the user's full merged claim set: if
+// User.EffectiveClaims is populated (includes role-inherited claims) its Name
+// values are used; if empty, falls back to the directly-assigned User.Claims.
 func (c *AuthorizationContext) GetEffectiveClaims() []string {
 	if len(c.InjectedClaims) > 0 {
 		return c.InjectedClaims
 	}
 	if c.User == nil {
 		return []string{}
+	}
+	if len(c.User.EffectiveClaims) > 0 {
+		claims := make([]string, 0, len(c.User.EffectiveClaims))
+		for _, ec := range c.User.EffectiveClaims {
+			if ec.Name != "" {
+				claims = append(claims, ec.Name)
+			}
+		}
+		return claims
 	}
 	return c.User.Claims
 }

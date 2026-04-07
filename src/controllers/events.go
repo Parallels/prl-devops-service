@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -18,7 +17,8 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/ws/subscribe").
-		WithRequiredClaim(constants.READ_ONLY_CLAIM).
+    WithAuthorization().
+		// WithRequiredClaim(constants.READ_ONLY_CLAIM).
 		WithHandler(WebSocketSubscribeHandler()).
 		Register()
 
@@ -26,7 +26,8 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.POST).
 		WithVersion(version).
 		WithPath("/ws/unsubscribe").
-		WithRequiredClaim(constants.READ_ONLY_CLAIM).
+    WithAuthorization().
+		// WithRequiredClaim(constants.READ_ONLY_CLAIM).
 		WithHandler(WebSocketUnsubscribeHandler()).
 		Register()
 
@@ -34,7 +35,8 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/ws/clients").
-		WithRequiredClaim(constants.READ_ONLY_CLAIM).
+    WithAuthorization().
+		// WithRequiredClaim(constants.READ_ONLY_CLAIM).
 		WithHandler(WebSocketClientsHandler()).
 		Register()
 
@@ -42,7 +44,8 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/ws/stats").
-		WithRequiredClaim(constants.READ_ONLY_CLAIM).
+    WithAuthorization().
+		// WithRequiredClaim(constants.READ_ONLY_CLAIM).
 		WithHandler(WebSocketStatsHandler()).
 		Register()
 }
