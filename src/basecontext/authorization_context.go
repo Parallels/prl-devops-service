@@ -85,6 +85,28 @@ func (c *AuthorizationContext) UserHasClaim(claim string) bool {
 	return false
 }
 
+// HasEffectiveRole checks the effective roles (InjectedRoles when present, else
+// User.Roles) for the given role, case-insensitively.
+func (c *AuthorizationContext) HasEffectiveRole(role string) bool {
+	for _, r := range c.GetEffectiveRoles() {
+		if strings.EqualFold(r, role) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasEffectiveClaim checks the effective claims (InjectedClaims when present,
+// else User.Claims) for the given claim, case-insensitively.
+func (c *AuthorizationContext) HasEffectiveClaim(claim string) bool {
+	for _, c := range c.GetEffectiveClaims() {
+		if strings.EqualFold(c, claim) {
+			return true
+		}
+	}
+	return false
+}
+
 // GetEffectiveClaims returns InjectedClaims if present (from a trusted X-Claims
 // header), otherwise the user's own claims from their JWT.
 func (c *AuthorizationContext) GetEffectiveClaims() []string {

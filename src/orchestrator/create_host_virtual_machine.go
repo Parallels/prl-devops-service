@@ -124,16 +124,21 @@ func (s *OrchestratorService) DispatchCreateVirtualMachine(ctx basecontext.ApiCo
 	reg := registry.Get()
 	for _, host := range validHosts {
 		updateJob(fmt.Sprintf("Dispatching to host %s", host.Host))
-		hostJob, err := s.CallCreateHostVirtualMachineAsync(host, request)
+		hostJob, err := s.CallCreateHostVirtualMachineAsync(host, jobID, request)
 		if err != nil {
 			e := models.NewFromError(err)
 			apiError = &e
 			updateJob(fmt.Sprintf("Host %s failed: %s — trying next host", host.Host, e.Message))
 			continue
 		}
-		reg.Register(hostJob.ID, jobID, host.ID)
+		// When the host reused our job ID (same-process case), the machines goroutine
+		// will complete the orchestrator job directly — no registry entry needed.
+		if hostJob.ID != jobID {
+			reg.Register(hostJob.ID, jobID, host.ID)
+		}
 		updateJob(fmt.Sprintf("Dispatched to host %s, tracking progress via job %s", host.Host, hostJob.ID))
-		// Completion (success or failure) is forwarded by HostJobEventHandler.
+		// Completion (success or failure) is forwarded by HostJobEventHandler (remote)
+		// or directly by the machines goroutine (same-process).
 		return nil, nil
 	}
 
@@ -190,7 +195,7 @@ func (s *OrchestratorService) DispatchCreateHosVirtualMachine(ctx basecontext.Ap
 	updateJob(fmt.Sprintf("Dispatching to host %s", host.Host))
 	ctx.LogInfof("[Orchestrator] Dispatching async VM creation to host %s", host.Host)
 	reg := registry.Get()
-	hostJob, err := s.CallCreateHostVirtualMachineAsync(*host, request)
+	hostJob, err := s.CallCreateHostVirtualMachineAsync(*host, jobID, request)
 	if err != nil {
 		e := models.NewFromError(err)
 		updateJob(fmt.Sprintf("Host %s failed: %s", host.Host, e.Message))
@@ -198,9 +203,14 @@ func (s *OrchestratorService) DispatchCreateHosVirtualMachine(ctx basecontext.Ap
 		return nil, &e
 	}
 
-	reg.Register(hostJob.ID, jobID, host.ID)
+	// When the host reused our job ID (same-process case), the machines goroutine
+	// will complete the orchestrator job directly — no registry entry needed.
+	if hostJob.ID != jobID {
+		reg.Register(hostJob.ID, jobID, host.ID)
+	}
 	updateJob(fmt.Sprintf("Dispatched to host %s, tracking progress via job %s", host.Host, hostJob.ID))
-	// Completion (success or failure) is forwarded by HostJobEventHandler.
+	// Completion (success or failure) is forwarded by HostJobEventHandler (remote)
+	// or directly by the machines goroutine (same-process).
 	return nil, nil
 }
 
@@ -413,9 +423,14 @@ func filterAndSortHosts(validHosts []data_models.OrchestratorHost, request model
 
 // CallCreateHostVirtualMachineAsync calls the host's async machine-creation
 // endpoint and returns the host job response immediately (HTTP 202).
-func (s *OrchestratorService) CallCreateHostVirtualMachineAsync(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest) (*models.JobResponse, error) {
+// jobID is the orchestrator job ID; when non-empty it is forwarded to the host
+// so the host can complete the orchestrator job directly (same-process case).
+func (s *OrchestratorService) CallCreateHostVirtualMachineAsync(host data_models.OrchestratorHost, jobID string, request models.CreateVirtualMachineRequest) (*models.JobResponse, error) {
 	httpClient := s.getApiClient(host)
 	httpClient.WithTimeout(30 * time.Second)
+	if jobID != "" {
+		httpClient.WithHeader(constants.ORCHESTRATOR_JOB_ID_HEADER, jobID)
+	}
 
 	path := "/machines/async"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})

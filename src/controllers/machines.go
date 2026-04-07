@@ -1325,6 +1325,44 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
+		// When called internally by the orchestrator, reuse the orchestrator job ID
+		// directly so no duplicate "machines" job appears in the job list, and the
+		// orchestrator job is completed in-process without relying on the WebSocket
+		// event path (which is only active for remote hosts).
+		if r.Header.Get(constants.INTERNAL_API_CLIENT) == "true" {
+			orchestratorJobID := r.Header.Get(constants.ORCHESTRATOR_JOB_ID_HEADER)
+			if orchestratorJobID != "" {
+				jobManager := jobs.Get(ctx)
+				go func(orchJobID string, req models.CreateVirtualMachineRequest) {
+					asyncCtx := basecontext.NewRootBaseContext()
+					defer func() {
+						if rec := recover(); rec != nil {
+							asyncCtx.LogErrorf("[Machines] Panic in internal async create for job %s: %v", orchJobID, rec)
+							if jobManager != nil {
+								_ = jobManager.MarkJobError(orchJobID, fmt.Errorf("internal error: %v", rec))
+							}
+						}
+					}()
+					result, err := createCatalogMachine(asyncCtx, req, orchJobID)
+					if err != nil {
+						if jobManager != nil {
+							_ = jobManager.MarkJobError(orchJobID, err)
+						}
+						return
+					}
+					if jobManager != nil {
+						_ = jobManager.MarkJobCompleteWithRecord(orchJobID,
+							fmt.Sprintf("Virtual machine %s created", result.ID),
+							result.ID, result.Name, "virtual_machine", result.Host)
+					}
+				}(orchestratorJobID, request)
+				w.WriteHeader(http.StatusAccepted)
+				_ = json.NewEncoder(w).Encode(models.JobResponse{ID: orchestratorJobID})
+				ctx.LogInfof("Internal async machine create started for orchestrator job: %v", orchestratorJobID)
+				return
+			}
+		}
+
 		catalogConnection, err := resolveCatalogMachineConnection(ctx, request.CatalogManifest)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))

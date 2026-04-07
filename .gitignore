@@ -33,7 +33,8 @@ commit.msg
 .claude-flow/daemon.pid
 .claude-flow/sessions/
 .claude-flow/metrics/ 
-.claude-flow/security/ 
+.claude-flow/security/
+src/.claude-flow/ 
 *.db
 node_modules/
 # RuFlo runtime
