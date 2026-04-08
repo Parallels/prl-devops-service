@@ -3,11 +3,13 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/cacheservice"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -92,7 +94,7 @@ func registerCacheHandlers(ctx basecontext.ApiContext, version string) {
 // @Tags			Catalogs
 // @Produce		json
 // @Success		200	{object}	[]models.CatalogManifest
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -102,14 +104,19 @@ func GetCatalogCacheHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		getCatalogCacheDiag := errors.NewDiagnostics("/cache")
 		catalogCacheSvc, err := cacheservice.NewCacheService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			getCatalogCacheDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "NewCacheService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getCatalogCacheDiag, rsp.Code))
+			return
 		}
 		items, err := catalogCacheSvc.GetAllCacheItems()
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			getCatalogCacheDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetAllCacheItems")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getCatalogCacheDiag, rsp.Code))
 			return
 		}
 
@@ -171,7 +178,7 @@ func GetCatalogCacheHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			catalogId	path	string	true	"Catalog ID"
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -181,15 +188,20 @@ func DeleteCatalogCacheHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		deleteCatalogCacheDiag := errors.NewDiagnostics("/cache")
 		catalogCacheSvc, err := cacheservice.NewCacheService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteCatalogCacheDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "NewCacheService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteCatalogCacheDiag, rsp.Code))
+			return
 		}
 
 		err = catalogCacheSvc.RemoveAllCacheItems()
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteCatalogCacheDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "RemoveAllCacheItems")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteCatalogCacheDiag, rsp.Code))
 			return
 		}
 
@@ -206,7 +218,7 @@ func DeleteCatalogCacheHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			catalogId	path	string	true	"Catalog ID"
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -216,25 +228,28 @@ func DeleteCatalogCacheItemHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
 		vars := mux.Vars(r)
 		catalogId := vars["catalogId"]
+		deleteCatalogCacheItemDiag := errors.NewDiagnostics("/cache/" + catalogId)
 		if catalogId == "" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Catalog ID is required",
-				Code:    http.StatusBadRequest,
-			})
+			deleteCatalogCacheItemDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Catalog ID is required", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteCatalogCacheItemDiag, http.StatusBadRequest))
 			return
 		}
 
 		catalogCacheSvc, err := cacheservice.NewCacheService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteCatalogCacheItemDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "NewCacheService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteCatalogCacheItemDiag, rsp.Code))
+			return
 		}
 
 		err = catalogCacheSvc.RemoveCacheItem(catalogId, "")
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteCatalogCacheItemDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "RemoveCacheItem")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteCatalogCacheItemDiag, rsp.Code))
 			return
 		}
 
@@ -252,7 +267,7 @@ func DeleteCatalogCacheItemHandler() restapi.ControllerHandler {
 // @Param			catalogId	path	string	true	"Catalog ID"
 // @Param			version		path	string	true	"Version"
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -262,34 +277,35 @@ func DeleteCatalogCacheItemVersionHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
 		vars := mux.Vars(r)
 		catalogId := vars["catalogId"]
 		version := vars["version"]
+		deleteCatalogCacheItemVersionDiag := errors.NewDiagnostics("/cache/" + catalogId + "/" + version)
 		if catalogId == "" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Catalog ID is required",
-				Code:    http.StatusBadRequest,
-			})
+			deleteCatalogCacheItemVersionDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Catalog ID is required", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteCatalogCacheItemVersionDiag, http.StatusBadRequest))
 			return
 		}
 
 		if version == "" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Version is required",
-				Code:    http.StatusBadRequest,
-			})
+			deleteCatalogCacheItemVersionDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Version is required", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteCatalogCacheItemVersionDiag, http.StatusBadRequest))
 			return
 		}
 
 		catalogCacheSvc, err := cacheservice.NewCacheService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteCatalogCacheItemVersionDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "NewCacheService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteCatalogCacheItemVersionDiag, rsp.Code))
+			return
 		}
 
 		err = catalogCacheSvc.RemoveCacheItem(catalogId, version)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteCatalogCacheItemVersionDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "RemoveCacheItem")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteCatalogCacheItemVersionDiag, rsp.Code))
 			return
 		}
 
