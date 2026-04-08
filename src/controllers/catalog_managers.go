@@ -1266,7 +1266,8 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 			strings.EqualFold(headerKey, "X-Api-Key") ||
 			strings.EqualFold(headerKey, constants.INTERNAL_API_CLIENT) ||
 			strings.EqualFold(headerKey, constants.X_CLAIMS_HEADER) ||
-			strings.EqualFold(headerKey, constants.X_ROLES_HEADER) {
+			strings.EqualFold(headerKey, constants.X_ROLES_HEADER) ||
+			strings.EqualFold(headerKey, constants.X_SUPER_USER_HEADER) {
 			continue
 		}
 		for _, value := range values {
@@ -1290,6 +1291,9 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 		if len(roles) > 0 {
 			outboundRequest.Header.Set(constants.X_ROLES_HEADER,
 				base64.StdEncoding.EncodeToString([]byte(strings.Join(roles, ","))))
+		}
+		if fwdAuthCtx.IsSuperUser {
+			outboundRequest.Header.Set(constants.X_SUPER_USER_HEADER, "true")
 		}
 	}
 

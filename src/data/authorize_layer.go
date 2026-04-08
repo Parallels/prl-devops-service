@@ -60,11 +60,9 @@ func IsAuthorized[T AuthorizedRecord](ctx basecontext.ApiContext, t T) bool {
 		return false
 	}
 
-	// Super-user bypass applies to direct access. When injected claims/roles
-	// are present (catalog manager forwarding), the catalog's own RequiredClaims
-	// and RequiredRoles must be respected regardless of system-level super-user
-	// status — a super-user of the devops service is not automatically a member
-	// of every catalog audience.
+	// Super-user bypass: applies for direct access, and also for forwarded
+	// requests when the upstream explicitly flagged the calling user as a
+	// super-user via X-Super-User (authContext.IsSuperUser set by middleware).
 	if authContext.IsSuperUser || (!hasInjected && authContext.HasEffectiveRole(constants.SUPER_USER_ROLE)) {
 		return true
 	}

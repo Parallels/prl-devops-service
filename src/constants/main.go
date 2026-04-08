@@ -49,6 +49,7 @@ const (
 	ORCHESTRATOR_JOB_ID_HEADER                   = "X-ORCHESTRATOR-JOB-ID"
 	X_CLAIMS_HEADER                              = "X-Claims"
 	X_ROLES_HEADER                               = "X-Roles"
+	X_SUPER_USER_HEADER                          = "X-Super-User"
 	ENABLE_CREDENTIALS_OBFUSCATION_DEFAULT_VALUE = true
 
 	API_MODE               = "api"

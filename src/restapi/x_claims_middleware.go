@@ -67,6 +67,10 @@ func XClaimsMiddlewareAdapter() Adapter {
 				}
 			}
 
+			if superUserHeader := r.Header.Get(constants.X_SUPER_USER_HEADER); strings.EqualFold(superUserHeader, "true") {
+				authCtx.IsSuperUser = true
+			}
+
 			ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authCtx)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
