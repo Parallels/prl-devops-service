@@ -52,16 +52,17 @@ const (
 	X_SUPER_USER_HEADER                          = "X-Super-User"
 	ENABLE_CREDENTIALS_OBFUSCATION_DEFAULT_VALUE = true
 
-	API_MODE               = "api"
-	CLI_MODE               = "cli"
-	ORCHESTRATOR_MODE      = "orchestrator"
-	CATALOG_MODE           = "catalog"
-	CATALOG_MANAGER_MODE   = "catalog_manager"
-	HOST_MODE              = "host"
-	REVERSE_PROXY_MODE     = "reverse_proxy"
-	CACHE_MODE             = "cache"
-	CORS_MODE              = "cors"
-	VM_FORCE_CACHE_REFRESH = true
+	DISABLE_URL_VALIDATION_ENV_VAR = "DISABLE_URL_VALIDATION"
+	API_MODE                       = "api"
+	CLI_MODE                       = "cli"
+	ORCHESTRATOR_MODE              = "orchestrator"
+	CATALOG_MODE                   = "catalog"
+	CATALOG_MANAGER_MODE           = "catalog_manager"
+	HOST_MODE                      = "host"
+	REVERSE_PROXY_MODE             = "reverse_proxy"
+	CACHE_MODE                     = "cache"
+	CORS_MODE                      = "cors"
+	VM_FORCE_CACHE_REFRESH         = true
 
 	DEFAULT_LOG_FILE_NAME = "prldevops.log"
 )

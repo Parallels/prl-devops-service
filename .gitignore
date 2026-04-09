@@ -42,3 +42,4 @@ package-lock.json
 package.json
 .claude-flow/daemon-state.json
 .claude-flow/swarm/swarm-state.json
+.kilo/

@@ -563,6 +563,11 @@ func CreateCatalogManagerHandler() restapi.ControllerHandler {
 		newMgr.CreatedAt = helpers.GetUtcCurrentDateTime()
 		newMgr.UpdatedAt = helpers.GetUtcCurrentDateTime()
 
+		if err := validateCatalogManagerUrl(newMgr.URL); err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+			return
+		}
+
 		canCreateGlobalInternal := false
 		for _, claim := range user.Claims {
 			if claim == constants.CATALOG_MANAGER_CREATE_CLAIM {
@@ -661,6 +666,11 @@ func UpdateCatalogManagerHandler() restapi.ControllerHandler {
 		updatedMgr := *mgr
 		mappers.UpdateCatalogManagerFromRequest(&updatedMgr, &req)
 		updatedMgr.UpdatedAt = helpers.GetUtcCurrentDateTime()
+
+		if err := validateCatalogManagerUrl(updatedMgr.URL); err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+			return
+		}
 
 		if err := validateCatalogManagerConnection(ctx, updatedMgr.URL, updatedMgr.Username, decryptCatalogManagerSecret(updatedMgr.Password), decryptCatalogManagerSecret(updatedMgr.ApiKey)); err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
@@ -1081,6 +1091,10 @@ func stripHostFromConnection(connection string) string {
 	return strings.Join(filtered, ";")
 }
 
+func validateCatalogManagerUrl(managerURL string) error {
+	return helpers.ValidateCatalogManagerUrl(managerURL)
+}
+
 func validateCatalogManagerConnection(ctx basecontext.ApiContext, managerURL string, username string, password string, apiKey string) error {
 	if strings.TrimSpace(managerURL) == "" {
 		return errors.New("catalog manager url is required")
@@ -1092,6 +1106,10 @@ func validateCatalogManagerConnection(ctx basecontext.ApiContext, managerURL str
 
 	if apiKey == "" && ((username != "" && password == "") || (username == "" && password != "")) {
 		return errors.New("both username and password are required for password authentication")
+	}
+
+	if err := validateCatalogManagerUrl(managerURL); err != nil {
+		return fmt.Errorf("invalid catalog manager url: %w", err)
 	}
 
 	targetURL, err := buildCatalogManagerTargetUrl(managerURL, "/catalog", "")
