@@ -3,8 +3,10 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -39,51 +41,46 @@ func registerAuthorizationHandlers(ctx basecontext.ApiContext, version string) {
 // @Produce		json
 // @Param			login	body		models.LoginRequest	true	"Body"
 // @Success		200		{object}	models.LoginResponse
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
+// @Failure		400		{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401		{object}	models.ApiErrorDiagnosticsResponse
 // @Router			/v1/auth/token [post]
 func GetTokenHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		getTokenDiag := errors.NewDiagnostics("/auth/token")
 		var request models.LoginRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			getTokenDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "MapRequestBody")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, http.StatusBadRequest))
 			return
 		}
 		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			getTokenDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "Validate")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, http.StatusBadRequest))
 			return
 		}
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
 			return
 		}
 
 		user, err := dbService.GetUser(ctx, request.Email)
 		if err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid User or Password",
-				Code:    http.StatusUnauthorized,
-			})
+			rsp := models.NewFromError(err)
+			getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
 			return
 		}
 
 		if user == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid User or Password",
-				Code:    http.StatusUnauthorized,
-			})
+			getTokenDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "Invalid User or Password", "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, http.StatusUnauthorized))
 			return
 		}
 
@@ -91,10 +88,9 @@ func GetTokenHandler() restapi.ControllerHandler {
 
 		passwdSvc := password.Get()
 		if err := passwdSvc.Compare(request.Password, user.ID, user.Password); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid User or Password",
-				Code:    http.StatusUnauthorized,
-			})
+			rsp := models.NewFromError(err)
+			getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Compare")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
 
 			if diag := bruteForceSvc.Process(user.ID, false, "Invalid Password"); diag.HasErrors() {
 				ctx.LogErrorf("Error processing brute force guard: %v", diag)
@@ -120,7 +116,9 @@ func GetTokenHandler() restapi.ControllerHandler {
 		tokenSvc := jwt.Get()
 		tokenStr, err := tokenSvc.Sign(claims)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 401))
+			rsp := models.NewFromError(err)
+			getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Sign")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
 			if diag := bruteForceSvc.Process(user.ID, false, err.Error()); diag.HasErrors() {
 				ctx.LogErrorf("Error processing brute force guard: %v", diag)
 			}
@@ -128,7 +126,9 @@ func GetTokenHandler() restapi.ControllerHandler {
 		}
 		token, err := tokenSvc.Parse(tokenStr)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 401))
+			rsp := models.NewFromError(err)
+			getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Parse")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
 			if diag := bruteForceSvc.Process(user.ID, false, err.Error()); diag.HasErrors() {
 				ctx.LogErrorf("Error processing brute force guard: %v", diag)
 			}
@@ -157,45 +157,47 @@ func GetTokenHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			tokenRequest	body		models.ValidateTokenRequest	true	"Body"
 // @Success		200				{object}	models.ValidateTokenResponse
-// @Failure		400				{object}	models.ApiErrorResponse
-// @Failure		401				{object}	models.OAuthErrorResponse
+// @Failure		400				{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401				{object}	models.ApiErrorDiagnosticsResponse
 // @Router			/v1/auth/token/validate [post]
 func ValidateTokenHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		validateTokenDiag := errors.NewDiagnostics("/auth/token/validate")
 		var request models.ValidateTokenRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			validateTokenDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "MapRequestBody")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(validateTokenDiag, http.StatusBadRequest))
+			return
 		}
 		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			validateTokenDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "Validate")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(validateTokenDiag, http.StatusBadRequest))
 			return
 		}
 
 		tokenSvc := jwt.Get()
 		token, err := tokenSvc.Parse(request.Token)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 401))
+			rsp := models.NewFromError(err)
+			validateTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Parse")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(validateTokenDiag, rsp.Code))
 			return
 		}
 
 		isValid, err := token.Valid()
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 401))
+			rsp := models.NewFromError(err)
+			validateTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Valid")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(validateTokenDiag, rsp.Code))
 			return
 		}
 
 		if !isValid {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, 401))
+			validateTokenDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "Invalid token", "Valid")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(validateTokenDiag, http.StatusUnauthorized))
 			return
 		}
 
