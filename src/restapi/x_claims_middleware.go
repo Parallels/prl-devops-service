@@ -67,8 +67,17 @@ func XClaimsMiddlewareAdapter() Adapter {
 				}
 			}
 
-			if superUserHeader := r.Header.Get(constants.X_SUPER_USER_HEADER); strings.EqualFold(superUserHeader, "true") {
+			superUserHeader := r.Header.Get(constants.X_SUPER_USER_HEADER)
+			if strings.EqualFold(superUserHeader, "true") {
+				// Only set IsSuperUser when the X-Super-User header is explicitly "true"
+				// This is critical for security: when claims/roles are forwarded from a downstream
+				// service, the super-user status should ONLY apply if explicitly declared via header.
 				authCtx.IsSuperUser = true
+			} else if len(authCtx.InjectedClaims) > 0 || len(authCtx.InjectedRoles) > 0 {
+				// When injected claims/roles are present but X-Super-User is not "true",
+				// reset IsSuperUser to false to prevent using the authenticated user's super-user status.
+				// This ensures that forwarded permissions are strictly limited to the forwarded claims/roles.
+				authCtx.IsSuperUser = false
 			}
 
 			ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authCtx)

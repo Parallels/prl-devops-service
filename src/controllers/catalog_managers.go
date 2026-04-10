@@ -1385,10 +1385,11 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 		if readErr != nil {
 			return readErr
 		}
-		authCtx := ctx.GetAuthorizationContext()
-		filteredBody, filteredStatus := filterCatalogManifestResponse(authCtx, bodyBytes, response.StatusCode)
-		w.WriteHeader(filteredStatus)
-		_, err = w.Write(filteredBody)
+		// authCtx := ctx.GetAuthorizationContext()
+		// filteredBody, filteredStatus := filterCatalogManifestResponse(authCtx, bodyBytes, response.StatusCode)
+		// w.WriteHeader(filteredStatus)
+		w.WriteHeader(response.StatusCode)
+		_, err = w.Write(bodyBytes)
 		return err
 	}
 

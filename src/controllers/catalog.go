@@ -285,6 +285,7 @@ func GetCatalogManifestsHandler() restapi.ControllerHandler {
 					break
 				}
 			}
+
 			if resultManifest == nil {
 				resultManifest := make(map[string][]models.CatalogManifest)
 				resultManifest[manifest.CatalogId] = append(resultManifest[manifest.CatalogId], mappers.DtoCatalogManifestToApi(manifest))

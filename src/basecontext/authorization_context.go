@@ -150,14 +150,28 @@ func CloneAuthorizationContext() *AuthorizationContext {
 	}
 
 	newContext := AuthorizationContext{
-		Issuer:       baseAuthorizationCtx.Issuer,
-		Scope:        baseAuthorizationCtx.Scope,
-		Audiences:    make([]string, 0),
-		BaseUrl:      baseAuthorizationCtx.BaseUrl,
-		IsAuthorized: false,
-		RequestId:    "",
-		AuthorizedBy: "",
-		User:         nil,
+		Issuer:             baseAuthorizationCtx.Issuer,
+		Scope:              baseAuthorizationCtx.Scope,
+		Audiences:          make([]string, 0),
+		BaseUrl:            baseAuthorizationCtx.BaseUrl,
+		IsAuthorized:       false,
+		RequestId:          "",
+		AuthorizedBy:       "",
+		User:               nil,
+		IsMicroService:     baseAuthorizationCtx.IsMicroService,
+		IsSuperUser:        baseAuthorizationCtx.IsSuperUser,
+		ApiKeyName:         baseAuthorizationCtx.ApiKeyName,
+		AuthorizationError: baseAuthorizationCtx.AuthorizationError,
+	}
+
+	// Copy injected claims and roles (they are request-independent when set)
+	if len(baseAuthorizationCtx.InjectedClaims) > 0 {
+		newContext.InjectedClaims = make([]string, len(baseAuthorizationCtx.InjectedClaims))
+		copy(newContext.InjectedClaims, baseAuthorizationCtx.InjectedClaims)
+	}
+	if len(baseAuthorizationCtx.InjectedRoles) > 0 {
+		newContext.InjectedRoles = make([]string, len(baseAuthorizationCtx.InjectedRoles))
+		copy(newContext.InjectedRoles, baseAuthorizationCtx.InjectedRoles)
 	}
 
 	return &newContext
