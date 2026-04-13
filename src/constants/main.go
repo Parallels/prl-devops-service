@@ -53,6 +53,7 @@ const (
 	ENABLE_CREDENTIALS_OBFUSCATION_DEFAULT_VALUE = true
 
 	DISABLE_URL_VALIDATION_ENV_VAR = "DISABLE_URL_VALIDATION"
+	URL_WHITELIST_ENV_VAR          = "URL_WHITELIST"
 	API_MODE                       = "api"
 	CLI_MODE                       = "cli"
 	ORCHESTRATOR_MODE              = "orchestrator"

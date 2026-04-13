@@ -23,6 +23,8 @@ var (
 	}
 
 	forbiddenCIDRs = []*net.IPNet{}
+
+	whitelistedDomains = []string{}
 )
 
 func init() {
@@ -34,6 +36,14 @@ func init() {
 		_, network, err := net.ParseCIDR(cidr)
 		if err == nil {
 			forbiddenCIDRs = append(forbiddenCIDRs, network)
+		}
+	}
+
+	whitelist := os.Getenv(constants.URL_WHITELIST_ENV_VAR)
+	if whitelist != "" {
+		domains := strings.Split(whitelist, ",")
+		for _, domain := range domains {
+			whitelistedDomains = append(whitelistedDomains, strings.ToLower(strings.TrimSpace(domain)))
 		}
 	}
 }
@@ -71,6 +81,10 @@ func IsUrlAllowed(urlStr string) error {
 
 	host := parsedURL.Hostname()
 
+	if isWhitelisted(host) {
+		return nil
+	}
+
 	if isForbiddenHostname(host) {
 		return errors.New("access to this url is not allowed")
 	}
@@ -100,6 +114,21 @@ func isForbiddenHostname(hostname string) bool {
 
 	if strings.EqualFold(hostname, "localhost") {
 		return true
+	}
+
+	return false
+}
+
+func isWhitelisted(hostname string) bool {
+	hostname = strings.ToLower(strings.TrimSpace(hostname))
+
+	for _, domain := range whitelistedDomains {
+		if strings.EqualFold(hostname, domain) {
+			return true
+		}
+		if strings.HasSuffix(hostname, "."+domain) {
+			return true
+		}
 	}
 
 	return false
