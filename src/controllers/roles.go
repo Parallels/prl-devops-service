@@ -321,11 +321,11 @@ func GetRoleClaimsHandler() restapi.ControllerHandler {
 // @Description	This endpoint adds a claim to a role
 // @Tags			Roles
 // @Produce		json
-// @Param			id			path		string					true	"Role ID"
-// @Param			body		body		models.RoleClaimRequest	true	"Claim Name"
-// @Success		201			{object}	models.ClaimResponse
-// @Failure		400			{object}	models.ApiErrorDiagnosticsResponse
-// @Failure		401			{object}	models.OAuthErrorResponse
+// @Param			id		path		string					true	"Role ID"
+// @Param			body	body		models.RoleClaimRequest	true	"Claim Name"
+// @Success		201		{object}	models.ClaimResponse
+// @Failure		400		{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401		{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/auth/roles/{id}/claims  [post]

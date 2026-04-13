@@ -1,0 +1,91 @@
+---
+layout: post
+title:  "Release 1.0.0"
+date:   2026-04-13 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- Improved API return codes and error messages for authorization controller
+- Part of #415 
+- Improved API error return codes and error messages for cache controller. 
+- part of #415 
+- [x] New feature (non-breaking change which adds functionality)
+- Improved API return codes and error messages for ssh controller
+- Added the snapshots to the orchestrator machines
+- Fixed some issues with the roles and claims
+- Fixed a bug in the snapshot management when running it as a service
+- Fixed an issue where a new Host in the orchestrator never populated the VMs at start
+- Fixed an issue in the macOS service install and the modules
+- Fixes # (issue)
+- Improved API return codes and error messages for users controller. 
+- Improved API return codes and error messages for user-configs controller
+- Added internal flags for roles and claims
+- Added small fixes to the caching system
+- Updated the discord icon in the documentations
+- Updated the meeting scheduler link to parallels
+- Improved API return codes and error messages for events controller
+- Fixes different issues
+- Fixes # (issue)
+- Improved API return codes and error messages for api_key controller.
+- Implemented the new role/claim system
+- Created all the new endpoints to support the new system
+- Added new event emitter messages for users/roles/claims
+- Other small fixes
+- Fixed a issue where the messages for some of the jobs did not make sense
+- Added the ability to persist the record ids in the jobs
+- Added a tiny delay between the JOB_UPDATE and JOB_COMPLETE messages for the UI
+- Fixed an issue where the orchestrator would not update hardware in real time
+- Improved API return codes and error messages for claims controller.
+- Implemented the new `catalog_manager` module
+- Fixed an issue where the host was not being enabled by default
+- Added machine ids to the end jobs
+- Fixed several issues with our ssh deployment
+- Other small fixes
+- Improved API return codes and error messages for roles controller.
+- Added new user configuration endpoint to assist the UI in persisting user releated configurations
+- Fixes several issues with desync on orchestrator and the Hosts
+- Added linux and containers memory management
+- Improved the stats report for linux smoothing the UI spring effect
+- Fixed some of the automation issues found for the new ssh deploy
+- Fixed some other minor issues
+- Added the missing windows disk space for unblocking release
+- Updated PR flow to include macOS/Linux/Windows builds to detect these issues
+- Now the host will have fully sync diskspace tracking (this can be an external disk) #403 
+- We will use this disk space info to determine if we can create a VM in the host or not
+- Now we are also tracking the number of mac VM's running
+- New endpoint `/config/diskspace` users can query about disk space available for the cache dir and parallels home directory
+- Now we will brodcast diskspace and MacVMs running currently through the events channels 
+- Moved the docker container to GitHub Packages
+- Added new flow to register with orchestrator from host
+- Added a new endpoint to deploy a host from the orchestrator
+- Fixed an issue with the auto set of the modules that are enabled
+- Added a new module, cors, this will allow auto enabling of the cors that is needed for the UI
+- Changed the default api port from 80 to 3080
+- Created a new type of enrollment tokens for single use
+- Fixed an issue in the orchestrator that made the real time communication fail in some new hosts 
+- Other small fixes
+- Improve the concurrency when uploading
+- added a dynamic part size chunking
+- Fixed some issues during the job tracker
+- Implementing the new linux install flow from the cmd #405
+- Added the new version management and distribution channels
+- Added CORS by default, this will help the UI
+- Added a small fix for a diff issue when both arrays did not match in lenght
+- Fixed an issue where the modals where using dependencies that they should not have
+- Fixed and issue where the catalog manager was duplicatinf headers
+- Added the ability to force delete a vm, from the host and orchestrator
+- Bugfix fixed the deletion of virtual machines in the orchestrator, caused by variable shadowing 
+- Added the new async endpoint for the push #399 
+- Added some new fixes for the job tracker and reset of positions
+- Added a fix where job tracker would not keep message positions
+- Added a fix some work like compress and upload were not tracking correctly
+- other small fixes in the storage providers
+- Implemented new set of functions that will expose the list snapshots, create snapshots, delete snapshots, delete all snapshots for particular VM and revert the snapshot for host and orchestrator.
+- Created all the database entries for the snapshots and link them to the VMs. And also added them in to the event emitter.
+- Implemented code for emit events to our consumers on these changes using a new message type.
+- Created documentation for all the snapshot end points, refer the documentation for more info and examples.
+- Updating host resources in real-time, based on events from PDfM
+
+
