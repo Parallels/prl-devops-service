@@ -6,10 +6,10 @@ import "github.com/Parallels/prl-devops-service/errors"
 type DeployOrchestratorHostRequest struct {
 	// SSH connection details for the target host
 	SshHost            string `json:"ssh_host"`
-	SshPort            string `json:"ssh_port,omitempty"`             // defaults to "22"
+	SshPort            string `json:"ssh_port,omitempty"` // defaults to "22"
 	SshUser            string `json:"ssh_user"`
-	SshPassword        string `json:"ssh_password,omitempty"`         // mutually exclusive with SshKey
-	SshKey             string `json:"ssh_key,omitempty"`              // PEM-encoded private key
+	SshPassword        string `json:"ssh_password,omitempty"`          // mutually exclusive with SshKey
+	SshKey             string `json:"ssh_key,omitempty"`               // PEM-encoded private key
 	SshInsecureHostKey bool   `json:"ssh_insecure_host_key,omitempty"` // skip known_hosts verification
 	SudoPassword       string `json:"sudo_password,omitempty"`         // sudo password if different from ssh_password
 

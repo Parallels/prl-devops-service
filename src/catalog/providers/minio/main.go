@@ -226,7 +226,7 @@ func (s *MinioBucketProvider) PullFile(ctx basecontext.ApiContext, path string, 
 		return err
 	}
 
-	cw := writers.NewProgressWriter(f, fileSize, constants.ActionDownloadingPackFile)
+	cw := writers.NewProgressWriter(f, fileSize, constants.ActionDownloader)
 	cw.SetFilename("")
 	cw.SetPrefix(fmt.Sprintf("Pulling %s", filename))
 	cid := cw.CorrelationId()

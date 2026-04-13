@@ -21,6 +21,11 @@ type AuthorizationContext struct {
 	ApiKeyName         string
 	User               *models.ApiUser
 	AuthorizationError *models.OAuthErrorResponse
+	// InjectedClaims/InjectedRoles are set from X-Claims/X-Roles headers on
+	// trusted requests (microservices, catalog manager forwards). When present
+	// they override the user's JWT-based claims/roles for handler-level checks.
+	InjectedClaims []string
+	InjectedRoles  []string
 }
 
 var baseAuthorizationCtx *AuthorizationContext
@@ -80,6 +85,63 @@ func (c *AuthorizationContext) UserHasClaim(claim string) bool {
 	return false
 }
 
+// HasEffectiveRole checks the effective roles (InjectedRoles when present, else
+// User.Roles) for the given role, case-insensitively.
+func (c *AuthorizationContext) HasEffectiveRole(role string) bool {
+	for _, r := range c.GetEffectiveRoles() {
+		if strings.EqualFold(r, role) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasEffectiveClaim checks the effective claims (InjectedClaims when present,
+// else User.Claims) for the given claim, case-insensitively.
+func (c *AuthorizationContext) HasEffectiveClaim(claim string) bool {
+	for _, c := range c.GetEffectiveClaims() {
+		if strings.EqualFold(c, claim) {
+			return true
+		}
+	}
+	return false
+}
+
+// GetEffectiveClaims returns InjectedClaims if present (from a trusted X-Claims
+// header). Otherwise it returns the user's full merged claim set: if
+// User.EffectiveClaims is populated (includes role-inherited claims) its Name
+// values are used; if empty, falls back to the directly-assigned User.Claims.
+func (c *AuthorizationContext) GetEffectiveClaims() []string {
+	if len(c.InjectedClaims) > 0 {
+		return c.InjectedClaims
+	}
+	if c.User == nil {
+		return []string{}
+	}
+	if len(c.User.EffectiveClaims) > 0 {
+		claims := make([]string, 0, len(c.User.EffectiveClaims))
+		for _, ec := range c.User.EffectiveClaims {
+			if ec.Name != "" {
+				claims = append(claims, ec.Name)
+			}
+		}
+		return claims
+	}
+	return c.User.Claims
+}
+
+// GetEffectiveRoles returns InjectedRoles if present (from a trusted X-Roles
+// header), otherwise the user's own roles from their JWT.
+func (c *AuthorizationContext) GetEffectiveRoles() []string {
+	if len(c.InjectedRoles) > 0 {
+		return c.InjectedRoles
+	}
+	if c.User == nil {
+		return []string{}
+	}
+	return c.User.Roles
+}
+
 func CloneAuthorizationContext() *AuthorizationContext {
 	// Creating the new context using the default values if it does not exist
 	if baseAuthorizationCtx == nil {
@@ -88,14 +150,28 @@ func CloneAuthorizationContext() *AuthorizationContext {
 	}
 
 	newContext := AuthorizationContext{
-		Issuer:       baseAuthorizationCtx.Issuer,
-		Scope:        baseAuthorizationCtx.Scope,
-		Audiences:    make([]string, 0),
-		BaseUrl:      baseAuthorizationCtx.BaseUrl,
-		IsAuthorized: false,
-		RequestId:    "",
-		AuthorizedBy: "",
-		User:         nil,
+		Issuer:             baseAuthorizationCtx.Issuer,
+		Scope:              baseAuthorizationCtx.Scope,
+		Audiences:          make([]string, 0),
+		BaseUrl:            baseAuthorizationCtx.BaseUrl,
+		IsAuthorized:       false,
+		RequestId:          "",
+		AuthorizedBy:       "",
+		User:               nil,
+		IsMicroService:     baseAuthorizationCtx.IsMicroService,
+		IsSuperUser:        baseAuthorizationCtx.IsSuperUser,
+		ApiKeyName:         baseAuthorizationCtx.ApiKeyName,
+		AuthorizationError: baseAuthorizationCtx.AuthorizationError,
+	}
+
+	// Copy injected claims and roles (they are request-independent when set)
+	if len(baseAuthorizationCtx.InjectedClaims) > 0 {
+		newContext.InjectedClaims = make([]string, len(baseAuthorizationCtx.InjectedClaims))
+		copy(newContext.InjectedClaims, baseAuthorizationCtx.InjectedClaims)
+	}
+	if len(baseAuthorizationCtx.InjectedRoles) > 0 {
+		newContext.InjectedRoles = make([]string, len(baseAuthorizationCtx.InjectedRoles))
+		copy(newContext.InjectedRoles, baseAuthorizationCtx.InjectedRoles)
 	}
 
 	return &newContext

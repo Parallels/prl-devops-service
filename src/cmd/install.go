@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
@@ -27,6 +26,20 @@ func processInstall(ctx basecontext.ApiContext, cmd string) {
 		processHelp(constants.INSTALL_SERVICE_COMMAND)
 		os.Exit(0)
 	}
+
+	if subcommand == "service" {
+		filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
+		ctx.ToggleLogTimestamps(false)
+		if err := install.InstallService(ctx, filePath); err != nil {
+			ctx.LogErrorf(err.Error())
+			os.Exit(1)
+		}
+
+		cmdResult := InstallServiceResult{Success: true, Message: "Service installed successfully"}
+		_ = json.NewEncoder(os.Stdout).Encode(cmdResult)
+		os.Exit(0)
+	}
+
 	ctx.ToggleLogTimestamps(false)
 	ctx.DisableLog()
 	serviceprovider.InitServices(ctx)
@@ -50,40 +63,6 @@ func processInstall(ctx basecontext.ApiContext, cmd string) {
 	flags := make(map[string]string)
 
 	switch subcommand {
-	case "service":
-		filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
-		// helper.GetFlagValue has an off-by-one bug when parsing space-separated flags
-		// (e.g. --modules orchestrator).  Scan os.Args directly to support both
-		// --modules=value and --modules value formats reliably.
-		modulesFlag := ""
-		for i, arg := range os.Args {
-			if arg == "--modules" && i+1 < len(os.Args) && !strings.HasPrefix(os.Args[i+1], "--") {
-				modulesFlag = os.Args[i+1]
-				break
-			}
-			if strings.HasPrefix(arg, "--modules=") {
-				modulesFlag = strings.TrimPrefix(arg, "--modules=")
-				break
-			}
-		}
-		if modulesFlag != "" {
-			_ = os.Setenv(constants.ENABLED_MODULES_ENV_VAR, modulesFlag)
-		}
-		ctx.ToggleLogTimestamps(false)
-		if filePath != "" {
-			if err := install.InstallService(ctx, filePath); err != nil {
-				ctx.LogErrorf(err.Error())
-				os.Exit(1)
-			}
-		} else {
-			if err := install.InstallService(ctx, ""); err != nil {
-				ctx.LogErrorf(err.Error())
-				os.Exit(1)
-			} else {
-				cmdResult := InstallServiceResult{Success: true, Message: "Service installed successfully"}
-				_ = json.NewEncoder(os.Stdout).Encode(cmdResult)
-			}
-		}
 	case "brew":
 		result := providerSvc.InstallTool(userFlag, "brew", versionFlag, flags)
 		if !result.Result {

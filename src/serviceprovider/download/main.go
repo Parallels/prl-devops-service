@@ -46,6 +46,9 @@ func (s *DownloadService) DownloadFile(url string, headers map[string]string, de
 	if progressReporter != nil {
 		pw := writers.NewProgressWriter(file, progressReporter.Size, progressReporter.Action)
 		pw.SetJobId(progressReporter.JobId)
+		pw.SetCurrentAction(progressReporter.Action)
+		pw.SetPrefix(progressReporter.Prefix)
+		pw.SetFilename(progressReporter.Filename)
 		progressWriter = pw
 	} else {
 		progressWriter = file
