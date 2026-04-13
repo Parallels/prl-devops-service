@@ -91,12 +91,16 @@ func mergeNormalizedValues(defaults []string, configured string, normalize func(
 func buildCORSHandler(cfg *config.Config, handler http.Handler) http.Handler {
 	headers := defaultCORSAllowedHeaders()
 	if configuredHeaders := cfg.GetKey(constants.CORS_ALLOWED_HEADERS_ENV_VAR); configuredHeaders != "" {
-		headers = mergeNormalizedValues(defaultCORSAllowedHeaders(), configuredHeaders, http.CanonicalHeaderKey)
+		if strings.TrimSpace(configuredHeaders) != "*" {
+			headers = mergeNormalizedValues(defaultCORSAllowedHeaders(), configuredHeaders, http.CanonicalHeaderKey)
+		}
 	}
 
 	methods := defaultCORSAllowedMethods()
 	if configuredMethods := cfg.GetKey(constants.CORS_ALLOWED_METHODS_ENV_VAR); configuredMethods != "" {
-		methods = mergeNormalizedValues(defaultCORSAllowedMethods(), configuredMethods, strings.ToUpper)
+		if strings.TrimSpace(configuredMethods) != "*" {
+			methods = mergeNormalizedValues(defaultCORSAllowedMethods(), configuredMethods, strings.ToUpper)
+		}
 	}
 
 	origins := []string{"*"}

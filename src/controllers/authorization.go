@@ -6,10 +6,13 @@ import (
 	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
+	dbmodels "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
-	"github.com/Parallels/prl-devops-service/models"
+	models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
+	"github.com/Parallels/prl-devops-service/security/apikey"
 	bruteforceguard "github.com/Parallels/prl-devops-service/security/brute_force_guard"
 	"github.com/Parallels/prl-devops-service/security/jwt"
 	"github.com/Parallels/prl-devops-service/security/password"
@@ -79,32 +82,69 @@ func GetTokenHandler() restapi.ControllerHandler {
 			idOrEmail = "" // fallback, shouldn't happen due to validation
 		}
 
-		user, err := dbService.GetUser(ctx, idOrEmail)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUser")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
-			return
-		}
+		var user *dbmodels.User
+		var apiKeyId string
 
-		if user == nil {
-			getTokenDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "Invalid User or Password", "GetUser")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, http.StatusUnauthorized))
-			return
+		if request.ApiKey != "" {
+			result, err := apikey.ValidateApiKey(ctx, dbService, request.ApiKey)
+			if err != nil {
+				if apiErr, ok := err.(*apikey.ApiKeyValidationError); ok {
+					getTokenDiag.AddError(strconv.Itoa(apiErr.Code), err.Error(), apiErr.Component)
+					ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, apiErr.Code))
+				} else {
+					rsp := models.NewFromError(err)
+					getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ValidateApiKey")
+					ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
+				}
+				return
+			}
+
+			apiKeyId = result.ApiKeyId
+			if result.UserID != "" {
+				user, err = dbService.GetUser(ctx, result.UserID)
+				if err != nil || user == nil {
+					getTokenDiag.AddError(strconv.Itoa(http.StatusInternalServerError), "User not found", "GetUser")
+					ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, http.StatusInternalServerError))
+					return
+				}
+			} else {
+				user, err = dbService.GetUser(ctx, constants.ROOT_USER_ID)
+				if err != nil {
+					getTokenDiag.AddError(strconv.Itoa(http.StatusInternalServerError), "Root user not found", "GetRootUser")
+					ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, http.StatusInternalServerError))
+					return
+				}
+			}
+		} else {
+			user, err = dbService.GetUser(ctx, idOrEmail)
+			if err != nil {
+				rsp := models.NewFromError(err)
+				getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUser")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
+				return
+			}
+
+			if user == nil {
+				getTokenDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "Invalid User or Password", "GetUser")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, http.StatusUnauthorized))
+				return
+			}
 		}
 
 		bruteForceSvc := bruteforceguard.Get()
 
 		passwdSvc := password.Get()
-		if err := passwdSvc.Compare(request.Password, user.ID, user.Password); err != nil {
-			rsp := models.NewFromError(err)
-			getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Compare")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
+		if request.ApiKey == "" {
+			if err := passwdSvc.Compare(request.Password, user.ID, user.Password); err != nil {
+				rsp := models.NewFromError(err)
+				getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Compare")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
 
-			if diag := bruteForceSvc.Process(user.ID, false, "Invalid Password"); diag.HasErrors() {
-				ctx.LogErrorf("Error processing brute force guard: %v", diag)
+				if diag := bruteForceSvc.Process(user.ID, false, "Invalid Password"); diag.HasErrors() {
+					ctx.LogErrorf("Error processing brute force guard: %v", diag)
+				}
+				return
 			}
-			return
 		}
 
 		userRoles := make([]string, 0)
@@ -122,14 +162,19 @@ func GetTokenHandler() restapi.ControllerHandler {
 			"roles":    userRoles,
 			"claims":   userClaims,
 		}
+		if apiKeyId != "" {
+			claims["api_key_id"] = apiKeyId
+		}
 		tokenSvc := jwt.Get()
 		tokenStr, err := tokenSvc.Sign(claims)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Sign")
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
-			if diag := bruteForceSvc.Process(user.ID, false, err.Error()); diag.HasErrors() {
-				ctx.LogErrorf("Error processing brute force guard: %v", diag)
+			if request.ApiKey == "" {
+				if diag := bruteForceSvc.Process(user.ID, false, err.Error()); diag.HasErrors() {
+					ctx.LogErrorf("Error processing brute force guard: %v", diag)
+				}
 			}
 			return
 		}
@@ -138,25 +183,31 @@ func GetTokenHandler() restapi.ControllerHandler {
 			rsp := models.NewFromError(err)
 			getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Parse")
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
-			if diag := bruteForceSvc.Process(user.ID, false, err.Error()); diag.HasErrors() {
-				ctx.LogErrorf("Error processing brute force guard: %v", diag)
+			if request.ApiKey == "" {
+				if diag := bruteForceSvc.Process(user.ID, false, err.Error()); diag.HasErrors() {
+					ctx.LogErrorf("Error processing brute force guard: %v", diag)
+				}
 			}
 			return
 		}
 
+		responseEmail := user.Email
+
 		response := models.LoginResponse{
 			Token:     tokenStr,
-			Email:     request.Email,
+			Email:     responseEmail,
 			ExpiresAt: int64(token.Claims["exp"].(float64)),
 		}
 
-		if diag := bruteForceSvc.Process(user.ID, true, "Success"); diag.HasErrors() {
-			ctx.LogErrorf("Error processing brute force guard: %v", diag)
+		if request.ApiKey == "" {
+			if diag := bruteForceSvc.Process(user.ID, true, "Success"); diag.HasErrors() {
+				ctx.LogErrorf("Error processing brute force guard: %v", diag)
+			}
 		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
-		ctx.LogInfof("User %s logged in", request.Email)
+		ctx.LogInfof("User %s logged in", responseEmail)
 	}
 }
 

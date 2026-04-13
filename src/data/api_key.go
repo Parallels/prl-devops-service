@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -46,8 +47,8 @@ func (j *JsonDatabase) GetApiKey(ctx basecontext.ApiContext, idOrName string) (*
 	return nil, ErrApiKeyNotFound
 }
 
-// GetUserByApiKey retrieves a user linked to an API key. If the key has no associated user,
-// it returns nil, nil so the caller can fallback to the system root user.
+// GetUserByApiKey retrieves a user linked to an API key. If the key has no associated user
+// or the user doesn't exist, it returns the system root user.
 func (j *JsonDatabase) GetUserByApiKey(ctx basecontext.ApiContext, apiKey string) (*models.User, error) {
 	apiKeyRec, err := j.GetApiKey(ctx, apiKey)
 	if err != nil {
@@ -57,10 +58,15 @@ func (j *JsonDatabase) GetUserByApiKey(ctx basecontext.ApiContext, apiKey string
 		return nil, ErrApiKeyNotFound
 	}
 	if apiKeyRec.UserID != "" {
-		return j.GetUser(ctx, apiKeyRec.UserID)
+		user, err := j.GetUser(ctx, apiKeyRec.UserID)
+		if err != nil || user == nil {
+			// User doesn't exist; return root user
+			return j.GetUser(ctx, constants.ROOT_USER_ID)
+		}
+		return user, nil
 	}
-	// No user linked; treat as root fallback
-	return nil, nil
+	// No user linked; return root user
+	return j.GetUser(ctx, constants.ROOT_USER_ID)
 }
 
 func (j *JsonDatabase) CreateApiKey(ctx basecontext.ApiContext, apiKey models.ApiKey) (*models.ApiKey, error) {

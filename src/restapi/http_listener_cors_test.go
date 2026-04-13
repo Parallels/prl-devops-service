@@ -73,3 +73,23 @@ func TestBuildCORSHandler_TrimsConfiguredOrigins(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Equal(t, "http://localhost:1421", rr.Header().Get("Access-Control-Allow-Origin"))
 }
+
+func TestBuildCORSHandler_WildcardHeaders(t *testing.T) {
+	t.Setenv(constants.CORS_ALLOWED_HEADERS_ENV_VAR, "*")
+	t.Setenv(constants.CORS_ALLOWED_METHODS_ENV_VAR, "*")
+
+	cfg := config.New(basecontext.NewBaseContext())
+	handler := buildCORSHandler(cfg, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	req := newCORSPreflightRequest("http://localhost:1421", http.MethodPut, "Content-Type")
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "*", rr.Header().Get("Access-Control-Allow-Origin"))
+	assert.NotEmpty(t, rr.Header().Get("Access-Control-Allow-Headers"))
+	assert.NotEmpty(t, rr.Header().Get("Access-Control-Allow-Methods"))
+}

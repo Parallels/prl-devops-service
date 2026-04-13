@@ -5,13 +5,12 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/models"
-	"github.com/Parallels/prl-devops-service/security/password"
+	"github.com/Parallels/prl-devops-service/security/apikey"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
@@ -46,53 +45,14 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string, roleC
 				ErrorDescription: "The Api Key is not valid",
 			}
 
-			apiKey, err := extractApiKey(r.Header)
+			db := serviceprovider.Get().JsonDatabase
+			_ = db.Connect(baseCtx)
+
+			result, err := apikey.ValidateApiKey(baseCtx, db, r.Header.Get("X-Api-Key"))
 			if err != nil {
 				authError.ErrorDescription = err.Error()
 				authorizationContext.AuthorizationError = &authError
-				baseCtx.LogInfof("No Api Key was found in the request, skipping: %v", err)
-				ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
-				next.ServeHTTP(w, r.WithContext(ctx))
-				return
-			}
-			isValid := true
-			db := serviceprovider.Get().JsonDatabase
-			_ = db.Connect(baseCtx)
-			dbApiKey, err := db.GetApiKey(baseCtx, apiKey.Key)
-
-			if err != nil || dbApiKey == nil {
-				isValid = false
-			}
-
-			if isValid {
-				if dbApiKey.Revoked {
-					isValid = false
-					authError.ErrorDescription = "Api Key has been revoked"
-				}
-
-				if isValid && dbApiKey.ExpiresAt != "" {
-					expiresAt, err := time.Parse(time.RFC3339Nano, dbApiKey.ExpiresAt)
-					if err == nil {
-						if time.Now().UTC().After(expiresAt) {
-							isValid = false
-							authError.ErrorDescription = "Api Key has expired"
-						}
-					}
-				}
-			}
-			if isValid {
-				passwdSvc := password.Get()
-				if err := passwdSvc.Compare(apiKey.Value, dbApiKey.ID, dbApiKey.Secret); err != nil {
-					isValid = false
-					authError.ErrorDescription = "Api Key is not Valid"
-				}
-			}
-
-			if !isValid {
-				baseCtx.LogInfof("The Api Key is not valid")
-				authorizationContext.IsAuthorized = false
-				authorizationContext.AuthorizationError = &authError
-
+				baseCtx.LogInfof("The Api Key is not valid: %v", err)
 				ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
@@ -101,7 +61,7 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string, roleC
 			authorizationContext.IsAuthorized = true
 			authorizationContext.IsMicroService = true
 			authorizationContext.AuthorizedBy = "ApiKeyAuthorization"
-			authorizationContext.ApiKeyName = dbApiKey.Name
+			authorizationContext.ApiKeyName = result.ApiKeyId
 			authorizationContext.AuthorizationError = nil
 			ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
 			baseCtx.LogInfof("ApiKey Authorization layer finished")

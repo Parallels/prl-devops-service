@@ -205,6 +205,10 @@ const (
 )
 
 const (
+	ROOT_USER_EMAIL = "root@localhost"
+	ROOT_USER_NAME  = "root"
+	ROOT_USER_ID    = "root"
+
 	USER_ROLE       = "USER"
 	ADMIN_ROLE      = "ADMIN"
 	SUPER_USER_ROLE = "SUPER_USER"
