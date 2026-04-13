@@ -164,10 +164,10 @@ func GetUserConfigHandler() restapi.ControllerHandler {
 // @Description	This endpoint creates a configuration entry for the authenticated user
 // @Tags			User Configs
 // @Produce		json
-// @Param			userConfig	body	models.UserConfigRequest	true	"Body"
-// @Success		201	{object}	models.UserConfigResponse
-// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
-// @Failure		401	{object}	models.ApiErrorDiagnosticsResponse
+// @Param			userConfig	body		models.UserConfigRequest	true	"Body"
+// @Success		201			{object}	models.UserConfigResponse
+// @Failure		400			{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		401			{object}	models.ApiErrorDiagnosticsResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/user/configs [post]
@@ -233,7 +233,7 @@ func CreateUserConfigHandler() restapi.ControllerHandler {
 // @Summary		Updates a user config
 // @Description	This endpoint updates a configuration entry for the authenticated user
 // @Tags			User Configs
-// @Param			id			path	string						true	"Config ID or Slug"
+// @Param			id			path	string							true	"Config ID or Slug"
 // @Param			userConfig	body	models.UserConfigUpdateRequest	true	"Body"
 // @Produce		json
 // @Success		200	{object}	models.UserConfigResponse

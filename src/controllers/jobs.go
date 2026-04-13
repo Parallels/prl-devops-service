@@ -462,7 +462,7 @@ func runDebugProfilePullRemote(jobId string, jobManager *jobs.JobManagerService)
 	instantStep(constants.ActionStartingMachine, "debug-vm started")
 
 	recordId := "rec_remote_" + helpers.GenerateId()[:8]
-  recordName := "debug-vm"
+	recordName := "debug-vm"
 	_, _ = jobManager.UpdateJobResultRecord(jobId, recordId, recordName, "vm_deployment_record", "debug-vm-link-id")
 
 	_ = jobManager.MarkJobComplete(jobId, "pull_remote debug task finished")

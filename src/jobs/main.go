@@ -233,8 +233,8 @@ func (jms *JobManagerService) UpdateJobResultRecord(jobId string, recordId strin
 
 	job.ResultRecordId = recordId
 	job.ResultRecordType = recordType
-  job.ResultRecordName = recordName
-  job.ResultRecordLinkId = recordLinkId
+	job.ResultRecordName = recordName
+	job.ResultRecordLinkId = recordLinkId
 
 	err = jms.db.UpdateJob(jms.apiCtx, *job)
 	if err != nil {
@@ -291,9 +291,8 @@ func (jms *JobManagerService) MarkJobCompleteWithRecord(jobID string, result str
 	job.Result = result
 	job.ResultRecordId = recordID
 	job.ResultRecordType = recordType
-  job.ResultRecordName = recordName
-  job.ResultRecordLinkId = recordLinkId
-
+	job.ResultRecordName = recordName
+	job.ResultRecordLinkId = recordLinkId
 
 	err = jms.db.UpdateJob(jms.apiCtx, *job)
 	if err != nil {
