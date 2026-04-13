@@ -2512,7 +2512,7 @@ func UpdateCatalogManifestProviderHandler() restapi.ControllerHandler {
 // @Param			catalogId		path		string										true	"Catalog ID"
 // @Param			version			path		string										true	"Version"
 // @Param			architecture	path		string										true	"Architecture"
-// @Param			request			body		models.VirtualMachineCatalogManifestPatch	true	"Body"
+// @Param			request			body		models.UpdateCatalogManifestMetadataRequest	true	"Body"
 // @Success		200				{object}	models.CatalogManifest
 // @Failure		400				{object}	models.ApiErrorResponse
 // @Failure		401				{object}	models.OAuthErrorResponse
