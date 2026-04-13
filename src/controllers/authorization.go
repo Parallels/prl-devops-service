@@ -70,7 +70,16 @@ func GetTokenHandler() restapi.ControllerHandler {
 			return
 		}
 
-		user, err := dbService.GetUser(ctx, request.Email)
+		var idOrEmail string
+		if request.Email != "" {
+			idOrEmail = request.Email
+		} else if request.Username != "" {
+			idOrEmail = request.Username
+		} else {
+			idOrEmail = "" // fallback, shouldn't happen due to validation
+		}
+
+		user, err := dbService.GetUser(ctx, idOrEmail)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUser")

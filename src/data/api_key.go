@@ -46,6 +46,23 @@ func (j *JsonDatabase) GetApiKey(ctx basecontext.ApiContext, idOrName string) (*
 	return nil, ErrApiKeyNotFound
 }
 
+// GetUserByApiKey retrieves a user linked to an API key. If the key has no associated user,
+// it returns nil, nil so the caller can fallback to the system root user.
+func (j *JsonDatabase) GetUserByApiKey(ctx basecontext.ApiContext, apiKey string) (*models.User, error) {
+	apiKeyRec, err := j.GetApiKey(ctx, apiKey)
+	if err != nil {
+		return nil, ErrApiKeyNotFound
+	}
+	if apiKeyRec.Revoked {
+		return nil, ErrApiKeyNotFound
+	}
+	if apiKeyRec.UserID != "" {
+		return j.GetUser(ctx, apiKeyRec.UserID)
+	}
+	// No user linked; treat as root fallback
+	return nil, nil
+}
+
 func (j *JsonDatabase) CreateApiKey(ctx basecontext.ApiContext, apiKey models.ApiKey) (*models.ApiKey, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
