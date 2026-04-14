@@ -3,9 +3,11 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -27,13 +29,11 @@ func PerformDbTestHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		performDBDiag := errors.NewDiagnostics("/performance/db")
 		var request models.PerformanceRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			performDBDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "MapRequestBody")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(performDBDiag, http.StatusBadRequest))
 			return
 		}
 
@@ -51,7 +51,9 @@ func PerformDbTestHandler() restapi.ControllerHandler {
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			performDBDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(performDBDiag, rsp.Code))
 			return
 		}
 
