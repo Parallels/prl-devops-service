@@ -1,5 +1,55 @@
 basePath: /api
 definitions:
+  constants.EventType:
+    enum:
+    - global
+    - pdfm
+    - system
+    - system_logs
+    - health
+    - orchestrator
+    - stats
+    - reverse_proxy
+    - catalog_cache
+    - job_manager
+    - auth
+    type: string
+    x-enum-comments:
+      EventTypeAuth: Auth events (users, roles, claims)
+      EventTypeCatalogCache: Catalog cache events
+      EventTypeGlobal: Broadcasts to all subscribers
+      EventTypeHealth: Health check events
+      EventTypeJobManager: Job Manager events
+      EventTypeOrchestrator: Orchestrator events
+      EventTypePDFM: PDFM-specific events
+      EventTypeReverseProxy: Reverse Proxy events
+      EventTypeStats: Statistics events
+      EventTypeSystem: System-level events
+      EventTypeSystemLogs: System logs events
+    x-enum-descriptions:
+    - Broadcasts to all subscribers
+    - PDFM-specific events
+    - System-level events
+    - System logs events
+    - Health check events
+    - Orchestrator events
+    - Statistics events
+    - Reverse Proxy events
+    - Catalog cache events
+    - Job Manager events
+    - Auth events (users, roles, claims)
+    x-enum-varnames:
+    - EventTypeGlobal
+    - EventTypePDFM
+    - EventTypeSystem
+    - EventTypeSystemLogs
+    - EventTypeHealth
+    - EventTypeOrchestrator
+    - EventTypeStats
+    - EventTypeReverseProxy
+    - EventTypeCatalogCache
+    - EventTypeJobManager
+    - EventTypeAuth
   constants.JobState:
     enum:
     - init
@@ -851,8 +901,24 @@ definitions:
       Support USB 3.0:
         type: string
     type: object
+  github_com_Parallels_prl-devops-service_models.UserConfigValueType:
+    enum:
+    - string
+    - bool
+    - int
+    - json
+    type: string
+    x-enum-varnames:
+    - UserConfigValueTypeString
+    - UserConfigValueTypeBool
+    - UserConfigValueTypeInt
+    - UserConfigValueTypeJson
   github_com_Parallels_prl-devops-service_models.VMSnapshot:
     properties:
+      children:
+        items:
+          $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.VMSnapshot'
+        type: array
       current:
         type: boolean
       date:
@@ -969,6 +1035,10 @@ definitions:
         items:
           type: string
         type: array
+      effective_claims:
+        items:
+          $ref: '#/definitions/models.UserClaimResponse'
+        type: array
       email:
         type: string
       id:
@@ -1016,6 +1086,24 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.ClaimGroupResourceResponse:
+    properties:
+      claims:
+        items:
+          $ref: '#/definitions/models.ClaimResponse'
+        type: array
+      resource:
+        type: string
+    type: object
+  models.ClaimGroupResponse:
+    properties:
+      group:
+        type: string
+      resources:
+        items:
+          $ref: '#/definitions/models.ClaimGroupResourceResponse'
+        type: array
+    type: object
   models.ClaimRequest:
     properties:
       name:
@@ -1023,9 +1111,19 @@ definitions:
     type: object
   models.ClaimResponse:
     properties:
+      action:
+        type: string
+      description:
+        type: string
+      group:
+        type: string
       id:
         type: string
+      internal:
+        type: boolean
       name:
+        type: string
+      resource:
         type: string
       users:
         items:
@@ -1298,6 +1396,64 @@ definitions:
       username:
         type: string
     type: object
+  models.EventClientInfo:
+    properties:
+      connected_at:
+        description: Connection timestamp
+        type: string
+      event_subscriptions:
+        description: List of type subscriptions
+        items:
+          $ref: '#/definitions/constants.EventType'
+        type: array
+      id:
+        description: Unique client identifier
+        type: string
+      is_alive:
+        description: Connection health status
+        type: boolean
+      last_ping_at:
+        description: Last ping sent
+        type: string
+      last_pong_at:
+        description: Last pong received
+        type: string
+      queue_depth:
+        description: Number of pending outbound messages
+        type: integer
+      user_id:
+        description: User ID from authentication
+        type: string
+      username:
+        description: Username from authentication
+        type: string
+    type: object
+  models.EventEmitterStats:
+    properties:
+      clients:
+        description: List of connected clients (admin only)
+        items:
+          $ref: '#/definitions/models.EventClientInfo'
+        type: array
+      messages_sent:
+        description: Total messages sent since start
+        type: integer
+      start_time:
+        description: When the emitter started
+        type: string
+      total_clients:
+        type: integer
+      total_subscriptions:
+        type: integer
+      type_stats:
+        additionalProperties:
+          type: integer
+        description: Number of subscribers per type
+        type: object
+      uptime:
+        description: Human-readable uptime
+        type: string
+    type: object
   models.HostCatalogCacheItem:
     properties:
       architecture:
@@ -1448,6 +1604,10 @@ definitions:
         type: string
       result_record_id:
         type: string
+      result_record_link_id:
+        type: string
+      result_record_name:
+        type: string
       result_record_type:
         type: string
       state:
@@ -1566,6 +1726,7 @@ definitions:
     - 10
     - 11
     - 12
+    format: int64
     type: integer
     x-enum-varnames:
     - OAuthInvalidRequestError
@@ -1649,6 +1810,8 @@ definitions:
         type: string
       id:
         type: string
+      is_local:
+        type: boolean
       is_log_streaming_enabled:
         type: boolean
       is_reverse_proxy_enabled:
@@ -1981,15 +2144,32 @@ definitions:
       skip_resume:
         type: boolean
     type: object
+  models.RoleClaimRequest:
+    properties:
+      name:
+        type: string
+    type: object
   models.RoleRequest:
     properties:
+      claims:
+        items:
+          type: string
+        type: array
       name:
         type: string
     type: object
   models.RoleResponse:
     properties:
+      claims:
+        items:
+          $ref: '#/definitions/models.ClaimResponse'
+        type: array
+      description:
+        type: string
       id:
         type: string
+      internal:
+        type: boolean
       name:
         type: string
       users:
@@ -2128,6 +2308,73 @@ definitions:
         description: User ID from authentication
         type: string
     type: object
+  models.UpdateCatalogManifestMetadataRequest:
+    properties:
+      description:
+        type: string
+      required_claims:
+        items:
+          type: string
+        type: array
+      required_roles:
+        items:
+          type: string
+        type: array
+      tags:
+        items:
+          type: string
+        type: array
+    type: object
+  models.UserClaimResponse:
+    properties:
+      id:
+        type: string
+      is_inherited:
+        type: boolean
+      name:
+        type: string
+      source_role:
+        type: string
+    type: object
+  models.UserConfigRequest:
+    properties:
+      name:
+        type: string
+      slug:
+        type: string
+      type:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.UserConfigValueType'
+      value:
+        type: string
+    type: object
+  models.UserConfigResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+      type:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.UserConfigValueType'
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      value:
+        type: string
+    type: object
+  models.UserConfigUpdateRequest:
+    properties:
+      name:
+        type: string
+      type:
+        $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.UserConfigValueType'
+      value:
+        type: string
+    type: object
   models.UserCreateRequest:
     properties:
       claims:
@@ -2173,6 +2420,8 @@ definitions:
   models.VirtualMachineCatalogManifestPatch:
     properties:
       connection:
+        type: string
+      description:
         type: string
       required_claims:
         items:
@@ -2337,7 +2586,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 0.9.21
+  version: 1.0.0
 paths:
   /config/diskspace:
     post:
@@ -2468,7 +2717,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2498,7 +2747,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2526,7 +2775,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2555,7 +2804,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2583,7 +2832,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2609,7 +2858,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2639,7 +2888,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2667,7 +2916,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2696,7 +2945,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2705,6 +2954,32 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Gets a claim
+      tags:
+      - Claims
+  /v1/auth/claims/grouped:
+    get:
+      description: This endpoint returns all claims organised by group and resource
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ClaimGroupResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all claims grouped for the matrix UI
       tags:
       - Claims
   /v1/auth/roles:
@@ -2722,7 +2997,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2734,7 +3009,7 @@ paths:
       tags:
       - Roles
     post:
-      description: This endpoint returns a role
+      description: This endpoint creates a role
       parameters:
       - description: Role Request
         in: body
@@ -2745,14 +3020,14 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             $ref: '#/definitions/models.RoleResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2760,7 +3035,7 @@ paths:
       security:
       - ApiKeyAuth: []
       - BearerAuth: []
-      summary: Gets a role
+      summary: Creates a role
       tags:
       - Roles
   /v1/auth/roles/{id}:
@@ -2780,7 +3055,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2809,7 +3084,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2818,6 +3093,106 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Gets a role
+      tags:
+      - Roles
+  /v1/auth/roles/{id}/claims:
+    get:
+      description: This endpoint returns all claims associated with a role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ClaimResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all claims for a role
+      tags:
+      - Roles
+    post:
+      description: This endpoint adds a claim to a role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Claim Name
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.RoleClaimRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.ClaimResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Adds a claim to a role
+      tags:
+      - Roles
+  /v1/auth/roles/{id}/claims/{claim_id}:
+    delete:
+      description: This endpoint removes a claim from a role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Claim ID
+        in: path
+        name: claim_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Removes a claim from a role
       tags:
       - Roles
   /v1/auth/token:
@@ -2840,11 +3215,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.OAuthErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
       summary: Generates a token
       tags:
       - Authorization
@@ -2868,11 +3243,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.OAuthErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
       summary: Validates a token
       tags:
       - Authorization
@@ -2891,7 +3266,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2949,7 +3324,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -2978,7 +3353,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3008,7 +3383,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3038,7 +3413,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3073,7 +3448,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3106,7 +3481,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3136,7 +3511,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3171,7 +3546,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3204,7 +3579,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3232,7 +3607,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3257,7 +3632,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3286,7 +3661,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3319,7 +3694,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3819,6 +4194,56 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Downloads a catalog manifest version
+      tags:
+      - Catalogs
+  /v1/catalog/{catalogId}/{version}/{architecture}/metadata:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint atomically updates description, tags, required claims,
+        and required roles for a catalog manifest version. Omit a field to leave it
+        unchanged.
+      parameters:
+      - description: Catalog ID
+        in: path
+        name: catalogId
+        required: true
+        type: string
+      - description: Version
+        in: path
+        name: version
+        required: true
+        type: string
+      - description: Architecture
+        in: path
+        name: architecture
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateCatalogManifestMetadataRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.CatalogManifest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Updates metadata for a catalog manifest version
       tags:
       - Catalogs
   /v1/catalog/{catalogId}/{version}/{architecture}/revoke:
@@ -6501,6 +6926,43 @@ paths:
       summary: Unregister a virtual machine in a orchestrator host
       tags:
       - Orchestrator
+  /v1/orchestrator/hosts/{id}/machines/async:
+    post:
+      description: This endpoint creates a virtual machine in a specific orchestrator
+        host in the background and returns a Job ID to track progress
+      parameters:
+      - description: Host ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Create Virtual Machine Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateVirtualMachineRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.JobResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a virtual machine in a specific orchestrator host asynchronously
+      tags:
+      - Orchestrator
   /v1/orchestrator/hosts/{id}/machines/register:
     post:
       description: This endpoint registers a virtual machine in a orchestrator host
@@ -7335,6 +7797,176 @@ paths:
       summary: Configures orchestrator virtual machine
       tags:
       - Orchestrator
+  /v1/orchestrator/machines/{id}/snapshots:
+    delete:
+      description: This endpoint deletes all snapshots of an orchestrator virtual
+        machine (host resolved automatically)
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes all snapshots of an orchestrator virtual machine
+      tags:
+      - Orchestrator
+    get:
+      description: This endpoint lists snapshots of an orchestrator virtual machine
+        (host resolved automatically)
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ListVMSnapshotResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Lists snapshots of an orchestrator virtual machine
+      tags:
+      - Orchestrator
+    post:
+      description: This endpoint creates a snapshot for an orchestrator virtual machine
+        (host resolved automatically)
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Create Snapshot Request
+        in: body
+        name: createRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateVMSnapshotRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.CreateVMSnapshotResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a snapshot for an orchestrator virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/machines/{id}/snapshots/{snapshot_id}:
+    delete:
+      description: This endpoint deletes a snapshot of an orchestrator virtual machine
+        (host resolved automatically)
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Snapshot ID
+        in: path
+        name: snapshot_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a snapshot of an orchestrator virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/machines/{id}/snapshots/{snapshot_id}/revert:
+    post:
+      description: This endpoint reverts an orchestrator virtual machine to a snapshot
+        (host resolved automatically)
+      parameters:
+      - description: Virtual Machine ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Snapshot ID
+        in: path
+        name: snapshot_id
+        required: true
+        type: string
+      - description: Revert Snapshot Request
+        in: body
+        name: revertRequest
+        schema:
+          $ref: '#/definitions/models.RevertVMSnapshotRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.ApiCommonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Reverts an orchestrator virtual machine to a snapshot
+      tags:
+      - Orchestrator
   /v1/orchestrator/machines/{id}/start:
     put:
       description: This endpoint starts orchestrator virtual machine
@@ -7457,6 +8089,38 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Suspends orchestrator virtual machine
+      tags:
+      - Orchestrator
+  /v1/orchestrator/machines/async:
+    post:
+      description: This endpoint creates a virtual machine in one of the orchestrator
+        hosts in the background and returns a Job ID to track progress
+      parameters:
+      - description: Create Virtual Machine Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateVirtualMachineRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/models.JobResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a virtual machine in one of the orchestrator hosts asynchronously
       tags:
       - Orchestrator
   /v1/orchestrator/overview/{id}/resources:
@@ -7921,19 +8585,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
             $ref: '#/definitions/models.OAuthErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
       summary: Execute SSH Command
       tags:
       - SSH
@@ -8100,6 +8760,217 @@ paths:
       summary: Updates a packer template
       tags:
       - Packer Templates
+  /v1/user/configs:
+    get:
+      description: This endpoint returns all configuration entries for the authenticated
+        user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.UserConfigResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets all user configs
+      tags:
+      - User Configs
+    post:
+      description: This endpoint creates a configuration entry for the authenticated
+        user
+      parameters:
+      - description: Body
+        in: body
+        name: userConfig
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.UserConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Creates a user config
+      tags:
+      - User Configs
+  /v1/user/configs/{id}:
+    delete:
+      description: This endpoint deletes a configuration entry for the authenticated
+        user
+      parameters:
+      - description: Config ID or Slug
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Deletes a user config
+      tags:
+      - User Configs
+    get:
+      description: This endpoint returns a single configuration entry for the authenticated
+        user
+      parameters:
+      - description: Config ID or Slug
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Gets a user config by id or slug
+      tags:
+      - User Configs
+    put:
+      description: This endpoint updates a configuration entry for the authenticated
+        user
+      parameters:
+      - description: Config ID or Slug
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Body
+        in: body
+        name: userConfig
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserConfigUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Updates a user config
+      tags:
+      - User Configs
+  /v1/ws/clients:
+    get:
+      description: Returns all currently connected WebSocket clients with queue depth
+        and ping/pong timestamps. Useful for diagnosing stale or dead clients whose
+        queues are filling up.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.EventClientInfo'
+            type: array
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: List connected WebSocket clients
+      tags:
+      - Events
+  /v1/ws/stats:
+    get:
+      description: Returns aggregate statistics including total connected clients,
+        subscription counts per event type, uptime, and per-client details with queue
+        depths.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EventEmitterStats'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Get WebSocket event emitter statistics
+      tags:
+      - Events
   /v1/ws/subscribe:
     get:
       description: This endpoint upgrades the HTTP connection to WebSocket and subscribes
@@ -8122,19 +8993,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "503":
           description: Service Unavailable
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
       security:
       - ApiKeyAuth: []
       - BearerAuth: []
@@ -8164,19 +9035,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "503":
           description: Service Unavailable
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
       security:
       - ApiKeyAuth: []
       - BearerAuth: []

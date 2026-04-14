@@ -17,7 +17,7 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/ws/subscribe").
-    WithAuthorization().
+		WithAuthorization().
 		// WithRequiredClaim(constants.READ_ONLY_CLAIM).
 		WithHandler(WebSocketSubscribeHandler()).
 		Register()
@@ -26,7 +26,7 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.POST).
 		WithVersion(version).
 		WithPath("/ws/unsubscribe").
-    WithAuthorization().
+		WithAuthorization().
 		// WithRequiredClaim(constants.READ_ONLY_CLAIM).
 		WithHandler(WebSocketUnsubscribeHandler()).
 		Register()
@@ -35,7 +35,7 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/ws/clients").
-    WithAuthorization().
+		WithAuthorization().
 		// WithRequiredClaim(constants.READ_ONLY_CLAIM).
 		WithHandler(WebSocketClientsHandler()).
 		Register()
@@ -44,7 +44,7 @@ func registerEventHandlers(ctx basecontext.ApiContext, version string) {
 		WithMethod(restapi.GET).
 		WithVersion(version).
 		WithPath("/ws/stats").
-    WithAuthorization().
+		WithAuthorization().
 		// WithRequiredClaim(constants.READ_ONLY_CLAIM).
 		WithHandler(WebSocketStatsHandler()).
 		Register()
