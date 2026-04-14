@@ -53,6 +53,7 @@ func Start(ctx basecontext.ApiContext) {
 	cfg := config.Get()
 	schemaMigrations := make([]migrations.Migration, 0)
 	schemaMigrations = append(schemaMigrations, migrations.Version0_6_0{})
+	schemaMigrations = append(schemaMigrations, migrations.AddApiKeyOwnClaims{})
 
 	system := system.SystemService{}
 	if system.GetOperatingSystem() != "macos" {

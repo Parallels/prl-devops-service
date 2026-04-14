@@ -70,6 +70,12 @@ var ClaimCategoryMap = map[string]ClaimCategory{
 	UPDATE_API_KEY_CLAIM: {ClaimGroupAdministration, "API Key", ClaimActionUpdate},
 	DELETE_API_KEY_CLAIM: {ClaimGroupAdministration, "API Key", ClaimActionDelete},
 
+	// ── Administration › API Key (Own) ────────────────────────────────────
+	LIST_OWN_API_KEY_CLAIM:   {ClaimGroupAdministration, "API Key (Own)", ClaimActionRead},
+	CREATE_OWN_API_KEY_CLAIM: {ClaimGroupAdministration, "API Key (Own)", ClaimActionCreate},
+	UPDATE_OWN_API_KEY_CLAIM: {ClaimGroupAdministration, "API Key (Own)", ClaimActionUpdate},
+	DELETE_OWN_API_KEY_CLAIM: {ClaimGroupAdministration, "API Key (Own)", ClaimActionDelete},
+
 	// ── Administration › Role ─────────────────────────────────────────────
 	LIST_ROLE_CLAIM:   {ClaimGroupAdministration, "Role", ClaimActionRead},
 	CREATE_ROLE_CLAIM: {ClaimGroupAdministration, "Role", ClaimActionCreate},

@@ -17,8 +17,8 @@ type ApiKeyValidationResult struct {
 }
 
 type ApiKeyValidationError struct {
-	Code    int
-	Message string
+	Code      int
+	Message   string
 	Component string
 }
 
@@ -32,8 +32,8 @@ func ValidateApiKey(ctx basecontext.ApiContext, dbService interface {
 	decodedKey, err := base64.StdEncoding.DecodeString(apiKey)
 	if err != nil {
 		return nil, &ApiKeyValidationError{
-			Code:    400,
-			Message: "Invalid API key format",
+			Code:      400,
+			Message:   "Invalid API key format",
 			Component: "DecodeApiKey",
 		}
 	}
@@ -41,8 +41,8 @@ func ValidateApiKey(ctx basecontext.ApiContext, dbService interface {
 	parts := strings.Split(string(decodedKey), ":")
 	if len(parts) != 2 {
 		return nil, &ApiKeyValidationError{
-			Code:    400,
-			Message: "API key must be in format base64(key:secret)",
+			Code:      400,
+			Message:   "API key must be in format base64(key:secret)",
 			Component: "ParseApiKey",
 		}
 	}
@@ -53,16 +53,16 @@ func ValidateApiKey(ctx basecontext.ApiContext, dbService interface {
 	dbApiKey, err := dbService.GetApiKey(ctx, apiKeyKey)
 	if err != nil || dbApiKey == nil {
 		return nil, &ApiKeyValidationError{
-			Code:    401,
-			Message: "Invalid API key",
+			Code:      401,
+			Message:   "Invalid API key",
 			Component: "GetApiKey",
 		}
 	}
 
 	if dbApiKey.Revoked {
 		return nil, &ApiKeyValidationError{
-			Code:    401,
-			Message: "Api Key has been revoked",
+			Code:      401,
+			Message:   "Api Key has been revoked",
 			Component: "CheckRevoked",
 		}
 	}
@@ -72,8 +72,8 @@ func ValidateApiKey(ctx basecontext.ApiContext, dbService interface {
 		if err == nil {
 			if time.Now().UTC().After(expiresAt) {
 				return nil, &ApiKeyValidationError{
-					Code:    401,
-					Message: "Api Key has expired",
+					Code:      401,
+					Message:   "Api Key has expired",
 					Component: "CheckExpiration",
 				}
 			}
@@ -83,8 +83,8 @@ func ValidateApiKey(ctx basecontext.ApiContext, dbService interface {
 	passwdSvc := password.Get()
 	if err := passwdSvc.Compare(apiKeySecret, dbApiKey.ID, dbApiKey.Secret); err != nil {
 		return nil, &ApiKeyValidationError{
-			Code:    401,
-			Message: "Invalid API key secret",
+			Code:      401,
+			Message:   "Invalid API key secret",
 			Component: "CompareApiKey",
 		}
 	}

@@ -17,6 +17,7 @@ type ApiKeyRequest struct {
 	UpdatedAt string `json:"updated_at,omitempty"`
 	RevokedAt string `json:"revoked_at,omitempty"`
 	ExpiresAt string `json:"expires_at,omitempty"`
+	UserID    string `json:"user_id,omitempty"`
 }
 
 func (r *ApiKeyRequest) Validate() error {
@@ -43,11 +44,15 @@ func (r *ApiKeyRequest) Validate() error {
 }
 
 type ApiKeyResponse struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Key       string `json:"key"`
-	Encoded   string `json:"encoded,omitempty"`
-	Revoked   bool   `json:"revoked,omitempty"`
-	ExpiresAt string `json:"expires_at,omitempty"`
-	RevokedAt string `json:"revoked_at,omitempty"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Key          string `json:"key"`
+	Encoded      string `json:"encoded,omitempty"`
+	Revoked      bool   `json:"revoked,omitempty"`
+	ExpiresAt    string `json:"expires_at,omitempty"`
+	RevokedAt    string `json:"revoked_at,omitempty"`
+	UserID       string `json:"user_id,omitempty"`
+	UserEmail    string `json:"user_email,omitempty"`
+	UserName     string `json:"user_name,omitempty"`
+	UserUsername string `json:"user_username,omitempty"`
 }

@@ -16,6 +16,22 @@ var (
 	ErrApiKeyAlreadyExists = errors.NewWithCode("API Key already exists", 500)
 )
 
+func GetOwnRecords[T interface{ GetUserID() string }](ctx basecontext.ApiContext, records ...T) []T {
+	authContext := ctx.GetAuthorizationContext()
+	if authContext == nil || authContext.User == nil {
+		return records
+	}
+
+	result := make([]T, 0)
+	for _, record := range records {
+		if record.GetUserID() == authContext.User.ID {
+			result = append(result, record)
+		}
+	}
+
+	return result
+}
+
 func (j *JsonDatabase) GetApiKeys(ctx basecontext.ApiContext, filter string) ([]models.ApiKey, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -30,6 +46,18 @@ func (j *JsonDatabase) GetApiKeys(ctx basecontext.ApiContext, filter string) ([]
 		return nil, err
 	}
 
+	authContext := ctx.GetAuthorizationContext()
+	if authContext == nil || authContext.User == nil {
+		return filteredData, nil
+	}
+
+	hasFullListClaim := authContext.HasEffectiveClaim(constants.LIST_API_KEY_CLAIM)
+	hasOwnListClaim := authContext.HasEffectiveClaim(constants.LIST_OWN_API_KEY_CLAIM)
+
+	if !hasFullListClaim && hasOwnListClaim {
+		filteredData = GetOwnRecords(ctx, filteredData...)
+	}
+
 	return filteredData, nil
 }
 
@@ -40,6 +68,16 @@ func (j *JsonDatabase) GetApiKey(ctx basecontext.ApiContext, idOrName string) (*
 
 	for _, apiKey := range j.data.ApiKeys {
 		if apiKey.ID == idOrName || strings.EqualFold(apiKey.Name, idOrName) || strings.EqualFold(apiKey.Key, idOrName) {
+			authContext := ctx.GetAuthorizationContext()
+			if authContext != nil && authContext.User != nil {
+				hasFullListClaim := authContext.HasEffectiveClaim(constants.LIST_API_KEY_CLAIM)
+				hasOwnListClaim := authContext.HasEffectiveClaim(constants.LIST_OWN_API_KEY_CLAIM)
+
+				if !hasFullListClaim && hasOwnListClaim && apiKey.UserID != authContext.User.ID {
+					return nil, ErrApiKeyNotFound
+				}
+			}
+
 			return &apiKey, nil
 		}
 	}
@@ -90,6 +128,7 @@ func (j *JsonDatabase) CreateApiKey(ctx basecontext.ApiContext, apiKey models.Ap
 	apiKey.Secret = hashSecret
 	apiKey.UpdatedAt = helpers.GetUtcCurrentDateTime()
 	apiKey.CreatedAt = helpers.GetUtcCurrentDateTime()
+
 	j.data.ApiKeys = append(j.data.ApiKeys, apiKey)
 
 	return &apiKey, nil

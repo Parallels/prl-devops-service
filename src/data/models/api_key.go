@@ -13,3 +13,7 @@ type ApiKey struct {
 	UserID    string `json:"user_id,omitempty"`
 	*DbRecord `json:"db_record"`
 }
+
+func (a ApiKey) GetUserID() string {
+	return a.UserID
+}
