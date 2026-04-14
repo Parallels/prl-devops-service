@@ -11,6 +11,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/common"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/serviceprovider/download"
 	"github.com/Parallels/prl-devops-service/writers"
 	"github.com/jfrog/jfrog-client-go/artifactory"
@@ -234,8 +235,16 @@ func (s *ArtifactoryProvider) PullFile(ctx basecontext.ApiContext, path string, 
 	if err != nil {
 		return err
 	}
+
+	action := s.currentAction
+	if action == "" {
+		action = constants.ActionDownloader
+	}
 	progressReporter := writers.NewProgressReporter(fileSize, nil)
 	progressReporter.SetJobId(s.JobId)
+	progressReporter.SetCurrentAction(action)
+	progressReporter.SetPrefix("Pulling")
+	progressReporter.SetFilename(filename)
 	err = downloadSrv.DownloadFile(url, headers, destinationFilePath, progressReporter)
 	if err != nil {
 		return err
@@ -268,8 +277,16 @@ func (s *ArtifactoryProvider) PullFileAndDecompress(ctx basecontext.ApiContext, 
 	if err != nil {
 		return err
 	}
+
+	action := s.currentAction
+	if action == "" {
+		action = constants.ActionDownloader
+	}
 	progressReporter := writers.NewProgressReporter(fileSize, nil)
 	progressReporter.SetJobId(s.JobId)
+	progressReporter.SetCurrentAction(action)
+	progressReporter.SetPrefix("Pulling")
+	progressReporter.SetFilename(filename)
 	err = downloadSrv.DownloadFile(url, headers, destinationFilePath, progressReporter)
 	if err != nil {
 		return err
@@ -308,8 +325,15 @@ func (s *ArtifactoryProvider) PullFileToMemory(ctx basecontext.ApiContext, path 
 		return nil, fmt.Errorf("file size is too large to pull to memory")
 	}
 
+	action := s.currentAction
+	if action == "" {
+		action = constants.ActionDownloader
+	}
 	progressReporter := writers.NewProgressReporter(fileSize, nil)
 	progressReporter.SetJobId(s.JobId)
+	progressReporter.SetCurrentAction(action)
+	progressReporter.SetPrefix("Pulling")
+	progressReporter.SetFilename(filename)
 	data, err := downloadSrv.DownloadFileToBytes(url, headers, progressReporter)
 	if err != nil {
 		return nil, err

@@ -87,11 +87,13 @@ func (h *HostJobEventHandler) Handle(ctx basecontext.ApiContext, hostID string, 
 	switch {
 	case event.Message == "JOB_COMPLETED":
 		vmID := hostJob.ResultRecordId
+		vmName := hostJob.ResultRecordName
+		vmLinkID := hostID
 		msg := fmt.Sprintf("Virtual machine created on host %s", hostID)
 		if vmID != "" {
 			msg = fmt.Sprintf("Virtual machine %s created on host %s", vmID, hostID)
 		}
-		_ = jobManager.MarkJobCompleteWithRecord(link.OrchestratorJobID, msg, vmID, "virtual_machine")
+		_ = jobManager.MarkJobCompleteWithRecord(link.OrchestratorJobID, msg, vmID, vmName, "virtual_machine", vmLinkID)
 		reg.Remove(hostJob.ID)
 
 	case hostJob.State == constants.JobStateFailed:

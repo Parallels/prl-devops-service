@@ -127,7 +127,7 @@ func TestDeleteClaim_CascadesToRoles(t *testing.T) {
 	assert.Empty(t, fetched.Claims, "claim should be removed from role on deletion")
 }
 
-func TestDeleteClaim_CascadesToUsers(t *testing.T) {
+func TestDeleteClaim_FailsWhenAssignedToUsers(t *testing.T) {
 	db, tmpDir, ctx := setupRoleClaimTestDB(t)
 	defer cleanupTestDB(t, tmpDir, db)
 
@@ -147,13 +147,12 @@ func TestDeleteClaim_CascadesToUsers(t *testing.T) {
 	db.dataMutex.Unlock()
 
 	err = db.DeleteClaim(ctx, claim.ID)
-	require.NoError(t, err)
+	require.ErrorIs(t, err, ErrClaimHasUsers)
 
 	fetched, err := db.GetUser(ctx, "test-user-id")
 	require.NoError(t, err)
-	for _, c := range fetched.Claims {
-		assert.NotEqual(t, claim.ID, c.ID, "deleted claim should be removed from user")
-	}
+	require.Len(t, fetched.Claims, 1)
+	assert.Equal(t, claim.ID, fetched.Claims[0].ID, "claim should remain assigned when deletion is rejected")
 }
 
 func TestGetRole_IncludesClaims(t *testing.T) {

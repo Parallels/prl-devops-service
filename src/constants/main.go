@@ -46,18 +46,24 @@ const (
 	DEFAULT_VM_CACHE_REFRESH_INTERVAL_SECONDS    = 300 // 5 minutes
 
 	INTERNAL_API_CLIENT                          = "X-INTERNAL-API-CLIENT"
+	ORCHESTRATOR_JOB_ID_HEADER                   = "X-ORCHESTRATOR-JOB-ID"
+	X_CLAIMS_HEADER                              = "X-Claims"
+	X_ROLES_HEADER                               = "X-Roles"
+	X_SUPER_USER_HEADER                          = "X-Super-User"
 	ENABLE_CREDENTIALS_OBFUSCATION_DEFAULT_VALUE = true
 
-	API_MODE               = "api"
-	CLI_MODE               = "cli"
-	ORCHESTRATOR_MODE      = "orchestrator"
-	CATALOG_MODE           = "catalog"
-	CATALOG_MANAGER_MODE   = "catalog_manager"
-	HOST_MODE              = "host"
-	REVERSE_PROXY_MODE     = "reverse_proxy"
-	CACHE_MODE             = "cache"
-	CORS_MODE              = "cors"
-	VM_FORCE_CACHE_REFRESH = true
+	DISABLE_URL_VALIDATION_ENV_VAR = "DISABLE_URL_VALIDATION"
+	URL_WHITELIST_ENV_VAR          = "URL_WHITELIST"
+	API_MODE                       = "api"
+	CLI_MODE                       = "cli"
+	ORCHESTRATOR_MODE              = "orchestrator"
+	CATALOG_MODE                   = "catalog"
+	CATALOG_MANAGER_MODE           = "catalog_manager"
+	HOST_MODE                      = "host"
+	REVERSE_PROXY_MODE             = "reverse_proxy"
+	CACHE_MODE                     = "cache"
+	CORS_MODE                      = "cors"
+	VM_FORCE_CACHE_REFRESH         = true
 
 	DEFAULT_LOG_FILE_NAME = "prldevops.log"
 )
@@ -130,25 +136,25 @@ const (
 )
 
 const (
-	TEST_COMMAND                     = "test"
-	API_COMMAND                      = "api"
-	REVERSE_PROXY_COMMAND            = "reverse-proxy"
-	GENERATE_SECURITY_KEY_COMMAND    = "gen-rsa"
-	INSTALL_SERVICE_COMMAND          = "install"
-	UNINSTALL_SERVICE_COMMAND        = "uninstall"
-	VERSION_COMMAND                  = "version"
-	HELP_COMMAND                     = "help"
-	CATALOG_COMMAND                  = "catalog"
-	CATALOG_PUSH_COMMAND             = "push"
-	CATALOG_PULL_COMMAND             = "pull"
-	UPDATE_ROOT_PASSWORD_COMMAND     = "update-root-pass"
-	DELETE_COMMAND                   = "delete"
-	START_COMMAND                    = "start"
-	STOP_COMMAND                     = "stop"
-	EXEC_COMMAND                     = "exec"
-	CLONE_COMMAND                    = "clone"
-	INIT_ORCHESTRATOR_CLIENT_COMMAND         = "init-orchestrator-client"
-	REGISTER_WITH_ORCHESTRATOR_COMMAND       = "register-with-orchestrator"
+	TEST_COMMAND                       = "test"
+	API_COMMAND                        = "api"
+	REVERSE_PROXY_COMMAND              = "reverse-proxy"
+	GENERATE_SECURITY_KEY_COMMAND      = "gen-rsa"
+	INSTALL_SERVICE_COMMAND            = "install"
+	UNINSTALL_SERVICE_COMMAND          = "uninstall"
+	VERSION_COMMAND                    = "version"
+	HELP_COMMAND                       = "help"
+	CATALOG_COMMAND                    = "catalog"
+	CATALOG_PUSH_COMMAND               = "push"
+	CATALOG_PULL_COMMAND               = "pull"
+	UPDATE_ROOT_PASSWORD_COMMAND       = "update-root-pass"
+	DELETE_COMMAND                     = "delete"
+	START_COMMAND                      = "start"
+	STOP_COMMAND                       = "stop"
+	EXEC_COMMAND                       = "exec"
+	CLONE_COMMAND                      = "clone"
+	INIT_ORCHESTRATOR_CLIENT_COMMAND   = "init-orchestrator-client"
+	REGISTER_WITH_ORCHESTRATOR_COMMAND = "register-with-orchestrator"
 
 	TEST_FLAG                       = "test"
 	TEST_CATALOG_PROVIDERS_FLAG     = "catalog-providers"
@@ -200,6 +206,10 @@ const (
 )
 
 const (
+	ROOT_USER_EMAIL = "root@localhost"
+	ROOT_USER_NAME  = "root"
+	ROOT_USER_ID    = "root"
+
 	USER_ROLE       = "USER"
 	ADMIN_ROLE      = "ADMIN"
 	SUPER_USER_ROLE = "SUPER_USER"
@@ -219,6 +229,11 @@ const (
 	CREATE_API_KEY_CLAIM = "CREATE_API_KEY"
 	DELETE_API_KEY_CLAIM = "DELETE_API_KEY"
 	UPDATE_API_KEY_CLAIM = "UPDATE_API_KEY"
+
+	LIST_OWN_API_KEY_CLAIM   = "LIST_OWN_API_KEY"
+	CREATE_OWN_API_KEY_CLAIM = "CREATE_OWN_API_KEY"
+	DELETE_OWN_API_KEY_CLAIM = "DELETE_OWN_API_KEY"
+	UPDATE_OWN_API_KEY_CLAIM = "UPDATE_OWN_API_KEY"
 
 	LIST_CLAIM_CLAIM   = "LIST_CLAIM"
 	CREATE_CLAIM_CLAIM = "CREATE_CLAIM"
@@ -327,6 +342,10 @@ var AllSystemClaims = []string{
 	CREATE_API_KEY_CLAIM,
 	DELETE_API_KEY_CLAIM,
 	UPDATE_API_KEY_CLAIM,
+	LIST_OWN_API_KEY_CLAIM,
+	CREATE_OWN_API_KEY_CLAIM,
+	DELETE_OWN_API_KEY_CLAIM,
+	UPDATE_OWN_API_KEY_CLAIM,
 	LIST_CLAIM_CLAIM,
 	CREATE_CLAIM_CLAIM,
 	DELETE_CLAIM_CLAIM,
@@ -412,6 +431,10 @@ var AllSuperUserClaims = []string{
 	CREATE_API_KEY_CLAIM,
 	DELETE_API_KEY_CLAIM,
 	UPDATE_API_KEY_CLAIM,
+	LIST_OWN_API_KEY_CLAIM,
+	CREATE_OWN_API_KEY_CLAIM,
+	DELETE_OWN_API_KEY_CLAIM,
+	UPDATE_OWN_API_KEY_CLAIM,
 	LIST_CLAIM_CLAIM,
 	CREATE_CLAIM_CLAIM,
 	DELETE_CLAIM_CLAIM,
@@ -528,4 +551,8 @@ var DefaultClaims = []string{
 	DELETE_OWN_VM_SNAPSHOT_CLAIM,
 	DELETE_ALL_OWN_VM_SNAPSHOTS_CLAIM,
 	REVERT_OWN_VM_SNAPSHOT_CLAIM,
+	LIST_OWN_API_KEY_CLAIM,
+	CREATE_OWN_API_KEY_CLAIM,
+	DELETE_OWN_API_KEY_CLAIM,
+	UPDATE_OWN_API_KEY_CLAIM,
 }

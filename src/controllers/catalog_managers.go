@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -220,8 +221,8 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithVersion(version).
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/claims").
 		WithOrClaims().
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/claims")).
 		Register()
 
@@ -231,7 +232,7 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/claims").
 		WithOrClaims().
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/claims")).
 		Register()
 
@@ -241,7 +242,7 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/roles").
 		WithOrClaims().
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/roles")).
 		Register()
 
@@ -251,7 +252,7 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/roles").
 		WithOrClaims().
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/roles")).
 		Register()
 
@@ -261,7 +262,7 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/tags").
 		WithOrClaims().
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/tags")).
 		Register()
 
@@ -276,12 +277,22 @@ func registerCatalogManagerCatalogHandlers(version string) {
 		Register()
 
 	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/metadata").
+		WithOrClaims().
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
+		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/metadata")).
+		Register()
+
+	restapi.NewController().
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog-managers/{id}/catalog/{catalogId}/{version}/{architecture}/tags").
 		WithOrClaims().
 		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CATALOG_MANIFEST_OWN_CLAIM).
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(ForwardCatalogManagerCatalogRequestHandler("/catalog/{catalogId}/{version}/{architecture}/tags")).
 		Register()
 
@@ -373,9 +384,12 @@ func GetCatalogManagersHandler() restapi.ControllerHandler {
 			return
 		}
 
+		authCtx := ctx.GetAuthorizationContext()
+		effectiveClaims := authCtx.GetEffectiveClaims()
+
 		canListAll := false
 		canListOwn := false
-		for _, claim := range user.Claims {
+		for _, claim := range effectiveClaims {
 			if claim == constants.CATALOG_MANAGER_LIST_CLAIM {
 				canListAll = true
 			}
@@ -409,7 +423,7 @@ func GetCatalogManagersHandler() restapi.ControllerHandler {
 				if len(mgr.RequiredClaims) > 0 {
 					for _, reqClaim := range mgr.RequiredClaims {
 						found := false
-						for _, userClaim := range user.Claims {
+						for _, userClaim := range effectiveClaims {
 							if userClaim == reqClaim {
 								found = true
 								break
@@ -473,9 +487,12 @@ func GetCatalogManagerByIdHandler() restapi.ControllerHandler {
 			return
 		}
 
+		authCtx := ctx.GetAuthorizationContext()
+		effectiveClaims := authCtx.GetEffectiveClaims()
+
 		canListAll := false
 		canListOwn := false
-		for _, claim := range user.Claims {
+		for _, claim := range effectiveClaims {
 			if claim == constants.CATALOG_MANAGER_LIST_CLAIM {
 				canListAll = true
 			}
@@ -490,7 +507,7 @@ func GetCatalogManagerByIdHandler() restapi.ControllerHandler {
 			if len(mgr.RequiredClaims) > 0 {
 				for _, reqClaim := range mgr.RequiredClaims {
 					found := false
-					for _, userClaim := range user.Claims {
+					for _, userClaim := range effectiveClaims {
 						if userClaim == reqClaim {
 							found = true
 							break
@@ -545,6 +562,11 @@ func CreateCatalogManagerHandler() restapi.ControllerHandler {
 		newMgr.OwnerID = user.ID
 		newMgr.CreatedAt = helpers.GetUtcCurrentDateTime()
 		newMgr.UpdatedAt = helpers.GetUtcCurrentDateTime()
+
+		if err := validateCatalogManagerUrl(newMgr.URL); err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+			return
+		}
 
 		canCreateGlobalInternal := false
 		for _, claim := range user.Claims {
@@ -621,13 +643,16 @@ func UpdateCatalogManagerHandler() restapi.ControllerHandler {
 		}
 
 		user := ctx.GetUser()
+		authCtxUpdate := ctx.GetAuthorizationContext()
+		effectiveClaimsUpdate := authCtxUpdate.GetEffectiveClaims()
+		effectiveRolesUpdate := authCtxUpdate.GetEffectiveRoles()
 		canSystemUpdate := false
-		for _, claim := range user.Claims {
+		for _, claim := range effectiveClaimsUpdate {
 			if claim == constants.CATALOG_MANAGER_UPDATE_CLAIM {
 				canSystemUpdate = true
 			}
 		}
-		for _, role := range user.Roles {
+		for _, role := range effectiveRolesUpdate {
 			if role == constants.SUPER_USER_ROLE {
 				canSystemUpdate = true
 			}
@@ -641,6 +666,11 @@ func UpdateCatalogManagerHandler() restapi.ControllerHandler {
 		updatedMgr := *mgr
 		mappers.UpdateCatalogManagerFromRequest(&updatedMgr, &req)
 		updatedMgr.UpdatedAt = helpers.GetUtcCurrentDateTime()
+
+		if err := validateCatalogManagerUrl(updatedMgr.URL); err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+			return
+		}
 
 		if err := validateCatalogManagerConnection(ctx, updatedMgr.URL, updatedMgr.Username, decryptCatalogManagerSecret(updatedMgr.Password), decryptCatalogManagerSecret(updatedMgr.ApiKey)); err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
@@ -692,13 +722,16 @@ func DeleteCatalogManagerHandler() restapi.ControllerHandler {
 		}
 
 		user := ctx.GetUser()
+		authCtxDelete := ctx.GetAuthorizationContext()
+		effectiveClaimsDelete := authCtxDelete.GetEffectiveClaims()
+		effectiveRolesDelete := authCtxDelete.GetEffectiveRoles()
 		canSystemDelete := false
-		for _, claim := range user.Claims {
+		for _, claim := range effectiveClaimsDelete {
 			if claim == constants.CATALOG_MANAGER_DELETE_CLAIM {
 				canSystemDelete = true
 			}
 		}
-		for _, role := range user.Roles {
+		for _, role := range effectiveRolesDelete {
 			if role == constants.SUPER_USER_ROLE {
 				canSystemDelete = true
 			}
@@ -920,8 +953,12 @@ func getAuthorizedCatalogManagerForUse(ctx basecontext.ApiContext, managerID str
 		return nil, &apiErr
 	}
 
+	authCtxUse := ctx.GetAuthorizationContext()
+	effectiveClaimsUse := authCtxUse.GetEffectiveClaims()
+	effectiveRolesUse := authCtxUse.GetEffectiveRoles()
+
 	isSuperUser := false
-	for _, role := range user.Roles {
+	for _, role := range effectiveRolesUse {
 		if role == constants.SUPER_USER_ROLE {
 			isSuperUser = true
 			break
@@ -936,7 +973,7 @@ func getAuthorizedCatalogManagerForUse(ctx basecontext.ApiContext, managerID str
 		hasAllRequiredClaims := true
 		for _, requiredClaim := range mgr.RequiredClaims {
 			found := false
-			for _, userClaim := range user.Claims {
+			for _, userClaim := range effectiveClaimsUse {
 				if userClaim == requiredClaim {
 					found = true
 					break
@@ -1054,6 +1091,10 @@ func stripHostFromConnection(connection string) string {
 	return strings.Join(filtered, ";")
 }
 
+func validateCatalogManagerUrl(managerURL string) error {
+	return helpers.ValidateCatalogManagerUrl(managerURL)
+}
+
 func validateCatalogManagerConnection(ctx basecontext.ApiContext, managerURL string, username string, password string, apiKey string) error {
 	if strings.TrimSpace(managerURL) == "" {
 		return errors.New("catalog manager url is required")
@@ -1065,6 +1106,10 @@ func validateCatalogManagerConnection(ctx basecontext.ApiContext, managerURL str
 
 	if apiKey == "" && ((username != "" && password == "") || (username == "" && password != "")) {
 		return errors.New("both username and password are required for password authentication")
+	}
+
+	if err := validateCatalogManagerUrl(managerURL); err != nil {
+		return fmt.Errorf("invalid catalog manager url: %w", err)
 	}
 
 	targetURL, err := buildCatalogManagerTargetUrl(managerURL, "/catalog", "")
@@ -1085,6 +1130,132 @@ func validateCatalogManagerConnection(ctx basecontext.ApiContext, managerURL str
 	}
 
 	return nil
+}
+
+// isCatalogManifestVisible returns true if the calling user's effective
+// claims/roles satisfy the manifest's RequiredRoles and RequiredClaims.
+// Super-user status is intentionally NOT a bypass here: catalog access controls
+// should be respected regardless of system-level role.
+func isCatalogManifestVisible(authCtx *basecontext.AuthorizationContext, manifest models.CatalogManifest) bool {
+	requiredRoles := manifest.RequiredRoles
+	requiredClaims := manifest.RequiredClaims
+
+	if len(requiredRoles) == 0 && len(requiredClaims) == 0 {
+		return true
+	}
+
+	effectiveRoles := authCtx.GetEffectiveRoles()
+	effectiveClaims := authCtx.GetEffectiveClaims()
+
+	isAuthorized := len(requiredRoles) == 0
+	if !isAuthorized {
+		for _, role := range requiredRoles {
+			for _, eff := range effectiveRoles {
+				if strings.EqualFold(role, eff) {
+					isAuthorized = true
+					break
+				}
+			}
+			if isAuthorized {
+				break
+			}
+		}
+	}
+
+	hasClaims := len(requiredClaims) == 0
+	if !hasClaims {
+		for _, claim := range requiredClaims {
+			for _, eff := range effectiveClaims {
+				if strings.EqualFold(claim, eff) {
+					hasClaims = true
+					break
+				}
+			}
+			if hasClaims {
+				break
+			}
+		}
+	}
+
+	return isAuthorized && hasClaims
+}
+
+// filterCatalogManifestResponse inspects a catalog-endpoint response body and
+// removes any manifests the calling user is not allowed to see.  It handles
+// three shapes:
+//
+//   - []map[string][]CatalogManifest  — the /catalog list response
+//   - []CatalogManifest               — per-catalogId / per-version responses
+//   - CatalogManifest                 — single architecture response (returns empty
+//     body with status 404 if the user cannot see it)
+//
+// Returns the (possibly filtered) body and the HTTP status to use.
+// If the body cannot be parsed as any recognised shape it is returned unchanged.
+func filterCatalogManifestResponse(authCtx *basecontext.AuthorizationContext, body []byte, originalStatus int) ([]byte, int) {
+	if authCtx == nil || len(body) == 0 {
+		return body, originalStatus
+	}
+
+	trimmed := bytes.TrimSpace(body)
+
+	// Shape 1: []map[string][]CatalogManifest  (the /catalog root endpoint)
+	if len(trimmed) > 0 && trimmed[0] == '[' {
+		var grouped []map[string][]models.CatalogManifest
+		if json.Unmarshal(trimmed, &grouped) == nil {
+			filtered := make([]map[string][]models.CatalogManifest, 0, len(grouped))
+			for _, group := range grouped {
+				filteredGroup := make(map[string][]models.CatalogManifest)
+				for catalogID, manifests := range group {
+					kept := make([]models.CatalogManifest, 0, len(manifests))
+					for _, m := range manifests {
+						if isCatalogManifestVisible(authCtx, m) {
+							kept = append(kept, m)
+						}
+					}
+					if len(kept) > 0 {
+						filteredGroup[catalogID] = kept
+					}
+				}
+				if len(filteredGroup) > 0 {
+					filtered = append(filtered, filteredGroup)
+				}
+			}
+			out, err := json.Marshal(filtered)
+			if err != nil {
+				return body, originalStatus
+			}
+			return out, originalStatus
+		}
+
+		// Shape 2: []CatalogManifest  (per-catalogId / per-version)
+		var list []models.CatalogManifest
+		if json.Unmarshal(trimmed, &list) == nil {
+			kept := make([]models.CatalogManifest, 0, len(list))
+			for _, m := range list {
+				if isCatalogManifestVisible(authCtx, m) {
+					kept = append(kept, m)
+				}
+			}
+			out, err := json.Marshal(kept)
+			if err != nil {
+				return body, originalStatus
+			}
+			return out, originalStatus
+		}
+	}
+
+	// Shape 3: single CatalogManifest object
+	if len(trimmed) > 0 && trimmed[0] == '{' {
+		var single models.CatalogManifest
+		if json.Unmarshal(trimmed, &single) == nil && single.ID != "" {
+			if !isCatalogManifestVisible(authCtx, single) {
+				return []byte(`{"code":404,"message":"not found"}`), http.StatusNotFound
+			}
+			return body, originalStatus
+		}
+	}
+
+	return body, originalStatus
 }
 
 func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWriter, r *http.Request, manager *data_models.CatalogManager, endpointPath string) error {
@@ -1109,7 +1280,12 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 	}
 
 	for headerKey, values := range r.Header {
-		if strings.EqualFold(headerKey, "Authorization") || strings.EqualFold(headerKey, "X-Api-Key") || strings.EqualFold(headerKey, constants.INTERNAL_API_CLIENT) {
+		if strings.EqualFold(headerKey, "Authorization") ||
+			strings.EqualFold(headerKey, "X-Api-Key") ||
+			strings.EqualFold(headerKey, constants.INTERNAL_API_CLIENT) ||
+			strings.EqualFold(headerKey, constants.X_CLAIMS_HEADER) ||
+			strings.EqualFold(headerKey, constants.X_ROLES_HEADER) ||
+			strings.EqualFold(headerKey, constants.X_SUPER_USER_HEADER) {
 			continue
 		}
 		for _, value := range values {
@@ -1118,6 +1294,26 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 	}
 	outboundRequest.Header.Set("X-SOURCE", "CATALOG_MANAGER_REQUEST")
 	outboundRequest.Header.Set(constants.INTERNAL_API_CLIENT, "false")
+
+	// Inject the current user's effective claims and roles so the downstream
+	// catalog service can filter results using the calling user's permissions
+	// rather than the stored catalog-manager credentials.
+	if fwdUser := ctx.GetUser(); fwdUser != nil {
+		fwdAuthCtx := ctx.GetAuthorizationContext()
+		claims := fwdAuthCtx.GetEffectiveClaims()
+		roles := fwdAuthCtx.GetEffectiveRoles()
+		if len(claims) > 0 {
+			outboundRequest.Header.Set(constants.X_CLAIMS_HEADER,
+				base64.StdEncoding.EncodeToString([]byte(strings.Join(claims, ","))))
+		}
+		if len(roles) > 0 {
+			outboundRequest.Header.Set(constants.X_ROLES_HEADER,
+				base64.StdEncoding.EncodeToString([]byte(strings.Join(roles, ","))))
+		}
+		if fwdAuthCtx.IsSuperUser {
+			outboundRequest.Header.Set(constants.X_SUPER_USER_HEADER, "true")
+		}
+	}
 
 	if authorizer != nil {
 		if authorizer.BearerToken != "" {
@@ -1178,6 +1374,23 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 		for _, value := range values {
 			w.Header().Add(key, value)
 		}
+	}
+
+	// For successful GET responses, apply a secondary defense-in-depth filter so
+	// that manifests the calling user cannot access are stripped even if the
+	// remote catalog service returns them (e.g. older service version, or a
+	// super-user identity being used for the stored catalog credentials).
+	if r.Method == http.MethodGet && response.StatusCode == http.StatusOK {
+		bodyBytes, readErr := io.ReadAll(response.Body)
+		if readErr != nil {
+			return readErr
+		}
+		// authCtx := ctx.GetAuthorizationContext()
+		// filteredBody, filteredStatus := filterCatalogManifestResponse(authCtx, bodyBytes, response.StatusCode)
+		// w.WriteHeader(filteredStatus)
+		w.WriteHeader(response.StatusCode)
+		_, err = w.Write(bodyBytes)
+		return err
 	}
 
 	w.WriteHeader(response.StatusCode)

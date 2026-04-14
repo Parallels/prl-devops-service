@@ -25,6 +25,99 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func defaultCORSAllowedHeaders() []string {
+	return []string{
+		"X-Requested-With",
+		"Accept",
+		"Authorization",
+		"Content-Type",
+		"Content-Length",
+		"Accept-Encoding",
+		"X-CSRF-Token",
+		"Origin",
+		"Access-Control-Request-Method",
+		"Access-Control-Request-Headers",
+		"X-Source-Id",
+	}
+}
+
+func defaultCORSAllowedMethods() []string {
+	return []string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+}
+
+func splitAndTrimCommaSeparated(value string) []string {
+	if value == "" {
+		return []string{}
+	}
+
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		result = append(result, trimmed)
+	}
+
+	return result
+}
+
+func mergeNormalizedValues(defaults []string, configured string, normalize func(string) string) []string {
+	result := make([]string, 0, len(defaults))
+	seen := make(map[string]bool)
+
+	appendValue := func(value string) {
+		normalized := normalize(strings.TrimSpace(value))
+		if normalized == "" || seen[normalized] {
+			return
+		}
+
+		seen[normalized] = true
+		result = append(result, normalized)
+	}
+
+	for _, value := range defaults {
+		appendValue(value)
+	}
+
+	for _, value := range splitAndTrimCommaSeparated(configured) {
+		appendValue(value)
+	}
+
+	return result
+}
+
+func buildCORSHandler(cfg *config.Config, handler http.Handler) http.Handler {
+	headers := defaultCORSAllowedHeaders()
+	if configuredHeaders := cfg.GetKey(constants.CORS_ALLOWED_HEADERS_ENV_VAR); configuredHeaders != "" {
+		if strings.TrimSpace(configuredHeaders) != "*" {
+			headers = mergeNormalizedValues(defaultCORSAllowedHeaders(), configuredHeaders, http.CanonicalHeaderKey)
+		}
+	}
+
+	methods := defaultCORSAllowedMethods()
+	if configuredMethods := cfg.GetKey(constants.CORS_ALLOWED_METHODS_ENV_VAR); configuredMethods != "" {
+		if strings.TrimSpace(configuredMethods) != "*" {
+			methods = mergeNormalizedValues(defaultCORSAllowedMethods(), configuredMethods, strings.ToUpper)
+		}
+	}
+
+	origins := []string{"*"}
+	if configuredOrigins := cfg.GetKey(constants.CORS_ALLOWED_ORIGINS_ENV_VAR); configuredOrigins != "" {
+		trimmedOrigins := splitAndTrimCommaSeparated(configuredOrigins)
+		if len(trimmedOrigins) > 0 {
+			origins = trimmedOrigins
+		}
+	}
+
+	return handlers.CORS(
+		handlers.AllowedOrigins(origins),
+		handlers.AllowedHeaders(headers),
+		handlers.AllowedMethods(methods),
+	)(handler)
+}
+
 type HttpControllerMethod string
 
 const (
@@ -262,7 +355,8 @@ func (l *HttpListener) AddAuthorizedHandlerWithExtraAdapters(
 	adapters = append(adapters,
 		AddAuthorizationContextMiddlewareAdapter(),
 		TokenAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation),
-		ApiKeyAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation))
+		ApiKeyAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation),
+		XClaimsMiddlewareAdapter())
 	adapters = append(adapters, extraAdapters...)
 	adapters = append(adapters, EndAuthorizationMiddlewareAdapter())
 
@@ -297,6 +391,7 @@ func (l *HttpListener) AddAuthorizedHandlerWithRolesAndClaims(
 		AddAuthorizationContextMiddlewareAdapter(),
 		TokenAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation),
 		ApiKeyAuthorizationMiddlewareAdapter(roles, claims, roleComparisonOperation, claimComparisonOperation),
+		XClaimsMiddlewareAdapter(),
 		EndAuthorizationMiddlewareAdapter())
 
 	if l.GetApiPrefix() != "" && !strings.HasPrefix(path, l.Options.ApiPrefix) {
@@ -326,38 +421,9 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 
 	if config.IsCorsEnabled() {
 		l.Logger.Info("Enabling CORS for HTTP")
-		headersOk := handlers.AllowedHeaders([]string{
-			"X-Requested-With",
-			"Accept",
-			"Authorization",
-			"Content-Type",
-			"Content-Length",
-			"Accept-Encoding",
-			"X-CSRF-Token",
-			"Origin",
-			"Access-Control-Request-Method",
-			"Access-Control-Request-Headers",
-			"x-source-id",
-			"X-Source-Id",
-		})
-		originsOk := handlers.AllowedOrigins([]string{"*"})
-		methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"})
-		configCorsAllowedHeaders := config.GetKey("CORS_ALLOWED_HEADERS")
-		if configCorsAllowedHeaders != "" {
-			headersOk = handlers.AllowedHeaders(strings.Split(configCorsAllowedHeaders, ","))
-		}
-		configCorsAllowedOrigins := config.GetKey("CORS_ALLOWED_ORIGINS")
-		if configCorsAllowedOrigins != "" {
-			originsOk = handlers.AllowedOrigins(strings.Split(configCorsAllowedOrigins, ","))
-		}
-		configCorsAllowedMethods := config.GetKey("CORS_ALLOWED_METHODS")
-		if configCorsAllowedMethods != "" {
-			methodsOk = handlers.AllowedMethods(strings.Split(configCorsAllowedMethods, ","))
-		}
-
 		srv = &http.Server{
 			Addr:              ":" + l.Options.HttpPort,
-			Handler:           handlers.CORS(originsOk, headersOk, methodsOk)(l.Router),
+			Handler:           buildCORSHandler(config, l.Router),
 			ReadHeaderTimeout: time.Duration(30) * time.Second,
 			ReadTimeout:       time.Duration(5) * time.Hour,
 			WriteTimeout:      time.Duration(5) * time.Hour,
@@ -404,38 +470,10 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 
 			if config.IsCorsEnabled() {
 				l.Logger.Info("Enabling CORS for HTTPS")
-				headersOk := handlers.AllowedHeaders([]string{
-					"X-Requested-With",
-					"Accept",
-					"Authorization",
-					"Content-Type",
-					"Content-Length",
-					"Accept-Encoding",
-					"X-CSRF-Token",
-					"Origin",
-					"Access-Control-Request-Method",
-					"Access-Control-Request-Headers",
-					"x-source-id",
-					"X-Source-Id",
-				})
-				originsOk := handlers.AllowedOrigins([]string{"*"})
-				methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"})
-				configCorsAllowedHeaders := config.GetKey("CORS_ALLOWED_HEADERS")
-				if configCorsAllowedHeaders != "" {
-					headersOk = handlers.AllowedHeaders(strings.Split(configCorsAllowedHeaders, ","))
-				}
-				configCorsAllowedOrigins := config.GetKey("CORS_ALLOWED_ORIGINS")
-				if configCorsAllowedOrigins != "" {
-					originsOk = handlers.AllowedOrigins(strings.Split(configCorsAllowedOrigins, ","))
-				}
-				configCorsAllowedMethods := config.GetKey("CORS_ALLOWED_METHODS")
-				if configCorsAllowedMethods != "" {
-					methodsOk = handlers.AllowedMethods(strings.Split(configCorsAllowedMethods, ","))
-				}
 				sslSrv = &http.Server{
 					Addr:              ":" + l.Options.TLSPort,
 					TLSConfig:         tlsConfig,
-					Handler:           handlers.CORS(originsOk, headersOk, methodsOk)(l.Router),
+					Handler:           buildCORSHandler(config, l.Router),
 					ReadHeaderTimeout: time.Duration(30) * time.Second,
 					ReadTimeout:       time.Duration(5) * time.Hour,
 					WriteTimeout:      time.Duration(5) * time.Hour,

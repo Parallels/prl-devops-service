@@ -278,7 +278,7 @@ func (s *AzureStorageAccountProvider) PullFileAndDecompress(ctx basecontext.ApiC
 	}
 
 	// Now decompress from the temporary file directly to the destination
-	if err := compressor.DecompressFileWithStepChannel(ctx, tempDownloadPath, destination, nil, s.JobId, constants.ActionDecompressingPackFile); err != nil {
+	if err := compressor.DecompressFileWithStepChannel(ctx, tempDownloadPath, destination, nil, s.JobId, constants.ActionDecompressor); err != nil {
 		return fmt.Errorf("decompression failed: %w", err)
 	}
 

@@ -47,6 +47,10 @@ func shellSingleQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
 }
 
+func shellFlag(name, value string) string {
+	return fmt.Sprintf("--%s=%s", name, shellSingleQuote(value))
+}
+
 // detectOutboundIP returns the first non-loopback, non-link-local IPv4 address
 // found on a local network interface, falling back to "127.0.0.1".
 func detectOutboundIP() string {
@@ -161,7 +165,7 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 		installArgs = append(installArgs, "--root-password", shellSingleQuote(req.RootPassword))
 	}
 	if req.EnabledModules != "" {
-		installArgs = append(installArgs, "--modules", shellSingleQuote(req.EnabledModules))
+		installArgs = append(installArgs, "--modules", req.EnabledModules)
 	}
 	if req.AgentVersion != "" {
 		installArgs = append(installArgs, "--version", shellSingleQuote(req.AgentVersion))
@@ -185,11 +189,15 @@ func (s *OrchestratorService) DeployAndRegisterAgent(ctx basecontext.ApiContext,
 	// takes top priority in resolveSelfBaseURL on the remote side.
 	agentBaseURL := fmt.Sprintf("http://%s:%s", req.SshHost, agentPort)
 	registerCmd := fmt.Sprintf(
-		"BASE_URL=%s /usr/local/bin/prldevops register-with-orchestrator --orchestrator-url=%s --orchestrator-token=%s --host-name=%s --port=%s",
-		agentBaseURL, orchURL, enrollToken.Token, req.HostName, agentPort,
+		"BASE_URL=%s /usr/local/bin/prldevops register-with-orchestrator %s %s %s %s",
+		shellSingleQuote(agentBaseURL),
+		shellFlag(constants.ORCHESTRATOR_URL_FLAG, orchURL),
+		shellFlag(constants.ORCHESTRATOR_TOKEN_FLAG, enrollToken.Token),
+		shellFlag(constants.HOST_NAME_FLAG, req.HostName),
+		shellFlag(constants.API_PORT_FLAG, agentPort),
 	)
 	if tagsStr != "" {
-		registerCmd += " --tags=" + tagsStr
+		registerCmd += " " + shellFlag(constants.TAGS_FLAG, tagsStr)
 	}
 
 	installCmd := fmt.Sprintf(

@@ -21,8 +21,8 @@ import (
 //   - If a host is currently in-flight (being processed), new requests are still
 //     accepted so the worker re-fetches after the current one completes.
 type hardwareUpdateQueue struct {
-	mu      sync.Mutex
-	cond    *sync.Cond
+	mu       sync.Mutex
+	cond     *sync.Cond
 	pending  map[string]struct{} // hosts with an outstanding refresh request
 	inFlight map[string]struct{} // hosts currently being processed by the worker
 	stopped  bool

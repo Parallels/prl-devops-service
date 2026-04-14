@@ -48,7 +48,7 @@ func (s *CatalogManifestService) AsyncPush(jobId string, r *models.PushCatalogMa
 		}
 		jobManager.MarkJobError(jobId, errors.New(errorMessage))
 	} else {
-		jobManager.MarkJobCompleteWithRecord(jobId, "Catalog Manifest Pushed", response.ID, "catalog_manifest")
+		jobManager.MarkJobCompleteWithRecord(jobId, "Catalog Manifest Pushed", response.ID, response.Name, "catalog_manifest", "")
 	}
 }
 

@@ -41,13 +41,29 @@ func IsAuthorized[T AuthorizedRecord](ctx basecontext.ApiContext, t T) bool {
 	if authContext == nil {
 		return false
 	}
-	if authContext.AuthorizedBy == "ApiKeyAuthorization" || authContext.AuthorizedBy == "RootAuthorization" {
-		return true
+
+	// When injected claims/roles are present (catalog manager or microservice
+	// forwarded request) we must apply record-level filtering using those values
+	// rather than bypassing. Otherwise API-key / root requests skip filtering.
+	hasInjected := len(authContext.InjectedClaims) > 0 || len(authContext.InjectedRoles) > 0
+
+	if !hasInjected {
+		if authContext.AuthorizedBy == "ApiKeyAuthorization" || authContext.AuthorizedBy == "RootAuthorization" {
+			return true
+		}
 	}
-	if authContext.User == nil || !authContext.IsAuthorized {
+
+	if !authContext.IsAuthorized {
 		return false
 	}
-	if authContext.IsUserInRole(constants.SUPER_USER_ROLE) {
+	if authContext.User == nil && !hasInjected {
+		return false
+	}
+
+	// Super-user bypass: applies for direct access, and also for forwarded
+	// requests when the upstream explicitly flagged the calling user as a
+	// super-user via X-Super-User (authContext.IsSuperUser set by middleware).
+	if authContext.IsSuperUser || (!hasInjected && authContext.HasEffectiveRole(constants.SUPER_USER_ROLE)) {
 		return true
 	}
 
@@ -60,7 +76,7 @@ func IsAuthorized[T AuthorizedRecord](ctx basecontext.ApiContext, t T) bool {
 		isAuthorized = true
 	} else {
 		for _, role := range requiredRoles {
-			if authContext.IsUserInRole(role) {
+			if authContext.HasEffectiveRole(role) {
 				isAuthorized = true
 			}
 		}
@@ -70,7 +86,7 @@ func IsAuthorized[T AuthorizedRecord](ctx basecontext.ApiContext, t T) bool {
 		hasClaims = true
 	} else {
 		for _, claim := range requiredClaims {
-			if authContext.UserHasClaim(claim) {
+			if authContext.HasEffectiveClaim(claim) {
 				hasClaims = true
 			}
 		}

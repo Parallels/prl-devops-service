@@ -11,6 +11,41 @@ import (
 	apimodels "github.com/Parallels/prl-devops-service/models"
 )
 
+// validateVM resolves a virtual machine and its owning host from the VM ID alone.
+// Used by the /orchestrator/machines/{id}/snapshots endpoints where the caller
+// does not know (or specify) the host.
+func (s *OrchestratorService) validateVM(ctx basecontext.ApiContext, vmId string, noCache bool) (*data_models.OrchestratorHost, *data_models.VirtualMachine, error) {
+	if noCache {
+		ctx.LogDebugf("[Orchestrator] No cache set, refreshing all hosts...")
+		s.Refresh()
+	}
+
+	vm, err := s.GetVirtualMachine(ctx, vmId, false)
+	if err != nil {
+		return nil, nil, err
+	}
+	if vm == nil {
+		return nil, nil, errors.NewWithCodef(404, "Virtual machine %s not found", vmId)
+	}
+
+	host, err := s.GetDatabaseHost(ctx, vm.HostId)
+	if err != nil {
+		return nil, nil, err
+	}
+	if host == nil {
+		return nil, nil, errors.NewWithCodef(404, "Host for virtual machine %s not found", vmId)
+	}
+
+	if !host.Enabled {
+		return nil, nil, errors.NewWithCodef(400, "Host %s is disabled", host.Host)
+	}
+	if host.State != "healthy" {
+		return nil, nil, errors.NewWithCodef(400, "Host %s is not healthy", host.Host)
+	}
+
+	return host, vm, nil
+}
+
 // validateHostAndVM is a shared helper function to validate host and VM for snapshot operations
 func (s *OrchestratorService) validateHostAndVM(ctx basecontext.ApiContext, hostId string, vmId string, noCache bool) (*data_models.OrchestratorHost, *data_models.VirtualMachine, error) {
 	if noCache {
@@ -179,4 +214,93 @@ func (s *OrchestratorService) RevertHostVirtualMachineSnapshot(ctx basecontext.A
 	}
 
 	return nil
+}
+
+// GetVirtualMachineSnapshots lists all snapshots for a virtual machine, resolving the host automatically.
+func (s *OrchestratorService) GetVirtualMachineSnapshots(ctx basecontext.ApiContext, vmId string, noCache bool) (*apimodels.ListVMSnapshotResponse, error) {
+	host, vm, err := s.validateVM(ctx, vmId, noCache)
+	if err != nil {
+		return nil, err
+	}
+	return s.callGetVMSnapshotsFromHost(host, vm.ID)
+}
+
+// CreateVirtualMachineSnapshot creates a snapshot for a virtual machine, resolving the host automatically.
+func (s *OrchestratorService) CreateVirtualMachineSnapshot(ctx basecontext.ApiContext, vmId string, request apimodels.CreateVMSnapshotRequest, noCache bool) (*apimodels.CreateVMSnapshotResponse, error) {
+	host, vm, err := s.validateVM(ctx, vmId, noCache)
+	if err != nil {
+		return nil, err
+	}
+
+	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(10 * time.Minute)
+	path := "/machines/" + vm.ID + "/snapshots"
+	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
+	if err != nil {
+		return nil, err
+	}
+
+	var response apimodels.CreateVMSnapshotResponse
+	_, err = httpClient.Post(url.String(), request, &response)
+	if err != nil {
+		return nil, err
+	}
+	return &response, nil
+}
+
+// DeleteAllVirtualMachineSnapshots deletes all snapshots for a virtual machine, resolving the host automatically.
+func (s *OrchestratorService) DeleteAllVirtualMachineSnapshots(ctx basecontext.ApiContext, vmId string, noCache bool) error {
+	host, vm, err := s.validateVM(ctx, vmId, noCache)
+	if err != nil {
+		return err
+	}
+
+	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(10 * time.Minute)
+	path := "/machines/" + vm.ID + "/snapshots"
+	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
+	if err != nil {
+		return err
+	}
+
+	_, err = httpClient.Delete(url.String(), nil)
+	return err
+}
+
+// DeleteVirtualMachineSnapshot deletes a specific snapshot for a virtual machine, resolving the host automatically.
+func (s *OrchestratorService) DeleteVirtualMachineSnapshot(ctx basecontext.ApiContext, vmId string, snapshotId string, noCache bool) error {
+	host, vm, err := s.validateVM(ctx, vmId, noCache)
+	if err != nil {
+		return err
+	}
+
+	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(10 * time.Minute)
+	path := "/machines/" + vm.ID + "/snapshots/" + snapshotId
+	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
+	if err != nil {
+		return err
+	}
+
+	_, err = httpClient.Delete(url.String(), nil)
+	return err
+}
+
+// RevertVirtualMachineSnapshot reverts a virtual machine to a snapshot, resolving the host automatically.
+func (s *OrchestratorService) RevertVirtualMachineSnapshot(ctx basecontext.ApiContext, vmId string, snapshotId string, request apimodels.RevertVMSnapshotRequest, noCache bool) error {
+	host, vm, err := s.validateVM(ctx, vmId, noCache)
+	if err != nil {
+		return err
+	}
+
+	httpClient := s.getApiClient(*host)
+	httpClient.WithTimeout(10 * time.Minute)
+	path := "/machines/" + vm.ID + "/snapshots/" + snapshotId + "/revert"
+	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
+	if err != nil {
+		return err
+	}
+
+	_, err = httpClient.Post(url.String(), request, nil)
+	return err
 }

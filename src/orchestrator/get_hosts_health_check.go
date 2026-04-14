@@ -1,6 +1,14 @@
 package orchestrator
 
 import (
+	"context"
+	"crypto/tls"
+	"encoding/json"
+	"net"
+	"net/http"
+	"time"
+
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -9,22 +17,68 @@ import (
 )
 
 func (s *OrchestratorService) GetHostHealthProbeCheck(host *models.OrchestratorHost) (*restapi.HealthProbeResponse, error) {
-	httpClient := s.getApiClient(*host)
-	httpClient.WithTimeout(s.healthCheckTimeout)
-
 	path := "/health/probe"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {
 		return nil, err
 	}
-	var response restapi.HealthProbeResponse
-	apiResponse, err := httpClient.Get(url.String(), &response)
+
+	timeout := s.healthCheckTimeout
+	if timeout <= 0 {
+		timeout = 3 * time.Second
+	}
+
+	cfg := config.Get()
+	disableTLSValidation := false
+	if cfg != nil {
+		disableTLSValidation = cfg.DisableTlsValidation()
+	}
+
+	transport := &http.Transport{
+		TLSHandshakeTimeout:   timeout,
+		ResponseHeaderTimeout: timeout,
+		ExpectContinueTimeout: timeout,
+		IdleConnTimeout:       timeout,
+		DialContext: (&net.Dialer{
+			Timeout:   timeout,
+			KeepAlive: timeout,
+		}).DialContext,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: disableTLSValidation,
+		},
+	}
+
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   timeout,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if apiResponse.StatusCode != 200 {
-		return nil, errors.NewWithCodef(400, "Error getting health check for host %s: %v", host.Host, apiResponse.StatusCode)
+	req.Header.Set("User-Agent", "PrlDevOpsService/HealthProbe")
+	req.Header.Set("X-SOURCE", "ORCHESTRATOR_HEALTH_PROBE")
+	req.Header.Set("X-LOGGING", "IGNORE")
+	req.Header.Set("X-SOURCE-ID", "ORCHESTRATOR_HEALTH_PROBE")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.NewWithCodef(400, "Error getting health check for host %s: %v", host.Host, resp.StatusCode)
+	}
+
+	var response restapi.HealthProbeResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
 	}
 
 	return &response, nil

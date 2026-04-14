@@ -56,7 +56,7 @@ func (s *ChunkManagerService) DownloadAndDecompress(ctx basecontext.ApiContext, 
 	} = ctx
 
 	if request.Action == "" {
-		request.Action = constants.ActionDownloadingPackFile
+		request.Action = constants.ActionDownloader
 	}
 	action := request.Action
 

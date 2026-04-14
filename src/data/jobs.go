@@ -109,6 +109,8 @@ func (j *JsonDatabase) UpdateJob(ctx basecontext.ApiContext, key models.Job) err
 			j.data.Jobs[i].Progress = key.Progress
 			j.data.Jobs[i].Result = key.Result
 			j.data.Jobs[i].ResultRecordId = key.ResultRecordId
+			j.data.Jobs[i].ResultRecordName = key.ResultRecordName
+			j.data.Jobs[i].ResultRecordLinkId = key.ResultRecordLinkId
 			j.data.Jobs[i].ResultRecordType = key.ResultRecordType
 			j.data.Jobs[i].Error = key.Error
 			j.data.Jobs[i].Steps = key.Steps

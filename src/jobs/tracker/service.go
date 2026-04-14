@@ -33,7 +33,7 @@ type JobProgressService struct {
 	OnInitJob               func(jobId string)
 	OnUpdateJobProgress     func(jobId string, percent int, status string)
 	OnUpdateJobMessage      func(jobId string, message string)
-	OnUpdateJobResultRecord func(jobId string, recordId string, recordType string)
+	OnUpdateJobResultRecord func(jobId string, recordId string, recordName string, recordType string, recordLinkId string)
 	// OnUpdateJobProgressAndSteps is called instead of the two separate callbacks when available.
 	// It writes progress + step snapshot in a single atomic operation, avoiding the race where
 	// a separate UpdateJobProgress read could see stale (empty) steps.
@@ -839,9 +839,9 @@ func (p *JobProgressService) publishJobSteps(jobId string) {
 	}
 }
 
-func (p *JobProgressService) UpdateJobResultRecord(jobId string, recordId string, recordType string) {
+func (p *JobProgressService) UpdateJobResultRecord(jobId string, recordId string, recordName string, recordType string, recordLinkId string) {
 	if p.OnUpdateJobResultRecord != nil {
-		p.OnUpdateJobResultRecord(jobId, recordId, recordType)
+		p.OnUpdateJobResultRecord(jobId, recordId, recordName, recordType, recordLinkId)
 	}
 }
 

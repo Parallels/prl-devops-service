@@ -1,5 +1,9 @@
 # Claude Code Configuration - RuFlo V3
 
+> **IMPORTANT**: These rules are MANDATORY for every interaction in this project.
+> Before responding to ANY message, read and follow the Swarm Activation section.
+> There are NO exceptions for code-related tasks.
+>
 ## Behavioral Rules (Always Enforced)
 
 - Do what has been asked; nothing more, nothing less
@@ -138,18 +142,23 @@ npx @claude-flow/cli@latest doctor --fix
 ## Available Agents (60+ Types)
 
 ### Core Development
+
 `coder`, `reviewer`, `tester`, `planner`, `researcher`
 
 ### Specialized
+
 `security-architect`, `security-auditor`, `memory-specialist`, `performance-engineer`
 
 ### Swarm Coordination
+
 `hierarchical-coordinator`, `mesh-coordinator`, `adaptive-coordinator`
 
 ### GitHub & Repository
+
 `pr-manager`, `code-review-swarm`, `issue-tracker`, `release-manager`
 
 ### SPARC Methodology
+
 `sparc-coord`, `sparc-coder`, `specification`, `pseudocode`, `architecture`
 
 ## Memory Commands Reference
@@ -184,5 +193,5 @@ npx @claude-flow/cli@latest doctor --fix
 
 ## Support
 
-- Documentation: https://github.com/ruvnet/claude-flow
-- Issues: https://github.com/ruvnet/claude-flow/issues
+- Documentation: <https://github.com/ruvnet/claude-flow>
+- Issues: <https://github.com/ruvnet/claude-flow/issues>

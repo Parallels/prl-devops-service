@@ -24,16 +24,16 @@ func getEffectiveCallerID(ctx *basecontext.BaseContext) (string, bool) {
 	}
 	authCtx := ctx.GetAuthorizationContext()
 	if authCtx != nil && authCtx.IsMicroService {
-    // Getting the user based on the user we are logged in as
-    // in the service using the system service
-    sysSvc := system.Get()
-    sysUser, err := sysSvc.GetCurrentUser(ctx)
-    currentUser := "root"
-    if err == nil {
-      currentUser = sysUser
-    }
-    return currentUser, true
-  }
+		// Getting the user based on the user we are logged in as
+		// in the service using the system service
+		sysSvc := system.Get()
+		sysUser, err := sysSvc.GetCurrentUser(ctx)
+		currentUser := "root"
+		if err == nil {
+			currentUser = sysUser
+		}
+		return currentUser, true
+	}
 
 	return "", false
 }

@@ -25,7 +25,7 @@ type Controller struct {
 	// ExtraAdapters are injected into the middleware chain just before
 	// EndAuthorizationMiddlewareAdapter, allowing per-endpoint auth extensions
 	// such as enrollment-token support.
-	ExtraAdapters        []Adapter
+	ExtraAdapters         []Adapter
 	requiresAuthorization bool
 }
 

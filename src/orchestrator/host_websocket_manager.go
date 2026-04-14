@@ -18,10 +18,13 @@ type HostWebSocketManager struct {
 	ctx           basecontext.ApiContext
 	clients       map[string]*HostWebSocketClient                              // hostID -> HostWebSocketClient
 	handlers      map[constants.EventType]map[interfaces.HostEventHandler]bool // eventType -> handlers
+	probeInFlight map[string]bool
 	mu            sync.RWMutex
 	handlersMu    sync.RWMutex
 	stopChan      chan struct{}
 	refreshTicker *time.Ticker
+	probeHost     func(models.OrchestratorHost)
+	startClient   func(*HostWebSocketClient, []constants.EventType)
 }
 
 var (
@@ -33,10 +36,17 @@ var (
 func NewHostWebSocketManager(ctx basecontext.ApiContext) *HostWebSocketManager {
 	managerOnce.Do(func() {
 		managerInstance = &HostWebSocketManager{
-			ctx:      ctx,
-			clients:  make(map[string]*HostWebSocketClient),
-			handlers: make(map[constants.EventType]map[interfaces.HostEventHandler]bool),
-			stopChan: make(chan struct{}),
+			ctx:           ctx,
+			clients:       make(map[string]*HostWebSocketClient),
+			handlers:      make(map[constants.EventType]map[interfaces.HostEventHandler]bool),
+			probeInFlight: make(map[string]bool),
+			stopChan:      make(chan struct{}),
+		}
+		managerInstance.probeHost = func(host models.OrchestratorHost) {
+			managerInstance.ProbeAndConnect(host)
+		}
+		managerInstance.startClient = func(client *HostWebSocketClient, events []constants.EventType) {
+			go client.Connect(events)
 		}
 	})
 	return managerInstance
@@ -80,14 +90,24 @@ func (m *HostWebSocketManager) ConnectHost(host *models.OrchestratorHost, events
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if _, exists := m.clients[host.ID]; exists {
-		m.ctx.LogInfof("[HostWebSocketManager] Host %s already connected", host.Host)
-		return
+	if existing, exists := m.clients[host.ID]; exists {
+		if existing.IsConnected() {
+			m.ctx.LogInfof("[HostWebSocketManager] Host %s already connected", host.Host)
+			return
+		}
+
+		m.ctx.LogWarnf("[HostWebSocketManager] Replacing disconnected WebSocket client for host %s", host.Host)
+		existing.Close()
+		delete(m.clients, host.ID)
 	}
 
 	client := NewHostWebSocketClient(m.ctx, host, m)
 	m.clients[host.ID] = client
-	go client.Connect(events)
+	if m.startClient != nil {
+		m.startClient(client, events)
+	} else {
+		go client.Connect(events)
+	}
 }
 
 // DisconnectHost closes the WebSocket connection to the host
@@ -176,6 +196,12 @@ func (m *HostWebSocketManager) Shutdown() {
 }
 
 func (m *HostWebSocketManager) ProbeAndConnect(host models.OrchestratorHost) {
+	if !m.beginProbe(host.ID) {
+		m.ctx.LogDebugf("[HostWebSocketManager] Probe already in flight for host %s, skipping", host.Host)
+		return
+	}
+	defer m.endProbe(host.ID)
+
 	// Create a temporary client to probe
 	client := NewHostWebSocketClient(m.ctx, &host, nil) // No manager needed for probe
 	if client.Probe() {
@@ -258,10 +284,26 @@ func (m *HostWebSocketManager) syncConnections(hosts []models.OrchestratorHost) 
 
 		activeHostIDs[host.ID] = true
 
-		// If host is not connected, attempt to connect
-		if !m.IsConnected(host.ID) {
-			m.ctx.LogDebugf("[HostWebSocketManager] Host %s is not connected, attempting reconnection", host.Host)
-			hostCopy := host
+		m.mu.RLock()
+		client, exists := m.clients[host.ID]
+		m.mu.RUnlock()
+
+		if exists {
+			if client.IsConnected() {
+				continue
+			}
+
+			// A disconnected client already owns the reconnect loop for this host.
+			// Avoid launching duplicate probes/connections for the same host.
+			m.ctx.LogDebugf("[HostWebSocketManager] Host %s has a disconnected WebSocket client already reconnecting, skipping duplicate probe", host.Host)
+			continue
+		}
+
+		m.ctx.LogDebugf("[HostWebSocketManager] Host %s has no WebSocket client, attempting connection", host.Host)
+		hostCopy := host
+		if m.probeHost != nil {
+			go m.probeHost(hostCopy)
+		} else {
 			go m.ProbeAndConnect(hostCopy)
 		}
 	}
@@ -275,4 +317,22 @@ func (m *HostWebSocketManager) syncConnections(hosts []models.OrchestratorHost) 
 		}
 	}
 	m.mu.Unlock()
+}
+
+func (m *HostWebSocketManager) beginProbe(hostID string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.probeInFlight[hostID] {
+		return false
+	}
+
+	m.probeInFlight[hostID] = true
+	return true
+}
+
+func (m *HostWebSocketManager) endProbe(hostID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.probeInFlight, hostID)
 }

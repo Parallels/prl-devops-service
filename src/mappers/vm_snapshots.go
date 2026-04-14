@@ -10,13 +10,13 @@ import (
 func VMSnapshotsDtoToApi(dVMSnapshots []models.VMSnapshot) []apiModels.VMSnapshot {
 	var apiVMSnapshots []apiModels.VMSnapshot
 	for _, dVMSnapshot := range dVMSnapshots {
-    cleanParent := dVMSnapshot.Parent
-    if cleanParent != "" {
-      cleanParent = strings.TrimSpace(dVMSnapshot.Parent)
-      cleanParent = strings.Trim(cleanParent, "\"")
-      cleanParent = strings.Trim(cleanParent, "{")
-      cleanParent = strings.Trim(cleanParent, "}")
-    }
+		cleanParent := dVMSnapshot.Parent
+		if cleanParent != "" {
+			cleanParent = strings.TrimSpace(dVMSnapshot.Parent)
+			cleanParent = strings.Trim(cleanParent, "\"")
+			cleanParent = strings.Trim(cleanParent, "{")
+			cleanParent = strings.Trim(cleanParent, "}")
+		}
 		apiVMSnapshots = append(apiVMSnapshots, apiModels.VMSnapshot{
 			ID:      dVMSnapshot.ID,
 			Name:    dVMSnapshot.Name,

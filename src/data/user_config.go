@@ -71,7 +71,7 @@ func (j *JsonDatabase) CreateUserConfig(ctx basecontext.ApiContext, cfg models.U
 	cfg.UpdatedAt = helpers.GetUtcCurrentDateTime()
 	j.data.UserConfigs = append(j.data.UserConfigs, cfg)
 
-  j.SaveNow(ctx)
+	j.SaveNow(ctx)
 
 	return &cfg, nil
 }
@@ -114,7 +114,7 @@ func (j *JsonDatabase) UpdateUserConfig(ctx basecontext.ApiContext, cfg models.U
 		}
 
 		result := j.data.UserConfigs[i]
-    j.SaveNow(ctx)
+		j.SaveNow(ctx)
 		return &result, nil
 	}
 

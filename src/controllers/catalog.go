@@ -130,7 +130,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.PATCH).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/claims").
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(AddClaimsToCatalogManifestHandler()).
 		Register()
 
@@ -138,7 +138,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/claims").
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(RemoveClaimsToCatalogManifestHandler()).
 		Register()
 
@@ -146,7 +146,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.PATCH).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/roles").
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(AddRolesToCatalogManifestHandler()).
 		Register()
 
@@ -154,7 +154,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/roles").
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(RemoveRolesToCatalogManifestHandler()).
 		Register()
 
@@ -162,7 +162,7 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.PATCH).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/tags").
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(AddTagsToCatalogManifestHandler()).
 		Register()
 
@@ -170,15 +170,23 @@ func registerCatalogManifestHandlers(ctx basecontext.ApiContext, version string)
 		WithMethod(restapi.PATCH).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/connection").
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(UpdateCatalogManifestProviderHandler()).
+		Register()
+
+	restapi.NewController().
+		WithMethod(restapi.PUT).
+		WithVersion(version).
+		WithPath("/catalog/{catalogId}/{version}/{architecture}/metadata").
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
+		WithHandler(UpdateCatalogManifestMetadataHandler()).
 		Register()
 
 	restapi.NewController().
 		WithMethod(restapi.DELETE).
 		WithVersion(version).
 		WithPath("/catalog/{catalogId}/{version}/{architecture}/tags").
-		WithRequiredRole(constants.SUPER_USER_ROLE).
+		WithRequiredClaim(constants.CATALOG_MANAGER_UPDATE_CLAIM).
 		WithHandler(RemoveTagsToCatalogManifestHandler()).
 		Register()
 
@@ -277,6 +285,7 @@ func GetCatalogManifestsHandler() restapi.ControllerHandler {
 					break
 				}
 			}
+
 			if resultManifest == nil {
 				resultManifest := make(map[string][]models.CatalogManifest)
 				resultManifest[manifest.CatalogId] = append(resultManifest[manifest.CatalogId], mappers.DtoCatalogManifestToApi(manifest))
@@ -1902,19 +1911,40 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
+		userContext := ctx.GetUser()
+		if userContext == nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			return
+		}
+
+		job, err := jobManager.CreateNewJob(userContext.ID, "catalog", "push", "Initializing catalog push")
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
 		manifest := catalog.NewManifestService(ctx)
-		resultManifest := manifest.Push(&request)
+		resultManifest := manifest.PushWithExistingJob(job.ID, &request)
 		if resultManifest.HasErrors() {
 			errorMessage := "Error pushing manifest: \n"
 			for _, err := range resultManifest.Errors {
 				errorMessage += "\n" + err.Error() + " "
 			}
+			_ = jobManager.MarkJobError(job.ID, errors.New(errorMessage))
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: errorMessage,
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
+
+		_ = jobManager.MarkJobCompleteWithRecord(job.ID, "Catalog Manifest Pushed", resultManifest.ID, resultManifest.Name, "catalog_manifest", "")
 
 		resultData := mappers.DtoCatalogManifestToApi(mappers.CatalogManifestToDto(*resultManifest))
 		resultData.ID = resultManifest.ID
@@ -2106,8 +2136,26 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 			}
 		}
 
+		userContext := ctx.GetUser()
+		if userContext == nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			return
+		}
+
+		jobManager := jobs.Get(ctx)
+		if jobManager == nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			return
+		}
+
+		job, err := jobManager.CreateNewJob(userContext.ID, "catalog", "pull", "Initializing repository pull")
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
 		manifest := catalog.NewManifestService(ctx)
-		resultManifest := manifest.Pull(&request)
+		resultManifest := manifest.PullWithExistingJob(job.ID, &request)
 
 		if resultManifest.HasErrors() {
 			if sendTelemetry && amplitudeEvent.EventProperties != nil {
@@ -2119,12 +2167,15 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 			for _, err := range resultManifest.Errors {
 				errorMessage += "\n" + err.Error() + " "
 			}
+			_ = jobManager.MarkJobError(job.ID, errors.New(errorMessage))
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: errorMessage,
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
+
+		_ = jobManager.MarkJobCompleteWithRecord(job.ID, "Virtual Machine Pulled and Registered", resultManifest.MachineID, resultManifest.MachineName, "virtual_machine", "")
 
 		if sendTelemetry && amplitudeEvent.EventProperties != nil {
 			telemetryItem.Properties["success"] = "true"
@@ -2450,5 +2501,99 @@ func UpdateCatalogManifestProviderHandler() restapi.ControllerHandler {
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(manifest)
 		ctx.LogInfof("Manifest Claims Updated: %v", manifest.ID)
+	}
+}
+
+// @Summary		Updates metadata for a catalog manifest version
+// @Description	This endpoint atomically updates description, tags, required claims, and required roles for a catalog manifest version. Omit a field to leave it unchanged.
+// @Tags			Catalogs
+// @Accept			json
+// @Produce		json
+// @Param			catalogId		path		string										true	"Catalog ID"
+// @Param			version			path		string										true	"Version"
+// @Param			architecture	path		string										true	"Architecture"
+// @Param			request			body		models.UpdateCatalogManifestMetadataRequest	true	"Body"
+// @Success		200				{object}	models.CatalogManifest
+// @Failure		400				{object}	models.ApiErrorResponse
+// @Failure		401				{object}	models.OAuthErrorResponse
+// @Security		ApiKeyAuth
+// @Security		BearerAuth
+// @Router			/v1/catalog/{catalogId}/{version}/{architecture}/metadata [put]
+func UpdateCatalogManifestMetadataHandler() restapi.ControllerHandler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
+
+		var request catalog_models.UpdateCatalogManifestMetadataRequest
+		if err := http_helper.MapRequestBody(r, &request); err != nil {
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: "Invalid request body: " + err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			return
+		}
+
+		vars := mux.Vars(r)
+		catalogId := vars["catalogId"]
+		version := vars["version"]
+		architecture := vars["architecture"]
+
+		updatedManifest, err := dbService.UpdateCatalogManifestMetadata(ctx, catalogId, version, architecture, request.Description, request.Tags, request.RequiredClaims, request.RequiredRoles)
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+
+		catalogSvc := catalog.NewManifestService(ctx)
+		catalogRequest := mappers.DtoCatalogManifestToBase(*updatedManifest)
+		catalogRequest.CleanupRequest = cleanupservice.NewCleanupService()
+		catalogRequest.Errors = []error{}
+
+		resultOp := catalogSvc.PushMetadata(&catalogRequest)
+		if resultOp.HasErrors() {
+			errorMessage := "Error pushing manifest: \n"
+			for _, err := range resultOp.Errors {
+				errorMessage += "\n" + err.Error() + " "
+			}
+			ReturnApiError(ctx, w, models.ApiErrorResponse{
+				Message: errorMessage,
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+
+		// obfuscate provider credentials for external calls
+		cfg := config.Get()
+		enableObfuscation := cfg.EnableCredentialsObfuscation()
+		internalClientHeader := r.Header.Get(constants.INTERNAL_API_CLIENT)
+		if internalClientHeader != "true" && enableObfuscation {
+			if updatedManifest.Provider != nil {
+				newProvider := &data_models.CatalogManifestProvider{}
+				newProvider.Type = updatedManifest.Provider.Type
+				newProvider.Host = updatedManifest.Provider.Host
+				newProvider.Port = updatedManifest.Provider.Port
+				newProvider.Username = helpers.ObfuscateString(updatedManifest.Provider.Username)
+				newProvider.Password = helpers.ObfuscateString(updatedManifest.Provider.Password)
+				newProvider.ApiKey = helpers.ObfuscateString(updatedManifest.Provider.ApiKey)
+				if updatedManifest.Provider.Meta != nil {
+					newProvider.Meta = make(map[string]string)
+					for k, v := range updatedManifest.Provider.Meta {
+						newProvider.Meta[k] = helpers.ObfuscateString(v)
+					}
+				}
+				updatedManifest.Provider = newProvider
+			}
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(updatedManifest)
+		ctx.LogInfof("Manifest Metadata Updated: %v", updatedManifest.ID)
 	}
 }

@@ -1207,11 +1207,52 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			ctx.LogInfof("Machine created using vagrant box: %v", response.ID)
 			return
 		} else if request.CatalogManifest != nil {
-			response, err := createCatalogMachine(ctx, request, "")
+			// When called internally by the orchestrator, use the orchestrator's job ID
+			// (passed via header) so the single orchestrator job gets step-level updates.
+			// No separate job is created on the host side.
+			isInternalCall := r.Header.Get(constants.INTERNAL_API_CLIENT) == "true"
+			if isInternalCall {
+				orchestratorJobID := r.Header.Get(constants.ORCHESTRATOR_JOB_ID_HEADER)
+				response, err := createCatalogMachine(ctx, request, orchestratorJobID)
+				if err != nil {
+					ReturnApiError(ctx, w, models.NewFromError(err))
+					return
+				}
+				w.WriteHeader(http.StatusOK)
+				defer r.Body.Close()
+				_ = json.NewEncoder(w).Encode(response)
+				ctx.LogInfof("Machine created using catalog: %v", response.ID)
+				return
+			}
+
+			callerID, ok := getEffectiveCallerID(ctx)
+			if !ok {
+				ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+				return
+			}
+
+			jobManager := jobs.Get(ctx)
+			if jobManager == nil {
+				ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+				return
+			}
+
+			job, err := jobManager.CreateNewJob(callerID, "machines", "create", "Initializing catalog machine creation")
 			if err != nil {
+				ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+				return
+			}
+
+			_, _ = jobManager.UpdateJobProgress(job.ID, 1, constants.JobStateRunning)
+			response, err := createCatalogMachine(ctx, request, job.ID)
+			if err != nil {
+				_ = jobManager.MarkJobError(job.ID, err)
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
+
+			resultMessage := fmt.Sprintf("Virtual machine %s created", response.ID)
+			_ = jobManager.MarkJobCompleteWithRecord(job.ID, resultMessage, response.ID, response.Name, "virtual_machine", response.Host)
 
 			w.WriteHeader(http.StatusOK)
 			defer r.Body.Close()
@@ -1284,6 +1325,44 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
+		// When called internally by the orchestrator, reuse the orchestrator job ID
+		// directly so no duplicate "machines" job appears in the job list, and the
+		// orchestrator job is completed in-process without relying on the WebSocket
+		// event path (which is only active for remote hosts).
+		if r.Header.Get(constants.INTERNAL_API_CLIENT) == "true" {
+			orchestratorJobID := r.Header.Get(constants.ORCHESTRATOR_JOB_ID_HEADER)
+			if orchestratorJobID != "" {
+				jobManager := jobs.Get(ctx)
+				go func(orchJobID string, req models.CreateVirtualMachineRequest) {
+					asyncCtx := basecontext.NewRootBaseContext()
+					defer func() {
+						if rec := recover(); rec != nil {
+							asyncCtx.LogErrorf("[Machines] Panic in internal async create for job %s: %v", orchJobID, rec)
+							if jobManager != nil {
+								_ = jobManager.MarkJobError(orchJobID, fmt.Errorf("internal error: %v", rec))
+							}
+						}
+					}()
+					result, err := createCatalogMachine(asyncCtx, req, orchJobID)
+					if err != nil {
+						if jobManager != nil {
+							_ = jobManager.MarkJobError(orchJobID, err)
+						}
+						return
+					}
+					if jobManager != nil {
+						_ = jobManager.MarkJobCompleteWithRecord(orchJobID,
+							fmt.Sprintf("Virtual machine %s created", result.ID),
+							result.ID, result.Name, "virtual_machine", result.Host)
+					}
+				}(orchestratorJobID, request)
+				w.WriteHeader(http.StatusAccepted)
+				_ = json.NewEncoder(w).Encode(models.JobResponse{ID: orchestratorJobID})
+				ctx.LogInfof("Internal async machine create started for orchestrator job: %v", orchestratorJobID)
+				return
+			}
+		}
+
 		catalogConnection, err := resolveCatalogMachineConnection(ctx, request.CatalogManifest)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
@@ -1320,7 +1399,7 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 			}
 
 			resultMessage := fmt.Sprintf("Virtual machine %s created", result.ID)
-			_ = jobManager.MarkJobCompleteWithRecord(jobID, resultMessage, result.ID, "virtual_machine")
+			_ = jobManager.MarkJobCompleteWithRecord(jobID, resultMessage, result.ID, result.Name, "virtual_machine", result.Host)
 		}(job.ID, request)
 
 		response := mappers.MapJobToApiJob(*job)
@@ -1373,6 +1452,10 @@ func CreateVMSnapshot() restapi.ControllerHandler {
 			snapshots, err = svc.GetVMSnapshotsFromDB(ctx, VMId)
 			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			if snapshots == nil {
+				ReturnApiError(ctx, w, models.NewFromError(errors.NewWithCodef(http.StatusInternalServerError, "snapshot database is unavailable for virtual machine %s", VMId)))
 				return
 			}
 			for _, snapshot := range snapshots.Snapshots {
@@ -1435,6 +1518,10 @@ func DeleteVMSnapshot() restapi.ControllerHandler {
 				ReturnApiError(ctx, w, models.NewFromError(err))
 				return
 			}
+			if snapshots == nil {
+				ReturnApiError(ctx, w, models.NewFromError(errors.NewWithCodef(http.StatusInternalServerError, "snapshot database is unavailable for virtual machine %s", VMId)))
+				return
+			}
 			found := false
 			for _, snapshot := range snapshots.Snapshots {
 				if snapshot.ID == SnapshotId {
@@ -1485,6 +1572,10 @@ func DeleteAllVMSnapshots() restapi.ControllerHandler {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
 		}
+		if snapshots == nil {
+			ReturnApiError(ctx, w, models.NewFromError(errors.NewWithCodef(http.StatusInternalServerError, "snapshot database is unavailable for virtual machine %s", VMId)))
+			return
+		}
 
 		for _, snapshot := range snapshots.Snapshots {
 			err = svc.DeleteVMSnapshot(ctx, VMId, snapshot.ID, &models.DeleteVMSnapshotRequest{})
@@ -1503,6 +1594,10 @@ func DeleteAllVMSnapshots() restapi.ControllerHandler {
 			snapshot, err := svc.GetVMSnapshotsFromDB(ctx, VMId)
 			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			if snapshot == nil {
+				ReturnApiError(ctx, w, models.NewFromError(errors.NewWithCodef(http.StatusInternalServerError, "snapshot database is unavailable for virtual machine %s", VMId)))
 				return
 			}
 			if len(snapshot.Snapshots) == 0 {
@@ -1539,24 +1634,27 @@ func ListVMSnapshot() restapi.ControllerHandler {
 
 		params := mux.Vars(r)
 		VMId := params["id"]
-    //qeury params for grouping snapshots by parent or not
-    query := r.URL.Query()
-    groupByParent := query.Get("group")
-
+		//qeury params for grouping snapshots by parent or not
+		query := r.URL.Query()
+		groupByParent := query.Get("group")
 
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-    var response *models.ListVMSnapshotResponse
-    var err error
-    if groupByParent == "true" {
-      response, err = svc.GetVMSnapshotsTreeFromDB(ctx, VMId)
-    } else {
-		response, err = svc.GetVMSnapshotsFromDB(ctx, VMId)
-    }
-    
+		var response *models.ListVMSnapshotResponse
+		var err error
+		if groupByParent == "true" {
+			response, err = svc.GetVMSnapshotsTreeFromDB(ctx, VMId)
+		} else {
+			response, err = svc.GetVMSnapshotsFromDB(ctx, VMId)
+		}
+
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+		if response == nil {
+			ReturnApiError(ctx, w, models.NewFromError(errors.NewWithCodef(http.StatusInternalServerError, "snapshot database is unavailable for virtual machine %s", VMId)))
 			return
 		}
 
@@ -1609,6 +1707,10 @@ func RevertVMSnapshot() restapi.ControllerHandler {
 			snapshot, err = svc.GetVMSnapshotsFromDB(ctx, VMId)
 			if err != nil {
 				ReturnApiError(ctx, w, models.NewFromError(err))
+				return
+			}
+			if snapshot == nil {
+				ReturnApiError(ctx, w, models.NewFromError(errors.NewWithCodef(http.StatusInternalServerError, "snapshot database is unavailable for virtual machine %s", VMId)))
 				return
 			}
 			for _, snapshot := range snapshot.Snapshots {
