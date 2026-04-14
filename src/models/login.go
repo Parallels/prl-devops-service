@@ -3,19 +3,31 @@ package models
 import "github.com/Parallels/prl-devops-service/errors"
 
 type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email,omitempty"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	ApiKey   string `json:"api_key,omitempty"`
 }
 
 func (r *LoginRequest) Validate() error {
-	if r.Email == "" {
-		return errors.NewWithCode("Email is required", 400)
+	// Accept either Email+Password, Username+Password, or ApiKey (with optional Password)
+	if r.ApiKey != "" {
+		// API key login, password optional
+		return nil
 	}
-	if r.Password == "" {
-		return errors.NewWithCode("Password is required", 400)
+	if r.Email != "" {
+		if r.Password == "" {
+			return errors.NewWithCode("Password is required for email login", 400)
+		}
+		return nil
 	}
-
-	return nil
+	if r.Username != "" {
+		if r.Password == "" {
+			return errors.NewWithCode("Password is required for username login", 400)
+		}
+		return nil
+	}
+	return errors.NewWithCode("Either email, username or api_key must be provided", 400)
 }
 
 type LoginResponse struct {

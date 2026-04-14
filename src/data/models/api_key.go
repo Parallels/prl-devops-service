@@ -10,5 +10,10 @@ type ApiKey struct {
 	UpdatedAt string `json:"updated_at"`
 	RevokedAt string `json:"revoked_at"`
 	ExpiresAt string `json:"expires_at"`
+	UserID    string `json:"user_id,omitempty"`
 	*DbRecord `json:"db_record"`
+}
+
+func (a ApiKey) GetUserID() string {
+	return a.UserID
 }

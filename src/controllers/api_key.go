@@ -18,12 +18,35 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func enrichApiKeyWithUser(ctx basecontext.ApiContext, apiKey *models.ApiKeyResponse) {
+	if apiKey.UserID == "" {
+		return
+	}
+
+	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	if err != nil {
+		return
+	}
+
+	user, err := dbService.GetUser(ctx, apiKey.UserID)
+	if err != nil {
+		return
+	}
+
+	if user != nil {
+		apiKey.UserEmail = user.Email
+		apiKey.UserName = user.Name
+		apiKey.UserUsername = user.Username
+	}
+}
+
 func registerApiKeysHandlers(ctx basecontext.ApiContext, version string) {
 	ctx.LogInfof("Registering version %s ApiKeys handlers", version)
 	restapi.NewController().
 		WithMethod(restapi.GET).
 		WithVersion(version).WithPath("/auth/api_keys").
 		WithRequiredClaim(constants.LIST_API_KEY_CLAIM).
+		WithRequiredClaim(constants.LIST_OWN_API_KEY_CLAIM).
 		WithHandler(GetApiKeysHandler()).
 		Register()
 
@@ -32,6 +55,7 @@ func registerApiKeysHandlers(ctx basecontext.ApiContext, version string) {
 		WithVersion(version).
 		WithPath("/auth/api_keys/{id}").
 		WithRequiredClaim(constants.LIST_API_KEY_CLAIM).
+		WithRequiredClaim(constants.LIST_OWN_API_KEY_CLAIM).
 		WithHandler(GetApiKeyHandler()).
 		Register()
 
@@ -40,6 +64,7 @@ func registerApiKeysHandlers(ctx basecontext.ApiContext, version string) {
 		WithVersion(version).
 		WithPath("/auth/api_keys").
 		WithRequiredClaim(constants.CREATE_API_KEY_CLAIM).
+		WithRequiredClaim(constants.CREATE_OWN_API_KEY_CLAIM).
 		WithHandler(CreateApiKeyHandler()).
 		Register()
 
@@ -48,6 +73,7 @@ func registerApiKeysHandlers(ctx basecontext.ApiContext, version string) {
 		WithVersion(version).
 		WithPath("/auth/api_keys/{id}").
 		WithRequiredClaim(constants.DELETE_API_KEY_CLAIM).
+		WithRequiredClaim(constants.DELETE_OWN_API_KEY_CLAIM).
 		WithHandler(DeleteApiKeyHandler()).
 		Register()
 
@@ -113,6 +139,25 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 
 		dtoApiKey := mappers.ApiKeyRequestToDto(request)
 
+		authContext := ctx.GetAuthorizationContext()
+		if authContext != nil && authContext.User != nil {
+			hasFullCreateClaim := authContext.HasEffectiveClaim(constants.CREATE_API_KEY_CLAIM)
+			hasOwnCreateClaim := authContext.HasEffectiveClaim(constants.CREATE_OWN_API_KEY_CLAIM)
+
+			if hasOwnCreateClaim {
+				// Users with CREATE_OWN_API_KEY_CLAIM can only create for themselves
+				if !hasFullCreateClaim && request.UserID != "" && request.UserID != authContext.User.ID {
+					createApiKeyDiag.AddError(strconv.Itoa(http.StatusForbidden), "You do not have permission to create API keys for other users", "Validation")
+					ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createApiKeyDiag, http.StatusForbidden))
+					return
+				}
+				// Auto-assign to user's ID if not provided
+				if dtoApiKey.UserID == "" {
+					dtoApiKey.UserID = authContext.User.ID
+				}
+			}
+		}
+
 		dtoApiKeyResult, err := dbService.CreateApiKey(ctx, dtoApiKey)
 		if err != nil {
 			rsp := models.NewFromError(err)
@@ -163,6 +208,10 @@ func GetApiKeysHandler() restapi.ControllerHandler {
 		}
 
 		result := mappers.ApiKeysDtoToApiKeyResponse(dtoApiKeys)
+
+		for i := range result {
+			enrichApiKeyWithUser(ctx, &result[i])
+		}
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
@@ -250,6 +299,8 @@ func GetApiKeyHandler() restapi.ControllerHandler {
 		}
 
 		response := mappers.ApiKeyDtoToApiKeyResponse(*dtoApiKey)
+
+		enrichApiKeyWithUser(ctx, &response)
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)

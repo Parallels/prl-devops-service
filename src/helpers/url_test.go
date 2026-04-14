@@ -141,3 +141,59 @@ func TestGetResolvedIPs(t *testing.T) {
 		})
 	}
 }
+
+func TestIsWhitelisted(t *testing.T) {
+	whitelistedDomains = []string{"local-build.co", "example.com"}
+
+	tests := []struct {
+		name     string
+		hostname string
+		want     bool
+	}{
+		{name: "exact match local-build.co", hostname: "local-build.co", want: true},
+		{name: "exact match example.com", hostname: "example.com", want: true},
+		{name: "subdomain local-build.co", hostname: "devops-catalog.local-build.co", want: true},
+		{name: "subdomain example.com", hostname: "api.example.com", want: true},
+		{name: "different domain", hostname: "other.com", want: false},
+		{name: "uppercase match", hostname: "LOCAL-BUILD.CO", want: true},
+		{name: "partial match", hostname: "notlocal-build.co", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isWhitelisted(tt.hostname)
+			if got != tt.want {
+				t.Errorf("isWhitelisted(%s) = %v, want %v", tt.hostname, got, tt.want)
+			}
+		})
+	}
+
+	whitelistedDomains = []string{}
+}
+
+func TestIsUrlAllowed_WithWhitelist(t *testing.T) {
+	whitelistedDomains = []string{"local-build.co"}
+
+	tests := []struct {
+		name        string
+		url         string
+		expectError bool
+	}{
+		{name: "whitelisted domain should pass", url: "https://devops-catalog.local-build.co", expectError: false},
+		{name: "non-whitelisted private IP should fail", url: "http://192.168.1.1", expectError: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := IsUrlAllowed(tt.url)
+			if tt.expectError && err == nil {
+				t.Errorf("expected error, got nil")
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+
+	whitelistedDomains = []string{}
+}
