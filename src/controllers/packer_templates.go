@@ -186,8 +186,9 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 		var request models.CreatePackerTemplateRequest
 		createPackerTemplateDiag := errors.NewDiagnostics("/templates/packer")
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			createPackerTemplateDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createPackerTemplateDiag, http.StatusBadRequest))
+			rsp := models.NewFromError(err)
+			createPackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "MapRequestBody")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createPackerTemplateDiag, rsp.Code))
 			return
 		}
 		if diag := request.Validate(); diag.HasErrors() {
