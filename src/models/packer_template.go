@@ -1,6 +1,11 @@
 package models
 
-import "github.com/Parallels/prl-devops-service/errors"
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/Parallels/prl-devops-service/errors"
+)
 
 type CreatePackerTemplateRequest struct {
 	ID             string            `json:"id"`
@@ -18,12 +23,13 @@ type CreatePackerTemplateRequest struct {
 	RequiredClaims []string          `json:"required_claims,omitempty"`
 }
 
-func (m *CreatePackerTemplateRequest) Validate() error {
+func (m *CreatePackerTemplateRequest) Validate() *errors.Diagnostics {
+	diagnostics := errors.NewDiagnostics("CreatePackerTemplateRequest validation")
 	if m.ID == "" {
-		return errors.NewWithCode("id cannot be empty", 400)
+		diagnostics.AddError(strconv.Itoa(http.StatusBadRequest), "id cannot be empty", "CreatePackerTemplateRequest")
 	}
 	if m.Name == "" {
-		return errors.NewWithCode("name cannot be empty", 400)
+		diagnostics.AddError(strconv.Itoa(http.StatusBadRequest), "name cannot be empty", "CreatePackerTemplateRequest")
 	}
 
 	if m.Specs == nil {
@@ -49,7 +55,7 @@ func (m *CreatePackerTemplateRequest) Validate() error {
 		m.RequiredRoles = make([]string, 0)
 	}
 
-	return nil
+	return diagnostics
 }
 
 type PackerTemplateResponse struct {
