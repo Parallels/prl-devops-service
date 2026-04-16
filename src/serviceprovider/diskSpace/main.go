@@ -2,12 +2,14 @@ package diskspaceservice
 
 import (
 	"context"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
@@ -89,16 +91,20 @@ func (d *DiskSpaceService) IsRunning() bool {
 	return d.isRunning
 }
 
-func (d *DiskSpaceService) GetCacheDiskSpace(ctx basecontext.ApiContext) (int64, error) {
+func (d *DiskSpaceService) GetCacheDiskSpace(ctx basecontext.ApiContext, diag *errors.Diagnostics) int64 {
 	cacheFolder, err := config.Get().CatalogCacheFolder()
 	if err != nil {
-		return 0, err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "CatalogCacheFolder")
+		return 0
 	}
 	diskSpace, err := helpers.GetFreeDiskSpace(cacheFolder)
 	if err != nil {
-		return 0, err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetFreeDiskSpace")
+		return 0
 	}
-	return diskSpace, nil
+	return diskSpace
 }
 
 // SetParallelsHomePathProvider injects the function used to query Parallels home disk space.
@@ -117,19 +123,21 @@ func (d *DiskSpaceService) getParallelsHomepath(ctx basecontext.ApiContext, user
 	return d.parallelsHomepathFn(ctx, username)
 }
 
-func (d *DiskSpaceService) GetDiskSpaceAvailable(ctx basecontext.ApiContext, username, folderPath string) (models.DiskSpaceAvailable, error) {
+func (d *DiskSpaceService) GetDiskSpaceAvailable(ctx basecontext.ApiContext, username, folderPath string, diag *errors.Diagnostics) models.DiskSpaceAvailable {
 	response := models.DiskSpaceAvailable{}
 
-	cacheDiskSpace, err := d.GetCacheDiskSpace(ctx)
-	if err != nil {
-		return response, err
+	cacheDiskSpace := d.GetCacheDiskSpace(ctx, diag)
+	if diag.HasErrors() {
+		return response
 	}
 	response.CacheFolder = cacheDiskSpace
 
 	if folderPath != "" {
 		diskSpace, err := helpers.GetFreeDiskSpace(folderPath)
 		if err != nil {
-			return response, err
+			rsp := models.NewFromError(err)
+			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetFreeDiskSpace")
+			return response
 		}
 		response.Given = diskSpace
 	}
@@ -142,16 +150,20 @@ func (d *DiskSpaceService) GetDiskSpaceAvailable(ctx basecontext.ApiContext, use
 
 	parallelsHomeDir, err := d.getParallelsHomepath(ctx, username)
 	if err != nil {
-		return response, err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "getParallelsHomepath")
+		return response
 	}
 	parallelsHomeDiskSpace, err := helpers.GetFreeDiskSpace(parallelsHomeDir)
 	if err != nil {
-		return response, err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetFreeDiskSpace")
+		return response
 	}
 	response.ParallelsHome = parallelsHomeDiskSpace
 	response.PrlHomePath = folderPath
 	response.PrlHomePath = parallelsHomeDir
-	return response, nil
+	return response
 }
 
 func (d *DiskSpaceService) startDiskspaceWorker() {
@@ -178,10 +190,10 @@ func (d *DiskSpaceService) CheckDiskSpaceAndBroadcast() {
 	}
 
 	event := models.DiskSpaceAvailable{}
-
-	cacheDiskSpace, err := d.GetCacheDiskSpace(d.ctx)
-	if err != nil {
-		d.ctx.LogErrorf("[DiskSpace] [worker] Error getting cache disk space: %v", err)
+	workerDiag := errors.NewDiagnostics("BackgroundWorker")
+	cacheDiskSpace := d.GetCacheDiskSpace(d.ctx, workerDiag)
+	if workerDiag.HasErrors() {
+		d.ctx.LogErrorf("[DiskSpace] [worker] Error getting cache disk space: %v", workerDiag.Errors[0].Message)
 	} else {
 		d.ctx.LogInfof("[DiskSpace] [worker] Cache disk space available: %d MB", cacheDiskSpace)
 		event.CacheFolder = cacheDiskSpace

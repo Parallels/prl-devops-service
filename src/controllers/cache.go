@@ -148,7 +148,8 @@ func GetCatalogCacheHandler() restapi.ControllerHandler {
 		}
 
 		var freeDiskSpace int64
-		if ds, err := diskspace.Get(ctx).GetCacheDiskSpace(ctx); err == nil {
+		localDiag := errors.NewDiagnostics("GetCacheDiskSpaceFallback")
+		if ds := diskspace.Get(ctx).GetCacheDiskSpace(ctx, localDiag); !localDiag.HasErrors() {
 			freeDiskSpace = ds
 		} else if hwInfo, err := serviceprovider.Get().System.GetHardwareInfo(ctx); err == nil {
 			freeDiskSpace = int64(hwInfo.FreeDiskSize)

@@ -2,6 +2,7 @@ package parallelsdesktop
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/errors"
@@ -10,7 +11,7 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
-func (s *ParallelsService) GetLicense() (*models.ParallelsDesktopLicense, error) {
+func (s *ParallelsService) GetLicense(diag *errors.Diagnostics) *models.ParallelsDesktopLicense {
 	getLicenseCmd := helpers.Command{
 		Command: s.serverExecutable,
 		Args:    []string{"info", "--license", "--json"},
@@ -18,7 +19,9 @@ func (s *ParallelsService) GetLicense() (*models.ParallelsDesktopLicense, error)
 
 	output, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), getLicenseCmd, helpers.ExecutionTimeout)
 	if err != nil {
-		return nil, err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ExecuteWithOutput")
+		return nil
 	}
 
 	output = strings.ReplaceAll(output, "This feature is not available in this edition of Parallels Desktop. \n", "")
@@ -26,10 +29,12 @@ func (s *ParallelsService) GetLicense() (*models.ParallelsDesktopLicense, error)
 	var license models.ParallelsDesktopLicense
 	err = json.Unmarshal([]byte(output), &license)
 	if err != nil {
-		return nil, err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Unmarshal")
+		return nil
 	}
 
-	return &license, nil
+	return &license
 }
 
 func (s *ParallelsService) InstallLicense(licenseKey, username, password string) error {
