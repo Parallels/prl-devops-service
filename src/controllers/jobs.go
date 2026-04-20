@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -80,15 +81,19 @@ func GetJobsHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		getJobsDiag := errors.NewDiagnostics("/jobs")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getJobsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetDatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getJobsDiag, rsp.Code))
 			return
 		}
 
 		userContext := ctx.GetUser()
 		if userContext == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			getJobsDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getJobsDiag, http.StatusUnauthorized))
 			return
 		}
 
@@ -99,7 +104,9 @@ func GetJobsHandler() restapi.ControllerHandler {
 		if canListAll {
 			dbJobs, err := dbService.GetJobs(ctx)
 			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+				rsp := models.NewFromError(err)
+				getJobsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetJobs")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getJobsDiag, rsp.Code))
 				return
 			}
 			for _, dbJob := range dbJobs {
@@ -108,7 +115,9 @@ func GetJobsHandler() restapi.ControllerHandler {
 		} else {
 			dbJobs, err := dbService.GetJobsByOwner(ctx, userContext.ID)
 			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+				rsp := models.NewFromError(err)
+				getJobsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetJobsByOwner")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getJobsDiag, rsp.Code))
 				return
 			}
 			for _, dbJob := range dbJobs {
@@ -131,31 +140,37 @@ func GetJobHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		jobId := vars["id"]
+		getJobDiag := errors.NewDiagnostics("/jobs/" + jobId)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			getJobDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetDatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getJobDiag, rsp.Code))
 			return
 		}
 
 		userContext := ctx.GetUser()
 		if userContext == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			getJobDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getJobDiag, http.StatusUnauthorized))
 			return
 		}
 
-		vars := mux.Vars(r)
-		jobId := vars["id"]
-
 		dbJob, err := dbService.GetJob(ctx, jobId)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusNotFound))
+			rsp := models.NewFromError(err)
+			getJobDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetJob")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getJobDiag, rsp.Code))
 			return
 		}
 
 		authCtx := ctx.GetAuthorizationContext()
 		canListAll := authCtx != nil && authCtx.UserHasClaim("job_manager_list")
 		if !canListAll && !strings.EqualFold(dbJob.Owner, userContext.ID) {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusForbidden, Message: "Forbidden to view this job"})
+			getJobDiag.AddError(strconv.Itoa(http.StatusForbidden), "Forbidden to view this job", "CheckAuthorization")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getJobDiag, http.StatusForbidden))
 			return
 		}
 
@@ -172,10 +187,10 @@ func GetJobHandler() restapi.ControllerHandler {
 // @Tags			Jobs
 // @Param			id	path	string	true	"Job ID"
 // @Success		204
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
-// @Failure		403	{object}	models.ApiErrorResponse
-// @Failure		404	{object}	models.ApiErrorResponse
+// @Failure		403	{object}	models.ApiErrorDiagnosticsResponse
+// @Failure		404	{object}	models.ApiErrorDiagnosticsResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/jobs/{id} [delete]
@@ -184,43 +199,51 @@ func DeleteJobHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		vars := mux.Vars(r)
+		jobId := vars["id"]
+		deleteJobDiag := errors.NewDiagnostics("/jobs/" + jobId)
 		userContext := ctx.GetUser()
 		if userContext == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			deleteJobDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteJobDiag, http.StatusUnauthorized))
 			return
 		}
 
-		vars := mux.Vars(r)
-		jobId := vars["id"]
-
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			deleteJobDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetDatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteJobDiag, rsp.Code))
 			return
 		}
 
 		dbJob, err := dbService.GetJob(ctx, jobId)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusNotFound))
+			rsp := models.NewFromError(err)
+			deleteJobDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetJob")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteJobDiag, rsp.Code))
 			return
 		}
 
 		authCtx := ctx.GetAuthorizationContext()
 		canDeleteAll := authCtx != nil && authCtx.UserHasClaim("job_manager_delete")
 		if !canDeleteAll && !strings.EqualFold(dbJob.Owner, userContext.ID) {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusForbidden, Message: "Forbidden to delete this job"})
+			deleteJobDiag.AddError(strconv.Itoa(http.StatusForbidden), "Forbidden to delete this job", "CheckAuthorization")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteJobDiag, http.StatusForbidden))
 			return
 		}
 
 		jobManager := jobs.Get(ctx)
 		if jobManager == nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			deleteJobDiag.AddError(strconv.Itoa(http.StatusInternalServerError), "Job Manager is not available", "GetJobManager")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteJobDiag, http.StatusInternalServerError))
 			return
 		}
 
 		if err := jobManager.DeleteJob(jobId); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteJobDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DeleteJob")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteJobDiag, rsp.Code))
 			return
 		}
 
@@ -234,15 +257,19 @@ func CleanupJobsHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		cleanupJobsDiag := errors.NewDiagnostics("/jobs/cleanup")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			cleanupJobsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetDatabaseService")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(cleanupJobsDiag, rsp.Code))
 			return
 		}
 
 		userContext := ctx.GetUser()
 		if userContext == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			cleanupJobsDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(cleanupJobsDiag, http.StatusUnauthorized))
 			return
 		}
 
@@ -252,13 +279,17 @@ func CleanupJobsHandler() restapi.ControllerHandler {
 		if canListAll {
 			err = dbService.DeleteJobsByState(ctx, constants.JobStateCompleted, constants.JobStateFailed)
 			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+				rsp := models.NewFromError(err)
+				cleanupJobsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DeleteJobsByState")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(cleanupJobsDiag, rsp.Code))
 				return
 			}
 		} else {
 			dbJobs, err := dbService.GetJobsByOwner(ctx, userContext.ID)
 			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+				rsp := models.NewFromError(err)
+				cleanupJobsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetJobsByOwner")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(cleanupJobsDiag, rsp.Code))
 				return
 			}
 
@@ -286,22 +317,25 @@ func DebugJobHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		debugJobDiag := errors.NewDiagnostics("/jobs/debug")
 		userContext := ctx.GetUser()
 		if userContext == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			debugJobDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(debugJobDiag, http.StatusUnauthorized))
 			return
 		}
 
 		var request models.JobCreateRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusBadRequest, Message: "Invalid request body"})
+			debugJobDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body", "MapRequestBody")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(debugJobDiag, http.StatusBadRequest))
 			return
 		}
 
 		jobManager := jobs.Get(ctx)
 		if jobManager == nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			debugJobDiag.AddError(strconv.Itoa(http.StatusInternalServerError), "Job Manager is not available", "GetJobManager")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(debugJobDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -312,7 +346,9 @@ func DebugJobHandler() restapi.ControllerHandler {
 
 		job, err := jobManager.CreateNewJob(userContext.ID, request.JobType, request.JobOperation, action)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			rsp := models.NewFromError(err)
+			debugJobDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "CreateNewJob")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(debugJobDiag, rsp.Code))
 			return
 		}
 
@@ -342,7 +378,11 @@ func runDebugProfileSimple(jobId string, jobManager *jobs.JobManagerService) {
 	ns := tracker.GetProgressService()
 	bCtx := basecontext.NewRootBaseContext()
 	bCtx.LogInfof("[Debug/simple] Starting job %s", jobId)
-
+	defer func() {
+		if r := recover(); r != nil {
+			bCtx.LogErrorf("Panic in debug profile: %v", r)
+		}
+	}()
 	if ns != nil {
 		ns.NotifyJobMessage(jobId, "Initializing debug background environment...")
 		time.Sleep(1 * time.Second)
@@ -373,6 +413,11 @@ func runDebugProfilePullRemote(jobId string, jobManager *jobs.JobManagerService)
 	}
 	bCtx := basecontext.NewRootBaseContext()
 	bCtx.LogInfof("[Debug/pull_remote] Starting job %s", jobId)
+	defer func() {
+		if r := recover(); r != nil {
+			bCtx.LogErrorf("Panic in debug profile: %v", r)
+		}
+	}()
 
 	// Register the same step configuration as catalog/pull.go (no caching)
 	ns.RegisterJobWorkflow(jobId, []tracker.JobStep{
@@ -480,7 +525,11 @@ func runDebugProfilePullCache(jobId string, jobManager *jobs.JobManagerService) 
 	}
 	bCtx := basecontext.NewRootBaseContext()
 	bCtx.LogInfof("[Debug/pull_cache] Starting job %s", jobId)
-
+	defer func() {
+		if r := recover(); r != nil {
+			bCtx.LogErrorf("Panic in debug profile: %v", r)
+		}
+	}()
 	ns.RegisterJobWorkflow(jobId, []tracker.JobStep{
 		{Name: constants.ActionValidatingRequest, Weight: 3, Parallel: false, HasPercentage: false},
 		{Name: constants.ActionCheckingLocalCatalog, Weight: 3, Parallel: false, HasPercentage: false},
@@ -555,6 +604,11 @@ func runDebugProfileSkippedSteps(jobId string, jobManager *jobs.JobManagerServic
 	}
 	bCtx := basecontext.NewRootBaseContext()
 	bCtx.LogInfof("[Debug/skipped_steps] Starting job %s", jobId)
+	defer func() {
+		if r := recover(); r != nil {
+			bCtx.LogErrorf("Panic in debug profile: %v", r)
+		}
+	}()
 
 	ns.RegisterJobWorkflow(jobId, []tracker.JobStep{
 		{Name: constants.ActionValidatingRequest, Weight: 2, Parallel: false, HasPercentage: false},
