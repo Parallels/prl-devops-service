@@ -2,14 +2,14 @@ package controllers
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	prlerrors "github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/logs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -104,28 +104,27 @@ func registerConfigHandlers(ctx basecontext.ApiContext, version string) {
 // @Tags			Config
 // @Produce		json
 // @Success		200	{object}	models.ParallelsDesktopLicense
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/parallels_desktop/key [get]
+// @Router			/v1/config/parallels-desktop/license [get]
 func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		getPDLicenseDiag := prlerrors.NewDiagnostics("/config/parallels-desktop/license")
 		provider := serviceprovider.Get()
 		if provider.ParallelsDesktopService == nil || !provider.ParallelsDesktopService.Installed() {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Parallels Desktop is not installed",
-				Code:    http.StatusNotFound,
-			})
+			getPDLicenseDiag.AddError("404", "Parallels Desktop is not installed", "GetParallelsDesktopLicense")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getPDLicenseDiag, http.StatusNotFound))
 			return
 		}
 
-		license, err := provider.ParallelsDesktopService.GetLicense()
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+		license := provider.ParallelsDesktopService.GetLicense(getPDLicenseDiag)
+		if getPDLicenseDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getPDLicenseDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -141,7 +140,7 @@ func GetParallelsDesktopLicenseHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			installToolsRequest	body		models.InstallToolsRequest	true	"Install Tools Request"
 // @Success		200					{object}	models.InstallToolsResponse
-// @Failure		400					{object}	models.ApiErrorResponse
+// @Failure		400					{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401					{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -151,19 +150,16 @@ func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		installToolsDiag := prlerrors.NewDiagnostics("/config/tools/install")
 		var request models.InstallToolsRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			installToolsDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "MapRequestBody")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(installToolsDiag, http.StatusBadRequest))
 			return
 		}
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		request.Validate(installToolsDiag)
+		if installToolsDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(installToolsDiag, http.StatusBadRequest))
 			return
 		}
 
@@ -205,7 +201,7 @@ func Install3rdPartyToolsHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			uninstallToolsRequest	body		models.UninstallToolsRequest	true	"Uninstall Tools Request"
 // @Success		200						{object}	models.InstallToolsResponse
-// @Failure		400						{object}	models.ApiErrorResponse
+// @Failure		400						{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401						{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -215,19 +211,16 @@ func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		uninstallToolsDiag := prlerrors.NewDiagnostics("/config/tools/uninstall")
 		var request models.UninstallToolsRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			uninstallToolsDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "MapRequestBody")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(uninstallToolsDiag, http.StatusBadRequest))
 			return
 		}
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		request.Validate(uninstallToolsDiag)
+		if uninstallToolsDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(uninstallToolsDiag, http.StatusBadRequest))
 			return
 		}
 
@@ -265,7 +258,7 @@ func Uninstall3rdPartyToolsHandler() restapi.ControllerHandler {
 // @Tags			Config
 // @Produce		json
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -286,7 +279,7 @@ func RestartApiHandler() restapi.ControllerHandler {
 // @Tags			Config
 // @Produce		json
 // @Success		200	{object}	models.SystemUsageResponse
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -297,14 +290,25 @@ func GetHardwareInfo() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		cfg := config.Get()
 		defer Recover(ctx, r, w)
+		getHardwareInfoDiag := prlerrors.NewDiagnostics("/config/hardware")
 		provider := serviceprovider.Get()
 		os := system.Get().GetOperatingSystem()
 		var hardwareInfo *models.SystemUsageResponse
-		var err error
 		if os == "macos" {
-			hardwareInfo, err = provider.ParallelsDesktopService.GetHardwareUsage(ctx)
+			hardwareInfo = provider.ParallelsDesktopService.GetHardwareUsage(ctx, getHardwareInfoDiag)
 		} else {
-			hardwareInfo, err = provider.System.GetHardwareUsage(ctx)
+			hardwareInfo = provider.System.GetHardwareUsage(ctx, getHardwareInfoDiag)
+		}
+		// 1. First, safely check if the error is what failed
+		if getHardwareInfoDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getHardwareInfoDiag, http.StatusInternalServerError))
+			return
+		}
+		// 2. ONLY if there was no error do we check if the data is missing!
+		if hardwareInfo == nil {
+			getHardwareInfoDiag.AddError("500", "Hardware info not found", "GetHardwareUsage")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getHardwareInfoDiag, http.StatusInternalServerError))
+			return
 		}
 
 		hardwareInfo.EnabledModules = cfg.GetEnabledModules()
@@ -334,7 +338,7 @@ func GetHardwareInfo() restapi.ControllerHandler {
 		}
 
 		var freeDiskSpace int64
-		if ds, err := diskspace.Get(ctx).GetCacheDiskSpace(ctx); err == nil {
+		if ds := diskspace.Get(ctx).GetCacheDiskSpace(ctx, getHardwareInfoDiag); !getHardwareInfoDiag.HasErrors() {
 			freeDiskSpace = ds
 		} else if hwInfo, err := provider.System.GetHardwareInfo(ctx); err == nil {
 			freeDiskSpace = int64(hwInfo.FreeDiskSize)
@@ -353,11 +357,6 @@ func GetHardwareInfo() restapi.ControllerHandler {
 			}
 		}
 
-		if err != nil || hardwareInfo == nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
-			return
-		}
-
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(hardwareInfo)
 	}
@@ -373,6 +372,8 @@ func GetHardwareInfo() restapi.ControllerHandler {
 func GetSystemHealth() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
+		ctx := GetBaseContext(r)
+		defer Recover(ctx, r, w)
 		provider := serviceprovider.Get()
 		result := models.ApiHealthCheck{}
 
@@ -445,7 +446,7 @@ func GetSystemHealth() restapi.ControllerHandler {
 // @Tags			Config
 // @Produce		plain
 // @Success		200
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -455,34 +456,28 @@ func GetSystemLogs() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		getSystemLogsDiag := prlerrors.NewDiagnostics("/logs")
 		cfg := config.Get()
 
 		// Checking if we have the logs to file enabled so we can read the logs
 		if !cfg.GetBoolKey(constants.LOG_TO_FILE_ENV_VAR) && !cfg.GetBoolKey(constants.PRL_DEVOPS_LOG_TO_FILE_ENV_VAR) {
-			err := errors.New("logs to file is not enabled, we cannot read the logs")
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Failed to read log file: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			getSystemLogsDiag.AddError(strconv.Itoa(http.StatusBadRequest), "logs to file is not enabled, we cannot read the logs", "GetBoolKey")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getSystemLogsDiag, http.StatusBadRequest))
 			return
 		}
 
 		logFile := logs.GetLogFilePath(ctx)
 		if logFile == "" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Failed to read log file: log file path is empty",
-				Code:    http.StatusBadRequest,
-			})
+			getSystemLogsDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Failed to read log file: log file path is empty", "GetLogFilePath")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getSystemLogsDiag, http.StatusBadRequest))
 			return
 		}
 
 		content, err := os.ReadFile(logFile)
 		if err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: fmt.Sprintf("Failed to read log file %s: %v", logFile, err.Error()),
-				Code:    http.StatusBadRequest,
-			})
+			rsp := models.NewFromError(err)
+			getSystemLogsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Failed to read log file")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getSystemLogsDiag, rsp.Code))
 			return
 		}
 
@@ -497,7 +492,7 @@ func GetSystemLogs() restapi.ControllerHandler {
 // @Tags			Config
 // @Produce		json
 // @Success		101	"Switching Protocols to websocket"
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -569,7 +564,7 @@ func StreamSystemLogs() restapi.ControllerHandler {
 //	@Produce		json
 //	@Param			createRequest	body		models.DiskSpaceAvailableRequest	false	"Disk Space Available Request"
 //	@Success		200				{object}	models.DiskSpaceAvailable
-//	@Failure		400				{object}	models.ApiErrorResponse
+//	@Failure		400				{object}	models.ApiErrorDiagnosticsResponse
 //	@Failure		401				{object}	models.OAuthErrorResponse
 //	@Security		ApiKeyAuth
 //	@Security		BearerAuth
@@ -579,19 +574,17 @@ func GetParallelsDiskSpace() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		getDiskSpaceAvailableDiag := prlerrors.NewDiagnostics("/config/diskspace")
 		var request models.DiskSpaceAvailableRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			getDiskSpaceAvailableDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "MapRequestBody")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getDiskSpaceAvailableDiag, http.StatusBadRequest))
 			return
 		}
 
-		response, err := diskspace.Get(ctx).GetDiskSpaceAvailable(ctx, request.UserName, request.FolderPath)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+		response := diskspace.Get(ctx).GetDiskSpaceAvailable(ctx, request.UserName, request.FolderPath, getDiskSpaceAvailableDiag)
+		if getDiskSpaceAvailableDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getDiskSpaceAvailableDiag, http.StatusInternalServerError))
 			return
 		}
 

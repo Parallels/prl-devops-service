@@ -752,11 +752,13 @@ func (s *SystemService) getLinuxArchitecture(ctx basecontext.ApiContext) (string
 	return strings.ReplaceAll(cpuType, "\n", ""), nil
 }
 
-func (s *SystemService) GetHardwareUsage(ctx basecontext.ApiContext) (*models.SystemUsageResponse, error) {
+func (s *SystemService) GetHardwareUsage(ctx basecontext.ApiContext, diag *errors.Diagnostics) *models.SystemUsageResponse {
 	result := &models.SystemUsageResponse{}
 
 	arch, err := s.GetArchitecture(ctx)
 	if err != nil {
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetArchitecture")
 		arch = err.Error()
 	}
 
@@ -796,7 +798,7 @@ func (s *SystemService) GetHardwareUsage(ctx basecontext.ApiContext) (*models.Sy
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 func (s *SystemService) GetExternalIp(ctx basecontext.ApiContext) (string, error) {

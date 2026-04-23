@@ -95,8 +95,12 @@ func NewCacheService(ctx basecontext.ApiContext) (*CacheService, error) {
 	}
 	svc.cacheFolder = cacheFolder
 
-	if freeDiskSpace, err := diskspaceservice.Get(ctx).GetCacheDiskSpace(ctx); err == nil {
+	cacheDiag := errors.NewDiagnostics("CacheService")
+	freeDiskSpace := diskspaceservice.Get(ctx).GetCacheDiskSpace(ctx, cacheDiag)
+	if !cacheDiag.HasErrors() {
 		svc.maxCacheSize = svc.cfg.CacheMaxSize(freeDiskSpace)
+	} else {
+		ctx.LogErrorf("Failed to get cache disk space: %v", cacheDiag.Errors[0].Message)
 	}
 
 	return svc, nil

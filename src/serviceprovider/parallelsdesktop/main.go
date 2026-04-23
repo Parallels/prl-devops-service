@@ -2822,7 +2822,7 @@ func (s *ParallelsService) RunCustomCommand(ctx basecontext.ApiContext, vm *mode
 	return nil
 }
 
-func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models.SystemUsageResponse, error) {
+func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext, diag *errors.Diagnostics) *models.SystemUsageResponse {
 	result := &models.SystemUsageResponse{
 		TotalInUse:     &models.SystemUsageItem{},
 		TotalReserved:  &models.SystemUsageItem{},
@@ -2832,7 +2832,9 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 
 	vms, err := s.GetCachedVms(ctx, "")
 	if err != nil {
-		return nil, err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetCachedVms")
+		return nil
 	}
 
 	for _, vm := range vms {
@@ -2843,13 +2845,17 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 			result.TotalInUse.LogicalCpuCount += vm.Hardware.CPU.Cpus
 			memorySizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Memory.Size)
 			if err != nil {
-				return nil, err
+				rsp := models.NewFromError(err)
+				diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetSizeByteFromString")
+				return nil
 			}
 			result.TotalInUse.MemorySize += helpers.ConvertByteToMegabyte(memorySizeInt)
 			if vm.Hardware.Hdd0.Size != "" {
 				hddSizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Hdd0.Size)
 				if err != nil {
-					return nil, err
+					rsp := models.NewFromError(err)
+					diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetSizeByteFromString")
+					return nil
 				}
 				result.TotalInUse.DiskSize += helpers.ConvertByteToMegabyte(hddSizeInt)
 			}
@@ -2860,13 +2866,17 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 			result.TotalReserved.LogicalCpuCount += vm.Hardware.CPU.Cpus
 			memorySizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Memory.Size)
 			if err != nil {
-				return nil, err
+				rsp := models.NewFromError(err)
+				diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetSizeByteFromString")
+				return nil
 			}
 			result.TotalReserved.MemorySize += helpers.ConvertByteToMegabyte(memorySizeInt)
 			if vm.Hardware.Hdd0.Size != "" {
 				hddSizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Hdd0.Size)
 				if err != nil {
-					return nil, err
+					rsp := models.NewFromError(err)
+					diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetSizeByteFromString")
+					return nil
 				}
 				result.TotalReserved.DiskSize += helpers.ConvertByteToMegabyte(hddSizeInt)
 			}
@@ -2878,7 +2888,9 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	systemSrv := system.Get()
 	systemInfo, err := systemSrv.GetHardwareInfo(ctx)
 	if err != nil {
-		return nil, err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetHardwareInfo")
+		return nil
 	}
 	result.CpuType = systemInfo.CpuType
 	result.CpuBrand = systemInfo.CpuBrand
@@ -2904,7 +2916,9 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 
 	homeDir, err := s.GetUserHome(ctx, "")
 	if err != nil {
-		return nil, err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUserHome")
+		return nil
 	}
 	result.TotalAvailable.PrlHomeTotalSize, _ = helpers.GetTotalDiskSpace(homeDir)
 
@@ -2918,7 +2932,7 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	}
 	result.OsName = systemSrv.GetOSName()
 
-	return result, nil
+	return result
 }
 func (s *ParallelsService) RegenerateMacAddress(ctx basecontext.ApiContext, vmID string, owner string) error {
 	// getting the VM to check state

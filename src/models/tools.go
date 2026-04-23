@@ -1,6 +1,11 @@
 package models
 
-import "github.com/Parallels/prl-devops-service/errors"
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/Parallels/prl-devops-service/errors"
+)
 
 type InstallToolsRequest struct {
 	All   bool                               `json:"all"`
@@ -13,9 +18,10 @@ type InstallToolsRequestItem struct {
 	Flags   map[string]string `json:"flags"`
 }
 
-func (i *InstallToolsRequest) Validate() error {
+func (i *InstallToolsRequest) Validate(diag *errors.Diagnostics) {
 	if i.Tools == nil && !i.All {
-		return errors.New("tools cannot be empty")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "tools cannot be empty", "Validate")
+		return
 	}
 	for _, tool := range i.Tools {
 		if tool.Version == "" {
@@ -25,8 +31,6 @@ func (i *InstallToolsRequest) Validate() error {
 			tool.Flags = make(map[string]string)
 		}
 	}
-
-	return nil
 }
 
 type InstallToolsResponse struct {
@@ -52,17 +56,16 @@ type UninstallToolsRequestItem struct {
 	Flags                 map[string]string `json:"flags"`
 }
 
-func (u *UninstallToolsRequest) Validate() error {
+func (u *UninstallToolsRequest) Validate(diag *errors.Diagnostics) {
 	if u.Tools == nil && !u.All {
-		return errors.New("tools cannot be empty")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "tools cannot be empty", "Validate")
+		return
 	}
 	for _, tool := range u.Tools {
 		if tool.Flags == nil {
 			tool.Flags = make(map[string]string)
 		}
 	}
-
-	return nil
 }
 
 type UninstallToolsResponse struct {
