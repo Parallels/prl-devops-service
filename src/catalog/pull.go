@@ -123,8 +123,18 @@ func (s *CatalogManifestService) Pull(r *models.PullCatalogManifestRequest) *mod
 	}
 	s.ns.InitJob(r.JobId)
 
-	foundProvider := false
 	response := models.NewPullCatalogManifestResponse()
+	defer func() {
+		if response.HasErrors() && r.JobId != "" {
+			errorMsg := "Pull failed:"
+			for _, err := range response.Errors {
+				errorMsg += " " + err.Error()
+			}
+			s.ns.FailJob(r.JobId, errorMsg)
+		}
+	}()
+
+	foundProvider := false
 	response.MachineName = r.MachineName
 	apiClient := apiclient.NewHttpClient(s.ctx)
 	serviceProvider := serviceprovider.Get()

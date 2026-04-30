@@ -1227,6 +1227,9 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 
 				response, err := createCatalogMachine(ctx, request, orchestratorJobID)
 				if err != nil {
+					if jobManager != nil {
+						_ = jobManager.MarkJobError(orchestratorJobID, err)
+					}
 					ReturnApiError(ctx, w, models.NewFromError(err))
 					return
 				}
