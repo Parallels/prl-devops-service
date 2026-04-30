@@ -240,7 +240,6 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		WithRequiredClaim(constants.CREATE_VM_CLAIM).
 		WithHandler(CloneVirtualMachineHandler()).
 		Register()
-
 }
 
 // @Summary		Gets all the virtual machines
@@ -1207,12 +1206,25 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 			ctx.LogInfof("Machine created using vagrant box: %v", response.ID)
 			return
 		} else if request.CatalogManifest != nil {
-			// When called internally by the orchestrator, use the orchestrator's job ID
-			// (passed via header) so the single orchestrator job gets step-level updates.
-			// No separate job is created on the host side.
 			isInternalCall := r.Header.Get(constants.INTERNAL_API_CLIENT) == "true"
+			callerID, _ := getEffectiveCallerID(ctx)
+
 			if isInternalCall {
 				orchestratorJobID := r.Header.Get(constants.ORCHESTRATOR_JOB_ID_HEADER)
+
+				jobManager := jobs.Get(ctx)
+				if jobManager == nil {
+					ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+					return
+				}
+
+				job, err := jobManager.CreateOrchestratorJob(callerID, "orchestrator", "create", "Initializing catalog machine creation (orchestrator)", orchestratorJobID)
+				if err != nil {
+					ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+					return
+				}
+				ctx.LogInfof("[Orchestrator] [Host] Created local job with orchestrator ID %s", job.ID)
+
 				response, err := createCatalogMachine(ctx, request, orchestratorJobID)
 				if err != nil {
 					ReturnApiError(ctx, w, models.NewFromError(err))
@@ -1222,12 +1234,6 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 				defer r.Body.Close()
 				_ = json.NewEncoder(w).Encode(response)
 				ctx.LogInfof("Machine created using catalog: %v", response.ID)
-				return
-			}
-
-			callerID, ok := getEffectiveCallerID(ctx)
-			if !ok {
-				ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
 				return
 			}
 
@@ -1325,14 +1331,16 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		// When called internally by the orchestrator, reuse the orchestrator job ID
-		// directly so no duplicate "machines" job appears in the job list, and the
-		// orchestrator job is completed in-process without relying on the WebSocket
-		// event path (which is only active for remote hosts).
 		if r.Header.Get(constants.INTERNAL_API_CLIENT) == "true" {
 			orchestratorJobID := r.Header.Get(constants.ORCHESTRATOR_JOB_ID_HEADER)
 			if orchestratorJobID != "" {
 				jobManager := jobs.Get(ctx)
+				if jobManager != nil {
+					job, _ := jobManager.CreateOrchestratorJob(callerID, "orchestrator", "create", "Initializing catalog machine creation (orchestrator)", orchestratorJobID)
+					if job != nil {
+						ctx.LogInfof("[Orchestrator] [Host] Created local job with orchestrator ID %s", job.ID)
+					}
+				}
 				go func(orchJobID string, req models.CreateVirtualMachineRequest) {
 					asyncCtx := basecontext.NewRootBaseContext()
 					defer func() {
@@ -1610,7 +1618,6 @@ func DeleteAllVMSnapshots() restapi.ControllerHandler {
 			Message: "Snapshots not deleted",
 			Code:    http.StatusBadRequest,
 		})
-
 	}
 }
 
@@ -1634,7 +1641,7 @@ func ListVMSnapshot() restapi.ControllerHandler {
 
 		params := mux.Vars(r)
 		VMId := params["id"]
-		//qeury params for grouping snapshots by parent or not
+		// qeury params for grouping snapshots by parent or not
 		query := r.URL.Query()
 		groupByParent := query.Get("group")
 
@@ -1726,7 +1733,6 @@ func RevertVMSnapshot() restapi.ControllerHandler {
 			Code:    http.StatusBadRequest,
 		})
 	}
-
 }
 
 func createPackerTemplate(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, error) {

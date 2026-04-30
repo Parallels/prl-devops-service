@@ -104,8 +104,9 @@ type HostVmEvent struct {
 }
 
 type HostJobEvent struct {
-	HostID string      `json:"host_id"`
-	Event  interface{} `json:"event"` // Job event forwarded from the remote host
+	HostID            string      `json:"host_id"`
+	Event             interface{} `json:"event"` // Job event forwarded from the remote host
+	IsOrchestratorJob bool        `json:"is_orchestrator_job,omitempty"`
 }
 
 type HostStatsUpdate struct {

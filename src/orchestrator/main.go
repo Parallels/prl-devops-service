@@ -347,7 +347,7 @@ func (s *OrchestratorService) fullRefreshHost(host models.OrchestratorHost, load
 		dtoVm.Host = host.GetHost()
 		dtoVm.HostUrl = host.GetHostUrl()
 		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
-		if vm.Type == "APPLE_VZ_VM" {
+		if vm.Type == "APPLE_VZ_VM" && vm.State == "running" {
 			totalAppleVms++
 		}
 	}

@@ -72,12 +72,23 @@ func (m *HostWebSocketManager) RegisterHandler(eventTypes []constants.EventType,
 
 // DispatchMessage dispatches a message to registered handlers
 func (m *HostWebSocketManager) DispatchMessage(hostID string, eventType constants.EventType, payload []byte) {
+	// Only log non-noisy events
+	if eventType != constants.EventTypeStats && eventType != constants.EventTypeSystemLogs {
+		m.ctx.LogDebugf("[Orchestrator] [WS Dispatch] Received event from host %s: eventType=%q (raw=%s)", hostID, eventType, eventType)
+	}
+
 	m.handlersMu.RLock()
 	handlers, exists := m.handlers[eventType]
 	m.handlersMu.RUnlock()
 
 	if !exists {
-		m.ctx.LogDebugf("[HostWebSocketManager] No handlers registered for event type: %s", eventType)
+		m.ctx.LogDebugf("[Orchestrator] [WS Dispatch] No handlers registered for event type=%q for host %s (available types: %v)", eventType, hostID, func() []string {
+			keys := make([]string, 0, len(m.handlers))
+			for k := range m.handlers {
+				keys = append(keys, string(k))
+			}
+			return keys
+		}())
 		return
 	}
 	for handler := range handlers {

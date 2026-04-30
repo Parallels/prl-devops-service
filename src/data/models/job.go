@@ -12,6 +12,7 @@ type Job struct {
 	Progress           int                `json:"progress"`
 	JobType            string             `json:"job_type"`
 	JobOperation       string             `json:"job_operation"`
+	IsOrchestratorJob  bool               `json:"is_orchestrator_job,omitempty"`
 	Steps              []JobStep          `json:"steps,omitempty"`
 	Result             string             `json:"result"`
 	ResultRecordId     string             `json:"result_record_id,omitempty"`

@@ -11,7 +11,7 @@ data.json
 __debug_*
 /vagrant
 *.key
-.env
+.env*
 **/*.local.*
 **/*.pem
 .DS_Store

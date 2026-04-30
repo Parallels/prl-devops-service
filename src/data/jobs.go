@@ -114,6 +114,7 @@ func (j *JsonDatabase) UpdateJob(ctx basecontext.ApiContext, key models.Job) err
 			j.data.Jobs[i].ResultRecordType = key.ResultRecordType
 			j.data.Jobs[i].Error = key.Error
 			j.data.Jobs[i].Steps = key.Steps
+			j.data.Jobs[i].IsOrchestratorJob = key.IsOrchestratorJob
 			j.data.Jobs[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
 			return nil
 		}
