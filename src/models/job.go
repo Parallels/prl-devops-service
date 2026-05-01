@@ -12,6 +12,7 @@ type JobResponse struct {
 	Progress           int                `json:"progress"`
 	JobType            string             `json:"job_type"`
 	JobOperation       string             `json:"job_operation"`
+	IsOrchestratorJob  bool               `json:"is_orchestrator_job,omitempty"`
 	Steps              []JobStepResponse  `json:"steps,omitempty"`
 	Result             string             `json:"result,omitempty"`
 	ResultRecordId     string             `json:"result_record_id,omitempty"`

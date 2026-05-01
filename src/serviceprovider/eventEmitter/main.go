@@ -112,10 +112,10 @@ func (e *EventEmitter) Initialize() *apperrors.Diagnostics {
 
 	cfg := config.Get()
 
-	// Only initialize in API or Orchestrator mode
-	if !cfg.IsApi() && !cfg.IsOrchestrator() {
+	// Only initialize in API, Orchestrator, or Host mode
+	if !cfg.IsApi() && !cfg.IsOrchestrator() && !cfg.IsHost() {
 		diag.AddPathEntry("mode_check", "event_emitter")
-		e.ctx.LogInfof("[EventEmitter] Not running in API or Orchestrator mode, skipping initialization")
+		e.ctx.LogInfof("[EventEmitter] Not running in API, Orchestrator, or Host mode, skipping initialization")
 		return diag
 	}
 

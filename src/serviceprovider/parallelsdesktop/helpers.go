@@ -9,11 +9,12 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 )
 
-const CacheFindNumberOfRetries = 10
-const CacheFindRetryDelay = 500 * time.Millisecond
+const (
+	CacheFindNumberOfRetries = 10
+	CacheFindRetryDelay      = 500 * time.Millisecond
+)
 
 func (s *ParallelsService) findVmInCacheAndSystem(ctx basecontext.ApiContext, idOrName string) (*models.ParallelsVM, error) {
-
 	for i := 0; i < CacheFindNumberOfRetries; i++ {
 		s.RLock()
 		vms := s.cachedLocalVms
@@ -23,7 +24,7 @@ func (s *ParallelsService) findVmInCacheAndSystem(ctx basecontext.ApiContext, id
 				return &vm, nil
 			}
 		}
-		ctx.LogInfof("[ParallelsDesktop] VM with name or id %v not found in cache, retrying... (%d/%d)", idOrName, i+1, CacheFindNumberOfRetries)
+		ctx.LogInfof("[ParallelsDesktop] VM with name or id %v not found in cache, retrying... (%s/%s)", idOrName, i+1, CacheFindNumberOfRetries)
 		time.Sleep(CacheFindRetryDelay)
 	}
 	// To fetch all virtual machines (VMs), we intentionally call `GetVms` without specifying an ID or name.

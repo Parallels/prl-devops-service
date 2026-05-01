@@ -2,8 +2,10 @@ package data
 
 import (
 	"strings"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
@@ -114,6 +116,7 @@ func (j *JsonDatabase) UpdateJob(ctx basecontext.ApiContext, key models.Job) err
 			j.data.Jobs[i].ResultRecordType = key.ResultRecordType
 			j.data.Jobs[i].Error = key.Error
 			j.data.Jobs[i].Steps = key.Steps
+			j.data.Jobs[i].IsOrchestratorJob = key.IsOrchestratorJob
 			j.data.Jobs[i].UpdatedAt = helpers.GetUtcCurrentDateTime()
 			return nil
 		}
@@ -194,6 +197,42 @@ func (j *JsonDatabase) RecoverOngoingJobs(ctx basecontext.ApiContext) {
 
 	if updated {
 		ctx.LogInfof("[Database] Recovered and failed ongoing jobs after restart")
+		_ = j.SaveNow(ctx)
+	}
+}
+
+// DetectStaleJobs scans all running/pending jobs and marks as failed those that
+// haven't been updated within the configured timeout window.
+// Uses direct mutation (same pattern as RecoverOngoingJobs) because UpdateJob
+// silently wipes Progress, Result, Steps, and IsOrchestratorJob when passed
+// a partial struct with zero values.
+func (j *JsonDatabase) DetectStaleJobs(ctx basecontext.ApiContext) {
+	if !j.IsConnected() {
+		return
+	}
+
+	cfg := config.Get()
+	timeoutMinutes := cfg.DbGhostJobTimeoutMinutes()
+	timeout := time.Duration(timeoutMinutes) * time.Minute
+
+	j.dataMutex.Lock()
+	updated := false
+	now := helpers.GetUtcCurrentDateTime()
+	for i, job := range j.data.Jobs {
+		if job.State == constants.JobStateRunning || job.State == constants.JobStatePending {
+			updatedAt, err := time.Parse(time.RFC3339Nano, job.UpdatedAt)
+			if err == nil && time.Since(updatedAt) > timeout {
+				j.data.Jobs[i].State = constants.JobStateFailed
+				j.data.Jobs[i].Error = constants.GhostJobCanceledReason
+				j.data.Jobs[i].UpdatedAt = now
+				updated = true
+			}
+		}
+	}
+	j.dataMutex.Unlock()
+
+	if updated {
+		ctx.LogInfof("[Database] Detected and canceled stale jobs (timeout: %v)", timeout)
 		_ = j.SaveNow(ctx)
 	}
 }

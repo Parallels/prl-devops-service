@@ -343,6 +343,17 @@ func (c *Config) DbSaveInterval() time.Duration {
 	return time.Duration(interval) * time.Minute
 }
 
+// DbGhostJobTimeoutMinutes returns the configured timeout in minutes for
+// detecting ghost (stuck) jobs. Falls back to DefaultGhostJobTimeoutMinutes
+// if no custom value is provided via GHOST_JOB_TIMEOUT_MINUTES env var.
+func (c *Config) DbGhostJobTimeoutMinutes() int {
+	timeout := c.GetIntKey(constants.GhostJobTimeoutMinutesEnvVar)
+	if timeout == 0 {
+		return constants.DefaultGhostJobTimeoutMinutes
+	}
+	return timeout
+}
+
 func (c *Config) RootFolder() (string, error) {
 	ctx := basecontext.NewRootBaseContext()
 	srv := system.Get()
