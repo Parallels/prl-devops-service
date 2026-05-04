@@ -22,6 +22,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
+	prlerrors "github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
@@ -766,7 +767,7 @@ func AsyncPushCatalogManifestToCatalogManagerHandler() restapi.ControllerHandler
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		asyncPushCatalogManifestDiag := prlerrors.NewDiagnostics("AsyncPushCatalogManifestToCatalogManagerHandler")
 		userContext := ctx.GetUser()
 		if userContext == nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
@@ -833,9 +834,9 @@ func AsyncPushCatalogManifestToCatalogManagerHandler() restapi.ControllerHandler
 			return
 		}
 
-		localJob, err := jobManager.CreateNewJob(userContext.ID, "catalog", "push", "Initializing catalog push to manager "+mgr.Name)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+		localJob := jobManager.CreateNewJob(userContext.ID, "catalog", "push", "Initializing catalog push to manager "+mgr.Name, asyncPushCatalogManifestDiag)
+		if asyncPushCatalogManifestDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifestDiag, http.StatusInternalServerError))
 			return
 		}
 

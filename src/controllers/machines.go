@@ -14,6 +14,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
+	prlerrors "github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -1155,7 +1156,7 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		createMachineDiag := prlerrors.NewDiagnostics("/v1/machines")
 		var request models.CreateVirtualMachineRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -1237,9 +1238,9 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 				return
 			}
 
-			job, err := jobManager.CreateNewJob(callerID, "machines", "create", "Initializing catalog machine creation")
-			if err != nil {
-				ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			job := jobManager.CreateNewJob(callerID, "machines", "create", "Initializing catalog machine creation", createMachineDiag)
+			if createMachineDiag.HasErrors() {
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createMachineDiag, http.StatusInternalServerError))
 				return
 			}
 
@@ -1285,7 +1286,7 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		asyncCreateVirtualMachineDiag := prlerrors.NewDiagnostics("/v1/machines/async")
 		callerID, ok := getEffectiveCallerID(ctx)
 		if !ok {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
@@ -1377,9 +1378,9 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		job, err := jobManager.CreateNewJob(callerID, "machines", "create", "Initializing catalog machine creation")
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+		job := jobManager.CreateNewJob(callerID, "machines", "create", "Initializing catalog machine creation", asyncCreateVirtualMachineDiag)
+		if asyncCreateVirtualMachineDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncCreateVirtualMachineDiag, http.StatusInternalServerError))
 			return
 		}
 

@@ -2,13 +2,16 @@ package jobs
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
+	"github.com/Parallels/prl-devops-service/models"
 	global_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
@@ -71,7 +74,7 @@ func (jms *JobManagerService) Stop() error {
 	return nil
 }
 
-func (jms *JobManagerService) CreateNewJob(owner string, jobType string, jobOperation string, action string) (*data_models.Job, error) {
+func (jms *JobManagerService) CreateNewJob(owner string, jobType string, jobOperation string, action string, diag *errors.Diagnostics) *data_models.Job {
 	job := data_models.Job{
 		Owner:        owner,
 		State:        constants.JobStatePending,
@@ -83,11 +86,13 @@ func (jms *JobManagerService) CreateNewJob(owner string, jobType string, jobOper
 
 	createdJob, err := jms.db.CreateJob(jms.apiCtx, job)
 	if err != nil {
-		return nil, err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "CreateNewJob")
+		return nil
 	}
 
 	jms.emitEvent("JOB_CREATED", createdJob)
-	return createdJob, nil
+	return createdJob
 }
 
 func (jms *JobManagerService) InitJob(jobId string) (*data_models.Job, error) {
@@ -329,18 +334,21 @@ func (jms *JobManagerService) MarkJobError(jobId string, jobErr error) error {
 	return nil
 }
 
-func (jms *JobManagerService) DeleteJob(jobId string) error {
+func (jms *JobManagerService) DeleteJob(jobId string, diag *errors.Diagnostics) {
 	job, err := jms.db.GetJob(jms.apiCtx, jobId)
 	if err != nil {
-		return err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetJob")
+		return
 	}
 
 	if err := jms.db.DeleteJob(jms.apiCtx, jobId); err != nil {
-		return err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DeleteJob")
+		return
 	}
 
 	jms.emitEvent("JOB_DELETED", job)
-	return nil
 }
 
 func (jms *JobManagerService) emitEvent(message string, job *data_models.Job) {

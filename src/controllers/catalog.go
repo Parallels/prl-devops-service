@@ -15,6 +15,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
+	prlerrors "github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
@@ -1883,6 +1884,7 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		pushCatalogManifestDiag := prlerrors.NewDiagnostics("/v1/catalog/push")
 		var request catalog_models.PushCatalogManifestRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -1923,9 +1925,9 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		job, err := jobManager.CreateNewJob(userContext.ID, "catalog", "push", "Initializing catalog push")
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+		job := jobManager.CreateNewJob(userContext.ID, "catalog", "push", "Initializing catalog push", pushCatalogManifestDiag)
+		if pushCatalogManifestDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(pushCatalogManifestDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -1994,7 +1996,7 @@ func AsyncPushCatalogManifestHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		asyncPushCatalogManifestDiag := prlerrors.NewDiagnostics("/v1/catalog/push/async")
 		userContext := ctx.GetUser()
 		if userContext == nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
@@ -2035,9 +2037,9 @@ func AsyncPushCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		job, err := jobManager.CreateNewJob(userContext.ID, "catalog", "push", "Initializing catalog push")
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+		job := jobManager.CreateNewJob(userContext.ID, "catalog", "push", "Initializing catalog push", asyncPushCatalogManifestDiag)
+		if asyncPushCatalogManifestDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifestDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -2069,6 +2071,7 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		pullCatalogManifestDiag := prlerrors.NewDiagnostics("/v1/catalog/pull")
 		var request catalog_models.PullCatalogManifestRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -2148,9 +2151,9 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		job, err := jobManager.CreateNewJob(userContext.ID, "catalog", "pull", "Initializing repository pull")
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+		job := jobManager.CreateNewJob(userContext.ID, "catalog", "pull", "Initializing repository pull", pullCatalogManifestDiag)
+		if pullCatalogManifestDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(pullCatalogManifestDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -2207,7 +2210,7 @@ func AsyncPullCatalogManifestHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		asyncPullCatalogManifestDiag := prlerrors.NewDiagnostics("/v1/catalog/pull/async")
 		userContext := ctx.GetUser()
 		if userContext == nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
@@ -2258,9 +2261,9 @@ func AsyncPullCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		job, err := jobManager.CreateNewJob(userContext.ID, "catalog", "pull", "Initializing repository pull")
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+		job := jobManager.CreateNewJob(userContext.ID, "catalog", "pull", "Initializing repository pull", asyncPullCatalogManifestDiag)
+		if asyncPullCatalogManifestDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPullCatalogManifestDiag, http.StatusInternalServerError))
 			return
 		}
 
