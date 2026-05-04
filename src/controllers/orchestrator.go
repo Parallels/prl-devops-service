@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	prlerrors "github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -2964,10 +2965,9 @@ func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.CreateVirtualMachineRequest
-
 		vars := mux.Vars(r)
 		id := vars["id"]
-
+		createOrchestratorHostMachineDiag := prlerrors.NewDiagnostics("/v1/orchestrator/hosts/" + id + "/machines")
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -3012,9 +3012,9 @@ func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		job, jobErr := jobManager.CreateNewJob(callerID, "orchestrator", "create", fmt.Sprintf("Initializing virtual machine creation on host %s", id))
-		if jobErr != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(jobErr, http.StatusInternalServerError))
+		job := jobManager.CreateNewJob(callerID, "orchestrator", "create", fmt.Sprintf("Initializing virtual machine creation on host %s", id), createOrchestratorHostMachineDiag)
+		if createOrchestratorHostMachineDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createOrchestratorHostMachineDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -3060,7 +3060,7 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.CreateVirtualMachineRequest
-
+		createOrchestratorVMDiag := prlerrors.NewDiagnostics("/v1/orchestrator/machines")
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
 				Message: "Invalid request body: " + err.Error(),
@@ -3106,9 +3106,9 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		job, jobErr := jobManager.CreateNewJob(callerID, "orchestrator", "create", "Initializing orchestrator virtual machine creation")
-		if jobErr != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(jobErr, http.StatusInternalServerError))
+		job := jobManager.CreateNewJob(callerID, "orchestrator", "create", "Initializing orchestrator virtual machine creation", createOrchestratorVMDiag)
+		if createOrchestratorVMDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createOrchestratorVMDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -3992,7 +3992,7 @@ func DeployOrchestratorHostHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		deployOrchestratorHostDiag := prlerrors.NewDiagnostics("/v1/orchestrator/hosts/deploy")
 		var req models.DeployOrchestratorHostRequest
 		if err := http_helper.MapRequestBody(r, &req); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -4029,9 +4029,9 @@ func DeployOrchestratorHostHandler() restapi.ControllerHandler {
 			return
 		}
 
-		job, jobErr := jobManager.CreateNewJob(callerID, "orchestrator", "deploy", "Deploying agent "+req.HostName)
-		if jobErr != nil {
-			ReturnApiError(ctx, w, models.NewFromError(jobErr))
+		job := jobManager.CreateNewJob(callerID, "orchestrator", "deploy", "Deploying agent "+req.HostName, deployOrchestratorHostDiag)
+		if deployOrchestratorHostDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deployOrchestratorHostDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -4081,7 +4081,7 @@ func AsyncDeployOrchestratorHostHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		asyncDeployOrchestratorHostDiag := prlerrors.NewDiagnostics("/v1/orchestrator/hosts/deploy/async")
 		var req models.DeployOrchestratorHostRequest
 		if err := http_helper.MapRequestBody(r, &req); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -4118,9 +4118,9 @@ func AsyncDeployOrchestratorHostHandler() restapi.ControllerHandler {
 			return
 		}
 
-		localJob, err := jobManager.CreateNewJob(callerID, "orchestrator", "deploy", "Deploying agent "+req.HostName)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+		localJob := jobManager.CreateNewJob(callerID, "orchestrator", "deploy", "Deploying agent "+req.HostName, asyncDeployOrchestratorHostDiag)
+		if asyncDeployOrchestratorHostDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncDeployOrchestratorHostDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -4176,7 +4176,7 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		asyncCreateOrchestratorVMDiag := prlerrors.NewDiagnostics("/v1/orchestrator/machines/async")
 		callerID, ok := getEffectiveCallerID(ctx)
 		if !ok {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
@@ -4223,9 +4223,9 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		job, err := jobManager.CreateNewJob(callerID, "orchestrator", "create", "Initializing orchestrator virtual machine creation")
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+		job := jobManager.CreateNewJob(callerID, "orchestrator", "create", "Initializing orchestrator virtual machine creation", asyncCreateOrchestratorVMDiag)
+		if asyncCreateOrchestratorVMDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncCreateOrchestratorVMDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -4275,15 +4275,14 @@ func AsyncCreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandle
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		vars := mux.Vars(r)
+		id := vars["id"]
+		asyncCreateOrchestratorHostVMDiag := prlerrors.NewDiagnostics("/v1/orchestrator/hosts/" + id + "/machines/async")
 		callerID, ok := getEffectiveCallerID(ctx)
 		if !ok {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
 			return
 		}
-
-		vars := mux.Vars(r)
-		id := vars["id"]
 
 		var request models.CreateVirtualMachineRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
@@ -4325,9 +4324,9 @@ func AsyncCreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandle
 			return
 		}
 
-		job, err := jobManager.CreateNewJob(callerID, "orchestrator", "create", fmt.Sprintf("Initializing virtual machine creation on host %s", id))
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+		job := jobManager.CreateNewJob(callerID, "orchestrator", "create", fmt.Sprintf("Initializing virtual machine creation on host %s", id), asyncCreateOrchestratorHostVMDiag)
+		if asyncCreateOrchestratorHostVMDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncCreateOrchestratorHostVMDiag, http.StatusInternalServerError))
 			return
 		}
 

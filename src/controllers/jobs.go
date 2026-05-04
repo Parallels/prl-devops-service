@@ -240,10 +240,9 @@ func DeleteJobHandler() restapi.ControllerHandler {
 			return
 		}
 
-		if err := jobManager.DeleteJob(jobId); err != nil {
-			rsp := models.NewFromError(err)
-			deleteJobDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DeleteJob")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteJobDiag, rsp.Code))
+		jobManager.DeleteJob(jobId, deleteJobDiag)
+		if deleteJobDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteJobDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -344,11 +343,9 @@ func DebugJobHandler() restapi.ControllerHandler {
 			action = "Debug Task"
 		}
 
-		job, err := jobManager.CreateNewJob(userContext.ID, request.JobType, request.JobOperation, action)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			debugJobDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "CreateNewJob")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(debugJobDiag, rsp.Code))
+		job := jobManager.CreateNewJob(userContext.ID, request.JobType, request.JobOperation, action, debugJobDiag)
+		if debugJobDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(debugJobDiag, http.StatusInternalServerError))
 			return
 		}
 
