@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/models"
 	log "github.com/cjlapao/common-go-logger"
 )
@@ -69,7 +70,7 @@ func (m *MockBaseContext) GetRequestId() string {
 	return m.MockRequestID
 }
 
-func (m *MockBaseContext) GetUser() *models.ApiUser {
+func (m *MockBaseContext) GetUser(diag *errors.Diagnostics) *models.ApiUser {
 	if m.callbackFunctions["GetUser"] != nil {
 		m.callbackFunctions["GetUser"]()
 	}

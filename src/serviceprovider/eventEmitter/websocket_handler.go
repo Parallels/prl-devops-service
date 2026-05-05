@@ -40,7 +40,7 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request, ctx basec
 	// connection.  Checking here (before Upgrade) lets us return a proper HTTP
 	// 401 response instead of a WebSocket close frame, which some clients
 	// misinterpret as a generic error.
-	usr := ctx.GetUser()
+	usr := ctx.GetUser(wsHandleDiag)
 	if usr == nil {
 		// API key auth (IsMicroService=true) does not populate the user.
 		// Allow the connection with a synthetic identity so microservices can
@@ -152,7 +152,7 @@ func HandleUnsubscribe(w http.ResponseWriter, r *http.Request, ctx basecontext.A
 	}
 
 	username := ""
-	if u := ctx.GetUser(); u != nil {
+	if u := ctx.GetUser(unsubscribeHandleDiag); u != nil {
 		username = u.Username
 	} else if authCtx := ctx.GetAuthorizationContext(); authCtx != nil && authCtx.IsMicroService {
 		username = authCtx.ApiKeyName

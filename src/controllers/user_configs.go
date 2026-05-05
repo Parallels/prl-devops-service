@@ -78,9 +78,8 @@ func GetUserConfigsHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		getUserConfigsDiag := errors.NewDiagnostics("/user/configs")
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			getUserConfigsDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "user not found", "GetUser")
+		userContext := ctx.GetUser(getUserConfigsDiag)
+		if getUserConfigsDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigsDiag, http.StatusUnauthorized))
 			return
 		}
@@ -129,9 +128,8 @@ func GetUserConfigHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := html.UnescapeString(vars["id"])
 		getUserConfigDiag := errors.NewDiagnostics("/user/configs/" + id)
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			getUserConfigDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "user not found", "GetUser")
+		userContext := ctx.GetUser(getUserConfigDiag)
+		if getUserConfigDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigDiag, http.StatusUnauthorized))
 			return
 		}
@@ -177,9 +175,8 @@ func CreateUserConfigHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		createUserConfigDiag := errors.NewDiagnostics("/user/configs")
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			createUserConfigDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "user not found", "GetUser")
+		userContext := ctx.GetUser(createUserConfigDiag)
+		if createUserConfigDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createUserConfigDiag, http.StatusUnauthorized))
 			return
 		}
@@ -251,9 +248,8 @@ func UpdateUserConfigHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := html.UnescapeString(vars["id"])
 		updateUserConfigDiag := errors.NewDiagnostics("/user/configs/" + id)
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			updateUserConfigDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "user not found", "GetUser")
+		userContext := ctx.GetUser(updateUserConfigDiag)
+		if updateUserConfigDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, http.StatusUnauthorized))
 			return
 		}
@@ -357,9 +353,8 @@ func DeleteUserConfigHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := html.UnescapeString(vars["id"])
 		deleteUserConfigDiag := errors.NewDiagnostics("/user/configs/" + id)
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			deleteUserConfigDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "user not found", "GetUser")
+		userContext := ctx.GetUser(deleteUserConfigDiag)
+		if deleteUserConfigDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteUserConfigDiag, http.StatusUnauthorized))
 			return
 		}

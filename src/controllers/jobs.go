@@ -90,9 +90,8 @@ func GetJobsHandler() restapi.ControllerHandler {
 			return
 		}
 
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			getJobsDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+		userContext := ctx.GetUser(getJobsDiag)
+		if getJobsDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getJobsDiag, http.StatusUnauthorized))
 			return
 		}
@@ -151,9 +150,8 @@ func GetJobHandler() restapi.ControllerHandler {
 			return
 		}
 
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			getJobDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+		userContext := ctx.GetUser(getJobDiag)
+		if getJobDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getJobDiag, http.StatusUnauthorized))
 			return
 		}
@@ -202,9 +200,8 @@ func DeleteJobHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		jobId := vars["id"]
 		deleteJobDiag := errors.NewDiagnostics("/jobs/" + jobId)
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			deleteJobDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+		userContext := ctx.GetUser(deleteJobDiag)
+		if deleteJobDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteJobDiag, http.StatusUnauthorized))
 			return
 		}
@@ -265,9 +262,8 @@ func CleanupJobsHandler() restapi.ControllerHandler {
 			return
 		}
 
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			cleanupJobsDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+		userContext := ctx.GetUser(cleanupJobsDiag)
+		if cleanupJobsDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(cleanupJobsDiag, http.StatusUnauthorized))
 			return
 		}
@@ -317,9 +313,8 @@ func DebugJobHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		debugJobDiag := errors.NewDiagnostics("/jobs/debug")
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			debugJobDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+		userContext := ctx.GetUser(debugJobDiag)
+		if debugJobDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(debugJobDiag, http.StatusUnauthorized))
 			return
 		}

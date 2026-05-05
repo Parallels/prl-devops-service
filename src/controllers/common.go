@@ -18,8 +18,8 @@ import (
 // orchestrator-to-host calls, there is no user account on the target, so
 // "system" is used as a fallback owner. Returns ("", false) when the request
 // is not authenticated at all.
-func getEffectiveCallerID(ctx *basecontext.BaseContext) (string, bool) {
-	if user := ctx.GetUser(); user != nil {
+func getEffectiveCallerID(ctx *basecontext.BaseContext, diag *errors.Diagnostics) (string, bool) {
+	if user := ctx.GetUser(nil); user != nil {
 		return user.ID, true
 	}
 	authCtx := ctx.GetAuthorizationContext()
@@ -35,6 +35,9 @@ func getEffectiveCallerID(ctx *basecontext.BaseContext) (string, bool) {
 		return currentUser, true
 	}
 
+	if diag != nil {
+		diag.AddError("401", "Caller identity not found", "getEffectiveCallerID")
+	}
 	return "", false
 }
 

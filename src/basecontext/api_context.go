@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/errors"
 	log "github.com/cjlapao/common-go-logger"
 )
 
@@ -11,7 +12,7 @@ type ApiContext interface {
 	Context() context.Context
 	GetAuthorizationContext() *AuthorizationContext
 	GetRequestId() string
-	GetUser() *models.ApiUser
+	GetUser(diag *errors.Diagnostics) *models.ApiUser
 	Verbose() bool
 	EnableLog()
 	DisableLog()

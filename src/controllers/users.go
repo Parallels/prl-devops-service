@@ -261,8 +261,8 @@ func CreateUserHandler() restapi.ControllerHandler {
 		}
 
 		isSuperUser := false
-		if ctx.GetUser() != nil {
-			isSuperUser = ctx.User.IsSuperUser
+		if u := ctx.GetUser(nil); u != nil {
+			isSuperUser = u.IsSuperUser
 		}
 
 		if request.IsSuperUser && !isSuperUser {

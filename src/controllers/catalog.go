@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog"
@@ -1914,9 +1913,8 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			pushCatalogManifestDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+		userContext := ctx.GetUser(pushCatalogManifestDiag)
+		if pushCatalogManifestDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(pushCatalogManifestDiag, http.StatusUnauthorized))
 			return
 		}
@@ -1999,9 +1997,8 @@ func AsyncPushCatalogManifestHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		asyncPushCatalogManifestDiag := prlerrors.NewDiagnostics("/v1/catalog/push/async")
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			asyncPushCatalogManifestDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+		userContext := ctx.GetUser(asyncPushCatalogManifestDiag)
+		if asyncPushCatalogManifestDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifestDiag, http.StatusUnauthorized))
 			return
 		}
@@ -2142,9 +2139,8 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 			}
 		}
 
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			pullCatalogManifestDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+		userContext := ctx.GetUser(pullCatalogManifestDiag)
+		if pullCatalogManifestDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(pullCatalogManifestDiag, http.StatusUnauthorized))
 			return
 		}
@@ -2215,9 +2211,8 @@ func AsyncPullCatalogManifestHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		asyncPullCatalogManifestDiag := prlerrors.NewDiagnostics("/v1/catalog/pull/async")
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			asyncPullCatalogManifestDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+		userContext := ctx.GetUser(asyncPullCatalogManifestDiag)
+		if asyncPullCatalogManifestDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPullCatalogManifestDiag, http.StatusUnauthorized))
 			return
 		}

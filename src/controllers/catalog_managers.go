@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"strconv"
 	"strings"
 	"time"
 
@@ -380,7 +379,7 @@ func GetCatalogManagersHandler() restapi.ControllerHandler {
 			return
 		}
 
-		user := ctx.GetUser()
+		user := ctx.GetUser(nil)
 		if user == nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("User not contextually found"), http.StatusUnauthorized))
 			return
@@ -477,7 +476,7 @@ func GetCatalogManagerByIdHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		user := ctx.GetUser()
+		user := ctx.GetUser(nil)
 		if user == nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("User not contextually found"), http.StatusUnauthorized))
 			return
@@ -558,7 +557,7 @@ func CreateCatalogManagerHandler() restapi.ControllerHandler {
 		}
 		defer r.Body.Close()
 
-		user := ctx.GetUser()
+		user := ctx.GetUser(nil)
 
 		newMgr := mappers.FromCatalogManagerRequest(&req)
 		newMgr.OwnerID = user.ID
@@ -644,7 +643,7 @@ func UpdateCatalogManagerHandler() restapi.ControllerHandler {
 			return
 		}
 
-		user := ctx.GetUser()
+		user := ctx.GetUser(nil)
 		authCtxUpdate := ctx.GetAuthorizationContext()
 		effectiveClaimsUpdate := authCtxUpdate.GetEffectiveClaims()
 		effectiveRolesUpdate := authCtxUpdate.GetEffectiveRoles()
@@ -723,7 +722,7 @@ func DeleteCatalogManagerHandler() restapi.ControllerHandler {
 			return
 		}
 
-		user := ctx.GetUser()
+		user := ctx.GetUser(nil)
 		authCtxDelete := ctx.GetAuthorizationContext()
 		effectiveClaimsDelete := authCtxDelete.GetEffectiveClaims()
 		effectiveRolesDelete := authCtxDelete.GetEffectiveRoles()
@@ -769,9 +768,8 @@ func AsyncPushCatalogManifestToCatalogManagerHandler() restapi.ControllerHandler
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		asyncPushCatalogManifestDiag := prlerrors.NewDiagnostics("AsyncPushCatalogManifestToCatalogManagerHandler")
-		userContext := ctx.GetUser()
-		if userContext == nil {
-			asyncPushCatalogManifestDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "GetUser")
+		userContext := ctx.GetUser(asyncPushCatalogManifestDiag)
+		if asyncPushCatalogManifestDiag.HasErrors() {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifestDiag, http.StatusUnauthorized))
 			return
 		}
@@ -939,7 +937,7 @@ func getAuthorizedCatalogManagerForUse(ctx basecontext.ApiContext, managerID str
 		return nil, &apiErr
 	}
 
-	user := ctx.GetUser()
+	user := ctx.GetUser(nil)
 	if user == nil {
 		apiErr := models.NewFromErrorWithCode(errors.New("User not contextually found"), http.StatusUnauthorized)
 		return nil, &apiErr
@@ -1301,7 +1299,7 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 	// Inject the current user's effective claims and roles so the downstream
 	// catalog service can filter results using the calling user's permissions
 	// rather than the stored catalog-manager credentials.
-	if fwdUser := ctx.GetUser(); fwdUser != nil {
+	if fwdUser := ctx.GetUser(nil); fwdUser != nil {
 		fwdAuthCtx := ctx.GetAuthorizationContext()
 		claims := fwdAuthCtx.GetEffectiveClaims()
 		roles := fwdAuthCtx.GetEffectiveRoles()

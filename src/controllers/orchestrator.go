@@ -3000,9 +3000,9 @@ func CreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandler {
 			request.CatalogManifest.CatalogManagerId = ""
 		}
 
-		callerID, ok := getEffectiveCallerID(ctx)
+		callerID, ok := getEffectiveCallerID(ctx, createOrchestratorHostMachineDiag)
 		if !ok {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createOrchestratorHostMachineDiag, http.StatusUnauthorized))
 			return
 		}
 
@@ -3094,9 +3094,9 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			request.CatalogManifest.CatalogManagerId = ""
 		}
 
-		callerID, ok := getEffectiveCallerID(ctx)
+		callerID, ok := getEffectiveCallerID(ctx, createOrchestratorVMDiag)
 		if !ok {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createOrchestratorVMDiag, http.StatusUnauthorized))
 			return
 		}
 
@@ -4017,9 +4017,9 @@ func DeployOrchestratorHostHandler() restapi.ControllerHandler {
 			return
 		}
 
-		callerID, ok := getEffectiveCallerID(ctx)
+		callerID, ok := getEffectiveCallerID(ctx, deployOrchestratorHostDiag)
 		if !ok {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deployOrchestratorHostDiag, http.StatusUnauthorized))
 			return
 		}
 
@@ -4098,9 +4098,9 @@ func AsyncDeployOrchestratorHostHandler() restapi.ControllerHandler {
 			return
 		}
 
-		callerID, ok := getEffectiveCallerID(ctx)
+		callerID, ok := getEffectiveCallerID(ctx, asyncDeployOrchestratorHostDiag)
 		if !ok {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncDeployOrchestratorHostDiag, http.StatusUnauthorized))
 			return
 		}
 
@@ -4177,9 +4177,9 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		asyncCreateOrchestratorVMDiag := prlerrors.NewDiagnostics("/v1/orchestrator/machines/async")
-		callerID, ok := getEffectiveCallerID(ctx)
+		callerID, ok := getEffectiveCallerID(ctx, asyncCreateOrchestratorVMDiag)
 		if !ok {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncCreateOrchestratorVMDiag, http.StatusUnauthorized))
 			return
 		}
 
@@ -4278,9 +4278,9 @@ func AsyncCreateOrchestratorHostVirtualMachineHandler() restapi.ControllerHandle
 		vars := mux.Vars(r)
 		id := vars["id"]
 		asyncCreateOrchestratorHostVMDiag := prlerrors.NewDiagnostics("/v1/orchestrator/hosts/" + id + "/machines/async")
-		callerID, ok := getEffectiveCallerID(ctx)
+		callerID, ok := getEffectiveCallerID(ctx, asyncCreateOrchestratorHostVMDiag)
 		if !ok {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncCreateOrchestratorHostVMDiag, http.StatusUnauthorized))
 			return
 		}
 

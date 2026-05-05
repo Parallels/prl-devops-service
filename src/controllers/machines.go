@@ -1226,9 +1226,9 @@ func CreateVirtualMachineHandler() restapi.ControllerHandler {
 				return
 			}
 
-			callerID, ok := getEffectiveCallerID(ctx)
+			callerID, ok := getEffectiveCallerID(ctx, createMachineDiag)
 			if !ok {
-				ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createMachineDiag, http.StatusUnauthorized))
 				return
 			}
 
@@ -1287,9 +1287,9 @@ func AsyncCreateVirtualMachineHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		asyncCreateVirtualMachineDiag := prlerrors.NewDiagnostics("/v1/machines/async")
-		callerID, ok := getEffectiveCallerID(ctx)
+		callerID, ok := getEffectiveCallerID(ctx, asyncCreateVirtualMachineDiag)
 		if !ok {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncCreateVirtualMachineDiag, http.StatusUnauthorized))
 			return
 		}
 

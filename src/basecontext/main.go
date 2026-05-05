@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/models"
 	log "github.com/cjlapao/common-go-logger"
 )
@@ -98,9 +99,13 @@ func (c *BaseContext) GetRequestId() string {
 	return id.(string)
 }
 
-func (c *BaseContext) GetUser() *models.ApiUser {
-	if c.authContext != nil {
+func (c *BaseContext) GetUser(diag *errors.Diagnostics) *models.ApiUser {
+	if c.authContext != nil && c.authContext.User != nil {
 		return c.authContext.User
+	}
+
+	if diag != nil {
+		diag.AddError("401", "User not found or session expired", "GetUser")
 	}
 
 	return nil
