@@ -204,8 +204,14 @@ func (c *HostWebSocketClient) readLoop() {
 
 			var event api_models.EventMessage
 			if err := json.Unmarshal(message, &event); err != nil {
-				c.ctx.LogErrorf("[HostWebSocketClient] Error unmarshalling message from host %s: %v", c.hostName, err)
+				c.ctx.LogErrorf("[Orchestrator] [WS Read] Error unmarshalling message from host %s: %v", c.hostName, err)
 				continue
+			}
+
+			// Log all incoming events for debugging — helps identify which types reach the orchestrator
+			// Exclude noisy stat and log events to keep logs focused on job tracking
+			if event.Type != constants.EventTypeStats && event.Type != constants.EventTypeSystemLogs {
+				c.ctx.LogDebugf("[Orchestrator] [WS Received] host=%s type=%q message=%q id=%s", c.hostName, event.Type, event.Message, event.ID)
 			}
 
 			// Dispatch message to manager

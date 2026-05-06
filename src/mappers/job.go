@@ -16,6 +16,7 @@ func MapJobToApiJob(job data_models.Job) *api_models.JobResponse {
 		Progress:           job.Progress,
 		JobType:            job.JobType,
 		JobOperation:       job.JobOperation,
+		IsOrchestratorJob:  job.IsOrchestratorJob,
 		Result:             job.Result,
 		ResultRecordId:     job.ResultRecordId,
 		ResultRecordName:   job.ResultRecordName,

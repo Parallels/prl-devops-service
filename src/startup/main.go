@@ -89,8 +89,8 @@ func Start(ctx basecontext.ApiContext) {
 
 	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.EventStartApi, nil, nil))
 
-	// Initialize EventEmitter service (for API and Orchestrator modes)
-	if cfg.IsApi() || cfg.IsOrchestrator() {
+	// Initialize EventEmitter service (for API, Orchestrator, and Host modes)
+	if cfg.IsApi() || cfg.IsOrchestrator() || cfg.IsHost() {
 		emitter := eventemitter.NewEventEmitter(ctx)
 		if diag := emitter.Initialize(); diag.HasErrors() {
 			ctx.LogErrorf("Failed to initialize EventEmitter: %v", diag.GetErrors())

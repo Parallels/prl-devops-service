@@ -105,6 +105,22 @@ func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase 
 
 	// Starting the automatic backup
 	memoryDatabase.RunBackup(ctx)
+
+	// Start ghost job cleanup goroutine to detect and cancel stalled jobs
+	go func() {
+		ticker := time.NewTicker(time.Duration(constants.GhostJobCheckIntervalSeconds) * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-memoryDatabase.cancel:
+				ctx.LogInfof("[Database] Ghost job cleanup stopped")
+				return
+			case <-ticker.C:
+				memoryDatabase.DetectStaleJobs(ctx)
+			}
+		}
+	}()
+
 	return memoryDatabase
 }
 

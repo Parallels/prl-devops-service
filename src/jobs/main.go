@@ -90,6 +90,27 @@ func (jms *JobManagerService) CreateNewJob(owner string, jobType string, jobOper
 	return createdJob, nil
 }
 
+func (jms *JobManagerService) CreateOrchestratorJob(owner string, jobType string, jobOperation string, action string, externalJobID string) (*data_models.Job, error) {
+	job := data_models.Job{
+		ID:                externalJobID,
+		Owner:             owner,
+		State:             constants.JobStatePending,
+		JobType:           jobType,
+		JobOperation:      jobOperation,
+		Progress:          0,
+		IsOrchestratorJob: true,
+		Steps:             make([]data_models.JobStep, 0),
+	}
+
+	createdJob, err := jms.db.CreateJob(jms.apiCtx, job)
+	if err != nil {
+		return nil, err
+	}
+
+	jms.emitEvent("JOB_CREATED", createdJob)
+	return createdJob, nil
+}
+
 func (jms *JobManagerService) InitJob(jobId string) (*data_models.Job, error) {
 	job, err := jms.db.GetJob(jms.apiCtx, jobId)
 	if err != nil {
@@ -344,17 +365,30 @@ func (jms *JobManagerService) DeleteJob(jobId string) error {
 }
 
 func (jms *JobManagerService) emitEvent(message string, job *data_models.Job) {
+	if job == nil {
+		jms.apiCtx.LogDebugf("[Orchestrator] [Jobs] emitEvent called with nil job, message=%s", message)
+		return
+	}
 	emitter := serviceprovider.GetEventEmitter()
-	if emitter != nil && emitter.IsRunning() {
-		// Always broadcast the mapped API model so the UI always receives
-		// the full schema including Steps (never the raw DB struct).
-		// NOTE: Broadcast is synchronous (not in a goroutine) to preserve event
-		// ordering. The Go scheduler's LIFO goroutine scheduling would otherwise
-		// cause MarkJobComplete's "completed" event to be delivered before the
-		// preceding "running" step-update event, then overwritten when the
-		// "running" goroutine runs after, leaving the UI stuck showing "running".
-		apiJob := mappers.MapJobToApiJob(*job)
-		msg := global_models.NewEventMessage(constants.EventTypeJobManager, message, apiJob)
-		_ = emitter.Broadcast(msg)
+	if emitter == nil {
+		jms.apiCtx.LogDebugf("[Orchestrator] [Jobs] emitEvent: emitter is nil, message=%s jobID=%s", message, job.ID)
+		return
+	}
+	if !emitter.IsRunning() {
+		jms.apiCtx.LogDebugf("[Orchestrator] [Jobs] emitEvent: emitter not running, message=%s jobID=%s", message, job.ID)
+		return
+	}
+	jms.apiCtx.LogDebugf("[Orchestrator] [Jobs] emitEvent: message=%s jobID=%s jobState=%s progress=%d", message, job.ID, job.State, job.Progress)
+	// Always broadcast the mapped API model so the UI always receives
+	// the full schema including Steps (never the raw DB struct).
+	// NOTE: Broadcast is synchronous (not in a goroutine) to preserve event
+	// ordering. The Go scheduler's LIFO goroutine scheduling would otherwise
+	// cause MarkJobComplete's "completed" event to be delivered before the
+	// preceding "running" step-update event, then overwritten when the
+	// "running" goroutine runs after, leaving the UI stuck showing "running".
+	apiJob := mappers.MapJobToApiJob(*job)
+	msg := global_models.NewEventMessage(constants.EventTypeJobManager, message, apiJob)
+	if err := emitter.Broadcast(msg); err != nil {
+		jms.apiCtx.LogDebugf("[Orchestrator] [Jobs] emitEvent: broadcast failed for message=%s jobID=%s: %v", message, job.ID, err)
 	}
 }

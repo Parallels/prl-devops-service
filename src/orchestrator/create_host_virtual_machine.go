@@ -131,10 +131,19 @@ func (s *OrchestratorService) DispatchCreateVirtualMachine(ctx basecontext.ApiCo
 			updateJob(fmt.Sprintf("Host %s failed: %s — trying next host", host.Host, e.Message))
 			continue
 		}
-		// When the host reused our job ID (same-process case), the machines goroutine
-		// will complete the orchestrator job directly — no registry entry needed.
-		if hostJob.ID != jobID {
+		// When the host is connected via WebSocket the host is remote; the
+		// HostJobEventHandler translates the host job events into orchestrator
+		// job updates.  Register the link unconditionally for remote dispatches
+		// even when the host reused the orchestrator's job ID (same-process
+		// case shares the same PID and no WebSocket connection, so nothing
+		// to forward anyway).
+		isConnected := GetHostWebSocketManager() != nil && GetHostWebSocketManager().IsConnected(host.ID)
+		s.ctx.LogDebugf("[Orchestrator] [Dispatch] host=%s hostID=%s hostJobID=%s orchestratorJobID=%s ws_connected=%v", host.Host, host.ID, hostJob.ID, jobID, isConnected)
+		if isConnected {
 			reg.Register(hostJob.ID, jobID, host.ID)
+			s.ctx.LogDebugf("[Orchestrator] [Dispatch] Registered link: hostJobID=%s -> orchestratorJobID=%s for host=%s", hostJob.ID, jobID, host.ID)
+		} else {
+			s.ctx.LogDebugf("[Orchestrator] [Dispatch] Skipped registry registration: host=%s is not WebSocket-connected (same-process case)", host.Host)
 		}
 		updateJob(fmt.Sprintf("Dispatched to host %s, tracking progress via job %s", host.Host, hostJob.ID))
 		// Completion (success or failure) is forwarded by HostJobEventHandler (remote)
@@ -203,10 +212,19 @@ func (s *OrchestratorService) DispatchCreateHosVirtualMachine(ctx basecontext.Ap
 		return nil, &e
 	}
 
-	// When the host reused our job ID (same-process case), the machines goroutine
-	// will complete the orchestrator job directly — no registry entry needed.
-	if hostJob.ID != jobID {
+	// When the host is connected via WebSocket the host is remote; the
+	// HostJobEventHandler translates the host job events into orchestrator
+	// job updates.  Register the link unconditionally for remote dispatches
+	// even when the host reused the orchestrator's job ID (same-process
+	// case shares the same PID and no WebSocket connection, so nothing
+	// to forward anyway).
+	isConnected := GetHostWebSocketManager() != nil && GetHostWebSocketManager().IsConnected(host.ID)
+	s.ctx.LogDebugf("[Orchestrator Debug] [Dispatch] host=%s hostID=%s hostJobID=%s orchestratorJobID=%s ws_connected=%v", host.Host, host.ID, hostJob.ID, jobID, isConnected)
+	if isConnected {
 		reg.Register(hostJob.ID, jobID, host.ID)
+		s.ctx.LogDebugf("[Orchestrator Debug] [Dispatch] Registered link: hostJobID=%s -> orchestratorJobID=%s for host=%s", hostJob.ID, jobID, host.ID)
+	} else {
+		s.ctx.LogDebugf("[Orchestrator Debug] [Dispatch] Skipped registry registration: host=%s is not WebSocket-connected (same-process case)", host.Host)
 	}
 	updateJob(fmt.Sprintf("Dispatched to host %s, tracking progress via job %s", host.Host, hostJob.ID))
 	// Completion (success or failure) is forwarded by HostJobEventHandler (remote)

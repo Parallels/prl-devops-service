@@ -2,43 +2,14 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Parallels Desktop Api",
+      "name": "Devops Service",
       "type": "go",
       "request": "launch",
       "mode": "debug",
       "program": "${workspaceFolder}/src/main.go",
       // Comment out if you do not need to setup environment variables for the module
-      "envFile": "${workspaceFolder}/.env",
-      "args": [
-        "${input:debug_command}",
-        "catalog-providers",
-      ]
-    },
-    {
-      "name": "Parallels Desktop PdFile Debug",
-      "type": "go",
-      "request": "launch",
-      "mode": "debug",
-      "program": "${workspaceFolder}/src/main.go",
-      // Comment out if you do not need to setup environment variables for the module
-      "envFile": "${workspaceFolder}/.env",
-      "args": [
-        "pull",
-        "${workspaceFolder}/.local/pdfiles/dropbox-test-vm.aws.pull.pdfile",
-      ]
-    },
-    {
-      "name": "Parallels Desktop Manual Debug",
-      "type": "go",
-      "request": "launch",
-      "mode": "debug",
-      "program": "${workspaceFolder}/src/main.go",
-      // Comment out if you do not need to setup environment variables for the module
-      "envFile": "${workspaceFolder}/.env",
-      "args": [
-        "pull",
-        "/tmp/pull_empty_vm_latest1.pdfile"
-      ]
+      "envFile": "${workspaceFolder}/.env.${input:environment_file}",
+      "args": []
     },
     {
       "name": "Debug in Container",
@@ -64,16 +35,16 @@
   ],
   "inputs": [
     {
-      "id": "debug_command",
+      "id": "environment_file",
       "type": "pickString",
       "options": [
-        "api",
-        "catalog",
-        "reverse-proxy",
-        "test"
+        "all",
+        "orchestrator",
+        "host",
+        "catalog"
       ],
-      "default": "api",
-      "description": "Select the command to debug"
+      "default": "all",
+      "description": "Select the mode to debug"
     },
     {
       "id": "catalog_command",
