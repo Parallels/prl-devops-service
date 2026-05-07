@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -3265,9 +3266,11 @@ func CreateOrchestratorHostReverseProxyHostHandler() restapi.ControllerHandler {
 			return
 		}
 
-		if err := request.Validate(); err != nil {
+		diag := errors.NewDiagnostics("/orchestrator/hosts/reverse-proxy/hosts")
+		request.Validate(diag)
+		if diag.HasErrors() {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
+				Message: "Invalid request body",
 				Code:    http.StatusBadRequest,
 			})
 			return
@@ -3315,9 +3318,11 @@ func UpdateOrchestratorHostReverseProxyHostHandler() restapi.ControllerHandler {
 			return
 		}
 
-		if err := request.Validate(); err != nil {
+		diag := errors.NewDiagnostics("/orchestrator/hosts/reverse-proxy/hosts")
+		request.Validate(diag)
+		if diag.HasErrors() {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
+				Message: "Invalid request body",
 				Code:    http.StatusBadRequest,
 			})
 			return
@@ -3400,9 +3405,11 @@ func UpsertOrchestratorHostReverseProxyHostHttpRouteHandler() restapi.Controller
 			return
 		}
 
-		if err := request.Validate(); err != nil {
+		diag := errors.NewDiagnostics("/orchestrator/hosts/reverse-proxy/hosts/http_routes")
+		request.Validate(diag)
+		if diag.HasErrors() {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
+				Message: "Invalid request body",
 				Code:    http.StatusBadRequest,
 			})
 			return
@@ -3487,9 +3494,11 @@ func UpdateOrchestratorHostReverseProxyHostTcpRouteHandler() restapi.ControllerH
 			return
 		}
 
-		if err := request.Validate(); err != nil {
+		diag := errors.NewDiagnostics("/orchestrator/hosts/reverse-proxy/hosts/tcp_route")
+		request.Validate(diag)
+		if diag.HasErrors() {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
+				Message: "Invalid request body",
 				Code:    http.StatusBadRequest,
 			})
 			return

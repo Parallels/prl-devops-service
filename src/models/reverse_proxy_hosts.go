@@ -1,6 +1,11 @@
 package models
 
-import "github.com/Parallels/prl-devops-service/errors"
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/Parallels/prl-devops-service/errors"
+)
 
 type ReverseProxyHost struct {
 	ID         string                       `json:"id"`
@@ -48,53 +53,65 @@ func (o *ReverseProxyHostCreateRequest) GetHost() string {
 	return o.Host
 }
 
-func (o *ReverseProxyHostCreateRequest) Validate() error {
+func (o *ReverseProxyHostCreateRequest) Validate(diag *errors.Diagnostics) {
 	if o.Host == "" {
-		return errors.NewWithCode("missing reverse proxy host", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host", "")
+		return
 	}
 	if o.Port == "" {
-		return errors.NewWithCode("missing reverse proxy host port", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host port", "")
+		return
 	}
 
 	if o.Tls != nil {
-		if err := o.Tls.Validate(); err != nil {
-			return err
+		o.Tls.Validate(diag)
+		if diag.HasErrors() {
+			return
 		}
 	}
 
 	if o.Cors != nil {
-		if err := o.Cors.Validate(); err != nil {
-			return err
+		err := o.Cors.Validate()
+		if err != nil {
+			diag.AddError(strconv.Itoa(http.StatusBadRequest), err.Error(), "")
+			return
 		}
 	}
 
 	if len(o.HttpRoutes) == 0 && o.TcpRoute == nil {
-		return errors.NewWithCode("missing reverse proxy host routes", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host routes", "")
+		return
 	}
 
 	if len(o.HttpRoutes) > 0 && o.TcpRoute != nil {
-		return errors.NewWithCode("reverse proxy host cannot have both http and tcp routes", 400)
+		diag.AddError("400", "reverse proxy host cannot have both http and tcp routes", "")
+		return
 	}
 
 	if o.TcpRoute != nil {
 		if o.Cors != nil {
-			return errors.NewWithCode("reverse proxy host cannot have cors and tcp route", 400)
+			diag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy host cannot have cors and tcp route", "")
+			return
 		}
 		if o.Tls != nil {
-			return errors.NewWithCode("reverse proxy host cannot have tls and tcp route", 400)
+			diag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy host cannot have tls and tcp route", "")
+			return
 		}
-		if err := o.TcpRoute.Validate(); err != nil {
-			return err
+
+		o.TcpRoute.Validate(diag)
+		if diag.HasErrors() {
+			return
 		}
 	}
 
 	for _, route := range o.HttpRoutes {
-		if err := route.Validate(); err != nil {
-			return err
+		route.Validate(diag)
+		if diag.HasErrors() {
+			return
 		}
 	}
 
-	return nil
+	return
 }
 
 type ReverseProxyHostUpdateRequest struct {
@@ -112,24 +129,30 @@ func (o *ReverseProxyHostUpdateRequest) GetHost() string {
 	return o.Host
 }
 
-func (o *ReverseProxyHostUpdateRequest) Validate() error {
+func (o *ReverseProxyHostUpdateRequest) Validate(diag *errors.Diagnostics) {
 	if o.Host == "" {
-		return errors.NewWithCode("missing reverse proxy host", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host", "")
+		return
 	}
 	if o.Port == "" {
-		return errors.NewWithCode("missing reverse proxy host port", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host port", "")
+		return
 	}
 
 	if o.Tls != nil {
-		if err := o.Tls.Validate(); err != nil {
-			return err
+		o.Tls.Validate(diag)
+		if diag.HasErrors() {
+			return
 		}
 	}
 
 	if o.Cors != nil {
-		if err := o.Cors.Validate(); err != nil {
-			return err
+		err := o.Cors.Validate()
+		if err != nil {
+			diag.AddError(strconv.Itoa(http.StatusBadRequest), err.Error(), "")
+			return
 		}
 	}
-	return nil
+
+	return
 }

@@ -8,12 +8,14 @@ type ReverseProxyHostTls struct {
 	Key     string `json:"key,omitempty" yaml:"key,omitempty"`
 }
 
-func (o *ReverseProxyHostTls) Validate() error {
+func (o *ReverseProxyHostTls) Validate(diag *errors.Diagnostics) {
 	if o.Cert == "" {
-		return errors.NewWithCode("missing reverse proxy host tls cert", 400)
+		diag.AddError("400", "missing reverse proxy host tls cert", "ReverseProxyHostTls")
+		return
 	}
 	if o.Key == "" {
-		return errors.NewWithCode("missing reverse proxy host tls key", 400)
+		diag.AddError("400", "missing reverse proxy host tls key", "ReverseProxyHostTls")
+		return
 	}
-	return nil
+	return
 }

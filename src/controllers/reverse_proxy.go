@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -279,19 +280,16 @@ func CreateReverseProxyHostHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		createReverseProxyHostDiag := errors.NewDiagnostics("/reverse-proxy/hosts")
 		var request models.ReverseProxyHostCreateRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			createReverseProxyHostDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createReverseProxyHostDiag, http.StatusBadRequest))
 			return
 		}
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		request.Validate(createReverseProxyHostDiag)
+		if createReverseProxyHostDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createReverseProxyHostDiag, http.StatusBadRequest))
 			return
 		}
 
@@ -347,18 +345,15 @@ func UpdateReverseProxyHostHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.ReverseProxyHostUpdateRequest
+		updateReverseProxyHostDiag := errors.NewDiagnostics("/reverse-proxy/hosts")
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			updateReverseProxyHostDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostDiag, http.StatusBadRequest))
 			return
 		}
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		request.Validate(updateReverseProxyHostDiag)
+		if updateReverseProxyHostDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostDiag, http.StatusBadRequest))
 			return
 		}
 		cfg := config.Get()
@@ -382,17 +377,20 @@ func UpdateReverseProxyHostHandler() restapi.ControllerHandler {
 			return
 		}
 		if dtoHost == nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy host not found"), http.StatusNotFound))
+			updateReverseProxyHostDiag.AddError(strconv.Itoa(http.StatusNotFound), "reverse proxy host not found", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostDiag, http.StatusNotFound))
 			return
 		}
 
 		if dtoHost.TcpRoute != nil {
 			if request.Cors != nil {
-				ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("cors is not allowed for tcp route"), http.StatusBadRequest))
+				updateReverseProxyHostDiag.AddError(strconv.Itoa(http.StatusBadRequest), "cors is not allowed for tcp route", "")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostDiag, http.StatusBadRequest))
 				return
 			}
 			if request.Tls != nil {
-				ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("tls is not allowed for tcp route"), http.StatusBadRequest))
+				updateReverseProxyHostDiag.AddError(strconv.Itoa(http.StatusBadRequest), "tls is not allowed for tcp route", "")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostDiag, http.StatusBadRequest))
 				return
 			}
 		}
@@ -484,19 +482,21 @@ func UpsertReverseProxyHostHttpRouteHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		upsertReverseProxyHostHttpRouteDiag := errors.NewDiagnostics("/reverse-proxy/hosts/http_route")
 		var request models.ReverseProxyHostHttpRouteCreateRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			upsertReverseProxyHostHttpRouteDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(upsertReverseProxyHostHttpRouteDiag, http.StatusBadRequest))
 			return
 		}
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		request.Validate(upsertReverseProxyHostHttpRouteDiag)
+		if upsertReverseProxyHostHttpRouteDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(upsertReverseProxyHostHttpRouteDiag, http.StatusBadRequest))
+			return
+		}
+		request.Validate(upsertReverseProxyHostHttpRouteDiag)
+		if upsertReverseProxyHostHttpRouteDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(upsertReverseProxyHostHttpRouteDiag, http.StatusBadRequest))
 			return
 		}
 		cfg := config.Get()
@@ -644,20 +644,16 @@ func UpdateReverseProxyHostHttpRouteOrderHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		updateReverseProxyHostHttpRouteOrderDiag := errors.NewDiagnostics("/reverse-proxy/hosts/http_routes/order")
 		var request models.ReverseProxyHostHttpRouteReorderRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			updateReverseProxyHostHttpRouteOrderDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostHttpRouteOrderDiag, http.StatusBadRequest))
 			return
 		}
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		request.Validate(updateReverseProxyHostHttpRouteOrderDiag)
+		if updateReverseProxyHostHttpRouteOrderDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostHttpRouteOrderDiag, http.StatusBadRequest))
 			return
 		}
 
@@ -715,19 +711,16 @@ func UpdateReverseProxyHostTcpRouteHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		updateReverseProxyHostTcpRouteDiag := errors.NewDiagnostics("/reverse-proxy/hosts/tcp_routes")
 		var request models.ReverseProxyHostTcpRouteCreateRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			updateReverseProxyHostTcpRouteDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostTcpRouteDiag, http.StatusBadRequest))
 			return
 		}
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		request.Validate(updateReverseProxyHostTcpRouteDiag)
+		if updateReverseProxyHostTcpRouteDiag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostTcpRouteDiag, http.StatusBadRequest))
 			return
 		}
 		cfg := config.Get()
@@ -752,12 +745,14 @@ func UpdateReverseProxyHostTcpRouteHandler() restapi.ControllerHandler {
 		}
 
 		if dtoHost == nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy host not found"), http.StatusNotFound))
+			updateReverseProxyHostTcpRouteDiag.AddError(strconv.Itoa(http.StatusNotFound), "reverse proxy host not found", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostTcpRouteDiag, http.StatusNotFound))
 			return
 		}
 
 		if dtoHost.HttpRoutes != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("cannot update reverse proxy TCP route when HTTP routes are present"), http.StatusBadRequest))
+			updateReverseProxyHostTcpRouteDiag.AddError(strconv.Itoa(http.StatusBadRequest), "cannot update reverse proxy TCP route when HTTP routes are present", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostTcpRouteDiag, http.StatusBadRequest))
 			return
 		}
 
@@ -809,10 +804,11 @@ func RestartReverseProxyHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		restartReverseProxyDiag := errors.NewDiagnostics("/reverse-proxy/restart")
 		rpConfig := reverse_proxy.GetConfig()
 		if !rpConfig.Enabled {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
+			restartReverseProxyDiag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy is disabled", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(restartReverseProxyDiag, http.StatusBadRequest))
 			return
 		}
 
