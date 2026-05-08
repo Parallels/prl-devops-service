@@ -3269,10 +3269,7 @@ func CreateOrchestratorHostReverseProxyHostHandler() restapi.ControllerHandler {
 		diag := errors.NewDiagnostics("/orchestrator/hosts/reverse-proxy/hosts")
 		request.Validate(diag)
 		if diag.HasErrors() {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body",
-				Code:    http.StatusBadRequest,
-			})
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, http.StatusBadRequest))
 			return
 		}
 
@@ -3321,10 +3318,7 @@ func UpdateOrchestratorHostReverseProxyHostHandler() restapi.ControllerHandler {
 		diag := errors.NewDiagnostics("/orchestrator/hosts/reverse-proxy/hosts")
 		request.Validate(diag)
 		if diag.HasErrors() {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body",
-				Code:    http.StatusBadRequest,
-			})
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, http.StatusBadRequest))
 			return
 		}
 
@@ -3408,10 +3402,7 @@ func UpsertOrchestratorHostReverseProxyHostHttpRouteHandler() restapi.Controller
 		diag := errors.NewDiagnostics("/orchestrator/hosts/reverse-proxy/hosts/http_routes")
 		request.Validate(diag)
 		if diag.HasErrors() {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body",
-				Code:    http.StatusBadRequest,
-			})
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, http.StatusBadRequest))
 			return
 		}
 
@@ -3497,10 +3488,7 @@ func UpdateOrchestratorHostReverseProxyHostTcpRouteHandler() restapi.ControllerH
 		diag := errors.NewDiagnostics("/orchestrator/hosts/reverse-proxy/hosts/tcp_route")
 		request.Validate(diag)
 		if diag.HasErrors() {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body",
-				Code:    http.StatusBadRequest,
-			})
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, http.StatusBadRequest))
 			return
 		}
 

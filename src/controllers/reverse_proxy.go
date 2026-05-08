@@ -148,7 +148,7 @@ func enrichHostWithVmDetails(ctx basecontext.ApiContext, host *models.ReversePro
 // @Tags			ReverseProxy
 // @Produce		json
 // @Success		200	{object}	models.ReverseProxy
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -177,7 +177,7 @@ func GetReverseProxyConfigHandler() restapi.ControllerHandler {
 // @Tags			ReverseProxy
 // @Produce		json
 // @Success		200	{object}	[]models.ReverseProxyHost
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -187,6 +187,7 @@ func GetReverseProxyHostsHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		getReverseProxyHostsDiag := errors.NewDiagnostics("/reverse-proxy/hosts")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -195,7 +196,8 @@ func GetReverseProxyHostsHandler() restapi.ControllerHandler {
 
 		cfg := config.Get()
 		if !cfg.IsReverseProxyEnabled() {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
+			getReverseProxyHostsDiag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy is disabled", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getReverseProxyHostsDiag, http.StatusBadRequest))
 			return
 		}
 
@@ -223,7 +225,7 @@ func GetReverseProxyHostsHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path		string	true	"Reverse Proxy Host ID"
 // @Success		200	{object}	models.ReverseProxyHost
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -233,6 +235,9 @@ func GetReverseProxyHostHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		id := vars["id"]
+		getReverseProxyHostDiag := errors.NewDiagnostics("/reverse-proxy/hosts/" + id)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -241,12 +246,10 @@ func GetReverseProxyHostHandler() restapi.ControllerHandler {
 
 		cfg := config.Get()
 		if !cfg.IsReverseProxyEnabled() {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
+			getReverseProxyHostDiag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy is disabled", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getReverseProxyHostDiag, http.StatusBadRequest))
 			return
 		}
-
-		vars := mux.Vars(r)
-		id := vars["id"]
 
 		dtoRpHost, err := dbService.GetReverseProxyHost(ctx, id)
 		if err != nil {
@@ -270,7 +273,7 @@ func GetReverseProxyHostHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			reverse_proxy_create_request	body		models.ReverseProxyHostCreateRequest	true	"Reverse Host Request"
 // @Success		200								{object}	models.ReverseProxyHost
-// @Failure		400								{object}	models.ApiErrorResponse
+// @Failure		400								{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401								{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -295,7 +298,8 @@ func CreateReverseProxyHostHandler() restapi.ControllerHandler {
 
 		cfg := config.Get()
 		if !cfg.IsReverseProxyEnabled() {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
+			createReverseProxyHostDiag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy is disabled", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createReverseProxyHostDiag, http.StatusBadRequest))
 			return
 		}
 
@@ -334,7 +338,7 @@ func CreateReverseProxyHostHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			reverse_proxy_update_request	body		models.ReverseProxyHostUpdateRequest	true	"Reverse Host Request"
 // @Success		200								{object}	models.ReverseProxyHost
-// @Failure		400								{object}	models.ApiErrorResponse
+// @Failure		400								{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401								{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -345,7 +349,9 @@ func UpdateReverseProxyHostHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		var request models.ReverseProxyHostUpdateRequest
-		updateReverseProxyHostDiag := errors.NewDiagnostics("/reverse-proxy/hosts")
+		vars := mux.Vars(r)
+		id := vars["id"]
+		updateReverseProxyHostDiag := errors.NewDiagnostics("/reverse-proxy/hosts/" + id)
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			updateReverseProxyHostDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostDiag, http.StatusBadRequest))
@@ -358,12 +364,10 @@ func UpdateReverseProxyHostHandler() restapi.ControllerHandler {
 		}
 		cfg := config.Get()
 		if !cfg.IsReverseProxyEnabled() {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
+			updateReverseProxyHostDiag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy is disabled", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostDiag, http.StatusBadRequest))
 			return
 		}
-
-		vars := mux.Vars(r)
-		id := vars["id"]
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
@@ -406,7 +410,9 @@ func UpdateReverseProxyHostHandler() restapi.ControllerHandler {
 
 		rps := reverse_proxy.Get(ctx)
 		if err := rps.Restart(); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			updateReverseProxyHostDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Restart")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -425,7 +431,7 @@ func UpdateReverseProxyHostHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path	string	true	"Reverse Proxy Host ID"
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -435,6 +441,9 @@ func DeleteReverseProxyHostHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		id := vars["id"]
+		deleteReverseProxyHostDiag := errors.NewDiagnostics("/reverse-proxy/hosts/" + id)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -442,12 +451,10 @@ func DeleteReverseProxyHostHandler() restapi.ControllerHandler {
 		}
 		cfg := config.Get()
 		if !cfg.IsReverseProxyEnabled() {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
+			deleteReverseProxyHostDiag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy is disabled", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteReverseProxyHostDiag, http.StatusBadRequest))
 			return
 		}
-
-		vars := mux.Vars(r)
-		id := vars["id"]
 
 		err = dbService.DeleteReverseProxyHost(ctx, id)
 		if err != nil {
@@ -457,7 +464,9 @@ func DeleteReverseProxyHostHandler() restapi.ControllerHandler {
 
 		rps := reverse_proxy.Get(ctx)
 		if err := rps.Restart(); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteReverseProxyHostDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Restart")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteReverseProxyHostDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -472,17 +481,19 @@ func DeleteReverseProxyHostHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			reverse_proxy_http_route_request	body		models.ReverseProxyHostHttpRouteCreateRequest	true	"Reverse Host Request"
 // @Success		200									{object}	models.ReverseProxyHost
-// @Failure		400									{object}	models.ApiErrorResponse
+// @Failure		400									{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401									{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/reverse-proxy/hosts/{id}/http_route [post]
+// @Router			/v1/reverse-proxy/hosts/{id}/http_routes [post]
 func UpsertReverseProxyHostHttpRouteHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		upsertReverseProxyHostHttpRouteDiag := errors.NewDiagnostics("/reverse-proxy/hosts/http_route")
+		vars := mux.Vars(r)
+		id := vars["id"]
+		upsertReverseProxyHostHttpRouteDiag := errors.NewDiagnostics("/reverse-proxy/hosts/" + id + "/http_routes")
 		var request models.ReverseProxyHostHttpRouteCreateRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			upsertReverseProxyHostHttpRouteDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
@@ -494,19 +505,12 @@ func UpsertReverseProxyHostHttpRouteHandler() restapi.ControllerHandler {
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(upsertReverseProxyHostHttpRouteDiag, http.StatusBadRequest))
 			return
 		}
-		request.Validate(upsertReverseProxyHostHttpRouteDiag)
-		if upsertReverseProxyHostHttpRouteDiag.HasErrors() {
+		cfg := config.Get()
+		if !cfg.IsReverseProxyEnabled() {
+			upsertReverseProxyHostHttpRouteDiag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy is disabled", "")
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(upsertReverseProxyHostHttpRouteDiag, http.StatusBadRequest))
 			return
 		}
-		cfg := config.Get()
-		if !cfg.IsReverseProxyEnabled() {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
-			return
-		}
-
-		vars := mux.Vars(r)
-		id := vars["id"]
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
@@ -521,12 +525,14 @@ func UpsertReverseProxyHostHttpRouteHandler() restapi.ControllerHandler {
 		}
 
 		if dtoHost == nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy host not found"), http.StatusNotFound))
+			upsertReverseProxyHostHttpRouteDiag.AddError(strconv.Itoa(http.StatusNotFound), "reverse proxy host not found", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(upsertReverseProxyHostHttpRouteDiag, http.StatusNotFound))
 			return
 		}
 
 		if dtoHost.TcpRoute != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("cannot update reverse proxy HTTP route when TCP routes are present"), http.StatusBadRequest))
+			upsertReverseProxyHostHttpRouteDiag.AddError(strconv.Itoa(http.StatusBadRequest), "cannot update reverse proxy HTTP route when TCP routes are present", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(upsertReverseProxyHostHttpRouteDiag, http.StatusBadRequest))
 			return
 		}
 
@@ -568,7 +574,9 @@ func UpsertReverseProxyHostHttpRouteHandler() restapi.ControllerHandler {
 
 		rps := reverse_proxy.Get(ctx)
 		if err := rps.Restart(); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			upsertReverseProxyHostHttpRouteDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Restart")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(upsertReverseProxyHostHttpRouteDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -585,7 +593,7 @@ func UpsertReverseProxyHostHttpRouteHandler() restapi.ControllerHandler {
 // @Param			id				path	string	true	"Reverse Proxy Host ID"
 // @Param			http_route_id	path	string	true	"Reverse Proxy Host HTTP Route ID"
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -595,6 +603,10 @@ func DeleteReverseProxyHostHttpRoutesHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		id := vars["id"]
+		httpRouteID := vars["http_route_id"]
+		deleteReverseProxyHostHttpRouteDiag := errors.NewDiagnostics("/reverse-proxy/hosts/" + id + "/http_routes/" + httpRouteID)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -602,13 +614,10 @@ func DeleteReverseProxyHostHttpRoutesHandler() restapi.ControllerHandler {
 		}
 		cfg := config.Get()
 		if !cfg.IsReverseProxyEnabled() {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
+			deleteReverseProxyHostHttpRouteDiag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy is disabled", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteReverseProxyHostHttpRouteDiag, http.StatusBadRequest))
 			return
 		}
-
-		vars := mux.Vars(r)
-		id := vars["id"]
-		httpRouteID := vars["http_route_id"]
 
 		err = dbService.DeleteReverseProxyHostHttpRoute(ctx, id, httpRouteID)
 		if err != nil {
@@ -618,7 +627,9 @@ func DeleteReverseProxyHostHttpRoutesHandler() restapi.ControllerHandler {
 
 		rps := reverse_proxy.Get(ctx)
 		if err := rps.Restart(); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			deleteReverseProxyHostHttpRouteDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Restart")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteReverseProxyHostHttpRouteDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -634,7 +645,7 @@ func DeleteReverseProxyHostHttpRoutesHandler() restapi.ControllerHandler {
 // @Param			id											path		string											true	"Reverse Proxy Host ID"
 // @Param			reverse_proxy_http_route_reorder_request	body		models.ReverseProxyHostHttpRouteReorderRequest	true	"Reverse Proxy Host HTTP Route Reorder Request"
 // @Success		200											{object}	models.ReverseProxyHost
-// @Failure		400											{object}	models.ApiErrorResponse
+// @Failure		400											{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401											{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -644,7 +655,9 @@ func UpdateReverseProxyHostHttpRouteOrderHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		updateReverseProxyHostHttpRouteOrderDiag := errors.NewDiagnostics("/reverse-proxy/hosts/http_routes/order")
+		vars := mux.Vars(r)
+		id := vars["id"]
+		updateReverseProxyHostHttpRouteOrderDiag := errors.NewDiagnostics("/reverse-proxy/hosts/" + id + "/http_routes/order")
 		var request models.ReverseProxyHostHttpRouteReorderRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			updateReverseProxyHostHttpRouteOrderDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
@@ -659,12 +672,10 @@ func UpdateReverseProxyHostHttpRouteOrderHandler() restapi.ControllerHandler {
 
 		cfg := config.Get()
 		if !cfg.IsReverseProxyEnabled() {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
+			updateReverseProxyHostHttpRouteOrderDiag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy is disabled", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostHttpRouteOrderDiag, http.StatusBadRequest))
 			return
 		}
-
-		vars := mux.Vars(r)
-		id := vars["id"]
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
@@ -680,7 +691,9 @@ func UpdateReverseProxyHostHttpRouteOrderHandler() restapi.ControllerHandler {
 
 		rps := reverse_proxy.Get(ctx)
 		if err := rps.Restart(); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			updateReverseProxyHostHttpRouteOrderDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Restart")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostHttpRouteOrderDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -701,17 +714,19 @@ func UpdateReverseProxyHostHttpRouteOrderHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			reverse_proxy_tcp_route_request	body		models.ReverseProxyHostTcpRouteCreateRequest	true	"Reverse Host Request"
 // @Success		200								{object}	models.ReverseProxyHost
-// @Failure		400								{object}	models.ApiErrorResponse
+// @Failure		400								{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401								{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/reverse-proxy/hosts/{id}/http_routes [post]
+// @Router			/v1/reverse-proxy/hosts/{id}/tcp_route [post]
 func UpdateReverseProxyHostTcpRouteHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		updateReverseProxyHostTcpRouteDiag := errors.NewDiagnostics("/reverse-proxy/hosts/tcp_routes")
+		vars := mux.Vars(r)
+		id := vars["id"]
+		updateReverseProxyHostTcpRouteDiag := errors.NewDiagnostics("/reverse-proxy/hosts/" + id + "/tcp_routes")
 		var request models.ReverseProxyHostTcpRouteCreateRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			updateReverseProxyHostTcpRouteDiag.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
@@ -725,12 +740,10 @@ func UpdateReverseProxyHostTcpRouteHandler() restapi.ControllerHandler {
 		}
 		cfg := config.Get()
 		if !cfg.IsReverseProxyEnabled() {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("reverse proxy is disabled"), http.StatusBadRequest))
+			updateReverseProxyHostTcpRouteDiag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy is disabled", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostTcpRouteDiag, http.StatusBadRequest))
 			return
 		}
-
-		vars := mux.Vars(r)
-		id := vars["id"]
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
@@ -779,7 +792,9 @@ func UpdateReverseProxyHostTcpRouteHandler() restapi.ControllerHandler {
 
 		rps := reverse_proxy.Get(ctx)
 		if err := rps.Restart(); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			updateReverseProxyHostTcpRouteDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Restart")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateReverseProxyHostTcpRouteDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -794,7 +809,7 @@ func UpdateReverseProxyHostTcpRouteHandler() restapi.ControllerHandler {
 // @Tags			ReverseProxy
 // @Produce		json
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -814,7 +829,9 @@ func RestartReverseProxyHandler() restapi.ControllerHandler {
 
 		rps := reverse_proxy.Get(ctx)
 		if err := rps.Restart(); err != nil {
-			ReturnApiError(ctx, w, models.NewFromError(err))
+			rsp := models.NewFromError(err)
+			restartReverseProxyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Restart")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(restartReverseProxyDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -828,7 +845,7 @@ func RestartReverseProxyHandler() restapi.ControllerHandler {
 // @Tags			ReverseProxy
 // @Produce		json
 // @Success		202
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -839,7 +856,7 @@ func EnableReverseProxyHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		cfg := config.Get()
 		defer Recover(ctx, r, w)
-
+		enableReverseProxyDiag := errors.NewDiagnostics("/reverse-proxy/enable")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -871,7 +888,9 @@ func EnableReverseProxyHandler() restapi.ControllerHandler {
 
 		if wasEnabled {
 			if err := rps.Restart(); err != nil {
-				ReturnApiError(ctx, w, models.NewFromError(err))
+				rsp := models.NewFromError(err)
+				enableReverseProxyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Restart")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(enableReverseProxyDiag, http.StatusInternalServerError))
 				return
 			}
 		} else {

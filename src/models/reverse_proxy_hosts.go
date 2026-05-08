@@ -55,11 +55,11 @@ func (o *ReverseProxyHostCreateRequest) GetHost() string {
 
 func (o *ReverseProxyHostCreateRequest) Validate(diag *errors.Diagnostics) {
 	if o.Host == "" {
-		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host", "")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host", "ReverseProxyHostCreateRequest-Validate")
 		return
 	}
 	if o.Port == "" {
-		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host port", "")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host port", "ReverseProxyHostCreateRequest-Validate")
 		return
 	}
 
@@ -73,28 +73,28 @@ func (o *ReverseProxyHostCreateRequest) Validate(diag *errors.Diagnostics) {
 	if o.Cors != nil {
 		err := o.Cors.Validate()
 		if err != nil {
-			diag.AddError(strconv.Itoa(http.StatusBadRequest), err.Error(), "")
+			diag.AddError(strconv.Itoa(http.StatusBadRequest), err.Error(), "ReverseProxyHostCreateRequest-Validate")
 			return
 		}
 	}
 
 	if len(o.HttpRoutes) == 0 && o.TcpRoute == nil {
-		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host routes", "")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host routes", "ReverseProxyHostCreateRequest-Validate")
 		return
 	}
 
 	if len(o.HttpRoutes) > 0 && o.TcpRoute != nil {
-		diag.AddError("400", "reverse proxy host cannot have both http and tcp routes", "")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy host cannot have both http and tcp routes", "ReverseProxyHostCreateRequest-Validate")
 		return
 	}
 
 	if o.TcpRoute != nil {
 		if o.Cors != nil {
-			diag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy host cannot have cors and tcp route", "")
+			diag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy host cannot have cors and tcp route", "ReverseProxyHostCreateRequest-Validate")
 			return
 		}
 		if o.Tls != nil {
-			diag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy host cannot have tls and tcp route", "")
+			diag.AddError(strconv.Itoa(http.StatusBadRequest), "reverse proxy host cannot have tls and tcp route", "ReverseProxyHostCreateRequest-Validate")
 			return
 		}
 

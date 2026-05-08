@@ -1,6 +1,11 @@
 package models
 
-import "github.com/Parallels/prl-devops-service/errors"
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/Parallels/prl-devops-service/errors"
+)
 
 type ReverseProxyHostTls struct {
 	Enabled bool   `json:"enabled,omitempty" yaml:"enabled,omitempty"`
@@ -10,11 +15,11 @@ type ReverseProxyHostTls struct {
 
 func (o *ReverseProxyHostTls) Validate(diag *errors.Diagnostics) {
 	if o.Cert == "" {
-		diag.AddError("400", "missing reverse proxy host tls cert", "ReverseProxyHostTls")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host tls cert", "ReverseProxyHostTls-Validate")
 		return
 	}
 	if o.Key == "" {
-		diag.AddError("400", "missing reverse proxy host tls key", "ReverseProxyHostTls")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing reverse proxy host tls key", "ReverseProxyHostTls-Validate")
 		return
 	}
 	return
