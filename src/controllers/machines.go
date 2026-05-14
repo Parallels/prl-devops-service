@@ -1906,7 +1906,7 @@ func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMa
 
 func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest, jobID string) (*models.CreateVirtualMachineResponse, error) {
 	provider := serviceprovider.Get()
-
+	createCatalogMachineDiag := errors.NewDiagnostics("createCatalogMachine")
 	parallelsDesktopService := provider.ParallelsDesktopService
 
 	catalogConnection, err := resolveCatalogMachineConnection(ctx, request.CatalogManifest)
@@ -1925,9 +1925,9 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 	pullRequest.StartAfterPull = request.StartOnCreate
 
 	// Validate architecture and path
-	arch, err := catalog_helpers.ValidateArch(pullRequest.Architecture)
-	if err != nil {
-		return nil, err
+	arch := catalog_helpers.ValidateArch(pullRequest.Architecture, createCatalogMachineDiag)
+	if createCatalogMachineDiag.HasErrors() {
+		return nil, fmt.Errorf("invalid architecture: %s", createCatalogMachineDiag.GetErrors()[0].Message)
 	}
 	path, err := catalog_helpers.ValidatePath(pullRequest.Path, pullRequest.Owner)
 	if err != nil {
@@ -2025,6 +2025,7 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 }
 
 func resolveCatalogMachineConnection(ctx basecontext.ApiContext, request *models.CreateCatalogVirtualMachineRequest) (string, error) {
+	resolveCatalogMachineConnectionDiag := errors.NewDiagnostics("resolveCatalogMachineConnection")
 	if request == nil {
 		return "", errors.NewWithCode("missing catalog manifest request", http.StatusBadRequest)
 	}
@@ -2041,9 +2042,9 @@ func resolveCatalogMachineConnection(ctx basecontext.ApiContext, request *models
 			return "", errors.NewWithCode(errResp.Message, errResp.Code)
 		}
 
-		managerConnection, err := buildCatalogManagerConnection(*mgr)
-		if err != nil {
-			return "", errors.NewWithCode(err.Error(), http.StatusBadRequest)
+		managerConnection := buildCatalogManagerConnection(*mgr, resolveCatalogMachineConnectionDiag)
+		if resolveCatalogMachineConnectionDiag.HasErrors() {
+			return "", fmt.Errorf("invalid connection: %s", resolveCatalogMachineConnectionDiag.GetErrors()[0].Message)
 		}
 		return managerConnection, nil
 	}
