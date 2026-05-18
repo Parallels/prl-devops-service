@@ -60,14 +60,10 @@ jobs:
         run: |
           go get .
       - name: Test
-        working-directory: ${{ github.workspace }}/src
         run: |
-          go install github.com/axw/gocov/gocov@latest
-          go install github.com/AlekSi/gocov-xml@latest
-          go install github.com/matm/gocov-html/cmd/gocov-html@latest
-
-          go test -coverprofile coverage.txt -covermode count -v ./...
-          gocov convert coverage.txt | gocov-xml > ../cobertura-coverage.xml
+          go install github.com/boumenot/gocover-cobertura@latest
+          go test -coverprofile=../coverage.out -covermode=count ./...
+          gocover-cobertura < ../coverage.out > ../cobertura-coverage.xml
 
       - name: Upload Code Coverage
         uses: actions/upload-artifact@v4
