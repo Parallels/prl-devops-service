@@ -1,0 +1,57 @@
+{% if include.features %}
+{% assign f = include.features %}
+<section class="ui-section" id="ui-section">
+  <div class="ui-container">
+    {% if f.title %}
+    <div class="ui-header">
+      <span class="ui-label">DISCOVER</span>
+      <h2 class="ui-title">{{ f.title }}</h2>
+    </div>
+    {% endif %}
+    {% if f.description %}
+    <p class="ui-description">{{ f.description }}</p>
+    {% endif %}
+
+    <div class="ui-feature-list" id="ui-feature-list">
+      {% for item in f.items %}
+      {% unless item.hidden %}
+      {% assign is_even = forloop.index0 | modulo: 2 %}
+      {% if is_even == 0 %}
+      <div class="ui-feature" data-accent="{{ item.accent }}">
+        <div class="ui-feature-inner ui-feature-layout ui-feature-layout--image-left">
+          <div class="ui-feature-image-wrap">
+            <img class="ui-feature-img" src="{{ site.baseurl }}/assets/img/ui/{{ item.image }}" alt="{{ item.title }}">
+          </div>
+          <div class="ui-feature-text">
+            <span class="ui-feature-pre">BUILT ON</span>
+            <h3 class="ui-feature-title">{{ item.title }}</h3>
+            <p class="ui-feature-desc">{{ item.description }}</p>
+            {% if item.link_text and item.link_url %}
+            <a href="{{ item.link_url | relative_url }}" class="ui-feature-link">{{ item.link_text }}</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="ui-feature" data-accent="{{ item.accent }}">
+        <div class="ui-feature-inner ui-feature-layout ui-feature-layout--image-right">
+          <div class="ui-feature-image-wrap">
+            <img class="ui-feature-img" src="{{ site.baseurl }}/assets/img/ui/{{ item.image }}" alt="{{ item.title }}">
+          </div>
+          <div class="ui-feature-text">
+            <span class="ui-feature-pre">BUILT ON</span>
+            <h3 class="ui-feature-title">{{ item.title }}</h3>
+            <p class="ui-feature-desc">{{ item.description }}</p>
+            {% if item.link_text and item.link_url %}
+            <a href="{{ item.link_url | relative_url }}" class="ui-feature-link">{{ item.link_text }}</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% endunless %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}

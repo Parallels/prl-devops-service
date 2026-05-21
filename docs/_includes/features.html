@@ -1,0 +1,51 @@
+{% if include.features %}
+{% assign f = include.features %}
+<div class="features-section">
+  <div class="features-container">
+    <div class="features-header" id="feature-section">
+      {% if f.label %}
+      <span class="features-label">{{ f.label }}</span>
+      {% endif %}
+      {% if f.title %}
+      <h2 class="features-title">{{ f.title }}</h2>
+      {% endif %}
+      {% if f.description %}
+      <p class="features-description">{{ f.description }}</p>
+      {% endif %}
+    </div>
+
+    {% if f.items.size > 0 %}
+    <div class="features-grid">
+      {% for item in f.items %}
+      {% unless item.hidden %}
+      <div class="feature-card">
+        {% if item.fa_icon %}
+        <div class="feature-card-icon" {% if item.icon_bg %}style="background-color: {{ item.icon_bg }};"{% endif %}>
+          <i class="fas {{ item.fa_icon }}"></i>
+        </div>
+        {% elsif item.icon %}
+        <div class="feature-card-icon" {% if item.icon_bg %}style="background-color: {{ item.icon_bg }};"{% endif %}>
+          <img src="{{ site.baseurl }}/assets/img/{{ item.icon }}" alt="{{ item.title }}">
+        </div>
+        {% endif %}
+        <div class="feature-card-body">
+          {% if item.title %}
+          <h3 class="feature-card-title">{{ item.title }}</h3>
+          {% endif %}
+          {% if item.description %}
+          <p class="feature-card-description">{{ item.description }}</p>
+          {% endif %}
+        </div>
+        {% if item.link_text and item.link_url %}
+        <a href="{{ item.link_url | relative_url }}" class="feature-card-link">
+          {{ item.link_text }} &rarr;
+        </a>
+        {% endif %}
+      </div>
+      {% endunless %}
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

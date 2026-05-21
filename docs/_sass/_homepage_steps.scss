@@ -1,0 +1,290 @@
+// Steps section
+$step-circle-size: 44px;
+$step-connector-color: #d1d5db;
+
+.steps-section {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 24px $page-margin-left-right;
+  // background-color: $grey-background;
+
+  @media screen and (max-width: $m-breakpoint) {
+    padding: 40px $page-margin-left-right;
+  }
+
+
+
+  .steps-container {
+    width: 100%;
+
+      &.visible {
+    .steps-header .steps-label {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .steps-header .steps-title {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .steps-header .steps-description {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+    @media screen and (min-width: $m-breakpoint) {
+      max-width: $body-m-min-width;
+    }
+
+    @media screen and (min-width: $l-breakpoint) {
+      max-width: $body-l-max-width;
+    }
+
+    @media screen and (min-width: $xl-breakpoint) {
+      max-width: $body-xl-max-width;
+    }
+
+    .steps-header {
+      text-align: center;
+      margin-bottom: 48px;
+
+      .steps-label {
+        display: block;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: $light-blue;
+        margin-bottom: 12px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.6s ease, transform 0.6s ease;
+      }
+
+      .steps-title {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: -0.3px;
+        color: $font-base-color;
+        margin: 0 0 16px 0;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.6s ease, transform 0.6s ease;
+
+        @media screen and (max-width: $m-breakpoint) {
+          font-size: 28px;
+        }
+      }
+
+      .steps-description {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 1.6;
+        color: $font-lighter-color;
+        margin: 0 auto;
+        max-width: 480px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.6s ease, transform 0.6s ease;
+      }
+    }
+  }
+}
+
+.steps-track {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+
+  @media screen and (max-width: $m-breakpoint) {
+    flex-direction: column;
+    gap: 32px;
+  }
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  text-align: center;
+
+  @media screen and (max-width: $m-breakpoint) {
+    flex-direction: row;
+    align-items: flex-start;
+    text-align: left;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .step-number-wrapper {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .step-body {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  &.visible {
+    .step-number-wrapper {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0ms;
+    }
+
+    .step-body {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 100ms;
+    }
+  }
+}
+
+.step-item:nth-child(2) {
+  .step-number-wrapper { transition-delay: 0ms; }
+  .step-body { transition-delay: 100ms; }
+
+  &.visible .step-number-wrapper { transition-delay: 150ms; }
+  &.visible .step-body { transition-delay: 250ms; }
+}
+
+.step-item:nth-child(3) {
+  .step-number-wrapper { transition-delay: 0ms; }
+  .step-body { transition-delay: 100ms; }
+
+  &.visible .step-number-wrapper { transition-delay: 300ms; }
+  &.visible .step-body { transition-delay: 400ms; }
+}
+
+.step-item:nth-child(4) {
+  .step-number-wrapper { transition-delay: 0ms; }
+  .step-body { transition-delay: 100ms; }
+
+  &.visible .step-number-wrapper { transition-delay: 450ms; }
+  &.visible .step-body { transition-delay: 550ms; }
+}
+
+.step-item:nth-child(5) {
+  .step-number-wrapper { transition-delay: 0ms; }
+  .step-body { transition-delay: 100ms; }
+
+  &.visible .step-number-wrapper { transition-delay: 600ms; }
+  &.visible .step-body { transition-delay: 700ms; }
+}
+
+.step-item:nth-child(6) {
+  .step-number-wrapper { transition-delay: 0ms; }
+  .step-body { transition-delay: 100ms; }
+
+  &.visible .step-number-wrapper { transition-delay: 750ms; }
+  &.visible .step-body { transition-delay: 850ms; }
+}
+
+.step-number-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 20px;
+
+  @media screen and (max-width: $m-breakpoint) {
+    flex-direction: column;
+    width: auto;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+}
+
+.step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: $step-circle-size;
+  height: $step-circle-size;
+  border-radius: 50%;
+  background-color: $white;
+  border: 2px solid $light-blue;
+  color: $light-blue;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background-color: $step-connector-color;
+
+  @media screen and (max-width: $m-breakpoint) {
+    width: 2px;
+    height: 24px;
+    flex: none;
+    margin: 4px auto;
+  }
+
+  &--before {
+    .step-item:first-child & {
+      visibility: hidden;
+    }
+  }
+
+  &--after {
+    .step-item:last-child & {
+      visibility: hidden;
+    }
+  }
+}
+
+.step-body {
+  padding: 0 12px;
+
+  @media screen and (max-width: $m-breakpoint) {
+    padding: 0;
+  }
+
+  .step-title {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: $font-base-color;
+    margin: 0 0 8px 0;
+  }
+
+  .step-description {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: $font-lighter-color;
+    margin: 0;
+  }
+
+  .step-link {
+    display: inline-block;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: $light-blue;
+    text-decoration: none;
+    margin-top: 10px;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $light-blue-hover;
+      text-decoration: none;
+    }
+  }
+}

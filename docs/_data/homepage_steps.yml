@@ -1,0 +1,20 @@
+label: "HOW IT WORKS"
+title: "Up and running in minutes"
+description: "No complex setup. Just install, configure, and orchestrate."
+items:
+  - title: "Install the service"
+    description: "Deploy the binary on any macOS host running Parallels Desktop Business or Enterprise."
+    link_text: "Quick start guide"
+    link_url: /quick-start/
+  - title: "Connect your hosts"
+    description: "Register multiple hosts to the orchestrator for a unified control plane."
+    link_text: "View docs"
+    link_url: /docs/
+  - title: "Build your catalog"
+    description: "Push golden images that your pipelines and teams can clone on demand."
+    link_text: "Learn more"
+    link_url: /docs/devops/catalog/overview/
+  - title: "Automate"
+    description: "Hook into GitHub Actions, REST API, or use the new desktop UI dashboard."
+    link_text: "See integrations"
+    link_url: /features/

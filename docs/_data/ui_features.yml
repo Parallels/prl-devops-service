@@ -1,0 +1,30 @@
+title: "Parallels DevOps UI"
+description: "Manage, monitor and orchestrate your entire VM fleet from a single control plane."
+items:
+  - title: "One-Click Deployments"
+    description: "Accelerate your infrastructure. Deploy entire environments in seconds with a single click. Watch your resources materialize in real-time with animated efficiency."
+    image: "one-click-deployments.png"
+    link_text: "Explore Now"
+    link_url: /ui/deployments/
+    accent: "#3B82F6"
+
+  - title: "Global Fleet View"
+    description: "Monitor and manage your entire fleet from a single, unified dashboard. Gain real-time insights into global performance and health. Navigate with interactive 3D maps."
+    image: "global-fleet-view.png"
+    link_text: "View Demo"
+    link_url: /ui/fleet/
+    accent: "#8B5CF6"
+
+  - title: "Live Metrics & Alerts"
+    description: "Track CPU, memory, disk and network usage across all hosts and VMs in real-time. Set custom thresholds and receive alerts before issues impact your workflows."
+    image: "live-metrics-alerts.png"
+    link_text: "Learn More"
+    link_url: /ui/metrics/
+    accent: "#EC4899"
+
+  - title: "Snapshot & Rollback"
+    description: "Create point-in-time snapshots of any VM with a single click. Roll back to any previous state instantly, ensuring your deployments are always recoverable."
+    image: "snapshot-rollback.png"
+    link_text: "Get Started"
+    link_url: /ui/snapshots/
+    accent: "#10B981"

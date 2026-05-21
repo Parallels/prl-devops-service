@@ -22,17 +22,17 @@
 
 <body>
   {% include header.html %}
-  <section class="hero-section{% if page.is_home %} homepage-hero-section{% endif %}{% if page.menubar %} hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
-    {% unless page.hide_hero %}
+  {% unless page.hide_hero %}
+  <section class="hero-section{% if page.is_home %} landing{% endif %}{% if page.menubar %} hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
     {% include hero.html %}
-    {% endunless %}
     {% if page.callouts.size > 0 %}
     {% assign callouts=site.data[page.callouts] %}
-    <div class="callout-section{% if page.is_home %} homepage-callout-section{% endif %}{% unless page.hide_hero %} has-hero{% endunless %}">
+    <div class="callout-section{% if page.is_home %} homepage-callout-section{% endif %} has-hero">
       {% include callouts.html callouts=callouts show_callout_action=include.show_callout_action full_button=include.callout_full_button %}
     </div>
     {% endif %}
   </section>
+  {% endunless %}
   {% if page.is_home %}
   <section class="home-page">
     {{ content }}
@@ -69,7 +69,7 @@
       </div>
       {% endif %}
       <div
-        class="page-body{%if page.layout == 'api' %} api-document{% endif %}{% if page.menubar %} with-menu-bar{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
+        class="page-body{%if page.full_width %} full-width{% endif %}{%if page.layout == 'api' %} api-document{% endif %}{% if page.menubar %} with-menu-bar{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
         {% include tabs.html %}
         {% include showcase.html %}
         {% include sponsors.html %}
@@ -91,5 +91,317 @@
   <script src="{{ site.baseurl }}/assets/js/app.js" type="text/javascript"></script>
   {%- include footer-scripts.html -%}
 </body>
+<script>
+  console.log('Page loaded, initializing Intersection Observer for 3D scroll animations.');
+  // Intersection Observer for 3D Scroll Animations
+  document.addEventListener('DOMContentLoaded', () => {
+    const observerOptions = {
+      threshold: 0.15, // Trigger when the element is slightly above the viewport
+      rootMargin: '0px 0px -50px 0px'
+    };
+        const observerOptionsCard = {
+      threshold: 0.01, // Trigger when the element is slightly above the viewport
+      rootMargin: '0px 0px 15% 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          console.log(`Element ${entry.target.id || entry.target.className} is visible, adding 'visible' class.`);
+          // Optional: Stop observing once visible to save resources
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+        const observerCard = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          console.log(`Element ${entry.target.id || entry.target.className} is visible, adding 'visible' class.`);
+          // Optional: Stop observing once visible to save resources
+          observerCard.unobserve(entry.target);
+        }
+      });
+    }, observerOptionsCard);
+
+    // Observe the Hero Mockup
+    const heroImage = document.getElementById('home-image');
+    if (heroImage) observer.observe(heroImage);
+
+    // Observe Features Header
+    const featuresHeader = document.getElementById('feature-section');
+    if (featuresHeader) observer.observe(featuresHeader);
+
+    // Observe Feature Cards
+    const cards = document.querySelectorAll('.feature-card');
+    cards.forEach(card => observerCard.observe(card));
+
+    // Observe Steps Section (header animation)
+    const stepsSection = document.getElementById('steps-section');
+    if (stepsSection) {
+      const stepsHeaderObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            stepsHeaderObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      stepsHeaderObserver.observe(stepsSection);
+    }
+
+    // Staggered animation for step items (triggered when steps-track is visible)
+    const stepsTrack = document.getElementById('steps-track');
+    if (stepsTrack) {
+      const stepsObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            entry.target.querySelectorAll('.step-item').forEach(item => {
+              item.classList.add('visible');
+            });
+            stepsObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      stepsObserver.observe(stepsTrack);
+    }
+
+    // Download section animation
+    const downloadSection = document.getElementById('download-section');
+    if (downloadSection) {
+      const downloadObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            downloadObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+
+      downloadObserver.observe(downloadSection);
+    }
+
+    // Download cards animation
+    const downloadCards = document.getElementById('download-cards');
+    if (downloadCards) {
+      const downloadCardsObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const cards = entry.target.querySelectorAll('.download-card');
+            cards.forEach((card, i) => {
+              card.style.transitionDelay = (i * 150) + 'ms';
+              card.classList.add('visible');
+            });
+            downloadCardsObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+
+      downloadCardsObserver.observe(downloadCards);
+    }
+
+    // Latest releases section animation
+    const latestReleasesSection = document.querySelector('.latest-releases-section');
+    if (latestReleasesSection) {
+      const latestReleasesObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            const cards = entry.target.querySelectorAll('.release-card');
+            cards.forEach((card, i) => {
+              card.style.transitionDelay = (i * 150) + 'ms';
+              card.classList.add('visible');
+            });
+            latestReleasesObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+
+      latestReleasesObserver.observe(latestReleasesSection);
+    }
+
+    // UI Feature Sections: scroll-driven 3D image animations
+    const uiSection = document.querySelector('#ui-section');
+    const uiFeatureList = document.querySelector('#ui-feature-list');
+    if (uiFeatureList && uiSection) {
+      const featureElements = Array.from(uiFeatureList.querySelectorAll('.ui-feature'));
+      const headerEl = uiSection.querySelector('.ui-header');
+      const descEl = uiSection.querySelector('.ui-description');
+      const contentOffset = (headerEl ? headerEl.offsetHeight : 0) + (descEl ? descEl.offsetHeight : 0);
+
+      // Measure footer height dynamically
+      function getFooterHeight() {
+        const footer = document.querySelector('.footer');
+        return footer ? footer.offsetHeight : 96;
+      }
+
+      // Measure navbar height dynamically
+      function getNavbarHeight() {
+        const nav = document.querySelector('.navigation');
+        return nav ? nav.offsetHeight : 64;
+      }
+
+      // Calculate section height: available viewport minus header, navbar, footer
+      function calcSectionHeight() {
+        const viewportH = window.innerHeight;
+        const navbarH = getNavbarHeight();
+        const footerH = getFooterHeight();
+        const availableH = viewportH - navbarH - contentOffset - footerH;
+        return Math.max(availableH, 400);
+      }
+
+      function setupSectionHeight() {
+        const sectionH = calcSectionHeight();
+        featureElements.forEach(f => {
+          f.style.minHeight = `${sectionH}px`;
+          f.style.maxHeight = `${sectionH}px`;
+        });
+        // Total section height: header/desc + all features (no extra scroll room)
+        const totalH = contentOffset + (featureElements.length * sectionH);
+        uiSection.style.height = `${totalH}px`;
+      }
+
+      // Apply accent colors to each feature
+      featureElements.forEach(feature => {
+        const accent = feature.getAttribute('data-accent') || '#3B82F6';
+        const textWrap = feature.querySelector('.ui-feature-text');
+        const pre = textWrap?.querySelector('.ui-feature-pre');
+        const link = textWrap?.querySelector('.ui-feature-link');
+        if (pre) pre.style.color = accent;
+        if (link) {
+          link.style.color = accent;
+          link.innerHTML = link.innerHTML.replace(/→$/, '') + ' <span style="display:inline-block;transition:transform 0.2s ease">→</span>';
+        }
+      });
+
+      function smoothstep(t) {
+        const x = Math.max(0, Math.min(1, t));
+        return x * x * (3 - 2 * x);
+      }
+
+      function updateFeatures() {
+        const viewportH = window.innerHeight;
+        const centerY = viewportH * 0.5;
+
+        featureElements.forEach(feature => {
+          const imageWrap = feature.querySelector('.ui-feature-image-wrap');
+          const textWrap = feature.querySelector('.ui-feature-text');
+          if (!imageWrap || !textWrap) return;
+
+          const featureRect = feature.getBoundingClientRect();
+          const featureTop = featureRect.top;
+          const featureH = featureRect.height;
+
+          // Progress based on feature element visibility in viewport
+          const progress = (centerY - featureTop) / (featureH + viewportH * 0.3);
+
+          // Visibility window: 0.05 = start animating in, 0.95 = start animating out
+          const enterThreshold = 0.05;
+          const exitThreshold = 0.95;
+
+          let imageOpacity = 0;
+          let imageRotateX = 0;
+          let imageRotateY = 0;
+          let imageScale = 0.88;
+          let imageTranslateX = 0;
+          let imageTranslateY = 80;
+
+          let textOpacity = 0;
+          let textTranslateY = 40;
+
+          if (progress <= 0) {
+            // Below viewport: hidden, pushed down
+            imageOpacity = 0;
+            imageScale = 0.88;
+            imageTranslateY = 80;
+            imageTranslateX = -40;
+            imageRotateX = 20;
+            imageRotateY = -8;
+            textOpacity = 0;
+            textTranslateY = 40;
+          } else if (progress < enterThreshold) {
+            // Entering
+            const t = smoothstep(progress / enterThreshold);
+            imageOpacity = t;
+            imageScale = 0.88 + 0.12 * t;
+            imageTranslateY = 80 * (1 - t);
+            imageTranslateX = -40 * (1 - t);
+            imageRotateX = 20 * (1 - t);
+            imageRotateY = -8 * (1 - t);
+            textOpacity = t;
+            textTranslateY = 40 * (1 - t);
+          } else if (progress < exitThreshold) {
+            // Fully visible
+            const t = smoothstep(Math.min(1, (progress - enterThreshold) / (exitThreshold - enterThreshold)));
+            imageOpacity = 1;
+            imageScale = 1;
+            imageTranslateY = 0;
+            imageTranslateX = 0;
+            imageRotateX = 0;
+            imageRotateY = 0;
+            textOpacity = 1;
+            textTranslateY = 0;
+          } else if (progress < 1) {
+            // Exiting
+            const t = smoothstep((progress - exitThreshold) / (1 - exitThreshold));
+            imageOpacity = 1 - t;
+            imageScale = 1 - 0.12 * t;
+            imageTranslateY = -40 * t;
+            imageTranslateX = 40 * t;
+            imageRotateX = 20 * t;
+            imageRotateY = 8 * t;
+            textOpacity = 1 - t;
+            textTranslateY = -30 * t;
+          } else {
+            // Above viewport: hidden
+            imageOpacity = 0;
+            imageScale = 0.88;
+            imageTranslateY = -40;
+            imageTranslateX = 40;
+            imageRotateX = 20;
+            imageRotateY = 8;
+            textOpacity = 0;
+            textTranslateY = -30;
+          }
+
+          // Apply transforms
+          imageWrap.style.opacity = imageOpacity.toFixed(3);
+          imageWrap.style.transform = `translateY(${imageTranslateY.toFixed(1)}px) translateX(${imageTranslateX.toFixed(1)}px) rotateX(${imageRotateX.toFixed(2)}deg) rotateY(${imageRotateY.toFixed(2)}deg) scale(${imageScale.toFixed(3)})`;
+
+          textWrap.style.opacity = textOpacity.toFixed(3);
+          textWrap.style.transform = `translateY(${textTranslateY.toFixed(1)}px)`;
+        });
+      }
+
+      let ticking = false;
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          requestAnimationFrame(() => {
+            updateFeatures();
+            ticking = false;
+          });
+          ticking = true;
+        }
+      }, { passive: true });
+
+      setupSectionHeight();
+      updateFeatures();
+
+      let resizeTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          setupSectionHeight();
+          updateFeatures();
+        }, 150);
+      }, { passive: true });
+    }
+  });
+</script>
 
 </html>

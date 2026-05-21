@@ -1,0 +1,47 @@
+{% if include.steps %}
+{% assign s = include.steps %}
+<div class="steps-section" >
+  <div class="steps-container" id="steps-section">
+    <div class="steps-header">
+      {% if s.label %}
+      <span class="steps-label">{{ s.label }}</span>
+      {% endif %}
+      {% if s.title %}
+      <h2 class="steps-title">{{ s.title }}</h2>
+      {% endif %}
+      {% if s.description %}
+      <p class="steps-description">{{ s.description }}</p>
+      {% endif %}
+    </div>
+
+    {% if s.items.size > 0 %}
+    <div class="steps-track" id="steps-track">
+      {% for item in s.items %}
+      {% unless item.hidden %}
+      <div class="step-item">
+        <div class="step-number-wrapper">
+          <div class="step-connector step-connector--before"></div>
+          <div class="step-number">{{ forloop.index }}</div>
+          <div class="step-connector step-connector--after"></div>
+        </div>
+        <div class="step-body">
+          {% if item.title %}
+          <h3 class="step-title">{{ item.title }}</h3>
+          {% endif %}
+          {% if item.description %}
+          <p class="step-description">{{ item.description }}</p>
+          {% endif %}
+          {% if item.link_text and item.link_url %}
+          <a href="{{ item.link_url | relative_url }}" class="step-link">
+            {{ item.link_text }} &rarr;
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endunless %}
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

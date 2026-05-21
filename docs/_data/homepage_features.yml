@@ -1,0 +1,39 @@
+title: "Everything your DevOps team needs"
+description: "From golden image catalogs to full multi-host orchestration <br/>All exposed through a clean <strong>API</strong> and now a <strong>full UI.</strong>"
+items:
+  - title: "Golden Image Catalog"
+    description: "Host and share VM templates across your team. Version-controlled, immutable, instantly clonable golden images for any OS."
+    fa_icon: fa-layer-group
+    icon_bg: "#3d73d8"
+    link_text: "Explore catalog"
+    link_url: /docs/devops/catalog/overview/
+  - title: "Multi-host Orchestration"
+    description: "Control fleets of Parallels Desktop hosts from one dashboard. Start, stop, clone and snapshot VMs at scale with zero manual effort."
+    fa_icon: fa-network-wired
+    icon_bg: "#2da44e"
+    link_text: "Explore orchestration"
+    link_url: /features/orchestration/
+  - title: "CI/CD Runners"
+    description: "Using our GitHub Actions or Jenkins integration, spin up native macOS, Windows or Linux runners on your own hardware. No shared infra, no queues — your builds, your metal."
+    fa_icon: fa-circle-dot
+    icon_bg: "#e0392b"
+    link_text: "Explore CI/CD"
+    link_url: /features/github-actions/
+  - title: "Full UI Dashboard"
+    description: "A native control panel for every VM and host — live metrics, one-click actions, and full visibility across your entire fleet."
+    fa_icon: fa-display
+    icon_bg: "#8b5cf6"
+    link_text: "Try the new UI"
+    link_url: /features/ui/
+  - title: "REST API & CLI"
+    description: "Every action available in the UI is also in the API. Automate everything, integrate anywhere, script anything."
+    fa_icon: fa-code
+    icon_bg: "#f59e0b"
+    link_text: "API reference"
+    link_url: /docs/api/
+  - title: "Fair Source License"
+    description: "Free for up to 10 users. No credit card needed to get started. Scale with a Business or Enterprise license when you're ready."
+    fa_icon: fa-shield-halved
+    icon_bg: "#0891b2"
+    link_text: "View licensing"
+    link_url: /licensing/

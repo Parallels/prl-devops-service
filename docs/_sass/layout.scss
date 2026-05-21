@@ -64,6 +64,8 @@ body {
     flex: 1;
     width: 100%;
 
+    &:not(.full-width) {
+
     @media screen and (min-width: $m-breakpoint) {
       max-width: $body-m-max-width;
     }
@@ -87,6 +89,7 @@ body {
         margin-left: $side-menu-xl-left-margin;
       }
     }
+  }
 
     &.with-side-toc {
       margin-left: unset;

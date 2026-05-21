@@ -1,32 +1,28 @@
-.homepage-hero-section {
-  display: flex;
+.home-page {
   width: 100%;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
-
-  // &:first-of-type {
-  //   margin-top: 95px;
-  // }
 }
 
 .homepage-hero-container {
   .hero-text-container {
     > :last-child {
-      padding-bottom: 85px;
+      // padding-bottom: 20px;
 
-      @media screen and (min-width: $m-breakpoint) {
-        padding-bottom: 85px;
-      }
+      // @media screen and (min-width: $m-breakpoint) {
+      //   padding-bottom: 50px;
+      // }
 
-      @media screen and (min-width: $l-breakpoint) {
-        padding-bottom: 100px;
-      }
+      // @media screen and (min-width: $l-breakpoint) {
+      //   padding-bottom: 50px;
+      // }
 
 
-      @media screen and (min-width: $xl-breakpoint) {
-        padding-bottom: 100px;
-      }
+      // @media screen and (min-width: $xl-breakpoint) {
+      //   padding-bottom: 50px;
+      // }
     }
 
     .hero-title-text {
@@ -36,7 +32,7 @@
     .hero-description {
       color: $font-base-color !important;
       text-align: center !important;
-      margin: 20px 0 70px !important;
+      margin: 20px 0 20px !important;
 
 
       @media screen and (max-width: $m-breakpoint) {
@@ -47,7 +43,6 @@
 
   .hero-title {
     align-items: center !important;
-    padding-top: 32px !important;
   }
 }
 
@@ -78,7 +73,7 @@
 }
 
 .about-section {
-  font-family: 'Open Sans';
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -139,7 +134,7 @@
 }
 
 .licensing-section {
-  font-family: 'Open Sans';
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -198,94 +193,248 @@
   }
 }
 
-.whats-new-section {
-  font-family: 'Open Sans';
+// Features grid section
+
+// Shared card variables (needed since _homepage.scss is imported before _homepage_download.scss)
+$card-radius: 16px;
+$card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+$card-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.10);
+$card-border: #e8e8e8;
+
+// Latest releases section
+
+.latest-releases-section {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  padding: 64px $page-margin-left-right;
+  background-color: $grey-background;
 
-  .whats-new-container {
+  @media screen and (max-width: $m-breakpoint) {
+    padding: 40px $page-margin-left-right;
+  }
+
+  &.visible {
+    .latest-releases-container .container-title {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+    .container-content {
+        gap: 12px;
+  display: flex;
+  flex-direction: column;
+  }
+
+  .latest-releases-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    max-width: $body-s-max-width;
-    display: flex;
-    align-items: center;
+    width: 100%;
+    max-width: $body-xl-max-width;
 
     @media screen and (min-width: $m-breakpoint) {
       max-width: $body-m-min-width;
-      min-width: $body-m-min-width;
     }
 
     @media screen and (min-width: $l-breakpoint) {
       max-width: $body-l-max-width;
-      min-width: $body-l-min-width;
     }
 
     @media screen and (min-width: $xl-breakpoint) {
       max-width: $body-xl-max-width;
-      min-width: $body-xl-min-width;
     }
-
 
     .container-title {
-      font-size: 24px;
-      height: 60px;
-      font-weight: bold;
-      font-stretch: normal;
-      font-style: normal;
-      line-height: 1.25;
-      letter-spacing: normal;
+      font-size: 36px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.3px;
+      color: $font-base-color;
+      margin: 0 0 48px 0;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+
+      @media screen and (max-width: $m-breakpoint) {
+        font-size: 28px;
+        margin-bottom: 32px;
+      }
+    }
+  }
+}
+
+.release-card {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+
+
+  &.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .release-card-inner {
+    display: flex;
+    flex-direction: column;
+    background-color: $white;
+    border: 1px solid $card-border;
+    border-radius: $card-radius;
+    box-shadow: $card-shadow;
+    overflow: hidden;
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+
+    &:hover {
+      box-shadow: $card-shadow-hover;
+      border-color: darken($card-border, 4%);
+    }
+  }
+}
+
+.release-card:nth-child(1) {
+  &.visible { transition-delay: 0ms; }
+}
+.release-card:nth-child(2) {
+  &.visible { transition-delay: 150ms; }
+}
+.release-card:nth-child(3) {
+  &.visible { transition-delay: 300ms; }
+}
+.release-card:nth-child(4) {
+  &.visible { transition-delay: 450ms; }
+}
+
+.release-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid $card-border;
+  background-color: #fafbfc;
+
+
+  .release-version {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: $font-base-color;
+  }
+
+  .release-date {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: $font-lighter-color;
+  }
+}
+
+.release-card-body {
+  padding: 20px 24px;
+  max-height: 320px;
+  overflow-y: auto;
+  flex: 1;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 3px;
+  }
+
+  h1 {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: $font-base-color;
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $card-border;
+  }
+
+  h2, h3, h4, h5, h6 {
+    display: none;
+  }
+
+  ul, .task-list {
+    padding-left: 20px;
+    list-style: none;
+    margin: 0;
+
+    li {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      font-weight: 400;
       color: #303236;
+      line-height: 1.6;
+      margin-bottom: 8px;
+      position: relative;
+      list-style: none !important;
+
+      &::before {
+        content: '•';
+        position: absolute;
+        left: -16px;
+        color: #7b7d85;
+      }
     }
 
-    >:last-child {
-      padding-bottom: 50px;
-    }
+    li.task-list-item {
+      padding-left: 0;
 
-
-
-    .whats-new-item {
-      display: flex;
-      width: 100%;
-      flex-direction: column;
-
-      &:not(:last-child) {
-        margin-bottom: 22px;
+      &::before {
+        left: -16px;
       }
 
-      h2 {
-        font-family: 'Open Sans';
-        height: 29px;
-        font-size: 16px;
-        font-weight: bold;
-        font-stretch: normal;
-        font-style: normal;
-        line-height: 1.5;
-        letter-spacing: normal;
-        color: #303236;
-      }
+      input[type="checkbox"] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border: 1.5px solid #d1d5db;
+        border-radius: 4px;
+        margin-right: 8px;
+        vertical-align: middle;
+        position: relative;
+        top: -1px;
+        cursor: default;
+        flex-shrink: 0;
 
-      .index_release {
-        padding-bottom: 10px;
+        &[checked] {
+          background-color: #3d73d8;
+          border-color: #3d73d8;
 
-        ul {
-          padding-left: 25px;
-          list-style-type: disc;
-          line-height: 25px;
-          font-size: 16px;
-          font-weight: normal;
-          font-stretch: normal;
-          font-style: normal;
-          line-height: 1.5;
-          letter-spacing: normal;
-          color: #303236;
-
-          li {
-            min-height: 29px;
+          &::after {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 1px;
+            width: 5px;
+            height: 9px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
           }
         }
       }
     }
+  }
+
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    background-color: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #e83e8c;
   }
 }

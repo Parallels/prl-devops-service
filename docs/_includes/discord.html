@@ -1,0 +1,38 @@
+{% if include.discord %}
+{% assign d = include.discord %}
+<section class="discord-section">
+  <div class="discord-container" style="--discord-accent: {{ d.accent_color | default: '#5865F2' }}">
+    <i class="fab fa-discord discord-logo"></i>
+    <div class="discord-content">
+      <h2 class="discord-title">{{ d.title }}</h2>
+      <p class="discord-description">{{ d.description }}</p>
+      <span class="discord-members" id="discord-member-count"><span class="discord-members-dot"></span><span class="discord-loading">Loading...</span></span>
+      <div class="discord-actions">
+        <a href="{{ d.button_url | relative_url }}" class="discord-btn">{{ d.button_text }}</a>
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+(function() {
+  var inviteCode = '{{ d.button_url | split: "/" | last }}';
+  if (!inviteCode) return;
+
+  var el = document.getElementById('discord-member-count');
+  if (!el) return;
+
+  fetch('https://discord.com/api/v9/invites/' + inviteCode + '?with_counts=true&with_expiration=true', {
+    method: 'GET'
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.approximate_member_count) {
+      el.innerHTML = '<span class="discord-members-dot"></span><span class="discord-members-count">' + data.approximate_member_count.toLocaleString() + '</span> <span class="discord-members-label">members</span>';
+    }
+  })
+  .catch(function() {
+    el.innerHTML = '<span class="discord-members-dot"></span>Unable to load';
+  });
+})();
+</script>
+{% endif %}

@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parallels DevOps — The New UI</title>
+    <style>
+        :root {
+            --primary: #0055FF;
+            --primary-hover: #0044CC;
+            --dark-bg: #0B1120;
+            --dark-surface: #1E293B;
+            --darker-surface: #0F172A;
+            --light-bg: #FFFFFF;
+            --surface-gray: #F8FAFC;
+            --text-dark: #0F172A;
+            --text-light: #F8FAFC;
+            --text-muted-dark: #475569;
+            --text-muted-light: #94A3B8;
+            --border-color: #E2E8F0;
+            --status-green: #10B981;
+            --status-blue: #3B82F6;
+            --status-orange: #F59E0B;
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            color: var(--text-dark);
+            line-height: 1.6;
+            background-color: var(--light-bg);
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background-color: rgba(11, 17, 32, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 0 2rem;
+            height: 64px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-light);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            letter-spacing: -0.01em;
+        }
+
+        .nav-logo svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-muted-light);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-light);
+        }
+
+        .nav-cta {
+            background-color: var(--primary);
+            color: var(--text-light) !important;
+            padding: 0.5rem 1.25rem;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .nav-cta:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        /* Hero Section */
+        .hero {
+            background-color: var(--dark-bg);
+            padding: 8rem 2rem 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 30%, rgba(0, 85, 255, 0.12) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            padding-bottom: 3rem;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards 0.2s;
+        }
+
+        .hero h1 span {
+            color: var(--primary);
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted-light);
+            margin-bottom: 2.5rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards 0.4s;
+        }
+
+        .hero-cta-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards 0.6s;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 2rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--text-light);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 85, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-light);
+            border: 1px solid var(--text-muted-light);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--text-light);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* UI Showcase Preview with 3D Animation */
+        .ui-preview-container {
+            perspective: 1200px;
+            margin-top: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .ui-preview {
+            max-width: 1100px;
+            margin-left: auto;
+            margin-right: auto;
+            transform-style: preserve-3d;
+            transition: transform 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+            opacity: 0;
+            transform: rotateX(15deg) translateY(80px) scale(0.95);
+        }
+
+        .ui-preview.visible {
+            opacity: 1;
+            transform: rotateX(0deg) translateY(0) scale(1);
+        }
+
+        .ui-mockup {
+            background-color: var(--darker-surface);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 25px 60px rgba(0, 0, 0, 0.6),
+                0 0 80px rgba(0, 85, 255, 0.15); /* Subtle blue glow */
+            overflow: hidden;
+            position: relative;
+        }
+
+        .ui-mockup-header {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background-color: var(--dark-surface);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .mock-dots {
+            display: flex;
+            gap: 6px;
+            margin-right: 1rem;
+        }
+
+        .mock-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .mock-dot.red { background-color: #EF4444; }
+        .mock-dot.yellow { background-color: #F59E0B; }
+        .mock-dot.green { background-color: #10B981; }
+
+        .mock-url-bar {
+            flex: 1;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            padding: 0 0.75rem;
+            color: var(--text-muted-light);
+            font-size: 0.75rem;
+        }
+
+        .ui-mockup-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Keyframes for Hero Entrance */
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 2rem;
+            background-color: var(--surface-gray);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+
+        .section-header.visible h2 {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-header p {
+            font-size: 1.125rem;
+            color: var(--text-muted-dark);
+            max-width: 600px;
+            margin: 0 auto;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease 0.1s;
+        }
+
+        .section-header.visible p {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background-color: var(--light-bg);
+            padding: 2.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            opacity: 0;
+            transform: translateY(40px);
+        }
+
+        .feature-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        /* Staggered delays for cards */
+        .feature-card:nth-child(1) { transition-delay: 0.1s; }
+        .feature-card:nth-child(2) { transition-delay: 0.2s; }
+        .feature-card:nth-child(3) { transition-delay: 0.3s; }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background-color: rgba(0, 85, 255, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--primary);
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: var(--text-muted-dark);
+            font-size: 0.95rem;
+        }
+
+        /* Migration Message */
+        .migration {
+            padding: 6rem 2rem;
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        .migration-content {
+            max-width: 800px;
+            margin: 0 auto;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease;
+        }
+
+        .migration-content.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .migration h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .migration p {
+            font-size: 1.125rem;
+            color: var(--text-muted-light);
+            margin-bottom: 2.5rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 6rem 2rem;
+            background-color: var(--light-bg);
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .cta-section p {
+            font-size: 1.125rem;
+            color: var(--text-muted-dark);
+            margin-bottom: 2.5rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--dark-bg);
+            color: var(--text-muted-light);
+            padding: 4rem 2rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 3rem;
+            max-width: 1200px;
+            margin: 0 auto 3rem;
+        }
+
+        .footer-col h4 {
+            color: var(--text-light);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col ul li {
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-col ul li a {
+            color: var(--text-muted-light);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .footer-col ul li a:hover {
+            color: var(--text-light);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.875rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .hero {
+                padding: 7rem 1.5rem 3rem;
+                min-height: auto;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <a href="index.html" class="nav-logo">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            Parallels DevOps
+        </a>
+        <div class="nav-links">
+            <a href="quick-start.html">Quick Start</a>
+            <a href="ui.html">UI</a>
+            <a href="documentation.html">Documentation</a>
+            <a href="api-reference.html">API Reference</a>
+            <a href="solutions.html">Solutions</a>
+            <a href="ui.html" class="nav-cta">Try the UI</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Powerful DevOps,<br><span>Now Visual.</span></h1>
+            <p>Parallels DevOps brings the power of our CLI to a modern, intuitive interface. Manage complex deployments, visualize pipelines, and collaborate with your team — all from one place.</p>
+            <div class="hero-cta-group">
+                <a href="ui.html" class="btn btn-primary">Try the UI</a>
+                <a href="quick-start.html" class="btn btn-secondary">Quick Start Guide</a>
+            </div>
+        </div>
+        
+        <div class="ui-preview-container">
+            <div class="ui-preview" id="heroMockup">
+                <div class="ui-mockup">
+                    <div class="ui-mockup-header">
+                        <div class="mock-dots">
+                            <div class="mock-dot red"></div>
+                            <div class="mock-dot yellow"></div>
+                            <div class="mock-dot green"></div>
+                        </div>
+                        <div class="mock-url-bar">parallels.devops/dashboard</div>
+                    </div>
+                    <!-- Real UI screenshot -->
+                    <img src="mpcg20cv-image.png" alt="Parallels DevOps UI Dashboard showing cluster nodes and monitoring" class="ui-mockup-image">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <div class="section-header" id="featuresHeader">
+                <h2>Why Switch to the UI?</h2>
+                <p>The same powerful engine you love, now with a visual interface designed for modern DevOps workflows.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card" id="feat1">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <h3>Real-Time Visibility</h3>
+                    <p>Watch your deployments, builds, and infrastructure changes happen in real-time. Monitor node health, resource usage, and service status without leaving the dashboard.</p>
+                </div>
+                <div class="feature-card" id="feat2">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 6v6l4 2"/>
+                            <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                    </div>
+                    <h3>Easy Configuration</h3>
+                    <p>Configure complex environments through an intuitive visual editor. Manage clusters, networking, and storage with guided workflows that reduce errors and speed up setup.</p>
+                </div>
+                <div class="feature-card" id="feat3">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        </svg>
+                    </div>
+                    <h3>Run Anywhere</h3>
+                    <p>Manage your infrastructure from any device, anywhere. Whether you're on the office desktop or reviewing alerts on mobile, the UI adapts to your workflow.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Migration Message -->
+    <section class="migration">
+        <div class="migration-content" id="migrationContent">
+            <h2>Your CLI Skills Still Apply</h2>
+            <p>The UI is designed to complement your existing workflow, not replace it. Use the visual interface for complex scenarios and collaboration, and fall back to the CLI when you need raw power. The best of both worlds.</p>
+            <a href="quick-start.html" class="btn btn-primary">Get Started with the UI</a>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready to See It in Action?</h2>
+            <p>Experience the new Parallels DevOps interface. Try it today and see how much easier DevOps can be.</p>
+            <a href="ui.html" class="btn btn-primary">Try the UI Now</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-grid">
+            <div class="footer-col">
+                <h4>Product</h4>
+                <ul>
+                    <li><a href="ui.html">UI Overview</a></li>
+                    <li><a href="quick-start.html">Quick Start</a></li>
+                    <li><a href="documentation.html">Documentation</a></li>
+                    <li><a href="api-reference.html">API Reference</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Solutions</h4>
+                <ul>
+                    <li><a href="solutions.html">Use Cases</a></li>
+                    <li><a href="#">Enterprise</a></li>
+                    <li><a href="#">Security</a></li>
+                    <li><a href="#">Integrations</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="#">Blog</a></li>
+                    <li><a href="#">Community</a></li>
+                    <li><a href="#">Support</a></li>
+                    <li><a href="#">Status</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#">About</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Contact</a></li>
+                    <li><a href="#">Legal</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Parallels DevOps. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Intersection Observer for 3D Scroll Animations
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = {
+                threshold: 0.15,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        // Optional: Stop observing once visible to save resources
+                        // observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            // Observe the Hero Mockup
+            const heroMockup = document.getElementById('heroMockup');
+            if (heroMockup) observer.observe(heroMockup);
+
+            // Observe Features Header
+            const featuresHeader = document.getElementById('featuresHeader');
+            if (featuresHeader) observer.observe(featuresHeader);
+
+            // Observe Feature Cards
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach(card => observer.observe(card));
+
+            // Observe Migration Content
+            const migrationContent = document.getElementById('migrationContent');
+            if (migrationContent) observer.observe(migrationContent);
+        });
+    </script>
+</body>
+</html>

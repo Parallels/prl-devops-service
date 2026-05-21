@@ -1,0 +1,104 @@
+{% if include.download %}
+{% assign d = include.download %}
+<div class="download-section" >
+  <div class="download-container" id="download-section">
+    <div class="download-header">
+      {% if d.title %}
+      <h2 class="download-title">{{ d.title }}</h2>
+      {% endif %}
+    </div>
+
+    <div class="download-cards" id="download-cards">
+      {% for item in d.download_items %}
+      {% unless item.hidden %}
+      <div class="download-card download-card--{{ item.category }}">
+        <div class="download-card-inner">
+          <div class="download-card-label">{{ item.label }}</div>
+
+          {% if item.category == "ui" %}
+          <div class="download-card-platforms">
+            {% for p in item.platforms %}
+            <div class="download-platform-icon">
+              {% if p.icon_type == "svg" and p.platform == "macOS" %}
+              <svg class="platform-logo platform-logo--apple" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.5 7.5c0-1.5 1.2-2.2 1.3-2.3-.9-1.3-2.2-1.5-2.7-1.5-1.1-.1-2.2.7-2.8.7-.6 0-1.5-.7-2.5-.7C4.4 3.7 2.5 5 2.5 7.9c0 2.3 1.7 4.6 3.5 4.6.6 0 1-.5 1.7-.5s1 .5 1.7.5c1.4 0 2.4-1.7 2.8-2.7-.7-.3-1.2-1-1.2-1.9v-.4zM10.6 2.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.6-.4 2-1z" fill="#303236"/>
+              </svg>
+              {% elsif p.icon_type == "svg" and p.platform == "Windows" %}
+              <svg class="platform-logo platform-logo--windows" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 2.5l5.5-.5v6.4H2V2.5zm6 0v6.9H2.5l-.5-.5V2.5l6 .5zm0 7.9v6l-6-.5v-5.5l6 .5zm1-.5h5.5v-6l-5.5.5v6.5z" fill="#00a4ef"/>
+              </svg>
+              {% else %}
+              <i class="fab {% if p.platform == "macOS" %}fa-apple{% elsif p.platform == "Windows" %}fa-windows{% elsif p.platform == "Linux" %}fa-linux{% elsif p.platform == "Docker" %}fa-docker{% endif %}" style="font-size: 28px;"></i>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if item.category == "cli" %}
+          {% if item.cli_command %}
+          <div class="download-card-cli-command">
+            <div class="download-cli-command-row">
+              <code>{{ item.cli_command }}</code>
+              <button class="download-copy-cli-btn" onclick="navigator.clipboard.writeText('{{ item.cli_command }}'); this.querySelector('i').className='fas fa-check'; setTimeout(() => { this.querySelector('i').className='fas fa-copy'; }, 2000);" title="Copy command">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+          </div>
+          {% endif %}
+          {% endif %}
+
+          <div class="download-card-action">
+            {% if item.button_style == "primary" %}
+            <a href="{{ item.button_url | relative_url }}" class="download-btn download-btn--primary">{{ item.button_label }}</a>
+            {% else %}
+            <a href="{{ item.button_url | relative_url }}" class="download-btn download-btn--secondary">
+              {{ item.button_label }}
+              {% if item.show_copy %}
+              <button class="download-copy-btn" onclick="navigator.clipboard.writeText('{{ item.cli_command }}'); this.querySelector('i').className='fas fa-check'; setTimeout(() => { this.querySelector('i').className='fas fa-copy'; }, 2000);" title="Copy command">
+                <i class="fas fa-copy"></i>
+              </button>
+              {% endif %}
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endunless %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<script>
+(function() {
+  var ua = navigator.userAgent || navigator.vendor || window.opera;
+  var platform = 'Desktop';
+
+  if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) {
+    platform = 'iOS';
+  } else if (/Macintosh|Mac Intel|Mac PPC|Mac PowerPC/.test(ua)) {
+    platform = 'macOS';
+  } else if (/Windows/.test(ua)) {
+    platform = 'Windows';
+  } else if (/Linux/.test(ua)) {
+    platform = 'Linux';
+  }
+
+  var cards = document.querySelectorAll('.download-card');
+  cards.forEach(function(card) {
+    var btn = card.querySelector('.download-btn--primary');
+    if (btn) {
+      btn.textContent = 'Download for ' + platform;
+    }
+  });
+
+  var cliCard = document.querySelector('.download-card--cli');
+  if (cliCard) {
+    var cliBtn = cliCard.querySelector('.download-btn--secondary');
+    if (cliBtn) {
+      cliBtn.textContent = 'Download ' + platform + '  Service';
+    }
+  }
+})();
+</script>
+{% endif %}

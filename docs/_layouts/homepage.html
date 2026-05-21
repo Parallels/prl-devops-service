@@ -1,6 +1,23 @@
 ---
 layout: default
 ---
+
+{% if page.features %}
+{% assign features_data = site.data[page.features] %}
+{% include features.html features=features_data %}
+{% endif %}
+{% if page.steps %}
+{% assign steps_data = site.data[page.steps] %}
+{% include steps.html steps=steps_data %}
+{% endif %}
+{% if page.download %}
+{% assign download_data = site.data[page.download] %}
+{% include download.html download=download_data %}
+{% endif %}
+{% if page.discord %}
+{% assign discord_data = site.data[page.discord] %}
+{% include discord.html discord=discord_data %}
+{% endif %}
 {% if page.about %}
 <section class="about-section">
   <div class="about-container">
@@ -30,9 +47,9 @@ layout: default
 <section class="content">
   {{ content }}
 </section>
-<section class="whats-new-section">
-  <div class="whats-new-container">
-    <span class="container-title">What's New</span>
+<section class="latest-releases-section">
+  <div class="latest-releases-container">
+    <span class="container-title">Latest Releases</span>
     <div class="container-content">
       {% include whats_new.html %}
     </div>
