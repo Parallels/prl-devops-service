@@ -1,5 +1,7 @@
 - name: Quick Start
   link: /quick-start/
+- name: UI
+  link: /ui/
 - name: Documentation
   link: /#
   dropdown:
@@ -51,5 +53,3 @@
     - name: Run CI/CD Pipelines with Github Actions
       description: Learn how to run your CI/CD pipelines with Github Actions and Parallels Desktop DevOps Service using your own runners for building the software.
       link: /examples/github-actions/
-- name: UI
-  link: /ui/

@@ -4,6 +4,7 @@ title: Documentation
 subtitle: User-friendly hub with guides, API docs, and tutorials
 menubar: docs_devops_menu
 show_sidebar: false
+full_width: true
 ---
 
 # Parallels Desktop DevOps Service

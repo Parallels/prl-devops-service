@@ -31,6 +31,24 @@
   justify-content: space-between;
 }
 
+body.page-layout {
+  .navigation {
+    height: 80px;
+  }
+
+  .navigation-header {
+    min-height: 80px;
+  }
+
+  .navigation-menu {
+    @media (max-width: 1139.95px) {
+      &.open {
+        top: 80px;
+      }
+    }
+  }
+}
+
 .navigation-menu {
   @media (max-width: 1139.95px) {
     gap: 24px;

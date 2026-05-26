@@ -1,0 +1,431 @@
+{% assign tw = site.data.catalog_walkthrough %}
+{% if tw %}
+<div class="tw-container" id="tw-container">
+  <div class="tw-stage">
+    <div class="tw-images">
+      <img class="tw-img-main" src="{{ site.baseurl }}/assets/img/ui/{{ tw.main_image }}" alt="{{ tw.title }} — default view" />
+    </div>
+    <div class="tw-hotspot-layer"></div>
+    <div class="tw-scene-badge" id="tw-scene-badge">
+      <span class="tw-scene-badge-label"></span>
+      <button class="tw-scene-badge-close" id="tw-scene-badge-close" aria-label="Exit scene">×</button>
+    </div>
+  </div>
+
+  <div class="tw-info-panel" id="tw-info-panel">
+    <button class="tw-info-close" id="tw-info-close" aria-label="Close">✕</button>
+    <div class="tw-info-content">
+      <span class="tw-info-step-label"></span>
+      <h3 class="tw-info-title"></h3>
+      <p class="tw-info-desc"></p>
+      <div class="tw-nav">
+        <button class="tw-nav-btn tw-nav-prev" aria-label="Previous step">← Prev</button>
+        <div class="tw-dots"></div>
+        <button class="tw-nav-btn tw-nav-next" aria-label="Next step">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var tw = {{ site.data.catalog_walkthrough | jsonify }};
+  var items = tw.items || [];
+  if (!items.length) return;
+
+  var container = document.getElementById('tw-container');
+  var stage = container.querySelector('.tw-stage');
+  var imgMain = container.querySelector('.tw-img-main');
+  var hotspotLayer = container.querySelector('.tw-hotspot-layer');
+  var infoPanel = container.querySelector('.tw-info-panel');
+  var infoStepLabel = container.querySelector('.tw-info-step-label');
+  var infoTitle = container.querySelector('.tw-info-title');
+  var infoDesc = container.querySelector('.tw-info-desc');
+  var dotsContainer = container.querySelector('.tw-dots');
+  var btnPrev = container.querySelector('.tw-nav-prev');
+  var btnNext = container.querySelector('.tw-nav-next');
+  var sceneBadge = container.querySelector('.tw-scene-badge');
+  var sceneBadgeLabel = container.querySelector('.tw-scene-badge-label');
+  var sceneBadgeClose = document.getElementById('tw-scene-badge-close');
+  var infoClose = document.getElementById('tw-info-close');
+
+  if (tw.show_background_effect === false) {
+    stage.classList.add('tw-stage--no-effect');
+  }
+
+  var stack = [];
+  var sceneDepth = 0;
+  var currentHotspotEl = null;
+  var TRANSITION_MS = 200;
+
+  var rootDots = buildDots(items);
+  stack.push({
+    items: items,
+    currentIndex: 0,
+    dots: rootDots
+  });
+
+  function buildDots(items) {
+    dotsContainer.innerHTML = '';
+    var dots = [];
+    items.forEach(function(item, i) {
+      var color = (item.hotspot && item.hotspot.color) || '#3B82F6';
+      var dot = document.createElement('button');
+      dot.className = 'tw-dot' + (i === 0 ? ' tw-dot--active' : '');
+      dot.setAttribute('aria-label', 'Go to item ' + (i + 1));
+      dot.style.background = color;
+      dot.addEventListener('click', (function(idx) {
+        return function() { goToItemInScene(idx); };
+      })(i));
+      dotsContainer.appendChild(dot);
+      dots.push(dot);
+    });
+    return dots;
+  }
+
+  function pushScene(sceneItem) {
+    var sceneSteps = sceneItem.steps || [];
+    if (!sceneSteps.length) return;
+    sceneDepth++;
+
+    var sceneDots = buildDots(sceneSteps);
+    stack.push({
+      items: sceneSteps,
+      currentIndex: 0,
+      dots: sceneDots,
+      sceneTitle: sceneItem.title
+    });
+
+    sceneBadge.classList.add('tw-scene-badge--visible');
+    sceneBadgeLabel.textContent = sceneItem.title;
+
+    // Change the single image with fade transition
+    var sceneImage = sceneItem.image || tw.main_image;
+    var newSrc = '{{ site.baseurl }}/assets/img/ui/' + sceneImage;
+
+    var tempImg = new Image();
+    tempImg.src = newSrc;
+    tempImg.onload = function() {
+      imgMain.style.transition = 'opacity ' + TRANSITION_MS + 'ms ease';
+      imgMain.style.opacity = '0';
+      setTimeout(function() {
+        imgMain.src = newSrc;
+        imgMain.onload = function() {
+          imgMain.style.opacity = '1';
+        };
+      }, TRANSITION_MS);
+    };
+
+    hotspotLayer.innerHTML = '';
+    renderSceneItems(sceneSteps);
+    initFirstItem();
+  }
+
+  function popScene() {
+    if (stack.length <= 1) return;
+
+    var currentEntry = stack[stack.length - 1];
+    currentEntry.dots.forEach(function(d) { if (d.parentNode) d.parentNode.removeChild(d); });
+
+    stack.pop();
+    sceneDepth--;
+
+    if (sceneDepth === 0) {
+      sceneBadge.classList.remove('tw-scene-badge--visible');
+    } else {
+      sceneBadgeLabel.textContent = stack[stack.length - 1].sceneTitle;
+    }
+
+    var parentSrc = '{{ site.baseurl }}/assets/img/ui/' + tw.main_image;
+    var tempImg = new Image();
+    tempImg.src = parentSrc;
+    tempImg.onload = function() {
+      imgMain.style.transition = 'opacity ' + TRANSITION_MS + 'ms ease';
+      imgMain.style.opacity = '0';
+      setTimeout(function() {
+        imgMain.src = parentSrc;
+        imgMain.onload = function() {
+          imgMain.style.opacity = '1';
+        };
+      }, TRANSITION_MS);
+    };
+
+    hotspotLayer.innerHTML = '';
+    buildDots(stack[stack.length - 1].items);
+    renderSceneItems(stack[stack.length - 1].items);
+    initFirstItem();
+  }
+
+  function renderSceneItems(items) {
+    items.forEach(function(item, i) {
+      if (!item.hotspot) return;
+      var r = item.hotspot.radius || 30;
+      var color = item.hotspot.color || '#3B82F6';
+      var btn = document.createElement('button');
+      btn.className = 'tw-hotspot';
+      btn.setAttribute('data-id', item.id);
+      btn.style.left = item.hotspot.x + '%';
+      btn.style.top = item.hotspot.y + '%';
+      btn.style.setProperty('--tw-radius', r + 'px');
+      btn.style.setProperty('--tw-color', color);
+      btn.style.setProperty('--tw-color-dark', darken(color, 20));
+      btn.style.setProperty('--tw-color-glow', color + '4D');
+      btn.style.setProperty('--tw-color-shadow', color + '66');
+      btn.style.width = (r * 2) + 'px';
+      btn.style.height = (r * 2) + 'px';
+      btn.setAttribute('aria-label', item.title);
+      btn.innerHTML = '<span class="tw-hotspot-pulse"></span><span class="tw-hotspot-dot"></span>';
+      btn.addEventListener('click', (function(idx) {
+        return function() { goToItemInScene(idx); };
+      })(i));
+      hotspotLayer.appendChild(btn);
+    });
+  }
+
+  function showCurrentItemInScene(animate) {
+    if (animate === undefined) animate = true;
+    var entry = stack[stack.length - 1];
+    var item = entry.items[entry.currentIndex];
+
+    var color = (item.hotspot && item.hotspot.color) || '#3B82F6';
+    infoStepLabel.textContent = 'Step ' + (entry.currentIndex + 1) + ' of ' + entry.items.length;
+    infoTitle.innerHTML = item.title;
+    infoDesc.innerHTML = item.description;
+    infoPanel.classList.add('tw-info-panel--visible');
+
+    if (item.show_background_effect === false) {
+      infoPanel.classList.add('tw-info-panel--no-effect');
+    } else {
+      infoPanel.classList.remove('tw-info-panel--no-effect');
+    }
+
+    entry.dots.forEach(function(d, i) { d.classList.toggle('tw-dot--active', i === entry.currentIndex); d.style.background = (entry.items[i].hotspot && entry.items[i].hotspot.color) || '#3B82F6'; });
+
+    var hs = hotspotLayer.querySelectorAll('.tw-hotspot');
+    hs.forEach(function(h, i) {
+      var hsColor = (entry.items[i].hotspot && entry.items[i].hotspot.color) || '#3B82F6';
+      h.style.setProperty('--tw-color', hsColor);
+      h.style.setProperty('--tw-color-dark', darken(hsColor, 20));
+      h.style.setProperty('--tw-color-glow', hsColor + '4D');
+      h.style.setProperty('--tw-color-shadow', hsColor + '66');
+      h.classList.toggle('tw-hotspot--active', i === entry.currentIndex);
+    });
+
+    currentHotspotEl = hs[entry.currentIndex] || null;
+
+    if (item.hotspot && item.hotspot.x !== undefined) {
+      if (animate) {
+        imgMain.style.opacity = '0.6';
+      } else {
+        imgMain.style.opacity = '0.6';
+      }
+    } else {
+      imgMain.style.opacity = '1';
+    }
+
+    positionPanel();
+  }
+
+  function initFirstItem() {
+    var entry = stack[stack.length - 1];
+    var item = entry.items[entry.currentIndex];
+
+    infoTitle.innerHTML = item.title;
+    infoDesc.innerHTML = item.description;
+
+    // Don't highlight any dot or hotspot at start
+    var dots = dotsContainer.querySelectorAll('.tw-dot');
+    dots.forEach(function(d) { d.classList.remove('tw-dot--active'); });
+    var hs = hotspotLayer.querySelectorAll('.tw-hotspot');
+    hs.forEach(function(h) { h.classList.remove('tw-hotspot--active'); });
+
+    currentHotspotEl = null;
+    imgMain.style.opacity = '1';
+    infoPanel.classList.remove('tw-info-panel--visible');
+  }
+
+  function zoomToHotspot(item) {
+    imgMain.style.opacity = '0.6';
+  }
+
+  function applyCrop(img, hotspot, animate) {
+    var cx = hotspot.x;
+    var cy = hotspot.y;
+    var r = hotspot.radius;
+
+    // Convert percentage hotspot to pixel coords relative to image element
+    var imgRect = img.getBoundingClientRect();
+    var px = (cx / 100) * imgRect.width;
+    var py = (cy / 100) * imgRect.height;
+
+    // Scale radius to ~15% of image width for consistent zoom feel
+    var scaledR = Math.max(r, imgRect.width * 0.15);
+
+    if (animate) {
+      img.style.transition = 'clip-path ' + (TRANSITION_MS * 2) + 'ms cubic-bezier(0.2, 0, 0.2, 1), opacity ' + TRANSITION_MS + 'ms ease';
+    } else {
+      img.style.transition = 'none';
+    }
+
+    img.style.clipPath = 'circle(' + scaledR + 'px at ' + px + 'px ' + py + 'px)';
+  }
+
+  function positionPanel() {
+    if (!currentHotspotEl || !infoPanel) return;
+
+    var stageRect = stage.getBoundingClientRect();
+    var hotspotRect = currentHotspotEl.getBoundingClientRect();
+    var panelRect = infoPanel.getBoundingClientRect();
+
+    var hx = hotspotRect.left + hotspotRect.width / 2 - stageRect.left;
+    var hy = hotspotRect.top + hotspotRect.height / 2 - stageRect.top;
+
+    var panelW = panelRect.width || 300;
+    var panelH = panelRect.height || 200;
+
+    var placement = placeBelow(hx, hy, panelW, panelH);
+    if (!placement) placement = placeAbove(hx, hy, panelW, panelH);
+    if (!placement) placement = placeRight(hx, hy, panelW, panelH);
+    if (!placement) placement = placeLeft(hx, hy, panelW, panelH);
+
+    infoPanel.style.left = placement.x + 'px';
+    infoPanel.style.top = placement.y + 'px';
+  }
+
+  function placeBelow(x, y, pw, ph) {
+    var belowY = y + 30;
+    var belowX = clamp(x - pw / 2, 10, stage.offsetWidth - pw - 10);
+    if (belowY + ph <= stage.offsetHeight - 10) {
+      return { x: belowX, y: belowY };
+    }
+    return null;
+  }
+
+  function placeAbove(x, y, pw, ph) {
+    var aboveY = y - ph - 30;
+    var aboveX = clamp(x - pw / 2, 10, stage.offsetWidth - pw - 10);
+    if (aboveY >= 10) {
+      return { x: aboveX, y: aboveY };
+    }
+    return null;
+  }
+
+  function placeRight(x, y, pw, ph) {
+    var rightX = x + 30;
+    var rightY = clamp(y - ph / 2, 10, stage.offsetHeight - ph - 10);
+    if (rightX + pw <= stage.offsetWidth - 10) {
+      return { x: rightX, y: rightY };
+    }
+    return null;
+  }
+
+  function placeLeft(x, y, pw, ph) {
+    var leftX = x - pw - 30;
+    var leftY = clamp(y - ph / 2, 10, stage.offsetHeight - ph - 10);
+    if (leftX >= 10) {
+      return { x: leftX, y: leftY };
+    }
+    return null;
+  }
+
+  function clamp(val, min, max) {
+    return Math.min(Math.max(val, min), max);
+  }
+
+  function darken(hex, percent) {
+    var num = parseInt(hex.replace('#', ''), 16);
+    var r = Math.max(0, (num >> 16) - Math.round(2.55 * percent));
+    var g = Math.max(0, ((num >> 8) & 0x00FF) - Math.round(2.55 * percent));
+    var b = Math.max(0, (num & 0x0000FF) - Math.round(2.55 * percent));
+    return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
+  }
+
+  function goToItemInScene(index) {
+    var entry = stack[stack.length - 1];
+    if (index < 0 || index >= entry.items.length) return;
+    entry.currentIndex = index;
+    var item = entry.items[index];
+
+    if (item.type === 'scene' && item.steps) {
+      pushScene(item);
+      return;
+    }
+
+    showCurrentItemInScene(true);
+  }
+
+  function goToPrevItemInScene() {
+    var entry = stack[stack.length - 1];
+    if (entry.currentIndex > 0) {
+      goToItemInScene(entry.currentIndex - 1);
+    } else {
+      goToItemInScene(entry.items.length - 1);
+    }
+  }
+
+  function goToNextItemInScene() {
+    var entry = stack[stack.length - 1];
+    if (entry.currentIndex < entry.items.length - 1) {
+      goToItemInScene(entry.currentIndex + 1);
+    } else {
+      goToItemInScene(0);
+    }
+  }
+
+  btnPrev.addEventListener('click', function() {
+    goToPrevItemInScene();
+  });
+
+  btnNext.addEventListener('click', function() {
+    goToNextItemInScene();
+  });
+
+  sceneBadgeClose.addEventListener('click', function() {
+    popScene();
+  });
+
+  infoClose.addEventListener('click', function() {
+    resetSelection();
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (!container || !isInViewport(container)) return;
+    if (e.key === 'ArrowLeft') btnPrev.click();
+    if (e.key === 'ArrowRight') btnNext.click();
+    if (e.key === 'Escape' && sceneDepth > 0) sceneBadgeClose.click();
+  });
+
+  function isInViewport(el) {
+    var rect = el.getBoundingClientRect();
+    return rect.bottom > 0 && rect.top < window.innerHeight;
+  }
+
+  var resizeTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(positionPanel, 100);
+  });
+
+  renderSceneItems(items);
+  initFirstItem();
+  positionPanel();
+
+  // Click on stage (non-hotspot area) closes active step
+  stage.addEventListener('click', function(e) {
+    if (e.target === stage || e.target === imgMain) {
+      resetSelection();
+    }
+  });
+
+  function resetSelection() {
+    var dots = dotsContainer.querySelectorAll('.tw-dot');
+    dots.forEach(function(d) { d.classList.remove('tw-dot--active'); });
+    var hs = hotspotLayer.querySelectorAll('.tw-hotspot');
+    hs.forEach(function(h) { h.classList.remove('tw-hotspot--active'); });
+    currentHotspotEl = null;
+    imgMain.style.opacity = '1';
+    infoPanel.classList.remove('tw-info-panel--visible');
+  }
+})();
+</script>
+{% endif %}

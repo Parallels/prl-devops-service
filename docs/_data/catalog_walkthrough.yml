@@ -1,0 +1,110 @@
+main_image: "catalog-main.png"
+title: "Catalog Interface"
+show_background_effect: false
+items:
+  - id: header
+    type: step
+    title: "Catalog Service Information"
+    description: "Check the catalog information such as name, description, and number of manifests available."
+    hotspot:
+      x: 35
+      y: 12.5
+      radius: 25
+
+  - id: search
+    type: step
+    title: "Search & Filter"
+    description: "Find any VM in your catalog using powerful search and category filters. Narrow down by OS, architecture, or version."
+    hotspot:
+      x: 75
+      y: 12.5
+      radius: 30
+
+  - id: pull
+    type: step
+    title: "One-Click Pull"
+    description: "Pick a version and hit pull. The client handles metadata retrieval, storage download, and local registration automatically."
+    hotspot:
+      x: 35
+      y: 54
+      radius: 30
+
+  - id: manifest
+    type: step
+    title: "Pull a VM Like You Pull an Image, Safely!!"
+    description: "Browse manifests, pick a version, hit pull. Behind it: <strong>RBAC</strong> on every catalog, <strong>taints</strong> that warn your team about risky builds, and <strong>revokes</strong> that take compromised versions out of circulation. The registry workflow you know, hardened for production infrastructure."
+    hotspot:
+      x: 56
+      y: 83.5
+      radius: 30
+
+  - id: manifest-details
+    type: scene
+    title: "Manifest Details"
+    description: "View full manifest information including version history, taints, roles, and security claims before pulling."
+    hotspot:
+      x: 27
+      y: 27
+      radius: 30
+    image: "catalog-main-side-menu.png"
+    steps:
+      - id: rbac-overview
+        type: step
+        title: "RBAC Layer"
+        description: "Every catalog enforces role-based access control. Only authorized users can pull specific VM versions. Roles are checked at every API boundary."
+        hotspot:
+          x: 40
+          y: 50
+          radius: 30
+          color: "#3B82F6"
+
+      - id: policy-engine
+        type: scene
+        title: "Inside: Policy Engine"
+        description: "See how policies are evaluated at each layer of the catalog request pipeline."
+        hotspot:
+          x: 20
+          y: 55
+          radius: 35
+          color: "#8B5CF6"
+        image: "catalog-main-side-menu-roles.png"
+        steps:
+          - id: policy-check
+            type: step
+            title: "Policy Validation"
+            description: "Each pull request passes through a policy engine that validates roles, checks taints, and verifies revocation status before granting access."
+            hotspot:
+              x: 70
+              y: 20
+              radius: 35
+              color: "#F59E0B"
+
+          - id: log-stream
+            type: step
+            title: "Audit Log Stream"
+            description: "Every decision is logged. The audit stream provides full traceability from request to response, including policy evaluation results."
+            hotspot:
+              x: 80
+              y: 70
+              radius: 30
+              color: "#10B981"
+
+      - id: taints-detail
+        type: step
+        title: "Taints & Revokes"
+        description: "Taints warn your team about risky builds. Revokes automatically remove compromised versions from circulation."
+        hotspot:
+          x: 60
+          y: 55
+          radius: 30
+          color: "#8B5CF6"
+
+  - id: customize-view
+    type: step
+    title: "Taints & Revokes"
+    description: "Taints warn your team about risky builds. Revokes automatically remove compromised versions from circulation."
+    hotspot:
+      x: 75
+      y: 21.5
+      radius: 30
+
