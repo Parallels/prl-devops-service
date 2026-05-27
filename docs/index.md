@@ -18,7 +18,8 @@ hero_actions:
     fa_icon: fa-arrow-right
     icon_position: right
     url: /quick-start/
-  - title: Schedule a Call
+  - title: Schedule a Demo
+    url:  https://outlook.office.com/bookwithme/user/d6b4c940ec9d44079ed872ba1fcaaf68@parallels.com/meetingtype/you-CpOV8UyS0sFl9KjSWw2?anonymous&ep=mlink
 hero_footer_note: |
   [![License: Fair Source](https://img.shields.io/badge/license-fair-source.svg)](https://fair.io/)
   [![Builds](https://github.com/Parallels/prl-devops-service/actions/workflows/pull_request.yml/badge.svg)](https://github.com/Parallels/prl-devops-service/actions/workflows/pull_request.yml)

@@ -7,7 +7,7 @@
 <html dir="{{ site.direction | default: 'ltr' }}" lang="{{ site.lang | default: 'en' }}" {% if site.fixed_navbar %}class="has-navbar-fixed-{{ site.fixed_navbar }}" {% endif %}>
 {% include head.html %}
 
-<body class="{% if page.layout == 'page' %}page-layout{% endif %}{% if page.sticky_footer %} has-sticky-footer{% endif %}">
+<body class="{% if page.layout == 'page' %}page-layout{% endif %}{% if page.layout == 'api' %} api-layout{% endif %}{% if page.sticky_footer %} has-sticky-footer{% endif %}">
   {% include header.html %}
 
   {% if page.is_home %}
@@ -27,8 +27,12 @@
     {{ content }}
   </section>
 
+  {% elsif page.layout == 'api' %}
+  <!-- LAYOUT 2: API Reference Page -->
+  {{ content }}
+
   {% elsif page.menubar or page.menubar_toc or page.toc %}
-  <!-- LAYOUT 2: Documentation Page -->
+  <!-- LAYOUT 3: Documentation Page -->
 
   <section class="body-container">
     <nav class="doc-nav">
@@ -165,6 +169,7 @@
   {% endunless %}
   {% include cookie-consent.html %}
   <script src="{{ site.baseurl }}/assets/js/app.js" type="text/javascript"></script>
+  <script src="{{ site.baseurl }}/assets/js/search.js" type="text/javascript"></script>
   {%- include footer-scripts.html -%}
   </body>
   <script>

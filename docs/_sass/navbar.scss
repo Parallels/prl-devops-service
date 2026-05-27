@@ -31,7 +31,8 @@
   justify-content: space-between;
 }
 
-body.page-layout {
+body.page-layout,
+body.api-layout {
   .navigation {
     height: 80px;
   }
@@ -128,6 +129,7 @@ body.page-layout {
 .navigation-end-container {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .navigation-menu-item {
@@ -375,15 +377,6 @@ body.page-layout {
     border-top: 1px solid rgba(0, 0, 0, 0.07);
     width: 100%;
 
-    .github-stars {
-      width: 100%;
-    }
-
-    .github-stars-link {
-      width: 100%;
-      justify-content: center;
-    }
-
     .github-btn-wrapper {
       width: 100%;
 
@@ -397,42 +390,6 @@ body.page-layout {
       }
     }
   }
-}
-
-.github-stars {
-  display: flex;
-  align-items: center;
-}
-
-.github-stars-link {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  color: #303236;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: "Open Sans", sans-serif;
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  text-decoration: none;
-  transition: background 200ms ease;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.06);
-  }
-}
-
-.github-star-icon {
-  width: 16px;
-  height: 16px;
-  stroke: #f5a623;
-  fill: #f5a623;
-}
-
-.github-star-count {
-  color: #101828;
 }
 
 .get-started.github-btn {
@@ -537,14 +494,25 @@ body.page-layout {
 }
 
 .github-dropdown-menu-item {
-  display: block;
+  display: flex;
   padding: 12px 16px;
   border-radius: 8px;
   text-decoration: none !important;
   transition: background 150ms ease;
+  gap: 6px;
 
   &:hover {
     background: rgba(0, 0, 0, 0.04);
+  }
+
+  .github-dropdown-title-row {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 2px;
+    flex-direction: column;
+    flex-grow: 1;
   }
 
   .title {
@@ -552,7 +520,23 @@ body.page-layout {
     font-size: 14px;
     font-weight: 600;
     color: #101828;
-    margin-bottom: 2px;
+    margin-bottom: 0;
+  }
+
+  .github-dropdown-stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    color: #7b7d85;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+
+    i {
+      color: #f59e0b;
+      font-size: 11px;
+    }
   }
 
   .description {

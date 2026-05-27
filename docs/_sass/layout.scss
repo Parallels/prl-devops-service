@@ -833,7 +833,8 @@ p:has(> img) {
   overflow-y: auto;
 }
 
-body.page-layout {
+body.page-layout,
+body.api-layout {
   .body-container {
     min-height: calc(100vh - 80px);
 

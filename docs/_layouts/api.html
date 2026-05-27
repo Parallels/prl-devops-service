@@ -1,221 +1,476 @@
 ---
 layout: default
 ---
-{% assign url = page.url | split: '/' %}
-{% assign page_name = url | last %}
-<div class="api-document{% if page.categories %} has-categories{% endif %}">
-  {% if page.categories %}
-  <div class="category-menu">
-    <div class="api-menu-container">
-      <div class="api-dropdown-root-item{% if page_name == 'rest-api' %} active{% endif %}">
-        <a class="api-menu-item" href="{{ site.baseurl }}/docs/devops/restapi/reference/">All </a>
+{% assign url_parts = page.url | split: '/' %}
+{% assign page_name = url_parts | last %}
+{% assign reference_root = '/docs/devops/restapi/reference/' %}
+
+<section class="api-document api-reference body-container{% if page.categories %} has-categories{% endif %}">
+  <nav class="doc-nav api-doc-nav">
+    <nav class="doc-breadcrumb" aria-label="Breadcrumb">
+      <ol class="doc-breadcrumb-list">
+        <li class="doc-breadcrumb-item"><a href="{{ '/docs/' | relative_url }}">Docs</a></li>
+        <li class="doc-breadcrumb-separator">/</li>
+        <li class="doc-breadcrumb-item"><a href="{{ '/docs/devops/restapi/' | relative_url }}">REST API</a></li>
+        <li class="doc-breadcrumb-separator">/</li>
+        <li class="doc-breadcrumb-item doc-breadcrumb-current">{{ page.title | default: 'API Reference' }}</li>
+      </ol>
+    </nav>
+  </nav>
+
+  <div class="api-shell">
+    {% if page.categories %}
+    <aside class="category-menu" aria-label="API reference navigation">
+      <div class="api-menu-heading">
+        <span>API Reference</span>
+        {% if page.api_version %}
+        <small>{{ page.api_version }}</small>
+        {% else %}
+        <small>Stable</small>
+        {% endif %}
       </div>
-      {% for category in page.categories %}
-      {% if category.endpoints.size > 0 %}
-      <div class="api-dropdown-link{% if page_name == category.path %} expanded{% endif %}" target="dropdown-{{ category.path }}">
-        <div class="api-dropdown-root-item{% if page_name == category.path %} active{% endif %}{% if page_name == category.path %} expanded{% endif %}">
-          <a class="api-dropdown-expand-btn{% if page_name == category.path %} expanded{% endif %}" type="button" title="dropdown-{{ page_name }}" target="dropdown-{{ category.path }}">
-            <svg class="svg-button" focusable="false" viewBox="0 0 20 20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="fill: none;">
-              <path d="M18 7L10 15L2 7" stroke-width="2" stroke-miterlimit="10"></path>
-            </svg>
-          </a>
-          <a class="api-menu-item{% if page_name == category.path %} active{% endif %}" href="{{ site.baseurl }}/docs/devops/restapi/reference/{{ category.path }}">
-            <div class="menu-item-text">
-              {{ category.name }}
-            </div>
-          </a>
+      <div class="api-menu-container" data-api-menu>
+        <div class="api-dropdown-root-item{% if page.url == reference_root %} active{% endif %}">
+          <a class="api-menu-item" href="{{ reference_root | relative_url }}">All endpoints</a>
         </div>
-        <div class="api-dropdown-menu{% if page_name == category.path %} expanded{% endif %}" target="dropdown-{{ category.path }}">
-          <ul>
-            {% for endpoint in category.endpoints %}
-            {% assign anchor_id = page.api_prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
-            <li class="api-dropdown-menu-item">
-              <span class="endpoint {{ endpoint.method | upcase }}"></span>
-              <a href="{{ site.baseurl }}/docs/devops/restapi/reference/{{ category.path }}#{{ anchor_id }}">{{ endpoint.path }}</a>
-            </li>
-            {% endfor %}
-          </ul>
+        {% for category in page.categories %}
+        {% assign category_active = false %}
+        {% if page_name == category.path %}
+          {% assign category_active = true %}
+        {% endif %}
+        {% assign category_id = category.path | slugify %}
+        {% if category.endpoints.size > 0 %}
+        <div class="api-dropdown-link{% if category_active %} expanded is-expanded{% endif %}" data-api-menu-section="{{ category_id }}">
+          <div class="api-dropdown-root-item{% if category_active %} active expanded is-expanded{% endif %}">
+            <a class="api-menu-item{% if category_active %} active{% endif %}" href="{{ reference_root | append: category.path | append: '/' | relative_url }}">
+              <span class="menu-item-text">{{ category.name }}</span>
+            </a>
+            <button class="api-dropdown-expand-btn{% if category_active %} expanded is-expanded{% endif %}" type="button" aria-label="Toggle {{ category.name }}" aria-expanded="{% if category_active %}true{% else %}false{% endif %}" data-api-menu-toggle="{{ category_id }}">
+              <span class="menu-item-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+            </button>
+          </div>
+          <div class="api-dropdown-menu{% if category_active %} expanded is-expanded{% endif %}" data-api-menu-panel="{{ category_id }}">
+            <ul>
+              {% for endpoint in category.endpoints %}
+              {% assign anchor_id = page.api_prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
+              <li class="api-dropdown-menu-item">
+                <span class="endpoint {{ endpoint.method | upcase }}"></span>
+                <a class="api-endpoint-index-link" href="{{ reference_root | append: category.path | append: '/#' | append: anchor_id | relative_url }}">{{ endpoint.path }}</a>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
         </div>
+        {% else %}
+        <div class="api-dropdown-root-item{% if category_active %} active{% endif %}">
+          <a class="api-menu-item" href="{{ reference_root | append: category.path | append: '/' | relative_url }}">{{ category.name }}</a>
+        </div>
+        {% endif %}
+        {% endfor %}
       </div>
-      {% else %}
-      <div class="api-dropdown-root-item{% if page_name == category.path %} active{% endif %}">
-        <a class="api-menu-item" href="{{ site.baseurl }}/docs/devops/restapi/reference/{{ category.path }}">
-          {{ category.name }}
-        </a>
-      </div>
-      {% endif %}
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-  <div class="api-page-body">
-    {% if page.content %}
-    <section class="doc-content header">
-      <section class="left-docs header">
+    </aside>
+    <div class="api-menu-resize-handle" role="separator" aria-label="Resize API side menu" aria-orientation="vertical" aria-valuemin="240" aria-valuemax="560" aria-valuenow="280" tabindex="0" data-api-menu-resize-handle></div>
+    {% endif %}
+
+    <main class="api-page-body">
+      {% if page.content %}
+      <section class="doc-content api-reference-intro">
         {{ page.content | markdownify }}
       </section>
-      <section class="right-code header">
-      </section>
-    </section>
-    {% endif %}
-    {% assign endpoints = page.endpoints %}
-    {% for endpoint in endpoints %}
-    {% assign path = page.api_prefix | append: endpoint.path %}
-    {% assign id = page.api_prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
-    <section class="api-main-content" id="{{ id }}" style="scroll-margin-top: 120px;">
-      <section class="api-main-body">
-        {% if endpoint.title %}
-        <h6 class="endpoint-title">
-          {{ endpoint.title }}:
-        </h6>
-        {% endif %}
-        <h4 class="api-endpoint-header">
-          <div class="endpoint-header">
-            <a class="endpoint-link">
-              {{ path }}
-              {% if endpoint.method %}
-              <span class="endpoint {{ endpoint.method | upcase }}"></span>
-              {% endif %}
-              {% if endpoint.requires_authorization %}
-              {% include tag.html tag="Authorized" style="is-warning" %}
-              {% endif %}
-            </a>
+      {% endif %}
+
+      {% assign endpoints = page.endpoints %}
+      {% for endpoint in endpoints %}
+      {% assign path = page.api_prefix | append: endpoint.path %}
+      {% assign id = page.api_prefix | append: endpoint.path | append: '_' | append: endpoint.method | replace: '/', '_' | replace: '.', '_' | replace: ':', '_' %}
+      <section class="api-main-content" id="{{ id }}">
+        <section class="api-main-body">
+          <h1 class="api-endpoint-title">
+            <span class="endpoint {{ endpoint.method | upcase }}"></span>
+            {{ endpoint.title | default: endpoint.path }}
+          </h1>
+          <div class="api-endpoint-path">
+            <code>{{ path }}</code>
+            {% if endpoint.requires_authorization %}
+            {% include tag.html tag="Authorized" style="is-warning" %}
+            {% endif %}
           </div>
-          <div>
-            {% if endpoint.default_required_roles or endpoint.default_required_claims %}
+          {% if endpoint.default_required_roles or endpoint.default_required_claims %}
+          <div class="api-auth-tags">
             {% if endpoint.default_required_roles %}
             {% for role in endpoint.default_required_roles %}
-            <span class="tag is-info is-light "><span class="title">Role:</span> {{ role }}</span>
+            <span class="tag is-info is-light"><span class="title">Role:</span> {{ role }}</span>
             {% endfor %}
             {% endif %}
             {% if endpoint.default_required_claims %}
             {% for claim in endpoint.default_required_claims %}
-            <span class="tag is-success is-light "><span class="title">Claim:</span> {{ claim }}</span>
+            <span class="tag is-success is-light"><span class="title">Claim:</span> {{ claim }}</span>
             {% endfor %}
             {% endif %}
-            {% endif %}
-          </div>
-        </h4>
-        {% if endpoint.description %}
-        <p class="description">{{ endpoint.description }}</p>
-        {% endif %}
-        {% if endpoint.content_markdown %}
-        <div class="markdown-content">
-          {{ endpoint.content_markdown | markdownify  }}
-        </div>
-        {% endif %}
-        {% if endpoint.headers and endpoint.headers[0].name %}
-        <h6>Headers</h6>
-        <div class="endpoint-headers">
-          {% for header in endpoint.headers %}
-          <span>
-            {{ header.name }}
-            {% if header.description %}
-            <span class="tag is-info is-light">{{ header.description }}</span>
-            {% endif %}
-            {% if header.required %}
-            <span class="tag is-danger is-light">required</span>
-            {% else %}
-            <span class="tag is-info is-light">optional</span>
-            {% endif %}
-          </span>
-          <span>
-            {% if header.type %}
-            <span class="tag is-success is-light">{{ header.type }}</span>
-            {% endif %}
-            {{ header.content }}
-          </span>
-          {% endfor %}
-        </div>
-        {% endif %}
-        {% if endpoint.parameters and endpoint.parameters[0].name %}
-        <h6>Parameters</h6>
-        <div class="endpoint-params">
-          {% for parameter in endpoint.parameters %}
-          {% if parameter.type == 'path' %}
-          <span>
-            {{ parameter.name }}
-            {% if parameter.description %}
-            <span class="tag is-info is-light">{{ parameter.description }}</span>
-            {% endif %}
-            {% if parameter.required %}
-            <span class="tag is-danger is-light">required</span>
-            {% else %}
-            <span class="tag is-info is-light">optional</span>
-            {% endif %}
-          </span>
-          <span>
-            {% if parameter.type %}
-            <span class="tag is-success is-light">{{ parameter.type }}</span>
-            {% endif %}
-            {{ parameter.content }}
-          </span>
-          {% else if parameter.type == 'object' %}
-          <div>
-            <div>
-              <span>
-                {{ parameter.name }}
-                {% if parameter.description %}
-                <span class="tag is-info is-light">{{ parameter.description }}</span>
-                {% endif %}
-                {% if parameter.required %}
-                <span class="tag is-danger is-light">required</span>
-                {% endif %}
-              </span>
-              <span>
-                {% if parameter.type %}
-                <span class="tag is-success is-light">{{ parameter.type }}</span>
-                {% endif %}
-                {{ parameter.content }}
-              </span>
-            </div>
-            <div>
-              {% include api-code-block.html content=parameter.body language='json' %}
-            </div>
           </div>
           {% endif %}
-          {% endfor %}
-        </div>
-        {% endif %}
+          {% if endpoint.description %}
+          <p class="description">{{ endpoint.description }}</p>
+          {% endif %}
+          {% if endpoint.content_markdown %}
+          <div class="markdown-content">
+            {{ endpoint.content_markdown | markdownify }}
+          </div>
+          {% endif %}
+          {% if endpoint.headers and endpoint.headers[0].name %}
+          <h6>Headers</h6>
+          <table class="api-parameter-table endpoint-headers">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for header in endpoint.headers %}
+              <tr>
+                <td><code>{{ header.name }}</code></td>
+                <td>{% if header.type %}<code>{{ header.type }}</code>{% else %}-{% endif %}</td>
+                <td>
+                  {% if header.required %}
+                  <span class="tag is-danger is-light">required</span>
+                  {% else %}
+                  <span class="tag is-info is-light">optional</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if header.description %}
+                  {{ header.description }}
+                  {% else %}
+                  {{ header.content | default: '-' }}
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% endif %}
+          {% if endpoint.parameters and endpoint.parameters[0].name %}
+          <h6>Parameters</h6>
+          <table class="api-parameter-table endpoint-params">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>In</th>
+                <th>Required</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for parameter in endpoint.parameters %}
+            <tr>
+              <td><code>{{ parameter.name }}</code></td>
+              <td><code>{{ parameter.value_type | default: parameter.type }}</code></td>
+              <td><span class="tag is-success is-light">{{ parameter.type }}</span></td>
+              <td>
+                {% if parameter.required %}
+                  <span class="tag is-danger is-light">required</span>
+                {% else %}
+                  <span class="tag is-info is-light">optional</span>
+                {% endif %}
+              </td>
+              <td>{{ parameter.description | default: parameter.content | default: '-' }}</td>
+            </tr>
+            {% if parameter.body %}
+            <tr class="api-parameter-schema-row">
+              <td colspan="5">
+                <div class="api-parameter-body-schema">
+                  <span class="api-parameter-schema-label">Schema</span>
+                  {% assign schema_body = parameter.body | pretty_json %}
+                  {% include api-code-block.html content=schema_body language='json' %}
+                </div>
+              </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+            </tbody>
+          </table>
+          {% endif %}
+        </section>
+        <aside class="api-code-blocks">
+          <div class="api-code-blocks-inner">
+            {% if endpoint.example_blocks and endpoint.example_blocks[0].code_block %}
+            {% include api-code-block-examples.html endpoint=endpoint title="Request examples" %}
+            {% endif %}
+            {% if endpoint.response_blocks.size > 1 %}
+            {% include api-code-block-responses.html endpoint=endpoint title="Responses" %}
+            {% endif %}
+          </div>
+        </aside>
       </section>
-      <section class="api-code-blocks">
-        {% if endpoint.example_blocks and endpoint.example_blocks[0].code_block %}
-        {% include api-code-block-examples.html endpoint=endpoint title="Request examples" %}
-        {% endif %}
-        {% if endpoint.response_blocks.size > 1 %}
-        {% include api-code-block-responses.html endpoint=endpoint title="Responses" %}
-        {% endif %}
-      </section>
-    </section>
-    {% endfor %}
+      {% endfor %}
+    </main>
   </div>
-</div>
+</section>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    var $menu_dropdown_item = Array.prototype.slice.call(document.querySelectorAll(".api-dropdown-link"), 0);
-    if ($menu_dropdown_item.length > 0) {
-      $menu_dropdown_item.forEach(function ($el) {
-        var $root_menu_item = $el.querySelector(".api-dropdown-root-item");
-        var $button = $el.querySelector(".api-dropdown-root-item > .api-dropdown-expand-btn");
-        var $dropdown_items = $el.querySelector(".api-dropdown-menu");
-        if ($button) {
-          $button.addEventListener("click", function () {
-            $el.classList.toggle("expanded");
-            $dropdown_items.classList.toggle("expanded");
-            $button.classList.toggle("expanded");
-            $root_menu_item.classList.toggle("expanded");
-          });
-        }
+    var storageKey = "prl-api-menu-expanded";
+    var widthStorageKey = "prl-api-menu-width";
+    var legacyWidthStorageKey = "prl-api-menu-wide";
+    var storedState = null;
+    var storedExpanded = [];
+    var apiDocument = document.querySelector(".api-document.api-reference");
+    var categoryMenu = document.querySelector(".category-menu");
+    var resizeHandle = document.querySelector("[data-api-menu-resize-handle]");
+    var minMenuWidth = 240;
+    var defaultMenuWidth = 280;
+    var maxMenuWidth = 560;
+    var wideMenuThreshold = 360;
+    var currentMenuWidth = defaultMenuWidth;
 
+    try {
+      storedState = JSON.parse(window.localStorage.getItem(storageKey) || "null");
+    } catch (error) {
+      storedState = null;
+    }
+
+    if (Array.isArray(storedState)) {
+      storedExpanded = storedState;
+    } else if (storedState && Array.isArray(storedState.expanded)) {
+      storedExpanded = storedState.expanded;
+    }
+
+    function getMaxMenuWidth() {
+      if (window.innerWidth < 1200) {
+        return maxMenuWidth;
+      }
+      return Math.min(maxMenuWidth, Math.max(minMenuWidth, Math.round(window.innerWidth * 0.4)));
+    }
+
+    function clampMenuWidth(width) {
+      return Math.min(getMaxMenuWidth(), Math.max(minMenuWidth, width));
+    }
+
+    function setMenuWidth(width) {
+      if (!apiDocument) {
+        return;
+      }
+
+      currentMenuWidth = clampMenuWidth(Math.round(width));
+      apiDocument.style.setProperty("--api-menu-width", currentMenuWidth + "px");
+      apiDocument.classList.toggle("is-menu-wide", currentMenuWidth >= wideMenuThreshold);
+
+      if (resizeHandle) {
+        resizeHandle.setAttribute("aria-valuenow", String(currentMenuWidth));
+        resizeHandle.setAttribute("aria-valuemax", String(getMaxMenuWidth()));
+      }
+    }
+
+    try {
+      var storedWidth = parseInt(window.localStorage.getItem(widthStorageKey), 10);
+      if (Number.isNaN(storedWidth)) {
+        storedWidth = window.localStorage.getItem(legacyWidthStorageKey) === "true" ? 430 : defaultMenuWidth;
+      }
+      setMenuWidth(storedWidth);
+    } catch (error) {
+      setMenuWidth(defaultMenuWidth);
+    }
+
+    function saveMenuWidth() {
+      try {
+        window.localStorage.setItem(widthStorageKey, String(currentMenuWidth));
+      } catch (error) {
+        return;
+      }
+    }
+
+    function startMenuResize(startClientX) {
+      if (!apiDocument || !categoryMenu) {
+        return;
+      }
+
+      var startWidth = categoryMenu.getBoundingClientRect().width;
+      document.body.classList.add("is-api-menu-resizing");
+
+      function resize(clientX) {
+        setMenuWidth(startWidth + clientX - startClientX);
+      }
+
+      function stopResize() {
+        document.body.classList.remove("is-api-menu-resizing");
+        saveMenuWidth();
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("mouseup", stopResize);
+        window.removeEventListener("touchmove", onTouchMove);
+        window.removeEventListener("touchend", stopResize);
+        window.removeEventListener("touchcancel", stopResize);
+      }
+
+      function onMouseMove(event) {
+        event.preventDefault();
+        resize(event.clientX);
+      }
+
+      function onTouchMove(event) {
+        if (!event.touches || event.touches.length === 0) {
+          return;
+        }
+        event.preventDefault();
+        resize(event.touches[0].clientX);
+      }
+
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", stopResize);
+      window.addEventListener("touchmove", onTouchMove, { passive: false });
+      window.addEventListener("touchend", stopResize);
+      window.addEventListener("touchcancel", stopResize);
+    }
+
+    if (resizeHandle) {
+      resizeHandle.addEventListener("mousedown", function (event) {
+        event.preventDefault();
+        startMenuResize(event.clientX);
+      });
+
+      resizeHandle.addEventListener("touchstart", function (event) {
+        if (!event.touches || event.touches.length === 0) {
+          return;
+        }
+        startMenuResize(event.touches[0].clientX);
+      }, { passive: true });
+
+      resizeHandle.addEventListener("keydown", function (event) {
+        var step = event.shiftKey ? 40 : 16;
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          setMenuWidth(currentMenuWidth - step);
+          saveMenuWidth();
+        }
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          setMenuWidth(currentMenuWidth + step);
+          saveMenuWidth();
+        }
+        if (event.key === "Home") {
+          event.preventDefault();
+          setMenuWidth(minMenuWidth);
+          saveMenuWidth();
+        }
+        if (event.key === "End") {
+          event.preventDefault();
+          setMenuWidth(maxMenuWidth);
+          saveMenuWidth();
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          setMenuWidth(defaultMenuWidth);
+          saveMenuWidth();
+        }
       });
     }
-    //setupTabs('#responses-tab-container');
-    //setupTabs('#example-tab-container');
-  });
 
-  window.onload = function () {
-    console.log("onload");
-    //setupTabs('#responses-tab-container');
-  };
+    window.addEventListener("resize", function () {
+      if (!apiDocument) {
+        return;
+      }
+      if (window.innerWidth < 1200) {
+        return;
+      }
+      var maxAvailableWidth = Math.max(minMenuWidth, Math.min(maxMenuWidth, Math.round(window.innerWidth * 0.4)));
+      if (currentMenuWidth > maxAvailableWidth) {
+        setMenuWidth(currentMenuWidth);
+        try {
+          window.localStorage.setItem(widthStorageKey, String(currentMenuWidth));
+        } catch (error) {
+          return;
+        }
+      }
+    });
+
+    function saveExpanded() {
+      var expanded = Array.prototype.slice.call(document.querySelectorAll("[data-api-menu-section].is-expanded"), 0)
+        .map(function (section) {
+          return section.getAttribute("data-api-menu-section");
+        });
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify({ expanded: expanded }));
+      } catch (error) {
+        return;
+      }
+    }
+
+    function setExpanded(section, expanded) {
+      var sectionId = section.getAttribute("data-api-menu-section");
+      var button = section.querySelector("[data-api-menu-toggle]");
+      var root = section.querySelector(".api-dropdown-root-item");
+      var panel = section.querySelector("[data-api-menu-panel='" + sectionId + "']");
+
+      section.classList.toggle("is-expanded", expanded);
+      section.classList.toggle("expanded", expanded);
+      if (button) {
+        button.classList.toggle("is-expanded", expanded);
+        button.classList.toggle("expanded", expanded);
+        button.setAttribute("aria-expanded", expanded ? "true" : "false");
+      }
+      if (root) {
+        root.classList.toggle("is-expanded", expanded);
+        root.classList.toggle("expanded", expanded);
+      }
+      if (panel) {
+        panel.classList.toggle("is-expanded", expanded);
+        panel.classList.toggle("expanded", expanded);
+      }
+    }
+
+    Array.prototype.slice.call(document.querySelectorAll("[data-api-menu-section]"), 0).forEach(function (section) {
+      var sectionId = section.getAttribute("data-api-menu-section");
+      var isActiveSection = !!section.querySelector(".api-dropdown-root-item.active");
+      var shouldUseStoredState = Array.isArray(storedState);
+      if (storedState && Array.isArray(storedState.expanded)) {
+        shouldUseStoredState = true;
+      }
+      var shouldExpand = isActiveSection || (shouldUseStoredState ? storedExpanded.indexOf(sectionId) !== -1 : section.classList.contains("is-expanded"));
+      setExpanded(section, shouldExpand);
+    });
+
+    Array.prototype.slice.call(document.querySelectorAll("[data-api-menu-toggle]"), 0).forEach(function (button) {
+      button.addEventListener("click", function () {
+        var sectionId = button.getAttribute("data-api-menu-toggle");
+        var section = document.querySelector("[data-api-menu-section='" + sectionId + "']");
+        if (!section) {
+          return;
+        }
+        setExpanded(section, !section.classList.contains("is-expanded"));
+        saveExpanded();
+      });
+    });
+
+    var endpointLinks = Array.prototype.slice.call(document.querySelectorAll(".api-endpoint-index-link[href*='#']"), 0);
+    var endpoints = endpointLinks.map(function (link) {
+      var id = decodeURIComponent(link.getAttribute("href").split("#")[1] || "");
+      return document.getElementById(id);
+    }).filter(Boolean);
+
+    function setActiveEndpoint(id) {
+      endpointLinks.forEach(function (link) {
+        link.classList.toggle("is-active", link.getAttribute("href").split("#")[1] === id);
+      });
+    }
+
+    function updateActiveEndpoint() {
+      var current = endpoints[0];
+      endpoints.forEach(function (endpoint) {
+        if (endpoint.getBoundingClientRect().top <= 150) {
+          current = endpoint;
+        }
+      });
+      if (current) {
+        setActiveEndpoint(current.id);
+      }
+    }
+
+    if (endpoints.length > 0) {
+      updateActiveEndpoint();
+      window.addEventListener("scroll", updateActiveEndpoint, { passive: true });
+    }
+  });
 </script>

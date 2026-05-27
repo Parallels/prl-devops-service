@@ -1,0 +1,231 @@
+$search-primary: #3273dc !default;
+$search-text: #1f2937 !default;
+$search-muted: #6b7280 !default;
+$search-subtle: #9ca3af !default;
+$search-border: #e5e7eb !default;
+$search-surface: #ffffff !default;
+$search-surface-muted: #f9fafb !default;
+$search-control-bg: #f3f4f6 !default;
+
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-trigger {
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: $search-muted;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  min-width: 200px;
+
+  &:hover {
+    border-color: $search-primary;
+    color: $search-primary;
+  }
+
+  &.is-active {
+    border-color: $search-primary;
+    box-shadow: 0 0 0 3px rgba($search-primary, 0.15);
+
+    .search-shortcut {
+      background: $search-primary;
+      color: $search-surface;
+      border-color: $search-primary;
+    }
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  .search-shortcut {
+    margin-left: auto;
+    background: $search-control-bg;
+    border: 1px solid $search-border;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 11px;
+    color: $search-subtle;
+    font-family: monospace;
+  }
+}
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: none;
+  justify-content: center;
+  padding-top: 10vh;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+
+  &.is-active {
+    display: flex;
+    opacity: 1;
+  }
+}
+
+.search-modal {
+  background: $search-surface;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 640px;
+  max-height: 70vh;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+}
+
+.search-modal-input-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid $search-border;
+  gap: 12px;
+
+  svg {
+    flex-shrink: 0;
+    color: $search-subtle;
+  }
+}
+
+.search-modal-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: $search-text;
+  background: transparent;
+
+  &::placeholder {
+    color: $search-subtle;
+  }
+}
+
+.search-modal-close {
+  background: $search-control-bg;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: $search-muted;
+  font-size: 12px;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: $search-border;
+  }
+}
+
+.search-results {
+  overflow-y: auto;
+  max-height: calc(70vh - 60px);
+  padding: 8px 0;
+}
+
+.search-results-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: $search-subtle;
+
+  svg {
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+
+  p {
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+.search-result-item {
+  display: block;
+  padding: 12px 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s ease;
+  border-left: 3px solid transparent;
+
+  &:hover,
+  &.is-active {
+    background: $search-surface-muted;
+    border-left-color: $search-primary;
+  }
+}
+
+.search-result-item-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: $search-text;
+  margin-bottom: 4px;
+}
+
+.search-result-item-category {
+  font-size: 12px;
+  color: $search-muted;
+  margin-bottom: 4px;
+}
+
+.search-result-item-excerpt {
+  font-size: 13px;
+  color: $search-muted;
+  line-height: 1.5;
+
+  mark {
+    background: #fef08a;
+    color: inherit;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+}
+
+.search-result-item-separator {
+  padding: 4px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: $search-subtle;
+  letter-spacing: 0.05em;
+  background: $search-surface-muted;
+}
+
+@media screen and (max-width: 768px) {
+  .search-trigger {
+    min-width: 40px;
+    padding: 6px 8px;
+    border: none;
+    background: transparent;
+
+    .search-text,
+    .search-shortcut {
+      display: none;
+    }
+  }
+
+  .search-modal {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .search-overlay {
+    padding-top: 0;
+  }
+}
