@@ -69,22 +69,25 @@ steps:
     branches:
       aws:
         label: AWS
+        value: aws-cli
         description: EC2 + CodePipeline path
         icon: fa-aws
         icon_type: fa-brands
       gcp:
         label: Google Cloud
+        value: gcli
         description: Compute Engine + Cloud Build path
         icon: fa-google
         icon_type: fa-brands
       azure:
         label: Azure
+        value: azcli
         description: VM + Pipelines path
         icon: fa-microsoft
         icon_type: fa-brands
   - id: infra-setup
     kind: section_header
-    title: Infrastructure Setup
+    title: ${{.choose-cloud.value}} Infrastructure Setup
     icon: fa-server
   - id: infra-intro
     kind: narrative

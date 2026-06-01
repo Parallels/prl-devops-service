@@ -231,6 +231,11 @@ $uce-radius-sm: 8px;
   transition: width 0.4s ease, background-color 0.4s ease;
 }
 
+/* Success color when use case is complete */
+#uce-progress-fill.complete {
+  background-color: $uce-success;
+}
+
 @media screen and (max-width: 480px) {
   .uce-topbar {
     flex-direction: column;
@@ -597,6 +602,7 @@ $uce-radius-sm: 8px;
   font-size: 13px;
   font-weight: 700;
   color: $uce-primary;
+  transform: translateY(1px);
 }
 
 

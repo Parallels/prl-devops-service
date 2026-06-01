@@ -151,6 +151,13 @@
     var isCompleted = UCEState.isStepCompleted(useCaseId, step.id);
     var isCurrent = (index === currentIndex);
 
+    // If the last step is completed, treat it as completed — not current
+    var isLastStep = (index === visibleSteps.length - 1);
+    if (isLastStep && isCompleted) {
+      isCurrent = false;
+      isCompleted = true;
+    }
+
     // Current step takes precedence — never mark it completed
     if (isCurrent) {
       el.classList.add('uce-flow-step--current');
@@ -226,7 +233,13 @@
     nextBtn.className = 'uce-btn uce-btn--primary uce-step-nav-btn';
     nextBtn.setAttribute('data-uce-action', 'next');
     var isLastStep = (index === visibleSteps.length - 1);
-    nextBtn.innerHTML = (isLastStep ? 'Finish' : 'Next') + ' <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+    var allCompleted = visibleSteps.every(function(s) { return UCEState.isStepCompleted(useCaseId, s.id); });
+    if (allCompleted) {
+      // Hide nav row entirely — use case is complete
+      navRow.style.display = 'none';
+    } else {
+      nextBtn.innerHTML = (isLastStep ? 'Finish' : 'Next') + ' <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+    }
 
     // Lock Next button on interactive steps until user acts
     var interactiveKinds = ['choice', 'quiz'];
@@ -2449,10 +2462,15 @@
       }
     }
     
-    // Fall back to currentIndex if not found
-    if (currentStepIndex === -1) currentStepIndex = currentIndex;
-    if (activeStepIndex === -1) activeStepIndex = currentIndex;
-    
+    // If use case is fully complete, no step is current
+    var isComplete = (currentStepId === '__complete__');
+
+    // Fall back to currentIndex if not found (but only when NOT complete)
+    if (!isComplete) {
+      if (currentStepIndex === -1) currentStepIndex = currentIndex;
+      if (activeStepIndex === -1) activeStepIndex = currentIndex;
+    }
+
     // First pass: remove all dynamic elements and classes
     for (var i = 0; i < stepEls.length; i++) {
       var el = stepEls[i];
@@ -2519,6 +2537,22 @@
           }
         }
       }
+      // When use case is complete — treat everything as completed
+      else if (isComplete) {
+        el.classList.add('uce-flow-step--completed');
+        // Add chevron to completed step
+        var header = el.querySelector('.uce-step-header');
+        if (header) {
+          var chevronBtn = document.createElement('button');
+          chevronBtn.className = 'uce-step-toggle';
+          chevronBtn.setAttribute('aria-label', 'Toggle step content');
+          chevronBtn.innerHTML = '<svg class="uce-step-chevron" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7l5 5 5-5"/></svg>';
+          header.appendChild(chevronBtn);
+        }
+        // Update number to checkmark
+        var numEl = el.querySelector('.uce-step-number');
+        if (numEl) numEl.innerHTML = '<i class="fa-solid fa-check"></i>';
+      }
       // Step is completed
       else if (UCEState.isStepCompleted(useCaseId, stepId)) {
         el.classList.add('uce-flow-step--completed');
@@ -2556,6 +2590,11 @@
         UCEState.completeStep(useCaseId, sid);
       }
     }
+    // Set current_step to 'complete' sentinel so no step is treated as "current"
+    var state = UCEState.getState(useCaseId);
+    state.current_step = '__complete__';
+    state.active_step = null;
+    state.updated_at = new Date().toISOString();
     UCEState.save();
 
     // Check for return-to-origin
@@ -2578,7 +2617,10 @@
       }
     } catch (e) { /* noop */ }
 
-    // No return — emit completion event
+    // No return — re-render to hide Finish button, update breadcrumb
+    renderFlow();
+    updateStepStates();
+    updateProgress();
     emitEvent('use-case-complete', { useCaseId: useCaseId });
   }
 
@@ -2595,6 +2637,11 @@
     var total = steps.length;
     var completed = UCEState.getCompletedCount(useCaseId);
     var pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    // Add .complete class when all steps are done
+    if (dom.progressFill) {
+      dom.progressFill.className = (completed >= total) ? 'uce-progress-fill complete' : 'uce-progress-fill';
+    }
 
     if (dom.progressFill) {
       dom.progressFill.style.width = pct + '%';
