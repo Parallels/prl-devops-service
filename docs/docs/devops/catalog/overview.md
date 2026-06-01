@@ -5,6 +5,7 @@ subtitle: Overview
 menubar: docs_devops_menu
 show_sidebar: false
 toc: true
+show_copy_button: true
 full_width: true
 ---
 

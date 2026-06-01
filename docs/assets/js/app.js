@@ -132,6 +132,52 @@ window.onload = function () {
       }
     });
   }
+
+  // Mobile TOC toggle — show doc-toc-right as floating panel
+  const tocToggle = document.querySelector('.doc-toc-toggle');
+  const docTocRight = document.querySelector('.doc-toc-right');
+
+  if (tocToggle && docTocRight) {
+    // Create overlay element
+    let tocOverlay = document.querySelector('.doc-toc-overlay');
+    if (!tocOverlay) {
+      tocOverlay = document.createElement('div');
+      tocOverlay.className = 'doc-toc-overlay';
+      document.body.appendChild(tocOverlay);
+    }
+
+    function openToc() {
+      docTocRight.classList.add('is-mobile-open');
+      tocOverlay.classList.add('is-visible');
+      tocToggle.classList.add('is-open');
+      tocToggle.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeToc() {
+      docTocRight.classList.remove('is-mobile-open');
+      tocOverlay.classList.remove('is-visible');
+      tocToggle.classList.remove('is-open');
+      tocToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    tocToggle.addEventListener('click', function () {
+      const isOpen = docTocRight.classList.contains('is-mobile-open');
+      if (isOpen) {
+        closeToc();
+      } else {
+        openToc();
+      }
+    });
+
+    tocOverlay.addEventListener('click', closeToc);
+
+    // Close on escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && docTocRight.classList.contains('is-mobile-open')) {
+        closeToc();
+      }
+    });
+  }
 };
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -196,7 +242,20 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-  const copyMenu = document.querySelector('[data-doc-copy-menu]');
+  // Find the visible copy menu (mobile nav version or desktop toc-right version)
+  const allMenus = document.querySelectorAll('[data-doc-copy-menu]');
+  let copyMenu = null;
+  for (let i = 0; i < allMenus.length; i++) {
+    const style = window.getComputedStyle(allMenus[i]);
+    if (style.display !== 'none') {
+      copyMenu = allMenus[i];
+      break;
+    }
+  }
+  // Fallback: use first menu if none appear visible (e.g., during SSR)
+  if (!copyMenu && allMenus.length > 0) {
+    copyMenu = allMenus[0];
+  }
   const pageContent = document.querySelector('.page-body .content');
   if (!copyMenu || !pageContent) {
     return;

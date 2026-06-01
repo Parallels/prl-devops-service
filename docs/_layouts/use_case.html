@@ -12,7 +12,7 @@ layout: default
     <nav class="breadcrumb uce-breadcrumb-nav" aria-label="breadcrumbs">
       <ul>
         <li><a href="{{ site.baseurl }}/docs/">Docs</a></li>
-        <li {% if use_case.group %}class="is-active"{% endif %}><span>{{ use_case.group | default: 'Use Cases' }}</span></li>
+        <li><a href="{{ site.baseurl }}/docs/use-cases/">Use Cases</a></li>
         {% if use_case.category %}
         <li class="is-active"><span>{{ use_case.category }}</span></li>
         {% endif %}
@@ -93,4 +93,4 @@ layout: default
 </script>
 <script src="{{ site.baseurl }}/assets/js/uce-state.js?v4"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
-<script src="{{ site.baseurl }}/assets/js/uce-engine.js?v78"></script>
+<script src="{{ site.baseurl }}/assets/js/uce-engine.js?v81"></script>

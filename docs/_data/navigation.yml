@@ -11,7 +11,7 @@
         - name: Use Cases
           icon: fa-regular fa-folder-open
           description: Common workflows for catalogs, orchestration, CI/CD, and automation.
-          link: /docs/devops/
+          link: /docs/use-cases/
     - title: Platform
       items:
         - name: Native Desktop UI
@@ -39,9 +39,9 @@
   sections:
     - title: Get Started
       items:
-        - name: Run a Golden Image Catalog
-          description: Store, share, and pull VM images from a remote catalog.
-          link: /docs/use-cases/
+        - name: Run a Devops Remote Catalog
+          description: Create and manage VM images in a remote catalog.
+          link: /examples/remote-catalog/
     - title: Guides
       items:
         - name: Control Multiple Hosts

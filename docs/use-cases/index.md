@@ -18,13 +18,14 @@ permalink: /docs/use-cases/
   </div>
 
   <div class="uci-grid" id="uci-grid">
-    {% assign use_cases = site.pages | where_exp: "item", "item.path contains 'use-cases/' and item.path != 'index.md'" | sort: 'title' %}
+    {% assign use_cases = site.pages | where_exp: "item", "item.path contains 'use-cases/' and item.path != 'use-cases/index.md'" | sort: 'order' %}
     {% for uc in use_cases %}
     <article class="uci-card"
       data-title="{{ uc.title | escape }}"
       data-category="{{ uc.category | default: 'Uncategorized' | slugify }}"
       data-group="{{ uc.group | default: 'General' | slugify }}"
       data-level="{{ uc.level | default: '' }}"
+      data-uce-id="{{ uc.uce_data | default: '' }}"
       data-tags="{{ uc.tags | join: ',' }}"
       data-unlocks="{{ uc.unlocks | size }}">
       <div class="uci-card-inner">
@@ -119,197 +120,53 @@ permalink: /docs/use-cases/
     emptyMsg.style.display = visible === 0 ? '' : 'none';
   }
 
+  // Click on entire card navigates to the card's link
+  cards.forEach(function(card) {
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', function(e) {
+      // Don't double-navigate if clicking a nested link
+      if (e.target.tagName === 'A') return;
+      var link = card.querySelector('.uci-card-title a');
+      if (link) window.location.href = link.getAttribute('href');
+    });
+  });
+
+  // Mark cards for use cases that are completed or in progress
+  var STORAGE_PREFIX = 'uce_progress:';
+  cards.forEach(function(card) {
+    var uceId = (card.dataset.uceId || '').trim();
+    if (!uceId) return;
+    try {
+      var raw = localStorage.getItem(STORAGE_PREFIX + uceId);
+      if (!raw) return;
+      var state = JSON.parse(raw);
+      if (!state) return;
+
+      var badge = null;
+
+      // Fully completed — green checkmark badge
+      if (state.current_step === '__complete__') {
+        card.classList.add('uci-card--completed');
+        badge = document.createElement('span');
+        badge.className = 'uci-badge uci-badge--completed';
+        badge.innerHTML = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Done';
+      }
+      // Partially completed — show progress
+      else if (state.completed_steps && state.completed_steps.length > 0) {
+        badge = document.createElement('span');
+        badge.className = 'uci-badge uci-badge--progress';
+        badge.textContent = state.completed_steps.length + ' steps done';
+      }
+
+      if (badge) {
+        var meta = card.querySelector('.uci-card-meta');
+        if (meta) meta.appendChild(badge);
+      }
+    } catch (e) {
+      // Ignore corrupted localStorage data
+    }
+  });
+
   searchInput.addEventListener('input', filterCards);
 })();
 </script>
-
-<style>
-.use-cases-index {
-  max-width: 1024px;
-  margin: 0 auto;
-  padding: 32px 24px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.uci-header {
-  margin-bottom: 32px;
-}
-
-.uci-header h1 {
-  font-size: 28px;
-  font-weight: 800;
-  color: #303236;
-  margin: 0 0 8px;
-}
-
-.uci-description {
-  font-size: 15px;
-  color: #7b7d85;
-  margin: 0 0 20px;
-}
-
-.uci-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-
-.uci-search-input {
-  padding: 8px 16px;
-  border: 1px solid #e2e2e2;
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: inherit;
-  width: 280px;
-  max-width: 100%;
-  transition: border-color 0.2s;
-}
-
-.uci-search-input:focus {
-  outline: none;
-  border-color: #3d73d8;
-}
-
-.uci-filter-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.uci-filter-btn {
-  padding: 4px 10px;
-  border: 1px solid #e2e2e2;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  background: #fff;
-  color: #7b7d85;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-}
-
-.uci-filter-btn--active {
-  background: #3d73d8;
-  color: #fff;
-  border-color: #3d73d8;
-}
-
-.uci-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
-}
-
-.uci-card {
-  background: #fff;
-  border: 1px solid #e2e2e2;
-  border-radius: 12px;
-  overflow: hidden;
-  transition: box-shadow 0.2s, border-color 0.2s;
-}
-
-.uci-card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-  border-color: #3d73d8;
-}
-
-.uci-card-inner {
-  padding: 20px;
-}
-
-.uci-card-meta {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.uci-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.uci-badge--beginner {
-  background: rgba(34,197,94,0.1);
-  color: #22c55e;
-}
-
-.uci-badge--intermediate {
-  background: rgba(59,130,246,0.1);
-  color: #3b82f6;
-}
-
-.uci-badge--advanced {
-  background: rgba(239,68,68,0.1);
-  color: #ef4444;
-}
-
-.uci-meta-item {
-  font-size: 12px;
-  color: #7b7d85;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.uci-card-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #303236;
-  margin: 0 0 8px;
-}
-
-.uci-card-title a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.uci-card-title a:hover {
-  color: #3d73d8;
-}
-
-.uci-card-desc {
-  font-size: 14px;
-  color: #7b7d85;
-  line-height: 1.5;
-  margin: 0 0 12px;
-}
-
-.uci-card-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.uci-tag {
-  padding: 2px 8px;
-  background: #f6f6f6;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #7b7d85;
-}
-
-.uci-empty {
-  text-align: center;
-  padding: 48px 24px;
-  color: #7b7d85;
-  font-size: 15px;
-}
-
-@media screen and (max-width: 600px) {
-  .uci-grid {
-    grid-template-columns: 1fr;
-  }
-  .uci-search-input {
-    width: 100%;
-  }
-}
-</style>

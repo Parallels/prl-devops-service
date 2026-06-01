@@ -1,0 +1,221 @@
+// Use Cases Index Page — Styles
+
+$uci-primary: #3d73d8;
+$uci-grey: #7b7d85;
+$uci-border: #e2e2e2;
+$uci-bg: #f6f6f6;
+
+.use-cases-index {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.uci-header {
+  margin-bottom: 32px;
+}
+
+.uci-header h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #303236;
+  margin: 0 0 8px;
+}
+
+.uci-description {
+  font-size: 15px;
+  color: $uci-grey;
+  margin: 0 0 20px;
+}
+
+.uci-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.uci-search-input {
+  padding: 8px 16px;
+  border: 1px solid $uci-border;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  width: 280px;
+  max-width: 100%;
+  transition: border-color 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: $uci-primary;
+  }
+}
+
+.uci-filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.uci-filter-btn {
+  padding: 4px 10px;
+  border: 1px solid $uci-border;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #fff;
+  color: $uci-grey;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.uci-filter-btn--active {
+  background: $uci-primary;
+  color: #fff;
+  border-color: $uci-primary;
+}
+
+.uci-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.uci-card {
+  background: #fff;
+  border: 1px solid $uci-border;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.2s, border-color 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border-color: $uci-primary;
+  }
+
+  &--completed {
+    background: rgba(34, 197, 94, 0.02);
+    border-color: #22c55e;
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.12);
+      border-color: #22c55e;
+    }
+  }
+}
+
+.uci-card-inner {
+  padding: 20px;
+}
+
+.uci-card-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.uci-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  svg {
+    margin-right: 2px;
+    vertical-align: -1px;
+  }
+}
+
+.uci-badge--completed {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.uci-badge--progress {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.uci-badge--beginner {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.uci-badge--intermediate {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.uci-badge--advanced {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.uci-meta-item {
+  font-size: 12px;
+  color: $uci-grey;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.uci-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #303236;
+  margin: 0 0 8px;
+
+  a {
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+      color: $uci-primary;
+    }
+  }
+}
+
+.uci-card-desc {
+  font-size: 14px;
+  color: $uci-grey;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.uci-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.uci-tag {
+  padding: 2px 8px;
+  background: $uci-bg;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: $uci-grey;
+}
+
+.uci-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: $uci-grey;
+  font-size: 15px;
+}
+
+@media screen and (max-width: 600px) {
+  .uci-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .uci-search-input {
+    width: 100%;
+  }
+}

@@ -62,8 +62,11 @@
               {% for prereq in intro.prerequisites.hard %}
               <li>
                 <i class="uce-prereq-check fa-solid fa-check"></i>
-                {{ prereq }}
+                <span class="uce-prereq-text">
+                  {{ prereq }}
+                </span>
               </li>
+
               {% endfor %}
             </ul>
           </div>
@@ -75,7 +78,9 @@
               {% for prereq in intro.prerequisites.soft %}
               <li>
                 <i class="uce-prereq-info fa-solid fa-circle-info"></i>
-                {{ prereq }}
+                <span class="uce-prereq-text">
+                  {{ prereq }}
+                </span>
               </li>
               {% endfor %}
             </ul>

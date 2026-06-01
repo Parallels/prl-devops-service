@@ -62,6 +62,69 @@ body {
     position: sticky;
     top: 120px;
     z-index: 900;
+
+    .doc-toc-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-radius: 6px;
+      flex-shrink: 0;
+      padding: 0;
+      transition: background-color 0.15s ease;
+
+      &:hover {
+        background-color: $light-hover-color;
+      }
+
+      .doc-toc-icon {
+        display: block;
+      }
+
+      &.is-open {
+        background-color: #eef0fb;
+
+        .doc-toc-icon {
+          stroke: #485fc7;
+        }
+      }
+    }
+
+    // Copy menu inside doc-nav (mobile only) — reuses global .doc-copy-* styles
+    .doc-nav-copy-menu {
+      display: none;
+      margin-left: auto;
+    }
+
+    @media screen and (max-width: 1199px) {
+      .doc-nav-copy-menu {
+        display: block;
+      }
+
+      .doc-toc-toggle {
+        display: flex;
+      }
+    }
+  }
+
+  @media screen and (max-width: 1199px) {
+    .body-columns {
+      display: block;
+      max-width: 880px;
+      padding: 0 24px;
+
+      @media screen and (max-width: 768px) {
+        padding: 0 20px;
+      }
+    }
+
+    .doc-toc-right .doc-copy-menu {
+      display: none !important;
+    }
   }
 
   .body-columns {
@@ -77,16 +140,6 @@ body {
 
     &.full-width {
       max-width: none;
-    }
-
-    @media screen and (max-width: 1199px) {
-      display: block;
-      max-width: 880px;
-      padding: 0 24px;
-    }
-
-    @media screen and (max-width: 768px) {
-      padding: 0 20px;
     }
   }
 
@@ -551,6 +604,62 @@ p:has(> img) {
   }
 }
 
+// ---- Global copy menu styles (shared by doc-toc-right and doc-nav) ----
+
+.doc-copy-split {
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 100%;
+  border: 1px solid $border-color;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.doc-copy-button,
+.doc-copy-toggle,
+.doc-copy-menu-item {
+  border: 0;
+  color: $font-base-color;
+  background: transparent;
+  font-family: 'Open Sans';
+  cursor: pointer;
+}
+
+.doc-copy-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.doc-copy-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  min-height: 32px;
+  border-left: 1px solid $border-color;
+  border-radius: 0 5px 5px 0;
+}
+
+.doc-copy-button:hover,
+.doc-copy-toggle:hover {
+  background: $light-hover-color;
+}
+
+.doc-copy-button svg,
+.doc-copy-toggle svg,
+.doc-copy-menu-item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  fill: currentColor;
+  opacity: 0.72;
+}
+
 .doc-toc-right {
   width: 224px;
   flex-shrink: 0;
@@ -563,114 +672,6 @@ p:has(> img) {
   .doc-copy-menu {
     position: relative;
     margin-bottom: 28px;
-  }
-
-  .doc-copy-split {
-    display: inline-flex;
-    align-items: stretch;
-    max-width: 100%;
-    border: 1px solid $border-color;
-    border-radius: 6px;
-    background: #fff;
-  }
-
-  .doc-copy-button,
-  .doc-copy-toggle,
-  .doc-copy-menu-item {
-    border: 0;
-    color: $font-base-color;
-    background: transparent;
-    font-family: 'Open Sans';
-    cursor: pointer;
-  }
-
-  .doc-copy-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 32px;
-    padding: 0 10px;
-    font-size: 13px;
-    white-space: nowrap;
-  }
-
-  .doc-copy-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    min-height: 32px;
-    border-left: 1px solid $border-color;
-    border-radius: 0 5px 5px 0;
-  }
-
-  .doc-copy-button:hover,
-  .doc-copy-toggle:hover {
-    background: $light-hover-color;
-  }
-
-  .doc-copy-button svg,
-  .doc-copy-toggle svg,
-  .doc-copy-menu-item svg {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-    fill: currentColor;
-    opacity: 0.72;
-  }
-
-  .doc-copy-dropdown {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 2000;
-    width: 244px;
-    padding: 6px;
-    border: 1px solid $border-color;
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 12px 28px rgba(31, 35, 40, 0.14);
-    max-height: calc(100vh - 24px);
-    overflow-y: auto;
-  }
-
-  .doc-copy-menu-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    width: 100%;
-    padding: 10px;
-    border-radius: 6px;
-    text-align: left;
-  }
-
-  .doc-copy-menu-item:hover,
-  .doc-copy-menu-item.is-primary {
-    background: #f0f2f5;
-  }
-
-  .doc-copy-menu-item.is-primary {
-    outline: 2px solid #1f6feb;
-    outline-offset: -2px;
-  }
-
-  .doc-copy-menu-item span {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .doc-copy-menu-item strong {
-    font-size: 13px;
-    line-height: 1.25;
-  }
-
-  .doc-copy-menu-item small {
-    color: $font-lighter-color;
-    font-size: 12px;
-    line-height: 1.35;
   }
 
   .doc-copy-menu.is-copied .doc-copy-button {

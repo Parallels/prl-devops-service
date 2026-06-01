@@ -85,20 +85,16 @@ steps:
         description: VM + Pipelines path
         icon: fa-microsoft
         icon_type: fa-brands
-  - id: infra-setup
-    kind: section_header
-    title: ${{.choose-cloud.value}} Infrastructure Setup
-    icon: fa-server
   - id: infra-intro
     kind: narrative
-    title: Setting Up Your Infrastructure
+    title: Setting Up Your ${{ choose-cloud.label }} Infrastructure
     duration: "~5 min"
     body: >
       Now we'll prepare your virtual machine for the CI/CD pipeline.
       The exact commands depend on your cloud provider choice above.
     panel:
       kind: terminal
-      cmd: "sudo apt update && sudo apt install -y docker.io git curl"
+      cmd: "sudo apt update && sudo apt install -y docker.io git curl ${{ choose-cloud.value }}"
       output: |
         Reading package lists... Done
         Building dependency tree... Done
@@ -109,7 +105,7 @@ steps:
       - terraform-basics
   - id: infra-intro1
     kind: narrative
-    title: Setting Up Your Infrastructure Now
+    title: Setting Up Your ${{ choose-cloud.label }} Infrastructure Now
     duration: "~5 min"
     layout: rows
     body: >
@@ -157,40 +153,6 @@ steps:
       the basics of Infrastructure as Code.
     side_quests:
       - terraform-basics
-  - id: pipeline-setup
-    kind: section_header
-    title: Pipeline Configuration
-    icon: gear
-  - id: pipeline-intro
-    kind: narrative
-    title: Configuring Your CI/CD Pipeline
-    duration: "~5 min"
-    body: >
-      Now let's create the pipeline configuration file. This YAML file
-      defines your build, test, and deploy stages. The walkthrough below
-      illustrates the full pipeline flow from trigger to health check.
-    panel:
-      kind: walkthrough
-      items_ref: ci-cd-walkthrough
-      highlight_ids: ["build-stage", "test-stage"]
-      auto_advance: false
-  - id: pipeline-walkthrough-panel
-    kind: narrative
-    title: Pipeline Flow Explained
-    duration: "~4 min"
-    body: >
-      A CI/CD pipeline follows a linear flow: trigger, build, test, deploy,
-      and verify. The walkthrough on the right shows each stage and its role.
-      Click through each step to understand how artifacts move through the pipeline.
-    panel:
-      kind: walkthrough
-      items_ref: ci-cd-walkthrough
-      main_image: "pipeline-architecture.png"
-      highlight_ids:
-        - test-stage
-        - deploy-stage
-        - health-check
-      auto_advance: false
   - id: pipeline-edit
     kind: code_editor
     title: Write Your Pipeline Configuration
@@ -231,10 +193,6 @@ steps:
         correct: false
     feedback_correct: "Correct! Build, then test, then deploy is the standard order."
     feedback_incorrect: "Not quite. Think about the logical flow: you build first, then test the build, then deploy the tested artifact."
-  - id: verify
-    kind: section_header
-    title: Verification
-    icon: check-circle
   - id: verify-final
     kind: checkpoint
     title: Final Verification
@@ -249,20 +207,6 @@ steps:
         response_path: '$.pipeline == "active"'
         response_type: json
       on_failure: retry-only
-  - id: multi-cloud-summary
-    kind: narrative
-    title: Multi-Cloud Deployment Summary
-    duration: "~3 min"
-    body: >
-      You've configured your CI/CD pipeline for a single cloud provider.
-      The walkthrough below shows how the pipeline adapts across AWS, GCP,
-      and Azure. Each provider has different tooling but follows the same
-      build-test-deploy pattern.
-    panel:
-      kind: walkthrough
-      items_ref: ci-cd-walkthrough
-      highlight_ids: ["trigger", "deploy-stage", "health-check"]
-      auto_advance: true
   - id: terminal-summary
     kind: narrative
     title: Summary of Commands

@@ -34,6 +34,8 @@
     overflow-y: auto;
     background: #fff;
     box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+    border-bottom-right-radius: 10px;
+    border-top-right-radius: 10px;
 
     &.is-open {
       transform: translateX(0);
@@ -121,7 +123,7 @@
     .menu-group-list {
       list-style: none;
       margin: 0;
-      padding: 2px 0;
+      padding: 2px 0 0 15px;
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.3s ease;
@@ -215,6 +217,7 @@
         -webkit-appearance: none;
         -moz-appearance: none;
         appearance: none;
+        position: relative;
 
         .menu-item-icon {
           display: flex;
@@ -265,6 +268,172 @@
         &.is-expanded {
           .menu-item-chevron {
             transform: rotate(90deg);
+          }
+
+          &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background-color: #485fc7;
+            border-radius: 2px;
+          }
+        }
+      }
+
+      .sub-item-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        border-left: 3px solid #485fc7;
+        margin-left: -3px;
+
+        &.is-show {
+          max-height: 2000px;
+        }
+
+        &.level-2 {
+          border-left: 3px solid #485fc7;
+          margin-left: -3px;
+        }
+      }
+
+      .sub-item {
+        &.level-1 {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 8px 12px 8px 12px;
+          border-radius: 8px;
+          text-decoration: none;
+          transition: background-color 0.15s ease, color 0.15s ease;
+          cursor: pointer;
+          border: none;
+          background: none;
+          font-family: 'Open Sans';
+          font-size: 14px;
+          font-weight: 400;
+          color: $font-base-color;
+          text-align: left;
+          line-height: inherit;
+          text-transform: none;
+          letter-spacing: normal;
+          outline: none;
+          box-shadow: none;
+          background-color: transparent !important;
+          color: inherit;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          appearance: none;
+          position: relative;
+
+          .menu-item-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+
+            i {
+              font-size: 14px;
+            }
+          }
+
+          .menu-item-text {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .menu-item-chevron {
+            display: flex;
+            align-items: center;
+            transition: transform 0.2s ease;
+            flex-shrink: 0;
+
+            i {
+              font-size: 10px;
+              color: $font-lighter-color;
+            }
+          }
+
+          &:hover {
+            background-color: $light-hover-color;
+          }
+
+          &.is-expanded {
+            .menu-item-chevron {
+              transform: rotate(90deg);
+            }
+
+            &::before {
+              content: '';
+              position: absolute;
+              left: 0;
+              top: 0;
+              bottom: 0;
+              width: 3px;
+              background-color: #485fc7;
+              border-radius: 2px;
+            }
+          }
+        }
+
+        &.level-2 {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 8px 12px 8px 12px;
+          border-radius: 8px;
+          text-decoration: none;
+          transition: background-color 0.15s ease, color 0.15s ease;
+          cursor: pointer;
+          font-family: 'Open Sans';
+          font-size: 14px;
+          font-weight: 400;
+          color: $font-base-color;
+
+          .menu-item-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+
+            i {
+              font-size: 14px;
+            }
+          }
+
+          .menu-item-text {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          &:hover {
+            background-color: $light-hover-color;
+          }
+
+          &.is-active {
+            background-color: #eef0fb;
+            color: #485fc7;
+            font-weight: 500;
+
+            .menu-item-icon i {
+              color: #485fc7;
+            }
           }
         }
       }

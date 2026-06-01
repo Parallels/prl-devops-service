@@ -6,6 +6,7 @@ level: intermediate
 duration: "~25 min"
 group: Use Cases
 category: DevOps
+order: 2
 tags:
   - ci-cd
   - devops

@@ -27,6 +27,105 @@ var UCEState = (function () {
     return STORAGE_PREFIX + id;
   }
 
+  /* ── Condition Evaluator ────────────────────────────────────────── */
+
+  /**
+   * Evaluate a single condition like "choose-cloud.label == 'aws'".
+   * Supported operators: ==, !=, =~, !~
+   * Returns boolean.
+   */
+  function _evalCondition(condition, stepMap, state) {
+    if (!condition) return true;
+
+    /* Parse: stepId.field operator 'value' */
+    var m = String(condition).match(/^([^.]+)\.([^=]+?)\s*(==|!=|=~|!~)\s*['"](.*)['"]\s*$/);
+    if (!m) {
+      /* Try without quotes: stepId.field == value */
+      m = String(condition).match(/^([^.]+)\.([^=]+?)\s*(==|!=|=~|!~)\s*(.+)$/);
+      if (!m) return true; /* Unparseable — assume true */
+    }
+
+    var refStepId = m[1];
+    var refField = m[2].trim();
+    var op = m[3];
+    var target = m[4].trim();
+
+    var step = stepMap[refStepId];
+    if (!step) return false;
+
+    var actual = _resolveRef(refStepId, refField, step, state);
+    if (actual === null) return false;
+
+    actual = String(actual);
+    target = String(target);
+
+    switch (op) {
+      case '==': return actual === target;
+      case '!=': return actual !== target;
+      case '=~': return new RegExp(target).test(actual);
+      case '!~': return !new RegExp(target).test(actual);
+      default: return false;
+    }
+  }
+
+  /**
+   * Resolve a reference like "choose-cloud.label" against state.
+   */
+  function _resolveRef(stepId, field, step, state) {
+    if (step.kind === 'choice' && step.branches) {
+      var chosen = state.branches_chosen[stepId];
+      if (chosen && step.branches[chosen]) {
+        return step.branches[chosen][field];
+      }
+    } else if (step.kind === 'quiz' && step.options) {
+      var letter = state.quiz_answers[stepId];
+      if (letter) {
+        var opts = step.options;
+        if (Array.isArray(opts)) {
+          for (var o = 0; o < opts.length; o++) {
+            if (opts[o].letter === letter) return opts[o][field];
+          }
+        } else {
+          return opts[letter] ? opts[letter][field] : null;
+        }
+      }
+    } else if (step.kind === 'side_quest') {
+      return state.side_quests_completed.indexOf(stepId) !== -1 ? 'completed' : 'pending';
+    } else {
+      return step[field] !== undefined ? step[field] : null;
+    }
+    return null;
+  }
+
+  /**
+   * Evaluate an if-condition string (supports && and ||).
+   */
+  function _evaluateCondition(condition, stepMap, state) {
+    if (!condition) return true;
+    /* Split on || first (lowest precedence) */
+    var orParts = String(condition).split(/\s*\|\|\s*/);
+    for (var oi = 0; oi < orParts.length; oi++) {
+      var orGroup = orParts[oi];
+      /* Split on && */
+      var andParts = orGroup.split(/\s*&\&\s*/);
+      var allTrue = true;
+      for (var ai = 0; ai < andParts.length; ai++) {
+        var part = andParts[ai].trim();
+        /* Strip negation */
+        var negated = false;
+        if (part.indexOf('!') === 0) {
+          negated = true;
+          part = part.substring(1).trim();
+        }
+        var result = _evalCondition(part, stepMap, state);
+        if (negated) result = !result;
+        if (!result) { allTrue = false; break; }
+      }
+      if (allTrue) return true;
+    }
+    return false;
+  }
+
   /** Load a single use case's state from localStorage. */
   function _loadFromStorage(id) {
     try {
@@ -253,6 +352,11 @@ var UCEState = (function () {
     for (var i = 0; i < steps.length; i++) {
       var step = steps[i];
 
+      /* ── if-condition gate ─────────────────────────────────── */
+      if (step.if && !_evaluateCondition(step.if, stepMap, state)) {
+        continue;
+      }
+
       // Section headers and narrative steps are always visible
       if (step.kind === 'section_header') {
         visible.push(step);
@@ -380,6 +484,7 @@ var UCEState = (function () {
     getVisibleSteps: getVisibleSteps,
     getTotalSteps: getTotalSteps,
     getCompletedCount: getCompletedCount,
-    recordQuizAnswer: recordQuizAnswer
+    recordQuizAnswer: recordQuizAnswer,
+    _evaluateCondition: _evaluateCondition
   };
 })();

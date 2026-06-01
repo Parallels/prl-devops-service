@@ -47,20 +47,18 @@ $uce-radius-sm: 8px;
   color: $font-lighter-color;
 }
 
-.uce-breadcrumb-nav li:not(:last-child)::after {
-  content: '\203A';
-  color: $font-lighter-color;
-  font-size: 14px;
-}
+
 
 .uce-breadcrumb-nav li.is-active {
   color: $font-base-color;
   font-weight: 600;
+  font-size: 13px;
 }
 
 .uce-breadcrumb-nav a {
   color: $font-lighter-color;
   text-decoration: none;
+  font-weight: 600;
 }
 
 .uce-breadcrumb-nav a:hover {
@@ -162,11 +160,7 @@ $uce-radius-sm: 8px;
   color: $font-lighter-color;
 }
 
-.uce-breadcrumb-nav li:not(:last-child)::after {
-  content: '\203A';
-  color: $font-lighter-color;
-  font-size: 14px;
-}
+
 
 .uce-breadcrumb-nav li.is-active {
   color: $font-base-color;
@@ -176,6 +170,7 @@ $uce-radius-sm: 8px;
 .uce-breadcrumb-nav a {
   color: $font-lighter-color;
   text-decoration: none;
+  font-size: 13px;
 }
 
 .uce-breadcrumb-nav a:hover {
@@ -294,14 +289,11 @@ $uce-radius-sm: 8px;
 .uce-intro-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px;
-
 }
 
 @media (min-width: 768px) {
   .uce-intro-grid {
     grid-template-columns: 1fr 320px;
-    gap: 32px;
   }
 
   .uce-intro-grid--single {
@@ -384,7 +376,7 @@ $uce-radius-sm: 8px;
 .uce-prereq-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 24px;
 }
 
 @media (max-width: 600px) {
@@ -437,6 +429,7 @@ $uce-radius-sm: 8px;
   font-size: 12px;
   line-height: 1.5;
   color: $font-base-color;
+  width: 100%;
 }
 
 .uce-prereq-check {
@@ -453,6 +446,10 @@ $uce-radius-sm: 8px;
   font-size: 14px;
   color: $uce-primary;
   transform: translateY(2px);
+}
+
+.uce-prereq-text {
+  flex-grow: 1;
 }
 
 /* Architecture Diagram */
@@ -1687,6 +1684,10 @@ $uce-radius-sm: 8px;
   border-radius: $uce-radius;
   overflow: hidden;
   background: #fff;
+
+  .uce-panel-tabs-wrapper {
+    padding: 10px 15px;
+  }
 }
 
 .uce-editor-label {
@@ -1737,7 +1738,33 @@ $uce-radius-sm: 8px;
   transition: opacity 0.2s;
 }
 
+/* Editor copy button */
+.uce-editor-copy-btn {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: $font-lighter-color;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.uce-editor-copy-btn:hover {
+  color: $uce-primary;
+  background: $uce-primary-light;
+}
+
 /* Validation result variants */
+
+/* ── Tabbed code editor ─────────────────────────────────────────── */
+
+.uce-editor-active {
+  width: 100%;
+}
 .uce-validation-result {
   margin: 16px 0 0;
   padding: 16px;
@@ -1875,7 +1902,7 @@ $uce-radius-sm: 8px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: start;
   padding-left: 10px;
   transition: all 0.4s ease;
   min-width: 0;
@@ -1920,6 +1947,61 @@ $uce-radius-sm: 8px;
   transform: rotate(180deg);
 }
 
+/* ── Panel Tabs (multi-panel narrative) ───────────────────── */
+
+.uce-panel-tabs-wrapper {
+  display: flex;
+  flex-grow: 1;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+
+/* Copy button sits at the far right of the tab bar */
+.uce-panel-tabs-wrapper > .uce-editor-copy-btn {
+  margin-left: auto;
+  padding: 4px 6px;
+}
+
+.uce-panel-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  overflow-x: auto;
+  flex-grow: 1;
+}
+
+.uce-panel-tab {
+  background: none;
+  border: 1px solid $uce-border;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  color: $font-lighter-color;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.uce-panel-tab:hover {
+  color: $uce-primary;
+  border-color: $uce-primary;
+}
+
+.uce-panel-tab--active {
+  color: $uce-primary;
+  border-color: $uce-primary;
+  background: $uce-primary-light;
+}
+
+.uce-panel-active {
+  width: 100%;
+}
+
 /* ── Side Quest Fly-out (Phase 4-01) ─────────────────────────────── */
 
 .uce-sidequest-flyout {
@@ -1939,7 +2021,7 @@ $uce-radius-sm: 8px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 10px 10px 10px 12px;
   background: rgba(59, 130, 246, 0.08);
   cursor: pointer;
   user-select: none;

@@ -79,7 +79,10 @@
     // Set initial active_step and current_step to match current position
     var initState = UCEState.getState(useCaseId);
     if (!initState.active_step) {
-      initState.active_step = visibleSteps[currentIndex].id;
+      // When use case is complete, leave active_step null so updateStepStates doesn't mark anything as --current
+      if (initState.current_step !== '__complete__') {
+        initState.active_step = visibleSteps[currentIndex].id;
+      }
     }
     if (!initState.current_step) {
       initState.current_step = visibleSteps[currentIndex].id;
@@ -92,6 +95,10 @@
     updateStepStates();
     updateProgress();
 
+    /* ── Resolve expressions on already-completed steps (reload scenario) ── */
+    if (window.ExpressionResolver) {
+      window.ExpressionResolver.refreshAllSteps();
+    }
 
     // Bind navigation events
     bindNavigation();
@@ -101,7 +108,7 @@
     checkReturnToOrigin();
 
     // Emit ready event
-    emitEvent('engine-ready', { useCaseId: useCaseId, totalSteps: steps.length });
+    emitEvent('engine-ready', { useCaseId: useCaseId, totalSteps: visibleSteps.length });
   }
 
   /**
@@ -293,6 +300,11 @@
       el.appendChild(bodyEl);
     }
 
+    /* ── Resolve any [[expressions]] in the rendered step ─────────── */
+    if (window.ExpressionResolver) {
+      window.ExpressionResolver.resolveNode(el);
+    }
+
     return el;
   }
 
@@ -368,6 +380,8 @@
       // Reset branch choice
       var resetBtn = e.target.closest('.uce-branch-reset');
       if (resetBtn) {
+        // Block resets when use case is complete
+        if (state.current_step === '__complete__') return;
         e.preventDefault();
         e.stopPropagation();
         var choiceStepId = resetBtn.getAttribute('data-uce-step');
@@ -418,10 +432,37 @@
     // Layout mode: 'columns' (side-by-side) | 'rows' (stacked) | 'auto' (infer from presence of panel)
     var layout = step.layout || 'auto';
 
-    // Determine if we have a panel
-    var panelEl = step.panel ? renderPanel(step.panel) : null;
-    var hasPanel = !!panelEl;
-    var hasBody = !!step.body;
+    /* ── Panel resolution: panels (plural) wins over panel (singular) ── */
+    var panelsConfig = step.panels;
+    var singlePanelConfig = step.panel;
+
+    var visiblePanels = [];
+
+    if (panelsConfig && Array.isArray(panelsConfig) && panelsConfig.length > 0) {
+      /* ── plural panels: filter by if-condition ── */
+      /* Build a full stepMap from module-level steps so _resolveRef
+         can look up referenced steps (choices, quizzes, etc.) */
+      var stepMap = {};
+      for (var si = 0; si < steps.length; si++) {
+        stepMap[steps[si].id] = steps[si];
+      }
+      for (var pi = 0; pi < panelsConfig.length; pi++) {
+        var pCfg = panelsConfig[pi];
+        var panelVisible = true;
+        if (pCfg.if) {
+          panelVisible = UCEState._evaluateCondition(pCfg.if, stepMap, UCEState.getState(useCaseId));
+        }
+        if (panelVisible) {
+          visiblePanels.push(pCfg);
+        }
+      }
+    } else if (singlePanelConfig) {
+      /* ── singular panel (backward compat) ── */
+      visiblePanels.push(singlePanelConfig);
+    }
+
+    var hasPanel = visiblePanels.length > 0;
+    var stepHasBody = !!step.body;
 
     // Resolve effective layout
     var effectiveLayout = layout;
@@ -439,38 +480,133 @@
     var grid = document.createElement('div');
     grid.className = gridCls;
 
-    // Left/top column — narrative body + side quests
-    if (hasBody || (step.side_quests && step.side_quests.length > 0)) {
+    /* ── Decide: single panel (normal) vs multiple panels (tabbed) ── */
+    var isTabbed = visiblePanels.length > 1;
+
+    /* ── Single-panel path: left column + right column (existing behavior) ── */
+    if (!isTabbed) {
+      var pCfg = visiblePanels.length > 0 ? visiblePanels[0] : null;
+
+      var pBody = pCfg ? (pCfg.body || step.body || '') : (step.body || '');
+      var pSqIds = (pCfg && pCfg.side_quests && pCfg.side_quests.length > 0)
+        ? pCfg.side_quests : (step.side_quests || []);
+      var hasLeft = !!pBody || pSqIds.length > 0;
+
+      if (hasLeft) {
+        var leftCol = document.createElement('div');
+        leftCol.className = 'uce-narrative-left';
+
+        if (pBody) {
+          var bodyEl = document.createElement('div');
+          bodyEl.className = 'uce-narrative-body';
+          if (pCfg && pCfg.kind === 'api_call') {
+            var panelTitle = pCfg.title || step.title || '';
+            var stepTag = step.tag || '';
+            var tagHtml = stepTag
+              ? '<span class="uce-step-tag">' + escapeHtml(stepTag) + '</span>'
+              : '';
+            bodyEl.innerHTML =
+              '<div class="uce-api-call-header">' +
+              tagHtml +
+              '<h3 class="uce-api-call-title">' + escapeHtml(panelTitle) + '</h3>' +
+              '</div>' +
+              pBody;
+          } else {
+            bodyEl.innerHTML = pBody;
+          }
+          leftCol.appendChild(bodyEl);
+        }
+
+        if (pSqIds.length > 0) {
+          var sqTriggers = renderSideQuestTriggers(pSqIds, step.id);
+          for (var k = 0; k < sqTriggers.length; k++) {
+            leftCol.appendChild(sqTriggers[k]);
+          }
+        }
+
+        grid.appendChild(leftCol);
+      }
+
+      /* ── Right column — panel (if present) ── */
+      if (hasPanel) {
+        var panelEl = renderPanel(pCfg);
+        if (panelEl) {
+          var rightCol = document.createElement('div');
+          rightCol.className = 'uce-narrative-right';
+
+          if (effectiveLayout === 'columns') {
+            var expandBtn = document.createElement('button');
+            expandBtn.className = 'uce-narrative-expand';
+            expandBtn.setAttribute('aria-label', 'Expand panel');
+            expandBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+            expandBtn.addEventListener('click', function () {
+              var isExpanded = grid.classList.toggle('uce-narrative-grid--expanded');
+              expandBtn.classList.toggle('uce-narrative-expand--active', isExpanded);
+              expandBtn.setAttribute('aria-label', isExpanded ? 'Collapse panel' : 'Expand panel');
+            });
+            rightCol.appendChild(expandBtn);
+          }
+
+          rightCol.appendChild(panelEl);
+          grid.appendChild(rightCol);
+        }
+      }
+    }
+
+    /* ── Tabbed-panel path: one left column + tab bar + one right column ── */
+    if (isTabbed) {
+      renderNarrativeTabbed(grid, step, visiblePanels, effectiveLayout);
+    }
+
+    /* ── Step-level checklist — always at the bottom ── */
+    if (step.checklist && step.checklist.length > 0) {
+      var checklistUl = document.createElement('ul');
+      checklistUl.className = 'uce-checklist';
+      for (var i = 0; i < step.checklist.length; i++) {
+        var li = document.createElement('li');
+        li.className = 'uce-checklist-item';
+        var md = '';
+        if (typeof marked !== 'undefined') {
+          try {
+            md = marked.parse(step.checklist[i]).replace(/^<p>|<\/p>\n?$/g, '').trim();
+          } catch(e) { /* fall through to plain text */ }
+        }
+        if (!md) md = step.checklist[i];
+        li.innerHTML = '<i class="fa-solid fa-circle-check uce-check-icon"></i>' + md;
+        checklistUl.appendChild(li);
+      }
+      grid.appendChild(checklistUl);
+    }
+
+    div.appendChild(grid);
+
+    return div;
+  }
+
+  /* ── Tab helpers ──────────────────────────────────────────── */
+
+  /** Get the display label for a panel (name > id > kind). */
+  function getPanelLabel(pCfg) {
+    if (pCfg.name) return pCfg.name;
+    if (pCfg.id) return pCfg.id;
+    return pCfg.kind || '';
+  }
+
+  /** Render the tabbed-panel narrative (multiple visible panels). */
+  function renderNarrativeTabbed(grid, step, visiblePanels, effectiveLayout) {
+    /* ── Left column: step-level body + side_quests ── */
+    var hasLeft = !!step.body || (step.side_quests && step.side_quests.length > 0);
+    if (hasLeft) {
       var leftCol = document.createElement('div');
       leftCol.className = 'uce-narrative-left';
 
-      // Body content
-      if (hasBody) {
+      if (step.body) {
         var bodyEl = document.createElement('div');
         bodyEl.className = 'uce-narrative-body';
-        // For api_call panels, enhance the body with step tag and title
-        if (step.panel && step.panel.kind === 'api_call') {
-          var panelCfg = step.panel;
-          var panelTitle = panelCfg.title || step.title || '';
-          var stepTag = step.tag || '';
-          
-          var tagHtml = stepTag
-            ? '<span class="uce-step-tag">' + escapeHtml(stepTag) + '</span>'
-            : '';
-          
-          bodyEl.innerHTML =
-            '<div class="uce-api-call-header">' +
-            tagHtml +
-            '<h3 class="uce-api-call-title">' + escapeHtml(panelTitle) + '</h3>' +
-            '</div>' +
-            step.body;
-        } else {
-          bodyEl.innerHTML = step.body;
-        }
+        bodyEl.innerHTML = step.body;
         leftCol.appendChild(bodyEl);
       }
 
-      // Side quest triggers (rendered inside left column, below body)
       if (step.side_quests && step.side_quests.length > 0) {
         var sqTriggers = renderSideQuestTriggers(step.side_quests, step.id);
         for (var k = 0; k < sqTriggers.length; k++) {
@@ -478,59 +614,81 @@
         }
       }
 
-      // Step-level checklist — renders after body and side quests
-      if (step.checklist && step.checklist.length > 0) {
-        var checklistUl = document.createElement('ul');
-        checklistUl.className = 'uce-checklist';
-        for (var i = 0; i < step.checklist.length; i++) {
-          var li = document.createElement('li');
-          li.className = 'uce-checklist-item';
-          // Render as markdown (supports bold, code, links, etc.)
-          var md = '';
-          if (typeof marked !== 'undefined') {
-            try {
-              md = marked.parse(step.checklist[i]).replace(/^<p>|<\/p>\n?$/g, '').trim();
-            } catch(e) { /* fall through to plain text */ }
-          }
-          if (!md) md = step.checklist[i];
-          li.innerHTML = '<i class="fa-solid fa-circle-check uce-check-icon"></i>' + md;
-          checklistUl.appendChild(li);
-        }
-        leftCol.appendChild(checklistUl);
-      }
-
       grid.appendChild(leftCol);
     }
 
-    // Right/bottom column — panel (if present)
-    if (hasPanel) {
-      var rightCol = document.createElement('div');
-      rightCol.className = 'uce-narrative-right';
+    /* ── Right column: tab bar + active panel container ── */
+    var rightCol = document.createElement('div');
+    rightCol.className = 'uce-narrative-right';
 
-      // Expand toggle button (only in columns mode with panel)
-      if (effectiveLayout === 'columns') {
-        var expandBtn = document.createElement('button');
-        expandBtn.className = 'uce-narrative-expand';
-        expandBtn.setAttribute('aria-label', 'Expand panel');
-        expandBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
-        expandBtn.addEventListener('click', function () {
-          var isExpanded = grid.classList.toggle('uce-narrative-grid--expanded');
-          expandBtn.classList.toggle('uce-narrative-expand--active', isExpanded);
-          expandBtn.setAttribute('aria-label', isExpanded ? 'Collapse panel' : 'Expand panel');
+    /* Tab bar wrapper — flex-grow pushes expand button to the right */
+    var tabBarWrap = document.createElement('div');
+    tabBarWrap.className = 'uce-panel-tabs-wrapper';
+
+    /* Tab bar */
+    var tabBar = document.createElement('div');
+    tabBar.className = 'uce-panel-tabs';
+
+    for (var ti = 0; ti < visiblePanels.length; ti++) {
+      (function (idx) {
+        var tabBtn = document.createElement('button');
+        tabBtn.className = 'uce-panel-tab' + (idx === 0 ? ' uce-panel-tab--active' : '');
+        tabBtn.setAttribute('data-panel-index', idx);
+        tabBtn.textContent = getPanelLabel(visiblePanels[idx]);
+        tabBtn.addEventListener('click', function () {
+          setActiveTab(tabBar, visiblePanels[idx], idx);
         });
-        rightCol.appendChild(expandBtn);
-      }
-
-      var panel = panelEl;
-      if (panel) {
-        rightCol.appendChild(panel);
-      }
-      grid.appendChild(rightCol);
+        tabBar.appendChild(tabBtn);
+      })(ti);
     }
 
-    div.appendChild(grid);
+    tabBarWrap.appendChild(tabBar);
+    rightCol.appendChild(tabBarWrap);
 
-    return div;
+    /* Active panel container */
+    var activePanelWrap = document.createElement('div');
+    activePanelWrap.className = 'uce-panel-active';
+    rightCol.appendChild(activePanelWrap);
+
+    grid.appendChild(rightCol);
+
+    /* ── Expand toggle inside tab bar wrapper ── */
+    if (effectiveLayout === 'columns') {
+      var expandBtn = document.createElement('button');
+      expandBtn.className = 'uce-narrative-expand';
+      expandBtn.setAttribute('aria-label', 'Expand panel');
+      expandBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+      expandBtn.addEventListener('click', function () {
+        var isExpanded = grid.classList.toggle('uce-narrative-grid--expanded');
+        expandBtn.classList.toggle('uce-narrative-expand--active', isExpanded);
+        expandBtn.setAttribute('aria-label', isExpanded ? 'Collapse panel' : 'Expand panel');
+      });
+      tabBarWrap.appendChild(expandBtn);
+    }
+
+    /* Render initial tab */
+    if (visiblePanels.length > 0) {
+      setActiveTab(tabBar, visiblePanels[0], 0);
+    }
+  }
+
+  /** Activate a tab and render its panel inside the active container. */
+  function setActiveTab(tabBar, pCfg, index) {
+    var tabs = tabBar.querySelectorAll('.uce-panel-tab');
+    for (var t = 0; t < tabs.length; t++) {
+      tabs[t].classList.remove('uce-panel-tab--active');
+    }
+    tabs[index].classList.add('uce-panel-tab--active');
+
+    /* Find the active panel container — sibling of the tab bar wrapper */
+    var wrap = tabBar.parentElement.parentElement.querySelector('.uce-panel-active');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+
+    var panelEl = renderPanel(pCfg);
+    if (panelEl) {
+      wrap.appendChild(panelEl);
+    }
   }
 
   /** Generate a curl command from api_call params. */
@@ -1032,13 +1190,13 @@
         '<span class="uce-branch-label">' + escapeHtml(label) + '</span>' +
         (desc ? '<span class="uce-branch-desc">' + escapeHtml(desc) + '</span>' : '');
 
-      if (isSelected) {
-        // Selected: wrap badge + reset in a flex row
+      if (isSelected && state.current_step !== '__complete__') {
+        // Selected AND still editable: wrap badge + reset in a flex row
         html += '<div class="uce-branch-actions">' +
           '<span class="uce-branch-badge"><span class="uce-badge uce-badge--selected">SELECTED</span></span>' +
           '<button class="uce-branch-reset" data-uce-step="' + escapeHtml(stepId) + '" aria-label="Reset choice">&times; Reset</button>' +
           '</div>';
-      } else if (!isLocked) {
+      } else if (!isSelected && !isLocked) {
         // Not locked: show Select now button
         html += '<button class="uce-branch-select">Select now</button>';
       }
@@ -1087,6 +1245,11 @@
     visibleSteps = UCEState.getVisibleSteps(useCaseId, steps);
     renderFlow();
     updateProgress();
+
+    /* ── Re-resolve expressions now that a branch has been chosen ─── */
+    if (window.ExpressionResolver) {
+      window.ExpressionResolver.refreshAllSteps();
+    }
 
     // Scroll to new current step
     var newIdx = findCurrentIndex();
@@ -1908,6 +2071,11 @@
       // Inline side quest — mark as completed
       UCEState.completeSideQuest(useCaseId, sqId);
       emitEvent('side-quest-completed', { sqId: sqId });
+
+      /* Resolve expressions now that the side quest is completed */
+      if (window.ExpressionResolver) {
+        window.ExpressionResolver.refreshAllSteps();
+      }
     }
   }
 
@@ -2050,6 +2218,11 @@
           // Re-render to unlock the Next button
           renderFlow();
 
+          /* Resolve expressions now that the quiz answer is saved */
+          if (window.ExpressionResolver) {
+            window.ExpressionResolver.refreshAllSteps();
+          }
+
           // Mark all options as answered
           var allOpts = optsContainer.querySelectorAll('.uce-quiz-option');
           for (var j = 0; j < allOpts.length; j++) {
@@ -2163,17 +2336,9 @@
   /* - Code Editor (Monaco) - */
 
   function renderCodeEditorStep(step) {
-    console.log('[UCE] renderCodeEditorStep called:', step.id, 'lang:', step.language);
     var stepId = step.id || '';
-    var language = step.language || 'text';
-    var initialCode = step.initial_code || '';
-    var validationCmd = step.validation_cmd || '';
-    var validationFn = step.validation_js || '';
-    var saveKey = 'uce_code:' + useCaseId + ':' + stepId;
-
-    var savedCode = '';
-    try { savedCode = localStorage.getItem(saveKey) || ''; } catch(e) {}
-    var codeContent = savedCode || initialCode;
+    var hasFiles = step.files && Array.isArray(step.files) && step.files.length > 0;
+    var isTabbed = hasFiles && step.files.length > 1;
 
     var div = document.createElement('div');
     div.className = 'uce-step-body uce-step-body--code-editor';
@@ -2185,6 +2350,44 @@
       bodyP.innerHTML = step.body;
       div.appendChild(bodyP);
     }
+
+    if (isTabbed) {
+      renderCodeEditorTabbed(div, step, step.files);
+    } else {
+      renderCodeEditorSingle(div, step);
+    }
+
+    return div;
+  }
+
+  /* ── Code editor helpers ──────────────────────────────────── */
+
+  /** Get a display label for a file (name field). */
+  function getFileLabel(fileEntry) {
+    if (fileEntry.name) return fileEntry.name;
+    return 'file';
+  }
+
+  /** Normalize a Monaco language code. */
+  function normalizeLang(lang) {
+    if (!lang) return 'text';
+    if (lang === 'yml') return 'yaml';
+    if (lang === 'sh' || lang === 'bash') return 'shell';
+    if (lang === 'ts') return 'typescript';
+    if (lang === 'py') return 'python';
+    return lang;
+  }
+
+  /** Render a single-file code editor (existing behavior). */
+  function renderCodeEditorSingle(parent, step) {
+    var language = normalizeLang(step.language || 'text');
+    var initialCode = step.initial_code || '';
+    var stepId = step.id || '';
+    var saveKey = 'uce_code:' + useCaseId + ':' + stepId;
+
+    var savedCode = '';
+    try { savedCode = localStorage.getItem(saveKey) || ''; } catch(e) {}
+    var codeContent = savedCode || initialCode;
 
     var editorContainer = document.createElement('div');
     editorContainer.className = 'uce-editor-container';
@@ -2203,105 +2406,211 @@
 
     var actionsRow = document.createElement('div');
     actionsRow.className = 'uce-editor-actions';
+    var loadInd = document.createElement('span');
+    loadInd.className = 'uce-editor-load-indicator';
+    loadInd.textContent = 'Saving...';
+    loadInd.style.display = 'none';
+    actionsRow.appendChild(loadInd);
+    editorContainer.appendChild(actionsRow);
 
+    parent.appendChild(editorContainer);
+    initMonaco(editorDiv, stepId, language, codeContent, saveKey, loadInd);
+  }
+
+  /** Render a multi-file tabbed code editor. */
+  function renderCodeEditorTabbed(parent, step, files) {
+    var activeIndex = 0;
+
+    /* Editor wrapper — mirrors narrative tab structure */
+    var editorWrapper = document.createElement('div');
+    editorWrapper.className = 'uce-editor-container';
+    editorWrapper.setAttribute('data-uce-editor-step', step.id);
+
+    /* Tab bar wrapper */
+    var tabBarWrap = document.createElement('div');
+    tabBarWrap.className = 'uce-panel-tabs-wrapper';
+
+    /* Tab bar */
+    var tabBar = document.createElement('div');
+    tabBar.className = 'uce-panel-tabs';
+
+    for (var fi = 0; fi < files.length; fi++) {
+      (function (idx) {
+        var tabBtn = document.createElement('button');
+        tabBtn.className = 'uce-panel-tab' + (idx === 0 ? ' uce-panel-tab--active' : '');
+        tabBtn.setAttribute('data-file-index', idx);
+        tabBtn.textContent = getFileLabel(files[idx]);
+        tabBtn.addEventListener('click', function () {
+          setActiveCodeTab(tabBar, files[idx], idx);
+        });
+        tabBar.appendChild(tabBtn);
+      })(fi);
+    }
+
+    tabBarWrap.appendChild(tabBar);
+
+    /* Copy button — right-aligned in the tab bar */
+    var copyBtn = document.createElement('button');
+    copyBtn.className = 'uce-editor-copy-btn';
+    copyBtn.setAttribute('aria-label', 'Copy code');
+    copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+    copyBtn.addEventListener('click', function () {
+      /* Copy the currently active file's code */
+      var activeIdx = 0;
+      var activeTabs = tabBar.querySelectorAll('.uce-panel-tab--active');
+      if (activeTabs.length > 0) {
+        activeIdx = parseInt(activeTabs[0].getAttribute('data-file-index'), 10);
+      }
+      var activeFile = files[activeIdx];
+      var instId = step.id + '-' + activeFile.name;
+      if (window.__UCE_MONACO_INSTANCES__ && window.__UCE_MONACO_INSTANCES__[instId]) {
+        var text = window.__UCE_MONACO_INSTANCES__[instId].getValue();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function() {
+            showCopyTooltip(copyBtn);
+          }).catch(function() {
+            fallbackCopy(text, copyBtn);
+          });
+        } else {
+          fallbackCopy(text, copyBtn);
+        }
+      }
+    });
+    tabBarWrap.appendChild(copyBtn);
+
+    editorWrapper.appendChild(tabBarWrap);
+
+    /* Active editor container */
+    var activeEditorWrap = document.createElement('div');
+    activeEditorWrap.className = 'uce-editor-active';
+    editorWrapper.appendChild(activeEditorWrap);
+
+    parent.appendChild(editorWrapper);
+
+    /* Render initial file */
+    if (files.length > 0) {
+      setActiveCodeTab(tabBar, files[activeIndex], activeIndex);
+    }
+  }
+
+  /** Activate a file tab and render its editor inside the active container. */
+  function setActiveCodeTab(tabBar, fileEntry, index) {
+    var tabs = tabBar.querySelectorAll('.uce-panel-tab');
+    for (var t = 0; t < tabs.length; t++) {
+      tabs[t].classList.remove('uce-panel-tab--active');
+    }
+    tabs[index].classList.add('uce-panel-tab--active');
+
+    var wrap = tabBar.parentElement.parentElement.querySelector('.uce-editor-active');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+
+    var language = normalizeLang(fileEntry.language || 'text');
+    var initialCode = fileEntry.initial_code || '';
+    var stepId = tabBar.closest('[data-uce-step-id]').getAttribute('data-uce-step-id') || '';
+    var saveKey = 'uce_code:' + useCaseId + ':' + stepId + ':' + fileEntry.name;
+
+    var savedCode = '';
+    try { savedCode = localStorage.getItem(saveKey) || ''; } catch(e) {}
+    var codeContent = savedCode || initialCode;
+
+    var editorDiv = document.createElement('div');
+    editorDiv.className = 'uce-monaco-editor';
+    editorDiv.setAttribute('id', 'monaco-' + stepId + '-' + encodeURIComponent(fileEntry.name));
+    editorDiv.style.height = '300px';
+
+    var actionsRow = document.createElement('div');
+    actionsRow.className = 'uce-editor-actions';
     var loadInd = document.createElement('span');
     loadInd.className = 'uce-editor-load-indicator';
     loadInd.textContent = 'Saving...';
     loadInd.style.display = 'none';
     actionsRow.appendChild(loadInd);
 
+    wrap.appendChild(editorDiv);
+    wrap.appendChild(actionsRow);
 
-    editorContainer.appendChild(actionsRow);
-    div.appendChild(editorContainer);
+    initMonaco(editorDiv, stepId + '-' + fileEntry.name, language, codeContent, saveKey, loadInd);
+  }
 
-    // Initialize Monaco
-    (function() {
-      var lang = language;
-      if (lang === 'yml') lang = 'yaml';
-      if (lang === 'sh' || lang === 'bash') lang = 'shell';
-      if (lang === 'ts') lang = 'typescript';
-      if (lang === 'py') lang = 'python';
-
-      console.log('[UCE] Monaco init, stepId:', stepId, 'lang:', lang, 'require:', typeof require);
-
-      if (typeof require !== 'function') {
-      console.error('[UCE] require is not available');
-      loadInd.style.display = '';
+  /** Shared Monaco initialization logic. */
+  function initMonaco(editorDiv, editorId, language, codeContent, saveKey, loadInd) {
+    if (typeof require !== 'function') {
       loadInd.style.display = '';
       loadInd.textContent = 'Monaco unavailable';
       loadInd.style.color = '#EF4444';
-        return;
-        }
+      return;
+    }
 
-      require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
 
-      require(['vs/editor/editor.main'], function() {
-        var mon = window.monaco;
-        if (!mon) { console.error('[UCE] monaco not found'); loadInd.style.display = ''; loadInd.textContent = 'Monaco not found'; loadInd.style.color = '#EF4444'; return; }
-
-        try {
-          var editorInstance = mon.editor.create(editorDiv, {
-            value: codeContent,
-            language: lang,
-            theme: 'vs-dark',
-            automaticLayout: true,
-            minimap: { enabled: false },
-            fontSize: 13,
-            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-            lineNumbers: 'on',
-            scrollBeyondLastLine: false,
-            renderWhitespace: 'selection',
-            padding: { top: 12, bottom: 12 },
-            bracketPairColorization: { enabled: true }
-          });
-
-          var isDirty = false;
-          var saveTimer = null;
-          editorInstance.onDidChangeModelContent(function() {
-            if (!isDirty) {
-              isDirty = true;
-              loadInd.style.display = '';
-              loadInd.textContent = 'Modified';
-              loadInd.style.color = '#F59E0B';
-            }
-            clearTimeout(saveTimer);
-            saveTimer = setTimeout(function() {
-              try { localStorage.setItem(saveKey, editorInstance.getValue()); } catch(e) {}
-              isDirty = false;
-              loadInd.textContent = 'Saved';
-              loadInd.style.color = '';
-              setTimeout(function() { loadInd.style.display = 'none'; }, 1500);
-            }, 500);
-          });
-
-          window.__UCE_MONACO_INSTANCES__ = window.__UCE_MONACO_INSTANCES__ || {};
-          window.__UCE_MONACO_INSTANCES__[stepId] = {
-            getValue: function() { return editorInstance.getValue(); },
-            setValue: function(v) { editorInstance.setValue(v); },
-            getEditor: function() { return editorInstance; }
-          };
-
-          var ro = new ResizeObserver(function() {
-            editorInstance.layout();
-          });
-          ro.observe(editorDiv);
-          console.log('[UCE] Monaco editor created for:', stepId);
-        } catch(e) {
-          console.error('[UCE] Monaco create failed:', e);
-          loadInd.style.display = '';
-          loadInd.style.display = '';
-          loadInd.textContent = 'Editor error';
-          loadInd.style.color = '#EF4444';
-        }
-      }, function(err) {
-        console.error('[UCE] Monaco require failed:', err);
+    require(['vs/editor/editor.main'], function() {
+      var mon = window.monaco;
+      if (!mon) {
         loadInd.style.display = '';
-        loadInd.textContent = 'Failed to load';
+        loadInd.textContent = 'Monaco not found';
         loadInd.style.color = '#EF4444';
-      });
-    })();
+        return;
+      }
 
-    return div;
+      try {
+        var editorInstance = mon.editor.create(editorDiv, {
+          value: codeContent,
+          language: language,
+          theme: 'vs-dark',
+          automaticLayout: true,
+          minimap: { enabled: false },
+          fontSize: 13,
+          fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+          lineNumbers: 'on',
+          scrollBeyondLastLine: false,
+          renderWhitespace: 'selection',
+          padding: { top: 12, bottom: 12 },
+          bracketPairColorization: { enabled: true }
+        });
+
+        var isDirty = false;
+        var saveTimer = null;
+        editorInstance.onDidChangeModelContent(function() {
+          if (!isDirty) {
+            isDirty = true;
+            loadInd.style.display = '';
+            loadInd.textContent = 'Modified';
+            loadInd.style.color = '#F59E0B';
+          }
+          clearTimeout(saveTimer);
+          saveTimer = setTimeout(function() {
+            try { localStorage.setItem(saveKey, editorInstance.getValue()); } catch(e) {}
+            isDirty = false;
+            loadInd.textContent = 'Saved';
+            loadInd.style.color = '';
+            setTimeout(function() { loadInd.style.display = 'none'; }, 1500);
+          }, 500);
+        });
+
+        window.__UCE_MONACO_INSTANCES__ = window.__UCE_MONACO_INSTANCES__ || {};
+        window.__UCE_MONACO_INSTANCES__[editorId] = {
+          getValue: function() { return editorInstance.getValue(); },
+          setValue: function(v) { editorInstance.setValue(v); },
+          getEditor: function() { return editorInstance; }
+        };
+
+        var ro = new ResizeObserver(function() {
+          editorInstance.layout();
+        });
+        ro.observe(editorDiv);
+      } catch(e) {
+        console.error('[UCE] Monaco create failed:', e);
+        loadInd.style.display = '';
+        loadInd.textContent = 'Editor error';
+        loadInd.style.color = '#EF4444';
+      }
+    }, function(err) {
+      console.error('[UCE] Monaco require failed:', err);
+      loadInd.style.display = '';
+      loadInd.textContent = 'Failed to load';
+      loadInd.style.color = '#EF4444';
+    });
   }
 
   /* ── Navigation ─────────────────────────────────────────────────── */
@@ -2634,7 +2943,7 @@
   /* ── Progress Bar (Phase 2-02) ──────────────────────────────────── */
 
   function updateProgress() {
-    var total = steps.length;
+    var total = visibleSteps.length;
     var completed = UCEState.getCompletedCount(useCaseId);
     var pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
@@ -2677,4 +2986,292 @@
   } else {
     init();
   }
+
+  /* ── Expression Resolver (Phase 1-01) ───────────────────────────── */
+
+  /**
+   * ExpressionResolver — Core resolver engine for [[stepId.field]] / ${{stepId.field}} expressions.
+   *
+   * Appended to the main UCE IIFE so it can close over escapeHtml and emitEvent.
+   * Attaches to window.ExpressionResolver for external consumption.
+   *
+   * Public API:
+   *   resolve(text, useCaseId)          — Resolve all [[expr]] in plain text
+   *   resolveNode(element)              — Recursively resolve text inside DOM element
+   *   refreshAllSteps()                 — Re-scan all rendered step elements
+   *
+   * Internal helpers (not on public API):
+   *   _extractExpressions(text)         — Regex helper to find [[...]] or ${{...}} patterns
+   *   _resolveField(stepId, fieldName, steps, state) — Resolve one field reference
+   *   _formatPlaceholder(fieldPath)     — Format broken-ref visible text
+   *   _buildStepMap(steps)             — Create { stepId: step } lookup
+   */
+  var ExpressionResolver = (function () {
+    'use strict';
+
+    /* ── Regex: match [[...]], ${{...}}, and {{...}} ────────────────── */
+    /* Supports hyphens in step IDs and field names (e.g., choose-cloud.label) */
+    var EXPR_REGEX = /\[\[\s*([.\w-][.\w-]*)\s*\]\]|\$\{\{\s*([.\w-][.\w-]*)\s*\}\}|\{\{\s*([.\w-][.\w-]*)\s*\}\}/g;
+
+    /* ── Internal: build stepId -> step map ───────────────────────── */
+    function _buildStepMap(steps) {
+      var map = {};
+      for (var i = 0; i < steps.length; i++) {
+        if (steps[i] && steps[i].id) {
+          map[steps[i].id] = steps[i];
+        }
+      }
+      return map;
+    }
+
+    /* ── Internal: extract all [[...]], ${{...}}, and {{...}} matches from text ─ */
+    function _extractExpressions(text) {
+      var matches = [];
+      var m = null;
+      var re = new RegExp(EXPR_REGEX.source, 'g');
+      while ((m = re.exec(text)) !== null) {
+        /* Group 1 = [[...]], Group 2 = ${{...}}, Group 3 = {{...}} */
+        var expr = m[1] || m[2] || m[3];
+        if (!expr) {
+          console.warn('[UCE] ExpressionResolver: no expression captured from match:', m);
+          continue;
+        }
+        matches.push({
+          full: m[0],
+          expression: expr,
+          index: m.index,
+          syntax: m[1] ? 'double-bracket' : m[2] ? 'jinja' : 'liquid'
+        });
+      }
+      return matches;
+    }
+
+    /* Sentinel: field exists but value is empty/unresolved (not a broken ref) */
+    var EMPTY_VALUE = '__UCE_EMPTY__';
+
+    /* ── Internal: resolve one field reference ────────────────────── */
+    function _resolveField(stepId, fieldName, stepMap, state) {
+      var step = stepMap[stepId];
+
+      if (!step) {
+        console.warn('[UCE] ExpressionResolver: unknown step id "' + stepId + '"');
+        return null;
+      }
+
+      var value = null;
+
+      /* Choice step: look up branches_chosen, then fetch field from chosen branch */
+      if (step.kind === 'choice' && step.branches) {
+        var chosenKey = state.branches_chosen[stepId];
+        if (chosenKey && step.branches[chosenKey]) {
+          value = step.branches[chosenKey][fieldName];
+        }
+      }
+      /* Quiz step: look up quiz_answers, then fetch field from options */
+      else if (step.kind === 'quiz' && step.options) {
+        var optionLetter = state.quiz_answers[stepId];
+        if (optionLetter) {
+          var opts = step.options;
+          /* Support both array and object formats */
+          if (Array.isArray(opts)) {
+            /* Find option by letter property */
+            for (var o = 0; o < opts.length; o++) {
+              if (opts[o].letter === optionLetter) {
+                value = opts[o][fieldName];
+                break;
+              }
+            }
+          } else {
+            /* Object keyed by letter */
+            value = opts[optionLetter] ? opts[optionLetter][fieldName] : null;
+          }
+        }
+      }
+      /* Side quest step: check completion status */
+      else if (step.kind === 'side_quest') {
+        /* For side quest steps, check if referenced step is completed */
+        value = state.side_quests_completed.indexOf(stepId) !== -1 ? 'completed' : 'pending';
+      }
+      /* Narrative / section_header / checkpoint / code_editor: read field directly from step */
+      else {
+        value = step[fieldName];
+      }
+
+      /* Field exists but is empty/unresolved — not a broken ref */
+      if (value === undefined || value === null || value === '') {
+        return EMPTY_VALUE;
+      }
+
+      return String(value);
+    }
+
+    /* ── Internal: format broken-ref placeholder ──────────────────── */
+    function _formatPlaceholder(fieldPath) {
+      return '[broken ref: ' + fieldPath + ']';
+    }
+
+    /* ── Internal: clean up whitespace after expression removal ───── */
+    function _cleanupWhitespace(text) {
+      /* Collapse multiple spaces into one */
+      text = text.replace(/  +/g, ' ');
+      /* Trim leading/trailing spaces */
+      text = text.trim();
+      return text;
+    }
+
+    /* ── Public: resolve all [[expr]] / ${{expr}} patterns in plain text ─ */
+    function resolve(text, useCaseId) {
+      if (!text) {
+        return '';
+      }
+
+      var state = UCEState.getState(useCaseId);
+      var stepMap = _buildStepMap(steps);
+      var matches = _extractExpressions(text);
+
+      if (matches.length === 0) {
+        return text;
+      }
+
+      var result = text;
+
+      /* Process matches in reverse order to preserve indices */
+      for (var i = matches.length - 1; i >= 0; i--) {
+        var match = matches[i];
+        var parts = match.expression.split('.');
+        var refStepId = parts[0];
+        var fieldName = parts.length > 1 ? parts[1] : null;
+
+        /* Handle leading dot: .stepId.field -> stepId.field */
+        if (refStepId === '' && parts.length >= 2) {
+          refStepId = parts[1];
+          fieldName = parts.length > 2 ? parts[2] : null;
+        }
+
+        /* No field specified — skip (no default support yet, Phase 2) */
+        if (!fieldName) {
+          continue;
+        }
+
+        var resolved = _resolveField(refStepId, fieldName, stepMap, state);
+
+        if (resolved === null) {
+          /* Broken ref: step ID or field name not found */
+          result = result.replace(match.full, _formatPlaceholder(match.expression));
+        } else if (resolved === EMPTY_VALUE) {
+          /* Valid expression but value not yet set — remove silently */
+          result = result.replace(match.full, '');
+        } else {
+          /* Replace with resolved value */
+          result = result.replace(match.full, resolved);
+        }
+      }
+
+      return _cleanupWhitespace(result);
+    }
+
+    /* ── Internal: resolve text inside a single text node ─────────── */
+    function _resolveTextNode(textNode) {
+      var originalText = textNode.nodeValue;
+      if (!originalText) {
+        return;
+      }
+
+      var state = UCEState.getState(useCaseId);
+      var stepMap = _buildStepMap(steps);
+      var matches = _extractExpressions(originalText);
+
+      if (matches.length === 0) {
+        return;
+      }
+
+      var resolvedText = originalText;
+
+      /* Process matches in reverse order to preserve indices */
+      for (var i = matches.length - 1; i >= 0; i--) {
+        var match = matches[i];
+        var parts = match.expression.split('.');
+        var refStepId = parts[0];
+        var fieldName = parts.length > 1 ? parts[1] : null;
+
+        /* Handle leading dot: .stepId.field -> stepId.field */
+        if (refStepId === '' && parts.length >= 2) {
+          refStepId = parts[1];
+          fieldName = parts.length > 2 ? parts[2] : null;
+        }
+
+        if (!fieldName) {
+          continue;
+        }
+
+        var resolved = _resolveField(refStepId, fieldName, stepMap, state);
+
+        if (resolved === null) {
+          /* Broken ref: step ID or field name not found */
+          resolvedText = resolvedText.replace(match.full, _formatPlaceholder(match.expression));
+        } else if (resolved === EMPTY_VALUE) {
+          /* Valid expression but value not yet set — remove silently */
+          resolvedText = resolvedText.replace(match.full, '');
+        } else {
+          resolvedText = resolvedText.replace(match.full, resolved);
+        }
+      }
+
+      resolvedText = _cleanupWhitespace(resolvedText);
+
+      /* Only update if something changed */
+      if (resolvedText !== originalText) {
+        textNode.nodeValue = resolvedText;
+      }
+    }
+
+    /* ── Public: recursively resolve text inside any DOM element ──── */
+    function resolveNode(element) {
+      if (!element) {
+        return;
+      }
+
+      /* Skip script and style elements — never touch their content */
+      if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE') {
+        return;
+      }
+
+      var children = element.childNodes;
+      for (var i = 0; i < children.length; i++) {
+        var child = children[i];
+        if (child.nodeType === Node.TEXT_NODE) {
+          _resolveTextNode(child);
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+          resolveNode(child);
+        }
+      }
+    }
+
+    /* ── Public: re-scan all rendered step elements and re-resolve ── */
+    function refreshAllSteps() {
+      var container = document.getElementById(STEPS_CONTAINER_ID);
+      if (!container) {
+        return;
+      }
+
+      var stepElements = container.querySelectorAll('.uce-flow-step');
+      for (var i = 0; i < stepElements.length; i++) {
+        resolveNode(stepElements[i]);
+      }
+
+      /* Emit event for other modules to react */
+      emitEvent('expressions-refreshed', { count: stepElements.length });
+    }
+
+    /* ── Export public API ────────────────────────────────────────── */
+    return {
+      resolve: resolve,
+      resolveNode: resolveNode,
+      refreshAllSteps: refreshAllSteps
+    };
+  })();
+
+  /* Expose on window for external consumption */
+  window.ExpressionResolver = ExpressionResolver;
+
 })();
