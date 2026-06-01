@@ -1,0 +1,79 @@
+main_image: "infra-main.png"
+title: "VM Infrastructure Setup"
+show_background_effect: false
+items:
+  - id: ssh-key
+    type: step
+    title: "Generate SSH Keys"
+    description: "Create an SSH key pair for secure access to your virtual machine. Use <code>ssh-keygen -t ed25519</code> for modern elliptic curve encryption."
+    hotspot:
+      x: 20
+      y: 15
+      radius: 25
+
+  - id: security-group
+    type: step
+    title: "Configure Security Groups"
+    description: "Define firewall rules to allow only necessary inbound traffic. Open ports 22 (SSH), 80 (HTTP), and 443 (HTTPS) while blocking all others."
+    hotspot:
+      x: 60
+      y: 25
+      radius: 30
+
+  - id: vm-provision
+    type: step
+    title: "Provision the Virtual Machine"
+    description: "Launch your VM instance with the appropriate instance type. For CI/CD workloads, choose at least 2 vCPUs and 4 GB RAM."
+    hotspot:
+      x: 45
+      y: 55
+      radius: 30
+
+  - id: docker-install
+    type: step
+    title: "Install Docker & Dependencies"
+    description: "Install Docker Engine, Git, and curl. These are the core tools needed for your CI/CD runner to build and deploy containers."
+    hotspot:
+      x: 30
+      y: 75
+      radius: 28
+
+  - id: runner-register
+    type: scene
+    title: "Register the CI Runner"
+    description: "Connect your VM as a runner to your CI/CD platform. The runner polls for jobs and executes them on this machine."
+    hotspot:
+      x: 75
+      y: 65
+      radius: 35
+    image: "runner-register.png"
+    steps:
+      - id: runner-token
+        type: step
+        title: "Obtain Runner Token"
+        description: "Navigate to your CI/CD settings page and generate a registration token. Tokens expire after 1 hour for security."
+        hotspot:
+          x: 50
+          y: 20
+          radius: 25
+          color: "#3B82F6"
+
+      - id: runner-configure
+        type: step
+        title: "Configure Runner Labels"
+        description: "Assign labels to your runner (e.g., linux, docker, small) so the pipeline can target the right runner for each job."
+        hotspot:
+          x: 70
+          y: 50
+          radius: 30
+          color: "#10B981"
+
+      - id: runner-verify
+        type: step
+        title: "Verify Runner Health"
+        description: "Confirm the runner appears as online in your CI/CD dashboard. A healthy runner responds to job assignments within seconds."
+        hotspot:
+          x: 40
+          y: 80
+          radius: 28
+          color: "#F59E0B"

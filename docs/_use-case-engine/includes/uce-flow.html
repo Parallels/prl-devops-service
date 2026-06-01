@@ -1,0 +1,23 @@
+---
+# UCE Flow Renderer Partial
+# Renders the main step flow container and initializes the JS engine.
+# Expects: data (the use case object)
+---
+{% assign uc = include.data %}
+{% assign steps = uc.steps %}
+
+{# Render step data as a JS-accessible data attribute #}
+<div class="uce-flow-container" id="uce-flow-container"
+     data-uce-steps='{{ steps | jsonify }}'
+     data-uce-usecaseid="{{ uc.id | default: '' }}">
+
+  {# Steps are rendered dynamically by uce-engine.js #}
+  <div class="uce-loading" id="uce-loading">
+    <span class="uce-spinner"></span>
+    Loading workflow...
+  </div>
+</div>
+
+{# Inject UCE engine scripts #}
+<script src="{{ site.baseurl }}/docs/assets/js/uce-state.js"></script>
+<script src="{{ site.baseurl }}/docs/assets/js/uce-engine.js"></script>

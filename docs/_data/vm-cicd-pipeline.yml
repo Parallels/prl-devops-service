@@ -1,0 +1,319 @@
+id: vm-cicd-pipeline
+title: Building a CI/CD Pipeline on a Virtual Machine
+level: intermediate
+duration: "~25 min"
+tags:
+  - ci-cd
+  - devops
+  - virtual-machine
+  - automation
+
+introduction:
+  scenario: >
+    Learn how to set up a complete CI/CD pipeline on a virtual machine.
+    This use case walks you through choosing a cloud provider, deploying
+    infrastructure, configuring your pipeline, and verifying everything works.
+  key_outcomes:
+    - Deploy infrastructure on your chosen cloud provider
+    - Configure a CI/CD pipeline with automated testing
+    - Verify deployment with health checks
+    - Understand branching strategies for multi-cloud
+  prerequisites:
+    hard:
+      - Basic familiarity with YAML
+      - Access to a terminal (bash or zsh)
+      - An account on at least one cloud provider
+    soft:
+      - Understanding of Git workflows
+      - Experience with containerization (Docker)
+  architecture_diagram: |
+    flowchart LR
+        A[Developer] --> B[Git Push]
+        B --> C[CI Runner]
+        C --> D[VM/Cloud]
+        
+        B --> E[Tests]
+        E --> F[Report]
+        
+        C --> G[Deploy]
+        G --> H[Health Check]
+  unlocks:
+    - ci-cd-certification
+    - cloud-automation-badge
+
+steps:
+  - id: intro
+    kind: narrative
+    title: Welcome to the CI/CD Pipeline Use Case
+    duration: "~3 min"
+    body: >
+      In this guided experience, you'll build a <strong>CI/CD</strong> pipeline from scratch.
+      You'll make decisions about your cloud provider and see how the pipeline
+      adapts to each choice.
+
+      By the end, you'll have a working pipeline deployed on a virtual machine.
+  - id: overview
+    kind: narrative
+    title: Getting Started
+    icon: fa-rocket
+    body: >
+      Let's start by understanding the overall architecture of a CI/CD pipeline
+      and the components involved. This will help you make informed decisions
+      as you set up your pipeline.
+  - id: choose-cloud
+    kind: choice
+    title: Choose Your Cloud Provider
+    duration: "~2 min"
+    question: Which cloud provider do you want to deploy your pipeline on?
+    icon: fa-rocket
+    branches:
+      aws:
+        label: AWS
+        description: EC2 + CodePipeline path
+        icon: fa-aws
+        icon_type: fa-brands
+      gcp:
+        label: Google Cloud
+        description: Compute Engine + Cloud Build path
+        icon: fa-google
+        icon_type: fa-brands
+      azure:
+        label: Azure
+        description: VM + Pipelines path
+        icon: fa-microsoft
+        icon_type: fa-brands
+  - id: infra-setup
+    kind: section_header
+    title: Infrastructure Setup
+    icon: fa-server
+  - id: infra-intro
+    kind: narrative
+    title: Setting Up Your Infrastructure
+    duration: "~5 min"
+    body: >
+      Now we'll prepare your virtual machine for the CI/CD pipeline.
+      The exact commands depend on your cloud provider choice above.
+    panel:
+      kind: terminal
+      cmd: "sudo apt update && sudo apt install -y docker.io git curl"
+      output: |
+        Reading package lists... Done
+        Building dependency tree... Done
+        docker.io is already the newest version (24.0.7).
+        git is already the newest version (2.39.2).
+      copy_button: true
+    side_quests:
+      - terraform-basics
+  - id: infra-intro1
+    kind: narrative
+    title: Setting Up Your Infrastructure Now
+    duration: "~5 min"
+    layout: rows
+    body: >
+      Now we'll prepare your virtual machine for the CI/CD pipeline.
+      The exact commands depend on your cloud provider choice above.
+      Follow the walkthrough below to configure your VM securely.
+    panel:
+      kind: walkthrough
+      items_ref: catalog_walkthrough
+      highlight_ids: ["search", "manifest"]
+      auto_advance: false
+  - id: infra-check
+    kind: checkpoint
+    title: Verify Your Environment
+    duration: "~3 min"
+    body: >
+      Before proceeding, verify that Docker and Git are installed correctly.
+      Run the verification below to confirm your environment is ready.
+    checkpoint:
+      api:
+        tasks:
+          - id: api-health
+            title: Verify API Connectivity
+            url: "http://localhost:5475/api/health/probe"
+            method: GET
+            timeout_ms: 10000
+            expect_status_code: 200
+            response_path: '$.status == "OK"'
+            response_type: json
+          - id: vm-state
+            title: Check VM State
+            url: "http://localhost:5475/api/vm/status"
+            method: GET
+            timeout_ms: 10000
+            response_path: '$.state == "running"'
+            response_type: json
+      on_failure: retry-or-skip
+  - id: learn-terraform
+    kind: narrative
+    title: Learn About Infrastructure as Code
+    duration: "~5 min"
+    body: >
+      You're about to set up infrastructure manually. Want to learn how
+      to automate this with Terraform? This optional side quest teaches
+      the basics of Infrastructure as Code.
+    side_quests:
+      - terraform-basics
+  - id: pipeline-setup
+    kind: section_header
+    title: Pipeline Configuration
+    icon: gear
+  - id: pipeline-intro
+    kind: narrative
+    title: Configuring Your CI/CD Pipeline
+    duration: "~5 min"
+    body: >
+      Now let's create the pipeline configuration file. This YAML file
+      defines your build, test, and deploy stages. The walkthrough below
+      illustrates the full pipeline flow from trigger to health check.
+    panel:
+      kind: walkthrough
+      items_ref: ci-cd-walkthrough
+      highlight_ids: ["build-stage", "test-stage"]
+      auto_advance: false
+  - id: pipeline-walkthrough-panel
+    kind: narrative
+    title: Pipeline Flow Explained
+    duration: "~4 min"
+    body: >
+      A CI/CD pipeline follows a linear flow: trigger, build, test, deploy,
+      and verify. The walkthrough on the right shows each stage and its role.
+      Click through each step to understand how artifacts move through the pipeline.
+    panel:
+      kind: walkthrough
+      items_ref: ci-cd-walkthrough
+      main_image: "pipeline-architecture.png"
+      highlight_ids:
+        - test-stage
+        - deploy-stage
+        - health-check
+      auto_advance: false
+  - id: pipeline-edit
+    kind: code_editor
+    title: Write Your Pipeline Configuration
+    duration: "~5 min"
+    language: yaml
+    body: >
+      Create a `.pipeline.yml` file in your project root. This file defines
+      your CI/CD pipeline stages. Start with the template below and customize
+      it for your needs.
+    initial_code: |
+      stages:
+        - name: build
+          script:
+            - echo "Building application..."
+            - docker build -t myapp:latest .
+        - name: test
+          script:
+            - echo "Running tests..."
+            - docker run myapp:latest npm test
+        - name: deploy
+          script:
+            - echo "Deploying to VM..."
+            - docker push myapp:latest
+    validation_cmd: "cat .pipeline.yml | yamllint -"
+  - id: quiz-pipeline
+    kind: quiz
+    title: Quick Knowledge Check
+    duration: "~2 min"
+    question: What is the correct order of stages in a typical CI/CD pipeline?
+    options:
+      - text: "Deploy -> Build -> Test"
+        correct: false
+      - text: "Build -> Test -> Deploy"
+        correct: true
+      - text: "Test -> Build -> Deploy"
+        correct: false
+      - text: "Build -> Deploy -> Test"
+        correct: false
+    feedback_correct: "Correct! Build, then test, then deploy is the standard order."
+    feedback_incorrect: "Not quite. Think about the logical flow: you build first, then test the build, then deploy the tested artifact."
+  - id: verify
+    kind: section_header
+    title: Verification
+    icon: check-circle
+  - id: verify-final
+    kind: checkpoint
+    title: Final Verification
+    duration: "~3 min"
+    body: >
+      Run this final health check to verify your pipeline is working end-to-end.
+    checkpoint:
+      api:
+        url: "http://localhost:8080/pipeline/status"
+        method: GET
+        timeout_ms: 15000
+        response_path: '$.pipeline == "active"'
+        response_type: json
+      on_failure: retry-only
+  - id: multi-cloud-summary
+    kind: narrative
+    title: Multi-Cloud Deployment Summary
+    duration: "~3 min"
+    body: >
+      You've configured your CI/CD pipeline for a single cloud provider.
+      The walkthrough below shows how the pipeline adapts across AWS, GCP,
+      and Azure. Each provider has different tooling but follows the same
+      build-test-deploy pattern.
+    panel:
+      kind: walkthrough
+      items_ref: ci-cd-walkthrough
+      highlight_ids: ["trigger", "deploy-stage", "health-check"]
+      auto_advance: true
+  - id: terminal-summary
+    kind: narrative
+    title: Summary of Commands
+    duration: "~2 min"
+    body: >
+      Here's a summary of all the commands you ran during this use case.
+      You can copy them for future reference.
+    panel:
+      kind: terminal
+      cmd: |
+        # Complete CI/CD Pipeline Commands
+        sudo apt update && sudo apt install -y docker.io git curl
+        docker build -t myapp:latest .
+        docker run myapp:latest npm test
+        docker push myapp:latest
+        cat .pipeline.yml | yamllint -
+      copy_button: true
+
+  - id: verify-api
+    kind: narrative
+    title: Verify API Health
+    duration: "~2 min"
+    tag: EXEC
+    checklist:
+      - Uses standard <strong>GET</strong> method.
+      - Expects a <strong>200 OK</strong> response.
+      - Returns a standard JSON body with a `status` field.
+    body: >
+      Use the built-in API verification panel below to check if your
+      orchestrator service is healthy and responding correctly.
+    panel:
+      kind: api_call
+      title: Health Check
+      url: "http://localhost:8080/api/v1/health"
+      method: GET
+      expect_status: 200
+      expect_body: '{"status":"healthy"}'
+      copy_button: true
+
+side_quests:
+  - id: terraform-basics
+    title: Terraform Basics
+    expanded: true
+    description: >
+      Learn the fundamentals of Infrastructure as Code using Terraform.
+      This module covers providers, resources, variables, and state management.
+    links_to: learn-terraform
+    requires: []
+    duration: "~15 min"
+  - id: docker-networking
+    title: Docker Networking Deep Dive
+    description: >
+      Explore Docker networking concepts including bridges, overlays,
+      and port mapping. Essential for multi-container deployments.
+    links_to: docker-networking
+    requires: []
+    duration: "~10 min"

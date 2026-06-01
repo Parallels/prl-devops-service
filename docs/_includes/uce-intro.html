@@ -1,0 +1,99 @@
+{% assign uc = include.data %}
+{% assign intro = uc.introduction %}
+
+<section class="uce-intro-card" id="uce-intro" data-uce-intro>
+  <!-- Header -->
+  <div class="uce-intro-header">
+    <div class="uce-intro-title-row">
+      <svg class="uce-intro-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+      <h2 class="uce-intro-title">Introduction</h2>
+    </div>
+    <span class="uce-badge uce-badge--current">CURRENT</span>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="uce-intro-grid{% unless intro.architecture_diagram %} uce-intro-grid--single{% endunless %}">
+    <!-- Left Column -->
+    <div class="uce-intro-left">
+      <!-- Scenario -->
+      {% if intro.scenario %}
+      <div class="uce-intro-block">
+        <h3 class="uce-intro-label">THE SCENARIO</h3>
+        <p class="uce-intro-desc">{{ intro.scenario }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Key Outcomes -->
+      {% if intro.key_outcomes and intro.key_outcomes.size > 0 %}
+      <div class="uce-intro-block">
+        <h3 class="uce-intro-label">KEY OUTCOMES</h3>
+        <ul class="uce-outcome-list">
+          {% for outcome in intro.key_outcomes %}
+          <li class="uce-outcome-item">
+            <svg class="uce-check-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#22C55E" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            {{ outcome }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <!-- Prerequisites -->
+      {% if intro.prerequisites %}
+      <div class="uce-intro-block uce-intro--prereqs">
+        <div class="uce-intro-label">
+          <svg class="uce-prereq-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>
+          PREREQUISITES
+        </div>
+        {% if intro.prerequisites.hard or intro.prerequisites.soft %}
+        <div class="uce-prereq-columns">
+          {% if intro.prerequisites.hard %}
+          <div class="uce-prereq-column">
+            <div class="uce-prereq-badge uce-prereq-badge--mandatory">MANDATORY</div>
+            <ul class="uce-prereq-list uce-prereq-list--mandatory">
+              {% for prereq in intro.prerequisites.hard %}
+              <li>
+                <i class="uce-prereq-check fa-solid fa-check"></i>
+                {{ prereq }}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+          {% if intro.prerequisites.soft %}
+          <div class="uce-prereq-column">
+            <div class="uce-prereq-badge uce-prereq-badge--recommended">RECOMMENDED</div>
+            <ul class="uce-prereq-list uce-prereq-list--recommended">
+              {% for prereq in intro.prerequisites.soft %}
+              <li>
+                <i class="uce-prereq-info fa-solid fa-circle-info"></i>
+                {{ prereq }}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Right Column — Architecture Diagram -->
+    {% if intro.architecture_diagram %}
+    <div class="uce-intro-right">
+      <div class="uce-diagram-placeholder">
+        <div class="mermaid uce-diagram-mermaid">{{ intro.architecture_diagram | strip }}</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>

@@ -154,7 +154,7 @@
 
   {% else %}
   <!-- Fallback: No sidebar, no home -->
-  {% unless page.hide_hero %}
+  {% unless page.hide_hero or page.layout == 'use_case' %}
   <section class="hero-section">
     {% include hero.html %}
   </section>

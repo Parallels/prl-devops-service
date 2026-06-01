@@ -1,0 +1,96 @@
+---
+layout: default
+---
+{% assign data_key = page.uce_data | default: page.id %}
+{% assign use_case = site.data[data_key] | default: page %}
+
+<!-- Use Case Engine Page -->
+<div class="uce-page" data-uce-usecase="{{ use_case.id | default: '' }}">
+
+  <!-- Top Row: Breadcrumb + Progress -->
+  <div class="uce-topbar">
+    <nav class="breadcrumb uce-breadcrumb-nav" aria-label="breadcrumbs">
+      <ul>
+        <li><a href="{{ site.baseurl }}/docs/">Docs</a></li>
+        <li {% if use_case.group %}class="is-active"{% endif %}><span>{{ use_case.group | default: 'Use Cases' }}</span></li>
+        {% if use_case.category %}
+        <li class="is-active"><span>{{ use_case.category }}</span></li>
+        {% endif %}
+        <li class="is-active"><span>{{ use_case.title | default: 'Use Case' }}</span></li>
+      </ul>
+    </nav>
+    <div class="uce-topbar-progress" id="uce-topbar-progress">
+      <span class="uce-topbar-count" id="uce-topbar-count">0 of 0</span>
+      <div class="uce-progress-track">
+        <div class="uce-progress-fill" id="uce-progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Title Header -->
+  <header class="uce-header">
+    <h1 class="uce-title">{{ use_case.title | default: 'Use Case' }}</h1>
+    <div class="uce-meta">
+      {% if use_case.level %}
+      <span class="uce-badge uce-badge--level uce-badge--{{ use_case.level }}">{{ use_case.level | capitalize }}</span>
+      {% endif %}
+      {% if use_case.duration %}
+      <span class="uce-meta-item uce-meta--duration">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        {{ use_case.duration }}
+      </span>
+      {% endif %}
+      {% if use_case.unlocks and use_case.unlocks.size > 0 %}
+      {% assign unlock_word = 'achievement' %}
+      {% if use_case.unlocks.size > 1 %}
+        {% assign unlock_word = 'achievements' %}
+      {% endif %}
+      <span class="uce-meta-item uce-meta--unlocks">
+        Unlocks {{ use_case.unlocks.size }} {{ unlock_word }}
+      </span>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Introduction Card -->
+  {% include uce-intro.html data=use_case %}
+
+  <!-- Step Flow Container -->
+  <section class="uce-flow" id="uce-flow-container" data-uce-flow
+    data-uce-data='{{ use_case | jsonify | escape }}'>
+    <!-- Steps rendered by uce-engine.js -->
+  </section>
+
+  <!-- Serialize referenced walkthrough data for the JS engine -->
+  {% assign all_tw_keys = "" %}
+  {% for step in use_case.steps %}
+    {% if step.panel and step.panel.kind == 'walkthrough' and step.panel.items_ref %}
+      {% assign all_tw_keys = all_tw_keys | append: ',' | append: step.panel.items_ref %}
+    {% endif %}
+  {% endfor %}
+  {% assign unique_tw_keys = all_tw_keys | split: ',' | uniq | where_exp: 'k', 'k != ""' %}
+  {% if unique_tw_keys.size > 0 %}
+  <script>
+    window.__UCE_WALKTHROUGH_DATA__ = {
+      {% for key in unique_tw_keys %}
+        "{{ key }}": {{ site.data[key] | jsonify }},
+      {% endfor %}
+    };
+  </script>
+  {% endif %}
+
+</div>
+
+<!-- Monaco Editor — loaded synchronously before engine -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+
+<!-- Data passed to JS engine -->
+<script>
+  window.__UCE_BASEURL__ = '{{ site.baseurl }}';
+</script>
+<script src="{{ site.baseurl }}/assets/js/uce-state.js?v4"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="{{ site.baseurl }}/assets/js/uce-engine.js?v74"></script>

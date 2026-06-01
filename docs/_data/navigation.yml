@@ -41,7 +41,7 @@
       items:
         - name: Run a Golden Image Catalog
           description: Store, share, and pull VM images from a remote catalog.
-          link: /examples/remote-catalog/
+          link: /docs/use-cases/
     - title: Guides
       items:
         - name: Control Multiple Hosts

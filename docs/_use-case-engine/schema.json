@@ -1,0 +1,367 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://parallels.github.io/prl-devops-service/_use-case-engine/schema.json",
+  "title": "Use Case Engine YAML Definition",
+  "$comment": "Validates use case YAML files for the interactive guided workflow engine.",
+  "type": "object",
+  "required": ["id", "title", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*$",
+      "description": "Unique identifier for the use case (kebab-case, starts with letter)."
+    },
+    "title": {
+      "type": "string",
+      "description": "Display title of the use case."
+    },
+    "level": {
+      "type": "string",
+      "enum": ["beginner", "intermediate", "advanced"],
+      "default": "beginner",
+      "description": "Difficulty level."
+    },
+    "duration": {
+      "type": "string",
+      "pattern": "^\\d+[smh]?$",
+      "description": "Human-readable duration (e.g., '30m', '2h', '5s')."
+    },
+    "group": {
+      "type": "string",
+      "description": "Breadcrumb group name."
+    },
+    "category": {
+      "type": "string",
+      "description": "Breadcrumb sub-category."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Searchable tags."
+    },
+    "icon": {
+      "type": "string",
+      "description": "Optional icon name for index page."
+    },
+    "introduction": {
+      "$ref": "#/$defs/introduction",
+      "description": "Introduction section metadata."
+    },
+    "unlocks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of achievement IDs unlocked upon completion."
+    },
+    "side_quests": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/side_quest" },
+      "description": "Global side quest pool keyed by quest ID."
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/step" },
+      "description": "Ordered list of steps defining the workflow."
+    }
+  },
+
+  "$defs": {
+    "introduction": {
+      "type": "object",
+      "required": ["scenario"],
+      "properties": {
+        "scenario": {
+          "type": "string",
+          "description": "Narrative description of the use case scenario."
+        },
+        "key_outcomes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Bullet-point list of key outcomes."
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/prerequisite" },
+          "description": "Required tools or knowledge."
+        },
+        "architecture_diagram": {
+          "type": "string",
+          "description": "Optional path to architecture diagram image asset."
+        }
+      }
+    },
+
+    "prerequisite": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "check": {
+          "anyOf": [
+            { "type": "string" },
+            { "type": "null" }
+          ],
+          "description": "CLI command to verify prerequisite (null = soft prereq)."
+        }
+      }
+    },
+
+    "side_quest": {
+      "type": "object",
+      "required": ["id", "title", "links_to"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "links_to": {
+          "type": "string",
+          "description": "Use case ID this side quest links to."
+        },
+        "requires": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "returns_to": {
+          "type": "string",
+          "description": "Step ID to return to after completing this side quest."
+        }
+      }
+    },
+
+    "step": {
+      "oneOf": [
+        { "$ref": "#/$defs/step_narrative" },
+        { "$ref": "#/$defs/step_choice" },
+        { "$ref": "#/$defs/step_checkpoint" },
+        { "$ref": "#/$defs/step_section_header" },
+        { "$ref": "#/$defs/step_quiz" },
+        { "$ref": "#/$defs/step_code_editor" }
+      ]
+    },
+
+    "step_common": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "duration": { "type": "string" },
+        "next": { "type": "string", "description": "ID of the next step." }
+      }
+    },
+
+    "step_narrative": {
+      "allOf": [
+        { "$ref": "#/$defs/step_common" },
+        {
+          "type": "object",
+          "required": ["kind", "body"],
+          "properties": {
+            "kind": { "const": "narrative" },
+            "body": { "type": "string" },
+            "panel": { "$ref": "#/$defs/panel" },
+            "side_quests": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "step_choice": {
+      "allOf": [
+        { "$ref": "#/$defs/step_common" },
+        {
+          "type": "object",
+          "required": ["kind", "question", "branches"],
+          "properties": {
+            "kind": { "const": "choice" },
+            "question": { "type": "string" },
+            "branches": {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/branch" }
+            },
+            "auto_select": { "type": "boolean", "default": false }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "branch": {
+      "type": "object",
+      "required": ["label", "next"],
+      "properties": {
+        "label": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "next": { "type": "string", "description": "Step ID to route to on selection." }
+      }
+    },
+
+    "step_checkpoint": {
+      "allOf": [
+        { "$ref": "#/$defs/step_common" },
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": {
+            "kind": { "const": "checkpoint" },
+            "body": { "type": "string" },
+            "panel": { "$ref": "#/$defs/panel_api" },
+            "on_failure": {
+              "enum": ["retry-or-skip", "retry-only", "fail-step"],
+              "default": "retry-or-skip"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "step_section_header": {
+      "allOf": [
+        { "$ref": "#/$defs/step_common" },
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": {
+            "kind": { "const": "section_header" },
+            "title": { "type": "string" },
+            "icon": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "step_quiz": {
+      "allOf": [
+        { "$ref": "#/$defs/step_common" },
+        {
+          "type": "object",
+          "required": ["kind", "question", "options", "correct"],
+          "properties": {
+            "kind": { "const": "quiz" },
+            "question": { "type": "string" },
+            "options": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "text"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "text": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "correct": { "type": "string", "description": "Option ID that is correct." },
+            "feedback_correct": { "type": "string" },
+            "feedback_incorrect": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "step_code_editor": {
+      "allOf": [
+        { "$ref": "#/$defs/step_common" },
+        {
+          "type": "object",
+          "required": ["kind", "initial_code", "language"],
+          "properties": {
+            "kind": { "const": "code_editor" },
+            "title": { "type": "string" },
+            "body": { "type": "string" },
+            "initial_code": { "type": "string" },
+            "language": { "type": "string", "description": "Syntax language for highlighting (e.g., 'yaml', 'javascript')." },
+            "validation_cmd": { "type": "string" },
+            "hint": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "panel": {
+      "oneOf": [
+        { "$ref": "#/$defs/panel_terminal" },
+        { "$ref": "#/$defs/panel_walkthrough" },
+        { "$ref": "#/$defs/panel_api" }
+      ]
+    },
+
+    "panel_terminal": {
+      "type": "object",
+      "required": ["kind", "cmd"],
+      "properties": {
+        "kind": { "const": "terminal" },
+        "cmd": { "type": "string" },
+        "copy_button": { "type": "boolean", "default": true }
+      },
+      "additionalProperties": false
+    },
+
+    "panel_walkthrough": {
+      "type": "object",
+      "required": ["kind"],
+      "oneOf": [
+        {
+          "required": ["kind", "main_image"],
+          "properties": {
+            "kind": { "const": "walkthrough" },
+            "main_image": { "type": "string" },
+            "items_ref": { "type": "string" },
+            "highlight_ids": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "auto_advance": { "type": "boolean", "default": false }
+          },
+          "additionalProperties": false
+        },
+        {
+          "required": ["kind", "items_ref"],
+          "properties": {
+            "kind": { "const": "walkthrough" },
+            "main_image": { "type": "string" },
+            "items_ref": { "type": "string" },
+            "highlight_ids": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "auto_advance": { "type": "boolean", "default": false }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+
+    "panel_api": {
+      "type": "object",
+      "required": ["kind", "url"],
+      "properties": {
+        "kind": { "const": "api_call" },
+        "url": { "type": "string" },
+        "method": { "enum": ["GET", "POST", "PUT", "DELETE"], "default": "GET" },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "expect": {
+          "type": "object",
+          "properties": {
+            "status_code": { "type": "integer" },
+            "timeout_ms": { "type": "integer", "default": 30000 },
+            "response_path": { "type": "string" }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

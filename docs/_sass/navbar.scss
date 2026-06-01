@@ -2,7 +2,7 @@
   --navigation-dropdown-top: 96px;
 
   top: 0;
-  height: 120px;
+  height: 100px;
   display: flex;
   z-index: 999 !important;
   position: sticky !important;
@@ -23,7 +23,7 @@
 
 .navigation-header {
   margin: auto;
-  min-height: 100px;
+  min-height: 85px;
   padding-left: 36px;
   padding-right: 36px;
   color: #FFFFFF;
@@ -212,7 +212,7 @@ body.api-layout {
 }
 
 .navigation-dropdown-menu {
-  left: 50%;
+  left: 24px;
   top: var(--navigation-dropdown-top);
   color: #303236;
   cursor: default;
@@ -229,7 +229,7 @@ body.api-layout {
   transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
   pointer-events: none;
   visibility: hidden;
-  transform: translate(-50%, -6px);
+  transform: translateY(-6px);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   white-space: normal;
@@ -251,7 +251,7 @@ body.api-layout {
     opacity: 1;
     visibility: visible;
     pointer-events: all;
-    transform: translate(-50%, 0);
+    transform: translateY(0);
   }
 
   @media (max-width: 1139.95px) {

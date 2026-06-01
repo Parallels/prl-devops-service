@@ -1,4 +1,5 @@
-{% assign tw = site.data.catalog_walkthrough %}
+{% assign data_key = include.data_key | default: 'catalog_walkthrough' %}
+{% assign tw = site.data[data_key] %}
 {% if tw %}
 <div class="tw-container" id="tw-container">
   <div class="tw-stage">
@@ -29,7 +30,7 @@
 
 <script>
 (function() {
-  var tw = {{ site.data.catalog_walkthrough | jsonify }};
+  var tw = {{ site.data[data_key] | jsonify }};
   var items = tw.items || [];
   if (!items.length) return;
 
