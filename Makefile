@@ -220,6 +220,23 @@ generate-postman: generate-swagger
 	@echo "Generating Postman collection..."
 	@scripts/generate-postman.sh
 
+.PHONY: generate-api-docs
+generate-api-docs: generate-swagger
+	@echo "Generating API documentation..."
+	@go run src/api_documentation/api_generate.go
+
+.PHONY: generate-all-docs
+generate-all-docs: generate-swagger generate-postman generate-api-docs
+	@echo "Generating all documentation..."
+	@echo "Generating Swagger..."
+	@cd src && swag fmt
+	@cd src && swag init -g main.go
+	@echo "Generating Postman collection..."
+	@scripts/generate-postman.sh
+	@echo "Generating API documentation..."
+	@go run src/api_documentation/api_generate.go
+
+
 .PHONY: deps
 deps: $(DEVELOPMENT_TOOLS) $(SECURITY_TOOLS)
 

@@ -26,18 +26,6 @@ definitions:
       EventTypeStats: Statistics events
       EventTypeSystem: System-level events
       EventTypeSystemLogs: System logs events
-    x-enum-descriptions:
-    - Broadcasts to all subscribers
-    - PDFM-specific events
-    - System-level events
-    - System logs events
-    - Health check events
-    - Orchestrator events
-    - Statistics events
-    - Reverse Proxy events
-    - Catalog cache events
-    - Job Manager events
-    - Auth events (users, roles, claims)
     x-enum-varnames:
     - EventTypeGlobal
     - EventTypePDFM
@@ -1011,6 +999,8 @@ definitions:
         type: string
       updated_at:
         type: string
+      user_id:
+        type: string
     type: object
   models.ApiKeyResponse:
     properties:
@@ -1027,6 +1017,14 @@ definitions:
       revoked:
         type: boolean
       revoked_at:
+        type: string
+      user_email:
+        type: string
+      user_id:
+        type: string
+      user_name:
+        type: string
+      user_username:
         type: string
     type: object
   models.ApiUser:
@@ -1586,6 +1584,8 @@ definitions:
         type: string
       id:
         type: string
+      is_orchestrator_job:
+        type: boolean
       job_operation:
         type: string
       job_type:
@@ -1659,9 +1659,13 @@ definitions:
     type: object
   models.LoginRequest:
     properties:
+      api_key:
+        type: string
       email:
         type: string
       password:
+        type: string
+      username:
         type: string
     type: object
   models.LoginResponse:
@@ -1726,7 +1730,6 @@ definitions:
     - 10
     - 11
     - 12
-    format: int64
     type: integer
     x-enum-varnames:
     - OAuthInvalidRequestError
@@ -8615,7 +8618,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -8648,7 +8651,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -8679,7 +8682,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -8711,7 +8714,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -8749,7 +8752,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
