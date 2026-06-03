@@ -1,7 +1,7 @@
 ---
 layout: page
-title: Visual Studio Code Extension Documentation
-subtitle: How to use the Visual Studio Code Extension
+title: Terraform Provider
+subtitle: How to use the Terraform Provider to manage your DevOps resources with infrastructure as code
 menubar: docs_terraform_menu
 show_sidebar: false
 ---

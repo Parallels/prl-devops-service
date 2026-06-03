@@ -2,11 +2,20 @@ id: vm-cicd-pipeline
 title: Building a CI/CD Pipeline on a Virtual Machine
 level: intermediate
 duration: "~25 min"
+group: Use Cases
+category: DevOps
+order: 3
+hidden: true
 tags:
   - ci-cd
   - devops
   - virtual-machine
   - automation
+unlocks:
+  - ci-cd-certification
+  - cloud-automation-badge
+depends_on:
+  - devops-cli-quickstart
 
 introduction:
   scenario: >
@@ -37,9 +46,7 @@ introduction:
         
         C --> G[Deploy]
         G --> H[Health Check]
-  unlocks:
-    - ci-cd-certification
-    - cloud-automation-badge
+
 
 steps:
   - id: intro
@@ -253,7 +260,7 @@ side_quests:
     description: >
       Learn the fundamentals of Infrastructure as Code using Terraform.
       This module covers providers, resources, variables, and state management.
-    links_to: learn-terraform
+    links_to: vm-cicd-pipeline
     requires: []
     duration: "~15 min"
   - id: docker-networking

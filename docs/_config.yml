@@ -40,6 +40,7 @@ exclude:
   - vendor/cache/
   - vendor/gems/
   - vendor/ruby/
+  - assets/js/marked.min.js
 
 livereload: true
 

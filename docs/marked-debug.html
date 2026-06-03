@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marked Debug</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    pre { background: #f4f4f4; padding: 12px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
+    .result { margin: 20px 0; padding: 16px; border: 1px solid #ccc; border-radius: 4px; }
+    .pass { border-color: green; background: #f0fff0; }
+    .fail { border-color: red; background: #fff0f0; }
+    h2 { margin-top: 32px; }
+  </style>
+</head>
+<body>
+  <h1>Marked Debug Page</h1>
+  <p>This page tests whether marked.js loads and works from the local file.</p>
+
+  <h2>Console Diagnostics (before script loads)</h2>
+  <pre id="diag-before">Loading...</pre>
+
+  <script>
+    // Diagnostic BEFORE loading marked
+    var diagBefore = document.getElementById('diag-before');
+    diagBefore.textContent = 
+      'window.marked: ' + typeof window.marked + '\n' +
+      'globalThis.marked: ' + (typeof globalThis !== 'undefined' ? typeof globalThis.marked : 'N/A') + '\n' +
+      'self.marked: ' + (typeof self !== 'undefined' ? typeof self.marked : 'N/A') + '\n' +
+      'typeof window: ' + typeof window + '\n' +
+      'typeof globalThis: ' + (typeof globalThis !== 'undefined' ? typeof globalThis : 'N/A') + '\n' +
+      'typeof self: ' + (typeof self !== 'undefined' ? typeof self : 'N/A') + '\n' +
+      'window === globalThis: ' + (window === globalThis) + '\n' +
+      'window === self: ' + (window === self) + '\n' +
+      'globalThis === self: ' + ((typeof globalThis !== 'undefined' && typeof self !== 'undefined') ? (globalThis === self) : 'N/A') + '\n' +
+      'document.location.href: ' + window.location.href;
+  </script>
+
+  <!-- Load marked from local file -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/1.2.9/marked.min.js"></script>
+
+  <h2>Console Diagnostics (after script loads)</h2>
+  <pre id="diag-after">Loading...</pre>
+
+  <h2>Test: Parse Markdown</h2>
+  <pre id="md-input">## Hello World
+
+This is a **bold** and *italic* test.
+
+- Item 1
+- Item 2
+
+`inline code`
+
+[Link](https://example.com)</pre>
+
+  <div id="md-result" class="result">Loading...</div>
+
+  <h2>Test: Parse Heading</h2>
+  <pre id="md-heading-input">## What is the Remote Catalog?</pre>
+  <div id="md-heading-result" class="result">Loading...</div>
+
+  <script>
+    // Diagnostic AFTER loading marked
+    var diagAfter = document.getElementById('diag-after');
+    diagAfter.textContent = 
+      'window.marked: ' + typeof window.marked + '\n' +
+      'globalThis.marked: ' + (typeof globalThis !== 'undefined' ? typeof globalThis.marked : 'N/A') + '\n' +
+      'self.marked: ' + (typeof self !== 'undefined' ? typeof self.marked : 'N/A') + '\n' +
+      'typeof window.marked: ' + (typeof window.marked) + '\n' +
+      'typeof window.marked.parse: ' + (typeof window.marked !== 'undefined' && window.marked ? typeof window.marked.parse : 'N/A') + '\n' +
+      'window.marked === window: ' + (window.marked === window) + '\n' +
+      'window.marked === globalThis: ' + (window.marked === globalThis) + '\n' +
+      'Object.keys(window.marked || {}): ' + (window.marked ? Object.keys(window.marked).join(', ') : 'N/A') + '\n' +
+      'Object.getOwnPropertyNames(window.marked || {}): ' + (window.marked ? Object.getOwnPropertyNames(window.marked).join(', ') : 'N/A');
+
+    // Test parse
+    var mdResult = document.getElementById('md-result');
+    var mdHeadingResult = document.getElementById('md-heading-result');
+
+    if (typeof window.marked !== 'undefined' && typeof window.marked.parse === 'function') {
+      var mdInput = document.getElementById('md-input').textContent;
+      var parsed = window.marked.parse(mdInput);
+      mdResult.className = 'result pass';
+      mdResult.innerHTML = '<strong>PASS</strong><br><pre>' + parsed.replace(/</g, '&lt;') + '</pre>';
+
+      var headingInput = document.getElementById('md-heading-input').textContent;
+      var headingParsed = window.marked.parse(headingInput);
+      mdHeadingResult.className = 'result pass';
+      mdHeadingResult.innerHTML = '<strong>PASS</strong><br><pre>' + headingParsed.replace(/</g, '&lt;') + '</pre>';
+    } else {
+      mdResult.className = 'result fail';
+      mdResult.innerHTML = '<strong>FAIL</strong><br>marked.parse is not available. window.marked = ' + JSON.stringify(window.marked) + '\ntypeof marked = ' + typeof window.marked;
+      
+      mdHeadingResult.className = 'result fail';
+      mdHeadingResult.innerHTML = '<strong>FAIL</strong><br>marked.parse is not available.';
+    }
+  </script>
+</body>
+</html>

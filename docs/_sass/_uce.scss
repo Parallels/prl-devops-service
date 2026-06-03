@@ -23,6 +23,10 @@ $uce-radius-sm: 8px;
   padding-right: 24px;
   // background: rgb(62, 62, 62);
   font-family: 'Inter', sans-serif;
+
+  code {
+    color: $uce-primary;
+  }
 }
 
 /* Breadcrumb */
@@ -87,6 +91,13 @@ $uce-radius-sm: 8px;
   font-size: 14px;
   color: $font-lighter-color;
 }
+.uce-badge-wrapper {
+  margin-left: auto;
+  flex-grow: 1;
+  display: flex;
+    justify-content: end;
+    align-items: center;
+}
 
 .uce-badge--level {
   font-size: 11px;
@@ -95,6 +106,7 @@ $uce-radius-sm: 8px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+
 }
 
 .uce-badge--intermediate {
@@ -116,7 +128,7 @@ $uce-radius-sm: 8px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  flex-grow: 1;
+
   justify-content: flex-end;
 }
 
@@ -317,6 +329,28 @@ $uce-radius-sm: 8px;
   border-left: 1px dashed #dbdce0;
 }
 
+/* ── Image variant — clean frame, no dashed border ── */
+
+.uce-intro-right--image {
+  background: transparent;
+  border-left: none;
+  padding: 0;
+}
+
+.uce-image-frame {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: #fff;
+
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+}
+
 .uce-intro-block {
   display: flex;
   flex-direction: column;
@@ -340,6 +374,11 @@ $uce-radius-sm: 8px;
   line-height: 1.6;
   color: $font-base-color;
   margin: 0;
+
+  :not(pre)>code[class*=language-],pre[class*=language-] {
+    background: unset;
+    color: $uce-primary;
+}
 }
 
 /* Key Outcomes */
@@ -714,7 +753,7 @@ $uce-radius-sm: 8px;
 
 .uce-step-nav-btn--locked::after {
   content: '\f023';
-  font-family: 'Font Awesome 6 Free';
+  font-family: 'Font Awesome 7 Free';
   font-weight: 900;
   margin-left: 6px;
   font-size: 11px;
@@ -743,6 +782,10 @@ $uce-radius-sm: 8px;
   font-size: 15px;
   line-height: 1.7;
   color: $font-base-color;
+
+  code {
+    color: $uce-primary;
+  }
 }
 
 .uce-narrative-body p {
@@ -769,6 +812,13 @@ $uce-radius-sm: 8px;
   font-size: 0.9em;
 }
 
+.uce-narrative-body blockquote {
+  border-left: 3px solid $uce-primary;
+  padding-left: 16px;
+  margin: 18px 0;
+  color: $uce-grey;
+}
+
 .uce-narrative-body :last-child {
   margin-bottom: 0;
 }
@@ -792,6 +842,121 @@ $uce-radius-sm: 8px;
   font-weight: 800;
   color: $uce-primary;
   letter-spacing: -0.01em;
+}
+
+/* ── Markdown Step Body ─────────────────────────────────────────── */
+
+.uce-step-body--markdown {
+  font-size: 15px;
+  line-height: 1.7;
+  color: $font-base-color;
+  padding: 0 10px;
+  font-family: 'Inter', sans-serif;
+
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    line-height: 1.3;
+  }
+
+  h1 { font-size: 1.75em; font-weight: 800; }
+  h2 { font-size: 1.4em; font-weight: 700; }
+  h3 { font-size: 1.15em; font-weight: 600; }
+
+  p {
+    margin: 0 0 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  ul,
+  ol {
+    margin: 0 0 12px 20px;
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  pre {
+    background: $uce-bg;
+    border: 1px solid $uce-border;
+    border-radius: $uce-radius-sm;
+    padding: 12px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    margin: 12px 0;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9em;
+  }
+
+  // Inline code (not inside pre)
+  p code, li code, blockquote code {
+    background: $uce-primary-light;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: $uce-primary-dark;
+  }
+
+  blockquote {
+    border-left: 3px solid $uce-primary;
+    padding-left: 16px;
+    margin: 18px 0;
+    color: $uce-grey;
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: $uce-radius-sm;
+    margin: 12px 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 14px;
+
+    th, td {
+      border: 1px solid $uce-border;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    th {
+      background: $uce-bg;
+      font-weight: 600;
+    }
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid $uce-border;
+    margin: 24px 0;
+  }
+
+  a {
+    color: $uce-primary;
+    text-decoration: underline;
+
+    &:hover {
+      color: $uce-primary-dark;
+    }
+  }
 }
 
 /* ── Choice Cards (Phase 2-01) ────────────────────────────────────── */
@@ -1461,11 +1626,21 @@ $uce-radius-sm: 8px;
   color: #FFA657;
 }
 
-/* Terminal panel wrapper */
+/* ── Terminal panel wrapper ──────────────────────────────────────── */
 .uce-panel-terminal {
   display: flex;
   flex-direction: column;
   gap: 0;
+  width: 100%;
+
+  .token.number {
+    background-color: unset;
+    border-radius: unset;
+    font-size: unset;
+    margin-right: unset;
+    padding: unset;
+    vertical-align: unset;
+  }
 }
 
 .uce-panel-terminal .mac-window+.mac-window {
@@ -1511,6 +1686,7 @@ $uce-radius-sm: 8px;
   gap: 10px;
   border-top: 1px solid $uce-border;
   padding-top: 20px;
+  grid-column: 1 / -1;
 }
 
 .uce-checklist-item {
@@ -1570,6 +1746,11 @@ $uce-radius-sm: 8px;
   flex-direction: column;
   gap: 8px;
   padding-left: 0 !important;
+
+  strong {
+    font-weight: 600;
+    color: $font-base-color;
+  }
 }
 
 .uce-quiz-option {
@@ -1618,11 +1799,18 @@ $uce-radius-sm: 8px;
 }
 
 .uce-quiz-option--correct .uce-quiz-icon {
-  color: $uce-success;
+  color: $uce-success !important;
+
+  strong {
+    color: $uce-success !important;
+  }
 }
 
 .uce-quiz-option--incorrect .uce-quiz-icon {
-  color: $uce-error;
+  color: $uce-error !important;
+  strong {
+    color: $uce-error !important;
+  }
 }
 
 .uce-quiz-letter {
@@ -1658,15 +1846,23 @@ $uce-radius-sm: 8px;
 .uce-quiz-feedback--correct {
   display: block;
   background: rgba(34, 197, 94, 0.08);
-  color: $uce-success;
+  color: $uce-success !important;
   border: 1px solid rgba(34, 197, 94, 0.2);
+
+  strong {
+    color: $uce-success !important;
+  }
 }
 
 .uce-quiz-feedback--incorrect {
   display: block;
   background: rgba(239, 68, 68, 0.08);
-  color: $uce-error;
+  color: $uce-error !important;
   border: 1px solid rgba(239, 68, 68, 0.2);
+
+  strong {
+    color: $uce-error !important;
+  }
 }
 
 /* ── Code Editor (Phase 3-02) ────────────────────────────────────── */
@@ -1691,15 +1887,34 @@ $uce-radius-sm: 8px;
 }
 
 .uce-editor-label {
-  display: block;
+  display: inline-block;
   padding: 8px 16px;
   background: $uce-bg;
-  border-bottom: 1px solid $uce-border;
   font-size: 11px;
   font-weight: 700;
   color: $font-lighter-color;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.uce-editor-label-row {
+  display: flex;
+  align-items: center;
+  background: $uce-bg;
+  border-bottom: 1px solid $uce-border;
+  padding: 0 12px;
+}
+
+.uce-editor-label-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.uce-editor-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 
@@ -1756,6 +1971,26 @@ $uce-radius-sm: 8px;
 .uce-editor-copy-btn:hover {
   color: $uce-primary;
   background: $uce-primary-light;
+}
+
+/* Editor download button */
+.uce-editor-download-btn {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: $font-lighter-color;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.uce-editor-download-btn:hover {
+  color: $uce-success;
+  background: rgba(34, 197, 94, 0.1);
 }
 
 /* Validation result variants */
@@ -1820,6 +2055,14 @@ $uce-radius-sm: 8px;
 /* Stacked / rows layout — always single column */
 .uce-narrative-grid--rows {
   grid-template-columns: 1fr !important;
+
+  .uce-panel-terminal {
+    width: 100% !important;
+  }
+
+  .uce-panel-api {
+    width: 100% !important;
+  }
 }
 
 /* Single column (no panel, columns mode auto-resolved) */
@@ -2114,12 +2357,305 @@ $uce-radius-sm: 8px;
   color: $uce-success;
 }
 
+/* ── Resources Section ─────────────────────────────────────────── */
+
+$uce-resources-accent: #10B981;
+$uce-resources-accent-dark: #059669;
+$uce-resources-accent-light: rgba(16, 185, 129, 0.12);
+
+.uce-resources-flyout {
+  margin: 16px 0;
+  border: 1px solid $uce-resources-accent;
+  border-radius: $uce-radius;
+  overflow: hidden;
+  background: $uce-resources-accent-light;
+}
+
+.uce-resources-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 10px 12px;
+  background: rgba(16, 185, 129, 0.08);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.uce-resources-header:hover {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.uce-resources-icon {
+  width: 16px;
+  height: 16px;
+  color: $uce-resources-accent;
+  flex-shrink: 0;
+}
+
+.uce-resources-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: $font-base-color;
+  flex: 1;
+}
+
+.uce-resources-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.uce-resources-chevron {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  transition: transform 200ms ease;
+  flex-shrink: 0;
+}
+
+.uce-resources-body {
+  padding: 16px;
+}
+
+.uce-resource-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.uce-resource-item + .uce-resource-item {
+  border-top: 1px solid rgba($uce-resources-accent, 0.15);
+}
+
+.uce-resource-title {
+  font-size: 14px;
+  color: $font-base-color;
+  flex: 1;
+}
+
+.uce-resource-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: $uce-resources-accent;
+  border: none;
+  border-radius: $uce-radius-sm;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+
+.uce-resource-btn:hover {
+  background: $uce-resources-accent-dark;
+  color: #fff;
+}
+
+/* ── Loading Spinner ─────────────────────────────────────────────── */
+
+.uce-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: $font-lighter-color;
+  font-size: 14px;
+}
+
+.uce-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid $uce-border;
+  border-top-color: $uce-primary;
+  border-radius: 50%;
+  animation: uce-spin 0.6s linear infinite;
+}
+
+@keyframes uce-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── What's Next (Completion Section) ──────────────────────────── */
+
+$uce-whatsnext-accent: #3B82F6;
+$uce-whatsnext-bg: #F0F4FF;
+
+
+
+.uce-whatsnext-section {
+  padding-bottom: 20px;
+}
+
+/* Skeleton / shimmer placeholder */
+.uce-skeleton {
+  display: inline-block;
+  min-height: 1em;
+  background: linear-gradient(90deg, $uce-border 25%, rgba(59, 130, 246, 0.08) 50%, $uce-border 75%);
+  background-size: 200% 100%;
+  animation: uce-shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  color: transparent !important;
+}
+
+@keyframes uce-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.uce-whatsnext-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 2px solid $uce-primary;
+  border-radius: $uce-radius;
+  background: $uce-primary-light;
+}
+
+.uce-whatsnext-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 10px;
+  flex-shrink: 0;
+
+  svg {
+    width: 24px;
+    height: 24px;
+    color: $uce-primary;
+  }
+}
+
+.uce-whatsnext-content {
+  flex: 1;
+}
+
+.uce-whatsnext-title {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+  color: $font-base-color;
+}
+
+.uce-whatsnext-message {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: $font-base-color;
+}
+
+.uce-whatsnext-heading {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: $font-base-color;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.uce-whatsnext-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.uce-whatsnext-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid $uce-border;
+  border-radius: $uce-radius-sm;
+  background: $uce-bg;
+  text-decoration: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+
+  &:hover {
+    border-color: $uce-primary;
+    background: $uce-primary-light;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.uce-whatsnext-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.uce-whatsnext-card-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $uce-primary;
+  flex-shrink: 0;
+
+  i {
+    font-size: 14px;
+  }
+}
+
+.uce-whatsnext-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: $font-base-color;
+}
+
+.uce-whatsnext-card-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: $font-lighter-color;
+  flex: 1;
+
+  /* 2-line clamp with ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.uce-whatsnext-card-arrow {
+  margin-top: auto;
+  padding-top: 8px;
+  color: $uce-grey;
+  transition: color 0.2s;
+}
+
+.uce-whatsnext-card:hover .uce-whatsnext-card-arrow {
+  color: $uce-primary;
+}
+
+/* ── Return Banner ─────────────────────────────────────────────── */
+
 .uce-return-banner {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 20px;
-  margin: 0 -24px 16px;
+  margin-bottom: 16px;
   background: rgba(34, 197, 94, 0.06);
   border: 1px solid rgba(34, 197, 94, 0.2);
   border-radius: $uce-radius-sm;

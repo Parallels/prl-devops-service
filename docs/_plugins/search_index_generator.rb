@@ -85,12 +85,70 @@ Jekyll::Hooks.register :site, :post_write do |site|
     raw_content = page.content.to_s
     stripped_content = raw_content.gsub(/<[^>]*>/, '').gsub(/\s+/, ' ').strip
 
+    # Enrich with YAML data for use case pages
+    uce_id = page.data && page.data['uce_data']
+    if uce_id && site.data[uce_id]
+      uc = site.data[uce_id]
+      enrich_parts = []
+
+      # Top-level scenario
+      if uc['scenario']
+        enrich_parts << uc['scenario'].to_s
+      end
+
+      # Top-level markdown_scenario (plain text for search)
+      if uc['markdown_scenario']
+        enrich_parts << uc['markdown_scenario'].to_s
+      end
+
+      # Introduction scenario (secondary)
+      if uc['introduction'] && uc['introduction']['scenario']
+        enrich_parts << uc['introduction']['scenario'].to_s
+      end
+
+      # Introduction markdown_scenario (secondary)
+      if uc['introduction'] && uc['introduction']['markdown_scenario']
+        enrich_parts << uc['introduction']['markdown_scenario'].to_s
+      end
+
+      # Tags
+      if uc['tags']
+        enrich_parts << uc['tags'].join(' ')
+      end
+
+      # Step titles and short bodies (first 2 steps, to keep excerpt manageable)
+      if uc['steps']
+        uc['steps'][0..1].each do |step|
+          step_parts = []
+          step_parts << step['title'].to_s if step['title']
+          if step['body']
+            # Take first 100 chars of body to avoid bloating the index
+            body_preview = step['body'].to_s.gsub(/<[^>]*>/, '').strip
+            body_preview = body_preview.length > 100 ? body_preview[0, 100] + '...' : body_preview
+            step_parts << body_preview
+          end
+          enrich_parts << step_parts.join(' ')
+        end
+      end
+
+      # Append enriched text to stripped content
+      if enrich_parts.any?
+        stripped_content = stripped_content + ' ' + enrich_parts.join(' ')
+      end
+    end
+
     # Take first 500 characters as excerpt
     excerpt = stripped_content.length > 500 ? stripped_content[0, 500] + '...' : stripped_content
 
     # Resolve breadcrumb from menu map
     rel_url = page.url.to_s
     breadcrumb = breadcrumb_map[rel_url] || ''
+
+    # Override category for use cases
+    if uce_id && site.data[uce_id]
+      uc = site.data[uce_id]
+      breadcrumb = (uc['group'] || 'Use Cases').to_s
+    end
 
     # Prepend baseurl to page.url so links work from the served site
     baseurl = site.baseurl.to_s
@@ -103,6 +161,13 @@ Jekyll::Hooks.register :site, :post_write do |site|
       url:      full_url,
       content:  excerpt
     }
+    # For use cases, use the YAML title if front matter title is empty
+    if uce_id && site.data[uce_id]
+      uc = site.data[uce_id]
+      if uc['title']
+        entry[:title] = uc['title'].to_s
+      end
+    end
     if page.data && page.data['date']
       entry[:date] = page.data['date'].strftime('%Y-%m-%d')
     end

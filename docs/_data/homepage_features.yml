@@ -12,7 +12,7 @@ items:
     fa_icon: fa-network-wired
     icon_bg: "#2da44e"
     link_text: "Explore orchestration"
-    link_url: /features/orchestration/
+    link_url: /docs/devops/orchestrator/overview/
   - title: "CI/CD Runners"
     description: "Using our GitHub Actions or Jenkins integration, spin up native macOS, Windows or Linux runners on your own hardware. No shared infra, no queues — your builds, your metal."
     fa_icon: fa-circle-dot
@@ -24,15 +24,15 @@ items:
     fa_icon: fa-display
     icon_bg: "#8b5cf6"
     link_text: "Try the new UI"
-    link_url: /features/ui/
+    link_url: /ui/
   - title: "REST API & CLI"
     description: "Every action available in the UI is also in the API. Automate everything, integrate anywhere, script anything."
     fa_icon: fa-code
     icon_bg: "#f59e0b"
     link_text: "API reference"
-    link_url: /docs/api/
+    link_url: /docs/devops/restapi/reference/
   - title: "Fair Source License"
-    description: "Free for up to 10 users. No credit card needed to get started. Scale with a Business or Enterprise license when you're ready."
+    description: "Free and open-source, but requires a Parallels Desktop license. Pro covers up to 10 users; more requires a Business or Enterprise license."
     fa_icon: fa-shield-halved
     icon_bg: "#0891b2"
     link_text: "View licensing"

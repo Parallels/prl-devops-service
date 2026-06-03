@@ -1,0 +1,176 @@
+id: devops-ui-docker-start
+title: Run the DevOps UI in Docker
+level: beginner
+duration: "~5 min"
+group: Use Cases
+category: DevOps
+order: 2
+hidden: false
+
+tags:
+  - devops
+  - ui
+  - docker
+  - containers
+
+scenario: >
+  Learn how to deploy the Parallels DevOps UI as a Docker container and
+  connect it to your local backend service.
+
+introduction:
+  image: /assets/img/devops-ui-home.png
+  markdown_scenario: >
+    While the `prldevops` CLI and REST API are powerful on their own, the 
+    **Parallels DevOps UI** provides a unified visual dashboard for managing 
+    your host fleet, configuring virtual machines, and browsing your Catalog. 
+    In this use case, you will pull the official Docker image, run the UI 
+    container, and securely link it to the backend service you configured 
+    in the previous step.
+  key_outcomes:
+    - Pull the Parallels DevOps UI Docker image
+    - Start the UI container with the correct port mappings
+    - Link the container to your existing local API
+    - Access the visual dashboard from your browser
+  prerequisites:
+    hard:
+      - Docker Desktop or Docker Engine installed and running
+      - Parallels DevOps Service actively running on `http://localhost:80`
+    soft:
+      - Basic understanding of Docker commands
+      - Completion of the **DevOps CLI Quick Start** use case
+  unlocks:
+    - orchestrator-use-case
+    - catalog-use-case
+
+steps:
+  - id: intro
+    kind: markdown
+    title: Add a Visual Dashboard to your Fleet
+    duration: "~1 min"
+    body: |
+      ## A single pane of glass
+
+      The `prldevops` backend you set up previously does the heavy lifting, but 
+      sometimes a visual interface makes managing multiple nodes and images significantly 
+      easier. The official frontend is distributed as a lightweight, pre-compiled Docker 
+      image that connects directly to your backend's REST API.
+
+      | Feature | Benefit |
+      |---|---|
+      | <i class="fa-brands fa-docker"></i> **Containerized** | Zero build steps and no Node.js dependencies required on your host. |
+      | <i class="fa-solid fa-plug"></i> **Bring Your Own API** | Connects dynamically to your existing `localhost` API or a remote cluster. |
+      | <i class="fa-solid fa-chart-line"></i> **Real-time Insights** | View live metrics, logs, and state changes across your entire fleet. |
+
+      **In this use case**, we will download the image, start the container, and 
+      point it to the API listening on port `80`.
+
+  - id: verify-docker
+    kind: narrative
+    title: Verify Docker is Running
+    duration: "~1 min"
+    body: |
+      Before we can pull and run the UI, we need to ensure the Docker daemon is 
+      active on your machine. 
+      
+      Run the command below to check your Docker version. If this command fails, 
+      start Docker Desktop (on macOS/Windows) or the Docker service (on Linux) 
+      before proceeding.
+    panel:
+      kind: terminal
+      id: docker-version
+      name: Docker Check
+      cmd: |
+        docker --version
+      copy_button: true
+
+  - id: start-ui-container
+    kind: narrative
+    title: Run the UI Container
+    duration: "~2 min"
+    body: |
+      Now, let's start the UI container. We will map the container's web server 
+      to port `8080` on your machine to avoid conflicting with the backend service 
+      already running on port `80`. 
+      
+      Because the web application runs inside your browser, it will communicate 
+      with the backend using `localhost`. 
+      
+      Run the command below to pull the latest image and start the container in 
+      the background.
+    panel:
+      kind: terminal
+      id: docker-run-ui
+      name: Docker Run
+      cmd: |
+        docker run -d \
+          --name prldevops-ui \
+          -p 8080:80 \
+          -e BACKEND_URL="http://localhost:80" \
+          ghcr.io/parallels/prl-devops-ui:latest
+      copy_button: true
+    checklist:
+      - The `docker run` command outputs a container ID.
+      - The `prldevops` backend service is still running from the previous use case.
+
+  - id: verify-ui
+    kind: narrative
+    title: Access the Dashboard
+    duration: "~1 min"
+    body: |
+      With both the backend and frontend services running, your Parallels DevOps 
+      stack is complete. 
+      
+      Open your web browser and navigate to the address below. You should be 
+      greeted by the Parallels DevOps login screen or the main dashboard.
+    panels:
+      - kind: terminal
+        id: open-dashboard-mac
+        name: Open Dashboard (macOS)
+        if: choose-platform.value == 'mac' || choose-platform.value == 'source'
+        cmd: |
+          open http://localhost:8080
+        copy_button: true
+      - kind: terminal
+        id: open-dashboard-linux
+        name: Open Dashboard (Linux)
+        if: choose-platform.value == 'linux'
+        cmd: |
+          xdg-open http://localhost:8080
+        copy_button: true
+      - kind: terminal
+        id: open-dashboard-windows
+        name: Open Dashboard (Windows)
+        if: choose-platform.value == 'windows'
+        cmd: |
+          start http://localhost:8080
+        copy_button: true
+
+whats_next:
+    title: "Stack Complete"
+    body: >
+      You now have the complete Parallels DevOps stack running locally! You can 
+      manage your instances directly from the terminal via the CLI, or use the 
+      web dashboard for a visual overview of your fleet.
+    # recommendations:
+    #   - use_case: orchestrator-use-case
+    #     icon: fa-network-wired
+
+side_quests:
+  - id: secure-tls
+    title: Configure TLS for the UI
+    expanded: true
+    description: >
+      Learn how to mount your own SSL certificates into the Docker container 
+      so your dashboard is served securely over HTTPS.
+    links_to: https://parallels.github.io/prl-devops-service/docs/devops/getting-started/ui-tls/
+    requires: []
+    duration: "~10 min"
+  - id: custom-ports
+    title: Use Custom Port Mappings
+    expanded: false
+    description: >
+      Port 8080 already in use? Learn how to customize the frontend port mapping 
+      and backend routing variables.
+    links_to: https://parallels.github.io/prl-devops-service/docs/devops/getting-started/docker/#ports
+    requires: []
+    duration: "~5 min"

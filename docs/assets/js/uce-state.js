@@ -158,6 +158,23 @@ var UCEState = (function () {
     }, SAVE_DEBOUNCE_MS);
   }
 
+  /**
+   * Force-synchronously persist all dirty states to localStorage.
+   * Used before navigation to avoid losing debounced writes.
+   */
+  function _forceSync() {
+    for (var id in _currentState) {
+      if (_currentState.hasOwnProperty(id) && _currentState[id]) {
+        try {
+          localStorage.setItem(_key(id), JSON.stringify(_currentState[id]));
+        } catch (e) {
+          console.error('[UCEState] Failed to force-sync state for', id, e);
+        }
+      }
+    }
+    _dirty = false;
+  }
+
   /** Create a fresh default state object. */
   function _freshState() {
     return {
@@ -173,6 +190,23 @@ var UCEState = (function () {
   }
 
   /* ── Public API ─────────────────────────────────────────────────── */
+
+  /**
+   * Force-synchronously persist all dirty state to localStorage.
+   * Use this before page navigation to avoid losing unsaved state.
+   */
+  function _forceSync() {
+    for (var id in _currentState) {
+      if (_currentState.hasOwnProperty(id)) {
+        try {
+          localStorage.setItem(_key(id), JSON.stringify(_currentState[id]));
+        } catch (e) {
+          console.error('[UCEState] Failed to force-sync state for', id, e);
+        }
+      }
+    }
+    _dirty = false;
+  }
 
   /**
    * Get (and lazily-load) state for a use case.
@@ -469,6 +503,26 @@ var UCEState = (function () {
     return state.completed_steps.length;
   }
 
+  /**
+   * Check if a side quest's linked use case is fully completed.
+   * Side quests point to other use cases via `links_to`. We check
+   * localStorage for that use case's progress and verify current_step
+   * is '__complete__'.
+   * @param {string} sqLinksTo — the use-case ID that the side quest points to
+   * @returns {boolean}
+   */
+  function isSideQuestUseCaseCompleted(sqLinksTo) {
+    if (!sqLinksTo) return false;
+    try {
+      var raw = localStorage.getItem('uce_progress:' + sqLinksTo);
+      if (!raw) return false;
+      var state = JSON.parse(raw);
+      return state && state.current_step === '__complete__';
+    } catch (e) {
+      return false;
+    }
+  }
+
   /* ── Export ─────────────────────────────────────────────────────── */
   return {
     getState: getState,
@@ -480,11 +534,13 @@ var UCEState = (function () {
     resetState: resetState,
     isStepCompleted: isStepCompleted,
     isSideQuestCompleted: isSideQuestCompleted,
+    isSideQuestUseCaseCompleted: isSideQuestUseCaseCompleted,
     getSideQuestTag: getSideQuestTag,
     getVisibleSteps: getVisibleSteps,
     getTotalSteps: getTotalSteps,
     getCompletedCount: getCompletedCount,
     recordQuizAnswer: recordQuizAnswer,
-    _evaluateCondition: _evaluateCondition
+    _evaluateCondition: _evaluateCondition,
+    _forceSync: _forceSync
   };
 })();

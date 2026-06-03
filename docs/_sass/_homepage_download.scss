@@ -168,12 +168,27 @@ $btn-secondary-bg: #ffffff;
   }
 }
 
+// CLI section wrapper
+.download-card-cli-section {
+  margin-bottom: 10px;
+}
+
+.download-card-cli-label {
+  font-family: 'Inter', -apple-system, BlinkMacFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 5px;
+}
+
 // CLI command block
 .download-card-cli-command {
   background-color: #1e1e2e;
   border-radius: 10px;
   padding: 0;
-  margin-bottom: 24px;
+  margin-bottom: 6px;
   position: relative;
 
   .download-cli-command-row {
@@ -228,6 +243,32 @@ $btn-secondary-bg: #ffffff;
     i {
       font-size: 14px;
     }
+  }
+}
+
+// "or" divider between install script and download
+.download-card-cli-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+  margin-bottom: 5px;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: #e5e7eb;
+  }
+
+  span {
+    font-family: 'Inter', -apple-system, BlinkMacFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: lowercase;
+    letter-spacing: 0.05em;
   }
 }
 

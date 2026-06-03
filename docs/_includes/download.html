@@ -37,12 +37,18 @@
 
           {% if item.category == "cli" %}
           {% if item.cli_command %}
-          <div class="download-card-cli-command">
-            <div class="download-cli-command-row">
-              <code>{{ item.cli_command }}</code>
-              <button class="download-copy-cli-btn" onclick="navigator.clipboard.writeText('{{ item.cli_command }}'); this.querySelector('i').className='fas fa-check'; setTimeout(() => { this.querySelector('i').className='fas fa-copy'; }, 2000);" title="Copy command">
-                <i class="fas fa-copy"></i>
-              </button>
+          <div class="download-card-cli-section">
+            <div class="download-card-cli-label">Run Install Script</div>
+            <div class="download-card-cli-command">
+              <div class="download-cli-command-row">
+                <code>{{ item.cli_command }}</code>
+                <button class="download-copy-cli-btn" onclick="navigator.clipboard.writeText('{{ item.cli_command }}'); this.querySelector('i').className='fas fa-check'; setTimeout(() => { this.querySelector('i').className='fas fa-copy'; }, 2000);" title="Copy command">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+            </div>
+            <div class="download-card-cli-divider">
+              <span>or</span>
             </div>
           </div>
           {% endif %}
@@ -96,7 +102,7 @@
   if (cliCard) {
     var cliBtn = cliCard.querySelector('.download-btn--secondary');
     if (cliBtn) {
-      cliBtn.textContent = 'Download ' + platform + '  Service';
+      cliBtn.textContent = 'Download ' + platform + '  Service Binary';
     }
   }
 })();

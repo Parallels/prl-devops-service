@@ -18,6 +18,7 @@
   var useCaseId = '';
   var steps = [];
   var sideQuests = [];
+  var whatsNext = null;
   var visibleSteps = [];
   var state = null;
   var currentIndex = 0;
@@ -27,6 +28,7 @@
 
   function cacheDom() {
     dom.container = document.getElementById(STEPS_CONTAINER_ID);
+    dom.containerParent = dom.container ? dom.container.parentElement : null;
     dom.progressFill = document.getElementById('uce-progress-fill');
     dom.topbarCount = document.getElementById('uce-topbar-count');
     dom.topbarProgress = document.getElementById('uce-topbar-progress');
@@ -54,6 +56,7 @@
     useCaseId = data.id || '';
     steps = data.steps || [];
     sideQuests = data.side_quests || [];
+    whatsNext = data.whats_next || null;
 
     if (!useCaseId || steps.length === 0) {
       console.warn('[UCE] Use case has no ID or steps.');
@@ -95,9 +98,27 @@
     updateStepStates();
     updateProgress();
 
+    // Scroll to the current step so the user lands on the right position after reload
+    scrollToStep(currentIndex);
+
     /* ── Resolve expressions on already-completed steps (reload scenario) ── */
     if (window.ExpressionResolver) {
       window.ExpressionResolver.refreshAllSteps();
+    }
+
+    /* ── Preload whats_next recommendation data ── */
+    preloadWhatsNextData(dom.container);
+
+    /* ── Render whats_next section if use case is already complete ── */
+    if (whatsNext && state.current_step === '__complete__') {
+      renderWhatsNextSection(whatsNext);
+      // Scroll to the whats_next section so the user sees the completion card
+      setTimeout(function() {
+        var wnSection = document.getElementById('uce-whats-next');
+        if (wnSection) {
+          wnSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 200);
     }
 
     // Bind navigation events
@@ -107,18 +128,47 @@
     // Check for return-to-origin (side quest completion redirect)
     checkReturnToOrigin();
 
+    // Update breadcrumb with parent link from side quest navigation
+    updateBreadcrumbFromSession();
+
     // Emit ready event
     emitEvent('engine-ready', { useCaseId: useCaseId, totalSteps: visibleSteps.length });
+
+    // Hide loading spinner
+    var loadingEl = document.getElementById('uce-loading');
+    if (loadingEl) loadingEl.style.display = 'none';
   }
 
   /**
    * Find the index of the current step.
-   * Priority: last completed > first step.
+   * Priority: current_step (where user left off) > last completed > first step.
    * @param {Array} stepsArr — optional step array (defaults to visibleSteps)
    */
   function findCurrentIndex(stepsArr) {
     var arr = stepsArr || visibleSteps;
-    // Check if any visible step is completed
+
+    // Priority 1: saved active_step (where the user last was viewing)
+    // This ensures Prev/Next navigate relative to where the user left off,
+    // not relative to the current_step (completion marker) which may be ahead.
+    var initState = UCEState.getState(useCaseId);
+    if (initState.active_step) {
+      for (var ai = 0; ai < arr.length; ai++) {
+        if (arr[ai].id === initState.active_step) {
+          return ai;
+        }
+      }
+    }
+
+    // Priority 2: saved current_step that is NOT completed
+    if (initState.current_step && initState.current_step !== '__complete__') {
+      for (var ci = 0; ci < arr.length; ci++) {
+        if (arr[ci].id === initState.current_step && !UCEState.isStepCompleted(useCaseId, arr[ci].id)) {
+          return ci;
+        }
+      }
+    }
+
+    // Fallback: last completed step
     for (var i = arr.length - 1; i >= 0; i--) {
       if (UCEState.isStepCompleted(useCaseId, arr[i].id)) {
         return i;
@@ -141,6 +191,102 @@
       if (el) {
         dom.container.appendChild(el);
       }
+    }
+  }
+
+  /**
+   * Render the whats_next completion section and append after the flow container.
+   * Only called when the use case is fully complete.
+   */
+  function renderWhatsNextSection(wn) {
+    if (!wn || !dom.container) return;
+
+    // Remove existing section if re-rendering
+    var existing = document.getElementById('uce-whats-next');
+    if (existing) existing.remove();
+
+    var section = document.createElement('div');
+    section.id = 'uce-whats-next';
+    section.className = 'uce-whatsnext-section';
+
+    /* ── Congratulations header card ─────────────────────────────── */
+    var headerCard = document.createElement('div');
+    headerCard.className = 'uce-whatsnext-header';
+
+    // Resolve body — supports markdown_body (parsed via marked) or plain body
+    var resolvedBody = resolveStepBody(wn);
+
+    // var partyHornSvg = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M5.5713 14.5L9.46583 18.4141M18.9996 3.60975C17.4044 3.59505 16.6658 4.33233 16.4236 5.07743C16.2103 5.73354 16.4052 7.07735 15.896 8.0727C15.4091 9.02443 14.1204 9.5617 12.6571 9.60697M20 7.6104L20.01 7.61049M19 15.96L19.01 15.9601M7.00001 3.94926L7.01001 3.94936M19 11.1094C17.5 11.1094 16.5 11.6094 15.5949 12.5447M10.2377 7.18796C11 6.10991 11.5 5.10991 11.0082 3.52734M3.53577 20.4645L7.0713 9.85791L14.1424 16.929L3.53577 20.4645Z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>';
+    var partyHornSvg = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_1214_4417)"><path fill-rule="evenodd" clip-rule="evenodd" d="M13 11C14.9509 11 16.2542 10.3277 17.1047 9.19375C17.8601 8.18654 18.1833 6.89179 18.4476 5.83292L18.4701 5.74254C18.7639 4.5674 19.0067 3.65769 19.4953 3.00625C19.9105 2.45271 20.5759 2 22 2C22.5523 2 23 1.55228 23 1C23 0.447715 22.5523 0 22 0C20.0491 0 18.7458 0.672288 17.8953 1.80625C17.1399 2.81346 16.8167 4.10821 16.5524 5.16708L16.5299 5.25746C16.2361 6.4326 15.9933 7.34231 15.5047 7.99375C15.0895 8.54729 14.4241 9 13 9C12.4477 9 12 9.44771 12 10C12 10.5523 12.4477 11 13 11ZM9.60168 0.201244C9.15997 -0.130281 8.53314 -0.0409558 8.20161 0.400757C7.87009 0.842469 7.95941 1.4693 8.40112 1.80083C8.82124 2.11615 9.17514 2.51113 9.44262 2.96321C9.71009 3.4153 9.8859 3.91565 9.96 4.43568C10.0341 4.95572 10.0051 5.48526 9.87452 5.99406C9.74397 6.50287 9.51449 6.98098 9.19917 7.4011C8.86765 7.84282 8.95697 8.46965 9.39868 8.80118C9.8404 9.1327 10.4672 9.04338 10.7988 8.60166C11.2717 7.97148 11.616 7.25431 11.8118 6.4911C12.0076 5.72789 12.0512 4.93358 11.94 4.15353C11.8288 3.37348 11.5651 2.62296 11.1639 1.94483C10.7627 1.26669 10.2319 0.674222 9.60168 0.201244ZM7 5C7 5.55228 6.55228 6 6 6C5.44772 6 5 5.55228 5 5C5 4.44772 5.44772 4 6 4C6.55228 4 7 4.44772 7 5ZM22 9C22.5523 9 23 8.55228 23 8C23 7.44772 22.5523 7 22 7C21.4477 7 21 7.44772 21 8C21 8.55228 21.4477 9 22 9ZM20 18C20 18.5523 19.5523 19 19 19C18.4477 19 18 18.5523 18 18C18 17.4477 18.4477 17 19 17C19.5523 17 20 17.4477 20 18ZM19.5663 14.0403C19.0464 13.9659 18.5168 13.9947 18.0079 14.125C17.4991 14.2553 17.0208 14.4845 16.6005 14.7996C16.1587 15.1309 15.5319 15.0413 15.2006 14.5994C14.8693 14.1575 14.9589 13.5307 15.4008 13.1994C16.0312 12.7268 16.7486 12.3829 17.5119 12.1875C18.2752 11.992 19.0695 11.9489 19.8495 12.0604C20.6295 12.172 21.3799 12.4361 22.0578 12.8377C22.7358 13.2392 23.3279 13.7704 23.8006 14.4008C24.1319 14.8427 24.0423 15.4695 23.6004 15.8008C23.1585 16.1321 22.5317 16.0424 22.2004 15.6005C21.8853 15.1802 21.4905 14.8261 21.0386 14.5584C20.5866 14.2907 20.0863 14.1147 19.5663 14.0403ZM6.70714 9.29291C6.46777 9.05355 6.12357 8.95153 5.79244 9.0218C5.4613 9.09207 5.1882 9.32509 5.06668 9.64104L3.67459 13.2605L10.7396 20.3255L14.359 18.9334C14.675 18.8118 14.908 18.5387 14.9782 18.2076C15.0485 17.8765 14.9465 17.5323 14.7071 17.2929L6.70714 9.29291ZM8.6968 21.1111L2.88891 15.3032L0.0666833 22.641C-0.0751812 23.0099 0.0134815 23.4277 0.292922 23.7071C0.572363 23.9866 0.99016 24.0752 1.35901 23.9334L8.6968 21.1111Z" fill="currentColor"></path></g></svg>';
+
+    headerCard.innerHTML =
+      '<div class="uce-whatsnext-icon">' + partyHornSvg + '</div>' +
+      '<div class="uce-whatsnext-content">' +
+        '<h3 class="uce-whatsnext-title">Congratulations!</h3>' +
+        '<p class="uce-whatsnext-message">' + resolvedBody + '</p>' +
+      '</div>';
+    section.appendChild(headerCard);
+
+    /* ── Recommendation grid ─────────────────────────────────────── */
+    if (!wn.recommendations || wn.recommendations.length === 0) {
+      dom.container.parentNode.insertBefore(section, dom.container.nextSibling);
+      return;
+    }
+
+    var heading = document.createElement('h4');
+    heading.className = 'uce-whatsnext-heading';
+    heading.textContent = "What's Next";
+    section.appendChild(heading);
+
+    var grid = document.createElement('div');
+    grid.className = 'uce-whatsnext-grid';
+
+    var visibleCount = 0;
+    for (var i = 0; i < wn.recommendations.length; i++) {
+      var rec = wn.recommendations[i];
+      if (!rec.use_case) continue;
+
+      /* Skip hidden use cases */
+      if (window.__UCE_HIDDEN_MAP__ && window.__UCE_HIDDEN_MAP__[rec.use_case]) {
+        continue;
+      }
+
+      visibleCount++;
+
+      var card = document.createElement('a');
+      card.className = 'uce-whatsnext-card';
+      card.href = (window.__UCE_BASEURL__) + '/use-cases/' + rec.use_case + '/';
+      card.setAttribute('rel', 'noopener');
+
+      var iconHtml = '';
+      if (rec.icon) {
+        iconHtml = '<i class="fa-solid ' + escapeHtml(rec.icon) + '"></i>';
+      }
+
+      card.innerHTML =
+        '<div class="uce-whatsnext-card-head">' +
+          (iconHtml ? '<div class="uce-whatsnext-card-icon">' + iconHtml + '</div>' : '') +
+          '<span class="uce-whatsnext-card-title uce-skeleton"></span>' +
+        '</div>' +
+        '<p class="uce-whatsnext-card-desc"><span class="uce-whatsnext-card-text uce-skeleton"></span></p>';
+
+      grid.appendChild(card);
+    }
+
+    /* Hide the whole section if all recommendations are hidden */
+    if (visibleCount === 0) {
+      return;
+    }
+
+    section.appendChild(grid);
+    dom.container.parentNode.insertBefore(section, dom.container.nextSibling);
+
+    /* ── Populate recommendation data ── */
+    preloadWhatsNextData(section);
+
+    /* ── Resolve any [[expressions]] in the whats_next section ── */
+    if (window.ExpressionResolver) {
+      window.ExpressionResolver.resolveNode(section);
     }
   }
 
@@ -292,11 +438,20 @@
       case 'code_editor':
         bodyEl = renderCodeEditorStep(step);
         break;
+      case 'markdown':
+        bodyEl = renderMarkdownStep(step);
+        break;
       default:
         bodyEl = renderNarrative(step);
     }
 
     if (bodyEl) {
+      // Resources section — always rendered as the last child inside the body,
+      // so it hides when the step collapses.
+      var resEl = renderResources(step.resources);
+      if (resEl) {
+        bodyEl.appendChild(resEl);
+      }
       el.appendChild(bodyEl);
     }
 
@@ -326,6 +481,59 @@
     div.appendChild(divider);
     div.appendChild(label);
     return div;
+  }
+
+  /** Render a markdown step — body is raw Markdown parsed via marked.js. */
+  function renderMarkdownStep(step) {
+    var div = document.createElement('div');
+    div.className = 'uce-step-body uce-step-body--markdown';
+
+    var html = '';
+    // markdown_body takes precedence — it's raw Markdown to be parsed
+    var mdSource = step.markdown_body || step.body || '';
+    if (mdSource) {
+      var _marked = window.marked || (typeof globalThis !== 'undefined' && globalThis.marked);
+      if (_marked && typeof _marked.parse === 'function') {
+        try {
+          html = _marked.parse(mdSource);
+        } catch (e) {
+          console.warn('[UCE] marked.parse failed for step ' + step.id + ':', e);
+          html = '<p>' + escapeHtml(mdSource) + '</p>';
+        }
+      } else {
+        console.warn('[UCE] marked.js not available — rendering markdown step body as plain text');
+        html = '<p>' + escapeHtml(mdSource) + '</p>';
+      }
+    }
+
+    div.innerHTML = html;
+    return div;
+  }
+
+  /**
+   * Resolve step body content for narrative rendering.
+   * If markdown_body is present, parse it via marked.js and return HTML.
+   * Otherwise return body as-is (already HTML).
+   * If both are present, only use markdown_body.
+   * @param {Object} obj — step or panel config with markdown_body/body
+   * @returns {string} HTML string to render
+   */
+  function resolveStepBody(obj) {
+    if (obj.markdown_body) {
+      var _marked = window.marked || (typeof globalThis !== 'undefined' && globalThis.marked);
+      if (_marked && typeof _marked.parse === 'function') {
+        try {
+          return _marked.parse(obj.markdown_body);
+        } catch (e) {
+          console.warn('[UCE] marked.parse failed for markdown_body in ' + (obj.id || 'step') + ':', e);
+          return '<p>' + escapeHtml(obj.markdown_body) + '</p>';
+        }
+      } else {
+        console.warn('[UCE] marked.js not available — rendering markdown_body as plain text');
+        return '<p>' + escapeHtml(obj.markdown_body) + '</p>';
+      }
+    }
+    return obj.body || '';
   }
 
   /* ── Panel Event Delegation (Phase 3-01) ───────────────────────── */
@@ -462,7 +670,7 @@
     }
 
     var hasPanel = visiblePanels.length > 0;
-    var stepHasBody = !!step.body;
+    var stepHasBody = !!(step.body || step.markdown_body);
 
     // Resolve effective layout
     var effectiveLayout = layout;
@@ -487,7 +695,9 @@
     if (!isTabbed) {
       var pCfg = visiblePanels.length > 0 ? visiblePanels[0] : null;
 
-      var pBody = pCfg ? (pCfg.body || step.body || '') : (step.body || '');
+      var bodyHtml = resolveStepBody(step);
+      // Panel-level markdown_body takes precedence over step-level bodyHtml
+      var pBody = pCfg ? (resolveStepBody(pCfg) || bodyHtml || '') : (bodyHtml || '');
       var pSqIds = (pCfg && pCfg.side_quests && pCfg.side_quests.length > 0)
         ? pCfg.side_quests : (step.side_quests || []);
       var hasLeft = !!pBody || pSqIds.length > 0;
@@ -595,15 +805,16 @@
   /** Render the tabbed-panel narrative (multiple visible panels). */
   function renderNarrativeTabbed(grid, step, visiblePanels, effectiveLayout) {
     /* ── Left column: step-level body + side_quests ── */
-    var hasLeft = !!step.body || (step.side_quests && step.side_quests.length > 0);
+    var stepBodyHtml = resolveStepBody(step);
+    var hasLeft = !!stepBodyHtml || (step.side_quests && step.side_quests.length > 0);
     if (hasLeft) {
       var leftCol = document.createElement('div');
       leftCol.className = 'uce-narrative-left';
 
-      if (step.body) {
+      if (stepBodyHtml) {
         var bodyEl = document.createElement('div');
         bodyEl.className = 'uce-narrative-body';
-        bodyEl.innerHTML = step.body;
+        bodyEl.innerHTML = stepBodyHtml;
         leftCol.appendChild(bodyEl);
       }
 
@@ -733,12 +944,26 @@
     switch (panel.kind) {
       case 'terminal':
         div.classList.add('uce-panel-terminal');
-        var termCmd = escapeHtml(panel.cmd || '');
+        var termCmd = panel.cmd || '';
+        var termOutput = panel.output || '';
+        var cmdLang = panel.cmd_language || 'bash';
+        var outLang = panel.output_language || '';
         var showCopy = panel.copy_button !== false;
-        var termOutputHtml = '';
-        if (panel.output) {
-          termOutputHtml = escapeHtml(panel.output);
-        }
+        // Syntax-highlight cmd (default: bash) and output (default: plain)
+        var termCmdHtml = (function() {
+          if (typeof Prism !== 'undefined' && Prism.languages[cmdLang]) {
+            return Prism.highlight(escapeHtml(termCmd), Prism.languages[cmdLang], 'language-' + cmdLang);
+          }
+          return escapeHtml(termCmd);
+        })();
+        var termOutputHtml = (function() {
+          if (!termOutput) return '';
+          if (outLang && typeof Prism !== 'undefined' && Prism.languages[outLang]) {
+            return Prism.highlight(escapeHtml(termOutput), Prism.languages[outLang], 'language-' + outLang);
+          }
+          // Default output: plain text (no highlighting)
+          return escapeHtml(termOutput);
+        })();
         // Build macOS-style terminal windows
         var cmdWindow =
           '<div class="mac-window">' +
@@ -749,7 +974,7 @@
               '<span class="mac-window-title">Terminal</span>' +
               (showCopy ? '<button class="mac-window-copy" data-uce-action="copy" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>' : '') +
             '</div>' +
-            '<pre class="mac-window-body"><code>' + termCmd + '</code></pre>' +
+            '<pre class="mac-window-body"><code class="language-' + (cmdLang || 'bash') + '">' + termCmdHtml + '</code></pre>' +
           '</div>';
         var outputWindow = termOutputHtml
           ? '<div class="mac-window">' +
@@ -759,7 +984,7 @@
                 '<span class="mac-dot mac-dot--green"></span>' +
                 '<span class="mac-window-title">Output</span>' +
               '</div>' +
-              '<pre class="mac-window-body"><code>' + termOutputHtml + '</code></pre>' +
+              '<pre class="mac-window-body"><code class="language-' + (outLang || 'plaintext') + '">' + termOutputHtml + '</code></pre>' +
             '</div>'
           : '';
         div.innerHTML = cmdWindow + outputWindow;
@@ -1902,6 +2127,11 @@
       var sq = findSideQuest(sqId);
       if (!sq) continue;
 
+      /* Skip side quests whose linked use case is hidden */
+      if (sq.links_to && !sq.links_to.includes('://') && window.__UCE_HIDDEN_MAP__ && window.__UCE_HIDDEN_MAP__[sq.links_to]) {
+        continue;
+      }
+
       var tag = UCEState.getSideQuestTag(useCaseId, sqId);
       var completed = UCEState.isSideQuestCompleted(useCaseId, sqId);
       var domId = 'uce-sq-' + sqId + '-' + originStepId;
@@ -2045,6 +2275,171 @@
   }
 
   /**
+   * Render a collapsible Resources section for a step.
+   * Returns a DOM element or null if no valid resources.
+   */
+  function renderResources(resources) {
+    if (!resources || resources.length === 0) return null;
+
+    // Filter out entries without a title
+    var valid = [];
+    for (var i = 0; i < resources.length; i++) {
+      if (resources[i].title && resources[i].url) {
+        valid.push(resources[i]);
+      }
+    }
+    if (valid.length === 0) return null;
+
+    var flyout = document.createElement('div');
+    flyout.className = 'uce-resources-flyout';
+
+    // Flyout header
+    var header = document.createElement('div');
+    header.className = 'uce-resources-header';
+    header.innerHTML =
+      '<i class="fa-solid fa-globe uce-resources-icon"></i>' +
+      '<span class="uce-resources-title">Resources</span>' +
+      '<button class="uce-resources-toggle" aria-label="Toggle resources panel"><svg class="uce-resources-chevron" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7l5 5 5-5"/></svg></button>';
+    flyout.appendChild(header);
+
+    // Flyout body (collapsed by default)
+    var body = document.createElement('div');
+    body.className = 'uce-resources-body';
+    body.style.display = 'none';
+
+    for (var r = 0; r < valid.length; r++) {
+      var item = valid[r];
+      var row = document.createElement('div');
+      row.className = 'uce-resource-item';
+      row.innerHTML =
+        '<span class="uce-resource-title">' + escapeHtml(item.title) + '</span>' +
+        '<a class="uce-resource-btn" href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">Go</a>';
+      body.appendChild(row);
+    }
+
+    flyout.appendChild(body);
+
+    // Toggle button
+    (function(fly) {
+      var tog = fly.querySelector('.uce-resources-toggle');
+      var chevron = fly.querySelector('.uce-resources-chevron');
+      var bdy = fly.querySelector('.uce-resources-body');
+      tog.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var isOpen = bdy.style.display !== 'none';
+        bdy.style.display = isOpen ? 'none' : 'block';
+        if (chevron) {
+          chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+        }
+      });
+    })(flyout);
+
+    return flyout;
+  }
+
+  /**
+   * Render a "What's Next" completion step — congratulations card + recommendation grid.
+   */
+  function renderWhatsNextStep(step) {
+    var div = document.createElement('div');
+    div.className = 'uce-step-body uce-step-body--whats-next';
+
+    /* ── Congratulations header card ─────────────────────────────── */
+    var headerCard = document.createElement('div');
+    headerCard.className = 'uce-whatsnext-header';
+    headerCard.innerHTML =
+      '<div class="uce-whatsnext-icon"><i class="fa-solid fa-party-horn"></i></div>' +
+      '<div class="uce-whatsnext-content">' +
+        '<h3 class="uce-whatsnext-title">Congratulations!</h3>' +
+        '<p class="uce-whatsnext-message">' + escapeHtml(step.body || '') + '</p>' +
+      '</div>';
+    div.appendChild(headerCard);
+
+    /* ── Recommendation grid ─────────────────────────────────────── */
+    if (!step.recommendations || step.recommendations.length === 0) {
+      return div;
+    }
+
+    var heading = document.createElement('h4');
+    heading.className = 'uce-whatsnext-heading';
+    heading.textContent = "What's Next";
+    div.appendChild(heading);
+
+    var grid = document.createElement('div');
+    grid.className = 'uce-whatsnext-grid';
+
+    for (var i = 0; i < step.recommendations.length; i++) {
+      var rec = step.recommendations[i];
+      if (!rec.use_case) continue;
+
+      var card = document.createElement('a');
+      card.className = 'uce-whatsnext-card';
+      card.href = (window.__UCE_BASEURL__) + '/use-cases/' + rec.use_case + '/';
+      card.setAttribute('rel', 'noopener');
+
+      var iconHtml = '';
+      if (rec.icon) {
+        iconHtml = '<i class="fa-solid ' + escapeHtml(rec.icon) + '"></i>';
+      }
+
+      card.innerHTML =
+        '<div class="uce-whatsnext-card-head">' +
+          (iconHtml ? '<div class="uce-whatsnext-card-icon">' + iconHtml + '</div>' : '') +
+          '<span class="uce-whatsnext-card-title">Loading…</span>' +
+        '</div>' +
+        '<p class="uce-whatsnext-card-desc"><span class="uce-whatsnext-card-text"></span></p>' +
+        '<svg class="uce-whatsnext-card-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+
+      grid.appendChild(card);
+    }
+
+    div.appendChild(grid);
+    return div;
+  }
+
+  /**
+   * Preload use case metadata for whats_next recommendations.
+   * Called after all steps are rendered to fill in titles/descriptions.
+   */
+  function preloadWhatsNextData(container) {
+    if (!container) return;
+    var cards = container.querySelectorAll('.uce-whatsnext-card');
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i];
+      var href = card.getAttribute('href');
+      if (!href) continue;
+
+      // Extract slug from URL: /use-cases/{slug}/
+      var parts = href.replace(/\/$/, '').split('/');
+      var slug = parts[parts.length - 1];
+      if (!slug) continue;
+
+      // Look for matching use case data in window (set by layout)
+      var ucData = null;
+      if (window.__UCE_WHATS_NEXT_DATA__ && window.__UCE_WHATS_NEXT_DATA__[slug]) {
+        ucData = window.__UCE_WHATS_NEXT_DATA__[slug];
+      }
+
+      if (ucData) {
+        var titleEl = card.querySelector('.uce-whatsnext-card-title');
+        var textEl = card.querySelector('.uce-whatsnext-card-text');
+        if (titleEl) {
+          titleEl.textContent = ucData.title || slug;
+          titleEl.classList.remove('uce-skeleton');
+        }
+        if (textEl) {
+          var desc = ucData.introduction && (ucData.introduction.markdown_scenario || ucData.introduction.scenario)
+            ? (ucData.introduction.markdown_scenario || ucData.introduction.scenario)
+            : '';
+          // Render as markdown
+          textEl.innerHTML = desc ? marked.parse(desc) : '';
+          textEl.classList.remove('uce-skeleton');
+        }
+      }
+    }
+  }
+
+  /**
    * Handle "Take now!" — navigate to linked use case with return_to.
    */
   function handleTakeNow(sqId, originStepId) {
@@ -2059,7 +2454,9 @@
       // Store return info in sessionStorage (cross-page)
       var baseurl = (window.__UCE_BASEURL__) || '';
       sessionStorage.setItem('uce_return_to', JSON.stringify({
-        from: useCaseId,
+        from: window.__UCE_PAGE_SLUG__ || useCaseId,
+        from_title: window.__USE_CASE_TITLE__ || '',
+        from_data_key: useCaseId,
         step: originStepId,
         sq_id: sqId
       }));
@@ -2112,13 +2509,45 @@
       var info = JSON.parse(ret);
 
       // If we're on the same page we started from, we came back from a side quest
-      if (info.from === useCaseId) {
+      var currentPageSlug = window.__UCE_PAGE_SLUG__ || useCaseId;
+      if (info.from === currentPageSlug) {
         // Remove the session storage
         sessionStorage.removeItem('uce_return_to');
         showReturnBanner(info);
       }
     } catch (e) {
       try { sessionStorage.removeItem('uce_return_to'); } catch(ex) { /* noop */ }
+    }
+  }
+
+  /**
+   * Update breadcrumb with parent link from side quest navigation.
+   * Reads sessionStorage for return info and injects a clickable parent link
+   * before the current page title.
+   */
+  function updateBreadcrumbFromSession() {
+    try {
+      var ret = sessionStorage.getItem('uce_return_to');
+      if (!ret) return;
+
+      var info = JSON.parse(ret);
+      if (!info.from || !info.from_title) return;
+
+      var breadcrumb = document.querySelector('.uce-breadcrumb-nav ul');
+      if (!breadcrumb) return;
+
+      var parentLi = document.createElement('li');
+      parentLi.innerHTML = '<a href="' + (window.__UCE_BASEURL__ || '') + '/use-cases/' + info.from + '">' + escapeHtml(info.from_title) + '</a>';
+
+      // Insert before the first active step (use_case title)
+      var activeItem = breadcrumb.querySelector('li.is-active');
+      if (activeItem) {
+        breadcrumb.insertBefore(parentLi, activeItem);
+      } else {
+        breadcrumb.appendChild(parentLi);
+      }
+    } catch (e) {
+      // Ignore errors — breadcrumb is non-critical
     }
   }
 
@@ -2183,7 +2612,15 @@
     // Question
     var qEl = document.createElement('p');
     qEl.className = 'uce-quiz-question';
-    qEl.textContent = question;
+    var qText = question || '';
+    try {
+      var _marked = window.marked || (typeof globalThis !== 'undefined' && globalThis.marked);
+      if (_marked && typeof _marked.parse === 'function') {
+        qEl.innerHTML = _marked.parse(qText);
+      }
+    } catch (e) {
+      qEl.textContent = qText;
+    }
     div.appendChild(qEl);
 
     // Options container
@@ -2319,7 +2756,19 @@
           }
         }
         fbEl.className = 'uce-quiz-feedback uce-quiz-feedback--' + (userWasCorrect ? 'correct' : 'incorrect');
-        fbEl.textContent = (userWasCorrect ? '\u2713 ' : '\u2717 ') + (userWasCorrect ? feedbackCorrect : feedbackIncorrect);
+        var icon = userWasCorrect ? '\u2713 ' : '\u2717 ';
+        var fbText = icon + (userWasCorrect ? feedbackCorrect : feedbackIncorrect);
+        var fbParsed = '';
+        try {
+          var _marked = window.marked || (typeof globalThis !== 'undefined' && globalThis.marked);
+          if (_marked && typeof _marked.parse === 'function') {
+            fbParsed = _marked.parse(fbText);
+          }
+        } catch (e) {
+          /* fall through to plain text */
+        }
+        if (!fbParsed) fbParsed = fbText;
+        fbEl.innerHTML = fbParsed;
       }
     }
 
@@ -2330,7 +2779,18 @@
     var fbEl = container.nextElementSibling;
     if (!fbEl) return;
     fbEl.className = 'uce-quiz-feedback uce-quiz-feedback--' + (correct ? 'correct' : 'incorrect');
-    fbEl.textContent = (correct ? '\u2713 ' : '\u2717 ') + message;
+    var icon = correct ? '\u2713 ' : '\u2717 ';
+    var parsed = '';
+    try {
+      var _marked = window.marked || (typeof globalThis !== 'undefined' && globalThis.marked);
+      if (_marked && typeof _marked.parse === 'function') {
+        parsed = _marked.parse(icon + message);
+      }
+    } catch (e) {
+      /* fall through to plain text */
+    }
+    if (!parsed) parsed = icon + message;
+    fbEl.innerHTML = parsed;
   }
 
   /* - Code Editor (Monaco) - */
@@ -2344,10 +2804,12 @@
     div.className = 'uce-step-body uce-step-body--code-editor';
     div.setAttribute('data-uce-step-id', stepId);
 
-    if (step.body) {
+    // Resolve body — supports markdown_body (parsed via marked) or plain body
+    var resolvedBody = resolveStepBody(step);
+    if (resolvedBody) {
       var bodyP = document.createElement('p');
       bodyP.className = 'uce-editor-body';
-      bodyP.innerHTML = step.body;
+      bodyP.innerHTML = resolvedBody;
       div.appendChild(bodyP);
     }
 
@@ -2383,6 +2845,16 @@
     var language = normalizeLang(step.language || 'text');
     var initialCode = step.initial_code || '';
     var stepId = step.id || '';
+    var fileLabel = '';
+
+    // If step-level properties are empty, try reading from the files array
+    if (!initialCode && step.files && step.files.length === 1) {
+      var f = step.files[0];
+      language = normalizeLang(f.language || language);
+      initialCode = f.initial_code || '';
+      fileLabel = f.name || '';
+    }
+
     var saveKey = 'uce_code:' + useCaseId + ':' + stepId;
 
     var savedCode = '';
@@ -2395,8 +2867,66 @@
 
     var label = document.createElement('label');
     label.className = 'uce-editor-label';
-    label.textContent = language.toUpperCase();
-    editorContainer.appendChild(label);
+    label.textContent = fileLabel || language.toUpperCase();
+
+    // Copy button — right-aligned in the label bar
+    var copyBtn = document.createElement('button');
+    copyBtn.className = 'uce-editor-copy-btn';
+    copyBtn.setAttribute('aria-label', 'Copy code');
+    copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+    copyBtn.addEventListener('click', function () {
+      var instId = stepId;
+      if (window.__UCE_MONACO_INSTANCES__ && window.__UCE_MONACO_INSTANCES__[instId]) {
+        var text = window.__UCE_MONACO_INSTANCES__[instId].getValue();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function() {
+            showCopyTooltip(copyBtn);
+          }).catch(function() {
+            fallbackCopy(text, copyBtn);
+          });
+        } else {
+          fallbackCopy(text, copyBtn);
+        }
+      }
+    });
+
+    // Download button — right-aligned in the label bar
+    var dlBtn = document.createElement('button');
+    dlBtn.className = 'uce-editor-download-btn';
+    dlBtn.setAttribute('aria-label', 'Download file');
+    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+    dlBtn.addEventListener('click', function () {
+      var instId = stepId;
+      var fileName = fileLabel || 'file.txt';
+      if (window.__UCE_MONACO_INSTANCES__ && window.__UCE_MONACO_INSTANCES__[instId]) {
+        var text = window.__UCE_MONACO_INSTANCES__[instId].getValue();
+        var blob = new Blob([text], { type: 'text/plain' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    });
+
+    var labelWrap = document.createElement('div');
+    labelWrap.className = 'uce-editor-label-row';
+
+    var labelGroup = document.createElement('div');
+    labelGroup.className = 'uce-editor-label-group';
+    labelGroup.appendChild(label);
+
+    var btnGroup = document.createElement('div');
+    btnGroup.className = 'uce-editor-btn-group';
+    btnGroup.appendChild(copyBtn);
+    btnGroup.appendChild(dlBtn);
+
+    labelWrap.appendChild(labelGroup);
+    labelWrap.appendChild(btnGroup);
+    editorContainer.appendChild(labelWrap);
 
     var editorDiv = document.createElement('div');
     editorDiv.className = 'uce-monaco-editor';
@@ -2406,6 +2936,7 @@
 
     var actionsRow = document.createElement('div');
     actionsRow.className = 'uce-editor-actions';
+
     var loadInd = document.createElement('span');
     loadInd.className = 'uce-editor-load-indicator';
     loadInd.textContent = 'Saving...';
@@ -2449,13 +2980,16 @@
 
     tabBarWrap.appendChild(tabBar);
 
-    /* Copy button — right-aligned in the tab bar */
+    /* Button group — right-aligned in the tab bar */
+    var btnGroup = document.createElement('div');
+    btnGroup.className = 'uce-editor-btn-group';
+
+    // Copy button
     var copyBtn = document.createElement('button');
     copyBtn.className = 'uce-editor-copy-btn';
     copyBtn.setAttribute('aria-label', 'Copy code');
     copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
     copyBtn.addEventListener('click', function () {
-      /* Copy the currently active file's code */
       var activeIdx = 0;
       var activeTabs = tabBar.querySelectorAll('.uce-panel-tab--active');
       if (activeTabs.length > 0) {
@@ -2476,7 +3010,38 @@
         }
       }
     });
-    tabBarWrap.appendChild(copyBtn);
+    btnGroup.appendChild(copyBtn);
+
+    // Download button
+    var dlBtn = document.createElement('button');
+    dlBtn.className = 'uce-editor-download-btn';
+    dlBtn.setAttribute('aria-label', 'Download file');
+    dlBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+    dlBtn.addEventListener('click', function () {
+      var activeIdx = 0;
+      var activeTabs = tabBar.querySelectorAll('.uce-panel-tab--active');
+      if (activeTabs.length > 0) {
+        activeIdx = parseInt(activeTabs[0].getAttribute('data-file-index'), 10);
+      }
+      var activeFile = files[activeIdx];
+      var instId = step.id + '-' + activeFile.name;
+      var fileName = activeFile.name || 'file.txt';
+      if (window.__UCE_MONACO_INSTANCES__ && window.__UCE_MONACO_INSTANCES__[instId]) {
+        var text = window.__UCE_MONACO_INSTANCES__[instId].getValue();
+        var blob = new Blob([text], { type: 'text/plain' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    });
+    btnGroup.appendChild(dlBtn);
+
+    tabBarWrap.appendChild(btnGroup);
 
     editorWrapper.appendChild(tabBarWrap);
 
@@ -2911,13 +3476,17 @@
       var ret = sessionStorage.getItem('uce_return_to');
       if (ret) {
         var info = JSON.parse(ret);
-        sessionStorage.removeItem('uce_return_to');
 
-        // Mark side quest as completed
-        if (info.sq_id) {
-          UCEState.completeSideQuest(useCaseId, info.sq_id);
+        // Mark side quest as completed on the ORIGIN use case's state
+        if (info.sq_id && info.from_data_key) {
+          UCEState.completeSideQuest(info.from_data_key, info.sq_id);
           UCEState.save();
+          // Force-sync persistence before redirect (debounce would lose it)
+          UCEState._forceSync();
         }
+
+        // Keep return info for the origin page's checkReturnToOrigin
+        sessionStorage.setItem('uce_return_to', JSON.stringify(info));
 
         // Redirect back to origin
         var target = (window.__UCE_BASEURL__ || '') + '/use-cases/' + info.from;
@@ -2930,6 +3499,12 @@
     renderFlow();
     updateStepStates();
     updateProgress();
+
+    // Render whats_next completion section
+    if (whatsNext) {
+      renderWhatsNextSection(whatsNext);
+    }
+
     emitEvent('use-case-complete', { useCaseId: useCaseId });
   }
 

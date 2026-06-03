@@ -1,27 +1,25 @@
+- name: Quick Start
+  link: /use-cases/devops-cli-quickstart/
 - name: Docs
   link: /docs/
   variant: docs
   sections:
     - title: Get Started
       items:
-        - name: Quick Start
-          icon: fa-solid fa-rocket
-          description: Start building and connect your first Parallels DevOps workflow.
-          link: /quick-start/
         - name: Use Cases
           icon: fa-regular fa-folder-open
           description: Common workflows for catalogs, orchestration, CI/CD, and automation.
           link: /docs/use-cases/
     - title: Platform
       items:
-        - name: Native Desktop UI
+        - name: Agent Documentation
+          icon: fa-solid fa-terminal
+          description: Install the CLI and automate DevOps flows from a terminal.
+          link: /docs/devops/
+        - name: Desktop Application
           icon: fa-solid fa-desktop
           description: Run, manage, and inspect DevOps resources from the web UI.
           link: /ui/
-        - name: Command Line Interface (CLI)
-          icon: fa-solid fa-terminal
-          description: Install the CLI and automate DevOps flows from a terminal.
-          link: /docs/devops/getting-started/installation/
     - title: Developer Tools
       items:
         - name: API Reference
@@ -37,25 +35,22 @@
   link: /solutions/
   variant: guides
   sections:
-    - title: Get Started
-      items:
-        - name: Run a Devops Remote Catalog
-          description: Create and manage VM images in a remote catalog.
-          link: /examples/remote-catalog/
     - title: Guides
       items:
         - name: Control Multiple Hosts
           description: Manage multiple Parallels Desktop hosts and virtual machines.
           link: /examples/orchestrator/
-        - name: Run CI/CD Pipelines
+        - name: GitHub Actions CI/CD Pipelines
           description: Use GitHub Actions and self-hosted runners for VM builds.
           link: /examples/github-actions/
-        - name: Configure Reverse Proxy
-          description: Route client traffic to the DevOps service through a proxy.
-          link: /docs/devops/reverse-proxy/
-        - name: Monitor Events
-          description: Track VM and orchestrator events through the events hub.
-          link: /docs/devops/events-hub/overview/
-        - name: Manage Snapshots
-          description: Create, list, revert, and delete VM snapshots.
-          link: /docs/devops/snapshots/
+        - name: Run a Catalog service
+          description: Securely create and share Golden Master images with your team in minutes
+          link: /examples/remote-catalog/
+    - title: Plugins & Integrations
+      items:
+        - name: Run a Devops Remote Catalog
+          description: Create and manage VM images in a remote catalog.
+          link: /examples/remote-catalog/
+        - name: Terraform Provider
+          description: Manage your DevOps resources with infrastructure as code.
+          link: /docs/terraform-provider/

@@ -34,7 +34,7 @@
             {% for action in page.hero_actions %}
             {% assign btn_style = action.style | default: 'outline' %}
             {% if action.url %}
-            <a href="{{ action.url | relative_url }}" class="hero-btn hero-btn--{{ btn_style }}">
+            <a href="{{ action.url | relative_url }}" class="hero-btn hero-btn--{{ btn_style }}"{% if action.new_tab %} target="_blank" rel="noopener"{% endif %}>
               {% if action.fa_icon and action.icon_position != 'right' %}
               <i class="fas {{ action.fa_icon }}"></i>
               {% endif %}

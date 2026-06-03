@@ -1,5 +1,5 @@
 .navigation {
-  --navigation-dropdown-top: 96px;
+  --navigation-dropdown-top: 80px;
 
   top: 0;
   height: 100px;
@@ -22,8 +22,7 @@
 }
 
 .navigation-header {
-  margin: auto;
-  min-height: 85px;
+  min-height: 80px;
   padding-left: 36px;
   padding-right: 36px;
   color: #FFFFFF;
@@ -37,7 +36,7 @@
 body.page-layout,
 body.api-layout {
   .navigation {
-    --navigation-dropdown-top: 68px;
+    --navigation-dropdown-top: 72px;
 
     height: 80px;
   }
@@ -164,6 +163,12 @@ body.api-layout {
     }
   }
 
+  .is-sticky {
+        color: rgb(129, 129, 129);
+    background: rgba(100, 100, 100, 0.1);
+    border-radius: 6px;
+  }
+
   &:hover {
     color: rgb(129, 129, 129);
     background: rgba(100, 100, 100, 0.1);
@@ -211,6 +216,19 @@ body.api-layout {
   }
 }
 
+// Sticky dropdown button state
+.navigation-menu-item {
+  &.is-sticky  {
+    color: #818181;
+    background: rgba(100, 100, 100, .1);
+    border-radius: 6px;
+  }
+}
+
+.navigation-menu-item.is-sticky .dropdown-link svg {
+  transform: rotate(180deg);
+}
+
 .navigation-dropdown-menu {
   left: 24px;
   top: var(--navigation-dropdown-top);
@@ -241,8 +259,8 @@ body.api-layout {
   &::before {
     left: 0;
     right: 0;
-    top: -18px;
-    height: 18px;
+    top: -10px;
+    height: 10px;
     content: ' ';
     position: absolute;
   }
@@ -252,6 +270,10 @@ body.api-layout {
     visibility: visible;
     pointer-events: all;
     transform: translateY(0);
+
+    @media (max-width: 1139.95px) {
+      pointer-events: auto;
+    }
   }
 
   @media (max-width: 1139.95px) {
@@ -307,7 +329,7 @@ body.api-layout {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 
   &.navigation-dropdown-menu-content--guides {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr);
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.4fr);
   }
 
   @media (max-width: 1139.95px) {

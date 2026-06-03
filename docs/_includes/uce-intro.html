@@ -15,14 +15,18 @@
   </div>
 
   <!-- Main Content Grid -->
-  <div class="uce-intro-grid{% unless intro.architecture_diagram %} uce-intro-grid--single{% endunless %}">
+  <div class="uce-intro-grid{% unless intro.architecture_diagram or intro.image %} uce-intro-grid--single{% endunless %}">
     <!-- Left Column -->
     <div class="uce-intro-left">
       <!-- Scenario -->
-      {% if intro.scenario %}
+      {% if intro.scenario or intro.markdown_scenario %}
       <div class="uce-intro-block">
         <h3 class="uce-intro-label">THE SCENARIO</h3>
+        {% if intro.markdown_scenario %}
+        <div class="uce-intro-desc">{{ intro.markdown_scenario | markdownify }}</div>
+        {% else %}
         <p class="uce-intro-desc">{{ intro.scenario }}</p>
+        {% endif %}
       </div>
       {% endif %}
 
@@ -92,9 +96,15 @@
       {% endif %}
     </div>
 
-    <!-- Right Column — Architecture Diagram -->
-    {% if intro.architecture_diagram %}
-    <div class="uce-intro-right">
+    <!-- Right Column — Image or Architecture Diagram -->
+    {% if intro.image %}
+    <div class="uce-intro-right uce-intro-right--image">
+      <div class="uce-image-frame">
+        <img src="{{ site.baseurl }}{{ intro.image }}" alt="{{ uc.title }}">
+      </div>
+    </div>
+    {% elsif intro.architecture_diagram %}
+    <div class="uce-intro-right uce-intro-right--diagram">
       <div class="uce-diagram-placeholder">
         <div class="mermaid uce-diagram-mermaid">{{ intro.architecture_diagram | strip }}</div>
       </div>

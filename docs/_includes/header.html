@@ -301,55 +301,162 @@
         var $dropdown = $el.querySelector(".navigation-dropdown-menu");
         if ($el.classList.contains("is-dropdown")) {
           var $dropdownLink = $el.querySelector(".dropdown-link");
-          if ($dropdownLink && $dropdown) {
+          var isSticky = false;
+          var closeTimer = null;
+          $el._closeTimer = null;
+
+          function openDropdown() {
+            $el.classList.add("active");
+            if ($dropdown) $dropdown.classList.add("active");
+            // Position dropdown to align with the button
+            positionNavigationDropdown($el, $dropdown);
+          }
+
+          function closeDropdown() {
+            clearTimeout(closeTimer);
+            closeTimer = null;
+            $el._closeTimer = null;
+            $el.classList.remove("active");
+            if ($dropdown) $dropdown.classList.remove("active");
+          }
+
+          function scheduleClose() {
+            clearTimeout(closeTimer);
+            $el._closeTimer = setTimeout(function () {
+              closeDropdown();
+            }, 150);
+          }
+
+          function cancelClose() {
+            clearTimeout(closeTimer);
+            closeTimer = null;
+            $el._closeTimer = null;
+          }
+
+          // Mobile: tap toggles open/close
+          if ($dropdownLink && window.matchMedia("(max-width: 1139.95px)").matches) {
             $dropdownLink.addEventListener("click", function (e) {
-              if (window.matchMedia("(max-width: 1139.95px)").matches) {
-                e.preventDefault();
-                e.stopPropagation();
-                $el.classList.toggle("active");
-                $dropdown.classList.toggle("active");
+              e.preventDefault();
+              e.stopPropagation();
+              $el.classList.toggle("active");
+              if ($dropdown) $dropdown.classList.toggle("active");
+            });
+          }
+
+          // Desktop: click toggles sticky
+          if ($dropdownLink) {
+            $dropdownLink.addEventListener("click", function (e) {
+              // Only handle on desktop
+              if (window.matchMedia("(max-width: 1139.95px)").matches) return;
+
+              // Sync isSticky from class in case it was cleared externally (click-outside)
+              if (isSticky && !$el.classList.contains("is-sticky")) {
+                isSticky = false;
+              }
+
+              e.preventDefault();
+              e.stopPropagation();
+
+              if (isSticky) {
+                // Second click: unstick and close
+                isSticky = false;
+                $el.classList.remove("is-sticky");
+                closeDropdown();
+              } else {
+                // First click: make sticky, keep open
+                isSticky = true;
+                $el.classList.add("is-sticky");
+                // Ensure dropdown is open and positioned
+                if (!$el.classList.contains("active")) {
+                  openDropdown();
+                } else {
+                  // Already open, just reposition in case of resize
+                  positionNavigationDropdown($el, $dropdown);
+                }
               }
             });
           }
 
-          $el.addEventListener("mouseenter", function () {
-            positionNavigationDropdown($el, $dropdown);
-            $el.classList.add("active");
-            if ($dropdown) {
-              $dropdown.classList.add("active");
-            }
-          });
-          $el.addEventListener("mouseleave", function () {
-            $el.classList.remove("active");
-            if ($dropdown) {
-              $dropdown.classList.remove("active");
-            }
-          });
+          // Desktop: hover opens, hover leaves closes
+          if (!window.matchMedia("(max-width: 1139.95px)").matches) {
+            $el.addEventListener("mouseenter", function () {
+              var meSticky = $el.classList.contains("is-sticky");
+              // If this one is sticky, ignore hover (it stays open)
+              if (meSticky) {
+                return;
+              }
+              cancelClose();
 
-
-          if ($dropdown) {
-            $dropdown.addEventListener("click", function (e) {
-              e.stopPropagation();
-            });
-          }
-          var $dropdown_items = Array.prototype.slice.call($el.querySelectorAll(".navigation-dropdown-menu-item"), 0);
-          if ($dropdown_items.length > 0) {
-            $dropdown_items.forEach(function ($dropdown_item) {
-              $dropdown_item.addEventListener("mouseenter", function () {
-                $dropdown_item.classList.add("active");
-              });
-              $dropdown_item.addEventListener("mouseleave", function () {
-                $dropdown_item.classList.remove("active");
-              });
-              $el.addEventListener("click", function () {
-                $el.classList.add("enabled");
-                $dropdown_items.forEach(function ($el) {
-                  if ($el !== this) {
-                    $el.classList.remove("enabled");
+              // Close any other open dropdown (sticky or hover)
+              $navbarItems.forEach(function (otherEl) {
+                if (otherEl !== $el && otherEl.classList.contains("is-dropdown")) {
+                  var otherDd = otherEl.querySelector(".navigation-dropdown-menu");
+                  if (otherEl.classList.contains("active") && otherDd && otherDd.classList.contains("active")) {
+                    // Unstick the other one
+                    if (otherEl.classList.contains("is-sticky")) {
+                      otherEl.classList.remove("is-sticky");
+                    }
+                    // Cancel the other dropdown's close timer to prevent flicker
+                    if (otherEl._closeTimer) {
+                      clearTimeout(otherEl._closeTimer);
+                      otherEl._closeTimer = null;
+                    }
+                    otherEl.classList.remove("active");
+                    if (otherDd) otherDd.classList.remove("active");
                   }
-                }, this);
+                }
               });
+
+              openDropdown();
             });
+
+            // Single combined mouseleave for button + dropdown
+            // Checks if the mouse is still inside the button OR the dropdown element
+            var handleCombinedLeave = function (e) {
+              var meSticky = $el.classList.contains("is-sticky");
+              if (meSticky) {
+                return;
+              }
+              // If dropdown is not open, just close
+              if (!$el.classList.contains("active")) {
+                scheduleClose();
+                return;
+              }
+              // Check if mouse is still inside the dropdown element using elementFromPoint
+              // This handles the case where mouse left the button but entered the dropdown
+              var elUnderCursor = document.elementFromPoint(e.clientX, e.clientY);
+              var isOverDropdown = elUnderCursor && $dropdown && ($dropdown === elUnderCursor || $dropdown.contains(elUnderCursor));
+              if (isOverDropdown) {
+                cancelClose();
+              } else {
+                scheduleClose();
+              }
+            };
+
+            $el.addEventListener("mouseleave", handleCombinedLeave);
+          }
+
+          // Dropdown item hover
+          if ($dropdown) {
+            var $dropdown_items = Array.prototype.slice.call($dropdown.querySelectorAll(".navigation-dropdown-menu-item"), 0);
+            if ($dropdown_items.length > 0) {
+              $dropdown_items.forEach(function ($dropdown_item) {
+                $dropdown_item.addEventListener("mouseenter", function () {
+                  $dropdown_item.classList.add("active");
+                });
+                $dropdown_item.addEventListener("mouseleave", function () {
+                  $dropdown_item.classList.remove("active");
+                });
+                $el.addEventListener("click", function () {
+                  $el.classList.add("enabled");
+                  $dropdown_items.forEach(function (el) {
+                    if (el !== this) {
+                      el.classList.remove("enabled");
+                    }
+                  }, this);
+                });
+              });
+            }
           }
         }
       });
@@ -385,5 +492,19 @@
         });
       }
     });
+
+    // Desktop: click outside navigation dropdowns to close
+    if (!window.matchMedia("(max-width: 1139.95px)").matches) {
+      document.addEventListener("click", function (e) {
+        $navbarItems.forEach(function ($el) {
+          if ($el.classList.contains("active") && !$el.contains(e.target)) {
+            $el.classList.remove("active");
+            $el.classList.remove("is-sticky");
+            var $dd = $el.querySelector(".navigation-dropdown-menu");
+            if ($dd) $dd.classList.remove("active");
+          }
+        });
+      });
+    }
   });
 </script>

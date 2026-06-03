@@ -104,10 +104,18 @@ $uci-bg: #f6f6f6;
       border-color: #22c55e;
     }
   }
+
+  &--partial {
+    background: #f9fafb;
+    border-color: #d1d5db;
+  }
 }
 
 .uci-card-inner {
   padding: 20px;
+  display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .uci-card-meta {
@@ -115,6 +123,14 @@ $uci-bg: #f6f6f6;
   gap: 8px;
   align-items: center;
   margin-bottom: 8px;
+}
+
+.uci-badge-wrapper {
+  margin-left: auto;
+  flex-grow: 1;
+  display: flex;
+    justify-content: end;
+    align-items: center;
 }
 
 .uci-badge {
@@ -186,6 +202,11 @@ $uci-bg: #f6f6f6;
   color: $uci-grey;
   line-height: 1.5;
   margin: 0 0 12px;
+  flex-grow: 1;
+
+  code {
+    color: $uci-primary;
+  }
 }
 
 .uci-card-tags {
@@ -201,6 +222,73 @@ $uci-bg: #f6f6f6;
   font-size: 11px;
   font-weight: 600;
   color: $uci-grey;
+}
+
+.uci-card-depends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid $uci-border;
+  align-items: center;
+}
+
+.uci-dep-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+}
+
+.uci-dep-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: $uci-grey;
+  background: #f3f4f6;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  cursor: default;
+
+  &:hover {
+    background: #e5e7eb;
+  }
+
+  &--done {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.2);
+
+    &:hover {
+      background: rgba(34, 197, 94, 0.15);
+    }
+  }
+
+  &--pending {
+    background: rgba(251, 191, 36, 0.1);
+    color: #d97706;
+    border-color: rgba(251, 191, 36, 0.2);
+
+    &:hover {
+      background: rgba(251, 191, 36, 0.15);
+    }
+  }
+
+  &--locked {
+    background: #f9fafb;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+
+    &:hover {
+      background: #f3f4f6;
+    }
+  }
 }
 
 .uci-empty {

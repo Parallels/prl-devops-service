@@ -17,8 +17,10 @@ hero_actions:
   - title: Get Started
     fa_icon: fa-arrow-right
     icon_position: right
-    url: /quick-start/
+    url: /use-cases/devops-cli-quickstart/
   - title: Schedule a Demo
+    new_tab: true
+    fa_icon: fa-calendar-days
     url:  https://outlook.office.com/bookwithme/user/d6b4c940ec9d44079ed872ba1fcaaf68@parallels.com/meetingtype/you-CpOV8UyS0sFl9KjSWw2?anonymous&ep=mlink
 hero_footer_note: |
   [![License: Fair Source](https://img.shields.io/badge/license-fair-source.svg)](https://fair.io/)
