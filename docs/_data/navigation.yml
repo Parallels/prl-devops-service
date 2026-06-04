@@ -1,5 +1,5 @@
 - name: Quick Start
-  link: /use-cases/use_case_devops-cli-quickstart/
+  link: /tutorials/tutorial_devops-cli-quickstart/
 - name: Docs
   link: /docs/
   variant: docs
@@ -9,7 +9,7 @@
         - name: Tutorials
           icon: fa-regular fa-folder-open
           description: Common workflows for catalogs, orchestration, CI/CD, and automation.
-          link: /docs/use-cases/
+          link: /docs/tutorials/
     - title: Platform
       items:
         - name: Agent Documentation

@@ -255,7 +255,7 @@
 
       var card = document.createElement('a');
       card.className = 'uce-whatsnext-card';
-      card.href = (window.__UCE_BASEURL__) + '/use-cases/' + rec.use_case + '/';
+      card.href = (window.__UCE_BASEURL__) + '/tutorials/' + rec.use_case + '/';
       card.setAttribute('rel', 'noopener');
 
       var iconHtml = '';
@@ -2393,7 +2393,7 @@
 
       var card = document.createElement('a');
       card.className = 'uce-whatsnext-card';
-      card.href = (window.__UCE_BASEURL__) + '/use-cases/' + rec.use_case + '/';
+      card.href = (window.__UCE_BASEURL__) + '/tutorials/' + rec.use_case + '/';
       card.setAttribute('rel', 'noopener');
 
       var iconHtml = '';
@@ -2428,7 +2428,7 @@
       var href = card.getAttribute('href');
       if (!href) continue;
 
-      // Extract slug from URL: /use-cases/{slug}/
+      // Extract slug from URL: /tutorials/{slug}/
       var parts = href.replace(/\/$/, '').split('/');
       var slug = parts[parts.length - 1];
       if (!slug) continue;
@@ -2481,7 +2481,7 @@
       }));
 
       // Navigate to linked use case
-      var targetPage = baseurl + '/use-cases/' + sq.links_to;
+      var targetPage = baseurl + '/tutorials/' + sq.links_to;
       window.location.href = targetPage;
     } else {
       // Inline side quest — mark as completed
@@ -2556,7 +2556,7 @@
       if (!breadcrumb) return;
 
       var parentLi = document.createElement('li');
-      parentLi.innerHTML = '<a href="' + (window.__UCE_BASEURL__ || '') + '/use-cases/' + info.from + '">' + escapeHtml(info.from_title) + '</a>';
+      parentLi.innerHTML = '<a href="' + (window.__UCE_BASEURL__ || '') + '/tutorials/' + info.from + '">' + escapeHtml(info.from_title) + '</a>';
 
       // Insert before the first active step (use_case title)
       var activeItem = breadcrumb.querySelector('li.is-active');
@@ -3508,7 +3508,7 @@
         sessionStorage.setItem('uce_return_to', JSON.stringify(info));
 
         // Redirect back to origin
-        var target = (window.__UCE_BASEURL__ || '') + '/use-cases/' + info.from;
+        var target = (window.__UCE_BASEURL__ || '') + '/tutorials/' + info.from;
         window.location.href = target;
         return;
       }

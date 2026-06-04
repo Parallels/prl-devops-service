@@ -1,8 +1,8 @@
-id: vm-cicd-pipeline
+id: tutorial-vm-cicd-pipeline
 title: Building a CI/CD Pipeline on a Virtual Machine
 level: intermediate
 duration: "~25 min"
-group: Use Cases
+group: Tutorials
 category: DevOps
 order: 3
 hidden: true
@@ -15,7 +15,7 @@ unlocks:
   - ci-cd-certification
   - cloud-automation-badge
 depends_on:
-  - devops-cli-quickstart
+  - tutorial-devops-cli-quickstart
 
 introduction:
   scenario: >

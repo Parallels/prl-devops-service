@@ -11,12 +11,12 @@ module SitemapGeneratorPlugin
     path = page.path
 
     # Highest priority: index, use cases index
-    if path == 'index.md' || path == 'use-cases/index.md'
+    if path == 'index.md' || path == 'tutorials/index.md'
       return '1.0'
     end
 
     # Individual use cases
-    if path.start_with?('use-cases/')
+    if path.start_with?('tutorials/')
       return '0.9'
     end
 
@@ -55,14 +55,14 @@ Jekyll::Hooks.register :site, :post_write do |site|
   # Collect all pages that should appear in sitemap
   pages_to_index = []
 
-  # 1. Regular pages (non-use-case, non-docs)
+  # 1. Regular pages (non-tutorial, non-docs)
   site.pages.each do |page|
     next if page.path.include?('_site/')
     next if page.path.include?('404.html')
     next if page.path.include?('test.html')
     next if page.data && page.data['layout'] == 'none'
     next if page.data && page.data['is_home']
-    next if page.path.end_with?('.html') && !page.path.include?('/use-cases/')
+    next if page.path.end_with?('.html') && !page.path.include?('/tutorials/')
     next unless page.path.end_with?('.md')
 
     pages_to_index << page
@@ -71,7 +71,7 @@ Jekyll::Hooks.register :site, :post_write do |site|
   # 2. Use case pages
   site.pages.each do |page|
     next if page.path.include?('_site/')
-    next unless page.path.start_with?('use-cases/')
+    next unless page.path.start_with?('tutorials/')
     next unless page.path.end_with?('.md')
     next if page.data && page.data['layout'] == 'none'
 
@@ -157,7 +157,7 @@ Jekyll::Hooks.register :site, :post_write do |site|
     lines << "    <priority>#{escaped_priority}</priority>"
 
     # Use case pages get extra metadata as XML comments for crawlers
-    if page.path.start_with?('use-cases/')
+    if page.path.start_with?('tutorials/')
       uce_id = page.data && page.data['uce_data']
       if uce_id && site.data[uce_id]
         uc = site.data[uce_id]

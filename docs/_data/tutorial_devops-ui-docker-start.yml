@@ -1,8 +1,8 @@
-id: devops-ui-docker-start
+id: tutorial-devops-ui-docker-start
 title: Run the DevOps UI in Docker
 level: beginner
 duration: "~5 min"
-group: Use Cases
+group: Tutorials
 category: DevOps
 order: 2
 hidden: false
@@ -14,7 +14,7 @@ tags:
   - containers
 
 depends_on:
-  - use_case_devops-cli-quickstart
+  - tutorial-devops-cli-quickstart
 
 scenario: >
   Learn how to deploy the Parallels DevOps UI as a Docker container and

@@ -16,8 +16,8 @@ layout: default
     <nav class="breadcrumb uce-breadcrumb-nav" aria-label="breadcrumbs">
       <ul>
         <li><a href="{{ site.baseurl }}/docs/">Documentation</a></li>
-        <li><a href="{{ site.baseurl }}/docs/use-cases/">Use Cases</a></li>
-        <li class="is-active"><span>{{ use_case.title | default: 'Use Case' }}</span></li>
+        <li><a href="{{ site.baseurl }}/docs/tutorials/">Tutorials</a></li>
+        <li class="is-active"><span>{{ use_case.title | default: 'Tutorial' }}</span></li>
       </ul>
     </nav>
     <div class="uce-topbar-progress" id="uce-topbar-progress">
@@ -30,7 +30,7 @@ layout: default
 
   <!-- Title Header -->
   <header class="uce-header">
-    <h1 class="uce-title">{{ use_case.title | default: 'Use Case' }}</h1>
+    <h1 class="uce-title">{{ use_case.title | default: 'Tutorial' }}</h1>
     <div class="uce-meta">
       {% if use_case.level %}
       <div class="uce-badge-wrapper">
@@ -124,7 +124,7 @@ layout: default
 <!-- Data passed to JS engine -->
 <script>
   window.__UCE_BASEURL__ = '{{ site.baseurl }}';
-  window.__UCE_PAGE_SLUG__ = '{{ page.url | replace: "/use-cases/", "" | replace: "/", "" | replace: ".md", "" }}';
+  window.__UCE_PAGE_SLUG__ = '{{ page.url | replace: "/tutorials/", "" | replace: "/", "" | replace: ".md", "" }}';
   window.__USE_CASE_TITLE__ = '{{ use_case.title | default: page.title | escape }}';
   window.__UCE_PARENT_SLUG__ = '{{ use_case.linked_from | default: "" }}';
   window.__UCE_PARENT_TITLE__ = '{% if use_case.linked_from %}{% assign _p = site.pages | where: "slug", use_case.linked_from | first %}{{ _p.title | default: use_case.linked_from | jsonify }}{% else %}null{% endif %}';
@@ -132,7 +132,7 @@ layout: default
   // Map of use case slug -> hidden status (for side quest / recommendation filtering)
   window.__UCE_HIDDEN_MAP__ = {
     {% for uc in site.pages %}
-      {% if uc.path contains 'use-cases/' and uc.path != 'use-cases/index.md' %}
+      {% if uc.path contains 'tutorials/' and uc.path != 'tutorials/index.md' %}
         {% assign _key = uc.uce_data | default: uc.id %}
         {% assign _uc = site.data[_key] | default: uc %}
         {% if _uc.hidden %}
@@ -143,4 +143,4 @@ layout: default
   };
 </script>
 <script src="{{ site.baseurl }}/assets/js/uce-state.js?v7"></script>
-<script src="{{ site.baseurl }}/assets/js/uce-engine.js?v110"></script>
+<script src="{{ site.baseurl }}/assets/js/uce-engine.js?v111"></script>

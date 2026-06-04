@@ -1,25 +1,25 @@
 ---
 layout: default
-title: Use Cases
-permalink: /docs/use-cases/
+title: Tutorials
+permalink: /docs/tutorials/
 ---
 
-<!-- Use Cases Index Page -->
+<!-- Tutorials Index Page -->
 <div class="use-cases-index">
   <div class="uci-header">
-    <h1>Use Cases</h1>
+    <h1>Tutorials</h1>
     <p class="uci-description">
-      Interactive guided experiences for learning our DevOps services.
+      Step-by-step tutorials for learning our DevOps services.
     </p>
     <div class="uci-controls">
-      <input type="text" id="uci-search" placeholder="Search use cases..." class="uci-search-input">
+      <input type="text" id="uci-search" placeholder="Search tutorials..." class="uci-search-input">
       <div class="uci-filter-tags" id="uci-filter-tags"></div>
     </div>
   </div>
 
   <div class="uci-grid" id="uci-grid">
-    {% assign use_cases = site.pages | where_exp: "item", "item.path contains 'use-cases/' and item.path != 'use-cases/index.md'" | sort: 'order' %}
-    {% for uc in use_cases %}
+    {% assign tutorials = site.pages | where_exp: "item", "item.path contains 'tutorials/' and item.path != 'tutorials/index.md'" | sort: 'order' %}
+    {% for uc in tutorials %}
       {% assign uc_key = uc.uce_data | default: uc.id %}
       {% assign uc_data = site.data[uc_key] | default: uc %}
       {% assign depends_list = uc_data.depends_on | join: ',' %}
@@ -87,7 +87,7 @@ permalink: /docs/use-cases/
   </div>
 
   <div class="uci-empty" id="uci-empty" style="display:none;">
-    <p>No use cases match your search.</p>
+    <p>No tutorials match your search.</p>
   </div>
 </div>
 
@@ -371,7 +371,7 @@ permalink: /docs/use-cases/
         if (!raw) {
           tag.innerHTML = '<i class="fa-solid fa-lock"></i> ' + escapeHtml(displayTitle);
           tag.className = 'uci-dep-tag uci-dep-tag--locked';
-          tag.title = 'Complete "' + escapeHtml(fullTitle) + '" first to unlock this use case';
+          tag.title = 'Complete "' + escapeHtml(fullTitle) + '" first to unlock this tutorial';
           allDone = false;
           return;
         }

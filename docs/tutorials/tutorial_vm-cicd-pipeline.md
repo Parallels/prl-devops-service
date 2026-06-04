@@ -1,5 +1,5 @@
 ---
 layout: use_case
 hide_hero: true
-uce_data: use_case_devops-cli-quickstart
+uce_data: tutorial_vm-cicd-pipeline
 ---
