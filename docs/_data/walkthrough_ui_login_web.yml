@@ -1,0 +1,20 @@
+main_image: "/ui/login_web.png"
+title: "Login Interface"
+show_background_effect: false
+items:
+  - id: server_url
+    type: step
+    title: "Server URL"
+    description: "This is the URL of your Parallels DevOps Service instance. It can be pre-filled with the default value, but you can change it if your instance is hosted elsewhere."
+    hotspot:
+      x: 50
+      y: 40.5
+      radius: 25
+  - id: username
+    type: step
+    title: "Username"
+    description: "Enter your username for the Parallels DevOps Service instance."
+    hotspot:
+      x: 50
+      y: 48.5
+      radius: 25

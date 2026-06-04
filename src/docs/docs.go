@@ -9724,7 +9724,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -9774,7 +9774,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -9824,7 +9824,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -9881,7 +9881,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -9926,7 +9926,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -10412,19 +10412,6 @@ const docTemplate = `{
                 "EventTypeSystem": "System-level events",
                 "EventTypeSystemLogs": "System logs events"
             },
-            "x-enum-descriptions": [
-                "Broadcasts to all subscribers",
-                "PDFM-specific events",
-                "System-level events",
-                "System logs events",
-                "Health check events",
-                "Orchestrator events",
-                "Statistics events",
-                "Reverse Proxy events",
-                "Catalog cache events",
-                "Job Manager events",
-                "Auth events (users, roles, claims)"
-            ],
             "x-enum-varnames": [
                 "EventTypeGlobal",
                 "EventTypePDFM",
@@ -11896,6 +11883,9 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
                 }
             }
         },
@@ -11921,6 +11911,18 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "revoked_at": {
+                    "type": "string"
+                },
+                "user_email": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "user_name": {
+                    "type": "string"
+                },
+                "user_username": {
                     "type": "string"
                 }
             }
@@ -12754,6 +12756,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "is_orchestrator_job": {
+                    "type": "boolean"
+                },
                 "job_operation": {
                     "type": "string"
                 },
@@ -12865,10 +12870,16 @@ const docTemplate = `{
         "models.LoginRequest": {
             "type": "object",
             "properties": {
+                "api_key": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }
@@ -12948,7 +12959,6 @@ const docTemplate = `{
         },
         "models.OAuthErrorType": {
             "type": "integer",
-            "format": "int64",
             "enum": [
                 0,
                 1,

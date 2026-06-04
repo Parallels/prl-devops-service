@@ -1,0 +1,146 @@
+---
+layout: default
+---
+{% assign data_key = page.uce_data | default: page.id %}
+{% assign use_case = site.data[data_key] | default: page %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.3.19/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-shell-session.min.js"></script>
+<!-- Use Case Engine Page -->
+<div class="uce-page" data-uce-usecase="{{ use_case.id | default: '' }}">
+
+  <!-- Top Row: Breadcrumb + Progress -->
+  <div class="uce-topbar">
+    <nav class="breadcrumb uce-breadcrumb-nav" aria-label="breadcrumbs">
+      <ul>
+        <li><a href="{{ site.baseurl }}/docs/">Documentation</a></li>
+        <li><a href="{{ site.baseurl }}/docs/tutorials/">Tutorials</a></li>
+        <li class="is-active"><span>{{ use_case.title | default: 'Tutorial' }}</span></li>
+      </ul>
+    </nav>
+    <div class="uce-topbar-progress" id="uce-topbar-progress">
+      <span class="uce-topbar-count" id="uce-topbar-count">0 of 0</span>
+      <div class="uce-progress-track">
+        <div class="uce-progress-fill" id="uce-progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Title Header -->
+  <header class="uce-header">
+    <h1 class="uce-title">{{ use_case.title | default: 'Tutorial' }}</h1>
+    <div class="uce-meta">
+      {% if use_case.level %}
+      <div class="uce-badge-wrapper">
+        <span class="uce-badge uce-badge--level uce-badge--{{ use_case.level }}">{{ use_case.level | capitalize }}</span>
+      </div>
+      {% endif %}
+      {% if use_case.duration %}
+      <span class="uce-meta-item uce-meta--duration">
+        <i class="far fa-clock"></i>
+        {{ use_case.duration }}
+      </span>
+      {% endif %}
+      {% if use_case.unlocks and use_case.unlocks.size > 0 %}
+      {% assign unlock_word = 'achievement' %}
+      {% if use_case.unlocks.size > 1 %}
+        {% assign unlock_word = 'achievements' %}
+      {% endif %}
+      <span class="uce-meta-item uce-meta--unlocks">
+        Unlocks {{ use_case.unlocks.size }} {{ unlock_word }}
+      </span>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Introduction Card -->
+  {% include uce-intro.html data=use_case %}
+
+  <!-- Step Flow Container -->
+  <section class="uce-flow" id="uce-flow-container" data-uce-flow
+    data-uce-data='{{ use_case | jsonify | escape }}'>
+    <div class="uce-loading" id="uce-loading">
+      <div class="uce-spinner"></div>
+      <span>Loading…</span>
+    </div>
+    <!-- Steps rendered by uce-engine.js -->
+  </section>
+
+  <!-- Serialize referenced walkthrough data for the JS engine -->
+  {% assign all_tw_keys = "" %}
+  {% for step in use_case.steps %}
+    {% if step.panel and step.panel.kind == 'walkthrough' and step.panel.items_ref %}
+      {% assign all_tw_keys = all_tw_keys | append: ',' | append: step.panel.items_ref %}
+    {% endif %}
+  {% endfor %}
+  {% assign unique_tw_keys = all_tw_keys | split: ',' | uniq | where_exp: 'k', 'k != ""' %}
+  {% if unique_tw_keys.size > 0 or use_case.walkthroughs %}
+  <script>
+    window.__UCE_WALKTHROUGH_DATA__ = {};
+    // External walkthroughs (site.data)
+    {% for key in unique_tw_keys %}
+      window.__UCE_WALKTHROUGH_DATA__["{{ key }}"] = {{ site.data[key] | jsonify }};
+    {% endfor %}
+    // Inline walkthroughs (defined in use case YAML)
+    {% if use_case.walkthroughs %}
+      {% for tw in use_case.walkthroughs %}
+        window.__UCE_WALKTHROUGH_DATA__["{{ tw.id }}"] = {{ tw | jsonify }};
+      {% endfor %}
+    {% endif %}
+  </script>
+  {% endif %}
+
+  <!-- Serialize recommended use case data for whats_next -->
+  {% assign all_rec_keys = "" %}
+  {% if use_case.whats_next and use_case.whats_next.recommendations %}
+    {% for rec in use_case.whats_next.recommendations %}
+      {% if rec.use_case %}
+        {% assign all_rec_keys = all_rec_keys | append: ',' | append: rec.use_case %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+  {% assign unique_rec_keys = all_rec_keys | split: ',' | uniq | where_exp: 'k', 'k != ""' %}
+  {% if unique_rec_keys.size > 0 %}
+  <script>
+    window.__UCE_WHATS_NEXT_DATA__ = {
+      {% for key in unique_rec_keys %}
+        {% assign rec_data = site.data[key] %}
+        {% if rec_data and rec_data.hidden %}{% continue %}{% endif %}
+        {% if rec_data %}
+        "{{ key }}": {{ rec_data | jsonify }},
+        {% endif %}
+      {% endfor %}
+    };
+  </script>
+  {% endif %}
+
+</div>
+
+<!-- Monaco Editor — loaded synchronously before engine -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+
+<!-- Data passed to JS engine -->
+<script>
+  window.__UCE_BASEURL__ = '{{ site.baseurl }}';
+  window.__UCE_PAGE_SLUG__ = '{{ page.url | replace: "/tutorials/", "" | replace: "/", "" | replace: ".md", "" }}';
+  window.__USE_CASE_TITLE__ = '{{ use_case.title | default: page.title | escape }}';
+  window.__UCE_PARENT_SLUG__ = '{{ use_case.linked_from | default: "" }}';
+  window.__UCE_PARENT_TITLE__ = '{% if use_case.linked_from %}{% assign _p = site.pages | where: "slug", use_case.linked_from | first %}{{ _p.title | default: use_case.linked_from | jsonify }}{% else %}null{% endif %}';
+
+  // Map of use case slug -> hidden status (for side quest / recommendation filtering)
+  window.__UCE_HIDDEN_MAP__ = {
+    {% for uc in site.pages %}
+      {% if uc.path contains 'tutorials/' and uc.path != 'tutorials/index.md' %}
+        {% assign _key = uc.uce_data | default: uc.id %}
+        {% assign _uc = site.data[_key] | default: uc %}
+        {% if _uc.hidden %}
+          "{{ _key }}": true,
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  };
+</script>
+<script src="{{ site.baseurl }}/assets/js/uce-state.js?v7"></script>
+<script src="{{ site.baseurl }}/assets/js/uce-engine.js?v111"></script>

@@ -1,0 +1,25 @@
+title: "Download the Tools"
+description: ""
+download_items:
+  - category: "ui"
+    label: "Parallels DevOps UI"
+    hidden: false
+    platforms:
+      - platform: "macOS"
+        download_url: "#"
+      - platform: "Windows"
+        download_url: "#"
+      - platform: "Linux"
+        download_url: "#"
+    button_label: "Download for Desktop"
+    button_url: "#"
+    button_style: "primary"
+
+  - category: "cli"
+    label: "Parallels DevOps Agent (CLI)"
+    hidden: false
+    cli_command: "curl -sSL https://raw.githubusercontent.com/Parallels/prl-devops-service/main/scripts/install.sh | bash"
+    button_label: "Download CLI"
+    button_url: "#"
+    button_style: "secondary"
+    show_copy: true

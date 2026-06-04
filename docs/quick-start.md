@@ -4,6 +4,7 @@ title: Quick Start
 subtitle: Quickly spin up a Parallels Desktop DevOps Service
 show_sidebar: false
 version: 0.5.4
+full_width: true
 ---
 
 {% assign installationContent = site.pages | where:"url", "/docs/devops/getting-started/installation/" | first %}
