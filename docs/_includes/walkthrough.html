@@ -4,7 +4,7 @@
 <div class="tw-container" id="tw-container">
   <div class="tw-stage">
     <div class="tw-images">
-      <img class="tw-img-main" src="{{ site.baseurl }}/assets/img/ui/{{ tw.main_image }}" alt="{{ tw.title }} — default view" />
+      <img class="tw-img-main" src="{{ site.baseurl }}/assets/img/{{ tw.main_image }}" alt="{{ tw.title }} — default view" />
     </div>
     <div class="tw-hotspot-layer"></div>
     <div class="tw-scene-badge" id="tw-scene-badge">
@@ -102,7 +102,7 @@
 
     // Change the single image with fade transition
     var sceneImage = sceneItem.image || tw.main_image;
-    var newSrc = '{{ site.baseurl }}/assets/img/ui/' + sceneImage;
+    var newSrc = '{{ site.baseurl }}/assets/img/' + sceneImage;
 
     var tempImg = new Image();
     tempImg.src = newSrc;
@@ -137,7 +137,7 @@
       sceneBadgeLabel.textContent = stack[stack.length - 1].sceneTitle;
     }
 
-    var parentSrc = '{{ site.baseurl }}/assets/img/ui/' + tw.main_image;
+    var parentSrc = '{{ site.baseurl }}/assets/img/' + tw.main_image;
     var tempImg = new Image();
     tempImg.src = parentSrc;
     tempImg.onload = function() {

@@ -50,6 +50,23 @@ var UCEState = (function () {
     var op = m[3];
     var target = m[4].trim();
 
+    /* System variables — not backed by a step */
+    if (refStepId === 'platform') {
+      var actual = 'unknown';
+      var ua = navigator.userAgent;
+      if (/Mac|Macintosh|iPhone|iPad|iPod/.test(ua)) actual = 'darwin';
+      else if (/Linux/.test(ua)) actual = 'linux';
+      else if (/Win/.test(ua)) actual = 'windows';
+      target = String(target);
+      switch (op) {
+        case '==': return actual === target;
+        case '!=': return actual !== target;
+        case '=~': return new RegExp(target).test(actual);
+        case '!~': return !new RegExp(target).test(actual);
+        default: return false;
+      }
+    }
+
     var step = stepMap[refStepId];
     if (!step) return false;
 

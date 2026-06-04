@@ -1073,19 +1073,20 @@
   /** Build walkthrough HTML from data. */
   function buildWalkthroughHtml(tw, panel) {
     var mainImage = tw.main_image || '';
-    var html = '<div class="tw-container" id="tw-container">' +
+    var uid = panel.id ? '-uid-' + panel.id : '';
+    var html = '<div class="tw-container" id="tw-container' + uid + '">' +
       '<div class="tw-stage">' +
         '<div class="tw-images">' +
-          '<img class="tw-img-main" src="' + window.__UCE_BASEURL__ + '/assets/img/ui/' + escapeHtml(mainImage) + '" alt="' + escapeHtml(tw.title) + ' \u2014 default view" />' +
+          '<img class="tw-img-main" src="' + window.__UCE_BASEURL__ + '/assets/img/' + escapeHtml(mainImage) + '" alt="' + escapeHtml(tw.title) + ' \u2014 default view" />' +
         '</div>' +
         '<div class="tw-hotspot-layer"></div>' +
-        '<div class="tw-scene-badge" id="tw-scene-badge">' +
+        '<div class="tw-scene-badge" id="tw-scene-badge' + uid + '">' +
           '<span class="tw-scene-badge-label"></span>' +
-          '<button class="tw-scene-badge-close" id="tw-scene-badge-close" aria-label="Exit scene">\u00d7</button>' +
+          '<button class="tw-scene-badge-close" id="tw-scene-badge-close' + uid + '" aria-label="Exit scene">\u00d7</button>' +
         '</div>' +
       '</div>' +
-      '<div class="tw-info-panel" id="tw-info-panel">' +
-        '<button class="tw-info-close" id="tw-info-close" aria-label="Close">\u2715</button>' +
+      '<div class="tw-info-panel" id="tw-info-panel' + uid + '">' +
+        '<button class="tw-info-close" id="tw-info-close' + uid + '" aria-label="Close">\u2715</button>' +
         '<div class="tw-info-content">' +
           '<span class="tw-info-step-label"></span>' +
           '<h3 class="tw-info-title"></h3>' +
@@ -1108,23 +1109,41 @@
       var items = tw.items || [];
       if (!items.length) return;
 
-      var container = panelEl.querySelector('#tw-container');
+      // Build UID suffix from panel.id (set by caller)
+      var uid = '';
+      var panelIdEl = panelEl.querySelector('[id^="tw-container-uid-"]');
+      if (panelIdEl) {
+        var m = panelIdEl.id.match(/-uid-(.+)$/);
+        if (m) uid = m[1];
+      }
+      var sel = function(selStr) {
+        var suffix = uid ? '-' + uid : '';
+        if (selStr.charAt(0) === '#') {
+          return panelEl.querySelector(selStr + suffix);
+        }
+        if (selStr.charAt(0) === '.') {
+          return panelEl.querySelector(selStr + (suffix ? '-' + suffix : ''));
+        }
+        return panelEl.querySelector('#' + selStr + suffix);
+      };
+
+      var container = sel('tw-container');
       if (!container) return;
 
       var stage = container.querySelector('.tw-stage');
       var imgMain = container.querySelector('.tw-img-main');
       var hotspotLayer = container.querySelector('.tw-hotspot-layer');
-      var infoPanel = container.querySelector('.tw-info-panel');
-      var infoStepLabel = container.querySelector('.tw-info-step-label');
-      var infoTitle = container.querySelector('.tw-info-title');
-      var infoDesc = container.querySelector('.tw-info-desc');
-      var dotsContainer = container.querySelector('.tw-dots');
-      var btnPrev = container.querySelector('.tw-nav-prev');
-      var btnNext = container.querySelector('.tw-nav-next');
-      var sceneBadge = container.querySelector('.tw-scene-badge');
-      var sceneBadgeLabel = container.querySelector('.tw-scene-badge-label');
-      var sceneBadgeClose = container.querySelector('#tw-scene-badge-close');
-      var infoClose = container.querySelector('#tw-info-close');
+      var infoPanel = sel('tw-info-panel');
+      var infoStepLabel = sel('.tw-info-step-label');
+      var infoTitle = sel('.tw-info-title');
+      var infoDesc = sel('.tw-info-desc');
+      var dotsContainer = sel('.tw-dots');
+      var btnPrev = sel('.tw-nav-prev');
+      var btnNext = sel('.tw-nav-next');
+      var sceneBadge = sel('tw-scene-badge');
+      var sceneBadgeLabel = sel('.tw-scene-badge-label');
+      var sceneBadgeClose = sel('tw-scene-badge-close');
+      var infoClose = sel('tw-info-close');
 
       if (tw.show_background_effect === false) {
         stage.classList.add('tw-stage--no-effect');
@@ -1165,7 +1184,7 @@
         sceneBadge.classList.add('tw-scene-badge--visible');
         sceneBadgeLabel.textContent = sceneItem.title;
         var sceneImage = sceneItem.image || tw.main_image;
-        var newSrc = window.__UCE_BASEURL__ + '/assets/img/ui/' + sceneImage;
+        var newSrc = window.__UCE_BASEURL__ + '/assets/img/' + sceneImage;
         var tempImg = new Image();
         tempImg.src = newSrc;
         tempImg.onload = function() {
@@ -1185,7 +1204,7 @@
         sceneDepth--;
         if (sceneDepth === 0) { sceneBadge.classList.remove('tw-scene-badge--visible'); }
         else { sceneBadgeLabel.textContent = stack[stack.length - 1].sceneTitle; }
-        var parentSrc = window.__UCE_BASEURL__ + '/assets/img/ui/' + tw.main_image;
+        var parentSrc = window.__UCE_BASEURL__ + '/assets/img/' + tw.main_image;
         var tempImg = new Image();
         tempImg.src = parentSrc;
         tempImg.onload = function() {
@@ -3626,6 +3645,20 @@
 
     /* ── Internal: resolve one field reference ────────────────────── */
     function _resolveField(stepId, fieldName, stepMap, state) {
+      /* System variables — not backed by a step */
+      if (stepId === 'platform') {
+        var os = 'unknown';
+        var ua = navigator.userAgent;
+        if (/Mac|Macintosh|iPhone|iPad|iPod/.test(ua)) {
+          os = 'darwin';
+        } else if (/Linux/.test(ua)) {
+          os = 'linux';
+        } else if (/Win/.test(ua)) {
+          os = 'windows';
+        }
+        return fieldName === 'os' ? os : null;
+      }
+
       var step = stepMap[stepId];
 
       if (!step) {

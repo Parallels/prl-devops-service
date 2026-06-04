@@ -1,4 +1,4 @@
-main_image: "catalog-main.png"
+main_image: "/ui/catalog-main.png"
 title: "Catalog Interface"
 show_background_effect: false
 items:
@@ -8,7 +8,7 @@ items:
     description: "Check the catalog information such as name, description, and number of manifests available."
     hotspot:
       x: 35
-      y: 12.5
+      y: 5.5
       radius: 25
 
   - id: search
@@ -17,7 +17,7 @@ items:
     description: "Find any VM in your catalog using powerful search and category filters. Narrow down by OS, architecture, or version."
     hotspot:
       x: 75
-      y: 12.5
+      y: 5.5
       radius: 30
 
   - id: pull
@@ -26,7 +26,7 @@ items:
     description: "Pick a version and hit pull. The client handles metadata retrieval, storage download, and local registration automatically."
     hotspot:
       x: 35
-      y: 54
+      y: 49
       radius: 30
 
   - id: manifest
@@ -35,7 +35,7 @@ items:
     description: "Browse manifests, pick a version, hit pull. Behind it: <strong>RBAC</strong> on every catalog, <strong>taints</strong> that warn your team about risky builds, and <strong>revokes</strong> that take compromised versions out of circulation. The registry workflow you know, hardened for production infrastructure."
     hotspot:
       x: 56
-      y: 83.5
+      y: 82.5
       radius: 30
 
   - id: manifest-details
@@ -44,9 +44,9 @@ items:
     description: "View full manifest information including version history, taints, roles, and security claims before pulling."
     hotspot:
       x: 27
-      y: 27
+      y: 25
       radius: 30
-    image: "catalog-main-side-menu.png"
+    image: "/ui/catalog-main-side-menu.png"
     steps:
       - id: rbac-overview
         type: step
@@ -67,7 +67,7 @@ items:
           y: 55
           radius: 35
           color: "#8B5CF6"
-        image: "catalog-main-side-menu-roles.png"
+        image: "/ui/catalog-main-side-menu-roles.png"
         steps:
           - id: policy-check
             type: step
@@ -104,7 +104,7 @@ items:
     title: "Taints & Revokes"
     description: "Taints warn your team about risky builds. Revokes automatically remove compromised versions from circulation."
     hotspot:
-      x: 75
-      y: 21.5
+      x: 87
+      y: 23.5
       radius: 30
 

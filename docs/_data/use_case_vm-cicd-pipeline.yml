@@ -121,7 +121,7 @@ steps:
       Follow the walkthrough below to configure your VM securely.
     panel:
       kind: walkthrough
-      items_ref: catalog_walkthrough
+      items_ref: walkthrough_ui_catalog
       highlight_ids: ["search", "manifest"]
       auto_advance: false
   - id: infra-check

@@ -1,7 +1,7 @@
 id: devops-cli-quick-start
 title: DevOps CLI Quick Start
 level: beginner
-duration: "~5 min"
+duration: "~25 min"
 group: Use Cases
 category: DevOps
 order: 1
@@ -240,14 +240,7 @@ steps:
         language: yaml
         initial_code: |
           environment:
-            api_port: 80
-            log_level: DEBUG
-            ROOT_PASSWORD: VeryStr0ngPassw0rd
-      - name: config.1yaml
-        language: yaml
-        initial_code: |
-          environment:
-            api_port: 81
+            api_port: 5001
             log_level: DEBUG
             ROOT_PASSWORD: VeryStr0ngPassw0rd
     resources:
@@ -404,7 +397,7 @@ whats_next:
       DevOps Service on ${{ choose-platform.label }}. Here's how to take your
       fleet management to the next level.
     recommendations:
-      - use_case: devops-ui-docker-start
+      - use_case: use_case_devops-ui-docker-start
         icon: fa-box-archive
 
 side_quests:
@@ -416,6 +409,6 @@ side_quests:
       This side quest walks you through running the dashboard as a Docker container, which is the 
       recommended deployment method for most users. You'll learn how to configure the UI to connect 
       to your running service and access it from your browser.
-    links_to: devops-ui-docker-start
+    links_to: use_case_devops-ui-docker-start
     requires: []
     duration: "~5 min"

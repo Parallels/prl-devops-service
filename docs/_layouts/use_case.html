@@ -76,13 +76,19 @@ layout: default
     {% endif %}
   {% endfor %}
   {% assign unique_tw_keys = all_tw_keys | split: ',' | uniq | where_exp: 'k', 'k != ""' %}
-  {% if unique_tw_keys.size > 0 %}
+  {% if unique_tw_keys.size > 0 or use_case.walkthroughs %}
   <script>
-    window.__UCE_WALKTHROUGH_DATA__ = {
-      {% for key in unique_tw_keys %}
-        "{{ key }}": {{ site.data[key] | jsonify }},
+    window.__UCE_WALKTHROUGH_DATA__ = {};
+    // External walkthroughs (site.data)
+    {% for key in unique_tw_keys %}
+      window.__UCE_WALKTHROUGH_DATA__["{{ key }}"] = {{ site.data[key] | jsonify }};
+    {% endfor %}
+    // Inline walkthroughs (defined in use case YAML)
+    {% if use_case.walkthroughs %}
+      {% for tw in use_case.walkthroughs %}
+        window.__UCE_WALKTHROUGH_DATA__["{{ tw.id }}"] = {{ tw | jsonify }};
       {% endfor %}
-    };
+    {% endif %}
   </script>
   {% endif %}
 
@@ -136,5 +142,5 @@ layout: default
     {% endfor %}
   };
 </script>
-<script src="{{ site.baseurl }}/assets/js/uce-state.js?v6"></script>
-<script src="{{ site.baseurl }}/assets/js/uce-engine.js?v107"></script>
+<script src="{{ site.baseurl }}/assets/js/uce-state.js?v7"></script>
+<script src="{{ site.baseurl }}/assets/js/uce-engine.js?v110"></script>

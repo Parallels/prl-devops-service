@@ -327,6 +327,11 @@ $uce-radius-sm: 8px;
   background: #f2f4f6;
   padding: 10px;
   border-left: 1px dashed #dbdce0;
+
+  &.uce-intro-right--image {
+    align-items: flex-start;
+    padding-top: 10px;
+  }
 }
 
 /* ── Image variant — clean frame, no dashed border ── */
@@ -339,10 +344,19 @@ $uce-radius-sm: 8px;
 
 .uce-image-frame {
   width: 100%;
-  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   background: #fff;
+  padding:4px;
+/* Smooth animation for the hover effect */
+  transition: transform 0.3s ease-in-out; 
+  
+  /* Pins the top-right corner so it scales bottom-left */
+  transform-origin: top right;
+
+  &:hover {
+      background: rgba(255, 255, 255, 0.8);
+    transform: scale(1.6);
+  }
 
   img {
     width: 100%;

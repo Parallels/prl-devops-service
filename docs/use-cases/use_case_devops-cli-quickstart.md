@@ -1,5 +1,5 @@
 ---
 layout: use_case
 hide_hero: true
-uce_data: devops-cli-quick-start
+uce_data: use_case_devops-cli-quickstart
 ---

@@ -29,7 +29,7 @@ There are two main types of operations used with virtual machine catalogs are ca
 
 ### Explore the Catalog Interface
 
-{% include walkthrough.html %}
+{% include walkthrough.html data_key="walkthrough_ui_catalog" %}
 
 ### Pushing
 
