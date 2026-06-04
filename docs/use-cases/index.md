@@ -41,7 +41,7 @@ permalink: /docs/use-cases/
       data-category="{{ uc_data.category | default: 'Uncategorized' | slugify }}"
       data-group="{{ uc_data.group | default: 'General' | slugify }}"
       data-level="{{ uc_data.level | default: '' }}"
-      data-uce-id="{{ uc.uce_data | default: '' }}"
+      data-uce-id="{{ uc_data.id | default: '' }}"
       data-tags="{{ uc_data.tags | join: ',' }}"
       data-unlocks="{{ uc_data.unlocks | size }}"
       data-depends-on="{{ depends_list }}">

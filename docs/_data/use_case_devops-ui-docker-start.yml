@@ -14,7 +14,7 @@ tags:
   - containers
 
 depends_on:
-  - devops-cli-quickstart
+  - use_case_devops-cli-quickstart
 
 scenario: >
   Learn how to deploy the Parallels DevOps UI as a Docker container and

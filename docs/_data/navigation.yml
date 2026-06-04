@@ -6,7 +6,7 @@
   sections:
     - title: Get Started
       items:
-        - name: Use Cases
+        - name: Tutorials
           icon: fa-regular fa-folder-open
           description: Common workflows for catalogs, orchestration, CI/CD, and automation.
           link: /docs/use-cases/
