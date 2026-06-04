@@ -86,6 +86,8 @@ type ParallelsService struct {
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
+	licenseCache     *licenseCacheEntry
+	licenseMu        sync.RWMutex
 	Users            []*models.ParallelsDesktopUser
 	isLicensed       bool
 	installed        bool

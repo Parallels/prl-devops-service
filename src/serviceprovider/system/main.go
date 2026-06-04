@@ -446,6 +446,31 @@ func (s *SystemService) getUniqueIdMac(ctx basecontext.ApiContext) (string, erro
 }
 
 func (s *SystemService) getUniqueIdLinux(ctx basecontext.ApiContext) (string, error) {
+	// Priority 1: DMI/SMBIOS product UUID — survives container recreation
+	// This is the host machine's actual UUID (Intel SMBIOS standard)
+	uuid, err := s.getUniqueIdLinuxDmi(ctx)
+	if err == nil && uuid != "" {
+		return strings.TrimSpace(uuid), nil
+	}
+
+	// Priority 2: /etc/machine-id — existing behavior, fallback for containers
+	// that don't expose DMI data
+	return s.getUniqueIdLinuxMachineId(ctx)
+}
+
+func (s *SystemService) getUniqueIdLinuxDmi(ctx basecontext.ApiContext) (string, error) {
+	content, err := os.ReadFile("/sys/class/dmi/id/product_uuid")
+	if err != nil {
+		return "", err
+	}
+	trimmed := strings.TrimSpace(string(content))
+	if trimmed == "" {
+		return "", errors.New("product_uuid is empty")
+	}
+	return trimmed, nil
+}
+
+func (s *SystemService) getUniqueIdLinuxMachineId(ctx basecontext.ApiContext) (string, error) {
 	cmd := helpers.Command{
 		Command: "cat",
 		Args:    []string{"/etc/machine-id"},
