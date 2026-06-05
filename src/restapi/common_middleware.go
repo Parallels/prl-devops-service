@@ -46,8 +46,9 @@ func LoggerMiddlewareAdapter(logHealthCheck bool) Adapter {
 				id := GetRequestId(r)
 				common.Logger.Info("[%s] [%v] %v from %v", id, r.Method, r.URL.Path, r.Host)
 				rMatchLogin := regexp.MustCompile("auth/token")
+				rMatchSubscribe := regexp.MustCompile(`/ws/subscribe$`)
 
-				if !isRequestFromOrchestratorRefresh(r) && !isIgnoreLogHeaderPresent(r) && !rMatchLogin.MatchString(r.URL.Path) {
+				if !isRequestFromOrchestratorRefresh(r) && !isIgnoreLogHeaderPresent(r) && !rMatchLogin.MatchString(r.URL.Path) && !rMatchSubscribe.MatchString(r.URL.Path) {
 					ctx := basecontext.NewRootBaseContext()
 					sourceId := r.Header.Get("X-SOURCE-ID")
 					properties := make(map[string]interface{})
