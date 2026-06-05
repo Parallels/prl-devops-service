@@ -18,7 +18,7 @@ items:
     fa_icon: fa-circle-dot
     icon_bg: "#e0392b"
     link_text: "Explore CI/CD"
-    link_url: /features/github-actions/
+    link_url: /features/ci-cd/
   - title: "Full UI Dashboard"
     description: "A native control panel for every VM and host — live metrics, one-click actions, and full visibility across your entire fleet."
     fa_icon: fa-display
