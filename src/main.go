@@ -103,7 +103,7 @@ func main() {
 				// Call home every 30 minutes
 				time.Sleep(30 * time.Minute)
 				ctx.LogInfof("[Core] Sending heartbeat")
-				sendHeartbeat()
+				telemetry.SendHeartbeat()
 			}
 		}
 	}()
@@ -128,10 +128,3 @@ func cleanup(ctx basecontext.ApiContext, db *data.JsonDatabase) {
 	}
 }
 
-func sendHeartbeat() {
-	if telemetry.Get() == nil {
-		return
-	}
-	ctx := basecontext.NewRootBaseContext()
-	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.HeartbeatEvent, nil, nil))
-}

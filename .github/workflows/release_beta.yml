@@ -119,7 +119,7 @@ jobs:
           project_path: "./src"
           binary_name: "prldevops"
           release_name: "v${{ env.EXT_VERSION }}-beta"
-          ldflags: "-s -w -X 'github.com/Parallels/prl-devops-service/version.buildVersion=${{ env.EXT_VERSION }}' -X 'github.com/Parallels/prl-devops-service/version.buildChannel=beta' -X 'github.com/Parallels/prl-devops-service/version.buildDate=${{ env.BUILD_DATE }}' -X 'github.com/Parallels/prl-devops-service/version.buildCommit=${{ env.GIT_COMMIT }}' -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}'"
+          ldflags: "-s -w -X 'github.com/Parallels/prl-devops-service/version.buildVersion=${{ env.EXT_VERSION }}' -X 'github.com/Parallels/prl-devops-service/version.buildChannel=beta' -X 'github.com/Parallels/prl-devops-service/version.buildDate=${{ env.BUILD_DATE }}' -X 'github.com/Parallels/prl-devops-service/version.buildCommit=${{ env.GIT_COMMIT }}' -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=${{ env.AmplitudeApiKey }}'"
   beta-releases-macos:
     needs:
       - beta-release
