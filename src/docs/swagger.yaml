@@ -26,6 +26,18 @@ definitions:
       EventTypeStats: Statistics events
       EventTypeSystem: System-level events
       EventTypeSystemLogs: System logs events
+    x-enum-descriptions:
+    - Broadcasts to all subscribers
+    - PDFM-specific events
+    - System-level events
+    - System logs events
+    - Health check events
+    - Orchestrator events
+    - Statistics events
+    - Reverse Proxy events
+    - Catalog cache events
+    - Job Manager events
+    - Auth events (users, roles, claims)
     x-enum-varnames:
     - EventTypeGlobal
     - EventTypePDFM
@@ -1730,6 +1742,7 @@ definitions:
     - 10
     - 11
     - 12
+    format: int64
     type: integer
     x-enum-varnames:
     - OAuthInvalidRequestError
@@ -1908,8 +1921,6 @@ definitions:
     type: object
   models.ParallelsDesktopLicense:
     properties:
-      advanced_restrictions:
-        type: string
       cpu_total:
         type: integer
       deferred_activation:
@@ -1919,6 +1930,8 @@ definitions:
       expiration:
         type: string
       grace_period_ends_at:
+        type: string
+      is_trial:
         type: string
       is_volume:
         type: string
@@ -2589,7 +2602,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 1.0.0
+  version: 1.0.1
 paths:
   /config/diskspace:
     post:

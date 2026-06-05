@@ -10412,6 +10412,19 @@ const docTemplate = `{
                 "EventTypeSystem": "System-level events",
                 "EventTypeSystemLogs": "System logs events"
             },
+            "x-enum-descriptions": [
+                "Broadcasts to all subscribers",
+                "PDFM-specific events",
+                "System-level events",
+                "System logs events",
+                "Health check events",
+                "Orchestrator events",
+                "Statistics events",
+                "Reverse Proxy events",
+                "Catalog cache events",
+                "Job Manager events",
+                "Auth events (users, roles, claims)"
+            ],
             "x-enum-varnames": [
                 "EventTypeGlobal",
                 "EventTypePDFM",
@@ -12959,6 +12972,7 @@ const docTemplate = `{
         },
         "models.OAuthErrorType": {
             "type": "integer",
+            "format": "int64",
             "enum": [
                 0,
                 1,
@@ -13237,9 +13251,6 @@ const docTemplate = `{
         "models.ParallelsDesktopLicense": {
             "type": "object",
             "properties": {
-                "advanced_restrictions": {
-                    "type": "string"
-                },
                 "cpu_total": {
                     "type": "integer"
                 },
@@ -13253,6 +13264,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "grace_period_ends_at": {
+                    "type": "string"
+                },
+                "is_trial": {
                     "type": "string"
                 },
                 "is_volume": {
@@ -14283,7 +14297,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0.0",
+	Version:          "1.0.1",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
