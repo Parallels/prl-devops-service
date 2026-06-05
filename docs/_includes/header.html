@@ -39,6 +39,7 @@
                   {% for subitem in section.items %}
                   {% unless subitem.hidden %}
                   <a href="{{ subitem.link | relative_url }}" {% if subitem.link contains 'https' %} target="_blank" rel="noopener" {% endif %}
+                    data-clarity-event="NavMenuItem-{{ subitem.name }}" data-clarity-new-tab="{{ subitem.link contains 'https' }}"
                     class="navigation-dropdown-menu-item navigation-dropdown-menu-item--{{ dropdown_variant }} {% if subitem.link == page.url %}is-selected{% endif %}">
                     {% if dropdown_variant == 'docs' %}
                     <span class="navigation-dropdown-icon" aria-hidden="true">
@@ -73,6 +74,7 @@
               {% for subitem in item.dropdown %}
               {% unless subitem.hidden %}
               <a href="{{ subitem.link | relative_url }}" {% if subitem.link contains 'https' %} target="_blank" rel="noopener" {% endif %}
+                data-clarity-event="NavMenuItem-{{ subitem.name }}" data-clarity-new-tab="{{ subitem.link contains 'https' }}"
                 class="navigation-dropdown-menu-item {% if subitem.link == page.url %}is-selected{% endif %}">
                 <div class="texts">
                   <div class="title">{{ subitem.name }}</div>
