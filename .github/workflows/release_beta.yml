@@ -185,11 +185,11 @@ jobs:
 
       - name: Import notary credentials
         run: |
-          echo "${{ secrets.APPLE_API_KEY }}" | base64 --decode > apple_api_key.p8
+          echo "${{ secrets.APPLE_API_KEY_NEW }}" | base64 --decode > apple_api_key.p8
           xcrun notarytool store-credentials "notary-credentials" \
             --key apple_api_key.p8 \
-            --key-id ${{ secrets.APPLE_API_KEY_ID }} \
-            --issuer ${{ secrets.APPLE_API_KEY_ISSUER }}
+            --key-id ${{ secrets.APPLE_API_KEY_ID_NEW }} \
+            --issuer ${{ secrets.APPLE_API_KEY_ISSUER_NEW }}
 
       - name: Sign binary
         run: |
