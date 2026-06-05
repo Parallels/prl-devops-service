@@ -19,7 +19,7 @@ import (
 )
 
 //	@title			Parallels Desktop DevOps Service
-//	@version		1.0.0
+//	@version		1.0.1
 //	@description	Parallels Desktop DevOps Service
 //	@termsOfService	http://swagger.io/terms/
 
@@ -127,4 +127,3 @@ func cleanup(ctx basecontext.ApiContext, db *data.JsonDatabase) {
 		_ = db.Disconnect(ctx)
 	}
 }
-
