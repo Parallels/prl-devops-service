@@ -143,6 +143,16 @@ $btn-secondary-bg: #ffffff;
 }
 
 // Platforms (UI card)
+.download-card-available {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+
 .download-card-platforms {
   display: flex;
   align-items: center;
