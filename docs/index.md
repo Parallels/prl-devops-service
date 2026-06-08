@@ -17,7 +17,7 @@ hero_actions:
   - title: Get Started
     fa_icon: fa-arrow-right
     icon_position: right
-    url: /tutorials/tutorial-devops-cli-quickstart/
+    url: /tutorials/tutorial_devops-cli-quickstart/
   - title: Schedule a Demo
     new_tab: true
     fa_icon: fa-calendar-days
