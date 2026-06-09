@@ -1,0 +1,835 @@
+id: tutorial-jenkins-plugin
+title: Jenkins Dynamic Build Agents
+level: intermediate
+duration: "~45 min"
+group: Tutorials
+category: CI/CD
+order: 3
+tags:
+  - jenkins
+  - ci-cd
+  - automation
+  - build-agents
+
+scenario: >
+  Learn how to provision dynamic Jenkins build agents on demand using Parallels DevOps Service.
+  Automate your CI/CD pipeline with ephemeral macOS, Windows, and Linux agents.
+
+introduction:
+  markdown_scenario: >
+    **Jenkins** is one of the most widely adopted CI/CD platforms in the world. The **Parallels DevOps Jenkins Plugin** 
+    enables **ephemeral build agents**—virtual machines that are created on demand when Jenkins detects queued work, 
+    run a single build, and are automatically destroyed when finished.
+    
+    
+    With this plugin, you can:
+    
+    - Provision macOS, Windows, and Linux agents dynamically from golden images
+    - Scale your build fleet elastically to match workload demand
+    - Ensure build isolation by giving each job a fresh, clean VM
+    - Reduce costs by only running VMs when builds are actively executing
+  key_outcomes:
+    - Install and configure Parallels DevOps Service
+    - Set up Jenkins with the Parallels DevOps plugin
+    - Prepare golden image VMs with build dependencies
+    - Configure Jenkins cloud providers and agent templates
+    - Run dynamically provisioned builds on macOS, Linux, and Windows
+    - Create multi-platform pipeline builds
+  prerequisites:
+    hard:
+      - Parallels Desktop for Mac (for macOS hosts)
+      - Jenkins LTS 2.440.x or newer
+      - JDK 17 or 21 for running Jenkins
+      - At least one virtual machine for use as a golden image
+    soft:
+      - Basic familiarity with Jenkins and CI/CD concepts
+      - Understanding of virtual machine management
+  architecture_diagram: |
+    flowchart TB
+        A[Jenkins Controller] -->|Detects queued build| B[Parallels DevOps Plugin]
+        B -->|Clone VM Request| C[DevOps Service]
+        C -->|Clones Golden Image| D[Base VM - Stopped]
+        C -->|Creates & Starts| E[Ephemeral VM]
+        E -->|Connects as Agent| A
+        A -->|Runs Build| E
+        A -->|Build Complete| B
+        B -->|Delete VM| C
+        C -->|Destroys| E
+
+steps:
+  - id: intro
+    kind: narrative
+    title: Introduction
+    duration: "~2 min"
+    markdown_body: |
+      ## Welcome to Jenkins Dynamic Build Agents
+      
+      Traditional Jenkins setups use static agent pools that run 24/7, wasting resources during idle periods and 
+      creating bottlenecks during peak demand. This tutorial shows you how to provision **ephemeral agents** that 
+      exist only for the duration of a build.
+      
+      By the end of this tutorial, you'll have a fully automated, elastic Jenkins build fleet running on your own 
+      infrastructure with support for macOS, Windows, and Linux builds.
+
+  - id: install-devops
+    kind: narrative
+    title: Install Parallels DevOps Service
+    duration: "~5 min"
+    tag: SETUP
+    layout: rows
+    markdown_body: |
+      The Parallels Desktop DevOps Service acts as the control plane for managing Parallels Desktop hosts and 
+      virtual machines. First, let's install and verify the service is running.
+      
+      You can download the latest version by selecting your platform and running the installation command.
+    panel:
+      kind: terminal
+      name: Install DevOps Service
+      markdown_body: |
+        Download and install the DevOps service for your platform. For macOS, you can install using the binary:
+      cmd: |
+        # Download the binary (macOS example)
+        curl -L https://github.com/Parallels/prl-devops-service/releases/latest/download/prldevops-darwin-arm64 -o /usr/local/bin/prldevops
+        chmod +x /usr/local/bin/prldevops
+        
+        # Verify installation
+        prldevops --version
+      output: |
+        Parallels DevOps Service version 0.5.4
+      copy_button: true
+    resources:
+      - title: Full Installation Guide
+        url: /docs/devops/getting-started/installation/
+      - title: DevOps Service Repository
+        url: https://github.com/Parallels/prl-devops-service
+    checklist:
+      - Download the correct binary for your platform (macOS, Linux, or Windows)
+      - Place the binary in your PATH
+      - Verify the installation with `prldevops --version`
+
+  - id: install-parallels
+    kind: narrative
+    title: Install Parallels Desktop
+    duration: "~3 min"
+    tag: SETUP
+    layout: rows
+    markdown_body: |
+      For macOS hosts, you need Parallels Desktop to run virtual machines. The DevOps service can install it 
+      automatically for you.
+    panel:
+      kind: terminal
+      name: Install Parallels Desktop
+      cmd: |
+        prldevops install parallels-desktop
+      output: |
+        Downloading Parallels Desktop...
+        Installing Parallels Desktop for Mac...
+        Installation complete!
+      copy_button: true
+    resources:
+      - title: Parallels Desktop Trial
+        url: https://www.parallels.com/products/desktop/trial/
+    checklist:
+      - Parallels Desktop is installed and licensed
+      - You can create and manage VMs through Parallels Desktop Control Center
+
+  - id: start-devops-service
+    kind: narrative
+    title: Start the DevOps Service
+    duration: "~3 min"
+    tag: SETUP
+    layout: rows
+    markdown_body: |
+      Before starting the service, create a basic configuration file. Then start the service as a daemon.
+    panels:
+      - kind: code_editor
+        name: Configuration
+        markdown_body: |
+          Create a `config.yaml` file with basic settings:
+        files:
+          - name: config.yaml
+            language: yaml
+            initial_code: |
+              environment:
+                api_port: 80
+                log_level: INFO
+                ROOT_PASSWORD: ${ROOT_PASSWORD}
+      - kind: terminal
+        name: Start Service
+        cmd: |
+          # Create config file location
+          sudo mkdir -p /usr/local/bin
+          
+          # Start as daemon (macOS)
+          sudo prldevops install service /usr/local/bin/prldevops
+          launchctl start com.parallels.devops-service
+          
+          # Verify it's running
+          curl http://localhost:80/api/health/system
+        output: |
+          {"status":"OK","version":"0.5.4"}
+        copy_button: true
+    checklist:
+      - Configuration file created with secure password
+      - Service is running as a daemon
+      - Health endpoint returns HTTP 200 OK
+
+  - id: install-jenkins
+    kind: narrative
+    title: Install and Configure Jenkins
+    duration: "~10 min"
+    tag: JENKINS
+    layout: rows
+    markdown_body: |
+      Install Jenkins and configure the Jenkins URL so that dynamically provisioned VMs can connect back as 
+      inbound agents.
+    panels:
+      - kind: terminal
+        name: Install Jenkins (macOS)
+        if: choose-platform.value == 'mac'
+        markdown_body: |
+          Install Jenkins using Homebrew:
+        cmd: |
+          brew install jenkins-lts
+          brew services start jenkins-lts
+          
+          # Wait for Jenkins to start, then get initial admin password
+          sleep 30
+          cat /Users/Shared/Jenkins/Home/secrets/initialAdminPassword
+        copy_button: true
+      - kind: terminal
+        name: Install Jenkins (Linux)
+        if: choose-platform.value == 'linux'
+        markdown_body: |
+          Install Jenkins on Debian/Ubuntu:
+        cmd: |
+          wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+          sudo sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+          sudo apt update
+          sudo apt install -y jenkins
+          sudo systemctl start jenkins
+          sudo systemctl enable jenkins
+          
+          # Get initial admin password
+          sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+        copy_button: true
+    resources:
+      - title: Jenkins Download Page
+        url: https://www.jenkins.io/download/
+      - title: Jenkins Documentation
+        url: https://www.jenkins.io/doc/
+    checklist:
+      - Jenkins is installed and running
+      - You can access Jenkins at `http://localhost:8080`
+      - Initial setup wizard is complete
+      - Jenkins URL is configured in **Manage Jenkins → System → Jenkins Location**
+
+  - id: prepare-base-vm
+    kind: narrative
+    title: Prepare Your Base Virtual Machine
+    duration: "~15 min"
+    tag: VM
+    layout: rows
+    markdown_body: |
+      Create a "golden image" VM with all necessary build tools. The Jenkins plugin will clone this VM for each 
+      build. At minimum, you need **Java** (for the Jenkins agent) and any build tools your projects require.
+      
+      Create a VM for your target platform (macOS, Linux, or Windows) using Parallels Desktop.
+    panels:
+      - kind: terminal
+        name: Install Java (macOS)
+        if: choose-platform.value == 'mac'
+        markdown_body: |
+          On your macOS VM, install Java and other build tools:
+        cmd: |
+          # Install Homebrew if not already installed
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          
+          # Install Java (required for Jenkins agent)
+          brew install openjdk@17
+          
+          # Install other build tools as needed
+          brew install git node python3
+          
+          # Verify Java installation
+          java -version
+        copy_button: true
+      - kind: terminal
+        name: Install Java (Linux)
+        if: choose-platform.value == 'linux'
+        markdown_body: |
+          On your Ubuntu VM, install Java and build tools:
+        cmd: |
+          # Update package lists
+          sudo apt update
+          
+          # Install Java (required for Jenkins agent)
+          sudo apt install -y openjdk-17-jdk
+          
+          # Install other build tools
+          sudo apt install -y git build-essential curl wget
+          
+          # Verify Java installation
+          java -version
+        copy_button: true
+      - kind: markdown
+        name: Windows Setup
+        if: choose-platform.value == 'windows'
+        markdown_body: |
+          For Windows VMs, download and install:
+          
+          - [OpenJDK 17](https://adoptium.net/) (required for Jenkins agent)
+          - [Git for Windows](https://git-scm.com/download/win)
+          - Any other build tools required for your projects
+    checklist:
+      - VM is created and fully installed
+      - Parallels Tools are installed on the VM
+      - Java 17 or later is installed and in the PATH
+      - All required build dependencies are installed
+      - VM is **stopped** (important for cloning)
+
+  - id: register-vm
+    kind: narrative
+    title: Stop and Register the VM
+    duration: "~2 min"
+    tag: VM
+    layout: rows
+    markdown_body: |
+      The Jenkins plugin requires the base VM to be in a **stopped state** before cloning. Let's verify the VM 
+      is registered and stop it.
+    panel:
+      kind: terminal
+      name: Stop VM
+      cmd: |
+        # List all VMs to find your VM ID
+        prldevops api get /machines
+        
+        # Stop the VM (replace <vm-id> with actual ID or name)
+        prldevops api put /machines/<vm-id>/set/state/stop
+        
+        # Verify it's stopped
+        prldevops api get /machines/<vm-id>
+      output: |
+        {
+          "ID": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "Name": "macOS-Sonoma-Builder",
+          "State": "stopped",
+          ...
+        }
+      copy_button: true
+    checklist:
+      - VM is visible in `prldevops api get /machines`
+      - VM state is **stopped**
+      - You have noted the VM name or ID for the next steps
+
+  - id: install-jenkins-plugin
+    kind: narrative
+    title: Install Jenkins Plugin
+    duration: "~5 min"
+    tag: JENKINS
+    layout: rows
+    markdown_body: |
+      Download and install the Parallels DevOps Jenkins Plugin. You can install via the Plugin Manager UI or 
+      Jenkins CLI.
+    panels:
+      - kind: markdown
+        name: Via UI
+        markdown_body: |
+          1. Download the latest `.hpi` file from [GitHub Releases](https://github.com/Parallels/parallels-devops-jenkins-plugin/releases)
+          2. Open Jenkins: `http://localhost:8080`
+          3. Navigate to **Manage Jenkins → Plugins → Advanced settings**
+          4. Scroll to **Deploy Plugin**
+          5. Click **Choose File** and select the `.hpi` file
+          6. Click **Deploy**
+          7. Check **Restart Jenkins when installation is complete**
+          8. Wait for restart
+          
+          ![Plugin Manager Screenshot]({{ site.url }}{{ site.baseurl }}/img/examples/jenkins-plugin-manager.png)
+      - kind: terminal
+        name: Via CLI
+        cmd: |
+          # Download Jenkins CLI
+          curl -O http://localhost:8080/jnlpJars/jenkins-cli.jar
+          
+          # Install plugin (replace path and credentials)
+          java -jar jenkins-cli.jar \
+            -s http://localhost:8080 \
+            -auth <username>:<api-token> \
+            install-plugin /path/to/parallels-devops.hpi \
+            -restart
+        copy_button: true
+    resources:
+      - title: Plugin GitHub Repository
+        url: https://github.com/Parallels/parallels-devops-jenkins-plugin
+      - title: Plugin Releases
+        url: https://github.com/Parallels/parallels-devops-jenkins-plugin/releases
+    checklist:
+      - Plugin `.hpi` file is downloaded
+      - Plugin is installed via UI or CLI
+      - Jenkins has restarted successfully
+      - Plugin appears in **Manage Jenkins → Plugins → Installed plugins**
+
+  - id: configure-cloud
+    kind: narrative
+    title: Configure Jenkins Cloud Provider
+    duration: "~10 min"
+    tag: JENKINS
+    layout: rows
+    markdown_body: |
+      Now configure Jenkins to provision dynamic agents from Parallels DevOps Service. Navigate to 
+      **Manage Jenkins → Clouds → New cloud**.
+      
+      Enter a name (e.g., `parallels-cloud`), select **Parallels DevOps Cloud**, and click **Create**.
+    panels:
+      - kind: markdown
+        name: Cloud Settings
+        markdown_body: |
+          Configure the cloud with these settings:
+          
+          | Field | Value | Description |
+          |-------|-------|-------------|
+          | **Name** | `parallels-cloud` | Display name |
+          | **Service URL** | `http://localhost:80` | DevOps Service endpoint |
+          | **API Credentials** | Create new credential | Jenkins credential for API access |
+          | **Connection Mode** | `HOST` | Single-host mode (or `ORCHESTRATOR` for fleet) |
+          | **Max Concurrent Agents** | `5` | Maximum simultaneous VMs |
+          
+          ![Cloud Configuration Screenshot]({{ site.url }}{{ site.baseurl }}/img/examples/jenkins-cloud-config.png)
+      - kind: markdown
+        name: Add Credentials
+        markdown_body: |
+          To add API credentials:
+          
+          1. Click **Add** next to **API Credentials**
+          2. Select **Jenkins** as domain
+          3. Choose **Username with password**
+          4. Enter the username and password from your `config.yaml`
+          5. Set ID: `parallels-devops-api`
+          6. Click **Add**
+          7. Select the credential from dropdown
+    checklist:
+      - Cloud is created with name `parallels-cloud`
+      - Service URL points to your DevOps Service
+      - API credentials are configured
+      - Connection mode is set to `HOST` or `ORCHESTRATOR`
+      - **Test Connection** returns success ✅
+
+  - id: create-template
+    kind: narrative
+    title: Create Agent Template
+    duration: "~10 min"
+    tag: JENKINS
+    layout: rows
+    markdown_body: |
+      Agent templates define how Jenkins provisions VMs. Each template has a **label** that jobs use to request 
+      specific agent types (e.g., `macos`, `ubuntu-arm64`, `windows11`).
+      
+      Scroll to **Agent Templates** and click **Add Template**.
+    panels:
+      - kind: markdown
+        name: Template Configuration
+        markdown_body: |
+          Configure the template:
+          
+          | Field | Example | Description |
+          |-------|---------|-------------|
+          | **Template Label** | `macos` | Label for job matching |
+          | **VM User** | `parallels` | OS user on the VM |
+          | **Agent Workspace Directory** | `/tmp/jenkins` | Build workspace path |
+          | **Number of Executors** | `1` | Concurrent builds per VM |
+          | **Provisioning Mode** | **Clone existing VM** | How to create VMs |
+          | **Base VM Name or VM ID** | `macOS-Sonoma-Builder` | Your golden image name/ID |
+          | **VM Ready Timeout (s)** | `600` | Max wait for VM ready |
+          | **VM Ready Poll Interval (s)** | `10` | Readiness check frequency |
+          
+          ![Template Configuration Screenshot]({{ site.url }}{{ site.baseurl }}/img/examples/jenkins-template-config.png)
+    checklist:
+      - Template label matches your build needs (e.g., `macos`, `linux`)
+      - VM user account has necessary permissions
+      - Base VM name/ID matches your stopped golden image
+      - Timeout values are appropriate for your VM boot time
+
+  - id: first-build
+    kind: narrative
+    title: Run Your First Dynamic Build
+    duration: "~5 min"
+    tag: BUILD
+    layout: rows
+    markdown_body: |
+      Create a simple Jenkins job to test dynamic agent provisioning. Navigate to **Dashboard → New Item**, 
+      enter a name (e.g., `hello-world-macos`), select **Freestyle project**, and click **OK**.
+    panels:
+      - kind: markdown
+        name: Job Configuration
+        markdown_body: |
+          1. Under **General**, check **Restrict where this project can be run**
+          2. Enter label: `macos` (or your template label)
+          3. Under **Build Steps**, add **Execute shell**
+          4. Enter this test script:
+      - kind: terminal
+        name: Hello World Script
+        cmd: |
+          #!/bin/bash
+          echo "=== Hello from a dynamic Jenkins agent ==="
+          echo "Hostname: $(hostname)"
+          echo "Operating System: $(uname -s)"
+          echo "Architecture: $(uname -m)"
+          echo "User: $(whoami)"
+          echo "Java Version:"
+          java -version
+          echo "Current Directory: $(pwd)"
+          echo "=== Build complete ==="
+        copy_button: true
+    checklist:
+      - Job is restricted to your template label
+      - Build script tests basic environment info
+      - Click **Save** then **Build Now**
+
+  - id: observe-provisioning
+    kind: checkpoint
+    title: Verify Dynamic Provisioning
+    duration: "~3 min"
+    markdown_body: |
+      While your build runs, observe the dynamic provisioning process. Navigate to **Manage Jenkins → Nodes** 
+      to watch the agent lifecycle.
+    checkpoint:
+      api:
+        tasks:
+          - id: vm-created
+            title: VM Clone Started
+            url: "http://localhost:80/api/machines"
+            method: GET
+            timeout_ms: 30000
+            response_path: '$[*].Name'
+            response_type: json
+          - id: agent-connected
+            title: Agent Connected to Jenkins
+            url: "http://localhost:8080/computer/api/json"
+            method: GET
+            timeout_ms: 30000
+            response_path: '$.computer[?(@.displayName =~ /prl-.*/)]'
+            response_type: json
+      on_failure: retry-or-skip
+
+  - id: build-output
+    kind: narrative
+    title: Review Build Output
+    duration: "~2 min"
+    tag: BUILD
+    layout: rows
+    markdown_body: |
+      Once the build completes, check the **Console Output**. You should see your script output along with 
+      the provisioning details.
+    panel:
+      kind: terminal
+      name: Expected Output
+      output: |
+        Started by user admin
+        Running on prl-a1b2c3d4-e5f6-7890-abcd-ef1234567890 in workspace /tmp/jenkins/workspace/hello-world-macos
+        [hello-world-macos] $ /bin/bash /tmp/jenkins/tmp/jenkins12345.sh
+        === Hello from a dynamic Jenkins agent ===
+        Hostname: macOS-Sonoma-Clone-12345
+        Operating System: Darwin
+        Architecture: arm64
+        User: parallels
+        Java Version:
+        openjdk version "17.0.9" 2023-10-17
+        Current Directory: /tmp/jenkins/workspace/hello-world-macos
+        === Build complete ===
+        Finished: SUCCESS
+    checklist:
+      - Build status is **SUCCESS** ✅
+      - Console shows execution on a `prl-*` node
+      - Script output displays correct environment info
+      - After build, the `prl-*` node disappears from **Nodes** (cleanup successful)
+
+  - id: pipeline-example
+    kind: narrative
+    title: Run a Pipeline Job
+    duration: "~5 min"
+    tag: PIPELINE
+    layout: rows
+    markdown_body: |
+      For production workflows, use Jenkins Pipeline to define builds as code. Create a new **Pipeline** job 
+      and use either Declarative or Scripted syntax.
+    panels:
+      - kind: code_editor
+        name: Declarative Pipeline
+        files:
+          - name: Jenkinsfile
+            language: groovy
+            initial_code: |
+              pipeline {
+                  agent {
+                      label 'macos'
+                  }
+
+                  stages {
+                      stage('Environment Info') {
+                          steps {
+                              sh '''
+                                  echo "=== Environment Information ==="
+                                  hostname
+                                  uname -a
+                                  java -version
+                                  echo "=== Done ==="
+                              '''
+                          }
+                      }
+
+                      stage('Build') {
+                          steps {
+                              echo 'Building application...'
+                              // Add your build commands here
+                          }
+                      }
+
+                      stage('Test') {
+                          steps {
+                              echo 'Running tests...'
+                              // Add your test commands here
+                          }
+                      }
+                  }
+
+                  post {
+                      always {
+                          echo 'Pipeline complete!'
+                      }
+                  }
+              }
+      - kind: code_editor
+        name: Scripted Pipeline
+        files:
+          - name: Jenkinsfile (Scripted)
+            language: groovy
+            initial_code: |
+              node('macos') {
+                  stage('Checkout') {
+                      echo 'Checking out code...'
+                      // git 'https://github.com/your-org/your-repo.git'
+                  }
+
+                  stage('Build') {
+                      sh '''
+                          echo "Building on $(hostname)"
+                          # Add build commands
+                      '''
+                  }
+
+                  stage('Test') {
+                      sh '''
+                          echo "Running tests..."
+                          # Add test commands
+                      '''
+                  }
+              }
+    checklist:
+      - Pipeline job is created
+      - Agent label matches your template
+      - Pipeline runs successfully
+      - Build stages execute in order
+
+  - id: multi-platform
+    kind: narrative
+    title: Multi-Platform Builds (Advanced)
+    duration: "~10 min"
+    tag: ADVANCED
+    layout: rows
+    markdown_body: |
+      Run builds on multiple platforms simultaneously. First, ensure you have templates for each platform 
+      (`macos`, `ubuntu-arm64`, `windows11`), then create a pipeline with parallel stages.
+    panel:
+      kind: code_editor
+      name: Multi-Platform Pipeline
+      files:
+        - name: Jenkinsfile
+          language: groovy
+          initial_code: |
+            pipeline {
+                agent none
+
+                stages {
+                    stage('Build on All Platforms') {
+                        parallel {
+                            stage('macOS Build') {
+                                agent { label 'macos' }
+                                steps {
+                                    sh '''
+                                        echo "Building on macOS"
+                                        uname -a
+                                        # Add macOS-specific build commands
+                                    '''
+                                }
+                            }
+
+                            stage('Linux Build') {
+                                agent { label 'ubuntu-arm64' }
+                                steps {
+                                    sh '''
+                                        echo "Building on Linux"
+                                        uname -a
+                                        # Add Linux-specific build commands
+                                    '''
+                                }
+                            }
+
+                            stage('Windows Build') {
+                                agent { label 'windows11' }
+                                steps {
+                                    bat '''
+                                        echo Building on Windows
+                                        systeminfo | findstr /B /C:"OS Name"
+                                        REM Add Windows-specific build commands
+                                    '''
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+    checklist:
+      - Multiple agent templates exist for different platforms
+      - Pipeline uses `parallel` directive correctly
+      - All three builds execute simultaneously (up to max concurrent agents)
+      - Each platform runs platform-specific commands
+
+  - id: config-as-code
+    kind: narrative
+    title: Configuration as Code
+    duration: "~5 min"
+    tag: ADVANCED
+    layout: rows
+    markdown_body: |
+      For teams managing Jenkins infrastructure as code, use Jenkins Configuration as Code (JCasC) to define 
+      cloud configurations in YAML.
+    panel:
+      kind: code_editor
+      name: JCasC Configuration
+      files:
+        - name: jenkins.yaml
+          language: yaml
+          initial_code: |
+            jenkins:
+              clouds:
+                - parallelsDevops:
+                    name: "parallels-cloud"
+                    serviceUrl: "http://localhost:80"
+                    credentialsId: "parallels-devops-api"
+                    connectionMode: "HOST"
+                    maxAgents: 5
+                    templates:
+                      - templateLabel: "macos"
+                        vmUser: "parallels"
+                        agentWorkspaceDir: "/tmp/jenkins"
+                        numExecutors: 1
+                        vmReadyTimeoutSeconds: 600
+                        vmReadyPollIntervalSeconds: 10
+                        provisioningConfig:
+                          clone:
+                            baseVmName: "macOS-Sonoma-Builder"
+                      - templateLabel: "ubuntu-arm64"
+                        vmUser: "ubuntu"
+                        agentWorkspaceDir: "/tmp/jenkins"
+                        numExecutors: 1
+                        vmReadyTimeoutSeconds: 600
+                        vmReadyPollIntervalSeconds: 10
+                        provisioningConfig:
+                          clone:
+                            baseVmName: "Ubuntu-22-Builder"
+    resources:
+      - title: Jenkins Configuration as Code
+        url: https://www.jenkins.io/projects/jcasc/
+    checklist:
+      - JCasC plugin is installed
+      - Configuration file matches your environment
+      - Jenkins loads the configuration successfully
+
+  - id: troubleshooting
+    kind: narrative
+    title: Troubleshooting
+    duration: "~5 min"
+    tag: HELP
+    layout: single
+    markdown_body: |
+      ## Common Issues and Solutions
+      
+      ### VM Running But Build Still Queued
+      
+      **Symptom:** VM is cloned and running, but build stays in queue.
+      
+      **Solution:**
+      - Check node launch log: **Manage Jenkins → Nodes → `prl-<uuid>` → Log**
+      - Verify VM can reach Jenkins at configured Jenkins URL
+      - Check Java is installed and in PATH on the VM
+      - Increase **Agent Connection Timeout** in template
+      
+      ---
+      
+      ### Test Connection Fails (401 Unauthorized)
+      
+      **Symptom:** Test Connection returns HTTP 401.
+      
+      **Solution:**
+      ```bash
+      # Verify service is reachable
+      curl http://localhost:80/api/health/system
+      
+      # Check credentials match config.yaml ROOT_PASSWORD
+      ```
+      
+      ---
+      
+      ### Clone Fails: "VM Must Be Stopped"
+      
+      **Symptom:** Clone operation fails with error.
+      
+      **Solution:**
+      ```bash
+      # Stop the base VM
+      prldevops api put /machines/<vm-id>/set/state/stop
+      
+      # Verify state is stopped
+      prldevops api get /machines/<vm-id>
+      ```
+      
+      ---
+      
+      ### Jobs Wait Despite Different Labels
+      
+      **Symptom:** Different-label jobs queue behind each other.
+      
+      **Solution:**
+      - Increase **Max Concurrent Agents** in cloud configuration
+      - Each cloud has a global limit regardless of template labels
+      
+      ---
+      
+      ### Slow Provisioning
+      
+      **Symptom:** VMs take too long to become ready.
+      
+      **Solution:**
+      - Reduce **VM Ready Poll Interval** (e.g., `5` seconds)
+      - Increase **VM Ready Timeout** if VMs need more boot time
+      - Optimize golden image: disable startup services, use SSD storage
+    resources:
+      - title: Plugin Issue Tracker
+        url: https://github.com/Parallels/parallels-devops-jenkins-plugin/issues
+      - title: DevOps Service Documentation
+        url: /docs/devops/
+
+whats_next:
+  title: Congratulations!
+  body: >
+    You've successfully configured Jenkins to provision ephemeral build agents on demand using Parallels DevOps Service.
+    Your Jenkins setup now scales dynamically, provides complete build isolation, and reduces infrastructure costs.
+  recommendations:
+    - use_case: tutorial-devops-ui-docker-start
+      title: DevOps Web Dashboard
+      description: Manage your VMs visually with the DevOps web interface
+      icon: fa-desktop
+    - use_case: tutorial-vm-cicd-pipeline
+      title: Advanced CI/CD Pipelines
+      description: Build complex multi-stage pipelines with VM orchestration
+      icon: fa-code-branch
