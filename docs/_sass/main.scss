@@ -28,11 +28,21 @@ $hero-darken: $dark !default;
 @import "menu-bar";
 @import "page-toc";
 @import "navbar";
+@import "search";
 @import "footer";
 @import "blogs";
 @import "_homepage";
 @import "_callout";
 @import "_header";
+@import "_homepage_steps";
+@import "_homepage_features";
+@import "_homepage_download";
+@import "_discord";
+@import "footer";
+@import "_ui";
+@import "_walkthrough";
+@import "_uce";
+@import "_usecases-index";
 @import "cookie-consent";
 
 
@@ -48,5 +58,20 @@ $hero-darken: $dark !default;
 
   h3 {
     font-size: 1.2rem;
+  }
+}
+
+.body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+:root {
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

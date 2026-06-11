@@ -92,3 +92,15 @@ func SendStartEvent(cmd string) {
 
 	TrackEvent(NewTelemetryItem(ctx, StartEvent, properties, nil))
 }
+
+// SendHeartbeat sends a heartbeat event to Amplitude.
+// This is the periodic "alive" signal that indicates the service is running.
+func SendHeartbeat() {
+	svc := Get()
+	if !svc.EnableTelemetry {
+		return
+	}
+
+	ctx := basecontext.NewRootBaseContext()
+	TrackEvent(NewTelemetryItem(ctx, HeartbeatEvent, nil, nil))
+}

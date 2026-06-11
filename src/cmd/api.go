@@ -13,6 +13,7 @@ import (
 	"github.com/Parallels/prl-devops-service/security/password"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/startup"
+	"github.com/Parallels/prl-devops-service/telemetry"
 	"github.com/cjlapao/common-go/helper"
 )
 
@@ -34,6 +35,10 @@ func processApi(ctx basecontext.ApiContext, cmd string) {
 	startup.Start(ctx)
 
 	processTelemetry(cmd)
+
+	// Send heartbeat as soon as the service is fully initialized
+	ctx.LogInfof("[Core] Sending initial heartbeat")
+	telemetry.SendHeartbeat()
 	if cfg.EncryptionPrivateKey() == "" {
 		common.Logger.Warn("No security key found, database will be unencrypted")
 	}

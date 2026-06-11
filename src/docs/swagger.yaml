@@ -1011,6 +1011,8 @@ definitions:
         type: string
       updated_at:
         type: string
+      user_id:
+        type: string
     type: object
   models.ApiKeyResponse:
     properties:
@@ -1027,6 +1029,14 @@ definitions:
       revoked:
         type: boolean
       revoked_at:
+        type: string
+      user_email:
+        type: string
+      user_id:
+        type: string
+      user_name:
+        type: string
+      user_username:
         type: string
     type: object
   models.ApiUser:
@@ -1586,6 +1596,8 @@ definitions:
         type: string
       id:
         type: string
+      is_orchestrator_job:
+        type: boolean
       job_operation:
         type: string
       job_type:
@@ -1659,9 +1671,13 @@ definitions:
     type: object
   models.LoginRequest:
     properties:
+      api_key:
+        type: string
       email:
         type: string
       password:
+        type: string
+      username:
         type: string
     type: object
   models.LoginResponse:
@@ -1905,8 +1921,6 @@ definitions:
     type: object
   models.ParallelsDesktopLicense:
     properties:
-      advanced_restrictions:
-        type: string
       cpu_total:
         type: integer
       deferred_activation:
@@ -1916,6 +1930,8 @@ definitions:
       expiration:
         type: string
       grace_period_ends_at:
+        type: string
+      is_trial:
         type: string
       is_volume:
         type: string
@@ -2586,7 +2602,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 1.0.0
+  version: 1.0.1
 paths:
   /config/diskspace:
     post:
@@ -8615,7 +8631,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -8648,7 +8664,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -8679,7 +8695,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -8711,7 +8727,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:
@@ -8749,7 +8765,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.ApiErrorResponse'
+            $ref: '#/definitions/models.ApiErrorDiagnosticsResponse'
         "401":
           description: Unauthorized
           schema:

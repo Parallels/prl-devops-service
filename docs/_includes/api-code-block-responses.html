@@ -21,7 +21,7 @@
     </div>
     <div class="api-tab-blocks" data-type="tab-blocks">
       {% for response in endpoint.response_blocks %}
-      <div class="" api-tab-block" data-type="tab-block" id="_{{ response.code }}_{{ response.code_description | slugify}}">
+      <div class="api-tab-block" data-type="tab-block" id="_{{ response.code }}_{{ response.code_description | slugify}}">
         {% include api-code-block.html content=response.code_block language='json' %}
       </div>
       {% endfor %}

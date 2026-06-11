@@ -5,6 +5,7 @@ permissions:
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   release:
@@ -87,7 +88,7 @@ jobs:
           project_path: "./src"
           binary_name: "prldevops"
           release_name: "v${{ env.EXT_VERSION }}"
-          ldflags: "-s -w -X 'github.com/Parallels/prl-devops-service/version.buildVersion=${{ env.EXT_VERSION }}' -X 'github.com/Parallels/prl-devops-service/version.buildChannel=stable' -X 'github.com/Parallels/prl-devops-service/version.buildDate=${{ env.BUILD_DATE }}' -X 'github.com/Parallels/prl-devops-service/version.buildCommit=${{ env.GIT_COMMIT }}' -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=${{ env.AmplitudeApiKey }}'"
+          ldflags: "-s -w -X 'github.com/Parallels/prl-devops-service/version.buildVersion=${{ env.EXT_VERSION }}' -X 'github.com/Parallels/prl-devops-service/version.buildChannel=stable' -X 'github.com/Parallels/prl-devops-service/version.buildDate=${{ env.BUILD_DATE }}' -X 'github.com/Parallels/prl-devops-service/version.buildCommit=${{ env.GIT_COMMIT }}' -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=${{ env.AmplitudeApiKey }}'"
   releases-macos-matrix:
     needs:
       - release
@@ -134,7 +135,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
-          cd src && CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w -X 'github.com/Parallels/prl-devops-service/version.buildVersion=$EXT_VERSION' -X 'github.com/Parallels/prl-devops-service/version.buildChannel=stable' -X 'github.com/Parallels/prl-devops-service/version.buildDate=$BUILD_DATE' -X 'github.com/Parallels/prl-devops-service/version.buildCommit=$GIT_COMMIT' -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
+          cd src && CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="-s -w -X 'github.com/Parallels/prl-devops-service/version.buildVersion=$EXT_VERSION' -X 'github.com/Parallels/prl-devops-service/version.buildChannel=stable' -X 'github.com/Parallels/prl-devops-service/version.buildDate=$BUILD_DATE' -X 'github.com/Parallels/prl-devops-service/version.buildCommit=$GIT_COMMIT' -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" -o prldevops
       - name: Create and Unlock Temporary Keychain
         run: |
           security create-keychain -p "github" temp.keychain
@@ -153,11 +154,11 @@ jobs:
 
       - name: Import notary credentials
         run: |
-          echo "${{ secrets.APPLE_API_KEY }}" | base64 --decode > apple_api_key.p8
+          echo "${{ secrets.APPLE_API_KEY_NEW }}" | base64 --decode > apple_api_key.p8
           xcrun notarytool store-credentials "notary-credentials" \
             --key apple_api_key.p8 \
-            --key-id ${{ secrets.APPLE_API_KEY_ID }} \
-            --issuer ${{ secrets.APPLE_API_KEY_ISSUER }}
+            --key-id ${{ secrets.APPLE_API_KEY_ID_NEW }} \
+            --issuer ${{ secrets.APPLE_API_KEY_ISSUER_NEW }}
 
       - name: Sign binary
         run: |

@@ -5,6 +5,8 @@ subtitle: Overview
 menubar: docs_devops_menu
 show_sidebar: false
 toc: true
+show_copy_button: true
+full_width: true
 ---
 
 # Overview
@@ -24,6 +26,10 @@ The Catalog Repository is a service provided by the Parallels Desktop DevOps, wr
 ## How does it work?
 
 There are two main types of operations used with virtual machine catalogs are called *pushing* and *pulling*. A *pushing* operation is when a virtual machine is uploaded to the catalog, while a *pulling* operation is when a virtual machine is downloaded from the catalog.
+
+### Explore the Catalog Interface
+
+{% include walkthrough.html data_key="walkthrough_ui_catalog" %}
 
 ### Pushing
 

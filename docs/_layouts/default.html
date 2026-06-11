@@ -3,79 +3,188 @@
 {% assign has_left_sidebar = true %}
 {% endif %}
 
-{% if page.show_sidebar and has_left_sidebar %}
-{% assign content_width = 'is-4' %}
-{% assign content_padding = 'pl-2 pr-2' %}
-{% elsif page.show_sidebar or has_left_sidebar %}
-{% assign content_width = 'is-9' %}
-{% unless has_left_sidebar %}
-{% assign content_width = 'is-9' %}
-{% endunless %}
-{% assign content_padding = 'pl-2 pr-2' %}
-{% else %}
-{% assign content_width = 'is-12' %}
-{% assign content_padding = '' %}
-{% endif %}
 {% assign sideContent = page.side_toc | default: false %}
 <html dir="{{ site.direction | default: 'ltr' }}" lang="{{ site.lang | default: 'en' }}" {% if site.fixed_navbar %}class="has-navbar-fixed-{{ site.fixed_navbar }}" {% endif %}>
 {% include head.html %}
 
-<body>
+<body class="{% if page.layout == 'page' %}page-layout{% endif %}{% if page.layout == 'api' %} api-layout{% endif %}{% if page.sticky_footer %} has-sticky-footer{% endif %}">
   {% include header.html %}
-  <section class="hero-section{% if page.is_home %} homepage-hero-section{% endif %}{% if page.menubar %} hero-with-menu-bar{% endif %} {% if page.menubar_toc %}hero-with-menu-bar-toc{% endif %}">
-    {% unless page.hide_hero %}
+
+  {% if page.is_home %}
+  <!-- LAYOUT 1: Landing Page -->
+  {% unless page.hide_hero %}
+  <section class="hero-section landing">
     {% include hero.html %}
-    {% endunless %}
     {% if page.callouts.size > 0 %}
     {% assign callouts=site.data[page.callouts] %}
-    <div class="callout-section{% if page.is_home %} homepage-callout-section{% endif %}{% unless page.hide_hero %} has-hero{% endunless %}">
+    <div class="callout-section homepage-callout-section has-hero">
       {% include callouts.html callouts=callouts show_callout_action=include.show_callout_action full_button=include.callout_full_button %}
     </div>
     {% endif %}
   </section>
-  {% if page.is_home %}
+  {% endunless %}
   <section class="home-page">
     {{ content }}
   </section>
-  {% else %}
-  {% if page.menubar %}
-  <aside class="menu-button" data-target="page-menu">
-    <a role="button" class="page-body-menu-btn" aria-label="menu" aria-expanded="false">
-      <span class="menu-button-text">Menu</span>
-      <span class="filler">&nbsp;</span>
-      <span class="menu-button-icon is-small">
-        <i class="fas" data-target="page-menu"></i>
-      </span>
-    </a>
-  </aside>
-  {% endif %}
-  <section class="body-container {% if page.menubar_toc %}with-menu-bar-toc{% endif %}">
-    <div
-      class="columns body-columns flex-justify-center{% if page.menubar %}{% unless page.toc%} with-menu-bar{% endunless %}{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
-      {% if page.menubar_toc %}
-      <div class="column{% if page.menubar %}{% unless page.toc%} with-menu-bar{% endunless %}{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
-        {% assign contentsTitle = page.toc_title | default: 'Contents' %}
-        {% include toc.html html=content class='menu-list1' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent %}
+
+  {% elsif page.layout == 'api' %}
+  <!-- LAYOUT 2: API Reference Page -->
+  {{ content }}
+
+  {% elsif page.menubar or page.menubar_toc or page.toc %}
+  <!-- LAYOUT 3: Documentation Page -->
+
+  <section class="body-container">
+    <nav class="doc-nav">
+      {% if page.menubar %}
+      <button class="doc-nav-toggle" aria-label="Toggle sidebar menu" aria-expanded="false">
+        <svg class="doc-nav-icon-menu" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+        <svg class="doc-nav-icon-close" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+      {% endif %}
+      {% include breadcrumb.html %}
+      <!-- Mobile copy menu (shown inside doc-nav on small screens) -->
+      <div class="doc-nav-copy-menu" data-doc-copy-menu>
+        <div class="doc-copy-split">
+          <button type="button" class="doc-copy-button" data-doc-copy-action="copy">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M0 6.75C0 5.784.784 5 1.75 5H3v1.5H1.75a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25V13H11v1.25A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25v-7.5Z" />
+              <path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25v-7.5Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5Z" />
+            </svg>
+            <span data-doc-copy-label>Copy as Markdown</span>
+          </button>
+          <button type="button" class="doc-copy-toggle" aria-label="More Markdown actions" aria-expanded="false" data-doc-copy-toggle>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" />
+            </svg>
+          </button>
+        </div>
+        <div class="doc-copy-dropdown" role="menu">
+          <button type="button" class="doc-copy-menu-item is-primary" role="menuitem" data-doc-copy-action="copy">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M0 6.75C0 5.784.784 5 1.75 5H3v1.5H1.75a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25V13H11v1.25A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25v-7.5Z" />
+              <path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25v-7.5Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5Z" />
+            </svg>
+            <span><strong>Copy as Markdown</strong><small>Use with any LLM</small></span>
+          </button>
+          <button type="button" class="doc-copy-menu-item" role="menuitem" data-doc-copy-action="view">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M4.75 0h5.586c.464 0 .909.184 1.237.513l3.914 3.914c.329.328.513.773.513 1.237v8.586A1.75 1.75 0 0 1 14.25 16h-9.5A1.75 1.75 0 0 1 3 14.25v-1.5a.75.75 0 0 1 1.5 0v1.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-3.75A1.75 1.75 0 0 1 9 4.25V1.5H4.75a.25.25 0 0 0-.25.25v2.5a.75.75 0 0 1-1.5 0v-2.5C3 .784 3.784 0 4.75 0Zm5.75 1.56v2.69c0 .138.112.25.25.25h2.69L10.5 1.56Z" />
+              <path d="M0 7.75C0 6.784.784 6 1.75 6h5.5C8.216 6 9 6.784 9 7.75v1.5A1.75 1.75 0 0 1 7.25 11h-5.5A1.75 1.75 0 0 1 0 9.25v-1.5Zm1.75-.25a.25.25 0 0 0-.25.25v1.5c0 .138.112.25.25.25h5.5a.25.25 0 0 0 .25-.25v-1.5a.25.25 0 0 0-.25-.25h-5.5Z" />
+            </svg>
+            <span><strong>View as Markdown</strong><small>Open page in another tab</small></span>
+          </button>
+        </div>
       </div>
-      {% elsif page.menubar %}
-      <div class="menu-bar">
-        {% include menubar.html html=content %}
+    </nav>
+
+    <div class="body-columns{% if page.menubar %} with-menu-bar full-width{% endif %}{% if page.toc %} with-toc{% endif %}{% if page.full_width %} full-width{% endif %}">
+      {% if page.menubar %}
+      <div class="menu-container">
+        <div class="menu-bar">
+          {% include menubar.html html=content %}
+        </div>
       </div>
-      {% elsif page.toc %}
-      <div class="side-toc-menu">
-        {% assign contentsTitle = page.toc_title | default: 'Contents' %}
-        {% assign sideContent = page.side_toc | default: false %}
-        {% include toc.html html=content class='menu-list' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent item_class="menu-item-level-%level%" submenu_class="level-%level%" %}
+      {% elsif page.menubar_toc %}
+      <div class="menu-container">
+        <div class="side-toc-menu">
+          {% assign contentsTitle = page.toc_title | default: 'Contents' %}
+          {% assign sideContent = page.side_toc | default: false %}
+          {% include toc.html html=content class='menu-list' h_min=2 h_max=4 contents_title=contentsTitle side_toc=sideContent item_class="menu-item-level-%level%" submenu_class="level-%level%" %}
+        </div>
       </div>
       {% endif %}
-      <div
-        class="page-body{%if page.layout == 'api' %} api-document{% endif %}{% if page.menubar %} with-menu-bar{%endif%}{% if page.toc %}{% unless page.menubar%} with-side-toc{% endunless %}{%endif%}">
+      <div class="page-body{% if page.layout == 'api' %} api-document{% endif %}{% if page.full_width %} full-width{% endif %}">
         {% include tabs.html %}
         {% include showcase.html %}
         {% include sponsors.html %}
         {% include gallery.html %}
-        {{ content }}
+        <div class="content">
+          {{ content }}
+        </div>
       </div>
+      <aside class="doc-toc-right">
+        <div class="doc-copy-menu" data-doc-copy-menu>
+          <div class="doc-copy-split">
+            <button type="button" class="doc-copy-button" data-doc-copy-action="copy">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  d="M0 6.75C0 5.784.784 5 1.75 5H3v1.5H1.75a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25V13H11v1.25A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25v-7.5Z" />
+                <path
+                  d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25v-7.5Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5Z" />
+              </svg>
+              <span data-doc-copy-label>Copy as Markdown</span>
+            </button>
+            <button type="button" class="doc-copy-toggle" aria-label="More Markdown actions" aria-expanded="false" data-doc-copy-toggle>
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" />
+              </svg>
+            </button>
+          </div>
+          <div class="doc-copy-dropdown" role="menu">
+            <button type="button" class="doc-copy-menu-item is-primary" role="menuitem" data-doc-copy-action="copy">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  d="M0 6.75C0 5.784.784 5 1.75 5H3v1.5H1.75a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25V13H11v1.25A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25v-7.5Z" />
+                <path
+                  d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25v-7.5Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25h-7.5Z" />
+              </svg>
+              <span><strong>Copy as Markdown</strong><small>Use with any LLM</small></span>
+            </button>
+            <button type="button" class="doc-copy-menu-item" role="menuitem" data-doc-copy-action="view">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  d="M4.75 0h5.586c.464 0 .909.184 1.237.513l3.914 3.914c.329.328.513.773.513 1.237v8.586A1.75 1.75 0 0 1 14.25 16h-9.5A1.75 1.75 0 0 1 3 14.25v-1.5a.75.75 0 0 1 1.5 0v1.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-3.75A1.75 1.75 0 0 1 9 4.25V1.5H4.75a.25.25 0 0 0-.25.25v2.5a.75.75 0 0 1-1.5 0v-2.5C3 .784 3.784 0 4.75 0Zm5.75 1.56v2.69c0 .138.112.25.25.25h2.69L10.5 1.56Z" />
+                <path
+                  d="M0 7.75C0 6.784.784 6 1.75 6h5.5C8.216 6 9 6.784 9 7.75v1.5A1.75 1.75 0 0 1 7.25 11h-5.5A1.75 1.75 0 0 1 0 9.25v-1.5Zm1.75-.25a.25.25 0 0 0-.25.25v1.5c0 .138.112.25.25.25h5.5a.25.25 0 0 0 .25-.25v-1.5a.25.25 0 0 0-.25-.25h-5.5Z" />
+              </svg>
+              <span><strong>View as Markdown</strong><small>Open page in another tab</small></span>
+            </button>
+            <button type="button" class="doc-copy-menu-item" role="menuitem" data-doc-copy-action="chatgpt">
+              <svg aria-hidden="true" focusable="false" fill="currentColor" fill-rule="evenodd" height="1em" viewBox="0 0 24 24" width="1em" xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4 shrink-0">
+                <title>OpenAI</title>
+                <path
+                  d="M21.55 10.004a5.416 5.416 0 00-.478-4.501c-1.217-2.09-3.662-3.166-6.05-2.66A5.59 5.59 0 0010.831 1C8.39.995 6.224 2.546 5.473 4.838A5.553 5.553 0 001.76 7.496a5.487 5.487 0 00.691 6.5 5.416 5.416 0 00.477 4.502c1.217 2.09 3.662 3.165 6.05 2.66A5.586 5.586 0 0013.168 23c2.443.006 4.61-1.546 5.361-3.84a5.553 5.553 0 003.715-2.66 5.488 5.488 0 00-.693-6.497v.001zm-8.381 11.558a4.199 4.199 0 01-2.675-.954c.034-.018.093-.05.132-.074l4.44-2.53a.71.71 0 00.364-.623v-6.176l1.877 1.069c.02.01.033.029.036.05v5.115c-.003 2.274-1.87 4.118-4.174 4.123zM4.192 17.78a4.059 4.059 0 01-.498-2.763c.032.02.09.055.131.078l4.44 2.53c.225.13.504.13.73 0l5.42-3.088v2.138a.068.068 0 01-.027.057L9.9 19.288c-1.999 1.136-4.552.46-5.707-1.51h-.001zM3.023 8.216A4.15 4.15 0 015.198 6.41l-.002.151v5.06a.711.711 0 00.364.624l5.42 3.087-1.876 1.07a.067.067 0 01-.063.005l-4.489-2.559c-1.995-1.14-2.679-3.658-1.53-5.63h.001zm15.417 3.54l-5.42-3.088L14.896 7.6a.067.067 0 01.063-.006l4.489 2.557c1.998 1.14 2.683 3.662 1.529 5.633a4.163 4.163 0 01-2.174 1.807V12.38a.71.71 0 00-.363-.623zm1.867-2.773a6.04 6.04 0 00-.132-.078l-4.44-2.53a.731.731 0 00-.729 0l-5.42 3.088V7.325a.068.068 0 01.027-.057L14.1 4.713c2-1.137 4.555-.46 5.707 1.513.487.833.664 1.809.499 2.757h.001zm-11.741 3.81l-1.877-1.068a.065.065 0 01-.036-.051V6.559c.001-2.277 1.873-4.122 4.181-4.12.976 0 1.92.338 2.671.954-.034.018-.092.05-.131.073l-4.44 2.53a.71.71 0 00-.365.623l-.003 6.173v.002zm1.02-2.168L12 9.25l2.414 1.375v2.75L12 14.75l-2.415-1.375v-2.75z">
+                </path>
+              </svg>
+              <span><strong>Ask ChatGPT</strong><small>Copy and open ChatGPT</small></span>
+            </button>
+            <button type="button" class="doc-copy-menu-item" role="menuitem" data-doc-copy-action="claude">
+              <svg aria-hidden="true" focusable="false" fill="currentColor" fill-rule="evenodd" height="1em" viewBox="0 0 256 257" width="1em" xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4 shrink-0" preserveAspectRatio="xMidYMid">
+                <title>Anthropic</title>
+                <path
+                  d="m50.228 170.321 50.357-28.257.843-2.463-.843-1.361h-2.462l-8.426-.518-28.775-.778-24.952-1.037-24.175-1.296-6.092-1.297L0 125.796l.583-3.759 5.12-3.434 7.324.648 16.202 1.101 24.304 1.685 17.629 1.037 26.118 2.722h4.148l.583-1.685-1.426-1.037-1.101-1.037-25.147-17.045-27.22-18.017-14.258-10.37-7.713-5.25-3.888-4.925-1.685-10.758 7-7.713 9.397.649 2.398.648 9.527 7.323 20.35 15.75L94.817 91.9l3.889 3.24 1.555-1.102.195-.777-1.75-2.917-14.453-26.118-15.425-26.572-6.87-11.018-1.814-6.61c-.648-2.723-1.102-4.991-1.102-7.778l7.972-10.823L71.42 0 82.05 1.426l4.472 3.888 6.61 15.101 10.694 23.786 16.591 32.34 4.861 9.592 2.592 8.879.973 2.722h1.685v-1.556l1.36-18.211 2.528-22.36 2.463-28.776.843-8.1 4.018-9.722 7.971-5.25 6.222 2.981 5.12 7.324-.713 4.73-3.046 19.768-5.962 30.98-3.889 20.739h2.268l2.593-2.593 10.499-13.934 17.628-22.036 7.778-8.749 9.073-9.657 5.833-4.601h11.018l8.1 12.055-3.628 12.443-11.342 14.388-9.398 12.184-13.48 18.147-8.426 14.518.778 1.166 2.01-.194 30.46-6.481 16.462-2.982 19.637-3.37 8.88 4.148.971 4.213-3.5 8.62-20.998 5.184-24.628 4.926-36.682 8.685-.454.324.519.648 16.526 1.555 7.065.389h17.304l32.21 2.398 8.426 5.574 5.055 6.805-.843 5.184-12.962 6.611-17.498-4.148-40.83-9.721-14-3.5h-1.944v1.167l11.666 11.406 21.387 19.314 26.767 24.887 1.36 6.157-3.434 4.86-3.63-.518-23.526-17.693-9.073-7.972-20.545-17.304h-1.36v1.814l4.73 6.935 25.017 37.59 1.296 11.536-1.814 3.76-6.481 2.268-7.13-1.297-14.647-20.544-15.1-23.138-12.185-20.739-1.49.843-7.194 77.448-3.37 3.953-7.778 2.981-6.48-4.925-3.436-7.972 3.435-15.749 4.148-20.544 3.37-16.333 3.046-20.285 1.815-6.74-.13-.454-1.49.194-15.295 20.999-23.267 31.433-18.406 19.702-4.407 1.75-7.648-3.954.713-7.064 4.277-6.286 25.47-32.405 15.36-20.092 9.917-11.6-.065-1.686h-.583L44.07 198.125l-12.055 1.555-5.185-4.86.648-7.972 2.463-2.593 20.35-13.999-.064.065Z">
+                </path>
+              </svg>
+              </svg> <span><strong>Ask Claude</strong><small>Copy and open Claude</small></span>
+            </button>
+            <button type="button" class="doc-copy-menu-item" role="menuitem" data-doc-copy-action="copilot">
+              <svg aria-hidden="true" focusable="false" class="octicon octicon-copilot" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible"
+                style="vertical-align: text-bottom;">
+                <path
+                  d="M7.998 15.035c-4.562 0-7.873-2.914-7.998-3.749V9.338c.085-.628.677-1.686 1.588-2.065.013-.07.024-.143.036-.218.029-.183.06-.384.126-.612-.201-.508-.254-1.084-.254-1.656 0-.87.128-1.769.693-2.484.579-.733 1.494-1.124 2.724-1.261 1.206-.134 2.262.034 2.944.765.05.053.096.108.139.165.044-.057.094-.112.143-.165.682-.731 1.738-.899 2.944-.765 1.23.137 2.145.528 2.724 1.261.566.715.693 1.614.693 2.484 0 .572-.053 1.148-.254 1.656.066.228.098.429.126.612.012.076.024.148.037.218.924.385 1.522 1.471 1.591 2.095v1.872c0 .766-3.351 3.795-8.002 3.795Zm0-1.485c2.28 0 4.584-1.11 5.002-1.433V7.862l-.023-.116c-.49.21-1.075.291-1.727.291-1.146 0-2.059-.327-2.71-.991A3.222 3.222 0 0 1 8 6.303a3.24 3.24 0 0 1-.544.743c-.65.664-1.563.991-2.71.991-.652 0-1.236-.081-1.727-.291l-.023.116v4.255c.419.323 2.722 1.433 5.002 1.433ZM6.762 2.83c-.193-.206-.637-.413-1.682-.297-1.019.113-1.479.404-1.713.7-.247.312-.369.789-.369 1.554 0 .793.129 1.171.308 1.371.162.181.519.379 1.442.379.853 0 1.339-.235 1.638-.54.315-.322.527-.827.617-1.553.117-.935-.037-1.395-.241-1.614Zm4.155-.297c-1.044-.116-1.488.091-1.681.297-.204.219-.359.679-.242 1.614.091.726.303 1.231.618 1.553.299.305.784.54 1.638.54.922 0 1.28-.198 1.442-.379.179-.2.308-.578.308-1.371 0-.765-.123-1.242-.37-1.554-.233-.296-.693-.587-1.713-.7Z">
+                </path>
+                <path d="M6.25 9.037a.75.75 0 0 1 .75.75v1.501a.75.75 0 0 1-1.5 0V9.787a.75.75 0 0 1 .75-.75Zm4.25.75v1.501a.75.75 0 0 1-1.5 0V9.787a.75.75 0 0 1 1.5 0Z"></path>
+              </svg> <span><strong>Ask Copilot</strong><small>Copy and open Copilot</small></span>
+            </button>
+          </div>
+        </div>
+        {% if page.toc %}
+
+        {% assign contentsTitle = page.toc_title | default: 'In this article' %}
+        {% include toc.html html=content class='menu-list-right' h_min=2 h_max=3 contents_title=contentsTitle smooth_scroll=true %}
+        {% endif %}
+      </aside>
+
       {% if site.posts and page.show_sidebar %}
       <div class="column is-3-desktop is-3-tablet">
         {% include latest-post.html %}
@@ -83,13 +192,403 @@
       {% endif %}
     </div>
   </section>
+
+  {% else %}
+  <!-- Fallback: No sidebar, no home -->
+  {% unless page.hide_hero or page.layout == 'use_case' %}
+  <section class="hero-section">
+    {% include hero.html %}
+  </section>
+  {% endunless %}
+  <section class="home-page">
+    {{ content }}
+  </section>
   {% endif %}
+
   {% unless page.hide_footer %}
   {% include footer.html %}
   {% endunless %}
   {% include cookie-consent.html %}
   <script src="{{ site.baseurl }}/assets/js/app.js" type="text/javascript"></script>
+  <script src="{{ site.baseurl }}/assets/js/search.js" type="text/javascript"></script>
+  <script src="{{ site.baseurl }}/assets/js/navigation-telemetry.js" type="text/javascript"></script>
   {%- include footer-scripts.html -%}
 </body>
+<script>
+  console.log('Page loaded, initializing Intersection Observer for 3D scroll animations.');
+  // Intersection Observer for 3D Scroll Animations
+  document.addEventListener('DOMContentLoaded', () => {
+    const observerOptions = {
+      threshold: 0.15, // Trigger when the element is slightly above the viewport
+      rootMargin: '0px 0px -50px 0px'
+    };
+    const observerOptionsCard = {
+      threshold: 0.01, // Trigger when the element is slightly above the viewport
+      rootMargin: '0px 0px 15% 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          console.log(`Element ${entry.target.id || entry.target.className} is visible, adding 'visible' class.`);
+          // Optional: Stop observing once visible to save resources
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    const observerCard = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          console.log(`Element ${entry.target.id || entry.target.className} is visible, adding 'visible' class.`);
+          // Optional: Stop observing once visible to save resources
+          observerCard.unobserve(entry.target);
+        }
+      });
+    }, observerOptionsCard);
+
+    // Observe the Hero Mockup
+    const heroImage = document.getElementById('home-image');
+    if (heroImage) observer.observe(heroImage);
+
+    // Observe Features Header
+    const featuresHeader = document.getElementById('feature-section');
+    if (featuresHeader) observer.observe(featuresHeader);
+
+    // Observe Feature Cards
+    const cards = document.querySelectorAll('.feature-card');
+    cards.forEach(card => observerCard.observe(card));
+
+    // Observe Steps Section (header animation)
+    const stepsSection = document.getElementById('steps-section');
+    if (stepsSection) {
+      const stepsHeaderObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            stepsHeaderObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      stepsHeaderObserver.observe(stepsSection);
+    }
+
+    // Staggered animation for step items (triggered when steps-track is visible)
+    const stepsTrack = document.getElementById('steps-track');
+    if (stepsTrack) {
+      const stepsObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            entry.target.querySelectorAll('.step-item').forEach(item => {
+              item.classList.add('visible');
+            });
+            stepsObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      stepsObserver.observe(stepsTrack);
+    }
+
+    // Download section animation
+    const downloadSection = document.getElementById('download-section');
+    if (downloadSection) {
+      const downloadObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            downloadObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+
+      downloadObserver.observe(downloadSection);
+    }
+
+    // Download cards animation
+    const downloadCards = document.getElementById('download-cards');
+    if (downloadCards) {
+      const downloadCardsObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const cards = entry.target.querySelectorAll('.download-card');
+            cards.forEach((card, i) => {
+              card.style.transitionDelay = (i * 150) + 'ms';
+              card.classList.add('visible');
+            });
+            downloadCardsObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+
+      downloadCardsObserver.observe(downloadCards);
+    }
+
+    // Latest releases section animation
+    const latestReleasesSection = document.querySelector('.latest-releases-section');
+    if (latestReleasesSection) {
+      const latestReleasesObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            const cards = entry.target.querySelectorAll('.release-card');
+            cards.forEach((card, i) => {
+              card.style.transitionDelay = (i * 150) + 'ms';
+              card.classList.add('visible');
+            });
+            latestReleasesObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+
+      latestReleasesObserver.observe(latestReleasesSection);
+    }
+
+    // UI Feature Sections: scroll-driven 3D image animations
+    const uiSection = document.querySelector('#ui-section');
+    const uiFeatureList = document.querySelector('#ui-feature-list');
+    if (uiFeatureList && uiSection) {
+      const featureElements = Array.from(uiFeatureList.querySelectorAll('.ui-feature'));
+      const headerEl = uiSection.querySelector('.ui-header');
+      const descEl = uiSection.querySelector('.ui-description');
+      const contentOffset = (headerEl ? headerEl.offsetHeight : 0) + (descEl ? descEl.offsetHeight : 0);
+
+      // Spacing config — mirrors CSS values for consistency
+      const FEATURE_GAP = 20; // gap between adjacent .ui-feature elements
+      const SCROLL_ROOM = 100; // extra scroll room at the bottom so the last feature isn't cropped
+      const IMAGE_ASPECT_RATIO = 16 / 9; // fallback ratio when natural dimensions unavailable
+      const MIN_FEATURE_HEIGHT = 400; // minimum feature height in px
+
+      // Measure footer height dynamically
+      function getFooterHeight() {
+        const footer = document.querySelector('.footer');
+        return footer ? footer.offsetHeight : 96;
+      }
+
+      // Measure navbar height dynamically
+      function getNavbarHeight() {
+        const nav = document.querySelector('.navigation');
+        return nav ? nav.offsetHeight : 64;
+      }
+
+      // Calculate section height: each feature fills available viewport space
+      function calcSectionHeight() {
+        const viewportH = window.innerHeight;
+        const navbarH = getNavbarHeight();
+        const footerH = getFooterHeight();
+        const availableH = viewportH - navbarH - contentOffset - footerH;
+        return Math.max(availableH, MIN_FEATURE_HEIGHT);
+      }
+
+      // Set image-wrap dimensions based on the image's natural aspect ratio
+      function fitImagesToFeatures() {
+        featureElements.forEach(feature => {
+          const imageWrap = feature.querySelector('.ui-feature-image-wrap');
+          const textWrap = feature.querySelector('.ui-feature-text');
+          if (!imageWrap || !textWrap) return;
+
+          const featureH = feature.offsetHeight;
+          const featureW = feature.offsetWidth;
+
+          // Image area width: leave room for text panel (35%) + gap (10px)
+          const textPct = 0.35;
+          const gap = 10;
+          const imgAreaWidth = featureW * (1 - textPct) - gap;
+
+          // Use the image's natural aspect ratio
+          const imgEl = imageWrap.querySelector('img');
+          let imgHeight;
+          if (imgEl && imgEl.naturalWidth && imgEl.naturalHeight) {
+            const naturalRatio = imgEl.naturalWidth / imgEl.naturalHeight;
+            imgHeight = imgAreaWidth / naturalRatio;
+          } else {
+            // Fallback to IMAGE_ASPECT_RATIO if natural dimensions aren't available yet
+            imgHeight = imgAreaWidth / IMAGE_ASPECT_RATIO;
+          }
+
+          // Clamp image height to feature height
+          const clampedHeight = Math.min(imgHeight, featureH);
+
+          imageWrap.style.width = `${imgAreaWidth}px`;
+          imageWrap.style.height = `${clampedHeight}px`;
+        });
+      }
+
+      function setupSectionHeight() {
+        const sectionH = calcSectionHeight();
+        featureElements.forEach(f => {
+          f.style.minHeight = `${sectionH}px`;
+          f.style.maxHeight = `${sectionH}px`;
+        });
+        // Total section height: header/desc + all features + gaps between them + scroll room at bottom
+        const totalGaps = (featureElements.length - 1) * FEATURE_GAP;
+        const totalH = contentOffset + (featureElements.length * sectionH) + totalGaps + SCROLL_ROOM;
+        uiSection.style.height = `${totalH}px`;
+
+        // Fit images after layout is established
+        fitImagesToFeatures();
+
+        // Re-fit images when they finish loading (natural dimensions may not be available on DOMContentLoaded)
+        featureElements.forEach(feature => {
+          const imgEl = feature.querySelector('.ui-feature-image-wrap img');
+          if (imgEl) {
+            if (imgEl.complete) {
+              fitImagesToFeatures();
+            } else {
+              imgEl.addEventListener('load', () => {
+                fitImagesToFeatures();
+              }, { once: true });
+            }
+          }
+        });
+      }
+
+      // Apply accent colors to each feature
+      featureElements.forEach(feature => {
+        const accent = feature.getAttribute('data-accent') || '#3B82F6';
+        const textWrap = feature.querySelector('.ui-feature-text');
+        const pre = textWrap?.querySelector('.ui-feature-pre');
+        const link = textWrap?.querySelector('.ui-feature-link');
+        if (pre) pre.style.color = accent;
+        if (link) {
+          link.style.color = accent;
+          link.innerHTML = link.innerHTML.replace(/→$/, '') + ' <span style="display:inline-block;transition:transform 0.2s ease">→</span>';
+        }
+      });
+
+      function smoothstep(t) {
+        const x = Math.max(0, Math.min(1, t));
+        return x * x * (3 - 2 * x);
+      }
+
+      function updateFeatures() {
+        const viewportH = window.innerHeight;
+
+        featureElements.forEach(feature => {
+          const imageWrap = feature.querySelector('.ui-feature-image-wrap');
+          const textWrap = feature.querySelector('.ui-feature-text');
+          if (!imageWrap || !textWrap) return;
+
+          const featureRect = feature.getBoundingClientRect();
+          const featureTop = featureRect.top;
+          const featureBottom = featureRect.bottom;
+          const featureH = featureRect.height;
+
+          // Relative to viewport: -1 = fully below, 0 = just entering bottom, 1 = centered, 2 = exiting top, 3 = fully above
+          // Use the TOP of the feature relative to viewport bottom
+          const progress = (viewportH - featureTop) / (featureH + viewportH * 0.75);
+
+          // Visibility window: symmetric 0.05→0.15 enter, 0.85→0.95 exit
+          // Equal-width windows so fast scroll doesn't skip the exit animation
+          const enterStart = 0.15;
+          const exitStart = 0.85;
+
+          // Determine layout direction: image-right flips the 3D rotation axis
+          const inner = feature.querySelector('.ui-feature-inner');
+          const isImageRight = inner && inner.classList.contains('ui-feature-layout--image-right');
+          const dir = isImageRight ? -1 : 1;
+
+          let imageOpacity = 0;
+          let imageRotateX = 0;
+          let imageRotateY = 0;
+          let imageScale = 0.88;
+          let imageTranslateX = 0;
+          let imageTranslateY = 120;
+
+          let textOpacity = 0;
+          let textTranslateY = 60;
+
+          if (progress <= 0) {
+            // Fully below viewport: hidden, pushed down
+            imageOpacity = 0;
+            imageScale = 0.88;
+            imageTranslateY = 120;
+            imageTranslateX = -50 * dir;
+            imageRotateX = 25 * dir;
+            imageRotateY = -10;
+            textOpacity = 0;
+            textTranslateY = 60;
+          } else if (progress < enterStart) {
+            // Entering from bottom
+            const t = smoothstep(progress / enterStart);
+            imageOpacity = t;
+            imageScale = 0.88 + 0.12 * t;
+            imageTranslateY = 120 * (1 - t);
+            imageTranslateX = -50 * dir * (1 - t);
+            imageRotateX = 25 * dir * (1 - t);
+            imageRotateY = -10 * (1 - t);
+            textOpacity = t;
+            textTranslateY = 60 * (1 - t);
+          } else if (progress < exitStart) {
+            // Fully visible
+            imageOpacity = 1;
+            imageScale = 1;
+            imageTranslateY = 0;
+            imageTranslateX = 0;
+            imageRotateX = 0;
+            imageRotateY = 0;
+            textOpacity = 1;
+            textTranslateY = 0;
+          } else if (progress < 1) {
+            // Exiting toward top
+            const t = smoothstep((progress - exitStart) / (1 - exitStart));
+            imageOpacity = 1 - t;
+            imageScale = 1 - 0.12 * t;
+            imageTranslateY = -60 * t;
+            imageTranslateX = 50 * dir * t;
+            imageRotateX = 25 * dir * t;
+            imageRotateY = 10 * t;
+            textOpacity = 1 - t;
+            textTranslateY = -40 * t;
+          } else {
+            // Fully above viewport: hidden
+            imageOpacity = 0;
+            imageScale = 0.88;
+            imageTranslateY = -60;
+            imageTranslateX = 50 * dir;
+            imageRotateX = 25 * dir;
+            imageRotateY = 10;
+            textOpacity = 0;
+            textTranslateY = -40;
+          }
+
+          // Apply transforms
+          imageWrap.style.opacity = imageOpacity.toFixed(3);
+          imageWrap.style.transform = `translateY(${imageTranslateY.toFixed(1)}px) translateX(${imageTranslateX.toFixed(1)}px) rotateX(${imageRotateX.toFixed(2)}deg) rotateY(${imageRotateY.toFixed(2)}deg) scale(${imageScale.toFixed(3)})`;
+
+          textWrap.style.opacity = textOpacity.toFixed(3);
+          textWrap.style.transform = `translateY(${textTranslateY.toFixed(1)}px)`;
+        });
+      }
+
+      let ticking = false;
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          requestAnimationFrame(() => {
+            updateFeatures();
+            ticking = false;
+          });
+          ticking = true;
+        }
+      }, { passive: true });
+
+      setupSectionHeight();
+      updateFeatures();
+
+      let resizeTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          setupSectionHeight();
+          updateFeatures();
+        }, 150);
+      }, { passive: true });
+    }
+  });
+</script>
 
 </html>

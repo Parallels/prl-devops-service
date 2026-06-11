@@ -32,7 +32,7 @@ RUN go mod tidy && swag fmt && swag init -g main.go
 RUN --mount=type=secret,id=amplitude_api_key \
   export AMPLITUDE_API_KEY=$(cat /run/secrets/amplitude_api_key) && \
   BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) && \
-  BASE_FLAGS="-s -w -X 'github.com/Parallels/prl-devops-service/version.buildVersion=$VERSION' -X 'github.com/Parallels/prl-devops-service/version.buildDate=$BUILD_DATE' -X 'github.com/Parallels/prl-devops-service/version.buildCommit=$GIT_COMMIT' -X 'github.com/Parallels/prl-devops-service/telemetry.AmplitudeApiKey=$AMPLITUDE_API_KEY'" && \
+  BASE_FLAGS="-s -w -X 'github.com/Parallels/prl-devops-service/version.buildVersion=$VERSION' -X 'github.com/Parallels/prl-devops-service/version.buildDate=$BUILD_DATE' -X 'github.com/Parallels/prl-devops-service/version.buildCommit=$GIT_COMMIT' -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" && \
   if [ "$BUILD_ENV" = "production" ]; then \
   CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=stable'" -o /go/bin/prl-devops-service; \
   elif [ "$BUILD_ENV" = "canary" ]; then \

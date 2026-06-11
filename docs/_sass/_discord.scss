@@ -1,0 +1,144 @@
+// Discord community section
+
+.discord-section {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 28px $page-margin-left-right;
+
+  @media screen and (max-width: $m-breakpoint) {
+    padding: 32px $page-margin-left-right;
+  }
+
+  .discord-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 62px;
+    width: 100%;
+    max-width: 860px;
+    padding: 20px 28px;
+    background-color: var(--discord-accent, #5865F2);
+    border-radius: 16px;
+
+    @media screen and (max-width: $m-breakpoint) {
+      flex-direction: column;
+      text-align: center;
+      padding: 32px 24px;
+    }
+  }
+
+  .discord-logo {
+    font-size: 140px;
+    color: $white;
+    flex-shrink: 0;
+
+    @media screen and (max-width: $m-breakpoint) {
+      font-size: 48px;
+    }
+  }
+
+  .discord-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+
+    @media screen and (max-width: $m-breakpoint) {
+      align-items: center;
+    }
+  }
+
+  .discord-title {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 34px;
+    font-weight: 900;
+    color: $white;
+    margin: 0;
+    line-height: 1.2;
+
+    @media screen and (max-width: $m-breakpoint) {
+      font-size: 20px;
+    }
+  }
+
+  .discord-description {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .discord-members {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 1);
+    min-height: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: rgba(255, 255, 255, 0.15);
+    padding: 2px 10px;
+    border-radius: 20px;
+  }
+
+  .discord-members-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #43b581;
+    display: inline-block;
+    animation: discord-pulse 2s ease-in-out infinite;
+  }
+
+  .discord-members-count {
+    font-weight: 700;
+  }
+
+  .discord-members-label {
+    font-weight: 400;
+    opacity: 0.8;
+  }
+
+  @keyframes discord-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .discord-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 14px;
+  }
+
+  .discord-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 32px;
+    background-color: $white;
+    color: var(--discord-accent, #5865F2);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 10px;
+    text-decoration: none !important;
+    white-space: nowrap;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    align-self: flex-start;
+
+    @media screen and (max-width: $m-breakpoint) {
+      align-self: center;
+    }
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      transform: translateY(-1px);
+    }
+  }
+}

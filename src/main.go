@@ -19,7 +19,7 @@ import (
 )
 
 //	@title			Parallels Desktop DevOps Service
-//	@version		1.0.0
+//	@version		1.0.1
 //	@description	Parallels Desktop DevOps Service
 //	@termsOfService	http://swagger.io/terms/
 
@@ -103,7 +103,7 @@ func main() {
 				// Call home every 30 minutes
 				time.Sleep(30 * time.Minute)
 				ctx.LogInfof("[Core] Sending heartbeat")
-				sendHeartbeat()
+				telemetry.SendHeartbeat()
 			}
 		}
 	}()
@@ -126,12 +126,4 @@ func cleanup(ctx basecontext.ApiContext, db *data.JsonDatabase) {
 		}
 		_ = db.Disconnect(ctx)
 	}
-}
-
-func sendHeartbeat() {
-	if telemetry.Get() == nil {
-		return
-	}
-	ctx := basecontext.NewRootBaseContext()
-	telemetry.TrackEvent(telemetry.NewTelemetryItem(ctx, telemetry.HeartbeatEvent, nil, nil))
 }

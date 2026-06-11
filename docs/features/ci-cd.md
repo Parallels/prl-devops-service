@@ -5,6 +5,6 @@ subtitle: Integrate with your CI/CD pipeline
 show_sidebar: false
 ---
 
-{% assign overviewPage = site.pages | where:"url", "/docs/restapi/overview/" | first %}
+{% assign overviewPage = site.pages | where:"url", "/examples/github-actions/" | first %}
 
 {{ overviewPage.content | markdownify }}

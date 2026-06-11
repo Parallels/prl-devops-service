@@ -1,6 +1,8 @@
 .navigation {
+  --navigation-dropdown-top: 80px;
+
   top: 0;
-  height: 120px;
+  height: 100px;
   display: flex;
   z-index: 999 !important;
   position: sticky !important;
@@ -20,15 +22,36 @@
 }
 
 .navigation-header {
-  margin: auto;
-  min-height: 100px;
+  min-height: 80px;
   padding-left: 36px;
   padding-right: 36px;
   color: #FFFFFF;
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 28px;
+}
+
+body.page-layout,
+body.api-layout {
+  .navigation {
+    --navigation-dropdown-top: 72px;
+
+    height: 80px;
+  }
+
+  .navigation-header {
+    min-height: 80px;
+  }
+
+  .navigation-menu {
+    @media (max-width: 1139.95px) {
+      &.open {
+        top: 80px;
+      }
+    }
+  }
 }
 
 .navigation-menu {
@@ -56,14 +79,36 @@
 .navigation-logo {
   display: flex;
   align-items: center;
+  flex-direction: column;
+  color: #303236;
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+  }
 
   img {
-    height: 37px;
+    height: 22px;
+    transform: translateY(0px);
+  }
+
+  .navigation-logo-brand {
+    color: #6c757d;
+  }
+
+  .navigation-logo-product {
+    font-size: 18px;
+    color: #101828;
+    font-weight: 900;
   }
 }
 
 .navigation-menu-container {
-  gap: 40px;
+  gap: 18px;
   color: #AFB3B8;
   width: min-content;
   display: grid;
@@ -89,6 +134,8 @@
 .navigation-end-container {
   display: flex;
   align-items: center;
+  gap: 12px;
+  margin-left: auto;
 }
 
 .navigation-menu-item {
@@ -114,6 +161,12 @@
       padding: 0;
 
     }
+  }
+
+  .is-sticky {
+        color: rgb(129, 129, 129);
+    background: rgba(100, 100, 100, 0.1);
+    border-radius: 6px;
   }
 
   &:hover {
@@ -163,50 +216,83 @@
   }
 }
 
+// Sticky dropdown button state
+.navigation-menu-item {
+  &.is-sticky  {
+    color: #818181;
+    background: rgba(100, 100, 100, .1);
+    border-radius: 6px;
+  }
+}
+
+.navigation-menu-item.is-sticky .dropdown-link svg {
+  transform: rotate(180deg);
+}
+
 .navigation-dropdown-menu {
-  left: 0;
-  color: white;
-  right: 0;
+  left: 24px;
+  top: var(--navigation-dropdown-top);
+  color: #303236;
   cursor: default;
   opacity: 0;
-  padding: 24px 0px;
+  padding: 0;
   z-index: 999;
   position: fixed;
-  background: rgba(255, 255, 255, 0.95);
-  border-top: 1px solid #dbdbdb;
-  box-shadow: 0 8px 8px rgba(10, 10, 10, .1);
-  border-bottom: 1px solid rgba(220, 207, 233, 0.16);
-  margin-top: 12px;
-  transition: 250ms opacity ease;
+  width: min(calc(100vw - 48px), 920px);
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12);
+  margin-top: 0;
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
   pointer-events: none;
-  backdrop-filter: blur(90px);
-  -webkit-backdrop-filter: blur(90px);
+  visibility: hidden;
+  transform: translateY(-6px);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  white-space: normal;
+
+  &.navigation-dropdown-menu--guides {
+    width: min(calc(100vw - 48px), 720px);
+  }
 
   &::before {
     left: 0;
     right: 0;
-    height: 40px;
+    top: -10px;
+    height: 10px;
     content: ' ';
     position: absolute;
-    margin-top: -40px;
   }
 
   &.active {
     opacity: 1;
+    visibility: visible;
     pointer-events: all;
+    transform: translateY(0);
 
+    @media (max-width: 1139.95px) {
+      pointer-events: auto;
+    }
   }
 
   @media (max-width: 1139.95px) {
-    border: 1px solid rgba(220, 207, 233, 0.16);
     display: none;
     position: relative;
+    left: auto;
+    top: auto;
+    width: 100%;
+    transform: none;
+    border: 1px solid #e5e7eb;
+    box-shadow: none;
+    background: #f9fafb;
     margin-top: 0;
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
+    border-radius: 8px;
+    visibility: visible;
 
     &.active {
-      display: flex;
+      display: block;
+      transform: none;
     }
   }
 
@@ -235,35 +321,127 @@
 }
 
 .navigation-dropdown-menu-content {
-  gap: 24px;
+  gap: 0;
   width: 100%;
   margin: 0 auto;
   display: grid;
-  row-gap: 8px;
-  max-width: 776px;
-  grid-template-columns: 1fr 1fr;
+  max-width: none;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  &.navigation-dropdown-menu-content--guides {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.4fr);
+  }
 
   @media (max-width: 1139.95px) {
-    max-width: unset;
+    grid-template-columns: 1fr;
+
+    &.navigation-dropdown-menu-content--guides {
+      grid-template-columns: 1fr;
+    }
   }
 }
 
-.navigation-dropdown-menu-item {
-  gap: 16px;
-  border: 1px solid rgba(220, 207, 233, 0);
-  display: flex;
-  padding: 16px;
-  border-radius: 4px;
-  text-decoration: none !important;
+.navigation-dropdown-section {
+  padding: 18px 20px 20px;
 
-  &:hover {
-    color: rgb(129, 129, 129);
-    background: rgba(100, 100, 100, 0.1);
-    border-radius: 6px;
+  & + & {
+    border-left: 1px solid #edf0f3;
   }
 
-  a {
-    white-space: nowrap;
+  @media (max-width: 1139.95px) {
+    padding: 16px;
+
+    & + & {
+      border-left: 0;
+      border-top: 1px solid #edf0f3;
+    }
+  }
+}
+
+.navigation-dropdown-section-title {
+  color: #6b7280;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+
+.navigation-dropdown-section-items {
+  display: grid;
+  gap: 8px;
+}
+
+.navigation-dropdown-menu-item {
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid transparent;
+  display: flex;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none !important;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+
+  &:hover,
+  &.active,
+  &.is-selected {
+    color: #101828;
+    background: #f5f7fa;
+    border-color: #edf0f3;
+  }
+
+  &.navigation-dropdown-menu-item--guides {
+    padding: 7px 0;
+    border-radius: 0;
+
+    &:hover,
+    &.active,
+    &.is-selected {
+      background: transparent;
+      border-color: transparent;
+
+      .title {
+        color: #0f62fe;
+      }
+    }
+  }
+}
+
+.navigation-dropdown-icon {
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #6b7280;
+  display: inline-flex;
+  flex: 0 0 34px;
+  height: 34px;
+  justify-content: center;
+  margin-top: 1px;
+  width: 34px;
+
+  i {
+    font-size: 15px;
+  }
+}
+
+.navigation-dropdown-menu {
+  .texts {
+    min-width: 0;
+    white-space: normal;
+
+    .title {
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
+
+    .description {
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
   }
 }
 
@@ -303,5 +481,205 @@
 .navigation-getting-started {
   @media screen and (max-width: $s-breakpoint) {
     display: none;
+  }
+}
+
+.navigation-github-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Desktop: show in end-container, hide inside menu */
+.desktop-actions {
+  /* visible by default */
+}
+
+.desktop-actions {
+  @media screen and (max-width: 1139.95px) {
+    display: none;
+  }
+}
+
+.mobile-menu-actions {
+  display: none;
+
+  @media screen and (max-width: 1139.95px) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 24px 0 0;
+    margin-top: 24px;
+    border-top: 1px solid rgba(0, 0, 0, 0.07);
+    width: 100%;
+
+    .github-btn-wrapper {
+      width: 100%;
+
+      .github-btn-trigger {
+        width: 100%;
+      }
+
+      .get-started.github-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+}
+
+.get-started.github-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  text-decoration: none !important;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #303236;
+  color: #303236;
+  background: transparent;
+  transition: background 200ms ease, color 200ms ease;
+  cursor: pointer;
+
+  &:hover {
+    background: #303236;
+    color: #ffffff;
+  }
+}
+
+.github-icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* GitHub dropdown */
+.github-btn-wrapper {
+  position: relative;
+
+  &.open {
+    .github-dropdown-menu {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+      visibility: visible;
+    }
+  }
+}
+
+.github-btn-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.github-chevron {
+  width: 12px;
+  height: 12px;
+  stroke: #303236;
+  fill: none;
+  transition: transform 200ms ease;
+  flex-shrink: 0;
+
+  .github-btn-wrapper.open & {
+    transform: rotate(180deg);
+  }
+}
+
+.github-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  background: $white;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity 200ms ease, transform 200ms ease, visibility 200ms;
+  pointer-events: none;
+  z-index: 9999;
+
+  @media (max-width: 1139.95px) {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 100%;
+    min-width: unset;
+    margin-top: 8px;
+    transform: translateY(0);
+    display: none;
+
+    &.open {
+      display: block;
+    }
+  }
+
+  &.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: all;
+  }
+}
+
+.github-dropdown-menu-item {
+  display: flex;
+  padding: 12px 16px;
+  border-radius: 8px;
+  text-decoration: none !important;
+  transition: background 150ms ease;
+  gap: 6px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .github-dropdown-title-row {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 2px;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .title {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #101828;
+    margin-bottom: 0;
+  }
+
+  .github-dropdown-stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    color: #7b7d85;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+
+    i {
+      color: #f59e0b;
+      font-size: 11px;
+    }
+  }
+
+  .description {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    color: #7b7d85;
+    margin: 0;
   }
 }

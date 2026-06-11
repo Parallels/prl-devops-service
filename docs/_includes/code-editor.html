@@ -1,0 +1,203 @@
+<!-- 
+  UCE Code Editor Component
+  Usage: {% include code-editor.html step_id="xxx" language="yaml" initial_code="..." validation_cmd="..." %}
+-->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+
+<style>
+  .uce-code-editor {
+    border: 1px solid {{ '$uce-border' | default: '#E2E8F0' }};
+    border-radius: {{ '$uce-radius' | default: '8px' }};
+    overflow: hidden;
+    background: #1E293B;
+  }
+  
+  .uce-code-editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: #0F172A;
+    border-bottom: 1px solid #334155;
+  }
+  
+  .uce-code-editor-lang {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  
+  .uce-code-editor-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .uce-code-editor-status {
+    font-size: 11px;
+    font-weight: 600;
+    color: #22C55E;
+    transition: opacity 0.2s;
+  }
+  
+  .uce-code-editor-status.saving {
+    color: #F59E0B;
+  }
+  
+  .CodeMirror {
+    height: auto !important;
+    min-height: 160px;
+    max-height: 500px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    background: #1E293B !important;
+  }
+  
+  .CodeMirror-scroll {
+    padding: 16px;
+  }
+  
+  .cm-s-material-darker .CodeMirror-gutters {
+    background: #0F172A !important;
+    border-right: 1px solid #334155;
+  }
+  
+  .cm-s-material-darker .CodeMirror-linenumber {
+    color: #475569;
+  }
+  
+  .cm-s-material-darker .CodeMirror-cursor {
+    border-left: 2px solid #E2E8F0;
+  }
+  
+  .cm-s-material-darker .CodeMirror-selected {
+    background: #334155 !important;
+  }
+  
+  .cm-s-material-darker .CodeMirror-activeline-background {
+    background: rgba(51, 65, 85, 0.5);
+  }
+</style>
+
+<div class="uce-code-editor" data-uce-editor-step="{{ step_id }}">
+  <div class="uce-code-editor-header">
+    <span class="uce-code-editor-lang">{{ language | default: 'text' }}</span>
+    <div class="uce-code-editor-actions">
+      <span class="uce-code-editor-status" id="save-status-{{ step_id }}"></span>
+    </div>
+  </div>
+  <div class="uce-code-editor-body" id="editor-{{ step_id }}"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/go/go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/rust/rust.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/java/java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/nginx/nginx.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/dockerfile/dockerfile.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/toml/toml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/comment-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+
+<script>
+(function() {
+  var stepId = '{{ step_id }}';
+  var lang = '{{ language | default: "text" }}';
+  var initialCode = {{ initial_code | jsonify }};
+  var saveKey = 'uce_code:' + (window.__UCE_USE_CASE_ID__ || 'default') + ':' + stepId;
+  
+  // Map language names to CodeMirror modes
+  var langMap = {
+    'yaml': 'yaml', 'yml': 'yaml',
+    'json': 'javascript',
+    'shell': 'shell', 'bash': 'shell',
+    'python': 'python',
+    'java': 'text/x-java',
+    'javascript': 'javascript', 'js': 'javascript',
+    'typescript': 'javascript', 'ts': 'javascript',
+    'go': 'go',
+    'rust': 'rust',
+    'markdown': 'markdown', 'md': 'markdown',
+    'toml': 'toml',
+    'nginx': 'nginx',
+    'dockerfile': 'dockerfile', 'docker': 'dockerfile',
+    'xml': 'xml', 'html': 'xml', 'css': 'css',
+    'sql': 'sql',
+    'ruby': 'ruby',
+    'makefile': 'stex',
+    'ini': 'properties',
+  };
+  
+  var cmMode = langMap[lang] || 'text';
+  
+  // Restore saved code
+  var savedCode = '';
+  try { savedCode = localStorage.getItem(saveKey) || ''; } catch(e) {}
+  var code = savedCode || initialCode;
+  
+  // Initialize CodeMirror
+  var editor = CodeMirror(document.getElementById('editor-' + stepId), {
+    value: code,
+    mode: cmMode,
+    theme: 'material-darker',
+    lineNumbers: true,
+    lineWrapping: true,
+    autoCloseTags: true,
+    autoCloseBrackets: true,
+    styleActiveLine: true,
+    foldGutter: true,
+    gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+    tabSize: 2,
+    indentWithTabs: false,
+    extraKeys: {
+      'Tab': function(cm) {
+        if (cm.somethingSelected()) {
+          cm.indentSelection('add');
+        } else {
+          cm.replaceSelection('  ', 'end');
+        }
+      },
+      'Ctrl-/': 'toggleComment',
+      'Cmd-/': 'toggleComment',
+    },
+  });
+  
+  // Auto-save on input
+  var saveTimer = null;
+  var statusEl = document.getElementById('save-status-' + stepId);
+  editor.on('change', function() {
+    statusEl.textContent = 'Saving...';
+    statusEl.className = 'uce-code-editor-status saving';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function() {
+      try { localStorage.setItem(saveKey, editor.getValue()); } catch(e) {}
+      statusEl.textContent = 'Saved';
+      setTimeout(function() { statusEl.textContent = ''; }, 1500);
+    }, 500);
+  });
+  
+  // Expose editor for validation
+  window.__UCE_CODE_EDITORS__ = window.__UCE_CODE_EDITORS__ || {};
+  window.__UCE_CODE_EDITORS__[stepId] = editor;
+})();
+</script>

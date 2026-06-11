@@ -1,0 +1,414 @@
+id: tutorial-devops-cli-quickstart
+title: DevOps CLI Quick Start
+level: beginner
+duration: "~25 min"
+group: Tutorials
+category: DevOps
+order: 1
+tags:
+  - devops
+  - cli
+  - automation
+
+scenario: >
+  Learn how to quickly get started with the DevOps CLI.
+  This use case walks you through installing the CLI, configuring your environment,
+  and running your first commands.
+
+introduction:
+  markdown_scenario: >
+    **Parallels DevOps Service** is a command-line tool for managing and
+    orchestrating multiple Parallels Desktop hosts and virtual machines. In this
+    use case you will install the service on your machine, configure it, start it
+    as a background daemon, and verify it is healthy and ready to use.
+  key_outcomes:
+    - Install the prldevops binary for your platform
+    - Create a basic configuration file
+    - Run the service as a system daemon
+    - Verify the service health via the REST API
+    - Understand what tools are needed for advanced features
+  prerequisites:
+    hard:
+      - A Mac, Linux, or Windows machine
+      - Access to a terminal with admin/sudo privileges
+    soft:
+      - Basic familiarity with command-line tools
+      - Understanding of REST APIs
+  unlocks:
+    - orchestrator-use-case
+    - catalog-use-case
+    - github-actions-use-case
+
+steps:
+  - id: intro
+    kind: markdown
+    title: Welcome to Parallels DevOps Service
+    duration: "~1 min"
+    body: |
+      ## Turn your Macs into a fleet
+
+      Running one VM on your desk is easy. Running *many*, across many hosts,
+      driven by CI, shared with a team, is not. **Parallels DevOps Service**
+      (`prldevops`) is the open-source Go service that sits in front of your
+      Parallels Desktop hosts and exposes them through one secure REST API.
+
+      | Pillar | What it does |
+      |---|---|
+      | <i class="fa-solid fa-desktop"></i> **VM Management** | Create, start, stop, and configure VMs via the API. *(Mac only.)* |
+      | <i class="fa-solid fa-network-wired"></i> **Orchestrator** | Pool many hosts into one schedulable fleet. |
+      | <i class="fa-solid fa-box-archive"></i> **Catalog** | Push and pull versioned "golden master" images across your team. |
+
+      > <i class="fa-solid fa-lightbulb"></i> VM management needs a Mac with
+      > Parallels Desktop. Orchestrator and Catalog run anywhere, which is why
+      > we'll ask about your platform next.
+
+      **In this use case** you'll install the binary, write a minimal config, run
+      it as a daemon, and confirm it's healthy over the REST API.
+
+  - id: choose-platform
+    kind: choice
+    title: Choose Your Platform
+    duration: "~1 min"
+    question: Which platform are you installing on?
+    icon: fa-desktop
+    branches:
+      mac:
+        label: macOS
+        value: mac
+        description: Apple Silicon or Intel Mac with full VM support
+        icon: fa-apple
+        icon_type: fa-brands
+      linux:
+        label: Linux
+        value: linux
+        description: Orchestrator and Catalog features only
+        icon: fa-linux
+        icon_type: fa-brands
+      windows:
+        label: Windows
+        value: windows
+        description: Orchestrator and Catalog features only
+        icon: fa-windows
+        icon_type: fa-brands
+      source:
+        label: From Source
+        value: source
+        description: Build from the GitHub repository
+        icon: fa-github
+        icon_type: fa-brands
+
+
+  - id: install-binary
+    kind: narrative
+    title: "Install the prldevops Binary on ${{ choose-platform.label }}"
+    duration: "~5 min"
+    layout: rows
+    resources:
+      - title: "Download Page"
+        url: "https://github.com/Parallels/prl-devops-service/releases"
+    panels:
+      - kind: terminal
+        id: install-mac-linux
+        name: Install
+        if: choose-platform.value == 'mac' || choose-platform.value == 'linux'
+        markdown_body: |
+          The official install script detects your operating system and CPU
+          architecture, downloads the matching binary, and places it on your
+          PATH. The same command works on both macOS and Linux.
+        cmd: |
+          # Auto-detects OS and architecture (macOS and Linux)
+          curl -fsSL https://raw.githubusercontent.com/Parallels/prl-devops-service/main/scripts/install.sh | bash
+        copy_button: true
+      - kind: terminal
+        id: install-windows
+        name: Install
+        if: choose-platform.value == 'windows'
+        markdown_body: |
+          On Windows, the service runs in **Orchestrator** and **Catalog** mode.
+          Full VM management isn't available here, as it depends on Parallels
+          Desktop for Mac.
+
+          There's no one-line installer for Windows, so setup is a short manual
+          step: download the latest release archive, extract `prldevops.exe`, and
+          place it in any folder that's already on your `PATH`. That way you can
+          run `prldevops` from any terminal.
+        cmd: |
+          # Download the latest Windows build from GitHub releases
+          wget https://github.com/Parallels/prl-devops-service/releases/latest/download/prldevops--windows-amd64.tar.gz -OutFile prldevops.tar.gz
+
+          # Extract, then copy the binary to a folder on your PATH
+          tar -xzf prldevops.tar.gz
+          copy prldevops.exe C:\Windows\System32\
+        copy_button: true
+      - kind: terminal
+        id: install-source
+        name: Build
+
+        if: choose-platform.value == 'source'
+        markdown_body: |
+          Building from source gives you the very latest code, which is useful
+          if you want to contribute or try unreleased features. You'll need
+          **Go** and **Make** installed first, as both are used to compile the
+          service.
+
+          Clone the repository and run `make build`. The compiled binary lands in
+          `out/binaries/`. Move it onto your `PATH` so you can run `prldevops`
+          from any terminal.
+        cmd: |
+          git clone https://github.com/Parallels/prl-devops-service
+          cd prl-devops-service
+          make build
+
+          # Move the built binary into your PATH
+          sudo mv out/binaries/prldevops /usr/local/bin
+          sudo chmod +x /usr/local/bin/prldevops
+        copy_button: true
+
+  - id: verify-install
+    kind: narrative
+    title: Verify the Binary
+    duration: "~1 min"
+    markdown_body: >
+      Let's confirm that the `prldevops` binary was successfully installed and is available on your system's `PATH`.  
+
+
+      Run the version command below to ensure everything is working. Once verified, you can explore the built-in 
+      help system by running `prldevops help [sub-command]` to discover platform-specific features and usage details.
+    panel:
+      kind: terminal
+      id: verify-general
+      name: General
+      cmd: |
+          prldevops --version
+      output: |
+          Parallels DevOps Service version 1.0.0 (channel: stable)
+      copy_button: true
+
+
+  - id: configure-service
+    kind: narrative
+    title: Create a Configuration File
+    duration: "~3 min"
+    markdown_body: >
+      The `prldevops` service works out of the box using sensible defaults. 
+      To customize its behavior, you can create a `config.yaml` file in the 
+      same directory as your binary. 
+      
+
+      Run the commands below for your operating system to create and open an 
+      empty configuration file in your text editor. In the next step, we will 
+      populate this file with some recommended baseline settings.
+    panels:
+      - kind: terminal
+        id: config-create-mac
+        name: Create config
+        if: choose-platform.value == 'mac' || choose-platform.value == 'source'
+        cmd: |
+          touch /usr/local/bin/config.yaml
+          open -a TextEdit /usr/local/bin/config.yaml
+        copy_button: true
+      - kind: terminal
+        id: config-create-linux
+        name: Create config
+        if: choose-platform.value == 'linux'
+        cmd: |
+          touch /usr/local/bin/config.yaml
+          ${EDITOR:-nano} /usr/local/bin/config.yaml
+        copy_button: true
+      - kind: terminal
+        id: config-create-windows
+        name: Create config
+        if: choose-platform.value == 'windows'
+        cmd: |
+          New-Item -ItemType File config.yaml
+          notepad config.yaml
+        copy_button: true
+
+  - id: edit-config
+    kind: code_editor
+    title: Write Your Configuration
+    duration: "~3 min"
+    markdown_body: >
+      Copy the baseline configuration below into your newly created `config.yaml` file. 
+      At a minimum, ensure you set a strong `ROOT_PASSWORD` before starting the service 
+      in any environment beyond your local machine.
+
+      For a complete list of available settings and advanced options, check out the 
+      **Configuration Reference** linked below.
+    files:
+      - name: config.yaml
+        language: yaml
+        initial_code: |
+          environment:
+            api_port: 5001
+            log_level: DEBUG
+            ROOT_PASSWORD: VeryStr0ngPassw0rd
+    resources:
+      - title: "Configuration Reference"
+        url: "/prl-devops-service/docs/devops/getting-started/configuration/"
+
+  - id: start-service
+    kind: narrative
+    title: Start the Service as a Daemon
+    duration: "~3 min"
+    layout: rows
+    markdown_body: |
+      Let's start the service so the REST API becomes reachable at `http://localhost:80`. The exact setup depends on your operating system, so follow the instructions in the appropriate panel below.
+    panels:
+      - kind: terminal
+        id: start-daemon-mac
+        name: macOS / Source
+        if: choose-platform.value == 'mac' || choose-platform.value == 'source' || choose-platform.value == 'linux'
+        markdown_body: |
+          Install `prldevops` as a system daemon so it runs in the background and 
+          restarts automatically. On macOS, this registers the service with `launchctl`. 
+          
+          > **Note:** Remember to stop the daemon before making any future configuration changes.
+        cmd: |
+          sudo prldevops install service /usr/bin/prldevops
+        copy_button: true
+      - kind: terminal
+        id: start-daemon-windows
+        name: Windows
+        if: choose-platform.value == 'windows'
+        markdown_body: |
+          Currently, the `prldevops` binary does not include a built-in command to 
+          register itself as a native Windows background service. 
+          
+          You can run the service directly in the foreground by keeping a terminal 
+          open and executing `prldevops api`. Alternatively, you can use a third-party 
+          tool like **NSSM** (Non-Sucking Service Manager) to wrap the executable and 
+          run it as a standard Windows service.
+    checklist:
+      - The service is actively running and listening on its configured port and will be started on system boot.
+      - I understand the service must be stopped before making configuration changes.
+
+  - id: health-check
+    kind: narrative
+    title: Verify the Service is Running
+    duration: "~2 min"
+    tag: API
+    layout: rows
+    markdown_body: |
+      Now that the service is running, let's test the connection to ensure the API is 
+      responding correctly. 
+      
+      Copy the request details from the panel below and run the equivalent `curl` 
+      command directly in your terminal to send a health probe.
+    panel:
+      kind: api_call
+      title: Health Probe
+      url: "http://localhost:80/api/health/probe"
+      method: GET
+      expect_status: 200
+      expect_body: '{"status":"OK"}'
+      copy_button: true
+    checklist:
+      - The request uses the standard **GET** method.
+      - The service returns a **200 OK** status response.
+      - The response includes a JSON body containing a `'{"status":"OK"}'` field.
+
+  - id: quiz-features
+    kind: quiz
+    title: Quick Knowledge Check
+    duration: "~1 min"
+    question: |
+      Which features are available when running the `prldevops` service on Linux or Windows?
+    options:
+      - text: "Full VM management, Orchestrator, and Catalog"
+        correct: false
+      - text: "Orchestrator and Catalog only"
+        correct: true
+      - text: "Catalog only"
+        correct: false
+      - text: "None – the service only runs on macOS"
+        correct: false
+    feedback_correct: |
+      Correct! Since virtual machine management strictly requires **Parallels Desktop for Mac**, 
+      running the service on Linux or Windows limits it to the **Orchestrator** and **Catalog** features.
+    feedback_incorrect: |
+      Not quite. Virtual machine management strictly requires **Parallels Desktop for Mac**. 
+      Therefore, Linux and Windows installations only support the **Orchestrator** and **Catalog** features.
+
+  # VM tooling only matters on macOS / source builds — skip it entirely otherwise.
+  - id: install-tools
+    kind: narrative
+    if: choose-platform.value == 'mac' || choose-platform.value == 'source'
+    title: Install Optional Tools
+    duration: "~2 min"
+    markdown_body: |
+      While the Orchestrator and Catalog features work out of the box, some advanced 
+      capabilities require additional software on your host machine. Specifically, 
+      **virtual machine management** requires Parallels Desktop for Mac, and building 
+      VMs from templates requires **HashiCorp Packer** and **Vagrant**.
+      
+      You can easily check for and configure these dependencies using the command below. 
+      The `prldevops install` utility will scan your system for missing tools and 
+      can install them automatically.
+    panel:
+      kind: terminal
+      cmd: |
+        sudo prldevops install
+      copy_button: true
+
+  - id: explore-api
+    kind: narrative
+    title: Explore the REST API
+    duration: "~2 min"
+    layout: rows
+    markdown_body: |
+      The service ships with a built-in **Swagger UI**, allowing you to interactively 
+      explore and test every API endpoint directly from your browser. If you prefer 
+      using Postman, a downloadable collection is also available within the interface.
+      
+      Run the command below for your operating system to instantly open the Swagger UI. 
+      For a comprehensive guide on endpoints, schemas, and usage examples, check out the 
+      **API Reference** linked below.
+    panels:
+      - kind: terminal
+        id: swagger-mac
+        name: Open Swagger
+        if: choose-platform.value == 'mac' || choose-platform.value == 'source'
+        cmd: |
+          open http://localhost:80/swagger/index.html
+        copy_button: true
+      - kind: terminal
+        id: swagger-linux
+        name: Open Swagger
+        if: choose-platform.value == 'linux'
+        cmd: |
+          xdg-open http://localhost:80/swagger/index.html
+        copy_button: true
+      - kind: terminal
+        id: swagger-windows
+        name: Open Swagger
+        if: choose-platform.value == 'windows'
+        cmd: |
+          start http://localhost:80/swagger/index.html
+        copy_button: true
+    resources:
+      - title: "API Reference"
+        url: "/prl-devops-service/docs/devops/restapi/reference/"
+
+whats_next:
+    title: "Journey Complete"
+    body: >
+      You've successfully installed, configured, and verified the Parallels
+      DevOps Service on ${{ choose-platform.label }}. Here's how to take your
+      fleet management to the next level.
+    recommendations:
+      - use_case: tutorial-devops-ui-docker-start
+        icon: fa-box-archive
+
+side_quests:
+  - id: devops-ui-docker-start
+    title: Run the Web Dashboard with Docker
+    expanded: true
+    description: >
+      The DevOps Service includes a web-based dashboard for visual management of your fleet. 
+      This side quest walks you through running the dashboard as a Docker container, which is the 
+      recommended deployment method for most users. You'll learn how to configure the UI to connect 
+      to your running service and access it from your browser.
+    links_to: tutorial-devops-ui-docker-start
+    requires: []
+    duration: "~5 min"

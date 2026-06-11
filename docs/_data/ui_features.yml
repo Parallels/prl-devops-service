@@ -1,0 +1,34 @@
+title: "Parallels DevOps UI"
+description: "Manage, monitor and orchestrate your entire VM fleet from a single control plane."
+items:
+  - pre: "AT A GLANCE"
+    title: "Every Host, One Pane of Glass"
+    description: "Monitor CPU, memory, and disk across Linux, macOS, and Apple Silicon hosts in real time. Live agent metrics, reserved vs. available breakdowns, and module status — all from a single dashboard."
+    image: "homepage.png"
+    link_text: "Explore Now"
+    link_url: /docs/ui/hosts/
+    accent: "#3B82F6"
+
+  - pre: "GOLDEN IMAGES"
+    title: "Pull a VM Like You Pull an Image, Safely!!"
+    description: "Browse manifests, pick a version, hit pull. Behind it: <strong>RBAC</strong> on every catalog, <strong>taints</strong> that warn your team about risky builds, and <strong>revokes</strong> that take compromised versions out of circulation. The registry workflow you know, hardened for production infrastructure."
+    image: "catalog-main.png"
+    link_text: "See the catalog in action"
+    link_url: /docs/ui/catalog/
+    accent: "#8B5CF6"
+
+  - pre: "BUILT ON"
+    title: "Live Metrics & Alerts"
+    description: "Track CPU, memory, disk and network usage across all hosts and VMs in real-time. Set custom thresholds and receive alerts before issues impact your workflows."
+    image: "live-metrics-alerts.png"
+    link_text: "Learn More"
+    link_url: /ui/metrics/
+    accent: "#EC4899"
+
+  - pre: "BUILT ON"
+    title: "Snapshot & Rollback"
+    description: "Create point-in-time snapshots of any VM with a single click. Roll back to any previous state instantly, ensuring your deployments are always recoverable."
+    image: "snapshot-rollback.png"
+    link_text: "Get Started"
+    link_url: /ui/snapshots/
+    accent: "#10B981"

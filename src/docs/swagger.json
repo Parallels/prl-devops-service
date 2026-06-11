@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "1.0.0"
+        "version": "1.0.1"
     },
     "basePath": "/api",
     "paths": {
@@ -9717,7 +9717,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -9767,7 +9767,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -9817,7 +9817,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -9874,7 +9874,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -9919,7 +9919,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -11889,6 +11889,9 @@
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
                 }
             }
         },
@@ -11914,6 +11917,18 @@
                     "type": "boolean"
                 },
                 "revoked_at": {
+                    "type": "string"
+                },
+                "user_email": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "user_name": {
+                    "type": "string"
+                },
+                "user_username": {
                     "type": "string"
                 }
             }
@@ -12747,6 +12762,9 @@
                 "id": {
                     "type": "string"
                 },
+                "is_orchestrator_job": {
+                    "type": "boolean"
+                },
                 "job_operation": {
                     "type": "string"
                 },
@@ -12858,10 +12876,16 @@
         "models.LoginRequest": {
             "type": "object",
             "properties": {
+                "api_key": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }
@@ -13220,9 +13244,6 @@
         "models.ParallelsDesktopLicense": {
             "type": "object",
             "properties": {
-                "advanced_restrictions": {
-                    "type": "string"
-                },
                 "cpu_total": {
                     "type": "integer"
                 },
@@ -13236,6 +13257,9 @@
                     "type": "string"
                 },
                 "grace_period_ends_at": {
+                    "type": "string"
+                },
+                "is_trial": {
                     "type": "string"
                 },
                 "is_volume": {

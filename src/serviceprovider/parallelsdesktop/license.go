@@ -3,6 +3,7 @@ package parallelsdesktop
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -10,6 +11,16 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
+// licenseCacheEntry holds a cached license along with the time it was loaded.
+type licenseCacheEntry struct {
+	license  *models.ParallelsDesktopLicense
+	loadedAt time.Time
+}
+
+// licenseCacheTTL is how long a cached license remains valid before forcing a refresh.
+const licenseCacheTTL = 5 * time.Minute
+
+// GetLicense calls prlsrvctl info --license --json and parses the result.
 func (s *ParallelsService) GetLicense() (*models.ParallelsDesktopLicense, error) {
 	getLicenseCmd := helpers.Command{
 		Command: s.serverExecutable,
@@ -32,6 +43,38 @@ func (s *ParallelsService) GetLicense() (*models.ParallelsDesktopLicense, error)
 	return &license, nil
 }
 
+// GetCachedLicense returns the cached Parallels Desktop license info.
+// If the cache is cold or expired, it loads from the CLI and caches the result.
+func (s *ParallelsService) GetCachedLicense() (*models.ParallelsDesktopLicense, error) {
+	s.licenseMu.RLock()
+	entry := s.licenseCache
+	s.licenseMu.RUnlock()
+
+	if entry != nil && time.Since(entry.loadedAt) < licenseCacheTTL {
+		return entry.license, nil
+	}
+
+	return s.RefreshLicense()
+}
+
+// RefreshLicense forces a reload of the license info from the CLI and caches it.
+func (s *ParallelsService) RefreshLicense() (*models.ParallelsDesktopLicense, error) {
+	license, err := s.GetLicense()
+	if err != nil {
+		return nil, err
+	}
+
+	s.licenseMu.Lock()
+	s.licenseCache = &licenseCacheEntry{
+		license:  license,
+		loadedAt: time.Now(),
+	}
+	s.licenseMu.Unlock()
+
+	return license, nil
+}
+
+// InstallLicense installs a license key for Parallels Desktop.
 func (s *ParallelsService) InstallLicense(licenseKey, username, password string) error {
 	if licenseKey == "" {
 		return errors.New("license key is required")
@@ -89,6 +132,7 @@ func (s *ParallelsService) InstallLicense(licenseKey, username, password string)
 	}
 }
 
+// DeactivateLicense deactivates the current Parallels Desktop license.
 func (s *ParallelsService) DeactivateLicense() error {
 	s.ctx.LogInfof("Deactivating Parallels Desktop license")
 	deactivateLicenseCmd := helpers.Command{
@@ -102,6 +146,5 @@ func (s *ParallelsService) DeactivateLicense() error {
 	}
 
 	s.ctx.LogInfof("Parallels Desktop license deactivated successfully")
-
 	return nil
 }

@@ -9724,7 +9724,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -9774,7 +9774,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -9824,7 +9824,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -9881,7 +9881,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -9926,7 +9926,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.ApiErrorResponse"
+                            "$ref": "#/definitions/models.ApiErrorDiagnosticsResponse"
                         }
                     },
                     "401": {
@@ -11896,6 +11896,9 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
                 }
             }
         },
@@ -11921,6 +11924,18 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "revoked_at": {
+                    "type": "string"
+                },
+                "user_email": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "user_name": {
+                    "type": "string"
+                },
+                "user_username": {
                     "type": "string"
                 }
             }
@@ -12754,6 +12769,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "is_orchestrator_job": {
+                    "type": "boolean"
+                },
                 "job_operation": {
                     "type": "string"
                 },
@@ -12865,10 +12883,16 @@ const docTemplate = `{
         "models.LoginRequest": {
             "type": "object",
             "properties": {
+                "api_key": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }
@@ -13227,9 +13251,6 @@ const docTemplate = `{
         "models.ParallelsDesktopLicense": {
             "type": "object",
             "properties": {
-                "advanced_restrictions": {
-                    "type": "string"
-                },
                 "cpu_total": {
                     "type": "integer"
                 },
@@ -13243,6 +13264,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "grace_period_ends_at": {
+                    "type": "string"
+                },
+                "is_trial": {
                     "type": "string"
                 },
                 "is_volume": {
@@ -14273,7 +14297,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0.0",
+	Version:          "1.0.1",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},

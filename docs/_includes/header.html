@@ -3,10 +3,16 @@
     <div class="navigation-logo">
       <a href="{{ site.baseurl }}/" class="prl-header-link">
         {% if site.brand_img %}
-        <img alt="logo" src="{{ site.baseurl }}/assets/img/{{ site.brand_img}}" />
+        <img alt="logo" src="{{ site.baseurl }}/assets/img/prl_logo_small.png" />
         {% else %}
         {{ site.brand }}
         {% endif %}
+        <div class="navigation-logo-brand">
+          Parallels
+        </div>
+        <div class="navigation-logo-product">
+          DevOps
+        </div>
       </a>
     </div>
     <nav class="navigation-menu">
@@ -14,19 +20,48 @@
         {% if site.data.navigation %}
         {% for item in site.data.navigation %}
         {% assign hidden = item.hidden | default: false %}
-        {% assign hasDropdown = false %}
-        {% assign showCount = 0 %}
-        {% if item.dropdown %}
-        {% for subitem in item.dropdown %}
-        {% unless subitem.hidden %}
-        {% assign hasDropdown = true %}
-        {% assign showCount = showCount | plus: 1 %}
-        {% endunless %}
-        {% endfor %}
-        {% endif %}
         {% if hidden == false %}
-        {% if hasDropdown %}
-        {% if showCount > 1 %}
+        {% if item.sections %}
+        {% assign dropdown_variant = item.variant | default: 'default' %}
+        <div class="navigation-menu-item is-dropdown navigation-menu-item--{{ dropdown_variant }}">
+          <div class="dropdown-link">
+            <span class="text">{{ item.name }}</span>
+            <svg class="svg-button" focusable="false" viewBox="0 0 20 20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="fill: none;">
+              <path d="M18 7L10 15L2 7" stroke-width="2" stroke-miterlimit="10"></path>
+            </svg>
+          </div>
+          <div class="navigation-dropdown-menu navigation-dropdown-menu--{{ dropdown_variant }}">
+            <div class="navigation-dropdown-menu-content navigation-dropdown-menu-content--{{ dropdown_variant }}">
+              {% for section in item.sections %}
+              <div class="navigation-dropdown-section">
+                <div class="navigation-dropdown-section-title">{{ section.title }}</div>
+                <div class="navigation-dropdown-section-items">
+                  {% for subitem in section.items %}
+                  {% unless subitem.hidden %}
+                  <a href="{{ subitem.link | relative_url }}" {% if subitem.link contains 'https' %} target="_blank" rel="noopener" {% endif %}
+                    data-clarity-event="NavMenuItem-{{ subitem.name }}" data-clarity-new-tab="{{ subitem.link contains 'https' }}"
+                    class="navigation-dropdown-menu-item navigation-dropdown-menu-item--{{ dropdown_variant }} {% if subitem.link == page.url %}is-selected{% endif %}">
+                    {% if dropdown_variant == 'docs' %}
+                    <span class="navigation-dropdown-icon" aria-hidden="true">
+                      <i class="{{ subitem.icon | default: 'fa-regular fa-file-lines' }}"></i>
+                    </span>
+                    {% endif %}
+                    <div class="texts">
+                      <div class="title">{{ subitem.name }}</div>
+                      {% if subitem.description %}
+                      <div class="description">{{ subitem.description }}</div>
+                      {% endif %}
+                    </div>
+                  </a>
+                  {% endunless %}
+                  {% endfor %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% elsif item.dropdown %}
         <div class="navigation-menu-item is-dropdown">
           <div class="dropdown-link">
             <span class="text">{{ item.name }}</span>
@@ -38,7 +73,8 @@
             <div class="navigation-dropdown-menu-content">
               {% for subitem in item.dropdown %}
               {% unless subitem.hidden %}
-              <a href="{{ subitem.link | relative_url }}" {% if subitem.link contains 'https' %} target="_blank" {% endif %}
+              <a href="{{ subitem.link | relative_url }}" {% if subitem.link contains 'https' %} target="_blank" rel="noopener" {% endif %}
+                data-clarity-event="NavMenuItem-{{ subitem.name }}" data-clarity-new-tab="{{ subitem.link contains 'https' }}"
                 class="navigation-dropdown-menu-item {% if subitem.link == page.url %}is-selected{% endif %}">
                 <div class="texts">
                   <div class="title">{{ subitem.name }}</div>
@@ -53,31 +89,125 @@
           </div>
         </div>
         {% else %}
-        {% for subitem in item.dropdown %}
-        {% unless subitem.hidden %}
-        <a href="{{ subitem.link | relative_url }}" class="navigation-menu-item">{{ item.name }}</a>
-        {% endunless %}
-        {%endfor %}
-        {% endif %}
-        {% else %}
         <a href="{{ item.link | relative_url }}" class="navigation-menu-item">{{ item.name }}</a>
         {% endif %}
         {% endif %}
         {% endfor %}
         {% endif %}
+        <div class="navigation-github-actions mobile-menu-actions">
+          <div class="github-btn-wrapper is-dropdown">
+            <div class="github-btn-trigger">
+              <a href="https://github.com/Parallels/prl-devops-service/" class="button get-started github-btn">
+                <svg class="github-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path
+                    d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                </svg>
+                <span>GitHub</span>
+              </a>
+              <svg class="svg-button github-chevron" focusable="false" viewBox="0 0 20 20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="fill: none;">
+                <path d="M18 7L10 15L2 7" stroke-width="2" stroke-miterlimit="10"></path>
+              </svg>
+            </div>
+            <div class="github-dropdown-menu">
+              <a href="https://github.com/Parallels/prl-devops-service/" target="_blank" class="github-dropdown-menu-item">
+                <div class="github-dropdown-title-row">
+                  <div class="title">DevOps Service</div>
+                  <div class="description">Backend service & agents</div>
+
+                </div>
+                <span class="github-dropdown-stars">
+                  <i class="fa-regular fa-star" aria-hidden="true"></i>
+                  <span>{{ site.github_stars_service | default: site.github_stars | default: site.stars }}</span>
+                </span>
+              </a>
+              <a href="https://github.com/Parallels/prl-devops-ui/" target="_blank" class="github-dropdown-menu-item">
+                <div class="github-dropdown-title-row">
+                  <div class="title">DevOps UI</div>
+                  <div class="description">Dashboard & frontend</div>
+
+                </div>
+                <span class="github-dropdown-stars">
+                  <i class="fa-regular fa-star" aria-hidden="true"></i>
+                  <span>{{ site.github_stars_ui | default: 0 }}</span>
+                </span>
+
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </nav>
     <div class="navigation-end-container">
+      <!-- Search Trigger -->
+      <div class="search-container">
+        <button type="button" class="search-trigger" onclick="openSearchModal()" aria-label="Search documentation">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <span class="search-text">Search docs...</span>
+          <span class="search-shortcut">⌘K</span>
+        </button>
+      </div>
+      <!-- Search Overlay Modal -->
+      <div id="search-overlay" class="search-overlay">
+        <div class="search-modal">
+          <div class="search-modal-input-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input type="text" id="search-input" class="search-modal-input" placeholder="Search documentation..." autocomplete="off" />
+            <button type="button" class="search-modal-close" onclick="closeSearchModal()">ESC</button>
+          </div>
+          <div id="search-results" class="search-results"></div>
+        </div>
+      </div>
       <button type="button" aria-label="Menu Button" class="navigation-menu-button">
         <svg class="svg-button" focusable="false" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
         </svg>
       </button>
       {% unless page.show_github %}
-      <div class="navigation-getting-started">
-        <a href="{{ site.baseurl }}/quick-start" class="button get-started">
-          <span>Get Started</span>
-        </a>
+      <div class="navigation-github-actions desktop-actions">
+        <div class="github-btn-wrapper is-dropdown">
+          <div class="github-btn-trigger">
+            <a href="https://github.com/Parallels/prl-devops-service/" class="button get-started github-btn">
+              <svg class="github-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+              </svg>
+              <span>GitHub</span>
+            </a>
+            <svg class="svg-button github-chevron" focusable="false" viewBox="0 0 20 20" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="fill: none;">
+              <path d="M18 7L10 15L2 7" stroke-width="2" stroke-miterlimit="10"></path>
+            </svg>
+          </div>
+          <div class="github-dropdown-menu">
+            <a href="https://github.com/Parallels/prl-devops-service/" target="_blank" class="github-dropdown-menu-item">
+              <div class="github-dropdown-title-row">
+                <div class="title">DevOps Service</div>
+                <div class="description">Backend service & agents</div>
+              </div>
+              <span class="github-dropdown-stars">
+                <i class="fa-regular fa-star" aria-hidden="true"></i>
+                <span>{{ site.github_stars_service | default: site.github_stars | default: site.stars }}</span>
+              </span>
+
+            </a>
+            <a href="https://github.com/Parallels/prl-devops-ui/" target="_blank" class="github-dropdown-menu-item">
+              <div class="github-dropdown-title-row">
+                <div class="title">DevOps UI</div>
+                <div class="description">Dashboard & frontend</div>
+              </div>
+              <span class="github-dropdown-stars">
+                <i class="fa-regular fa-star" aria-hidden="true"></i>
+                <span>{{ site.github_stars_ui | default: 0 }}</span>
+              </span>
+
+            </a>
+          </div>
+        </div>
       </div>
       {% endunless %}
       {% if page.show_github %}
@@ -149,49 +279,233 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     var $navbarItems = Array.prototype.slice.call(document.querySelectorAll(".navigation-menu-item"), 0);
+    var desktopDropdownQuery = window.matchMedia("(min-width: 1140px)");
+
+    function positionNavigationDropdown($trigger, $dropdown) {
+      if (!$trigger || !$dropdown || !desktopDropdownQuery.matches) {
+        if ($dropdown) {
+          $dropdown.style.left = "";
+        }
+        return;
+      }
+
+      var gutter = 24;
+      var triggerRect = $trigger.getBoundingClientRect();
+      var dropdownWidth = $dropdown.offsetWidth || $dropdown.getBoundingClientRect().width;
+      var maxLeft = Math.max(gutter, window.innerWidth - dropdownWidth - gutter);
+      var nextLeft = Math.min(Math.max(triggerRect.left, gutter), maxLeft);
+
+      $dropdown.style.left = nextLeft + "px";
+    }
+
     if ($navbarItems.length > 0) {
       $navbarItems.forEach(function ($el) {
         var $dropdown = $el.querySelector(".navigation-dropdown-menu");
         if ($el.classList.contains("is-dropdown")) {
-          $el.addEventListener("mouseenter", function () {
+          var $dropdownLink = $el.querySelector(".dropdown-link");
+          var isSticky = false;
+          var closeTimer = null;
+          $el._closeTimer = null;
+
+          function openDropdown() {
             $el.classList.add("active");
-            if ($dropdown) {
-              $dropdown.classList.add("active");
-            }
-          });
-          $el.addEventListener("mouseleave", function () {
+            if ($dropdown) $dropdown.classList.add("active");
+            // Position dropdown to align with the button
+            positionNavigationDropdown($el, $dropdown);
+          }
+
+          function closeDropdown() {
+            clearTimeout(closeTimer);
+            closeTimer = null;
+            $el._closeTimer = null;
             $el.classList.remove("active");
-            if ($dropdown) {
-              $dropdown.classList.remove("active");
-            }
-          });
+            if ($dropdown) $dropdown.classList.remove("active");
+          }
 
+          function scheduleClose() {
+            clearTimeout(closeTimer);
+            $el._closeTimer = setTimeout(function () {
+              closeDropdown();
+            }, 150);
+          }
 
-          if ($dropdown) {
-            $dropdown.addEventListener("click", function (e) {
+          function cancelClose() {
+            clearTimeout(closeTimer);
+            closeTimer = null;
+            $el._closeTimer = null;
+          }
+
+          // Mobile: tap toggles open/close
+          if ($dropdownLink && window.matchMedia("(max-width: 1139.95px)").matches) {
+            $dropdownLink.addEventListener("click", function (e) {
+              e.preventDefault();
               e.stopPropagation();
+              $el.classList.toggle("active");
+              if ($dropdown) $dropdown.classList.toggle("active");
             });
           }
-          var $dropdown_items = Array.prototype.slice.call($el.querySelectorAll(".navigation-dropdown-menu-item"), 0);
-          if ($dropdown_items.length > 0) {
-            $dropdown_items.forEach(function ($dropdown_item) {
-              $dropdown_item.addEventListener("mouseenter", function () {
-                $dropdown_item.classList.add("active");
-              });
-              $dropdown_item.addEventListener("mouseleave", function () {
-                $dropdown_item.classList.remove("active");
-              });
-              $el.addEventListener("click", function () {
-                $el.classList.add("enabled");
-                $dropdown_items.forEach(function ($el) {
-                  if ($el !== this) {
-                    $el.classList.remove("enabled");
-                  }
-                }, this);
-              });
+
+          // Desktop: click toggles sticky
+          if ($dropdownLink) {
+            $dropdownLink.addEventListener("click", function (e) {
+              // Only handle on desktop
+              if (window.matchMedia("(max-width: 1139.95px)").matches) return;
+
+              // Sync isSticky from class in case it was cleared externally (click-outside)
+              if (isSticky && !$el.classList.contains("is-sticky")) {
+                isSticky = false;
+              }
+
+              e.preventDefault();
+              e.stopPropagation();
+
+              if (isSticky) {
+                // Second click: unstick and close
+                isSticky = false;
+                $el.classList.remove("is-sticky");
+                closeDropdown();
+              } else {
+                // First click: make sticky, keep open
+                isSticky = true;
+                $el.classList.add("is-sticky");
+                // Ensure dropdown is open and positioned
+                if (!$el.classList.contains("active")) {
+                  openDropdown();
+                } else {
+                  // Already open, just reposition in case of resize
+                  positionNavigationDropdown($el, $dropdown);
+                }
+              }
             });
+          }
+
+          // Desktop: hover opens, hover leaves closes
+          if (!window.matchMedia("(max-width: 1139.95px)").matches) {
+            $el.addEventListener("mouseenter", function () {
+              var meSticky = $el.classList.contains("is-sticky");
+              // If this one is sticky, ignore hover (it stays open)
+              if (meSticky) {
+                return;
+              }
+              cancelClose();
+
+              // Close any other open dropdown (sticky or hover)
+              $navbarItems.forEach(function (otherEl) {
+                if (otherEl !== $el && otherEl.classList.contains("is-dropdown")) {
+                  var otherDd = otherEl.querySelector(".navigation-dropdown-menu");
+                  if (otherEl.classList.contains("active") && otherDd && otherDd.classList.contains("active")) {
+                    // Unstick the other one
+                    if (otherEl.classList.contains("is-sticky")) {
+                      otherEl.classList.remove("is-sticky");
+                    }
+                    // Cancel the other dropdown's close timer to prevent flicker
+                    if (otherEl._closeTimer) {
+                      clearTimeout(otherEl._closeTimer);
+                      otherEl._closeTimer = null;
+                    }
+                    otherEl.classList.remove("active");
+                    if (otherDd) otherDd.classList.remove("active");
+                  }
+                }
+              });
+
+              openDropdown();
+            });
+
+            // Single combined mouseleave for button + dropdown
+            // Checks if the mouse is still inside the button OR the dropdown element
+            var handleCombinedLeave = function (e) {
+              var meSticky = $el.classList.contains("is-sticky");
+              if (meSticky) {
+                return;
+              }
+              // If dropdown is not open, just close
+              if (!$el.classList.contains("active")) {
+                scheduleClose();
+                return;
+              }
+              // Check if mouse is still inside the dropdown element using elementFromPoint
+              // This handles the case where mouse left the button but entered the dropdown
+              var elUnderCursor = document.elementFromPoint(e.clientX, e.clientY);
+              var isOverDropdown = elUnderCursor && $dropdown && ($dropdown === elUnderCursor || $dropdown.contains(elUnderCursor));
+              if (isOverDropdown) {
+                cancelClose();
+              } else {
+                scheduleClose();
+              }
+            };
+
+            $el.addEventListener("mouseleave", handleCombinedLeave);
+          }
+
+          // Dropdown item hover
+          if ($dropdown) {
+            var $dropdown_items = Array.prototype.slice.call($dropdown.querySelectorAll(".navigation-dropdown-menu-item"), 0);
+            if ($dropdown_items.length > 0) {
+              $dropdown_items.forEach(function ($dropdown_item) {
+                $dropdown_item.addEventListener("mouseenter", function () {
+                  $dropdown_item.classList.add("active");
+                });
+                $dropdown_item.addEventListener("mouseleave", function () {
+                  $dropdown_item.classList.remove("active");
+                });
+                $el.addEventListener("click", function () {
+                  $el.classList.add("enabled");
+                  $dropdown_items.forEach(function (el) {
+                    if (el !== this) {
+                      el.classList.remove("enabled");
+                    }
+                  }, this);
+                });
+              });
+            }
           }
         }
+      });
+
+      window.addEventListener("resize", function () {
+        $navbarItems.forEach(function ($el) {
+          var $dropdown = $el.querySelector(".navigation-dropdown-menu.active");
+          if ($dropdown) {
+            positionNavigationDropdown($el, $dropdown);
+          }
+        });
+      });
+    }
+
+    // GitHub dropdown toggle
+    var $githubWrappers = Array.prototype.slice.call(document.querySelectorAll(".github-btn-wrapper.is-dropdown"), 0);
+    $githubWrappers.forEach(function ($wrapper) {
+      var $trigger = $wrapper.querySelector(".github-btn-trigger");
+      var $menu = $wrapper.querySelector(".github-dropdown-menu");
+      if ($trigger && $menu) {
+        $trigger.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          $wrapper.classList.toggle("open");
+          $menu.classList.toggle("open");
+        });
+
+        document.addEventListener("click", function (e) {
+          if (!$wrapper.contains(e.target)) {
+            $wrapper.classList.remove("open");
+            $menu.classList.remove("open");
+          }
+        });
+      }
+    });
+
+    // Desktop: click outside navigation dropdowns to close
+    if (!window.matchMedia("(max-width: 1139.95px)").matches) {
+      document.addEventListener("click", function (e) {
+        $navbarItems.forEach(function ($el) {
+          if ($el.classList.contains("active") && !$el.contains(e.target)) {
+            $el.classList.remove("active");
+            $el.classList.remove("is-sticky");
+            var $dd = $el.querySelector(".navigation-dropdown-menu");
+            if ($dd) $dd.classList.remove("active");
+          }
+        });
       });
     }
   });

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://parallels.github.io/prl-devops-service/sitemap.xml

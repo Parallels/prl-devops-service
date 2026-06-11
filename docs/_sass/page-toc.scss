@@ -5,6 +5,11 @@
   @media screen and (min-width: $l-breakpoint) {
     display: flex;
     max-width: $side-menu-l-width;
+    position: sticky;
+    top: 168px;
+    align-self: flex-start;
+    max-height: calc(100vh - 168px);
+    overflow-y: auto;
   }
 
   @media screen and (min-width: $xl-breakpoint) {
@@ -13,7 +18,7 @@
 
   .page-toc {
     padding: unset;
-    background-color: unset !important;
+    background-color: #ffffff !important;
     border: unset !important;
 
     @media screen and (min-width: $l-breakpoint) {
@@ -41,6 +46,7 @@
   border: solid 1px $border-color;
   background-color: #f7f7f7;
   margin-bottom: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
   @media screen and (max-width: $l-breakpoint) {
     display: none;
@@ -99,6 +105,15 @@
 
     li {
       border-left: 1px solid $border-color;
+    }
+  }
+}
+
+body.page-layout {
+  .side-toc-menu {
+    @media screen and (min-width: $l-breakpoint) {
+      top: 128px;
+      max-height: calc(100vh - 128px);
     }
   }
 }

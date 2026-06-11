@@ -1,0 +1,358 @@
+{% if include.download %}
+{% assign d = include.download %}
+<div class="download-section" >
+  <div class="download-container" id="download-section">
+    <div class="download-header">
+      {% if d.title %}
+      <h2 class="download-title">{{ d.title }}</h2>
+      {% endif %}
+    </div>
+
+    <div class="download-cards" id="download-cards">
+      {% for item in d.download_items %}
+      {% unless item.hidden %}
+      <div class="download-card download-card--{{ item.category }}">
+        <div class="download-card-inner">
+          <div class="download-card-label">{{ item.label }}</div>
+
+          {% if item.category == "ui" %}
+          <div class="download-card-available">Available on:</div>
+          <div class="download-card-platforms">
+            {% for p in item.platforms %}
+            <div class="download-platform-icon">
+              {% if p.icon_type == "svg" and p.platform == "macOS" %}
+              <svg class="platform-logo platform-logo--apple" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.5 7.5c0-1.5 1.2-2.2 1.3-2.3-.9-1.3-2.2-1.5-2.7-1.5-1.1-.1-2.2.7-2.8.7-.6 0-1.5-.7-2.5-.7C4.4 3.7 2.5 5 2.5 7.9c0 2.3 1.7 4.6 3.5 4.6.6 0 1-.5 1.7-.5s1 .5 1.7.5c1.4 0 2.4-1.7 2.8-2.7-.7-.3-1.2-1-1.2-1.9v-.4zM10.6 2.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.6-.4 2-1z" fill="#303236"/>
+              </svg>
+              {% elsif p.icon_type == "svg" and p.platform == "Windows" %}
+              <svg class="platform-logo platform-logo--windows" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 2.5l5.5-.5v6.4H2V2.5zm6 0v6.9H2.5l-.5-.5V2.5l6 .5zm0 7.9v6l-6-.5v-5.5l6 .5zm1-.5h5.5v-6l-5.5.5v6.5z" fill="#00a4ef"/>
+              </svg>
+              {% else %}
+              <i class="fab {% if p.platform == "macOS" %}fa-apple{% elsif p.platform == "Windows" %}fa-windows{% elsif p.platform == "Linux" %}fa-linux{% elsif p.platform == "Docker" %}fa-docker{% endif %}" style="font-size: 28px;"></i>
+              {% endif %}
+            </div>
+            {% endfor %}
+            <div class="download-platform-icon">
+              <i class="fas fa-globe" style="font-size: 28px;" title="Web"></i>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if item.category == "cli" %}
+          {% if item.cli_command %}
+          <div class="download-card-cli-section">
+            <div class="download-card-cli-label">Run Install Script</div>
+            <div class="download-card-cli-command">
+              <div class="download-cli-command-row">
+                <code>{{ item.cli_command }}</code>
+                <button class="download-copy-cli-btn" onclick="navigator.clipboard.writeText('{{ item.cli_command }}'); this.querySelector('i').className='fas fa-check'; setTimeout(() => { this.querySelector('i').className='fas fa-copy'; }, 2000);" title="Copy command" data-clarity-event="CopyCLICommand">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+            </div>
+            <div class="download-card-cli-divider">
+              <span>or</span>
+            </div>
+          </div>
+          {% endif %}
+          {% endif %}
+
+          <div class="download-card-action">
+            {% if item.button_style == "primary" %}
+            <a href="{{ item.button_url | relative_url }}" class="download-btn download-btn--primary" data-clarity-event="DownloadUI" data-clarity-new-tab="{{ item.button_url contains 'https' }}">{{ item.button_label }}</a>
+            {% else %}
+            <a href="{{ item.button_url | relative_url }}" class="download-btn download-btn--secondary" data-clarity-event="DownloadBinary" data-clarity-new-tab="{{ item.button_url contains 'https' }}">
+              {{ item.button_label }}
+              {% if item.show_copy %}
+              <button class="download-copy-btn" onclick="navigator.clipboard.writeText('{{ item.cli_command }}'); this.querySelector('i').className='fas fa-check'; setTimeout(() => { this.querySelector('i').className='fas fa-copy'; }, 2000);" title="Copy command">
+                <i class="fas fa-copy"></i>
+              </button>
+              {% endif %}
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endunless %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<script>
+(function() {
+  var ua = navigator.userAgent || navigator.vendor || window.opera;
+  var platform = 'Desktop';
+
+  if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) {
+    platform = 'iOS';
+  } else if (/Macintosh|Mac Intel|Mac PPC|Mac PowerPC/.test(ua)) {
+    platform = 'macOS';
+  } else if (/Windows/.test(ua)) {
+    platform = 'Windows';
+  } else if (/Linux/.test(ua)) {
+    platform = 'Linux';
+  }
+
+  var cards = document.querySelectorAll('.download-card');
+  cards.forEach(function(card) {
+    var btn = card.querySelector('.download-btn--primary');
+    if (btn) {
+      btn.textContent = 'Download for ' + platform;
+    }
+  });
+
+  var cliCard = document.querySelector('.download-card--cli');
+  if (cliCard) {
+    var cliBtn = cliCard.querySelector('.download-btn--secondary');
+    if (cliBtn) {
+      cliBtn.textContent = 'Download ' + platform + '  Service Binary';
+    }
+  }
+})();
+
+(function() {
+  var UI_REPO = 'prl-devops-ui';
+  var UI_FALLBACK_VERSION = '0.2.0-beta.19';
+  var UI_API_URL = 'https://api.github.com/repos/Parallels/' + UI_REPO + '/releases';
+  var UI_DOWNLOAD_BASE = 'https://github.com/Parallels/' + UI_REPO + '/releases/download/';
+
+  function getArch() {
+    var ua = navigator.userAgent || '';
+    if (/arm64|Aarch64|aarch64/.test(ua)) return 'arm64';
+    if (/Windows/.test(ua)) return 'x64';
+    if (/Linux/.test(ua)) return 'amd64';
+    return 'amd64';
+  }
+
+  function buildDownloadUrl(version, platform, arch) {
+    var tag = 'v' + version;
+    var filename;
+    var ext;
+
+    if (platform === 'macOS') {
+      ext = 'universal.dmg';
+    } else if (platform === 'Windows') {
+      ext = arch + '-setup.exe';
+    } else if (platform === 'Linux') {
+      var linuxArch = /arm64|Aarch64|aarch64/.test(navigator.userAgent || '') ? 'aarch64' : 'amd64';
+      ext = linuxArch + '.AppImage';
+    } else {
+      ext = 'universal.dmg';
+    }
+
+    filename = 'Parallels.DevOps.UI_' + version + '_' + ext;
+    return UI_DOWNLOAD_BASE + tag + '/' + filename;
+  }
+
+  function setSpinner(btn, loading) {
+    if (loading) {
+      btn.setAttribute('disabled', 'disabled');
+      btn.innerHTML = '<svg style="width:16px;height:16px;animation:spin 1s linear infinite" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg> Loading...';
+    } else {
+      btn.removeAttribute('disabled');
+    }
+  }
+
+  function mapHighEntropyArch(arch, os) {
+    if (os === 'macOS') return 'universal';
+    if (os === 'Windows') return arch === 'arm' ? 'arm64' : 'x64';
+    if (os === 'Linux') return arch === 'arm' ? 'aarch64' : 'amd64';
+    return 'amd64';
+  }
+
+  function initUI() {
+    var uiCard = document.querySelector('.download-card--ui');
+    if (!uiCard) return;
+
+    var btn = uiCard.querySelector('.download-btn--primary');
+    if (!btn) return;
+
+    var originalLabel = btn.textContent || 'Download for Desktop';
+    setSpinner(btn, true);
+
+    var ua = navigator.userAgent || '';
+    var plat = 'macOS';
+    if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) {
+      plat = 'iOS';
+    } else if (/Macintosh|Mac Intel|Mac PPC|Mac PowerPC/.test(ua)) {
+      plat = 'macOS';
+    } else if (/Windows/.test(ua)) {
+      plat = 'Windows';
+    } else if (/Linux/.test(ua)) {
+      plat = 'Linux';
+    }
+
+    var detectedArch = null;
+
+    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+      navigator.userAgentData.getHighEntropyValues(['architecture']).then(function(values) {
+        detectedArch = values.architecture;
+        finalizeUIUrl(detectedArch);
+      }).catch(function(e) {
+        finalizeUIUrl(detectedArch);
+      });
+    } else {
+      finalizeUIUrl(detectedArch);
+    }
+
+    function finalizeUIUrl(highEntropyArch) {
+      var arch = highEntropyArch ? mapHighEntropyArch(highEntropyArch, plat) : 'amd64';
+
+      function applyUrl(version) {
+        var url = buildDownloadUrl(version, plat, arch);
+        btn.href = url;
+        btn.textContent = originalLabel;
+        setSpinner(btn, false);
+      }
+
+      fetch(UI_API_URL)
+        .then(function(r) { return r.json(); })
+        .then(function(releases) {
+          if (!Array.isArray(releases) || releases.length === 0) {
+            applyUrl(UI_FALLBACK_VERSION);
+            return;
+          }
+          var tag = releases[0].tag_name;
+          var version = tag ? tag.replace(/^v/, '') : UI_FALLBACK_VERSION;
+          applyUrl(version);
+        })
+        .catch(function() {
+          applyUrl(UI_FALLBACK_VERSION);
+        });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initUI);
+  } else {
+    initUI();
+  }
+})();
+
+(function() {
+  var SERVICE_REPO = 'prl-devops-service';
+  var SERVICE_FALLBACK_VERSION = '1.0.1';
+  var SERVICE_API_URL = 'https://api.github.com/repos/Parallels/' + SERVICE_REPO + '/releases';
+  var SERVICE_DOWNLOAD_BASE = 'https://github.com/Parallels/' + SERVICE_REPO + '/releases/download/';
+
+  var ARCH_OPTIONS = {
+    'macOS': ['darwin-amd64', 'darwin-arm64'],
+    'Windows': ['windows-amd64', 'windows-arm64'],
+    'Linux': ['linux-amd64', 'linux-arm64']
+  };
+
+  function buildServiceUrl(version, os, arch) {
+    var tag = 'v' + version;
+    var ext;
+    if (os === 'macOS') ext = arch + '.tar.gz';
+    else if (os === 'Windows') ext = arch + '.zip';
+    else ext = arch + '.tar.gz';
+    var filename = 'prldevops--' + ext;
+    return SERVICE_DOWNLOAD_BASE + tag + '/' + filename;
+  }
+
+  function setSpinner(btn, loading) {
+    if (loading) {
+      btn.setAttribute('disabled', 'disabled');
+      btn.innerHTML = '<svg style="width:16px;height:16px;animation:spin 1s linear infinite" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg> Loading...';
+    } else {
+      btn.removeAttribute('disabled');
+    }
+  }
+
+  function initService() {
+    var cliCard = document.querySelector('.download-card--cli');
+    if (!cliCard) return;
+
+    var btn = cliCard.querySelector('.download-btn--secondary');
+    if (!btn) return;
+
+    var originalLabel = btn.textContent || 'Download Service Binary';
+    setSpinner(btn, true);
+
+    var ua = navigator.userAgent || '';
+    var os = 'macOS';
+    if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) {
+      os = 'iOS';
+    } else if (/Macintosh|Mac Intel|Mac PPC|Mac PowerPC/.test(ua)) {
+      os = 'macOS';
+    } else if (/Windows/.test(ua)) {
+      os = 'Windows';
+    } else if (/Linux/.test(ua)) {
+      os = 'Linux';
+    }
+
+    var detectedArch = null;
+
+    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+      navigator.userAgentData.getHighEntropyValues(['architecture']).then(function(values) {
+        detectedArch = values.architecture;
+        finalizeServiceUrl(detectedArch);
+      }).catch(function(e) {
+        finalizeServiceUrl(detectedArch);
+      });
+    } else {
+      finalizeServiceUrl(detectedArch);
+    }
+
+    function mapHighEntropyArch(arch) {
+      if (os === 'macOS') {
+        if (arch === 'arm') return 'darwin-arm64';
+        if (arch === 'x86-64') return 'darwin-amd64';
+      }
+      if (os === 'Windows') {
+        if (arch === 'arm') return 'windows-arm64';
+        if (arch === 'x86-64') return 'windows-amd64';
+      }
+      if (os === 'Linux') {
+        if (arch === 'arm') return 'linux-arm64';
+        if (arch === 'x86-64') return 'linux-amd64';
+      }
+      return null;
+    }
+
+    function finalizeServiceUrl(highEntropyArch) {
+      var arches = ARCH_OPTIONS[os] || ['darwin-amd64'];
+      var selectedArch = arches[0];
+
+      if (highEntropyArch) {
+        var mapped = mapHighEntropyArch(highEntropyArch);
+        if (mapped && arches.indexOf(mapped) !== -1) {
+          selectedArch = mapped;
+        }
+      }
+
+      var version = SERVICE_FALLBACK_VERSION;
+
+      function applyUrl(ver) {
+        var url = buildServiceUrl(ver, os, selectedArch);
+        btn.href = url;
+        btn.textContent = originalLabel;
+        setSpinner(btn, false);
+      }
+
+      fetch(SERVICE_API_URL)
+        .then(function(r) { return r.json(); })
+        .then(function(releases) {
+          if (!Array.isArray(releases) || releases.length === 0) {
+            applyUrl(SERVICE_FALLBACK_VERSION);
+            return;
+          }
+          version = releases[0].tag_name.replace(/^v/, '');
+          applyUrl(version);
+        })
+        .catch(function() {
+          applyUrl(SERVICE_FALLBACK_VERSION);
+        });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initService);
+  } else {
+    initService();
+  }
+})();
+</script>
+{% endif %}
