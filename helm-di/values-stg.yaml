@@ -1,0 +1,47 @@
+# Staging overrides for DI AKS.
+# Secrets are fetched from Azure Key Vault via Secrets Store CSI Driver.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/parallels/prl-devops-service
+  pullPolicy: Always
+  tag: "latest"
+
+namespace: prl-devops-services
+
+serviceAccount:
+  create: false  # Service account created by external-secrets chart
+  name: "prl-devops-secrets"
+
+config:
+  mode: api          # CI overrides: orchestrator | catalog
+  apiPort: "80"
+  apiPrefix: /api
+  logLevel: info
+  tlsEnabled: "false"
+  disableCatalogCaching: "false"
+  useOrchestratorResources: "false"
+  tokenDurationMinutes: "60"
+
+envFrom:
+  - secretRef:
+      name: prl-devops-service-runtime-secrets
+
+# CSI SecretProviderClass reference created by infra chart (private repo).
+secretProviderClass:
+  name: "prl-devops-secrets"
+  mountPath: "/mnt/secrets"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi

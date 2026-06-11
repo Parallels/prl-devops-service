@@ -26,6 +26,16 @@ on:
         required: false
         type: boolean
         default: true
+      deploy_orchestrator:
+        description: "Deploy Orchestrator"
+        required: false
+        type: boolean
+        default: true
+      deploy_catalog:
+        description: "Deploy Catalog"
+        required: false
+        type: boolean
+        default: true
 jobs:
   canary-release:
     name: Release Canary version
@@ -268,6 +278,20 @@ jobs:
           tags: |
             ${{ env.IMAGE_REPOSITORY }}:latest-canary
             ${{ env.IMAGE_REPOSITORY }}:${{ env.EXT_VERSION }}-canary
+
+  deploy-stg:
+    name: Deploy to Staging
+    needs:
+      - canary-release
+      - build-containers
+    uses: ./.github/workflows/deploy-di-aks.yml
+    with:
+      environment: stg
+      image_tag: ${{ needs.canary-release.outputs.version }}-canary
+      namespace: prl-devops-services
+      deploy_orchestrator: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_orchestrator || true }}
+      deploy_catalog: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_catalog || true }}
+
   remove-old-canary-release:
     if: ${{ inputs.remove_old_canary == true }}
     name: Remove old canary release
