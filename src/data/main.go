@@ -2,7 +2,6 @@ package data
 
 import (
 	"encoding/json"
-	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -270,172 +269,132 @@ func (j *JsonDatabase) ProcessSaveQueue(ctx basecontext.ApiContext) {
 
 func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
 	j.saveMutex.Lock()
+	defer j.saveMutex.Unlock()
+
 	cfg := config.Get()
 	if cfg.GetRunningCommand() != constants.API_COMMAND && cfg.GetRunningCommand() != "" {
 		ctx.LogDebugf("[Database] Skipping save request, command running: %s", cfg.GetRunningCommand())
-		j.saveMutex.Unlock()
 		return nil
+	}
+
+	if j.filename == "" {
+		return errors.NewWithCode("the database filename is not set", 500)
 	}
 
 	ctx.LogDebugf("[Database] Saving database to %s", j.filename)
 	j.isSaving = true
-	if j.filename == "" {
-		j.saveMutex.Unlock()
-		return errors.NewWithCode("the database filename is not set", 500)
+	defer func() { j.isSaving = false }()
+
+	// Acquire a cross-process exclusive lock so that multiple service instances
+	// pointing at the same database directory cannot corrupt each other's saves.
+	lock, err := acquireFileLock(j.filename + ".lock")
+	if err != nil {
+		ctx.LogDebugf("[Database] Error acquiring database lock: %v", err)
+		return errors.NewFromError(err)
 	}
+	defer lock.release()
 
-	// Trying to open the file and waiting for it to be ready
-	dateTimeForFile := time.Now().Format("20060102150405")
-	tempFileName := j.filename + "." + dateTimeForFile + ".save"
-	var tempFile *os.File
-	openCount := 0
-	maxOpenAttempts := 10
-	for {
-		openCount++
-		ctx.LogDebugf("[Database] Trying to open file %s, attempt %v", tempFileName, openCount)
-		var fileOpenError error
-		tempFile, fileOpenError = os.OpenFile(tempFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
-		if fileOpenError == nil {
-			ctx.LogDebugf("[Database] File %s opened successfully", j.filename)
-			break
-		}
-		ctx.LogDebugf("[Database] Error opening file %s: %v", tempFileName, fileOpenError)
-		if openCount > maxOpenAttempts {
-			ctx.LogDebugf("[Database] Max attempts reached, aborting save")
-			j.isSaving = false
-			j.saveMutex.Unlock()
-			return errors.NewFromError(fileOpenError)
-		}
-
-		time.Sleep(1 * time.Second)
-	}
-
-	defer tempFile.Close()
-
+	// Marshal the data while holding only the read lock.
 	j.dataMutex.RLock()
 	jsonString, err := json.MarshalIndent(j.data, "", "  ")
 	j.dataMutex.RUnlock()
 	if err != nil {
-		ctx.LogDebugf("[Database] Error marshalling data to temp file: %v", err)
-		j.isSaving = false
-		j.saveMutex.Unlock()
+		ctx.LogDebugf("[Database] Error marshalling data: %v", err)
 		return errors.NewFromError(err)
 	}
-
 	ctx.LogDebugf("[Database] Data marshalled successfully")
-	// encrypting the data before saving it
+
+	// Encrypt the data before saving it, if a key is configured.
 	if cfg.EncryptionPrivateKey() != "" {
-		encJsonString, err := security.EncryptString(cfg.EncryptionPrivateKey(), string(jsonString))
-		if err != nil {
-			ctx.LogDebugf("[Database] Error encrypting data: %v", err)
-			_, saveErr := tempFile.Write(jsonString)
-			if saveErr != nil {
-				ctx.LogDebugf("[Database] Error writing data: %v", saveErr)
-				j.isSaving = false
-				j.saveMutex.Unlock()
-				return errors.NewFromError(saveErr)
-			}
-
-			j.isSaving = false
-			j.saveMutex.Unlock()
-			return errors.NewFromError(err)
+		encJsonString, encErr := security.EncryptString(cfg.EncryptionPrivateKey(), string(jsonString))
+		if encErr != nil {
+			ctx.LogDebugf("[Database] Error encrypting data: %v", encErr)
+			return errors.NewFromError(encErr)
 		}
-
 		jsonString = encJsonString
 	}
 
-	ctx.LogDebugf("[Database] Writing data to file")
-	_, err = tempFile.Write(jsonString)
+	// Atomic save: write to a uniquely-named temp file in the SAME directory,
+	// flush it to stable storage, then rename it over the destination. POSIX
+	// rename(2) on the same filesystem is atomic, so a crash, kill, or power loss
+	// can never leave the database missing or half-written. We never delete the
+	// live database before the new one is in place.
+	dir := filepath.Dir(j.filename)
+	tempFile, err := os.CreateTemp(dir, filepath.Base(j.filename)+".*.save")
 	if err != nil {
-		ctx.LogDebugf("[Database] Error writing data to temp file: %v", err)
-		j.isSaving = false
-		j.saveMutex.Unlock()
-		return err
+		ctx.LogDebugf("[Database] Error creating temp file: %v", err)
+		return errors.NewFromError(err)
 	}
+	tempFileName := tempFile.Name()
 
-	if err := tempFile.Close(); err != nil {
-		ctx.LogDebugf("[Database] Error closing temp file: %v", err)
-		j.isSaving = false
-		j.saveMutex.Unlock()
-		return err
-	}
-
-	// Copy the current file to a backup file
-	if err = j.copyCurrentDbFileToTemp(ctx, dateTimeForFile); err != nil {
-		ctx.LogDebugf("[Database] Error copying current file to backup: %v", err)
-		j.isSaving = false
-		return err
-	}
-
-	// Rename the temp file to the original filename
-	err = os.Rename(tempFileName, j.filename)
-	if err != nil {
-		ctx.LogDebugf("[Database] Error renaming temp file: %v", err)
-		j.isSaving = false
-		j.saveMutex.Unlock()
-		return err
-	}
-
-	// Delete the save backup temp file
-	backupFilename := j.filename + "." + dateTimeForFile + ".save_bak"
-	if helper.FileExists(backupFilename) {
-		ctx.LogDebugf("[Database] Backup file %s exists, deleting it", backupFilename)
-
-		err = os.Remove(backupFilename)
-		if err != nil {
-			ctx.LogDebugf("[Database] Error deleting temp file: %v", err)
-			j.isSaving = false
-			j.saveMutex.Unlock()
-			return err
+	// Best-effort cleanup of the temp file if we fail before the rename succeeds.
+	renamed := false
+	defer func() {
+		if !renamed {
+			_ = os.Remove(tempFileName)
 		}
+	}()
+
+	ctx.LogDebugf("[Database] Writing data to temp file %s", tempFileName)
+	if _, err = tempFile.Write(jsonString); err != nil {
+		ctx.LogDebugf("[Database] Error writing data to temp file: %v", err)
+		_ = tempFile.Close()
+		return errors.NewFromError(err)
 	}
+
+	// Flush to disk before swapping the file into place so the rename can never
+	// expose a partially-written file after a crash.
+	if err = tempFile.Sync(); err != nil {
+		ctx.LogDebugf("[Database] Error syncing temp file: %v", err)
+		_ = tempFile.Close()
+		return errors.NewFromError(err)
+	}
+
+	if err = tempFile.Close(); err != nil {
+		ctx.LogDebugf("[Database] Error closing temp file: %v", err)
+		return errors.NewFromError(err)
+	}
+
+	if err = os.Rename(tempFileName, j.filename); err != nil {
+		ctx.LogDebugf("[Database] Error renaming temp file into place: %v", err)
+		return errors.NewFromError(err)
+	}
+	renamed = true
 
 	ctx.LogDebugf("[Database] File %s saved successfully", j.filename)
-	j.isSaving = false
-	j.saveMutex.Unlock()
 	return nil
 }
 
-func (j *JsonDatabase) copyCurrentDbFileToTemp(ctx basecontext.ApiContext, dateTimeForFile string) error {
-	// Copy current file to a backup file
-	backupFilename := j.filename + "." + dateTimeForFile + ".save_bak"
-	inputFile, err := os.Open(j.filename)
-	if err != nil {
-		ctx.LogDebugf("[Database] Error opening file for backup: %v", err)
-		j.isSaving = false
-		j.saveMutex.Unlock()
-		return err
-	}
-	defer inputFile.Close()
-
-	outputFile, err := os.Create(backupFilename)
-	if err != nil {
-		ctx.LogDebugf("[Database] Error creating backup file: %v", err)
-		j.isSaving = false
-		j.saveMutex.Unlock()
-		return err
-	}
-	defer outputFile.Close()
-
-	_, err = io.Copy(outputFile, inputFile)
-	if err != nil {
-		ctx.LogDebugf("[Database] Error copying to backup file: %v", err)
-		j.isSaving = false
-		j.saveMutex.Unlock()
-		return err
-	}
-
-	// Delete the original file
-	err = os.Remove(j.filename)
-	if err != nil {
-		ctx.LogDebugf("[Database] Error deleting original file: %v", err)
-		j.isSaving = false
-		j.saveMutex.Unlock()
-		return err
-	}
-
-	return nil
+// fileLock holds an OS-level advisory lock on a lock file for the lifetime of a
+// save, preventing concurrent saves from separate processes that share the same
+// database directory.
+type fileLock struct {
+	f *os.File
 }
+
+// acquireFileLock opens (creating if needed) the given lock file and blocks
+// until it holds an exclusive OS-level lock on it.
+func acquireFileLock(path string) (*fileLock, error) {
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o600)
+	if err != nil {
+		return nil, err
+	}
+	if err := lockFileDescriptor(f); err != nil {
+		_ = f.Close()
+		return nil, err
+	}
+	return &fileLock{f: f}, nil
+}
+
+// release unlocks and closes the underlying lock file. Safe to call on a nil lock.
+func (l *fileLock) release() {
+	if l == nil || l.f == nil {
+		return
+	}
+	_ = unlockFileDescriptor(l.f)
+	_ = l.f.Close()
+}
+
 func IsRecordLocked(dbRecord *models.DbRecord) bool {
 	if dbRecord == nil {
 		return false
