@@ -1449,10 +1449,6 @@ func (s *ParallelsService) CreateVMSnapshot(ctx basecontext.ApiContext, vmID str
 	if vm == nil {
 		return nil, errors.Newf("VM with id %s was not found", vmID)
 	}
-	if vm.Type == "APPLE_VZ_VM" {
-		ctx.LogInfof("[parallelsdesktop][snapshots] VM %s is an Apple VZ VM, which does not support snapshots. Skipping snapshot creation.", vmID)
-		return nil, errors.Newf("VM %s is an Apple VZ VM, which does not support snapshots", vmID)
-	}
 
 	args := []string{"snapshot", vmID}
 	if request.SnapshotName != "" {
@@ -1499,10 +1495,6 @@ func (s *ParallelsService) DeleteVMSnapshot(ctx basecontext.ApiContext, vmId str
 	if vm == nil {
 		return errors.Newf("VM with id %s was not found", vmId)
 	}
-	if vm.Type == "APPLE_VZ_VM" {
-		ctx.LogInfof("[parallelsdesktop][snapshots] VM %s is an Apple VZ VM, which does not support snapshots. Skipping snapshot deletion.", vmId)
-		return errors.Newf("VM %s is an Apple VZ VM, which does not support snapshots", vmId)
-	}
 
 	ctx.LogInfof("[parallelsdesktop][snapshots] Deleting snapshot %s for VM %s", snapshotId, vmId)
 
@@ -1536,10 +1528,6 @@ func (s *ParallelsService) RevertVMSnapshot(ctx basecontext.ApiContext, vmId str
 	if vm == nil {
 		return errors.Newf("VM with id %s was not found", vmId)
 	}
-	if vm.Type == "APPLE_VZ_VM" {
-		ctx.LogInfof("[parallelsdesktop][snapshots] VM %s is an Apple VZ VM, which does not support snapshots. Skipping snapshot revert.", vmId)
-		return errors.Newf("VM %s is an Apple VZ VM, which does not support snapshots", vmId)
-	}
 
 	ctx.LogInfof("[parallelsdesktop][snapshots] Reverting snapshot %s for VM %s", snapshotId, vmId)
 
@@ -1569,13 +1557,6 @@ func (s *ParallelsService) listVMSnapshots(ctx basecontext.ApiContext, vmId stri
 	}
 	if vm == nil {
 		return nil, errors.Newf("VM with id %s was not found", vmId)
-	}
-	if vm.Type == "APPLE_VZ_VM" {
-		emptyList := models.ListVMSnapshotResponse{
-			Snapshots: []models.VMSnapshot{},
-		}
-		ctx.LogInfof("[parallelsdesktop][snapshots] VM %s is an Apple VZ VM, which does not support snapshots. Returning empty snapshot list.", vmId)
-		return &emptyList, nil
 	}
 
 	ctx.LogInfof("[parallelsdesktop][snapshots] Listing snapshots for VM %s", vmId)
