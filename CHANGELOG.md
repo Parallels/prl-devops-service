@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-06-11
+
+- Implemented file locking mechanism to fix concurrent saves issues in linux
+- Updated correct URLs in documentation.
+- Fixed some of the broken urls on buttons
+- Added special clarity telemetry
+
 ## [1.0.1] - 2026-06-05
 
 - Added caching for Parallels Desktop license information with TTL.

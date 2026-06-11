@@ -1,0 +1,15 @@
+---
+layout: post
+title:  "Release 1.0.2"
+date:   2026-06-11 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- Implemented file locking mechanism to fix concurrent saves issues in linux
+- Updated correct URLs in documentation.
+- Fixed some of the broken urls on buttons
+- Added special clarity telemetry
+
+
