@@ -1,0 +1,55 @@
+# Default values for prl-devops-service DI AKS deployment.
+# Override per-environment via values-stg.yaml / values-prd.yaml.
+# Secrets are NEVER stored here — injected at deploy time via envFrom.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/parallels/prl-devops-service
+  pullPolicy: Always
+  tag: "latest"
+
+fullnameOverride: ""
+namespace: prl-devops-services
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# --- Application config (maps to docker-compose environment) ---
+config:
+  # Overridden per-release: "orchestrator" or "catalog"
+  mode: api
+  apiPort: "80"
+  apiPrefix: /api
+  logLevel: info
+  tlsEnabled: "false"
+  disableCatalogCaching: "false"
+  useOrchestratorResources: "false"
+  tokenDurationMinutes: "60"
+
+# Runtime secrets are provided by SecretProviderClass in infra repo (CSI driver).
+# The CSI volume mount triggers Key Vault sync → K8s Secret → consumed via envFrom.
+# Secret follows pod lifecycle (deleted when pod is removed).
+envFrom:
+  - secretRef:
+      name: prl-devops-service-runtime-secrets
+
+# CSI SecretProviderClass reference. The actual SecretProviderClass is managed
+# in the private DI-azure-infra-k8s repo to avoid exposing Azure metadata.
+# Leave empty for local dev (no CSI driver).
+secretProviderClass:
+  name: ""
+  mountPath: "/mnt/secrets"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+resources: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
