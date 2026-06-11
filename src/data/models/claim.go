@@ -2,7 +2,7 @@ package models
 
 type Claim struct {
 	ID          string `json:"id,omitempty" gorm:"primaryKey"`
-	Name        string `json:"name" gorm:"unique;not null"`
+	Name        string `json:"name" gorm:"type:varchar(255);unique;not null"`
 	Description string `json:"description,omitempty"`
 	Internal    bool   `json:"internal" gorm:"default:false"`
 	Group       string `json:"group,omitempty" gorm:"type:varchar(255)"`
