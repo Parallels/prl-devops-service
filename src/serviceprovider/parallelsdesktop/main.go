@@ -7,7 +7,9 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,9 +18,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"io/ioutil"
-	"net/http"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
@@ -51,8 +50,10 @@ var (
 	toolsStateTimersMutex     = &sync.Mutex{}
 )
 
-const cooldownDelay = 2 * time.Second
-const eventWorkerTicker = 1 * time.Second
+const (
+	cooldownDelay     = 2 * time.Second
+	eventWorkerTicker = 1 * time.Second
+)
 
 // maxConcurrentSSH is the maximum number of simultaneous prlctl exec SSH logon
 // attempts. macOS enforces a hard cap on simultaneous logons, so we keep this low.
@@ -995,7 +996,6 @@ func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string
 	for i := range syncVms {
 		// Parallels bug: Home is missing on fast bulk fetches
 		if syncVms[i].Home == "" {
-
 			// FAST PATH: Try to patch it from our memory cache Map
 			if cached, exists := cacheMap[syncVms[i].ID]; exists && cached.Home != "" {
 				ctx.LogTracef("[ParallelsDesktop] [main] Patched Home path for %s from cache", syncVms[i].ID)
@@ -1202,7 +1202,8 @@ func (s *ParallelsService) GetVmSync(ctx basecontext.ApiContext, id string) (*mo
 }
 
 func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, desiredState ParallelsVirtualMachineDesiredState,
-	flags DesiredStateFlags) error {
+	flags DesiredStateFlags,
+) error {
 	vm, err := s.findVmSync(ctx, id)
 	if err != nil {
 		return err
@@ -1448,6 +1449,10 @@ func (s *ParallelsService) CreateVMSnapshot(ctx basecontext.ApiContext, vmID str
 	if vm == nil {
 		return nil, errors.Newf("VM with id %s was not found", vmID)
 	}
+	if vm.Type == "APPLE_VZ_VM" {
+		ctx.LogInfof("[parallelsdesktop][snapshots] VM %s is an Apple VZ VM, which does not support snapshots. Skipping snapshot creation.", vmID)
+		return nil, errors.Newf("VM %s is an Apple VZ VM, which does not support snapshots", vmID)
+	}
 
 	args := []string{"snapshot", vmID}
 	if request.SnapshotName != "" {
@@ -1494,6 +1499,10 @@ func (s *ParallelsService) DeleteVMSnapshot(ctx basecontext.ApiContext, vmId str
 	if vm == nil {
 		return errors.Newf("VM with id %s was not found", vmId)
 	}
+	if vm.Type == "APPLE_VZ_VM" {
+		ctx.LogInfof("[parallelsdesktop][snapshots] VM %s is an Apple VZ VM, which does not support snapshots. Skipping snapshot deletion.", vmId)
+		return errors.Newf("VM %s is an Apple VZ VM, which does not support snapshots", vmId)
+	}
 
 	ctx.LogInfof("[parallelsdesktop][snapshots] Deleting snapshot %s for VM %s", snapshotId, vmId)
 
@@ -1527,6 +1536,10 @@ func (s *ParallelsService) RevertVMSnapshot(ctx basecontext.ApiContext, vmId str
 	if vm == nil {
 		return errors.Newf("VM with id %s was not found", vmId)
 	}
+	if vm.Type == "APPLE_VZ_VM" {
+		ctx.LogInfof("[parallelsdesktop][snapshots] VM %s is an Apple VZ VM, which does not support snapshots. Skipping snapshot revert.", vmId)
+		return errors.Newf("VM %s is an Apple VZ VM, which does not support snapshots", vmId)
+	}
 
 	ctx.LogInfof("[parallelsdesktop][snapshots] Reverting snapshot %s for VM %s", snapshotId, vmId)
 
@@ -1556,6 +1569,13 @@ func (s *ParallelsService) listVMSnapshots(ctx basecontext.ApiContext, vmId stri
 	}
 	if vm == nil {
 		return nil, errors.Newf("VM with id %s was not found", vmId)
+	}
+	if vm.Type == "APPLE_VZ_VM" {
+		emptyList := models.ListVMSnapshotResponse{
+			Snapshots: []models.VMSnapshot{},
+		}
+		ctx.LogInfof("[parallelsdesktop][snapshots] VM %s is an Apple VZ VM, which does not support snapshots. Returning empty snapshot list.", vmId)
+		return &emptyList, nil
 	}
 
 	ctx.LogInfof("[parallelsdesktop][snapshots] Listing snapshots for VM %s", vmId)
@@ -1843,7 +1863,6 @@ func (s *ParallelsService) GetUser(ctx basecontext.ApiContext, user string) (*mo
 }
 
 func (s *ParallelsService) GetUserHome(ctx basecontext.ApiContext, user string) (string, error) {
-
 	if user == "" {
 		var err error
 		user, err = system.Get().GetCurrentUser(ctx)
@@ -2922,6 +2941,7 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 
 	return result, nil
 }
+
 func (s *ParallelsService) RegenerateMacAddress(ctx basecontext.ApiContext, vmID string, owner string) error {
 	// getting the VM to check state
 	vm, err := s.findVmSync(ctx, vmID)
@@ -2963,7 +2983,6 @@ func (s *ParallelsService) RegenerateMacAddress(ctx basecontext.ApiContext, vmID
 }
 
 func (s *ParallelsService) GetParallelsHomeDiskSpaceInfo(ctx basecontext.ApiContext, username string) (int64, error) {
-
 	if username == "" {
 		if user, err := system.Get().GetCurrentUser(ctx); err == nil {
 			ctx.LogInfof("No username provided, using current user %s for disk space info", user)
@@ -2976,6 +2995,7 @@ func (s *ParallelsService) GetParallelsHomeDiskSpaceInfo(ctx basecontext.ApiCont
 	}
 	return helpers.GetFreeDiskSpace(path)
 }
+
 func (s *ParallelsService) getMacVMsRunning() []string {
 	s.macVMsRunningMu.RLock()
 	defer s.macVMsRunningMu.RUnlock()
