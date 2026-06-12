@@ -1,16 +1,16 @@
 package models
 
 type ApiKey struct {
-	ID        string `json:"id" gorm:"primaryKey"`
-	Name      string `json:"name" gorm:"type:varchar(255);not null"`
-	Key       string `json:"key" gorm:"unique;not null"`
-	Secret    string `json:"secret" gorm:"not null"`
-	Revoked   bool   `json:"revoked" gorm:"default:false"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	RevokedAt string `json:"revoked_at"`
-	ExpiresAt string `json:"expires_at"`
-	UserID    string `json:"user_id,omitempty" gorm:"index"`
+	ID        string `json:"id" gorm:"column:id;primaryKey"`
+	Name      string `json:"name" gorm:"column:name;type:varchar(255);not null"`
+	Key       string `json:"key" gorm:"column:key;unique;not null"`
+	Secret    string `json:"secret" gorm:"column:secret;not null"`
+	Revoked   bool   `json:"revoked" gorm:"column:revoked;default:false"`
+	CreatedAt string `json:"created_at" gorm:"column:created_at"`
+	UpdatedAt string `json:"updated_at" gorm:"column:updated_at"`
+	RevokedAt string `json:"revoked_at" gorm:"column:revoked_at"`
+	ExpiresAt string `json:"expires_at" gorm:"column:expires_at"`
+	UserID    string `json:"user_id,omitempty" gorm:"column:user_id;index"`
 	*DbRecord `json:"db_record" gorm:"embedded"`
 }
 
