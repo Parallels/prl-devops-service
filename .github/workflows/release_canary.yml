@@ -284,13 +284,26 @@ jobs:
     needs:
       - canary-release
       - build-containers
-    uses: ./.github/workflows/deploy-di-aks.yml
-    with:
-      environment: stg
-      image_tag: ${{ needs.canary-release.outputs.version }}-canary
-      namespace: prl-devops-services
-      deploy_orchestrator: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_orchestrator || true }}
-      deploy_catalog: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_catalog || true }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch deploy workflow on master
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-di-aks.yml',
+              ref: 'master',
+              inputs: {
+                environment: 'stg',
+                image_tag: '${{ needs.canary-release.outputs.version }}-canary',
+                namespace: 'prl-devops-services',
+                deploy_orchestrator: '${{ github.event_name == 'workflow_dispatch' && inputs.deploy_orchestrator || true }}',
+                deploy_catalog: '${{ github.event_name == 'workflow_dispatch' && inputs.deploy_catalog || true }}'
+              }
+            });
+            console.log('Dispatched deploy-di-aks.yml on master for stg');
 
   remove-old-canary-release:
     if: ${{ inputs.remove_old_canary == true }}
