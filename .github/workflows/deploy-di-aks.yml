@@ -1,12 +1,25 @@
 name: Deploy to DI AKS
 
+# DEPLOYMENT STRATEGY:
+# - Workaround reason: GitHub Environments are not available on this GitHub plan,
+#   so we cannot use environment-based OIDC subjects.
+# - Therefore deployments are executed under the trusted main ref subject
+#   (repo:Parallels/prl-devops-service:ref:refs/heads/main).
+# - When dispatched from main: both Helm chart AND app image (image_tag) are deployed
+# - When dispatched from feature branch: only app image is deployed; chart always comes from main
+#   (This is because chart source is determined by the checkout ref, while image_tag is independent input)
+# IMPLICATION: Chart changes are only effective when merged to main and re-deployed.
+
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       environment:
         description: Deployment environment (stg or prd)
         required: true
-        type: string
+        type: choice
+        options:
+          - stg
+          - prd
       image_tag:
         description: Docker image tag to deploy
         required: true
@@ -19,20 +32,19 @@ on:
       deploy_orchestrator:
         description: Deploy Orchestrator
         required: false
-        default: true
-        type: boolean
+        default: "true"
+        type: string
       deploy_catalog:
         description: Deploy Catalog
         required: false
-        default: true
-        type: boolean
+        default: "true"
+        type: string
 
 jobs:
   deploy-orchestrator:
     name: Deploy Orchestrator (${{ inputs.environment }})
-    if: ${{ inputs.deploy_orchestrator }}
+    if: ${{ inputs.deploy_orchestrator == 'true' }}
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
     permissions:
       id-token: write
       contents: read
@@ -45,15 +57,15 @@ jobs:
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_CLIENT_ID || secrets.PRD_AZURE_CLIENT_ID }}
+          tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
+          subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
 
       - name: Set AKS context
         uses: azure/aks-set-context@v4
         with:
-          resource-group: ${{ vars.AKS_RESOURCE_GROUP }}
-          cluster-name: ${{ vars.AKS_CLUSTER_NAME }}
+          resource-group: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
 
       - name: Setup Helm
         uses: azure/setup-helm@v4
@@ -73,9 +85,8 @@ jobs:
 
   deploy-catalog:
     name: Deploy Catalog (${{ inputs.environment }})
-    if: ${{ inputs.deploy_catalog }}
+    if: ${{ inputs.deploy_catalog == 'true' }}
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
     permissions:
       id-token: write
       contents: read
@@ -88,15 +99,15 @@ jobs:
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_CLIENT_ID || secrets.PRD_AZURE_CLIENT_ID }}
+          tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
+          subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
 
       - name: Set AKS context
         uses: azure/aks-set-context@v4
         with:
-          resource-group: ${{ vars.AKS_RESOURCE_GROUP }}
-          cluster-name: ${{ vars.AKS_CLUSTER_NAME }}
+          resource-group: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
 
       - name: Setup Helm
         uses: azure/setup-helm@v4
