@@ -1,10 +1,10 @@
 package models
 
 type Claim struct {
-	ID          string `json:"id,omitempty" gorm:"column:id;primaryKey"`
+	ID          string `json:"id,omitempty" gorm:"column:id;primaryKey;not null;type:varchar(255)"`
 	Name        string `json:"name" gorm:"column:name;type:varchar(255);unique;not null"`
-	Description string `json:"description,omitempty" gorm:"column:description"`
-	Internal    bool   `json:"internal" gorm:"column:internal;default:false"`
+	Description string `json:"description,omitempty" gorm:"column:description;type:text"`
+	Internal    bool   `json:"internal" gorm:"column:internal;default:false;type:boolean;not null"`
 	Group       string `json:"group,omitempty" gorm:"column:group;type:varchar(255)"`
 	Resource    string `json:"resource,omitempty" gorm:"column:resource;type:varchar(255)"`
 	Action      string `json:"action,omitempty" gorm:"column:action;type:varchar(255)"`
