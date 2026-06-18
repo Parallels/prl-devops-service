@@ -914,3 +914,22 @@ func (c *Config) SetIntKey(key string, value int) {
 func (c *Config) SetBoolKey(key string, value bool) {
 	c.SetKey(key, strconv.FormatBool(value))
 }
+
+func (c *Config) GetConfig() *ConfigFile {
+	return &c.config
+}
+
+func (c *Config) GetFilename() string {
+	return c.filename
+}
+
+func (c *Config) GetConfigContent() ([]byte, error) {
+	switch c.fileFormat {
+	case "json":
+		return json.Marshal(c.config)
+	case "yaml":
+		return yaml.Marshal(c.config)
+	default:
+		return yaml.Marshal(c.config)
+	}
+}

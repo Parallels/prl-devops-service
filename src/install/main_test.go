@@ -1,6 +1,7 @@
 package install
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 func TestGetConfigFromEnv_UsesSpaceSeparatedServiceFlags(t *testing.T) {
@@ -298,4 +300,120 @@ func TestWriteServiceConfigFile_FailsOnInvalidPath(t *testing.T) {
 
 	err := writeServiceConfigFile(svcCfg, "/nonexistent/path/that/does/not/exist")
 	assert.Error(t, err)
+}
+
+func TestMergeDefaultsIntoConfig_AddsMissingKeys(t *testing.T) {
+	config.New(basecontext.NewBaseContext())
+	tmpDir := t.TempDir()
+
+	svcCfg := ApiServiceConfig{
+		Port: "3080",
+	}
+	err := writeServiceConfigFile(svcCfg, tmpDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(tmpDir, "prldevops_config.yaml"))
+	require.NoError(t, err)
+	assert.Contains(t, string(content), constants.API_PORT_ENV_VAR)
+}
+
+func TestMergeDefaultsIntoConfig_PreservesUserValues(t *testing.T) {
+	config.New(basecontext.NewBaseContext())
+	tmpDir := t.TempDir()
+
+	svcCfg := ApiServiceConfig{
+		Port:    "9999",
+		Prefix:  "/custom",
+		LogLevel: "DEBUG",
+	}
+	err := writeServiceConfigFile(svcCfg, tmpDir)
+	require.NoError(t, err)
+
+	// Read the file and verify user values are present
+	content, err := os.ReadFile(filepath.Join(tmpDir, "prldevops_config.yaml"))
+	require.NoError(t, err)
+	yamlStr := string(content)
+	assert.Contains(t, yamlStr, "9999")
+	assert.Contains(t, yamlStr, "/custom")
+	assert.Contains(t, yamlStr, "DEBUG")
+}
+
+func TestGetDefaultEnvironmentMap_ContainsExpectedKeys(t *testing.T) {
+	defaults := getDefaultEnvironmentMap()
+
+	assert.Contains(t, defaults, constants.API_PORT_ENV_VAR)
+	assert.Contains(t, defaults, constants.API_PREFIX_ENV_VAR)
+	assert.Contains(t, defaults, constants.LOG_LEVEL_ENV_VAR)
+	assert.Contains(t, defaults, constants.ENABLE_CORS_ENV_VAR)
+	assert.Contains(t, defaults, constants.CORS_ALLOWED_ORIGINS_ENV_VAR)
+	assert.Contains(t, defaults, constants.CORS_ALLOWED_METHODS_ENV_VAR)
+	assert.Contains(t, defaults, constants.CORS_ALLOWED_HEADERS_ENV_VAR)
+	assert.Contains(t, defaults, constants.LOG_TO_FILE_ENV_VAR)
+	assert.Contains(t, defaults, constants.TOKEN_DURATION_MINUTES_ENV_VAR)
+	assert.Contains(t, defaults, constants.TLS_ENABLED_ENV_VAR)
+	assert.Contains(t, defaults, constants.TLS_PORT_ENV_VAR)
+	assert.Contains(t, defaults, constants.DISABLE_CATALOG_CACHING_ENV_VAR)
+	assert.Contains(t, defaults, constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR)
+	assert.Contains(t, defaults, constants.SYSTEM_RESERVED_CPU_ENV_VAR)
+	assert.Contains(t, defaults, constants.SYSTEM_RESERVED_MEMORY_ENV_VAR)
+	assert.Contains(t, defaults, constants.SYSTEM_RESERVED_DISK_ENV_VAR)
+}
+
+func TestGetDefaultEnvironmentMap_DefaultValues(t *testing.T) {
+	defaults := getDefaultEnvironmentMap()
+
+	assert.Equal(t, constants.DEFAULT_API_PORT, defaults[constants.API_PORT_ENV_VAR])
+	assert.Equal(t, constants.DEFAULT_API_PREFIX, defaults[constants.API_PREFIX_ENV_VAR])
+	assert.Equal(t, "INFO", defaults[constants.LOG_LEVEL_ENV_VAR])
+	assert.Equal(t, "true", defaults[constants.ENABLE_CORS_ENV_VAR])
+	assert.Equal(t, "*", defaults[constants.CORS_ALLOWED_ORIGINS_ENV_VAR])
+	assert.Equal(t, "GET,POST,PUT,DELETE,PATCH", defaults[constants.CORS_ALLOWED_METHODS_ENV_VAR])
+	assert.Equal(t, "false", defaults[constants.TLS_ENABLED_ENV_VAR])
+	assert.Equal(t, "true", defaults[constants.LOG_TO_FILE_ENV_VAR])
+}
+
+func TestSaveConfig_YamlFormat(t *testing.T) {
+	config.New(basecontext.NewBaseContext())
+	tmpDir := t.TempDir()
+
+	testFile := filepath.Join(tmpDir, "prldevops_config.yaml")
+
+	cf := config.ConfigFile{
+		Environment: map[string]string{
+			"test_key": "test_value",
+		},
+	}
+
+	content, err := yaml.Marshal(cf)
+	require.NoError(t, err)
+	err = os.WriteFile(testFile, content, 0o644)
+	require.NoError(t, err)
+
+	readContent, err := os.ReadFile(testFile)
+	require.NoError(t, err)
+	assert.Contains(t, string(readContent), "test_key")
+	assert.Contains(t, string(readContent), "test_value")
+}
+
+func TestSaveConfig_JsonFormat(t *testing.T) {
+	config.New(basecontext.NewBaseContext())
+	tmpDir := t.TempDir()
+
+	testFile := filepath.Join(tmpDir, "prldevops_config.json")
+
+	cf := config.ConfigFile{
+		Environment: map[string]string{
+			"json_key": "json_value",
+		},
+	}
+
+	content, err := json.Marshal(cf)
+	require.NoError(t, err)
+	err = os.WriteFile(testFile, content, 0o644)
+	require.NoError(t, err)
+
+	readContent, err := os.ReadFile(testFile)
+	require.NoError(t, err)
+	assert.Contains(t, string(readContent), "json_key")
+	assert.Contains(t, string(readContent), "json_value")
 }
