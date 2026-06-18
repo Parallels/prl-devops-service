@@ -216,7 +216,6 @@ func InitServices(ctx basecontext.ApiContext) {
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase)
-		globalProvider.ParallelsDesktopService.InitSnapshotTreeInDB(ctx)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
@@ -238,7 +237,6 @@ func InitServices(ctx basecontext.ApiContext) {
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase)
-		globalProvider.ParallelsDesktopService.InitSnapshotTreeInDB(ctx)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 
@@ -280,7 +278,6 @@ func InitServices(ctx basecontext.ApiContext) {
 	} else {
 		ctx.LogInfof("Cache folder access test successful")
 	}
-
 }
 
 func Get() *ServiceProvider {

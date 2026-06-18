@@ -126,7 +126,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 
 			if user == nil {
 				getTokenDiag.AddError(strconv.Itoa(http.StatusUnauthorized), "Invalid User or Password", "GetUser")
-				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, http.StatusUnauthorized))
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithMessageAndCode(getTokenDiag, "Invalid User or Password", http.StatusUnauthorized))
 				return
 			}
 		}
@@ -138,7 +138,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 			if err := passwdSvc.Compare(request.Password, user.ID, user.Password); err != nil {
 				rsp := models.NewFromError(err)
 				getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Compare")
-				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getTokenDiag, rsp.Code))
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithMessageAndCode(getTokenDiag, "Invalid user or Password", rsp.Code))
 
 				if diag := bruteForceSvc.Process(user.ID, false, "Invalid Password"); diag.HasErrors() {
 					ctx.LogErrorf("Error processing brute force guard: %v", diag)
