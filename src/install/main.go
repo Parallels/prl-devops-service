@@ -16,6 +16,7 @@ import (
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/logs"
 	"github.com/cjlapao/common-go/helper"
+	"gopkg.in/yaml.v3"
 )
 
 // normalizeModules validates and normalizes a comma-separated modules string.
@@ -84,6 +85,10 @@ func InstallService(ctx basecontext.ApiContext, configFilePath string) error {
 		config = getConfigFromEnv()
 	}
 
+	if err := writeServiceConfigFile(config, ""); err != nil {
+		return fmt.Errorf("could not write config file: %w", err)
+	}
+
 	switch os := runtime.GOOS; os {
 	case "darwin":
 		return installServiceOnMac(ctx, config)
@@ -96,6 +101,86 @@ func InstallService(ctx basecontext.ApiContext, configFilePath string) error {
 		ctx.LogErrorf(errMsg)
 		return errors.New(errMsg)
 	}
+}
+
+func writeServiceConfigFile(cfg ApiServiceConfig, outputDir string) error {
+	if outputDir == "" {
+		outputDir = constants.ServiceDefaultDirectory
+	}
+
+	envMap := make(map[string]string)
+
+	if cfg.Port != "" {
+		envMap[constants.API_PORT_ENV_VAR] = cfg.Port
+	}
+	if cfg.Prefix != "" {
+		envMap[constants.API_PREFIX_ENV_VAR] = cfg.Prefix
+	}
+	if cfg.LogLevel != "" {
+		envMap[constants.LOG_LEVEL_ENV_VAR] = cfg.LogLevel
+	}
+	if cfg.RootPassword != "" {
+		envMap[constants.ROOT_PASSWORD_ENV_VAR] = cfg.RootPassword
+	}
+	if cfg.EncryptionRsaKey != "" {
+		envMap[constants.ENCRYPTION_SECURITY_KEY_ENV_VAR] = cfg.EncryptionRsaKey
+	}
+	if cfg.HmacSecret != "" {
+		envMap[constants.HMAC_SECRET_ENV_VAR] = cfg.HmacSecret
+	}
+	if cfg.EnableTLS {
+		envMap[constants.TLS_ENABLED_ENV_VAR] = "true"
+	}
+	if cfg.TLSCertificate != "" {
+		envMap[constants.TLS_CERTIFICATE_ENV_VAR] = cfg.TLSCertificate
+	}
+	if cfg.TLSPrivateKey != "" {
+		envMap[constants.TLS_PRIVATE_KEY_ENV_VAR] = cfg.TLSPrivateKey
+	}
+	if cfg.EnableCors {
+		envMap[constants.ENABLE_CORS_ENV_VAR] = "true"
+	}
+	if cfg.EnabledModules != "" {
+		envMap[constants.ENABLED_MODULES_ENV_VAR] = cfg.EnabledModules
+	}
+	if cfg.DisableCatalogCaching {
+		envMap[constants.DISABLE_CATALOG_CACHING_ENV_VAR] = "true"
+	}
+	if cfg.TokenDurationMinutes != "" {
+		envMap[constants.TOKEN_DURATION_MINUTES_ENV_VAR] = cfg.TokenDurationMinutes
+	}
+	if cfg.CorsAllowedOrigins != "" {
+		envMap[constants.CORS_ALLOWED_ORIGINS_ENV_VAR] = cfg.CorsAllowedOrigins
+	}
+	if cfg.CorsAllowedMethods != "" {
+		envMap[constants.CORS_ALLOWED_METHODS_ENV_VAR] = cfg.CorsAllowedMethods
+	}
+	if cfg.CorsAllowedHeaders != "" {
+		envMap[constants.CORS_ALLOWED_HEADERS_ENV_VAR] = cfg.CorsAllowedHeaders
+	}
+	if !cfg.DisableFileLogging {
+		envMap[constants.LOG_TO_FILE_ENV_VAR] = "true"
+	}
+
+	cf := config.ConfigFile{
+		Environment: envMap,
+	}
+
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		return fmt.Errorf("could not create directory %s: %w", outputDir, err)
+	}
+
+	filePath := filepath.Join(outputDir, "prldevops_config.yaml")
+	content, err := yaml.Marshal(cf)
+	if err != nil {
+		return fmt.Errorf("could not marshal config: %w", err)
+	}
+
+	if err := os.WriteFile(filePath, content, 0o644); err != nil {
+		return fmt.Errorf("could not write config file %s: %w", filePath, err)
+	}
+
+	return nil
 }
 
 func UninstallService(ctx basecontext.ApiContext, removeDatabase bool) error {

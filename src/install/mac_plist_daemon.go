@@ -8,28 +8,10 @@ import (
 )
 
 type PlistTemplateData struct {
-	Path                     string
-	ExecutableName           string
-	Port                     string
-	Prefix                   string
-	RootPassword             string
-	EncryptionRsaKey         string
-	HmacSecret               string
-	LogLevel                 string
-	DisableFileLogging       string
-	EnableTLS                string
-	HostTLSPort              string
-	TlsCertificate           string
-	TlsPrivateKey            string
-	DisableCatalogCaching    string
-	TokenDurationMinutes     string
-	EnabledModules           string
-	UseOrchestratorResources string
-	EnableCors               string
-	CorsAllowedOrigins       string
-	CorsAllowedMethods       string
-	CorsAllowedHeaders       string
-	LogOutput                bool
+	Path             string
+	ExecutableName   string
+	DisableFileLogging bool
+	LogOutput        bool
 }
 
 var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
@@ -43,86 +25,9 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
   <key>ProgramArguments</key>
   <array>
     <string>{{ .Path }}/{{ .ExecutableName }}</string>
+    <string>--config</string>
+    <string>/etc/prl-devops-service/prldevops_config.yaml</string>
   </array>
-  <key>EnvironmentVariables</key>
-  <dict>
-    {{- if not .DisableFileLogging }}
-    <key>` + constants.LOG_TO_FILE_ENV_VAR + `</key>
-    <string>true</string>
-    {{- end }}
-    {{- if .Port }}
-    <key>` + constants.API_PORT_ENV_VAR + `</key>
-    <string>{{ .Port }}</string>
-    {{- end }}
-    {{- if .Prefix }}
-    <key>` + constants.API_PREFIX_ENV_VAR + `</key>
-    <string>{{ .Prefix }}</string>
-    {{- end }}
-    {{- if .RootPassword }}
-    <key>` + constants.ROOT_PASSWORD_ENV_VAR + `</key>
-    <string>{{ .RootPassword }}</string>
-    {{- end }}
-    {{- if .EncryptionRsaKey }}
-    <key>` + constants.ENCRYPTION_SECURITY_KEY_ENV_VAR + `</key>
-    <string>{{ .EncryptionRsaKey }}</string>
-    {{- end }}
-    {{- if .HmacSecret }}
-    <key>` + constants.HMAC_SECRET_ENV_VAR + `</key>
-    <string>{{ .HmacSecret }}</string>
-    {{- end }}
-    {{- if .LogLevel }}
-    <key>` + constants.LOG_LEVEL_ENV_VAR + `</key>
-    <string>{{ .LogLevel }}</string>
-    {{- end }}
-    {{- if .EnableTLS }}
-    <key>` + constants.TLS_ENABLED_ENV_VAR + `</key>
-    <string>{{ .EnableTLS }}</string>
-    {{- end }}
-    {{- if .HostTLSPort }}
-    <key>` + constants.TLS_PORT_ENV_VAR + `</key>
-    <string>{{ .HostTLSPort }}</string>
-    {{- end }}
-    {{- if .TlsCertificate }}
-    <key>` + constants.TLS_CERTIFICATE_ENV_VAR + `</key>
-    <string>{{ .TlsCertificate }}</string>
-    {{- end }}
-    {{- if .TlsPrivateKey }}
-    <key>` + constants.TLS_PRIVATE_KEY_ENV_VAR + `</key>
-    <string>{{ .TlsPrivateKey }}</string>
-    {{- end }}
-    {{- if .DisableCatalogCaching }}
-    <key>` + constants.DISABLE_CATALOG_CACHING_ENV_VAR + `</key>
-    <string>{{ .DisableCatalogCaching }}</string>
-    {{- end }}
-    {{- if .TokenDurationMinutes }}
-    <key>` + constants.TOKEN_DURATION_MINUTES_ENV_VAR + `</key>
-    <string>{{ .TokenDurationMinutes }}</string>
-    {{- end }}
-    {{- if .EnabledModules }}
-    <key>` + constants.ENABLED_MODULES_ENV_VAR + `</key>
-    <string>{{ .EnabledModules }}</string>
-    {{- end }}
-    {{- if .UseOrchestratorResources }}
-    <key>` + constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR + `</key>
-    <string>{{ .UseOrchestratorResources }}</string>
-    {{- end }}
-    {{- if .EnableCors }}
-    <key>` + constants.ENABLE_CORS_ENV_VAR + `</key>
-    <string>{{ .EnableCors }}</string>
-    {{- end }}
-    {{- if .CorsAllowedOrigins }}
-    <key>` + constants.CORS_ALLOWED_ORIGINS_ENV_VAR + `</key>
-    <string>{{ .CorsAllowedOrigins }}</string>
-    {{- end }}
-    {{- if .CorsAllowedMethods }}
-    <key>` + constants.CORS_ALLOWED_METHODS_ENV_VAR + `</key>
-    <string>{{ .CorsAllowedMethods }}</string>
-    {{- end }}
-    {{- if .CorsAllowedHeaders }}
-    <key>` + constants.CORS_ALLOWED_HEADERS_ENV_VAR + `</key>
-    <string>{{ .CorsAllowedHeaders }}</string>
-    {{- end }}
-  </dict>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
@@ -140,47 +45,17 @@ var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 </plist>`
 
 func generatePlist(path string, config ApiServiceConfig) (string, error) {
-	// Define the text template
 	tmpl, err := template.New("parallels-devops").Parse(plistTemplate)
 	if err != nil {
 		return "", err
 	}
 
-	// Execute the template with a value
 	var tpl bytes.Buffer
 	templateData := PlistTemplateData{
-		Path:                 path,
-		ExecutableName:       constants.ExecutableName,
-		Port:                 config.Port,
-		Prefix:               config.Prefix,
-		RootPassword:         config.RootPassword,
-		EncryptionRsaKey:     config.EncryptionRsaKey,
-		HmacSecret:           config.HmacSecret,
-		LogLevel:             config.LogLevel,
-		HostTLSPort:          config.TLSPort,
-		TlsCertificate:       config.TLSCertificate,
-		TlsPrivateKey:        config.TLSPrivateKey,
-		TokenDurationMinutes: config.TokenDurationMinutes,
-		EnabledModules:       config.EnabledModules,
-		CorsAllowedOrigins:   config.CorsAllowedOrigins,
-		CorsAllowedMethods:   config.CorsAllowedMethods,
-		CorsAllowedHeaders:   config.CorsAllowedHeaders,
-		LogOutput:            config.LogOutput,
-	}
-	if config.DisableFileLogging {
-		templateData.DisableFileLogging = "true"
-	}
-	if config.EnableTLS {
-		templateData.EnableTLS = "true"
-	}
-	if config.DisableCatalogCaching {
-		templateData.DisableCatalogCaching = "true"
-	}
-	if config.UseOrchestratorResources {
-		templateData.UseOrchestratorResources = "true"
-	}
-	if config.EnableCors {
-		templateData.EnableCors = "true"
+		Path:             path,
+		ExecutableName:   constants.ExecutableName,
+		DisableFileLogging: config.DisableFileLogging,
+		LogOutput:        config.LogOutput,
 	}
 
 	err = tmpl.Execute(&tpl, templateData)

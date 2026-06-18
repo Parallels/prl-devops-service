@@ -36,6 +36,40 @@ var (
 	}
 )
 
+func findConfigFile(folder, baseName string) string {
+	for _, ext := range extensions {
+		candidate := filepath.Join(folder, baseName+ext)
+		if _, err := os.Stat(candidate); !os.IsNotExist(err) {
+			return candidate
+		}
+	}
+	return ""
+}
+
+func resolveConfigFile(configFileName, execPath string) string {
+	if configFileName != "" {
+		if _, err := os.Stat(configFileName); !os.IsNotExist(err) {
+			return configFileName
+		}
+		return ""
+	}
+
+	searchLocations := []string{
+		filepath.Dir(execPath),
+		filepath.Join(filepath.Dir(execPath), "prldevops_config"),
+		constants.ServiceDefaultDirectory,
+	}
+	baseNames := []string{"prldevops_config", "config"}
+	for _, location := range searchLocations {
+		for _, baseName := range baseNames {
+			if fileName := findConfigFile(location, baseName); fileName != "" {
+				return fileName
+			}
+		}
+	}
+	return ""
+}
+
 type Config struct {
 	ctx                 basecontext.ApiContext
 	mode                string
@@ -74,37 +108,17 @@ func (c *Config) Load() bool {
 		return true
 	}
 
-	fileName := ""
-	configFileName := helper.GetFlagValue(constants.CONFIG_FILE_FLAG, "")
-
 	execPath, err := os.Executable()
 	if err != nil {
 		c.ctx.LogErrorf("Error getting executable path: %s", err.Error())
 		c.isLoaded = false
 		return false
 	}
-	if configFileName != "" {
-		if _, err := os.Stat(configFileName); !os.IsNotExist(err) {
-			fileName = configFileName
-		}
-	} else {
-		configFolder := filepath.Join(filepath.Dir(execPath), "prldevops_config")
-		for _, extension := range extensions {
-			if _, err := os.Stat(fmt.Sprintf("%s%s", configFolder, extension)); !os.IsNotExist(err) {
-				fileName = fmt.Sprintf("%s%s", configFolder, extension)
-				break
-			}
-		}
-		if fileName == "" {
-			configFolder = filepath.Join(filepath.Dir(execPath), "config")
-			for _, extension := range extensions {
-				if _, err := os.Stat(fmt.Sprintf("%s%s", configFolder, extension)); !os.IsNotExist(err) {
-					fileName = fmt.Sprintf("%s%s", configFolder, extension)
-					break
-				}
-			}
-		}
-	}
+
+	fileName := resolveConfigFile(
+		helper.GetFlagValue(constants.CONFIG_FILE_FLAG, ""),
+		execPath,
+	)
 
 	if fileName == "" {
 		c.ctx.LogInfof("No configuration file found")
