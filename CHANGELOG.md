@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-06-22
+
+- change the way we install the service, reducing the amount of environment variables and adding more in the config file
+
 ## [1.0.2] - 2026-06-11
 
 - Implemented file locking mechanism to fix concurrent saves issues in linux
