@@ -8,10 +8,10 @@ import (
 )
 
 type PlistTemplateData struct {
-	Path             string
-	ExecutableName   string
+	Path               string
+	ExecutableName     string
 	DisableFileLogging bool
-	LogOutput        bool
+	LogOutput          bool
 }
 
 var plistTemplate = `<?xml version="1.0" encoding="UTF-8"?>
@@ -52,10 +52,10 @@ func generatePlist(path string, config ApiServiceConfig) (string, error) {
 
 	var tpl bytes.Buffer
 	templateData := PlistTemplateData{
-		Path:             path,
-		ExecutableName:   constants.ExecutableName,
+		Path:               path,
+		ExecutableName:     constants.ExecutableName,
 		DisableFileLogging: config.DisableFileLogging,
-		LogOutput:        config.LogOutput,
+		LogOutput:          config.LogOutput,
 	}
 
 	err = tmpl.Execute(&tpl, templateData)
