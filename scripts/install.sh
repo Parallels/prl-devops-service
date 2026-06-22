@@ -165,6 +165,7 @@ function install() {
   OS=$(uname -s)
   OS=$(echo "$OS" | tr '[:upper:]' '[:lower:]')
   echo "Installing prldevops $SHORT_VERSION for $OS-$ARCHITECTURE"
+  echo "Downloading release $VERSION"
 
   DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
 
@@ -213,7 +214,7 @@ function install() {
       SERVICE_PLIST="/Library/LaunchDaemons/com.parallels.prl-devops-service.plist"
       CONFIG_EXISTS="false"
 
-      if [ -f "$DESTINATION/config.yaml" ] || [ -f "$DESTINATION/config.yml" ]; then
+      if [ -f "/etc/prl-devops-service/prldevops_config.yaml" ]; then
         CONFIG_EXISTS="true"
       fi
 
@@ -241,7 +242,7 @@ function install() {
       SYSTEMD_UNIT="/etc/systemd/system/prl-devops-service.service"
       CONFIG_EXISTS="false"
 
-      if [ -f "$DESTINATION/config.yaml" ] || [ -f "$DESTINATION/config.yml" ]; then
+      if [ -f "/etc/prl-devops-service/prldevops_config.yaml" ]; then
         CONFIG_EXISTS="true"
       fi
 
@@ -310,6 +311,7 @@ function install_standard() {
   OS=$(uname -s)
   OS=$(echo "$OS" | tr '[:upper:]' '[:lower:]')
   echo "Installing prldevops $SHORT_VERSION for $OS-$ARCHITECTURE"
+  echo "Downloading release $VERSION"
 
   DOWNLOAD_URL="https://github.com/Parallels/prl-devops-service/releases/download/$VERSION/prldevops--$OS-$ARCHITECTURE.tar.gz"
 
@@ -358,7 +360,7 @@ function install_standard() {
       SERVICE_PLIST="/Library/LaunchDaemons/com.parallels.prl-devops-service.plist"
       CONFIG_EXISTS="false"
 
-      if [ -f "$DESTINATION/config.yaml" ] || [ -f "$DESTINATION/config.yml" ]; then
+      if [ -f "/etc/prl-devops-service/prldevops_config.yaml" ]; then
         CONFIG_EXISTS="true"
       fi
 
@@ -386,7 +388,7 @@ function install_standard() {
       SYSTEMD_UNIT="/etc/systemd/system/prl-devops-service.service"
       CONFIG_EXISTS="false"
 
-      if [ -f "$DESTINATION/config.yaml" ] || [ -f "$DESTINATION/config.yml" ]; then
+      if [ -f "/etc/prl-devops-service/prldevops_config.yaml" ]; then
         CONFIG_EXISTS="true"
       fi
 

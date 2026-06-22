@@ -29,7 +29,11 @@ func processInstall(ctx basecontext.ApiContext, cmd string) {
 
 	if subcommand == "service" {
 		filePath := helper.GetFlagValue(constants.FILE_FLAG, "")
+		rootPassword := helper.GetFlagValue("root-password", "")
 		ctx.ToggleLogTimestamps(false)
+		if rootPassword != "" {
+			_ = os.Setenv(constants.ROOT_PASSWORD_ENV_VAR, rootPassword)
+		}
 		if err := install.InstallService(ctx, filePath); err != nil {
 			ctx.LogErrorf(err.Error())
 			os.Exit(1)
@@ -151,6 +155,7 @@ func processInstallHelp() {
 	fmt.Println("  version\t\tRequest a specific version to be installed")
 	fmt.Println("  modules\t\tComma-separated list of modules to enable (api,host,catalog,orchestrator). api is always included.")
 	fmt.Println("  api-port\t\tPort the API service will listen on (default: 3080)")
+	fmt.Println("  root-password\t\tRoot password for the service")
 	fmt.Println()
 	fmt.Println("Example:")
 	fmt.Printf("  %v %v git --version=latest", constants.ExecutableName, constants.INSTALL_SERVICE_COMMAND)

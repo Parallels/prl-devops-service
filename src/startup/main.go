@@ -321,6 +321,20 @@ func Start(ctx basecontext.ApiContext) {
 			ctx.LogErrorf("Error starting job manager service: %v", err)
 		}
 	}()
+
+	// loading snapshots from parallels desktop if the host module is enabled
+	// and parallels desktop is available, we will be doing this in a go routine
+	// so that the api can start faster and the snapshots will be loaded in
+	// the background we will get rid of the function to save memory
+	go func() {
+		if cfg.IsHost() {
+			provider := serviceprovider.Get()
+			if provider.ParallelsDesktopService != nil {
+				ctx.LogInfof("Loading snapshots from Parallels Desktop")
+				provider.ParallelsDesktopService.InitSnapshotTreeInDB(ctx)
+			}
+		}
+	}()
 }
 
 func Restart() {

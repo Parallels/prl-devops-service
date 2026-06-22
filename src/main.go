@@ -40,6 +40,12 @@ import (
 // @in							header
 // @name						Authorization
 func main() {
+	cfg := config.Get()
+	loaded := cfg.Load()
+	if !loaded {
+		fmt.Println("Failed to load configuration")
+	}
+
 	// catching all of the exceptions
 	defer func() {
 		// Saving the database before exiting

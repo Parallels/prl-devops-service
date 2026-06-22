@@ -2,7 +2,7 @@ version: '3.9'
 name: devops-service
 services:
   devops:
-    build: .
+    image: ghcr.io/parallels/prl-devops-service:latest
     environment:
       HMAC_SECRET: ''
       LOG_LEVEL: 'info'
@@ -16,5 +16,9 @@ services:
       ROOT_PASSWORD: ''
       DISABLE_CATALOG_CACHING: 'false'
       TOKEN_DURATION_MINUTES: 60
-      MODE: api
+      ENABLED_MODULES: host,orchestrator,catalog,cors,reverse_proxy
       USE_ORCHESTRATOR_RESOURCES: 'false'
+      ENABLE_CORS: 'true'
+      CORS_ALLOWED_ORIGINS: '*'
+      CORS_ALLOWED_METHODS: 'GET,POST,PUT,DELETE,PATCH'
+      CORS_ALLOWED_HEADERS: 'X-Requested-With,Accept,Authorization,Content-Type,Content-Length,Accept-Encoding,X-CSRF-Token,Origin,Access-Control-Request-Method,Access-Control-Request-Headers,x-source-id,X-Source-Id'
