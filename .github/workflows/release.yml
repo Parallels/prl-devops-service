@@ -206,7 +206,7 @@ jobs:
     env:
       EXT_VERSION: ${{ needs.release.outputs.version }}
       AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
-      REGISTRY_OWNER: ${{ github.repository_owner }}
+      IMAGE_REPOSITORY: ghcr.io/parallels/prl-devops-service
     name: Build Docker Images
     runs-on: ubuntu-latest
     permissions:
@@ -214,8 +214,6 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
-      - name: Set lowercase registry owner
-        run: echo "REGISTRY_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -235,8 +233,8 @@ jobs:
           secrets: |
             amplitude_api_key=${{ secrets.AMPLITUDE_API_KEY }}
           tags: |
-            ghcr.io/${{ env.REGISTRY_OWNER }}/prl-devops-service:latest
-            ghcr.io/${{ env.REGISTRY_OWNER }}/prl-devops-service:${{ env.EXT_VERSION }}
+            ${{ env.IMAGE_REPOSITORY }}:latest
+            ${{ env.IMAGE_REPOSITORY }}:${{ env.EXT_VERSION }}
   remove-old-beta-release:
     name: Remove old beta release
     needs:

@@ -23,7 +23,7 @@ While this allows for most of the same functionality as running it as a binary, 
 for a quick start the `DevOps` service you can run:
 
 ```powershell
-docker run -d --name pd-devops-service -p 5570:80 -e ROOT_PASSWORD=VeryStr0ngPassw0rd -e API_PORT=8080 -e MODE=orchestrator cjlapao/prl-devops-service:latest
+docker run -d --name pd-devops-service -p 5570:80 -e ROOT_PASSWORD=VeryStr0ngPassw0rd -e API_PORT=8080 -e MODE=orchestrator ghcr.io/parallels/prl-devops-service:latest
 ```
 
 This will start the service and you will be able to access the swagger ui at [http://localhost:5570/swagger/index.html](http://localhost:5570/swagger/index.html){:target="_blank"}
@@ -33,7 +33,7 @@ You can pass any of the [configuration options]({{ site.url }}{{ site.baseurl }}
 for example:
 
 ```powershell
-docker run -d -p 8008:80 --name pd-devops-service -e API_PORT=8008 -e LOG_LEVEL=DEBUG cjlapao/prl-devops-service:latest
+docker run -d -p 8008:80 --name pd-devops-service -e API_PORT=8008 -e LOG_LEVEL=DEBUG ghcr.io/parallels/prl-devops-service:latest
 ```
 
 This will start the service on port 8008 and with the log level set to `DEBUG`.

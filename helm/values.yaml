@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: cjlapao/prl-devops-service
+  repository: ghcr.io/parallels/prl-devops-service
   pullPolicy: always
   tag: "latest"
 
