@@ -24,11 +24,10 @@ introduction:
     
     With this plugin, you can:
     
-    - Provision macOS, Windows, and Linux agents dynamically from golden images
+    - Provision macOS, Windows, and Linux agents dynamically from golden images using the catalog service of Parallels DevOps Service
     - Scale your build fleet elastically to match workload demand
     - Ensure build isolation by giving each job a fresh, clean VM
     - Reduce costs by only running VMs when builds are actively executing
-    
     
     **Before you begin**: This tutorial assumes you have a working Parallels DevOps Service instance. If you haven't 
     set it up yet, complete the [DevOps CLI Quick Start](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/) 
@@ -38,7 +37,6 @@ introduction:
     - Prepare golden image VMs with build dependencies
     - Configure Jenkins cloud providers and agent templates
     - Run dynamically provisioned builds on macOS, Linux, and Windows
-    - Create multi-platform pipeline builds
   prerequisites:
     hard:
       - "**Parallels DevOps Service** installed and running — [Complete this tutorial first](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/)"
@@ -117,7 +115,7 @@ steps:
       - title: Jenkins Download Page
         url: https://www.jenkins.io/download/
       - title: Jenkins Documentation
-        url: https://www.jenkins.io/doc/
+        url: https://www.jenkins.io/doc/book/installing/
   
     checklist:
       - Jenkins is installed and running
@@ -334,26 +332,29 @@ steps:
       ### Cloud Settings
       
       Configure the cloud with these settings:
+      - Name: `parallels-cloud`
+      - Service URL: `http://prldevops.example.com` (replace with your DevOps Service URL)
+      - Jenkins URL: `http://jenkins.example.com` (replace with your Jenkins URL)
+      - Connection Mode: `HOST` or `ORCHESTRATOR`
+      - Max Concurrent Agents: `5` (or adjust based on your needs)
+      - API Credentials
+         1. Click **Add** next to **API Credentials**
+         2. Select **Jenkins** as domain
+         3. Choose **Username with password**
+         4. Enter the username and password from your `config.yaml`
+         5. Set ID: `parallels-devops-api` (or any ID you prefer)
+         6. Click **Add**
+         7. Select the credential from dropdown
+      - Test Connection to verify Jenkins can communicate with the DevOps Service API
       
       ![Cloud Configuration Screenshot](/prl-devops-service/img/examples/service-configurations.png)
-      
-      ### Add API Credentials
-      
-      To add API credentials:
-      
-      1. Click **Add** next to **API Credentials**
-      2. Select **Jenkins** as domain
-      3. Choose **Username with password**
-      4. Enter the username and password from your `config.yaml`
-      5. Set ID: `parallels-devops-api` (or any ID you prefer)
-      6. Click **Add**
-      7. Select the credential from dropdown
+     
     checklist:
       - Cloud is created with name `parallels-cloud`
       - Service URL points to your DevOps Service
       - API credentials are configured
       - Connection mode is set to `HOST` or `ORCHESTRATOR`
-      - "**Test Connection** returns success ✅"
+      - "**Test Connection** returns success"
 
   - id: create-template
     kind: narrative
@@ -386,13 +387,21 @@ steps:
     layout: rows
     markdown_body: |
       Agent templates define how Jenkins provisions VMs. Each template has a **label** that jobs use to request 
-      specific agent types (e.g., `macos`, `ubuntu-arm64`, `windows11`).
+      specific agent types (e.g., `macos`, `ubuntu-arm64`, `windows11`). In this example, we will create a template that provisions VMs from the Catalog Service.
       
       Scroll to **Agent Templates** and click **Add Template**.
       
       ### Template Configuration
       
       Configure the template:
+      - Label: `macos` (or your desired label)
+      - Provisioning Mode: `Create from Catalog`
+      - Catalog URL: `http://prldevops-catalog.example.com/`
+      - Architecture: `arm64` (or `x86_64` depending on your catalog image)
+      - Catalog ID: 'Id of the catalog image you want to use eg. `macos-sonoma-14.0-arm64`'
+      - Catalog Version: 'Version of the catalog image you want to use eg. `1.0.0`'
+      - Catalog Credentials: Select the credentials you created for the Catalog Service
+      - Test Connection to verify Jenkins can communicate with the Catalog Service 
       
       ![Template Configuration Screenshot](/prl-devops-service/img/examples/catalog-based.png)
     checklist:
