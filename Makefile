@@ -1,6 +1,7 @@
 NAME ?= prldevops
 export PACKAGE_NAME ?= $(NAME)
-export DOCKER_PACKAGE_NAME ?= "prl-devops-service"
+export DOCKER_PACKAGE_NAME ?= prl-devops-service
+export DOCKER_IMAGE_REPOSITORY ?= ghcr.io/parallels/$(DOCKER_PACKAGE_NAME)
 ifeq ($(OS),Windows_NT)
 	export VERSION:=$(shell type VERSION)
 else
@@ -144,49 +145,49 @@ endif
 push-alpha-container:
 	@echo "Building $(BUILD_VERSION) Alpha Container..."
 	@docker build --platform linux/amd64,linux/arm64 \
-		-t cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-alpha \
-		-t cjlapao/$(DOCKER_PACKAGE_NAME):latest-alpha \
+		-t $(DOCKER_IMAGE_REPOSITORY):$(BUILD_VERSION)-alpha \
+		-t $(DOCKER_IMAGE_REPOSITORY):latest-alpha \
 		--build-arg VERSION=$(BUILD_VERSION) \
 		--build-arg BUILD_ENV=canary \
 		--build-arg OS=linux \
 		--build-arg ARCHITECTURE=amd64 \
 		-f Dockerfile .
 	@echo "Pushing $(BUILD_VERSION) Container..."
-	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-alpha tag..."
-	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-alpha
-	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):latest-alpha tag..."
-	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):latest-alpha
-	@echo "Build finished. Pushed to cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)_alpha and cjlapao/$(DOCKER_PACKAGE_NAME):latest_alpha."
+	@echo "Pushing $(DOCKER_IMAGE_REPOSITORY):$(BUILD_VERSION)-alpha tag..."
+	@docker push $(DOCKER_IMAGE_REPOSITORY):$(BUILD_VERSION)-alpha
+	@echo "Pushing $(DOCKER_IMAGE_REPOSITORY):latest-alpha tag..."
+	@docker push $(DOCKER_IMAGE_REPOSITORY):latest-alpha
+	@echo "Build finished. Pushed to $(DOCKER_IMAGE_REPOSITORY):$(BUILD_VERSION)-alpha and $(DOCKER_IMAGE_REPOSITORY):latest-alpha."
 
 .PHONY: clean-alpha
 clean-alpha-container:
-	@echo "Removing all alpha versions from Docker Hub..."
-	@./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*alpha.*$$' 
+	@echo "Removing all alpha versions from $(DOCKER_IMAGE_REPOSITORY)..."
+	@IMAGE_REPOSITORY=$(DOCKER_IMAGE_REPOSITORY) ./.github/workflow_scripts/remove-docker-images.sh rm --filter '.*alpha.*$$'
 	@echo "All alpha versions removed."
 
 .PHONY: push-beta-container
 push-beta-container:
 	@echo "Building $(BUILD_VERSION) Beta Container..."
 	@docker build --platform linux/amd64,linux/arm64 \
-		-t cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-beta \
-		-t cjlapao/$(DOCKER_PACKAGE_NAME):unstable \
+		-t $(DOCKER_IMAGE_REPOSITORY):$(BUILD_VERSION)-beta \
+		-t $(DOCKER_IMAGE_REPOSITORY):unstable \
 		--build-arg VERSION=$(BUILD_VERSION) \
 		--build-arg BUILD_ENV=canary \
 		--build-arg OS=linux \
 		--build-arg ARCHITECTURE=amd64 \
 		-f Dockerfile .
 	@echo "Pushing $(BUILD_VERSION) Container..."
-	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-beta tag..."
-	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-beta
-	@echo "Pushing cjlapao/$(DOCKER_PACKAGE_NAME):unstable tag..."
-	@docker push cjlapao/$(DOCKER_PACKAGE_NAME):unstable
-	@echo "Build finished. Pushed to cjlapao/$(DOCKER_PACKAGE_NAME):$(BUILD_VERSION)-beta and cjlapao/$(DOCKER_PACKAGE_NAME):unstable."
+	@echo "Pushing $(DOCKER_IMAGE_REPOSITORY):$(BUILD_VERSION)-beta tag..."
+	@docker push $(DOCKER_IMAGE_REPOSITORY):$(BUILD_VERSION)-beta
+	@echo "Pushing $(DOCKER_IMAGE_REPOSITORY):unstable tag..."
+	@docker push $(DOCKER_IMAGE_REPOSITORY):unstable
+	@echo "Build finished. Pushed to $(DOCKER_IMAGE_REPOSITORY):$(BUILD_VERSION)-beta and $(DOCKER_IMAGE_REPOSITORY):unstable."
 
 .PHONY: clean-beta
 clean-beta-container:
-	@echo "Removing all beta versions from Docker Hub..."
-	@./.github/workflow_scripts/remove-docker-images.sh rm --filter ".*beta.*$$" 
-	@echo "All alpha versions removed."
+	@echo "Removing all beta versions from $(DOCKER_IMAGE_REPOSITORY)..."
+	@IMAGE_REPOSITORY=$(DOCKER_IMAGE_REPOSITORY) ./.github/workflow_scripts/remove-docker-images.sh rm --filter ".*beta.*$$"
+	@echo "All beta versions removed."
 
 .PHONY: clean
 clean:
