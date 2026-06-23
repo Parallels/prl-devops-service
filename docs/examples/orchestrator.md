@@ -118,7 +118,7 @@ To add a host to the orchestrator service, we need to make a POST request to the
     ],
     "authentication": {
         "username": "root@localhost",
-        "password": "VeryStr0ngPassw0rdg"
+        "password": "YOUR_PASSWORD_HERE"
     }
 }
 ```

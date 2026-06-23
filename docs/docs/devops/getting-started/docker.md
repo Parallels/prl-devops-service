@@ -23,7 +23,7 @@ While this allows for most of the same functionality as running it as a binary, 
 for a quick start the `DevOps` service you can run:
 
 ```powershell
-docker run -d --name pd-devops-service -p 5570:80 -e ROOT_PASSWORD=VeryStr0ngPassw0rd -e API_PORT=8080 -e MODE=orchestrator cjlapao/prl-devops-service:latest
+docker run -d --name pd-devops-service -p 5570:80 -e ROOT_PASSWORD=${ROOT_PASSWORD} -e API_PORT=8080 -e MODE=orchestrator cjlapao/prl-devops-service:latest
 ```
 
 This will start the service and you will be able to access the swagger ui at [http://localhost:5570/swagger/index.html](http://localhost:5570/swagger/index.html){:target="_blank"}
