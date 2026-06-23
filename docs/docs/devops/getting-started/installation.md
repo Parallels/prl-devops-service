@@ -32,7 +32,7 @@ You can then add the following basic configuration to the file, you can find mor
 environment:
   api_port: 80
   log_level: DEBUG
-  ROOT_PASSWORD: ${ROOT_PASSWORD}
+  ROOT_PASSWORD: VeryStr0ngPassw0rd
 ```
 
 #### Start it as a service

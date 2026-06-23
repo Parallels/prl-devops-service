@@ -423,7 +423,7 @@ The `code_editor` step provides an in-browser code editor using Monaco Editor (t
         environment:
           api_port: 80
           log_level: DEBUG
-          ROOT_PASSWORD: ${ROOT_PASSWORD}
+          ROOT_PASSWORD: VeryStr0ngPassw0rd
 ```
 
 **Multiple files (tabbed editor):**

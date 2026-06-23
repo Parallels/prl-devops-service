@@ -242,7 +242,7 @@ steps:
           environment:
             api_port: 5001
             log_level: DEBUG
-            ROOT_PASSWORD: ${ROOT_PASSWORD}
+            ROOT_PASSWORD: VeryStr0ngPassw0rd
     resources:
       - title: "Configuration Reference"
         url: "/prl-devops-service/docs/devops/getting-started/configuration/"
