@@ -48,7 +48,7 @@ aligns macOS and Windows workflows with modern DevOps practices.
 ## 3. Technology Stack
 
 * **Language:** Go (services & CLI)
-* **Packaging:** Multi‑arch Docker images published to **Github** and **Docker Hub**
+* **Packaging:** Multi‑arch Docker images published to **GitHub Container Registry**
 * **API:** "Open" REST + websocket communication
 * **Database:** Json file (pluggable—MySQL support in roadmap)
 * **AuthN/Z:** OIDC (JWT) + role‑based access control

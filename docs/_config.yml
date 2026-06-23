@@ -12,7 +12,7 @@ url: "https://parallels.github.io" # the base hostname & protocol for your site,
 github_username: Parallels
 permalink: pretty
 
-version: 0.5.5
+version: 1.0.1
 ui_version: 0.0.1-beta
 stars: 4
 forks: 0

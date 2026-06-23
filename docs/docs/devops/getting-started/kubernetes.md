@@ -49,7 +49,7 @@ Below is an example of a configuration file.
 replicaCount: 1
 
 image:
-  repository: cjlapao/prl-devops-service
+  repository: ghcr.io/parallels/prl-devops-service
   pullPolicy: IfNotPresent
   tag: "latest"
 

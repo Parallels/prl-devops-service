@@ -33,7 +33,7 @@ You can pass any of the [configuration options]({{ site.url }}{{ site.baseurl }}
 for example:
 
 ```powershell
-docker run -d -p 8008:80 --name pd-devops-service -e API_PORT=8008 -e LOG_LEVEL=DEBUG cjlapao/prl-devops-service:latest
+docker run -d -p 8008:80 --name pd-devops-service -e API_PORT=8008 -e LOG_LEVEL=DEBUG ghcr.io/parallels/prl-devops-service:latest
 ```
 
 This will start the service on port 8008 and with the log level set to `DEBUG`.

@@ -1,8 +1,6 @@
 package data
 
 import (
-	"errors"
-
 	"github.com/Parallels/prl-devops-service/data/models"
 )
 
@@ -36,5 +34,7 @@ func (j *JsonDatabase) GetListVMSnapshotsByVMId(vmID string) ([]models.VMSnapsho
 			return vmSnap.VMSnapshot, nil
 		}
 	}
-	return nil, errors.New("snapshots not found for VM ID: " + vmID)
+
+	emptyList := make([]models.VMSnapshot, 0)
+	return emptyList, nil
 }

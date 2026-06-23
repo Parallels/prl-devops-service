@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/logs"
 	"github.com/cjlapao/common-go/helper"
+	"gopkg.in/yaml.v3"
 )
 
 // normalizeModules validates and normalizes a comma-separated modules string.
@@ -84,6 +86,10 @@ func InstallService(ctx basecontext.ApiContext, configFilePath string) error {
 		config = getConfigFromEnv()
 	}
 
+	if err := writeServiceConfigFile(config, ""); err != nil {
+		return fmt.Errorf("could not write config file: %w", err)
+	}
+
 	switch os := runtime.GOOS; os {
 	case "darwin":
 		return installServiceOnMac(ctx, config)
@@ -96,6 +102,86 @@ func InstallService(ctx basecontext.ApiContext, configFilePath string) error {
 		ctx.LogErrorf(errMsg)
 		return errors.New(errMsg)
 	}
+}
+
+func writeServiceConfigFile(cfg ApiServiceConfig, outputDir string) error {
+	if outputDir == "" {
+		outputDir = constants.ServiceDefaultDirectory
+	}
+
+	envMap := make(map[string]string)
+
+	if cfg.Port != "" {
+		envMap[constants.API_PORT_ENV_VAR] = cfg.Port
+	}
+	if cfg.Prefix != "" {
+		envMap[constants.API_PREFIX_ENV_VAR] = cfg.Prefix
+	}
+	if cfg.LogLevel != "" {
+		envMap[constants.LOG_LEVEL_ENV_VAR] = cfg.LogLevel
+	}
+	if cfg.RootPassword != "" {
+		envMap[constants.ROOT_PASSWORD_ENV_VAR] = cfg.RootPassword
+	}
+	if cfg.EncryptionRsaKey != "" {
+		envMap[constants.ENCRYPTION_SECURITY_KEY_ENV_VAR] = cfg.EncryptionRsaKey
+	}
+	if cfg.HmacSecret != "" {
+		envMap[constants.HMAC_SECRET_ENV_VAR] = cfg.HmacSecret
+	}
+	if cfg.EnableTLS {
+		envMap[constants.TLS_ENABLED_ENV_VAR] = "true"
+	}
+	if cfg.TLSCertificate != "" {
+		envMap[constants.TLS_CERTIFICATE_ENV_VAR] = cfg.TLSCertificate
+	}
+	if cfg.TLSPrivateKey != "" {
+		envMap[constants.TLS_PRIVATE_KEY_ENV_VAR] = cfg.TLSPrivateKey
+	}
+	if cfg.EnableCors {
+		envMap[constants.ENABLE_CORS_ENV_VAR] = "true"
+	}
+	if cfg.EnabledModules != "" {
+		envMap[constants.ENABLED_MODULES_ENV_VAR] = cfg.EnabledModules
+	}
+	if cfg.DisableCatalogCaching {
+		envMap[constants.DISABLE_CATALOG_CACHING_ENV_VAR] = "true"
+	}
+	if cfg.TokenDurationMinutes != "" {
+		envMap[constants.TOKEN_DURATION_MINUTES_ENV_VAR] = cfg.TokenDurationMinutes
+	}
+	if cfg.CorsAllowedOrigins != "" {
+		envMap[constants.CORS_ALLOWED_ORIGINS_ENV_VAR] = cfg.CorsAllowedOrigins
+	}
+	if cfg.CorsAllowedMethods != "" {
+		envMap[constants.CORS_ALLOWED_METHODS_ENV_VAR] = cfg.CorsAllowedMethods
+	}
+	if cfg.CorsAllowedHeaders != "" {
+		envMap[constants.CORS_ALLOWED_HEADERS_ENV_VAR] = cfg.CorsAllowedHeaders
+	}
+	if !cfg.DisableFileLogging {
+		envMap[constants.LOG_TO_FILE_ENV_VAR] = "true"
+	}
+
+	cf := config.ConfigFile{
+		Environment: envMap,
+	}
+
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		return fmt.Errorf("could not create directory %s: %w", outputDir, err)
+	}
+
+	filePath := filepath.Join(outputDir, "prldevops_config.yaml")
+	content, err := yaml.Marshal(cf)
+	if err != nil {
+		return fmt.Errorf("could not marshal config: %w", err)
+	}
+
+	if err := os.WriteFile(filePath, content, 0o644); err != nil {
+		return fmt.Errorf("could not write config file %s: %w", filePath, err)
+	}
+
+	return nil
 }
 
 func UninstallService(ctx basecontext.ApiContext, removeDatabase bool) error {
@@ -468,4 +554,88 @@ func PersistEnabledModules(ctx basecontext.ApiContext) {
 		}
 		ctx.LogInfof("[startup] Persisted updated module list to %s", daemonPath)
 	}
+}
+
+// mergeDefaultsIntoConfig reads the existing service config file and adds any
+// missing environment keys with their default values, preserving everything
+// the user has already set. If the file does not exist it is created with all
+// defaults. Supports both YAML and JSON formats.
+func mergeDefaultsIntoConfig(ctx basecontext.ApiContext) {
+	cfg := config.Get()
+	if !cfg.Load() {
+		return
+	}
+
+	defaults := getDefaultEnvironmentMap()
+
+	// Build a case-insensitive lookup of existing keys.
+	existingLower := make(map[string]string)
+	for k := range cfg.GetConfig().Environment {
+		existingLower[strings.ToLower(k)] = k
+	}
+
+	merged := false
+	for key, defaultValue := range defaults {
+		lowerKey := strings.ToLower(key)
+		if _, ok := existingLower[lowerKey]; !ok {
+			cfg.SetKey(key, defaultValue)
+			merged = true
+		}
+	}
+
+	if merged {
+		if err := saveConfig(cfg); err != nil {
+			ctx.LogWarnf("[startup] Failed to save merged config: %v", err)
+		} else {
+			ctx.LogInfof("[startup] Merged default values into service config")
+		}
+	}
+}
+
+// getDefaultEnvironmentMap returns the canonical set of default environment
+// variables for the service config file.
+func getDefaultEnvironmentMap() map[string]string {
+	return map[string]string{
+		constants.API_PORT_ENV_VAR:                                        constants.DEFAULT_API_PORT,
+		constants.API_PREFIX_ENV_VAR:                                      constants.DEFAULT_API_PREFIX,
+		constants.LOG_LEVEL_ENV_VAR:                                       "INFO",
+		constants.TLS_ENABLED_ENV_VAR:                                     "false",
+		constants.TLS_PORT_ENV_VAR:                                        constants.DEFAULT_API_TLS_PORT,
+		constants.ENABLE_CORS_ENV_VAR:                                     "true",
+		constants.CORS_ALLOWED_ORIGINS_ENV_VAR:                            "*",
+		constants.CORS_ALLOWED_METHODS_ENV_VAR:                            "GET,POST,PUT,DELETE,PATCH",
+		constants.CORS_ALLOWED_HEADERS_ENV_VAR:                            "X-Requested-With,Accept,Authorization,Content-Type,Content-Length,Accept-Encoding,X-CSRF-Token,Origin,Access-Control-Request-Method,Access-Control-Request-Headers,x-source-id,X-Source-Id",
+		constants.LOG_TO_FILE_ENV_VAR:                                     "true",
+		constants.TOKEN_DURATION_MINUTES_ENV_VAR:                          strconv.Itoa(constants.DEFAULT_TOKEN_DURATION_MINUTES),
+		constants.DISABLE_CATALOG_CACHING_ENV_VAR:                         "false",
+		constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR:                      "false",
+		constants.SYSTEM_RESERVED_CPU_ENV_VAR:                             strconv.Itoa(constants.DEFAULT_SYSTEM_RESERVED_CPU),
+		constants.SYSTEM_RESERVED_MEMORY_ENV_VAR:                          strconv.Itoa(constants.DEFAULT_SYSTEM_RESERVED_MEMORY),
+		constants.SYSTEM_RESERVED_DISK_ENV_VAR:                            strconv.Itoa(constants.DEFAULT_SYSTEM_RESERVED_DISK),
+		constants.REVERSE_PROXY_PORT_ENV_VAR:                              constants.DEFAULT_REVERSE_PROXY_PORT,
+		constants.REVERSE_PROXY_HOST_ENV_VAR:                              constants.DEFAULT_REVERSE_PROXY_HOST,
+		constants.ORCHESTRATOR_PULL_FREQUENCY_SECONDS_ENV_VAR:             strconv.Itoa(constants.DEFAULT_ORCHESTRATOR_PULL_FREQUENCY_SEC),
+		constants.DATABASE_NUMBER_BACKUP_FILES_ENV_VAR:                    "10",
+		constants.DATABASE_BACKUP_INTERVAL_ENV_VAR:                        "120",
+		constants.DATABASE_SAVE_INTERVAL_ENV_VAR:                          "2",
+		constants.CATALOG_CACHE_FOLDER_ENV_VAR:                            "./catalog_cache",
+		constants.CATALOG_CACHE_KEEP_FREE_DISK_SPACE_ENV_VAR:              strconv.FormatInt(constants.DEFAULT_CATALOG_CACHE_KEEP_FREE_DISK_SPACE, 10),
+		constants.CATALOG_CACHE_MAX_SIZE_ENV_VAR:                          strconv.FormatInt(constants.DEFAULT_CATALOG_CACHE_MAX_SIZE, 10),
+		constants.VM_CACHE_REFRESH_INTERVAL_SECONDS_ENV_VAR:               strconv.Itoa(constants.DEFAULT_VM_CACHE_REFRESH_INTERVAL_SECONDS),
+		constants.CATALOG_ENABLE_PROVIDER_CREDENTIALS_OBFUSCATION_ENV_VAR: strconv.FormatBool(constants.ENABLE_CREDENTIALS_OBFUSCATION_DEFAULT_VALUE),
+	}
+}
+
+// saveConfig persists the config back to disk in the original format (YAML or JSON).
+func saveConfig(cfg *config.Config) error {
+	content, err := cfg.GetConfigContent()
+	if err != nil {
+		return fmt.Errorf("could not marshal config: %w", err)
+	}
+
+	filename := cfg.GetFilename()
+	if err := os.WriteFile(filename, content, 0o644); err != nil {
+		return fmt.Errorf("could not write config file %s: %w", filename, err)
+	}
+	return nil
 }

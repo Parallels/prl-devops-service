@@ -19,7 +19,7 @@ import (
 )
 
 //	@title			Parallels Desktop DevOps Service
-//	@version		1.0.1
+//	@version		1.0.3
 //	@description	Parallels Desktop DevOps Service
 //	@termsOfService	http://swagger.io/terms/
 
@@ -40,6 +40,12 @@ import (
 // @in							header
 // @name						Authorization
 func main() {
+	cfg := config.Get()
+	loaded := cfg.Load()
+	if !loaded {
+		fmt.Println("Failed to load configuration")
+	}
+
 	// catching all of the exceptions
 	defer func() {
 		// Saving the database before exiting

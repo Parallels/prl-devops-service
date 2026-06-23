@@ -1,0 +1,12 @@
+---
+layout: post
+title:  "Release 1.0.3"
+date:   2026-06-22 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- change the way we install the service, reducing the amount of environment variables and adding more in the config file
+
+

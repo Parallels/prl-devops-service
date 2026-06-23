@@ -11,7 +11,6 @@ type ApiErrorDiagnosticsResponse struct {
 }
 
 func NewDiagnosticsWithCode(diag *errors.Diagnostics, code int) ApiErrorDiagnosticsResponse {
-
 	apiRspDiag := errors.NewDiagnostics("api error response")
 	if diag != nil {
 		apiRspDiag.Append(diag)
@@ -23,4 +22,18 @@ func NewDiagnosticsWithCode(diag *errors.Diagnostics, code int) ApiErrorDiagnost
 		Message:     apiRspDiag.GetSummary(),
 	}
 	return message
+}
+
+func NewDiagnosticsWithMessageAndCode(diag *errors.Diagnostics, message string, code int) ApiErrorDiagnosticsResponse {
+	apiRspDiag := errors.NewDiagnostics("api error response")
+	if diag != nil {
+		apiRspDiag.Append(diag)
+	}
+	apiRspDiag.Complete()
+	msg := ApiErrorDiagnosticsResponse{
+		Code:        code,
+		Diagnostics: apiRspDiag,
+		Message:     message,
+	}
+	return msg
 }

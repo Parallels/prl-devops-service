@@ -13,7 +13,7 @@ download_ubuntu_tab:
       icon: microchip 
       content: |-
         <div class="mt-3">
-            <a href="https://releases.ubuntu.com/22.04.4/ubuntu-22.04.4-live-server-amd64.iso" class="button is-primary is-medium">
+            <a href="https://old-releases.ubuntu.com/releases/22.04.4/ubuntu-22.04.4-live-server-amd64.iso" class="button is-primary is-medium">
                 Download Ubuntu Server 22.04 LTS for x86_64
             </a>
         </div>
@@ -22,7 +22,7 @@ download_ubuntu_tab:
       icon: microchip 
       content: |-
         <div class="mt-3">
-            <a href="https://cdimage.ubuntu.com/releases/22.04/release/ubuntu-22.04.4-live-server-arm64.iso" class="button is-primary is-medium">
+            <a href="https://old-releases.ubuntu.com/releases/22.04.4/ubuntu-22.04.4-live-server-arm64.iso" class="button is-primary is-medium">
                 Download Ubuntu Server 22.04 LTS for arm64
             </a>
         </div>
@@ -175,11 +175,11 @@ To set up the service, we will need to create or edit a [configuration file]({{ 
       mode: catalog
     ```
 
-This will configure the service to run in catalog mode and listen on port 80 with all the default settings. However, this setup is only suitable for quick testing. For production use, we need to implement additional security measures to ensure a more secure deployment. You can find more information about security options in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/harden-security/){:target="_blank"}
+This will configure the service to run in catalog mode and listen on port 80 with all the default settings. However, this setup is only suitable for quick testing. For production use, we need to implement additional security measures to ensure a more secure deployment. You can find more information about security options in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/devops/security/hardening-security/){:target="_blank"}
 
 ### Security
 
-The service will run with default values, these are just fine for demos and to quickly get the service running but for production use, you will need to secure the service. You can find more information about how to secure the service in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/devops/getting-started/harden-security/){:target="_blank"}
+The service will run with default values, these are just fine for demos and to quickly get the service running but for production use, you will need to secure the service. You can find more information about how to secure the service in the [official documentation]({{ site.url }}{{ site.baseurl }}/docs/devops/security/hardening-security/){:target="_blank"}
 
 ### Starting the service
 
