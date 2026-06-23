@@ -9,29 +9,29 @@ import (
 )
 
 type OrchestratorHost struct {
-	ID                        string                          `json:"id" gorm:"primaryKey;column:id;type:varchar(255)"`
+	ID                        string                          `json:"id" gorm:"primaryKey;column:id;type:varchar(64)"`
 	Enabled                   bool                            `json:"enabled" gorm:"column:enabled;type:boolean;default:false;not null"`
 	Host                      string                          `json:"host" gorm:"column:host;type:varchar(255)"`
-	Architecture              string                          `json:"architecture" gorm:"column:architecture;type:varchar(255)"`
+	Architecture              string                          `json:"architecture" gorm:"column:architecture;type:varchar(64)"`
 	CpuModel                  string                          `json:"cpu_model,omitempty" gorm:"column:cpu_model;type:varchar(255)"`
-	OsVersion                 string                          `json:"os_version,omitempty" gorm:"column:os_version;type:varchar(255)"`
-	OsName                    string                          `json:"os_name,omitempty" gorm:"column:os_name;type:varchar(255)"`
-	ExternalIpAddress         string                          `json:"external_ip_address,omitempty" gorm:"column:external_ip_address;type:varchar(255)"`
-	DevOpsVersion             string                          `json:"devops_version,omitempty" gorm:"column:devops_version;type:varchar(255)"`
+	OsVersion                 string                          `json:"os_version,omitempty" gorm:"column:os_version;type:varchar(64)"`
+	OsName                    string                          `json:"os_name,omitempty" gorm:"column:os_name;type:varchar(64)"`
+	ExternalIpAddress         string                          `json:"external_ip_address,omitempty" gorm:"column:external_ip_address;type:varchar(64)"`
+	DevOpsVersion             string                          `json:"devops_version,omitempty" gorm:"column:devops_version;type:varchar(64)"`
 	Description               string                          `json:"description,omitempty" gorm:"column:description;type:text"`
 	Tags                      []string                        `json:"tags,omitempty" gorm:"column:tags;type:json;serializer:json"`
-	Port                      string                          `json:"port,omitempty" gorm:"column:port;type:varchar(255)"`
-	Schema                    string                          `json:"schema,omitempty" gorm:"column:schema;type:varchar(255)"`
+	Port                      string                          `json:"port,omitempty" gorm:"column:port;type:varchar(32)"`
+	Schema                    string                          `json:"schema,omitempty" gorm:"column:schema;type:varchar(32)"`
 	PathPrefix                string                          `json:"path_prefix,omitempty" gorm:"column:path_prefix;type:varchar(255)"`
-	ParallelsDesktopVersion   string                          `json:"parallels_desktop_version,omitempty" gorm:"column:parallels_desktop_version;type:varchar(255)"`
+	ParallelsDesktopVersion   string                          `json:"parallels_desktop_version,omitempty" gorm:"column:parallels_desktop_version;type:varchar(64)"`
 	ParallelsDesktopLicensed  bool                            `json:"parallels_desktop_licensed,omitempty" gorm:"column:parallels_desktop_licensed;type:boolean;default:false;not null"`
 	HasWebsocketEvents        bool                            `json:"has_websocket_events" gorm:"column:has_websocket_events;type:boolean;default:false;not null"`
 	IsLocal                   bool                            `json:"is_local,omitempty" gorm:"column:is_local;type:boolean;default:false;not null"`
 	Authentication            *OrchestratorHostAuthentication `json:"authentication,omitempty" gorm:"column:authentication;type:json;serializer:json"`
 	Resources                 *HostResources                  `json:"resources,omitempty" gorm:"column:resources;type:json;serializer:json"`
-	State                     string                          `json:"state,omitempty" gorm:"column:state;type:varchar(255)"`
-	LastUnhealthy             string                          `json:"last_seen,omitempty" gorm:"column:last_seen;type:varchar(255)"`
-	LastUnhealthyErrorMessage string                          `json:"last_seen_error_message,omitempty" gorm:"column:last_seen_error_message;type:varchar(255)"`
+	State                     string                          `json:"state,omitempty" gorm:"column:state;type:varchar(32)"`
+	LastUnhealthy             string                          `json:"last_seen,omitempty" gorm:"column:last_seen;type:varchar(64)"`
+	LastUnhealthyErrorMessage string                          `json:"last_seen_error_message,omitempty" gorm:"column:last_seen_error_message;type:text"`
 	HealthCheck               *models.ApiHealthCheck          `json:"-" gorm:"-"`
 	VirtualMachines           []VirtualMachine                `json:"virtual_machines,omitempty" gorm:"foreignKey:HostId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	IsReverseProxyEnabled     bool                            `json:"is_reverse_proxy_enabled,omitempty" gorm:"column:is_reverse_proxy_enabled;type:boolean;default:false;not null"`
