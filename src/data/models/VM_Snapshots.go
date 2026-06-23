@@ -1,12 +1,12 @@
 package models
 
 type VMSnapshot struct {
-	ID      string `json:"id,omitempty" gorm:"primaryKey;column:id;type:varchar(255);not null"`
+	ID      string `json:"id,omitempty" gorm:"primaryKey;column:id;type:varchar(64);not null"`
 	Name    string `json:"name" gorm:"column:name;type:varchar(255);not null"`
 	Date    string `json:"date" gorm:"column:date;type:timestamp;not null"`
-	State   string `json:"state" gorm:"column:state;type:varchar(255);not null"`
+	State   string `json:"state" gorm:"column:state;type:varchar(32);not null"`
 	Current bool   `json:"current" gorm:"column:current;type:boolean;not null"`
-	Parent  string `json:"parent" gorm:"column:parent;type:varchar(255);not null"`
+	Parent  string `json:"parent" gorm:"column:parent;type:varchar(64);not null"`
 }
 
 type VMSnapshots struct {

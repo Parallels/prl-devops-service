@@ -3,22 +3,22 @@ package models
 import "encoding/json"
 
 type VirtualMachine struct {
-	ID                    string                             `json:"ID,omitempty" gorm:"column:id;primaryKey;not null;type:varchar(255)"`
+	ID                    string                             `json:"ID,omitempty" gorm:"column:id;primaryKey;not null;type:varchar(64)"`
 	HostUrl               string                             `json:"host_url,omitempty" gorm:"column:host_url;not null;type:varchar(255)"`
-	HostId                string                             `json:"host_id,omitempty" gorm:"column:host_id;not null;type:varchar(255)"`
+	HostId                string                             `json:"host_id,omitempty" gorm:"column:host_id;not null;type:varchar(64)"`
 	HostName              string                             `json:"host_name,omitempty" gorm:"column:host_name;not null;type:varchar(255)"`
 	HostState             string                             `json:"host_state,omitempty" gorm:"column:host_state;type:varchar(255)"`
 	User                  string                             `json:"user,omitempty" gorm:"column:user;not null;type:varchar(255)"`
-	HostExternalIpAddress string                             `json:"host_external_ip_address,omitempty" gorm:"column:host_external_ip_address;type:varchar(255)"`
-	InternalIpAddress     string                             `json:"internal_ip_address,omitempty" gorm:"column:internal_ip_address;type:varchar(255)"`
+	HostExternalIpAddress string                             `json:"host_external_ip_address,omitempty" gorm:"column:host_external_ip_address;type:varchar(64)"`
+	InternalIpAddress     string                             `json:"internal_ip_address,omitempty" gorm:"column:internal_ip_address;type:varchar(64)"`
 	Host                  string                             `json:"host,omitempty" gorm:"column:host;type:varchar(255)"`
 	Name                  string                             `json:"name,omitempty" gorm:"column:name;not null;type:varchar(255)"`
 	Description           string                             `json:"description,omitempty" gorm:"column:description;type:text"`
-	Type                  string                             `json:"type,omitempty" gorm:"column:type;type:varchar(255)"`
-	State                 string                             `json:"state,omitempty" gorm:"column:state;type:varchar(255)"`
-	OS                    string                             `json:"os,omitempty" gorm:"column:os;type:varchar(255)"`
-	Template              string                             `json:"template,omitempty" gorm:"column:template;type:varchar(255)"`
-	Uptime                string                             `json:"uptime,omitempty" gorm:"column:uptime;type:varchar(255)"`
+	Type                  string                             `json:"type,omitempty" gorm:"column:type;type:varchar(64)"`
+	State                 string                             `json:"state,omitempty" gorm:"column:state;type:varchar(32)"`
+	OS                    string                             `json:"os,omitempty" gorm:"column:os;type:varchar(64)"`
+	Template              string                             `json:"template,omitempty" gorm:"column:template;type:varchar(64)"`
+	Uptime                string                             `json:"uptime,omitempty" gorm:"column:uptime;type:varchar(64)"`
 	HomePath              string                             `json:"home_path,omitempty" gorm:"column:home_path;type:varchar(255)"`
 	Home                  string                             `json:"home,omitempty" gorm:"column:home;type:varchar(255)"`
 	RestoreImage          string                             `json:"restore_image,omitempty" gorm:"column:restore_image;type:varchar(255)"`

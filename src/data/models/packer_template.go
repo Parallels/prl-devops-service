@@ -5,7 +5,7 @@ import (
 )
 
 type PackerTemplate struct {
-	ID             string            `json:"id" gorm:"column:id;primaryKey;not null;type:varchar(255)"`
+	ID             string            `json:"id" gorm:"column:id;primaryKey;not null;type:varchar(64)"`
 	Name           string            `json:"name" gorm:"column:name;not null;type:varchar(255);"`
 	Owner          string            `json:"owner" gorm:"column:owner;not null;type:varchar(255);"`
 	Hostname       string            `json:"hostname" gorm:"column:hostname;not null;type:varchar(255);"`
