@@ -6,11 +6,11 @@ import (
 )
 
 type ReverseProxy struct {
-	ID      string `json:"id,omitempty" gorm:"primaryKey;type:varchar(255);column:id"`
-	HostID  string `json:"host_id,omitempty" gorm:"column:host_id;type:varchar(255);index"`
+	ID      string `json:"id,omitempty" gorm:"primaryKey;type:varchar(64);column:id"`
+	HostID  string `json:"host_id,omitempty" gorm:"column:host_id;type:varchar(64);index"`
 	Enabled bool   `json:"enabled" gorm:"column:enabled;default:0;type:boolean"`
 	Host    string `json:"host,omitempty" gorm:"column:host;type:varchar(255)"`
-	Port    string `json:"port,omitempty" gorm:"column:port;type:varchar(255)"`
+	Port    string `json:"port,omitempty" gorm:"column:port;type:varchar(32)"`
 }
 
 func (o *ReverseProxy) Diff(source ReverseProxy) bool {

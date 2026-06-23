@@ -12,7 +12,7 @@ type CatalogManifest struct {
 	Path                    string                       `json:"path,omitempty" gorm:"column:path;type:varchar(255)"`
 	PackFile                string                       `json:"pack_path,omitempty" gorm:"column:pack_path;type:varchar(255)"`
 	MetadataFile            string                       `json:"metadata_path,omitempty" gorm:"column:metadata_path;type:varchar(255)"`
-	Type                    string                       `json:"type" gorm:"column:type;not null;type:varchar(64);index"`
+	Type                    string                       `json:"type" gorm:"column:type;not null;type:varchar(64)"`
 	Provider                *CatalogManifestProvider     `json:"provider" gorm:"column:provider;type:json;serializer:json"`
 	Size                    int64                        `json:"size" gorm:"column:size;not null;type:bigint"`
 	RequiredRoles           []string                     `json:"required_roles" gorm:"column:required_roles;type:json;serializer:json"`
