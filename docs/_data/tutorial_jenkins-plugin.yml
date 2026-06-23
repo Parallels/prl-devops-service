@@ -123,44 +123,79 @@ steps:
       - Initial setup wizard is complete
       - Jenkins URL is configured in **Manage Jenkins → System → Jenkins Location**
 
+  - id: choose-installation-method
+    kind: choice
+    title: Choose Installation Method
+    duration: "~1 min"
+    tag: JENKINS
+    question: How would you like to install the Parallels DevOps Jenkins Plugin?
+    icon: fa-download
+    branches:
+      plugin-manager:
+        label: Plugin Manager UI
+        value: plugin-manager
+        description: Install directly from Jenkins Plugin Manager (recommended)
+        icon: fa-store
+      github-hpi:
+        label: GitHub Release (HPI)
+        value: github-hpi
+        description: Manual installation via downloaded .hpi file
+        icon: fa-github
+        icon_type: fa-brands
+
   - id: install-jenkins-plugin
     kind: narrative
-    title: Install Jenkins Plugin
+    title: "Install Jenkins Plugin via ${{ choose-installation-method.label }}"
     duration: "~5 min"
     tag: JENKINS
     layout: rows
-    markdown_body: |
-      Download and install the Parallels DevOps Jenkins Plugin. You can install via the Plugin Manager UI or 
-      Jenkins CLI.
-
-      ### Via Plugin Manager UI
-      1. Login into Jenkins service `http://jenkins.example.com`
-      2. Navigate to **Manage Jenkins → Plugins → Available**
-      3. Search for **Parallels DevOps Plugin**
-      4. Check the box next to the plugin and click **Install**
-      5. Wait for installation to complete and check **Restart Jenkins when installation is complete**
-      ![Plugin Manager Screenshot](/prl-devops-service/img/examples/jenkins-store-plugin-search.png)
-      
-      ### Via github releases (manual download)
-      
-      1. Download the latest `.hpi` file from [GitHub Releases](https://github.com/jenkinsci/parallels-devops-plugin/releases)
-      2. Login into Jenkins service `http://jenkins.example.com`
-      3. Navigate to **Manage Jenkins → Plugins → Advanced settings**
-      4. Scroll to **Deploy Plugin**
-      5. Click **Choose File** and select the `.hpi` file
-      6. Click **Deploy**
-      7. Check **Restart Jenkins when installation is complete**
-      8. Wait for restart
-      
-      ![Plugin Manager Screenshot](/prl-devops-service/img/examples/jenkins-plugin-manager.png)
+    markdown_body: >
+      Follow the steps below to install the Parallels DevOps Jenkins Plugin using your selected method.
+    panels:
+      - kind: markdown
+        id: install-plugin-manager
+        name: Plugin Manager UI
+        if: choose-installation-method.value == 'plugin-manager'
+        markdown_body: |
+          ### Install via Plugin Manager
+          
+          This is the recommended method for most users. Jenkins will automatically download and install the 
+          plugin from the official Jenkins plugin repository.
+          
+          1. Login into Jenkins service at `http://jenkins.example.com`
+          2. Navigate to **Manage Jenkins → Plugins → Available**
+          3. Search for **Parallels DevOps Plugin**
+          4. Check the box next to the plugin and click **Install**
+          5. Wait for installation to complete and check **Restart Jenkins when installation is complete**
+          
+          ![Plugin Manager Screenshot](/prl-devops-service/img/examples/jenkins-store-plugin-search.png)
+      - kind: markdown
+        id: install-github-hpi
+        name: GitHub HPI
+        if: choose-installation-method.value == 'github-hpi'
+        markdown_body: |
+          ### Install via GitHub Release (HPI)
+          
+          Use this method if you need to install a specific version or if your Jenkins instance doesn't have 
+          internet access to the plugin repository.
+          
+          1. Download the latest `.hpi` file from [GitHub Releases](https://github.com/jenkinsci/parallels-devops-plugin/releases)
+          2. Login into Jenkins service at `http://jenkins.example.com`
+          3. Navigate to **Manage Jenkins → Plugins → Advanced settings**
+          4. Scroll to **Deploy Plugin** section
+          5. Click **Choose File** and select the downloaded `.hpi` file
+          6. Click **Deploy**
+          7. Check **Restart Jenkins when installation is complete**
+          8. Wait for Jenkins to restart
+          
+          ![Plugin Manager Screenshot](/prl-devops-service/img/examples/jenkins-plugin-manager.png)
     resources:
       - title: Plugin GitHub Repository
         url: https://github.com/jenkinsci/parallels-devops-plugin
       - title: Plugin Releases
         url: https://github.com/jenkinsci/parallels-devops-plugin/releases
     checklist:
-      - Plugin `.hpi` file is downloaded
-      - Plugin is installed via UI or CLI
+      - Plugin is installed via your chosen method
       - Jenkins has restarted successfully
       - Plugin appears in **Manage Jenkins → Plugins → Installed plugins**
 
@@ -304,7 +339,7 @@ steps:
       output: |
         {
           "ID": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-          "Name": "macOS-Sonoma-Builder",
+          "Name": "Ubuntu-Builder",
           "State": "stopped",
           ...
         }
@@ -364,19 +399,19 @@ steps:
     layout: rows
     markdown_body: |
       Agent templates define how Jenkins provisions VMs. Each template has a **label** that jobs use to request 
-      specific agent types (e.g., `macos`, `ubuntu-arm64`, `windows11`).
+      specific agent types (e.g., `ubuntu-arm64`, `ubuntu-x86_64`, `windows11`).
       
       Scroll to **Agent Templates** and click **Add Template**.
       
       ### Template Configuration
       
-      Configure the template:
+      Configure the template with a label like `ubuntu-arm64` to match your Ubuntu Server VM.
       
       ![Template Configuration Screenshot](/prl-devops-service/img/examples/template-label.png)
     checklist:
-      - Template label matches your build needs (e.g., `macos`, `linux`)
+      - Template label matches your build needs (e.g., `ubuntu-arm64`, `linux`)
       - VM user account has necessary permissions
-      - Base VM name/ID matches your stopped golden image
+      - Base VM name/ID matches your stopped golden image (e.g., `Ubuntu-Builder`)
       - Timeout values are appropriate for your VM boot time
 
   - id: create-template-from-catalog
@@ -387,27 +422,27 @@ steps:
     layout: rows
     markdown_body: |
       Agent templates define how Jenkins provisions VMs. Each template has a **label** that jobs use to request 
-      specific agent types (e.g., `macos`, `ubuntu-arm64`, `windows11`). In this example, we will create a template that provisions VMs from the Catalog Service.
+      specific agent types (e.g., `ubuntu-arm64`, `ubuntu-x86_64`, `windows11`). In this example, we will create a template that provisions VMs from the Catalog Service.
       
       Scroll to **Agent Templates** and click **Add Template**.
       
       ### Template Configuration
       
       Configure the template:
-      - Label: `macos` (or your desired label)
+      - Label: `ubuntu-arm64` (or your desired label)
       - Provisioning Mode: `Create from Catalog`
       - Catalog URL: `http://prldevops-catalog.example.com/`
       - Architecture: `arm64` (or `x86_64` depending on your catalog image)
-      - Catalog ID: 'Id of the catalog image you want to use eg. `macos-sonoma-14.0-arm64`'
+      - Catalog ID: 'Id of the catalog image you want to use eg. `ubuntu-server-24.04-arm64`'
       - Catalog Version: 'Version of the catalog image you want to use eg. `1.0.0`'
       - Catalog Credentials: Select the credentials you created for the Catalog Service
       - Test Connection to verify Jenkins can communicate with the Catalog Service 
       
       ![Template Configuration Screenshot](/prl-devops-service/img/examples/catalog-based.png)
     checklist:
-      - Template label matches your build needs (e.g., `macos`, `linux`)
+      - Template label matches your build needs (e.g., `ubuntu-arm64`, `linux`)
       - VM user account has necessary permissions
-      - Base VM name/ID matches your stopped golden image
+      - Catalog ID and version match your Ubuntu Server image
       - Timeout values are appropriate for your VM boot time
 
   - id: first-build
@@ -418,12 +453,12 @@ steps:
     layout: rows
     markdown_body: |
       Create a simple Jenkins job to test dynamic agent provisioning. Navigate to **Dashboard → New Item**, 
-      enter a name (e.g., `hello-world-macos`), select **Freestyle project**, and click **OK**.
+      enter a name (e.g., `hello-world-ubuntu`), select **Freestyle project**, and click **OK**.
       
       ### Job Configuration
       
       1. Under **General**, check **Restrict where this project can be run**
-      2. Enter label: `t1` (or your template label)
+      2. Enter label: `ubuntu-arm64` (or your template label)
       3. Under **Build Steps**, add **Execute shell**
       4. Enter the test script below:
     panel:
@@ -453,29 +488,30 @@ steps:
     tag: BUILD
     layout: rows
     markdown_body: |
-      Once the build completes, check the **Console Output**. You should see your script output along with 
-      the provisioning details.
-    panel:
-      kind: terminal
-      name: Expected Output
-      output: |
-        Started by user admin
-        Running on prl-a1b2c3d4-e5f6-7890-abcd-ef1234567890 in workspace /tmp/jenkins/workspace/hello-world-macos
-        [hello-world-macos] $ /bin/bash /tmp/jenkins/tmp/jenkins12345.sh
-        === Hello from a dynamic Jenkins agent ===
-        Hostname: macOS-Sonoma-Clone-12345
-        Operating System: Darwin
-        Architecture: arm64
-        User: parallels
-        Java Version:
-        openjdk version "17.0.9" 2023-10-17
-        Current Directory: /tmp/jenkins/workspace/hello-world-macos
-        === Build complete ===
-        Finished: SUCCESS
+      Once the build completes, check the **Console Output** in Jenkins. You should see your script output 
+      along with the provisioning details showing execution on a dynamically created `prl-*` agent node.
+      
+      ### Expected Console Output
+      
+      ```bash
+      Started by user admin
+      Running on prl-a1b2c3d4-e5f6-7890-abcd-ef1234567890 in workspace /tmp/jenkins/workspace/hello-world-ubuntu
+      [hello-world-ubuntu] $ /bin/bash /tmp/jenkins/tmp/jenkins12345.sh
+      === Hello from a dynamic Jenkins agent ===
+      Hostname: ubuntu-builder-clone-12345
+      Operating System: Linux
+      Architecture: aarch64
+      User: parallels
+      Java Version:
+      openjdk version "17.0.13" 2024-10-15
+      Current Directory: /tmp/jenkins/workspace/hello-world-ubuntu
+      === Build complete ===
+      Finished: SUCCESS
+      ```
     checklist:
       - Build status is **SUCCESS** ✅
       - Console shows execution on a `prl-*` node
-      - Script output displays correct environment info
+      - Script output displays correct environment info (Linux, aarch64)
       - After build, the `prl-*` node disappears from **Nodes** (cleanup successful)
 
   - id: troubleshooting
