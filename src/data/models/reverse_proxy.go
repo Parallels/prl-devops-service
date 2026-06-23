@@ -34,11 +34,11 @@ func (o *ReverseProxy) Diff(source ReverseProxy) bool {
 }
 
 type ReverseProxyHost struct {
-	ID         string                       `json:"id" gorm:"primaryKey;type:varchar(255);column:id"`
+	ID         string                       `json:"id" gorm:"primaryKey;type:varchar(64);column:id"`
 	Name       string                       `json:"name,omitempty" gorm:"column:name;type:varchar(255)"`
-	HostID     string                       `json:"host_id,omitempty" gorm:"column:host_id;type:varchar(255);index"`
+	HostID     string                       `json:"host_id,omitempty" gorm:"column:host_id;type:varchar(64);index"`
 	Host       string                       `json:"host" gorm:"column:host;type:varchar(255);not null"`
-	Port       string                       `json:"port" gorm:"column:port;type:varchar(255);not null"`
+	Port       string                       `json:"port" gorm:"column:port;type:varchar(32);not null"`
 	Tls        *ReverseProxyHostTls         `json:"tls,omitempty" gorm:"column:tls;type:json;serializer:json"`
 	Cors       *ReverseProxyHostCors        `json:"cors,omitempty" gorm:"column:cors;type:json;serializer:json"`
 	HttpRoutes []*ReverseProxyHostHttpRoute `json:"http_routes,omitempty" gorm:"column:http_routes;type:json;serializer:json"`

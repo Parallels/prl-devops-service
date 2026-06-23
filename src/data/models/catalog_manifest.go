@@ -3,16 +3,16 @@ package models
 import "strings"
 
 type CatalogManifest struct {
-	ID                      string                       `json:"id" gorm:"primaryKey;type:varchar(255);column:id;not null"`
-	CatalogId               string                       `json:"catalog_id" gorm:"column:catalog_id;not null;type:varchar(255);index"`
+	ID                      string                       `json:"id" gorm:"primaryKey;type:varchar(64);column:id;not null"`
+	CatalogId               string                       `json:"catalog_id" gorm:"column:catalog_id;not null;type:varchar(64);index"`
 	Name                    string                       `json:"name" gorm:"column:name;not null;type:varchar(255);index"`
-	Version                 string                       `json:"version" gorm:"column:version;not null;type:varchar(255)"`
-	Architecture            string                       `json:"architecture" gorm:"column:architecture;not null;type:varchar(255)"`
+	Version                 string                       `json:"version" gorm:"column:version;not null;type:varchar(64)"`
+	Architecture            string                       `json:"architecture" gorm:"column:architecture;not null;type:varchar(64)"`
 	Description             string                       `json:"description" gorm:"column:description;not null;type:text"`
 	Path                    string                       `json:"path,omitempty" gorm:"column:path;type:varchar(255)"`
 	PackFile                string                       `json:"pack_path,omitempty" gorm:"column:pack_path;type:varchar(255)"`
 	MetadataFile            string                       `json:"metadata_path,omitempty" gorm:"column:metadata_path;type:varchar(255)"`
-	Type                    string                       `json:"type" gorm:"column:type;not null;type:varchar(255);index"`
+	Type                    string                       `json:"type" gorm:"column:type;not null;type:varchar(64);index"`
 	Provider                *CatalogManifestProvider     `json:"provider" gorm:"column:provider;type:json;serializer:json"`
 	Size                    int64                        `json:"size" gorm:"column:size;not null;type:bigint"`
 	RequiredRoles           []string                     `json:"required_roles" gorm:"column:required_roles;type:json;serializer:json"`
