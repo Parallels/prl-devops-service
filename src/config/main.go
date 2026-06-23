@@ -854,19 +854,20 @@ func (c *Config) EnableModule(module string) {
 }
 
 func (c *Config) GetKey(key string) string {
-	value := helper.GetFlagValue(key, "")
-	exists := false
-
-	if value == "" {
-		value, exists = os.LookupEnv(key)
-		if value == "" && !exists {
-			for k, v := range c.config.Environment {
-				if strings.EqualFold(k, key) {
-					value = v
-					break
-				}
-			}
+	value := ""
+	for k, v := range c.config.Environment {
+		if strings.EqualFold(k, key) {
+			value = v
+			break
 		}
+	}
+
+	if flagValue := helper.GetFlagValue(key, ""); flagValue != "" {
+		value = flagValue
+	}
+
+	if envValue, exists := os.LookupEnv(key); exists {
+		value = envValue
 	}
 
 	return value
