@@ -1,0 +1,669 @@
+id: tutorial-jenkins-plugin
+title: Jenkins Dynamic Build Agents
+level: intermediate
+duration: "~30 min"
+group: Tutorials
+category: CI/CD
+order: 3
+tags:
+  - jenkins
+  - ci-cd
+  - automation
+  - build-agents
+
+scenario: >
+  Learn how to provision dynamic Jenkins build agents on demand using Parallels DevOps Service.
+  Automate your CI/CD pipeline with ephemeral macOS, Windows, and Linux agents.
+
+introduction:
+  markdown_scenario: >
+    **Jenkins** is one of the most widely adopted CI/CD platforms in the world. The **Parallels DevOps Jenkins Plugin** 
+    enables **ephemeral build agents**—virtual machines that are created on demand when Jenkins detects queued work, 
+    run a single build, and are automatically destroyed when finished.
+    
+    
+    With this plugin, you can:
+    
+    - Provision macOS, Windows, and Linux agents dynamically from golden images using the catalog service of Parallels DevOps Service
+    - Scale your build fleet elastically to match workload demand
+    - Ensure build isolation by giving each job a fresh, clean VM
+    - Reduce costs by only running VMs when builds are actively executing
+    
+    **Before you begin**: This tutorial assumes you have a working Parallels DevOps Service instance. If you haven't 
+    set it up yet, complete the [DevOps CLI Quick Start](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/) 
+    tutorial first.
+  key_outcomes:
+    - Set up Jenkins with the Parallels DevOps plugin
+    - Prepare golden image VMs with build dependencies
+    - Configure Jenkins cloud providers and agent templates
+    - Run dynamically provisioned builds on macOS, Linux, and Windows
+  prerequisites:
+    hard:
+      - "**Parallels DevOps Service** installed and running — [Complete this tutorial first](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/)"
+      - Jenkins LTS 2.440.x or newer
+      - JDK 17 or 21 for running Jenkins
+    soft:
+      - "**Catalog Service** (optional) — Only needed for catalog-based provisioning. [Setup guide](/prl-devops-service/examples/remote-catalog/)"
+      - Basic familiarity with Jenkins and CI/CD concepts
+      - Understanding of virtual machine management
+  architecture_diagram: |
+    flowchart TB
+        A[Jenkins Controller] -->|Detects queued build| B[Parallels DevOps Plugin]
+        B -->|Clone VM Request| C[DevOps Service]
+        C -->|Clones Golden Image| D[Base VM - Stopped]
+        C -->|Creates & Starts| E[Ephemeral VM]
+        E -->|Connects as Agent| A
+        A -->|Runs Build| E
+        A -->|Build Complete| B
+        B -->|Delete VM| C
+        C -->|Destroys| E
+
+steps:
+  - id: verify-prerequisites
+    kind: sidequest
+    title: Verify Prerequisites
+    duration: "~2 min"
+    tag: SETUP
+    required: true
+    sidequest_id: tutorial-devops-cli-quickstart
+    markdown_body: |
+      ## Welcome to Jenkins Dynamic Build Agents
+      
+      Before we begin, you need to have the Parallels DevOps Service installed and running. This is a 
+      **mandatory prerequisite** for this tutorial.
+      
+      If you haven't completed the DevOps CLI Quick Start tutorial yet, you can do it now and your progress 
+      in both tutorials will be tracked.
+      
+      ### Quick Verification
+      
+      Once you've completed the prerequisite tutorial, verify your setup:
+      
+      ```bash
+      # Check if prldevops is installed
+      prldevops --version
+      
+      # Verify the service is running
+      curl http://prldevops.example.com/api/health/system
+      ```
+    checklist:
+      - Parallels DevOps Service is installed and accessible
+      - Service health check returns HTTP 200 OK
+      - You have API credentials (username/password or token)
+      - (Optional) Catalog Service is running if you plan to use catalog-based provisioning
+
+  - id: install-jenkins
+    kind: narrative
+    title: Install and Run Jenkins
+    duration: "~10 min"
+    tag: JENKINS
+    layout: rows
+    markdown_body: |
+      Install Jenkins and configure the Jenkins URL so that dynamically provisioned VMs can connect back as 
+      inbound agents. 
+
+      You can install Jenkins on the same machine as the DevOps Service or on a separate server. Just ensure 
+      Jenkins can reach the DevOps Service API and that VMs can reach Jenkins at the configured Jenkins URL.
+    panel:
+    resources:
+      - title: Jenkins Download Page
+        url: https://www.jenkins.io/download/
+      - title: Jenkins Documentation
+        url: https://www.jenkins.io/doc/book/installing/
+  
+    checklist:
+      - Jenkins is installed and running
+      - You can access Jenkins at `http://jenkins.example.com`
+      - Initial setup wizard is complete
+      - Jenkins URL is configured in **Manage Jenkins → System → Jenkins Location**
+
+  - id: choose-installation-method
+    kind: choice
+    title: Choose Installation Method
+    duration: "~1 min"
+    tag: JENKINS
+    question: How would you like to install the Parallels DevOps Jenkins Plugin?
+    icon: fa-download
+    branches:
+      plugin-manager:
+        label: Plugin Manager UI
+        value: plugin-manager
+        description: Install directly from Jenkins Plugin Manager (recommended)
+        icon: fa-store
+      github-hpi:
+        label: GitHub Release (HPI)
+        value: github-hpi
+        description: Manual installation via downloaded .hpi file
+        icon: fa-github
+        icon_type: fa-brands
+
+  - id: install-jenkins-plugin
+    kind: narrative
+    title: "Install Jenkins Plugin via ${{ choose-installation-method.label }}"
+    duration: "~5 min"
+    tag: JENKINS
+    layout: rows
+    markdown_body: >
+      Follow the steps below to install the Parallels DevOps Jenkins Plugin using your selected method.
+    panels:
+      - kind: terminal
+        id: install-plugin-manager
+        name: Plugin Manager UI
+        if: choose-installation-method.value == 'plugin-manager'
+        markdown_body: |
+          This is the recommended method for most users. Jenkins will automatically download and install the 
+          plugin from the official Jenkins plugin repository.
+          
+          1. Login into Jenkins service at `http://jenkins.example.com`
+          2. Navigate to **Manage Jenkins → Plugins → Available**
+          3. Search for **Parallels DevOps Plugin**
+          4. Check the box next to the plugin and click **Install**
+          5. Wait for installation to complete and check **Restart Jenkins when installation is complete**
+          
+          ![Plugin Manager Screenshot](/prl-devops-service/img/examples/jenkins-store-plugin-search.png)
+        cmd: |
+          # Installation is done through the Jenkins UI
+          echo "Follow the steps above in the Jenkins web interface"
+        copy_button: false
+      - kind: terminal
+        id: install-github-hpi
+        name: GitHub HPI
+        if: choose-installation-method.value == 'github-hpi'
+        markdown_body: |
+          ### Install via GitHub Release (HPI)
+          
+          Use this method if you need to install a specific version or if your Jenkins instance doesn't have 
+          internet access to the plugin repository.
+          
+          1. Download the latest `.hpi` file from [GitHub Releases](https://github.com/jenkinsci/parallels-devops-plugin/releases)
+          2. Login into Jenkins service at `http://jenkins.example.com`
+          3. Navigate to **Manage Jenkins → Plugins → Advanced settings**
+          4. Scroll to **Deploy Plugin** section
+          5. Click **Choose File** and select the downloaded `.hpi` file
+          6. Click **Deploy**
+          7. Check **Restart Jenkins when installation is complete**
+          8. Wait for Jenkins to restart
+          
+          ![Plugin Manager Screenshot](/prl-devops-service/img/examples/jenkins-plugin-manager.png)
+        cmd: |
+          # Download the plugin file
+          curl -L -o parallels-devops.hpi https://github.com/jenkinsci/parallels-devops-plugin/releases/latest/download/parallels-devops.hpi
+          
+          # Then upload via Jenkins UI following the steps above
+        copy_button: true
+    resources:
+      - title: Plugin GitHub Repository
+        url: https://github.com/jenkinsci/parallels-devops-plugin
+      - title: Plugin Releases
+        url: https://github.com/jenkinsci/parallels-devops-plugin/releases
+    checklist:
+      - Plugin is installed via your chosen method
+      - Jenkins has restarted successfully
+      - Plugin appears in **Manage Jenkins → Plugins → Installed plugins**
+
+  - id: choose-vm-setup
+    kind: choice
+    title: Choose VM Setup Method
+    duration: "~1 min"
+    tag: VM
+    question: Do you want to create a new VM or use an existing one?
+    icon: fa-laptop
+    branches:
+      create-new:
+        label: Create New Ubuntu Server VM
+        value: create-new
+        description: Set up a fresh Ubuntu Server 24.04 LTS as your build agent
+        icon: fa-plus-circle
+      use-existing:
+        label: Use Existing VM
+        value: use-existing
+        description: Configure an existing macOS, Windows, or Linux VM
+        icon: fa-check-circle
+
+  - id: prepare-base-vm
+    kind: narrative
+    title: "Prepare Your Base Virtual Machine: ${{ choose-vm-setup.label }}"
+    duration: "~20 min"
+    if : choose-vm-setup.value == 'create-new'
+    tag: VM
+    layout: rows
+    markdown_body: |
+      Create a "golden image" VM with all necessary build tools. The Jenkins plugin will clone this VM for each 
+      build. At minimum, you need **Java** (for the Jenkins agent) and any build tools your projects require.
+      Create a New Ubuntu Server 24.04 LTS Virtual Machine
+      
+      If you selected "Create New Ubuntu Server VM", follow these steps:
+      
+      1. **Download** Ubuntu Server 24.04 LTS ISO from [ubuntu.com/download/server](https://ubuntu.com/download/server)
+      2. **Open** Parallels Desktop and click the "+" button
+      3. **Select** "Install Windows or another OS from a DVD or image file"
+      4. **Click** "Locate Manually" and select the Ubuntu Server 24.04 LTS ISO file
+      5. **Follow** the installation wizard steps
+      
+      **Install Parallels Tools** (required for cloning):
+      - In VM configuration → Hardware → CD/DVD 1 → Choose an image file
+      - Navigate to: `Parallels Desktop.app/Contents/Resources/Tools/prl-tools-lin-arm.iso`
+      - Use the "Install Parallels Tools" terminal panel to run the installation
+      
+      See the [Parallels Tools Guide](https://kb.parallels.com/en/129740) for more details.
+      
+      Use the appropriate Java installation terminal panel for your platform (macOS, Linux, or Windows).
+    panels:
+      - name: Install Parallels Tools
+        kind: terminal
+        if: choose-vm-setup.value == 'create-new'
+        markdown_body: |
+          Mount the Parallels Tools ISO and run the installer:
+        cmd: |
+          # Eject any existing CD/DVD mounts
+          for dev in /dev/sr0 /dev/cdrom /dev/dvd; do sudo eject $dev; done 2>/dev/null
+          
+          # Create mount point and mount the ISO
+          sudo mkdir -p /media/cdrom0
+          sudo mount -o exec /dev/sr0 /media/cdrom0
+          
+          # Navigate to mount point and run installer
+          cd /media/cdrom0
+          sudo ./install
+          
+          # Follow the installation prompts
+        copy_button: true
+      - kind: terminal
+        name: Install Java (Ubuntu)
+        if: choose-vm-setup.value == 'create-new'
+        markdown_body: |
+          On your Ubuntu VM, install Java and build tools:
+        cmd: |
+          # Update package lists
+          sudo apt update
+          
+          # Install Java (required for Jenkins agent)
+          sudo apt install -y openjdk-17-jdk
+          
+          # Install other build tools
+          sudo apt install -y git build-essential curl wget
+          
+          # Verify Java installation
+          java -version
+        copy_button: true
+    resources:
+      - title: Ubuntu Server Download
+        url: https://ubuntu.com/download/server
+      - title: Parallels Tools Installation Guide
+        url: https://kb.parallels.com/en/129740
+      - title: OpenJDK Downloads
+        url: https://openjdk.org/
+    checklist:
+      - VM is created and fully installed (if creating new) or existing VM is ready
+      - Parallels Tools are installed on the VM
+      - Java 17 or later is installed and in the PATH
+      - All required build dependencies are installed (Git, build tools, etc.)
+      - VM is **stopped** (important for cloning)
+
+  - id: use-existing-vm
+    kind: narrative
+    title: Use Existing VM
+    if : choose-vm-setup.value == 'use-existing'
+    duration: "~5 min"
+    tag: VM
+    layout: rows
+    markdown_body: |
+      Ensure the VM is prepared with the necessary build tools and Java installed. 
+      The Jenkins plugin will clone this VM for each build, so it should be in a **stopped state** before proceeding.
+      
+      Verify the VM is registered in the DevOps Service and note its name or ID for later use in the Jenkins plugin configuration.
+    panels:
+      - kind: terminal
+        name: Install Java (macOS)
+        if: choose-vm-setup.value == 'use-existing'
+        markdown_body: |
+          On your macOS VM, install Java and other build tools:
+        cmd: |
+          # Install Homebrew if not already installed
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          
+          # Install Java (required for Jenkins agent)
+          brew install openjdk@17
+          
+          # Install other build tools as needed
+          brew install git node python3
+          
+          # Verify Java installation
+          java -version
+        copy_button: true
+      - kind: terminal
+        name: Install Java (Linux)
+        if: choose-vm-setup.value == 'use-existing'
+        markdown_body: |
+          On your Linux VM, install Java and build tools:
+        cmd: |
+          # Update package lists
+          sudo apt update
+          
+          # Install Java (required for Jenkins agent)
+          sudo apt install -y openjdk-17-jdk
+          
+          # Install other build tools
+          sudo apt install -y git build-essential curl wget
+          
+          # Verify Java installation
+          java -version
+        copy_button: true
+      - kind: terminal
+        name: Install Java (Windows)
+        if: choose-vm-setup.value == 'use-existing'
+        markdown_body: |
+          On your Windows VM, install Java using PowerShell:
+        cmd: |
+          # Download and install OpenJDK (requires admin privileges)
+          # Alternative: Download manually from https://openjdk.org/
+          
+          winget install Microsoft.OpenJDK.17
+          
+          # Verify Java installation
+          java -version
+          
+          # Install Git for Windows
+          winget install Git.Git
+        copy_button: true
+
+    checklist:
+      - Existing VM is prepared with required build tools and Java
+      - VM is registered in DevOps Service and visible via `/v1/machines` API
+      - VM is **stopped** before proceeding to Jenkins configuration
+
+  - id: register-vm
+    kind: narrative
+    title: Stop and Register the VM
+    duration: "~2 min"
+    tag: VM
+    layout: rows
+    markdown_body: |
+      The Jenkins plugin requires the base VM to be in a **stopped state** before cloning. Let's verify the VM 
+      is registered and stop it.
+
+      You can push this VM to the Catalog Service for easier management, or simply use it as a local base image by referencing its name or ID in the Jenkins plugin configuration.
+    panel:
+      kind: terminal
+      name: Stop VM
+      cmd: |
+        # List all VMs to find your VM ID
+        /v1/machines/{id}
+        
+        # Stop the VM (replace '{id}' with actual ID or name)
+        /v1/machines/{id}/stop
+        
+        # Verify it's stopped
+        /v1/machines/{id}
+      output: |
+        {
+          "ID": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "Name": "Ubuntu-Builder",
+          "State": "stopped",
+          ...
+        }
+      copy_button: true
+    checklist:
+      - VM is visible in `/v1/machines` API
+      - VM state is **stopped**
+      - You have noted the VM name or ID for the next steps
+
+  - id: configure-cloud
+    kind: narrative
+    title: Configure Jenkins Cloud Provider
+    duration: "~10 min"
+    tag: JENKINS
+    layout: rows
+    markdown_body: |
+      Now configure Jenkins to provision dynamic agents from Parallels DevOps Service. Navigate to 
+      **Manage Jenkins → Clouds → New cloud**.
+      
+      Enter a name (e.g., `parallels-cloud`), select **Parallels DevOps Cloud**, and click **Create**.
+
+      ![Cloud Configuration Screenshot](/prl-devops-service/img/examples/new-cloud.png)
+      
+      
+      ### Cloud Settings
+      
+      Configure the cloud with these settings:
+      - Name: `parallels-cloud`
+      - Service URL: `http://prldevops.example.com` (replace with your DevOps Service URL)
+      - Jenkins URL: `http://jenkins.example.com` (replace with your Jenkins URL)
+      - Connection Mode: `HOST` or `ORCHESTRATOR`
+      - Max Concurrent Agents: `5` (or adjust based on your needs)
+      - API Credentials
+         1. Click **Add** next to **API Credentials**
+         2. Select **Jenkins** as domain
+         3. Choose **Username with password**
+         4. Enter the username and password from your `config.yaml`
+         5. Set ID: `parallels-devops-api` (or any ID you prefer)
+         6. Click **Add**
+         7. Select the credential from dropdown
+      - Test Connection to verify Jenkins can communicate with the DevOps Service API
+      
+      ![Cloud Configuration Screenshot](/prl-devops-service/img/examples/service-configurations.png)
+     
+    checklist:
+      - Cloud is created with name `parallels-cloud`
+      - Service URL points to your DevOps Service
+      - API credentials are configured
+      - Connection mode is set to `HOST` or `ORCHESTRATOR`
+      - "**Test Connection** returns success"
+
+  - id: choose-template-setup
+    kind: choice
+    title: Choose VM Setup Method
+    duration: "~1 min"
+    tag: VM
+    question: Do you want to create a new VM from a golden image or use an existing one?
+    icon: fa-laptop
+    branches:
+      use-existing:
+        label: Clone Existing VM
+        value: clone-existing
+        description: Use an existing VM that is already prepared with build tools and Java, and is registered in the DevOps Service
+        icon: fa-check-circle
+      clone:
+        label: Clone from Golden Image
+        value: catalog-based
+        description: Provision a new VM from a golden image in the Catalog Service
+        icon: fa-plus-circle
+
+  - id: create-template
+    kind: narrative
+    title: Create Agent Template from existing VM
+    if : choose-template-setup.value == 'clone-existing'
+    duration: "~10 min"
+    tag: JENKINS
+    layout: rows
+    markdown_body: |
+      Agent templates define how Jenkins provisions VMs. Each template has a **label** that jobs use to request 
+      specific agent types (e.g., `ubuntu-arm64`, `ubuntu-x86_64`, `windows11`).
+      
+      Scroll to **Agent Templates** and click **Add Template**.
+      
+      ### Template Configuration
+      
+      Configure the template with a label like `ubuntu-arm64` to match your Ubuntu Server VM.
+      
+      ![Template Configuration Screenshot](/prl-devops-service/img/examples/template-label.png)
+    checklist:
+      - Template label matches your build needs (e.g., `ubuntu-arm64`, `linux`)
+      - VM user account has necessary permissions
+      - Base VM name/ID matches your desired VM (e.g., `Ubuntu-Builder`)
+      - Timeout values are appropriate for your VM boot time
+
+  - id: create-template-from-catalog
+    kind: narrative
+    title: Create Agent Template from Catalog
+    if : choose-template-setup.value == 'catalog-based'
+    duration: "~10 min"
+    tag: JENKINS
+    layout: rows
+    markdown_body: |
+      Agent templates define how Jenkins provisions VMs. Each template has a **label** that jobs use to request 
+      specific agent types (e.g., `ubuntu-arm64`, `ubuntu-x86_64`, `windows11`). In this example, we will create a template that provisions VMs from the Catalog Service.
+      
+      Scroll to **Agent Templates** and click **Add Template**.
+      
+      ### Template Configuration
+      
+      Configure the template:
+      - Label: `ubuntu-arm64` (or your desired label)
+      - Provisioning Mode: `Create from Catalog`
+      - Catalog URL: `http://prldevops-catalog.example.com/`
+      - Architecture: `arm64` (or `x86_64` depending on your catalog image)
+      - Catalog ID: 'Id of the catalog image you want to use eg. `ubuntu-server-24.04-arm64`'
+      - Catalog Version: 'Version of the catalog image you want to use eg. `1.0.0`'
+      - Catalog Credentials: Select the credentials you created for the Catalog Service
+      - Test Connection to verify Jenkins can communicate with the Catalog Service 
+      
+      ![Template Configuration Screenshot](/prl-devops-service/img/examples/catalog-based.png)
+    checklist:
+      - Template label matches your build needs (e.g., `ubuntu-arm64`, `linux`)
+      - VM user account has necessary permissions
+      - Catalog ID and version match your desired image in the Catalog Service
+      - Timeout values are appropriate for your VM boot time
+
+  - id: first-build
+    kind: narrative
+    title: Run Your First Dynamic Build
+    duration: "~5 min"
+    tag: BUILD
+    layout: rows
+    markdown_body: |
+      Create a simple Jenkins job to test dynamic agent provisioning. Navigate to **Dashboard → New Item**, 
+      enter a name (e.g., `hello-world-ubuntu`), select **Freestyle project**, and click **OK**.
+      
+      ### Job Configuration
+      
+      1. Under **General**, check **Restrict where this project can be run**
+      2. Enter label: `ubuntu-arm64` (or your template label)
+      3. Under **Build Steps**, add **Execute shell**
+      4. Enter the test script below:
+    panel:
+      kind: terminal
+      name: Hello World Script
+      cmd: |
+        #!/bin/bash
+        echo "=== Hello from a dynamic Jenkins agent ==="
+        echo "Hostname: $(hostname)"
+        echo "Operating System: $(uname -s)"
+        echo "Architecture: $(uname -m)"
+        echo "User: $(whoami)"
+        echo "Java Version:"
+        java -version
+        echo "Current Directory: $(pwd)"
+        echo "=== Build complete ==="
+      copy_button: true
+    checklist:
+      - Job is restricted to your template label
+      - Build script tests basic environment info
+      - Click **Save** then **Build Now**
+
+  - id: build-output
+    kind: narrative
+    title: Review Build Output
+    duration: "~2 min"
+    tag: BUILD
+    layout: rows
+    markdown_body: |
+      Once the build completes, check the **Console Output** in Jenkins. You should see your script output 
+      along with the provisioning details showing execution on a dynamically created `prl-*` agent node.
+      
+      ### Expected Console Output
+      
+      ```bash
+      Started by user admin
+      Running on prl-a1b2c3d4-e5f6-7890-abcd-ef1234567890 in workspace /tmp/jenkins/workspace/hello-world-ubuntu
+      [hello-world-ubuntu] $ /bin/bash /tmp/jenkins/tmp/jenkins12345.sh
+      === Hello from a dynamic Jenkins agent ===
+      Hostname: ubuntu-builder-clone-12345
+      Operating System: Linux
+      Architecture: aarch64
+      User: parallels
+      Java Version:
+      openjdk version "17.0.13" 2024-10-15
+      Current Directory: /tmp/jenkins/workspace/hello-world-ubuntu
+      === Build complete ===
+      Finished: SUCCESS
+      ```
+    checklist:
+      - Build status is **SUCCESS** ✅
+      - Console shows execution on a `prl-*` node
+      - Script output displays correct environment info (Linux, aarch64)
+      - After build, the `prl-*` node disappears from **Nodes** (cleanup successful)
+
+  - id: troubleshooting
+    kind: narrative
+    title: Troubleshooting
+    duration: "~5 min"
+    tag: HELP
+    layout: single
+    markdown_body: |
+      ## Common Issues and Solutions
+      
+      ### VM Running But Build Still Queued
+      
+      **Symptom:** VM is cloned and running, but build stays in queue.
+      
+      **Solution:**
+      - Check node launch log: **Manage Jenkins → Nodes → `prl-<uuid>` → Log**
+      - Verify VM can reach Jenkins at configured Jenkins URL
+      - Check Java is installed and in PATH on the VM
+      - Increase **Agent Connection Timeout** in template
+      
+      ---
+      
+      ### Test Connection Fails (401 Unauthorized)
+      
+      **Symptom:** Test Connection returns HTTP 401.
+      
+      **Solution:**
+      ```bash
+      # Verify service is reachable
+      curl http://prldevops.example.com/api/health/system
+      
+      # Check credentials match config.yaml ROOT_PASSWORD
+      ```
+      
+      ---
+      
+      ### Clone Fails: "VM Must Be Stopped"
+      
+      **Symptom:** Clone operation fails with error.
+      
+      **Solution:**
+      ```bash
+      # Stop the base VM
+      /v1/machines/{id}/stop
+      
+      # Verify state is stopped
+      /v1/machines/{id}
+      ```
+      
+      ---
+      
+      ### Jobs Wait Despite Different Labels
+      
+      **Symptom:** Different-label jobs queue behind each other.
+      
+      **Solution:**
+      - Increase **Max Concurrent Agents** in cloud configuration
+      - Each cloud has a global limit regardless of template labels
+      
+      ---
+      
+      ### Slow Provisioning
+      
+      **Symptom:** VMs take too long to become ready.
+      
+      **Solution:**
+      - Reduce **VM Ready Poll Interval** (e.g., `5` seconds)
+      - Increase **VM Ready Timeout** if VMs need more boot time
+      - Optimize golden image: disable startup services, use SSD storage
+    resources:
+      - title: Plugin Issue Tracker
+        url: https://github.com/jenkinsci/parallels-devops-plugin/issues
+      - title: DevOps Service Documentation
+        url: /docs/devops/
