@@ -1,3 +1,5 @@
+# TODO: This chart was added for initial testing and simplicity.
+# Use ../helm as the canonical chart. This directory will be removed.
 apiVersion: v2
 name: prl-devops-service
 description: Parallels DevOps Service — lightweight chart for DI AKS (orchestrator / catalog)
