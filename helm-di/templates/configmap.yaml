@@ -10,7 +10,17 @@ data:
   API_PORT: {{ .Values.config.apiPort | quote }}
   API_PREFIX: {{ .Values.config.apiPrefix | quote }}
   LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  ENABLED_MODULES: {{ default (ternary "api,catalog" "api,orchestrator" (eq .Values.config.mode "catalog")) .Values.config.enabledModules | quote }}
+  ENABLE_CORS: {{ .Values.config.enableCors | quote }}
+  CORS_ALLOWED_ORIGINS: {{ .Values.config.corsAllowedOrigins | quote }}
+  CORS_ALLOWED_METHODS: {{ .Values.config.corsAllowedMethods | quote }}
+  CORS_ALLOWED_HEADERS: {{ .Values.config.corsAllowedHeaders | quote }}
   TLS_ENABLED: {{ .Values.config.tlsEnabled | quote }}
   DISABLE_CATALOG_CACHING: {{ .Values.config.disableCatalogCaching | quote }}
   USE_ORCHESTRATOR_RESOURCES: {{ .Values.config.useOrchestratorResources | quote }}
   TOKEN_DURATION_MINUTES: {{ .Values.config.tokenDurationMinutes | quote }}
+  {{- with .Values.config.extraEnv }}
+  {{- range $key, $value := . }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}

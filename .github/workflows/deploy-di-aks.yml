@@ -75,8 +75,8 @@ jobs:
           K8S_NAMESPACE: ${{ inputs.namespace }}
         run: |
           set -euo pipefail
-          helm upgrade --install prl-devops-orchestrator ./helm-di \
-            -f ./helm-di/values-${{ inputs.environment }}.yaml \
+          helm upgrade --install prl-devops-orchestrator ./helm \
+            -f ./helm/values-${{ inputs.environment }}.yaml \
             --namespace "$K8S_NAMESPACE" \
             --set image.tag="${{ inputs.image_tag }}" \
             --set config.mode=orchestrator \
@@ -117,8 +117,8 @@ jobs:
           K8S_NAMESPACE: ${{ inputs.namespace }}
         run: |
           set -euo pipefail
-          helm upgrade --install prl-devops-catalog ./helm-di \
-            -f ./helm-di/values-${{ inputs.environment }}.yaml \
+          helm upgrade --install prl-devops-catalog ./helm \
+            -f ./helm/values-${{ inputs.environment }}.yaml \
             --namespace "$K8S_NAMESPACE" \
             --set image.tag="${{ inputs.image_tag }}" \
             --set config.mode=catalog \
