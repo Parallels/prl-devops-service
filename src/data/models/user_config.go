@@ -10,13 +10,13 @@ const (
 )
 
 type UserConfig struct {
-	ID        string              `json:"id"`
-	UserID    string              `json:"user_id"`
-	Slug      string              `json:"slug"`
-	Name      string              `json:"name"`
-	Type      UserConfigValueType `json:"type"`
-	Value     string              `json:"value"`
-	CreatedAt string              `json:"created_at"`
-	UpdatedAt string              `json:"updated_at"`
-	*DbRecord `json:"db_record"`
+	ID        string              `json:"id" gorm:"column:id;primaryKey;not null;type:varchar(64)"`
+	UserID    string              `json:"user_id" gorm:"column:user_id;index;type:varchar(64);not null"`
+	Slug      string              `json:"slug" gorm:"column:slug;type:varchar(64);not null"`
+	Name      string              `json:"name" gorm:"column:name;type:varchar(64);not null"`
+	Type      UserConfigValueType `json:"type" gorm:"column:type;type:varchar(64);not null" `
+	Value     string              `json:"value" gorm:"column:value;type:text;not null"`
+	CreatedAt string              `json:"created_at" gorm:"column:created_at;type:timestamp"`
+	UpdatedAt string              `json:"updated_at" gorm:"column:updated_at;type:timestamp"`
+	*DbRecord `json:"db_record" gorm:"embedded"`
 }
