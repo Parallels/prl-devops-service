@@ -3,57 +3,57 @@ package models
 import "encoding/json"
 
 type VirtualMachine struct {
-	ID                    string                             `json:"ID,omitempty"`
-	HostUrl               string                             `json:"host_url,omitempty"`
-	HostId                string                             `json:"host_id,omitempty"`
-	HostName              string                             `json:"host_name,omitempty"`
-	HostState             string                             `json:"host_state,omitempty"`
-	User                  string                             `json:"user,omitempty"`
-	HostExternalIpAddress string                             `json:"host_external_ip_address,omitempty"`
-	InternalIpAddress     string                             `json:"internal_ip_address,omitempty"`
-	Host                  string                             `json:"host,omitempty"`
-	Name                  string                             `json:"name,omitempty"`
-	Description           string                             `json:"description,omitempty"`
-	Type                  string                             `json:"type,omitempty"`
-	State                 string                             `json:"state,omitempty"`
-	OS                    string                             `json:"os,omitempty"`
-	Template              string                             `json:"template,omitempty"`
-	Uptime                string                             `json:"uptime,omitempty"`
-	HomePath              string                             `json:"home_path,omitempty"`
-	Home                  string                             `json:"home,omitempty"`
-	RestoreImage          string                             `json:"restore_image,omitempty"`
-	GuestTools            VirtualMachineGuestTools           `json:"guest_tools,omitempty"`
-	MouseAndKeyboard      VirtualMachineMouseAndKeyboard     `json:"mouse_and_keyboard,omitempty"`
-	USBAndBluetooth       VirtualMachineUSBAndBluetooth      `json:"usb_and_bluetooth,omitempty"`
-	StartupAndShutdown    VirtualMachineStartupAndShutdown   `json:"startup_and_Shutdown,omitempty"`
-	Optimization          VirtualMachineOptimization         `json:"optimization,omitempty"`
-	TravelMode            VirtualMachineTravelMode           `json:"travel_mode,omitempty"`
-	Security              VirtualMachineSecurity             `json:"security,omitempty"`
-	SmartGuard            VirtualMachineExpiration           `json:"smart_guard,omitempty"`
-	Modality              VirtualMachineModality             `json:"modality,omitempty"`
-	FullScreen            VirtualMachineFullscreen           `json:"full_screen,omitempty"`
-	Coherence             VirtualMachineCoherence            `json:"coherence,omitempty"`
-	TimeSynchronization   VirtualMachineTimeSynchronization  `json:"time_synchronization,omitempty"`
-	Expiration            VirtualMachineExpiration           `json:"expiration,omitempty"`
-	BootOrder             string                             `json:"boot_order,omitempty"`
-	BIOSType              string                             `json:"bios_type,omitempty"`
-	EFISecureBoot         string                             `json:"efi_secure_boot,omitempty"`
-	AllowSelectBootDevice string                             `json:"allow_select_boot_device,omitempty"`
-	ExternalBootDevice    string                             `json:"external_boot_device,omitempty"`
-	SMBIOSSettings        VirtualMachineSMBIOSSettings       `json:"smbios_settings,omitempty"`
-	Hardware              VirtualMachineHardware             `json:"hardware,omitempty"`
-	HostSharedFolders     map[string]interface{}             `json:"host_shared_folders,omitempty"`
-	HostDefinedSharing    string                             `json:"host_defined_sharing,omitempty"`
-	SharedProfile         VirtualMachineExpiration           `json:"shared_profile,omitempty"`
-	SharedApplications    VirtualMachineSharedApplications   `json:"shared_applications,omitempty"`
-	SmartMount            VirtualMachineSmartMount           `json:"smart_mount,omitempty"`
-	MiscellaneousSharing  VirtualMachineMiscellaneousSharing `json:"miscellaneous_sharing,omitempty"`
-	Advanced              VirtualMachineAdvanced             `json:"advanced,omitempty"`
-	PrintManagement       VirtualMachinePrintManagement      `json:"print _management,omitempty"`
-	GuestSharedFolders    VirtualMachineGuestSharedFolders   `json:"guest_shared_folders,omitempty"`
-	NetworkInformation    VirtualMachineNetworkInformation   `json:"network_information,omitempty"`
-	CreatedAt             string                             `json:"created_at,omitempty"`
-	UpdatedAt             string                             `json:"updated_at,omitempty"`
+	ID                    string                             `json:"ID,omitempty" gorm:"column:id;primaryKey;not null;type:varchar(64)"`
+	HostUrl               string                             `json:"host_url,omitempty" gorm:"column:host_url;not null;type:varchar(255)"`
+	HostId                string                             `json:"host_id,omitempty" gorm:"column:host_id;not null;type:varchar(64)"`
+	HostName              string                             `json:"host_name,omitempty" gorm:"column:host_name;not null;type:varchar(255)"`
+	HostState             string                             `json:"host_state,omitempty" gorm:"column:host_state;type:varchar(255)"`
+	User                  string                             `json:"user,omitempty" gorm:"column:user;not null;type:varchar(255)"`
+	HostExternalIpAddress string                             `json:"host_external_ip_address,omitempty" gorm:"column:host_external_ip_address;type:varchar(64)"`
+	InternalIpAddress     string                             `json:"internal_ip_address,omitempty" gorm:"column:internal_ip_address;type:varchar(64)"`
+	Host                  string                             `json:"host,omitempty" gorm:"column:host;type:varchar(255)"`
+	Name                  string                             `json:"name,omitempty" gorm:"column:name;not null;type:varchar(255)"`
+	Description           string                             `json:"description,omitempty" gorm:"column:description;type:text"`
+	Type                  string                             `json:"type,omitempty" gorm:"column:type;type:varchar(64)"`
+	State                 string                             `json:"state,omitempty" gorm:"column:state;type:varchar(32)"`
+	OS                    string                             `json:"os,omitempty" gorm:"column:os;type:varchar(64)"`
+	Template              string                             `json:"template,omitempty" gorm:"column:template;type:varchar(64)"`
+	Uptime                string                             `json:"uptime,omitempty" gorm:"column:uptime;type:varchar(64)"`
+	HomePath              string                             `json:"home_path,omitempty" gorm:"column:home_path;type:varchar(255)"`
+	Home                  string                             `json:"home,omitempty" gorm:"column:home;type:varchar(255)"`
+	RestoreImage          string                             `json:"restore_image,omitempty" gorm:"column:restore_image;type:varchar(255)"`
+	GuestTools            VirtualMachineGuestTools           `json:"guest_tools,omitempty" gorm:"column:guest_tools;type:json;serializer:json"`
+	MouseAndKeyboard      VirtualMachineMouseAndKeyboard     `json:"mouse_and_keyboard,omitempty" gorm:"column:mouse_and_keyboard;type:json;serializer:json"`
+	USBAndBluetooth       VirtualMachineUSBAndBluetooth      `json:"usb_and_bluetooth,omitempty" gorm:"column:usb_and_bluetooth;type:json;serializer:json"`
+	StartupAndShutdown    VirtualMachineStartupAndShutdown   `json:"startup_and_Shutdown,omitempty" gorm:"column:startup_and_shutdown;type:json;serializer:json"`
+	Optimization          VirtualMachineOptimization         `json:"optimization,omitempty" gorm:"column:optimization;type:json;serializer:json"`
+	TravelMode            VirtualMachineTravelMode           `json:"travel_mode,omitempty" gorm:"column:travel_mode;type:json;serializer:json"`
+	Security              VirtualMachineSecurity             `json:"security,omitempty" gorm:"column:security;type:json;serializer:json"`
+	SmartGuard            VirtualMachineExpiration           `json:"smart_guard,omitempty" gorm:"column:smart_guard;type:json;serializer:json"`
+	Modality              VirtualMachineModality             `json:"modality,omitempty" gorm:"column:modality;type:json;serializer:json"`
+	FullScreen            VirtualMachineFullscreen           `json:"full_screen,omitempty" gorm:"column:full_screen;type:json;serializer:json"`
+	Coherence             VirtualMachineCoherence            `json:"coherence,omitempty" gorm:"column:coherence;type:json;serializer:json"`
+	TimeSynchronization   VirtualMachineTimeSynchronization  `json:"time_synchronization,omitempty" gorm:"column:time_synchronization;type:json;serializer:json"`
+	Expiration            VirtualMachineExpiration           `json:"expiration,omitempty" gorm:"column:expiration;type:json;serializer:json"`
+	BootOrder             string                             `json:"boot_order,omitempty" gorm:"column:boot_order;type:varchar(255)"`
+	BIOSType              string                             `json:"bios_type,omitempty" gorm:"column:bios_type;type:varchar(255)"`
+	EFISecureBoot         string                             `json:"efi_secure_boot,omitempty" gorm:"column:efi_secure_boot;type:varchar(255)"`
+	AllowSelectBootDevice string                             `json:"allow_select_boot_device,omitempty" gorm:"column:allow_select_boot_device;type:varchar(255)"`
+	ExternalBootDevice    string                             `json:"external_boot_device,omitempty" gorm:"column:external_boot_device;type:varchar(255)"`
+	SMBIOSSettings        VirtualMachineSMBIOSSettings       `json:"smbios_settings,omitempty" gorm:"column:smbios_settings;type:json;serializer:json"`
+	Hardware              VirtualMachineHardware             `json:"hardware,omitempty" gorm:"column:hardware;type:json;serializer:json"`
+	HostSharedFolders     map[string]interface{}             `json:"host_shared_folders,omitempty" gorm:"column:host_shared_folders;type:json;serializer:json"`
+	HostDefinedSharing    string                             `json:"host_defined_sharing,omitempty" gorm:"column:host_defined_sharing;type:varchar(255)"`
+	SharedProfile         VirtualMachineExpiration           `json:"shared_profile,omitempty" gorm:"column:shared_profile;type:json;serializer:json"`
+	SharedApplications    VirtualMachineSharedApplications   `json:"shared_applications,omitempty" gorm:"column:shared_applications;type:json;serializer:json"`
+	SmartMount            VirtualMachineSmartMount           `json:"smart_mount,omitempty" gorm:"column:smart_mount;type:json;serializer:json"`
+	MiscellaneousSharing  VirtualMachineMiscellaneousSharing `json:"miscellaneous_sharing,omitempty" gorm:"column:miscellaneous_sharing;type:json;serializer:json"`
+	Advanced              VirtualMachineAdvanced             `json:"advanced,omitempty" gorm:"column:advanced;type:json;serializer:json"`
+	PrintManagement       VirtualMachinePrintManagement      `json:"print_management,omitempty" gorm:"column:print_management;type:json;serializer:json"`
+	GuestSharedFolders    VirtualMachineGuestSharedFolders   `json:"guest_shared_folders,omitempty" gorm:"column:guest_shared_folders;type:json;serializer:json"`
+	NetworkInformation    VirtualMachineNetworkInformation   `json:"network_information,omitempty" gorm:"column:network_information;type:json;serializer:json"`
+	CreatedAt             string                             `json:"created_at,omitempty" gorm:"column:created_at;type:timestamp"`
+	UpdatedAt             string                             `json:"updated_at,omitempty" gorm:"column:updated_at;type:timestamp"`
 }
 
 func (m *VirtualMachine) Diff(source VirtualMachine) bool {
