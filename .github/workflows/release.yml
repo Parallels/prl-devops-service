@@ -6,6 +6,17 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      deploy_orchestrator:
+        description: "Deploy orchestrator"
+        required: true
+        default: true
+        type: boolean
+      deploy_catalog:
+        description: "Deploy catalog"
+        required: true
+        default: true
+        type: boolean
 
 jobs:
   release:
@@ -243,7 +254,7 @@ jobs:
       - build-containers
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch deploy workflow on master
+      - name: Dispatch deploy workflow on main
         uses: actions/github-script@v7
         with:
           script: |
@@ -251,16 +262,16 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'deploy-di-aks.yml',
-              ref: 'master',
+              ref: 'main',
               inputs: {
                 environment: 'prd',
                 image_tag: '${{ needs.release.outputs.version }}',
                 namespace: 'prl-devops-services',
-                deploy_orchestrator: 'true',
-                deploy_catalog: 'true'
+                deploy_orchestrator: "${{ github.event_name == 'workflow_dispatch' && (inputs.deploy_orchestrator && 'true' || 'false') || 'true' }}",
+                deploy_catalog: "${{ github.event_name == 'workflow_dispatch' && (inputs.deploy_catalog && 'true' || 'false') || 'true' }}"
               }
             });
-            console.log('Dispatched deploy-di-aks.yml on master for prd');
+            console.log('Dispatched deploy-di-aks.yml on main for prd');
 
   remove-old-beta-release:
     name: Remove old beta release

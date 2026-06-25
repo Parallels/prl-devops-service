@@ -286,7 +286,7 @@ jobs:
       - build-containers
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch deploy workflow on master
+      - name: Dispatch deploy workflow on main
         uses: actions/github-script@v7
         with:
           script: |
@@ -294,7 +294,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'deploy-di-aks.yml',
-              ref: 'master',
+              ref: 'main',
               inputs: {
                 environment: 'stg',
                 image_tag: '${{ needs.canary-release.outputs.version }}-canary',
@@ -303,7 +303,7 @@ jobs:
                 deploy_catalog: '${{ github.event_name == 'workflow_dispatch' && inputs.deploy_catalog || true }}'
               }
             });
-            console.log('Dispatched deploy-di-aks.yml on master for stg');
+            console.log('Dispatched deploy-di-aks.yml on main for stg');
 
   remove-old-canary-release:
     if: ${{ inputs.remove_old_canary == true }}
