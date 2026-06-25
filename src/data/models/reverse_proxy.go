@@ -6,11 +6,11 @@ import (
 )
 
 type ReverseProxy struct {
-	ID      string `json:"id,omitempty"`
-	HostID  string `json:"host_id,omitempty"`
-	Enabled bool   `json:"enabled"`
-	Host    string `json:"host,omitempty"`
-	Port    string `json:"port,omitempty"`
+	ID      string `json:"id,omitempty" gorm:"primaryKey;type:varchar(64);column:id"`
+	HostID  string `json:"host_id,omitempty" gorm:"column:host_id;type:varchar(64);index"`
+	Enabled bool   `json:"enabled" gorm:"column:enabled;default:0;type:boolean"`
+	Host    string `json:"host,omitempty" gorm:"column:host;type:varchar(255)"`
+	Port    string `json:"port,omitempty" gorm:"column:port;type:varchar(32)"`
 }
 
 func (o *ReverseProxy) Diff(source ReverseProxy) bool {
@@ -34,15 +34,15 @@ func (o *ReverseProxy) Diff(source ReverseProxy) bool {
 }
 
 type ReverseProxyHost struct {
-	ID         string                       `json:"id"`
-	Name       string                       `json:"name,omitempty"`
-	HostID     string                       `json:"host_id,omitempty"`
-	Host       string                       `json:"host"`
-	Port       string                       `json:"port"`
-	Tls        *ReverseProxyHostTls         `json:"tls,omitempty"`
-	Cors       *ReverseProxyHostCors        `json:"cors,omitempty"`
-	HttpRoutes []*ReverseProxyHostHttpRoute `json:"http_routes,omitempty"`
-	TcpRoute   *ReverseProxyHostTcpRoute    `json:"tcp_route,omitempty"`
+	ID         string                       `json:"id" gorm:"primaryKey;type:varchar(64);column:id"`
+	Name       string                       `json:"name,omitempty" gorm:"column:name;type:varchar(255)"`
+	HostID     string                       `json:"host_id,omitempty" gorm:"column:host_id;type:varchar(64);index"`
+	Host       string                       `json:"host" gorm:"column:host;type:varchar(255);not null"`
+	Port       string                       `json:"port" gorm:"column:port;type:varchar(32);not null"`
+	Tls        *ReverseProxyHostTls         `json:"tls,omitempty" gorm:"column:tls;type:json;serializer:json"`
+	Cors       *ReverseProxyHostCors        `json:"cors,omitempty" gorm:"column:cors;type:json;serializer:json"`
+	HttpRoutes []*ReverseProxyHostHttpRoute `json:"http_routes,omitempty" gorm:"column:http_routes;type:json;serializer:json"`
+	TcpRoute   *ReverseProxyHostTcpRoute    `json:"tcp_route,omitempty" gorm:"column:tcp_route;type:json;serializer:json"`
 }
 
 func (o *ReverseProxyHost) GetHost() string {
