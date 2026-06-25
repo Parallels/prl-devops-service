@@ -298,8 +298,8 @@ jobs:
                 environment: 'stg',
                 image_tag: '${{ needs.beta-release.outputs.version }}-beta',
                 namespace: 'prl-devops-services',
-                deploy_orchestrator: '${{ github.event_name == 'workflow_dispatch' && inputs.deploy_orchestrator || true }}',
-                deploy_catalog: '${{ github.event_name == 'workflow_dispatch' && inputs.deploy_catalog || true }}'
+                deploy_orchestrator: "${{ github.event_name == 'workflow_dispatch' && (inputs.deploy_orchestrator && 'true' || 'false') || 'true' }}",
+                deploy_catalog: "${{ github.event_name == 'workflow_dispatch' && (inputs.deploy_catalog && 'true' || 'false') || 'true' }}"
               }
             });
             console.log('Dispatched deploy-di-aks.yml on main for stg');
