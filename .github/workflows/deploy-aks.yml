@@ -32,18 +32,18 @@ on:
       deploy_orchestrator:
         description: Deploy Orchestrator
         required: false
-        default: "true"
-        type: string
+        default: true
+        type: boolean
       deploy_catalog:
         description: Deploy Catalog
         required: false
-        default: "true"
-        type: string
+        default: true
+        type: boolean
       dry_run:
         description: Run Helm in dry-run mode (no cluster changes)
         required: false
-        default: "false"
-        type: string
+        default: false
+        type: boolean
       atomic:
         description: "Rollback on failure (atomic deployment)"
         required: false
