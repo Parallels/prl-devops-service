@@ -1,0 +1,160 @@
+package workers
+
+import (
+	"fmt"
+
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/database/entities"
+	pkg_models "github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
+	"github.com/Parallels/prl-devops-service/models"
+	system_interfaces "github.com/Parallels/prl-devops-service/system/interfaces"
+	"github.com/Parallels/prl-devops-service/errors"
+	"gorm.io/gorm"
+)
+
+type DefaultRolesMigrationWorker struct {
+	db            *gorm.DB
+	config        *config.Config
+	systemService system_interfaces.SystemServiceInterface
+	roleService   interfaces.RoleServiceInterface
+}
+
+func NewDefaultRolesMigrationWorker(db *gorm.DB, config *config.Config, systemService system_interfaces.SystemServiceInterface, roleService interfaces.RoleServiceInterface) *DefaultRolesMigrationWorker {
+	return &DefaultRolesMigrationWorker{
+		db:            db,
+		config:        config,
+		systemService: systemService,
+		roleService:   roleService,
+	}
+}
+
+func (e *DefaultRolesMigrationWorker) GetName() string {
+	return "default-roles-migration"
+}
+
+func (e *DefaultRolesMigrationWorker) GetDescription() string {
+	return "Default system roles migration"
+}
+
+func (e *DefaultRolesMigrationWorker) GetVersion() int {
+	return 1
+}
+
+func (e *DefaultRolesMigrationWorker) GetOrder() int {
+	return 1
+}
+
+func (e *DefaultRolesMigrationWorker) Up(ctx basecontext.BaseContext) *errors.Diagnostics {
+	diag := errors.NewDiagnostics("default_roles_migration_up")
+
+	// Generate all default roles
+	roles := e.systemService.GenerateDefaultRoles()
+
+	for _, role := range roles {
+		ctx.Log().WithField("role", role.Slug).Info("Processing default role")
+
+		var targetRole *pkg_models.Role
+
+		// 1. Check if role exists by Hardcoded ID
+		existingRole, _ := e.roleService.GetRoleByIDorSlug(ctx, config.GlobalTenantID, role.ID)
+
+		// 2. Check if role exists by Slug
+		slugRole, _ := e.roleService.GetRoleByIDorSlug(ctx, config.GlobalTenantID, role.Slug)
+
+		if existingRole != nil {
+			targetRole = existingRole
+			// We have the correct role. Check for duplicates (same slug, different ID)
+			if slugRole != nil && slugRole.ID != existingRole.ID {
+				ctx.Log().WithField("duplicate_id", slugRole.ID).Info("Found duplicate role by slug, migrating users and cleaning up...")
+
+				// Migrate users from duplicate to existing role
+				// Using raw SQL for safety and speed avoids iterating potentially large lists
+				// We handle conflict if user already has the target role by ignoring those specific updates?
+				// Complex query: UPDATE user_roles SET role_id = target WHERE role_id = source AND user_id NOT IN (SELECT user_id FROM user_roles WHERE role_id = target)
+				// Since we are using GORM, we can execute this.
+				updateQuery := "UPDATE user_roles SET role_id = ? WHERE role_id = ? AND user_id NOT IN (SELECT user_id FROM user_roles WHERE role_id = ?)"
+				if err := e.db.Exec(updateQuery, existingRole.ID, slugRole.ID, existingRole.ID).Error; err != nil {
+					diag.AddError("failed_to_migrate_users", fmt.Sprintf("failed to migrate users from duplicate role: %v", err), "default_roles_migration", nil)
+					// Verify if we should continue? Probably yes, to try cleanup.
+				}
+
+				// Delete any remaining links (users who already had the target role)
+				if err := e.db.Exec("DELETE FROM user_roles WHERE role_id = ?", slugRole.ID).Error; err != nil {
+					diag.AddError("failed_to_cleanup_duplicate_role_links", fmt.Sprintf("failed to cleanup duplicate role links: %v", err), "default_roles_migration", nil)
+				}
+
+				// Delete the duplicate role
+				if err := e.db.Where("id = ?", slugRole.ID).Delete(&entities.Role{}).Error; err != nil {
+					diag.AddError("failed_to_delete_duplicate_role", fmt.Sprintf("failed to delete duplicate role: %v", err), "default_roles_migration", nil)
+				}
+			}
+		} else {
+			// Hardcoded ID NOT found.
+			if slugRole != nil {
+				// Role exists via Slug, but has WRONG ID.
+				// We need to replace it with Correct ID.
+				ctx.Log().WithField("old_id", slugRole.ID).Info("Found role with wrong ID, recreating with correct ID...")
+
+				// Create the new role with correct ID
+				createReq := &models.CreateRoleRequest{
+					ID:            role.ID,
+					Name:          role.Name,
+					Description:   role.Description,
+					SecurityLevel: role.SecurityLevel,
+				}
+				newRole, createDiag := e.roleService.CreateRole(ctx, config.GlobalTenantID, createReq)
+				if createDiag.HasErrors() {
+					diag.Append(createDiag)
+					return diag
+				}
+				targetRole = newRole
+
+				// Migrate users
+				updateQuery := "UPDATE user_roles SET role_id = ? WHERE role_id = ? AND user_id NOT IN (SELECT user_id FROM user_roles WHERE role_id = ?)"
+				if err := e.db.Exec(updateQuery, targetRole.ID, slugRole.ID, targetRole.ID).Error; err != nil {
+					diag.AddError("failed_to_migrate_users", fmt.Sprintf("failed to migrate users from old role: %v", err), "default_roles_migration", nil)
+				}
+
+				// Cleanup old role
+				if err := e.db.Exec("DELETE FROM user_roles WHERE role_id = ?", slugRole.ID).Error; err != nil {
+					diag.AddError("failed_to_cleanup_old_role_links", fmt.Sprintf("failed to cleanup old role links: %v", err), "default_roles_migration", nil)
+				}
+				if err := e.db.Where("id = ?", slugRole.ID).Delete(&entities.Role{}).Error; err != nil {
+					diag.AddError("failed_to_delete_old_role", fmt.Sprintf("failed to delete old role: %v", err), "default_roles_migration", nil)
+				}
+			} else {
+				// Neither exists. Create new.
+				ctx.Log().Info("Creating default role")
+				createReq := &models.CreateRoleRequest{
+					ID:            role.ID,
+					Name:          role.Name,
+					Description:   role.Description,
+					SecurityLevel: role.SecurityLevel,
+				}
+				var createDiag *errors.Diagnostics
+				targetRole, createDiag = e.roleService.CreateRole(ctx, config.GlobalTenantID, createReq)
+				if createDiag.HasErrors() {
+					diag.Append(createDiag)
+					return diag
+				}
+			}
+		}
+
+		// Ensure created_by is system
+		if targetRole != nil {
+			if err := e.db.Model(&entities.Role{}).Where("id = ?", targetRole.ID).Update("created_by", "system").Error; err != nil {
+				diag.AddError("failed_to_update_role", "failed to update role created_by", "default_roles_migration", nil)
+				return diag
+			}
+		}
+	}
+
+	return diag
+}
+
+func (e *DefaultRolesMigrationWorker) Down(ctx basecontext.BaseContext) *errors.Diagnostics {
+	diag := errors.NewDiagnostics("default_roles_migration_down")
+	return diag
+}

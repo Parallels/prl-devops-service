@@ -1,0 +1,90 @@
+package workers
+
+import (
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
+	"github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/database/entities"
+	system_interfaces "github.com/Parallels/prl-devops-service/system/interfaces"
+	"github.com/Parallels/prl-devops-service/errors"
+	"gorm.io/gorm"
+)
+
+type DefaultClaimsMigrationWorker struct {
+	db            *gorm.DB
+	config        *config.Config
+	systemService system_interfaces.SystemServiceInterface
+	claimService  interfaces.ClaimServiceInterface
+}
+
+func NewDefaultClaimsMigrationWorker(db *gorm.DB, config *config.Config, systemService system_interfaces.SystemServiceInterface, claimService interfaces.ClaimServiceInterface) *DefaultClaimsMigrationWorker {
+	return &DefaultClaimsMigrationWorker{
+		db:            db,
+		config:        config,
+		systemService: systemService,
+		claimService:  claimService,
+	}
+}
+
+func (e *DefaultClaimsMigrationWorker) GetName() string {
+	return "default-claims-migration"
+}
+
+func (e *DefaultClaimsMigrationWorker) GetDescription() string {
+	return "Default system claims migration"
+}
+
+func (e *DefaultClaimsMigrationWorker) GetVersion() int {
+	return 1
+}
+
+func (e *DefaultClaimsMigrationWorker) GetOrder() int {
+	return 3
+}
+
+func (e *DefaultClaimsMigrationWorker) Up(ctx basecontext.BaseContext) *errors.Diagnostics {
+	diag := errors.NewDiagnostics("default_claims_migration_up")
+
+	// Generate all system claims
+	claims := e.systemService.GenerateSystemClaims()
+
+	for _, claim := range claims {
+		// Check if claim exists
+		existingClaim, err := e.claimService.GetClaimByIDOrSlug(ctx, config.GlobalTenantID, claim.Slug)
+		if err.HasErrors() {
+			diag.Append(err)
+			return diag
+		}
+
+		if existingClaim == nil {
+			ctx.Log().WithField("claim_slug", claim.Slug).Info("Creating default claim")
+			_, createDiag := e.claimService.CreateClaim(ctx, config.GlobalTenantID, &models.CreateClaimRequest{
+				Service: claim.Service,
+				Module:  claim.Module,
+				Action:  claim.Action,
+			})
+			if createDiag.HasErrors() {
+				diag.Append(createDiag)
+				return diag
+			}
+
+			// Update created_by
+			if err := e.db.Model(&entities.Claim{}).Where("slug = ?", claim.Slug).Update("created_by", "system").Error; err != nil {
+				diag.AddError("failed_to_update_claim", "failed to update claim created_by", "default_claims_migration", nil)
+				return diag
+			}
+		} else {
+			ctx.Log().WithField("claim_slug", claim.Slug).Debug("Default claim already exists")
+		}
+	}
+
+	return diag
+}
+
+func (e *DefaultClaimsMigrationWorker) Down(ctx basecontext.BaseContext) *errors.Diagnostics {
+	diag := errors.NewDiagnostics("default_claims_migration_down")
+	// We typically don't want to delete system claims on rollback as they might be used by other things
+	// But for completeness we could implement it if needed. Leaving empty for now.
+	return diag
+}

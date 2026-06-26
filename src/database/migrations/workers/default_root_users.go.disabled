@@ -1,0 +1,182 @@
+package workers
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/database/entities"
+	"github.com/Parallels/prl-devops-service/models"
+	system_interfaces "github.com/Parallels/prl-devops-service/system/interfaces"
+	user_interfaces "github.com/Parallels/prl-devops-service/data/interfaces"
+	user_models "github.com/Parallels/prl-devops-service/models"
+	"github.com/Parallels/prl-devops-service/errors"
+	"gorm.io/gorm"
+)
+
+// DefaultRootUsersMigrationWorker demonstrates how to create a seed worker
+type DefaultRootUsersMigrationWorker struct {
+	db            *gorm.DB
+	config        *config.Config
+	systemService system_interfaces.SystemServiceInterface
+	userService   user_interfaces.UserServiceInterface
+}
+
+// NewDefaultUsersMigrationWorker creates a new example seed worker
+func NewDefaultUsersMigrationWorker(db *gorm.DB, config *config.Config, systemService system_interfaces.SystemServiceInterface, userService user_interfaces.UserServiceInterface) *DefaultRootUsersMigrationWorker {
+	return &DefaultRootUsersMigrationWorker{
+		db:            db,
+		config:        config,
+		systemService: systemService,
+		userService:   userService,
+	}
+}
+
+// GetName returns the name of this seed
+func (e *DefaultRootUsersMigrationWorker) GetName() string {
+	return "default-root-users-migration"
+}
+
+// GetDescription returns the description of this seed
+func (e *DefaultRootUsersMigrationWorker) GetDescription() string {
+	return "Default root users migration"
+}
+
+// GetVersion returns the version number
+func (e *DefaultRootUsersMigrationWorker) GetVersion() int {
+	return 1
+}
+
+// GetOrder returns the execution order
+func (e *DefaultRootUsersMigrationWorker) GetOrder() int {
+	return 2
+}
+
+// Up applies the seed
+func (e *DefaultRootUsersMigrationWorker) Up(ctx basecontext.BaseContext) *errors.Diagnostics {
+	diag := errors.NewDiagnostics("default_root_users_migration_up")
+	cfg := config.GetInstance().Get()
+	username := cfg.GetString(context.Background(), config.RootUserUsernameKey, "root")
+	role, getRoleDiag := e.systemService.GetRoleBySecurityLevel(models.SecurityLevelSuperUser)
+	if getRoleDiag.HasErrors() {
+		diag.Append(getRoleDiag)
+		return diag
+	}
+
+	var existingUser entities.User
+	if err := e.db.Where("username = ?", username).First(&existingUser).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			diag.AddError("failed_to_get_user", "failed to get user", "default_root_users_migration", nil)
+			return diag
+		}
+	}
+
+	if existingUser.ID != "" {
+		ctx.Log().WithField("user_id", existingUser.ID).Info("User already exists, ensuring super user role")
+		addRoleDiag := e.userService.AddRoleToUser(ctx, config.GlobalTenantID, existingUser.ID, role.Slug)
+		if addRoleDiag.HasErrors() {
+			hasOtherErrors := false
+			for _, err := range addRoleDiag.GetAllErrors() {
+				if err.Code != "role_already_associated_with_user" {
+					hasOtherErrors = true
+					break
+				}
+			}
+
+			if hasOtherErrors {
+				diag.Append(addRoleDiag)
+				return diag
+			}
+		}
+
+		// We also need to ensure that the user has the claims associated with the role
+		ctx.Log().WithField("user_id", existingUser.ID).Info("Ensuring super user claims")
+		addClaimDiag := e.userService.AddClaimToUser(ctx, config.GlobalTenantID, existingUser.ID, "*::*::*")
+		if addClaimDiag.HasErrors() {
+			hasOtherErrors := false
+			for _, err := range addClaimDiag.GetAllErrors() {
+				if err.Code != "claim_already_associated_with_user" {
+					hasOtherErrors = true
+					break
+				}
+			}
+
+			if hasOtherErrors {
+				diag.Append(addClaimDiag)
+				return diag
+			}
+		}
+
+		// Update the created_by field
+		if existingUser.CreatedBy == "" {
+			existingUser.CreatedBy = "system"
+			if err := e.db.Save(&existingUser).Error; err != nil {
+				diag.AddError("failed_to_update_user", "failed to update user created_by", "default_root_users_migration", nil)
+				return diag
+			}
+		}
+
+		return diag
+	}
+
+	createdUser, createDiag := e.userService.CreateUser(ctx, config.GlobalTenantID, role.Slug, &user_models.CreateUserRequest{
+		ID:       config.DefaultSuperUserUserID,
+		Username: username,
+		Password: cfg.GetString(context.Background(), config.RootUserPasswordKey, "root"),
+		Email:    "root@locally.internal",
+		Name:     "Locally Root User",
+		Role:     role.Slug,
+	})
+	if createDiag.HasErrors() {
+		diag.Append(createDiag)
+		return diag
+	}
+
+	// Updating the created_by field
+	if err := e.db.Model(&entities.User{}).Where("id = ?", createdUser.ID).Update("created_by", "system").Error; err != nil {
+		diag.AddError("failed_to_update_user", "failed to update user", "default_root_users_migration", nil)
+		return diag
+	}
+
+	diag.AddPathEntry(fmt.Sprintf("user_%s_created", username), "user_migration", map[string]interface{}{
+		"user_id": createdUser.ID,
+	})
+
+	return diag
+}
+
+// Down rolls back the seed
+func (e *DefaultRootUsersMigrationWorker) Down(ctx basecontext.BaseContext) *errors.Diagnostics {
+	diag := errors.NewDiagnostics("default_users_migration_down")
+
+	cfg := config.GetInstance().Get()
+	superUserUsername := cfg.GetString(context.Background(), config.RootUserUsernameKey, "root")
+	defer diag.Complete()
+
+	var existingUser *entities.User
+	if dbErr := e.db.Where("username = ?", superUserUsername).First(&existingUser).Error; dbErr != nil {
+		if errors.Is(dbErr, gorm.ErrRecordNotFound) {
+			return diag
+		}
+		diag.AddError(fmt.Sprintf("failed_to_get_user_%s", superUserUsername), "failed to get user", "user_migration", nil)
+		return diag
+	}
+
+	if existingUser == nil {
+		diag.AddError(fmt.Sprintf("user_%s_not_found", superUserUsername), "user not found", "user_migration", nil)
+		return diag
+	}
+
+	if dbErr := e.db.Delete(&existingUser).Error; dbErr != nil {
+		diag.AddError(fmt.Sprintf("failed_to_delete_user_%s", superUserUsername), "failed to delete user", "user_migration", nil)
+		return diag
+	}
+
+	diag.AddPathEntry(fmt.Sprintf("user_%s_rolled_back", superUserUsername), "user_migration", map[string]interface{}{
+		"user_id": existingUser.ID,
+	})
+
+	return diag
+}

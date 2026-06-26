@@ -1,0 +1,90 @@
+package workers
+
+import (
+	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/database/entities"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
+	"github.com/cjlapao/common-go-logger"
+	"github.com/Parallels/prl-devops-service/errors"
+)
+
+type DefaultEmailTemplatesMigrationWorker struct {
+	svc interfaces.EmailService
+}
+
+func NewDefaultEmailTemplatesMigrationWorker(svc interfaces.EmailService) *DefaultEmailTemplatesMigrationWorker {
+	return &DefaultEmailTemplatesMigrationWorker{
+		svc: svc,
+	}
+}
+
+func (w *DefaultEmailTemplatesMigrationWorker) GetName() string {
+	return "default_email_templates"
+}
+
+func (w *DefaultEmailTemplatesMigrationWorker) GetDescription() string {
+	return "Default email templates seeding"
+}
+
+func (w *DefaultEmailTemplatesMigrationWorker) GetVersion() int {
+	return 1
+}
+
+func (w *DefaultEmailTemplatesMigrationWorker) GetOrder() int {
+	return 4
+}
+
+func (w *DefaultEmailTemplatesMigrationWorker) Up(ctx basecontext.BaseContext) *errors.Diagnostics {
+	diag := errors.NewDiagnostics("default_email_templates_migration_up")
+
+	templates := []entities.EmailTemplate{
+		{
+			Name:     "Two Factor Authentication",
+			Slug:     "2fa_code",
+			Subject:  "Your Authentication Code",
+			Body:     "<h1>Hello {{.Username}}</h1><p>Your authentication code is: <b>{{.Code}}</b></p><p>This code will expire in {{.ExpiresIn}} minutes.</p>",
+			IsSystem: true,
+		},
+		{
+			Name:     "Welcome Email",
+			Slug:     "welcome_email",
+			Subject:  "Welcome to our platform",
+			Body:     "<h1>Welcome {{.Username}}</h1><p>We are glad to have you on board.</p>",
+			IsSystem: true,
+		},
+	}
+
+	for i := range templates {
+		templates[i].TenantID = config.GlobalTenantID
+	}
+
+	for _, tmpl := range templates {
+		// Check if exists
+		existing, getDiag := w.svc.GetTemplate(ctx, tmpl.Slug)
+		if existing != nil {
+			logging.Info("Email template %s already exists, skipping", tmpl.Slug)
+			continue
+		}
+
+		// Check if error is something else than not found
+		if getDiag.HasErrors() {
+			diag.Append(getDiag)
+			continue
+		}
+
+		if regDiag := w.svc.RegisterTemplate(ctx, tmpl); regDiag.HasErrors() {
+			logging.Errorf("Failed to register template %s: %v", tmpl.Slug, regDiag)
+			diag.Append(regDiag)
+		} else {
+			logging.Info("Registered email template: %s", tmpl.Slug)
+		}
+	}
+
+	return diag
+}
+
+func (w *DefaultEmailTemplatesMigrationWorker) Down(ctx basecontext.BaseContext) *errors.Diagnostics {
+	diag := errors.NewDiagnostics("default_email_templates_migration_down")
+	return diag
+}
