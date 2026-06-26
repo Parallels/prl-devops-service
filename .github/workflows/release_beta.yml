@@ -292,7 +292,7 @@ jobs:
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'deploy-di-aks.yml',
+              workflow_id: 'deploy-aks.yml',
               ref: 'main',
               inputs: {
                 environment: 'stg',
@@ -302,7 +302,7 @@ jobs:
                 deploy_catalog: "${{ github.event_name == 'workflow_dispatch' && (inputs.deploy_catalog && 'true' || 'false') || 'true' }}"
               }
             });
-            console.log('Dispatched deploy-di-aks.yml on main for stg');
+            console.log('Dispatched deploy-aks.yml on main for stg');
 
   remove-old-beta-release:
     if: ${{ inputs.remove_old_beta == true }}

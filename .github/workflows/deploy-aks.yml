@@ -1,4 +1,4 @@
-name: Deploy to DI AKS
+name: Deploy to AKS
 
 # DEPLOYMENT STRATEGY:
 # - Workaround reason: GitHub Environments are not available on this GitHub plan,
@@ -39,6 +39,16 @@ on:
         required: false
         default: "true"
         type: string
+      dry_run:
+        description: Run Helm in dry-run mode (no cluster changes)
+        required: false
+        default: "false"
+        type: string
+      atomic:
+        description: "Rollback on failure (atomic deployment)"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   deploy-orchestrator:
@@ -70,18 +80,39 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
+      - name: Helm lint orchestrator
+        run: |
+          set -euo pipefail
+          helm lint ./helm \
+            -f ./helm/values-${{ inputs.environment }}.yaml \
+            --set config.mode=orchestrator \
+            --set fullnameOverride=prl-devops-orchestrator \
+            --set image.tag="${{ inputs.image_tag }}"
+
       - name: Helm deploy orchestrator
         env:
           K8S_NAMESPACE: ${{ inputs.namespace }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          ATOMIC: ${{ inputs.atomic }}
         run: |
           set -euo pipefail
-          helm upgrade --install prl-devops-orchestrator ./helm \
-            -f ./helm/values-${{ inputs.environment }}.yaml \
-            --namespace "$K8S_NAMESPACE" \
-            --set image.tag="${{ inputs.image_tag }}" \
-            --set config.mode=orchestrator \
-            --set fullnameOverride=prl-devops-orchestrator \
-            --wait --timeout 5m
+          HELM_ARGS=(
+            -f "./helm/values-${{ inputs.environment }}.yaml"
+            --namespace "$K8S_NAMESPACE"
+            --set "image.tag=${{ inputs.image_tag }}"
+            --set config.mode=orchestrator
+            --set fullnameOverride=prl-devops-orchestrator
+          )
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" --dry-run --debug
+          else
+            DEPLOY_ARGS=(--wait --timeout 5m)
+            if [[ "$ATOMIC" == "true" ]]; then
+              DEPLOY_ARGS+=("--atomic")
+            fi
+            helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
+          fi
 
   deploy-catalog:
     name: Deploy Catalog (${{ inputs.environment }})
@@ -112,15 +143,36 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
+      - name: Helm lint catalog
+        run: |
+          set -euo pipefail
+          helm lint ./helm \
+            -f ./helm/values-${{ inputs.environment }}.yaml \
+            --set config.mode=catalog \
+            --set fullnameOverride=prl-devops-catalog \
+            --set image.tag="${{ inputs.image_tag }}"
+
       - name: Helm deploy catalog
         env:
           K8S_NAMESPACE: ${{ inputs.namespace }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          ATOMIC: ${{ inputs.atomic }}
         run: |
           set -euo pipefail
-          helm upgrade --install prl-devops-catalog ./helm \
-            -f ./helm/values-${{ inputs.environment }}.yaml \
-            --namespace "$K8S_NAMESPACE" \
-            --set image.tag="${{ inputs.image_tag }}" \
-            --set config.mode=catalog \
-            --set fullnameOverride=prl-devops-catalog \
-            --wait --timeout 5m
+          HELM_ARGS=(
+            -f "./helm/values-${{ inputs.environment }}.yaml"
+            --namespace "$K8S_NAMESPACE"
+            --set "image.tag=${{ inputs.image_tag }}"
+            --set config.mode=catalog
+            --set fullnameOverride=prl-devops-catalog
+          )
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" --dry-run --debug
+          else
+            DEPLOY_ARGS=(--wait --timeout 5m)
+            if [[ "$ATOMIC" == "true" ]]; then
+              DEPLOY_ARGS+=("--atomic")
+            fi
+            helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
+          fi
