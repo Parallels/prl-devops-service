@@ -9,42 +9,42 @@ import (
 )
 
 type OrchestratorHost struct {
-	ID                        string                          `json:"id"`
-	Enabled                   bool                            `json:"enabled"`
-	Host                      string                          `json:"host"`
-	Architecture              string                          `json:"architecture"`
-	CpuModel                  string                          `json:"cpu_model,omitempty"`
-	OsVersion                 string                          `json:"os_version,omitempty"`
-	OsName                    string                          `json:"os_name,omitempty"`
-	ExternalIpAddress         string                          `json:"external_ip_address,omitempty"`
-	DevOpsVersion             string                          `json:"devops_version,omitempty"`
-	Description               string                          `json:"description,omitempty"`
-	Tags                      []string                        `json:"tags,omitempty"`
-	Port                      string                          `json:"port,omitempty"`
-	Schema                    string                          `json:"schema,omitempty"`
-	PathPrefix                string                          `json:"path_prefix,omitempty"`
-	ParallelsDesktopVersion   string                          `json:"parallels_desktop_version,omitempty"`
-	ParallelsDesktopLicensed  bool                            `json:"parallels_desktop_licensed,omitempty"`
-	HasWebsocketEvents        bool                            `json:"has_websocket_events"`
-	IsLocal                   bool                            `json:"is_local,omitempty"`
-	Authentication            *OrchestratorHostAuthentication `json:"authentication,omitempty"`
-	Resources                 *HostResources                  `json:"resources,omitempty"`
-	State                     string                          `json:"state,omitempty"`
-	LastUnhealthy             string                          `json:"last_seen,omitempty"`
-	LastUnhealthyErrorMessage string                          `json:"last_seen_error_message,omitempty"`
-	HealthCheck               *models.ApiHealthCheck          `json:"-"`
-	VirtualMachines           []VirtualMachine                `json:"virtual_machines,omitempty"`
-	IsReverseProxyEnabled     bool                            `json:"is_reverse_proxy_enabled,omitempty"`
-	IsLogStreamingEnabled     bool                            `json:"is_log_streaming_enabled,omitempty"`
-	EnabledModules            []string                        `json:"enabled_modules,omitempty"`
-	ReverseProxy              *ReverseProxy                   `json:"reverse_proxy,omitempty"`
-	ReverseProxyHosts         []*ReverseProxyHost             `json:"reverse_proxy_hosts,omitempty"`
-	CacheConfig               *models.CatalogCacheConfig      `json:"cache_config,omitempty"`
-	CacheItems                []models.HostCatalogCacheItem   `json:"cache_items,omitempty"`
-	CreatedAt                 string                          `json:"created_at,omitempty"`
-	UpdatedAt                 string                          `json:"updated_at,omitempty"`
-	RequiredClaims            []string                        `json:"required_claims,omitempty"`
-	RequiredRoles             []string                        `json:"required_roles,omitempty"`
+	ID                        string                          `json:"id" gorm:"primaryKey;column:id;type:varchar(64)"`
+	Enabled                   bool                            `json:"enabled" gorm:"column:enabled;type:boolean;default:false;not null"`
+	Host                      string                          `json:"host" gorm:"column:host;type:varchar(255)"`
+	Architecture              string                          `json:"architecture" gorm:"column:architecture;type:varchar(64)"`
+	CpuModel                  string                          `json:"cpu_model,omitempty" gorm:"column:cpu_model;type:varchar(255)"`
+	OsVersion                 string                          `json:"os_version,omitempty" gorm:"column:os_version;type:varchar(64)"`
+	OsName                    string                          `json:"os_name,omitempty" gorm:"column:os_name;type:varchar(64)"`
+	ExternalIpAddress         string                          `json:"external_ip_address,omitempty" gorm:"column:external_ip_address;type:varchar(64)"`
+	DevOpsVersion             string                          `json:"devops_version,omitempty" gorm:"column:devops_version;type:varchar(64)"`
+	Description               string                          `json:"description,omitempty" gorm:"column:description;type:text"`
+	Tags                      []string                        `json:"tags,omitempty" gorm:"column:tags;type:json;serializer:json"`
+	Port                      string                          `json:"port,omitempty" gorm:"column:port;type:varchar(32)"`
+	Schema                    string                          `json:"schema,omitempty" gorm:"column:schema;type:varchar(32)"`
+	PathPrefix                string                          `json:"path_prefix,omitempty" gorm:"column:path_prefix;type:varchar(255)"`
+	ParallelsDesktopVersion   string                          `json:"parallels_desktop_version,omitempty" gorm:"column:parallels_desktop_version;type:varchar(64)"`
+	ParallelsDesktopLicensed  bool                            `json:"parallels_desktop_licensed,omitempty" gorm:"column:parallels_desktop_licensed;type:boolean;default:false;not null"`
+	HasWebsocketEvents        bool                            `json:"has_websocket_events" gorm:"column:has_websocket_events;type:boolean;default:false;not null"`
+	IsLocal                   bool                            `json:"is_local,omitempty" gorm:"column:is_local;type:boolean;default:false;not null"`
+	Authentication            *OrchestratorHostAuthentication `json:"authentication,omitempty" gorm:"column:authentication;type:json;serializer:json"`
+	Resources                 *HostResources                  `json:"resources,omitempty" gorm:"column:resources;type:json;serializer:json"`
+	State                     string                          `json:"state,omitempty" gorm:"column:state;type:varchar(32)"`
+	LastUnhealthy             string                          `json:"last_seen,omitempty" gorm:"column:last_seen;type:varchar(64)"`
+	LastUnhealthyErrorMessage string                          `json:"last_seen_error_message,omitempty" gorm:"column:last_seen_error_message;type:text"`
+	HealthCheck               *models.ApiHealthCheck          `json:"-" gorm:"-"`
+	VirtualMachines           []VirtualMachine                `json:"virtual_machines,omitempty" gorm:"foreignKey:HostId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	IsReverseProxyEnabled     bool                            `json:"is_reverse_proxy_enabled,omitempty" gorm:"column:is_reverse_proxy_enabled;type:boolean;default:false;not null"`
+	IsLogStreamingEnabled     bool                            `json:"is_log_streaming_enabled,omitempty" gorm:"column:is_log_streaming_enabled;type:boolean;default:false;not null"`
+	EnabledModules            []string                        `json:"enabled_modules,omitempty" gorm:"column:enabled_modules;type:json;serializer:json"`
+	ReverseProxy              *ReverseProxy                   `json:"reverse_proxy,omitempty" gorm:"column:reverse_proxy;type:json;serializer:json"`
+	ReverseProxyHosts         []*ReverseProxyHost             `json:"reverse_proxy_hosts,omitempty" gorm:"-"`
+	CacheConfig               *models.CatalogCacheConfig      `json:"cache_config,omitempty" gorm:"column:cache_config;type:json;serializer:json"`
+	CacheItems                []models.HostCatalogCacheItem   `json:"cache_items,omitempty" gorm:"column:cache_items;type:json;serializer:json"`
+	CreatedAt                 string                          `json:"created_at,omitempty" gorm:"column:created_at;type:timestamp"`
+	UpdatedAt                 string                          `json:"updated_at,omitempty" gorm:"column:updated_at;type:timestamp"`
+	RequiredClaims            []string                        `json:"required_claims,omitempty" gorm:"column:required_claims;type:json;serializer:json"`
+	RequiredRoles             []string                        `json:"required_roles,omitempty" gorm:"column:required_roles;type:json;serializer:json"`
 }
 
 func (o OrchestratorHost) GetHost() string {
