@@ -1,10 +1,9 @@
-package entities
+package models
 
-import "github.com/Parallels/prl-devops-service/database/common"
 
 // NotificationChannel represents a logical notification channel (topic)
 type NotificationChannel struct {
-	common.BaseModelWithTenant
+	BaseModel
 	Name        string `json:"name" gorm:"type:text;not null;uniqueIndex:idx_name_tenant"`
 	Description string `json:"description" gorm:"type:text"`
 }

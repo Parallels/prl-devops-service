@@ -1,13 +1,9 @@
-package entities
+package models
 
-import "github.com/Parallels/prl-devops-service/database/common"
-
-import (
-	"time"
-)
+import "time"
 
 type IpBan struct {
-	common.BaseModelWithTenant
+	BaseModel
 	IP        string     `json:"ip" gorm:"type:varchar(50);uniqueIndex;not null"`
 	Reason    string     `json:"reason" gorm:"type:text"`
 	BanLevel  string     `json:"ban_level" gorm:"type:varchar(50);default:'global'"` // global, tenant

@@ -1,11 +1,9 @@
-package entities
-
-import "github.com/Parallels/prl-devops-service/database/common"
+package models
 
 import "time"
 
 type Notification struct {
-	common.BaseModelWithTenant
+	BaseModel
 	UserID  string     `json:"user_id" gorm:"type:text;not null;index"`
 	Subject string     `json:"subject" gorm:"type:text;not null"`
 	Content string     `json:"content" gorm:"type:text;not null"`

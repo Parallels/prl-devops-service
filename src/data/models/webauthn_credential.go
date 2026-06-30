@@ -1,15 +1,13 @@
-package entities
-
-import "github.com/Parallels/prl-devops-service/database/common"
+package models
 
 import (
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// WebAuthnCredential represents a WebAuthn credential in the database
 type WebAuthnCredential struct {
-	common.BaseModelWithTenant
+	BaseModel
 	UserID          string `json:"user_id" gorm:"size:36;not null;index"`
 	CredentialID    []byte `json:"credential_id" gorm:"uniqueIndex;not null"` // Binary data
 	PublicKey       []byte `json:"public_key" gorm:"not null"`                // Binary data

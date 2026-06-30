@@ -1,6 +1,4 @@
-package entities
-
-import "github.com/Parallels/prl-devops-service/database/common"
+package models
 
 import (
 	"time"
@@ -8,7 +6,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// MessageStatus represents the status of a message
 type MessageStatus string
 
 const (
@@ -22,7 +19,7 @@ const (
 
 // Message represents a message in the database
 type Message struct {
-	common.BaseModelWithTenant
+	BaseModel
 	Type        string         `json:"type" gorm:"not null;index"`
 	Priority    int            `json:"priority" gorm:"not null;default:1;index"`
 	Payload     string         `json:"payload" gorm:"type:text"` // JSON string
@@ -54,7 +51,7 @@ func (Message) TableName() string {
 
 // MessageEvent represents events that happen to messages
 type MessageEvent struct {
-	common.BaseModel
+	BaseModel
 	MessageID  string        `json:"message_id" gorm:"not null;index"`
 	Message    Message       `json:"message" gorm:"foreignKey:MessageID"`
 	EventType  string        `json:"event_type" gorm:"not null"` // created, processing, completed, failed, retrying, abandoned
@@ -72,7 +69,7 @@ func (MessageEvent) TableName() string {
 
 // Worker represents a registered worker
 type Worker struct {
-	common.BaseModel
+	BaseModel
 	Name        string         `json:"name" gorm:"uniqueIndex;not null"`
 	Description string         `json:"description" gorm:"type:text"`
 	Version     string         `json:"version" gorm:"type:text"`
