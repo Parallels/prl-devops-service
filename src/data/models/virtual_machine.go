@@ -52,8 +52,11 @@ type VirtualMachine struct {
 	PrintManagement       VirtualMachinePrintManagement      `json:"print_management,omitempty" gorm:"column:print_management;type:json;serializer:json"`
 	GuestSharedFolders    VirtualMachineGuestSharedFolders   `json:"guest_shared_folders,omitempty" gorm:"column:guest_shared_folders;type:json;serializer:json"`
 	NetworkInformation    VirtualMachineNetworkInformation   `json:"network_information,omitempty" gorm:"column:network_information;type:json;serializer:json"`
-	CreatedAt             string                             `json:"created_at,omitempty" gorm:"column:created_at;type:timestamp"`
-	UpdatedAt             string                             `json:"updated_at,omitempty" gorm:"column:updated_at;type:timestamp"`
+	BaseModel             `gorm:"embedded"`
+}
+
+func (VirtualMachine) TableName() string {
+	return "virtual_machines"
 }
 
 func (m *VirtualMachine) Diff(source VirtualMachine) bool {
