@@ -1,7 +1,10 @@
 package testhelpers
 
 import (
+	"fmt"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/data/models"
 	"gorm.io/driver/sqlite"
@@ -9,10 +12,17 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 // NewTestDB creates an in-memory SQLite database for testing
-// This provides fast, isolated tests with no disk I/O
+// Each test gets a unique isolated database to prevent test interference
 func NewTestDB(t *testing.T) *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+	// Use a unique database name for each test to prevent cross-test pollution
+	dbName := fmt.Sprintf("file:test_%d_%d?mode=memory&cache=shared", time.Now().UnixNano(), rand.Int())
+
+	db, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent), // Quiet during tests
 	})
 	if err != nil {

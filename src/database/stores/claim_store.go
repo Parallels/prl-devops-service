@@ -31,15 +31,15 @@ type ClaimDataStoreInterface interface {
 	GetClaims(ctx basecontext.BaseContext) ([]models.Claim, *apperrors.Diagnostics)
 
 	GetClaimsByQuery(ctx basecontext.BaseContext, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Claim], *apperrors.Diagnostics)
-	GetClaimBySlugOrID(ctx basecontext.BaseContext, slugOrID string) (*models.Claim, *apperrors.Diagnostics)
+	GetClaimByNameOrID(ctx basecontext.BaseContext, nameOrID string) (*models.Claim, *apperrors.Diagnostics)
 	GetClaimUsers(ctx basecontext.BaseContext, claimID string) ([]models.User, *apperrors.Diagnostics)
 	GetClaimUsersByQuery(ctx basecontext.BaseContext, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.User], *apperrors.Diagnostics)
 	CreateClaim(ctx basecontext.BaseContext, claim *models.Claim) (*models.Claim, *apperrors.Diagnostics)
 	UpdateClaim(ctx basecontext.BaseContext, claim *models.Claim) *apperrors.Diagnostics
 	DeleteClaim(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics
 	GetClaimsByLevel(ctx basecontext.BaseContext, level models.SecurityLevel) ([]models.Claim, *apperrors.Diagnostics)
-	AddClaimToUser(ctx basecontext.BaseContext, userID string, claimIdOrSlug string) *apperrors.Diagnostics
-	RemoveClaimFromUser(ctx basecontext.BaseContext, userID string, claimIdOrSlug string) *apperrors.Diagnostics
+	AddClaimToUser(ctx basecontext.BaseContext, userID string, claimIdOrName string) *apperrors.Diagnostics
+	RemoveClaimFromUser(ctx basecontext.BaseContext, userID string, claimIdOrName string) *apperrors.Diagnostics
 	GetClaimApiKeys(ctx basecontext.BaseContext, claimID string) ([]models.ApiKey, *apperrors.Diagnostics)
 	GetClaimApiKeysByQuery(ctx basecontext.BaseContext, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.ApiKey], *apperrors.Diagnostics)
 	AddClaimToApiKey(ctx basecontext.BaseContext, claimID string, apiKeyID string) *apperrors.Diagnostics
@@ -166,14 +166,13 @@ func (s *ClaimDataStore) GetClaimsByQuery(ctx basecontext.BaseContext, queryBuil
 	return result, diag
 }
 
-func (s *ClaimDataStore) GetClaimBySlugOrID(ctx basecontext.BaseContext, slugOrID string) (*models.Claim, *apperrors.Diagnostics) {
-	diag := apperrors.NewDiagnostics("store_get_claim_by_slug_or_id")
+func (s *ClaimDataStore) GetClaimByNameOrID(ctx basecontext.BaseContext, nameOrID string) (*models.Claim, *apperrors.Diagnostics) {
+	diag := apperrors.NewDiagnostics("store_get_claim_by_name_or_id")
 
 	db := s.GetDB().WithContext(ctx.Context())
-	db = db
 
 	var claim models.Claim
-	result := db.First(&claim, "(slug = ? OR id = ?)", slugOrID, slugOrID)
+	result := db.First(&claim, "(name = ? OR id = ?)", nameOrID, nameOrID)
 	if result.Error != nil {
 		if goerrors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil // Return nil, nil if record not found
@@ -188,7 +187,7 @@ func (s *ClaimDataStore) GetClaimUsers(ctx basecontext.BaseContext, claimID stri
 	diag := apperrors.NewDiagnostics("store_get_claim_users")
 
 	var users []models.User
-	claim, userDiag := s.GetClaimBySlugOrID(ctx, claimID)
+	claim, userDiag := s.GetClaimByNameOrID(ctx, claimID)
 	if userDiag.HasErrors() {
 		diag.Append(userDiag)
 		return nil, diag
@@ -217,7 +216,7 @@ func (s *ClaimDataStore) GetClaimUsers(ctx basecontext.BaseContext, claimID stri
 func (s *ClaimDataStore) GetClaimUsersByQuery(ctx basecontext.BaseContext, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.User], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claim_users_by_query")
 
-	claim, userDiag := s.GetClaimBySlugOrID(ctx, claimID)
+	claim, userDiag := s.GetClaimByNameOrID(ctx, claimID)
 	if userDiag.HasErrors() {
 		diag.Append(userDiag)
 		return nil, diag
@@ -268,7 +267,7 @@ func (s *ClaimDataStore) UpdateClaim(ctx basecontext.BaseContext, claim *models.
 	claim.UpdatedAt = time.Now()
 
 	// check if the claim exists in the database
-	existingClaim, getClaimDiag := s.GetClaimBySlugOrID(ctx, claim.ID)
+	existingClaim, getClaimDiag := s.GetClaimByNameOrID(ctx, claim.ID)
 	if getClaimDiag.HasErrors() {
 		diag.Append(getClaimDiag)
 		return diag
@@ -279,7 +278,7 @@ func (s *ClaimDataStore) UpdateClaim(ctx basecontext.BaseContext, claim *models.
 	}
 
 	// using the partial update map to update the claim
-	updates := common.PartialUpdateMap(existingClaim, claim, "updated_at", "slug")
+	updates := common.PartialUpdateMap(existingClaim, claim, "updated_at", "name")
 	if err := s.GetDB().WithContext(ctx.Context()).
 		Model(&models.Claim{}).
 		Where("id = ?", claim.ID).
@@ -295,8 +294,7 @@ func (s *ClaimDataStore) DeleteClaim(ctx basecontext.BaseContext, id string) *ap
 	diag := apperrors.NewDiagnostics("store_delete_claim")
 
 	err := s.GetDB().WithContext(ctx.Context()).
-		Where("tenant_id = ?").
-		Where("id = ? OR slug = ?", id, id).
+		Where("id = ? OR name = ?", id, id).
 		Delete(&models.Claim{}).Error
 	if err != nil {
 		diag.AddError("failed_to_delete_claim", fmt.Sprintf("failed to delete claim: %s", common.MapError(err).Error()), "claim_data_store", nil)
@@ -311,7 +309,6 @@ func (s *ClaimDataStore) GetClaimsByLevel(ctx basecontext.BaseContext, level mod
 
 	var claims []models.Claim
 	result := s.GetDB().WithContext(ctx.Context()).
-		Where("tenant_id = ?").
 		Where("security_level = ?", level).
 		Find(&claims)
 	if result.Error != nil {
@@ -321,7 +318,7 @@ func (s *ClaimDataStore) GetClaimsByLevel(ctx basecontext.BaseContext, level mod
 	return claims, diag
 }
 
-func (s *ClaimDataStore) AddClaimToUser(ctx basecontext.BaseContext, userID string, claimIdOrSlug string) *apperrors.Diagnostics {
+func (s *ClaimDataStore) AddClaimToUser(ctx basecontext.BaseContext, userID string, claimIdOrName string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("store_add_claim_to_user")
 
 	var user models.User
@@ -336,7 +333,7 @@ func (s *ClaimDataStore) AddClaimToUser(ctx basecontext.BaseContext, userID stri
 	}
 
 	// check if the claim exists
-	existingClaim, err := s.GetClaimBySlugOrID(ctx, claimIdOrSlug)
+	existingClaim, err := s.GetClaimByNameOrID(ctx, claimIdOrName)
 	if err != nil && err.HasErrors() {
 		diag.Append(err)
 		return diag
@@ -355,7 +352,7 @@ func (s *ClaimDataStore) AddClaimToUser(ctx basecontext.BaseContext, userID stri
 	return diag
 }
 
-func (s *ClaimDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, userID string, claimIdOrSlug string) *apperrors.Diagnostics {
+func (s *ClaimDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, userID string, claimIdOrName string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("store_remove_claim_from_user")
 
 	var user models.User
@@ -370,7 +367,7 @@ func (s *ClaimDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, userID
 	}
 
 	// check if the claim exists
-	existingClaim, err := s.GetClaimBySlugOrID(ctx, claimIdOrSlug)
+	existingClaim, err := s.GetClaimByNameOrID(ctx, claimIdOrName)
 	if err != nil && err.HasErrors() {
 		diag.Append(err)
 		return diag
@@ -420,7 +417,7 @@ func (s *ClaimDataStore) RemoveClaimFromApiKey(ctx basecontext.BaseContext, clai
 func (s *ClaimDataStore) GetClaimRolesByQuery(ctx basecontext.BaseContext, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Role], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claim_roles_by_query")
 
-	claim, getDiag := s.GetClaimBySlugOrID(ctx, claimID)
+	claim, getDiag := s.GetClaimByNameOrID(ctx, claimID)
 	if getDiag.HasErrors() {
 		diag.Append(getDiag)
 		return nil, diag
@@ -452,7 +449,7 @@ func (s *ClaimDataStore) GetClaimRolesByQuery(ctx basecontext.BaseContext, claim
 func (s *ClaimDataStore) GetClaimRoles(ctx basecontext.BaseContext, claimID string) ([]models.Role, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claim_roles")
 
-	claim, getDiag := s.GetClaimBySlugOrID(ctx, claimID)
+	claim, getDiag := s.GetClaimByNameOrID(ctx, claimID)
 	if getDiag.HasErrors() {
 		diag.Append(getDiag)
 		return nil, diag
@@ -494,7 +491,7 @@ func (s *ClaimDataStore) AddClaimToRole(ctx basecontext.BaseContext, claimID str
 	}
 
 	// check if the claim exists
-	existingClaim, existingClaimDiag := s.GetClaimBySlugOrID(ctx, claimID)
+	existingClaim, existingClaimDiag := s.GetClaimByNameOrID(ctx, claimID)
 	if existingClaimDiag.HasErrors() {
 		diag.Append(existingClaimDiag)
 		return diag
@@ -546,7 +543,7 @@ func (s *ClaimDataStore) RemoveClaimFromRole(ctx basecontext.BaseContext, claimI
 	}
 
 	// check if the claim exists
-	existingClaim, existingClaimDiag := s.GetClaimBySlugOrID(ctx, claimID)
+	existingClaim, existingClaimDiag := s.GetClaimByNameOrID(ctx, claimID)
 	if existingClaimDiag.HasErrors() {
 		diag.Append(existingClaimDiag)
 		return diag
