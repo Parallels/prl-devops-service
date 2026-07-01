@@ -27,19 +27,19 @@ var (
 
 type NotificationDataStoreInterface interface {
 	interfaces.Store
-	CreateNotification(ctx basecontext.BaseContext, tenantID string, notification *models.Notification) (*models.Notification, *apperrors.Diagnostics)
+	CreateNotification(ctx basecontext.BaseContext, notification *models.Notification) (*models.Notification, *apperrors.Diagnostics)
 
-	GetNotifications(ctx basecontext.BaseContext, tenantID string, userID string, filterObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Notification], *apperrors.Diagnostics)
-	MarkAsRead(ctx basecontext.BaseContext, tenantID string, notificationID string, userID string) *apperrors.Diagnostics
-	MarkAllAsRead(ctx basecontext.BaseContext, tenantID string, userID string) *apperrors.Diagnostics
-	GetUnreadCount(ctx basecontext.BaseContext, tenantID string, userID string) (int64, *apperrors.Diagnostics)
+	GetNotifications(ctx basecontext.BaseContext, userID string, filterObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Notification], *apperrors.Diagnostics)
+	MarkAsRead(ctx basecontext.BaseContext, notificationID string, userID string) *apperrors.Diagnostics
+	MarkAllAsRead(ctx basecontext.BaseContext, userID string) *apperrors.Diagnostics
+	GetUnreadCount(ctx basecontext.BaseContext, userID string) (int64, *apperrors.Diagnostics)
 
 	// Channels & Configuration
-	CreateChannel(ctx basecontext.BaseContext, tenantID string, channel *models.NotificationChannel) (*models.NotificationChannel, *apperrors.Diagnostics)
-	GetChannelByName(ctx basecontext.BaseContext, tenantID string, name string) (*models.NotificationChannel, *apperrors.Diagnostics)
-	GetChannels(ctx basecontext.BaseContext, tenantID string) ([]models.NotificationChannel, *apperrors.Diagnostics)
-	AddConfigToChannel(ctx basecontext.BaseContext, tenantID string, config *models.NotificationChannelConfig) (*models.NotificationChannelConfig, *apperrors.Diagnostics)
-	GetConfigsForChannel(ctx basecontext.BaseContext, tenantID string, channelName string) ([]models.NotificationChannelConfig, *apperrors.Diagnostics)
+	CreateChannel(ctx basecontext.BaseContext, channel *models.NotificationChannel) (*models.NotificationChannel, *apperrors.Diagnostics)
+	GetChannelByName(ctx basecontext.BaseContext, name string) (*models.NotificationChannel, *apperrors.Diagnostics)
+	GetChannels(ctx basecontext.BaseContext) ([]models.NotificationChannel, *apperrors.Diagnostics)
+	AddConfigToChannel(ctx basecontext.BaseContext, config *models.NotificationChannelConfig) (*models.NotificationChannelConfig, *apperrors.Diagnostics)
+	GetConfigsForChannel(ctx basecontext.BaseContext, channelName string) ([]models.NotificationChannelConfig, *apperrors.Diagnostics)
 }
 
 type NotificationDataStore struct {
@@ -132,7 +132,7 @@ func (s *NotificationDataStore) Migrate() error {
 	return nil
 }
 
-func (s *NotificationDataStore) CreateNotification(ctx basecontext.BaseContext, tenantID string, notification *models.Notification) (*models.Notification, *apperrors.Diagnostics) {
+func (s *NotificationDataStore) CreateNotification(ctx basecontext.BaseContext, notification *models.Notification) (*models.Notification, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("create_notification")
 	if notification.ID == "" {
 		notification.ID = uuid.New().String()
@@ -148,11 +148,11 @@ func (s *NotificationDataStore) CreateNotification(ctx basecontext.BaseContext, 
 	return notification, diag
 }
 
-func (s *NotificationDataStore) GetNotifications(ctx basecontext.BaseContext, tenantID string, userID string, queryObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Notification], *apperrors.Diagnostics) {
+func (s *NotificationDataStore) GetNotifications(ctx basecontext.BaseContext, userID string, queryObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Notification], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_notifications")
-	db := s.GetDB().WithContext(ctx.Context()).Where("tenant_id = ? AND user_id = ?", tenantID, userID)
+	db := s.GetDB().WithContext(ctx.Context()).Where("user_id = ?", userID)
 
-	result, err := filters.QueryDatabase[models.Notification](db, tenantID, queryObj)
+	result, err := filters.QueryDatabase[models.Notification](db, "", queryObj)
 	if err != nil {
 		diag.AddError("failed_to_get_notifications", fmt.Sprintf("failed to get notifications: %s", common.MapError(err).Error()), "notification_data_store", nil)
 		return nil, diag
@@ -160,7 +160,7 @@ func (s *NotificationDataStore) GetNotifications(ctx basecontext.BaseContext, te
 	return result, diag
 }
 
-func (s *NotificationDataStore) MarkAsRead(ctx basecontext.BaseContext, tenantID string, notificationID string, userID string) *apperrors.Diagnostics {
+func (s *NotificationDataStore) MarkAsRead(ctx basecontext.BaseContext, notificationID string, userID string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("mark_notification_as_read")
 
 	now := time.Now()
@@ -171,7 +171,7 @@ func (s *NotificationDataStore) MarkAsRead(ctx basecontext.BaseContext, tenantID
 	}
 
 	result := s.GetDB().WithContext(ctx.Context()).Model(&models.Notification{}).
-		Where("tenant_id = ? AND user_id = ? AND id = ?", tenantID, userID, notificationID).
+		Where("tenant_id = ? AND user_id = ? AND id = ?", userID, notificationID).
 		Updates(updates)
 
 	if result.Error != nil {
@@ -188,7 +188,7 @@ func (s *NotificationDataStore) MarkAsRead(ctx basecontext.BaseContext, tenantID
 	return diag
 }
 
-func (s *NotificationDataStore) MarkAllAsRead(ctx basecontext.BaseContext, tenantID string, userID string) *apperrors.Diagnostics {
+func (s *NotificationDataStore) MarkAllAsRead(ctx basecontext.BaseContext, userID string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("mark_all_notifications_as_read")
 
 	now := time.Now()
@@ -199,7 +199,7 @@ func (s *NotificationDataStore) MarkAllAsRead(ctx basecontext.BaseContext, tenan
 	}
 
 	result := s.GetDB().WithContext(ctx.Context()).Model(&models.Notification{}).
-		Where("tenant_id = ? AND user_id = ? AND read = ?", tenantID, userID, false).
+		Where("tenant_id = ? AND user_id = ? AND read = ?", userID, false).
 		Updates(updates)
 
 	if result.Error != nil {
@@ -210,12 +210,12 @@ func (s *NotificationDataStore) MarkAllAsRead(ctx basecontext.BaseContext, tenan
 	return diag
 }
 
-func (s *NotificationDataStore) GetUnreadCount(ctx basecontext.BaseContext, tenantID string, userID string) (int64, *apperrors.Diagnostics) {
+func (s *NotificationDataStore) GetUnreadCount(ctx basecontext.BaseContext, userID string) (int64, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_unread_notification_count")
 	var count int64
 
 	result := s.GetDB().WithContext(ctx.Context()).Model(&models.Notification{}).
-		Where("tenant_id = ? AND user_id = ? AND read = ?", tenantID, userID, false).
+		Where("tenant_id = ? AND user_id = ? AND read = ?", userID, false).
 		Count(&count)
 
 	if result.Error != nil {
@@ -228,7 +228,7 @@ func (s *NotificationDataStore) GetUnreadCount(ctx basecontext.BaseContext, tena
 
 // Channels & Configuration
 
-func (s *NotificationDataStore) CreateChannel(ctx basecontext.BaseContext, tenantID string, channel *models.NotificationChannel) (*models.NotificationChannel, *apperrors.Diagnostics) {
+func (s *NotificationDataStore) CreateChannel(ctx basecontext.BaseContext, channel *models.NotificationChannel) (*models.NotificationChannel, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("create_notification_channel")
 	if channel.ID == "" {
 		channel.ID = uuid.New().String()
@@ -244,11 +244,11 @@ func (s *NotificationDataStore) CreateChannel(ctx basecontext.BaseContext, tenan
 	return channel, diag
 }
 
-func (s *NotificationDataStore) GetChannelByName(ctx basecontext.BaseContext, tenantID string, name string) (*models.NotificationChannel, *apperrors.Diagnostics) {
+func (s *NotificationDataStore) GetChannelByName(ctx basecontext.BaseContext, name string) (*models.NotificationChannel, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_notification_channel_by_name")
 	var channel models.NotificationChannel
 
-	result := s.GetDB().WithContext(ctx.Context()).Where("tenant_id = ? AND name = ?", tenantID, name).First(&channel)
+	result := s.GetDB().WithContext(ctx.Context()).Where("name = ?", name).First(&channel)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, nil // Return nil if not found, let caller handle
@@ -260,11 +260,11 @@ func (s *NotificationDataStore) GetChannelByName(ctx basecontext.BaseContext, te
 	return &channel, diag
 }
 
-func (s *NotificationDataStore) GetChannels(ctx basecontext.BaseContext, tenantID string) ([]models.NotificationChannel, *apperrors.Diagnostics) {
+func (s *NotificationDataStore) GetChannels(ctx basecontext.BaseContext) ([]models.NotificationChannel, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_notification_channels")
 	var channels []models.NotificationChannel
 
-	result := s.GetDB().WithContext(ctx.Context()).Where("tenant_id = ?", tenantID).Find(&channels)
+	result := s.GetDB().WithContext(ctx.Context()).Find(&channels)
 	if result.Error != nil {
 		diag.AddError("failed_to_get_notification_channels", fmt.Sprintf("failed to get notification channels: %s", common.MapError(result.Error).Error()), "notification_data_store", nil)
 		return nil, diag
@@ -273,7 +273,7 @@ func (s *NotificationDataStore) GetChannels(ctx basecontext.BaseContext, tenantI
 	return channels, diag
 }
 
-func (s *NotificationDataStore) AddConfigToChannel(ctx basecontext.BaseContext, tenantID string, config *models.NotificationChannelConfig) (*models.NotificationChannelConfig, *apperrors.Diagnostics) {
+func (s *NotificationDataStore) AddConfigToChannel(ctx basecontext.BaseContext, config *models.NotificationChannelConfig) (*models.NotificationChannelConfig, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("add_config_to_notification_channel")
 	if config.ID == "" {
 		config.ID = uuid.New().String()
@@ -289,14 +289,14 @@ func (s *NotificationDataStore) AddConfigToChannel(ctx basecontext.BaseContext, 
 	return config, diag
 }
 
-func (s *NotificationDataStore) GetConfigsForChannel(ctx basecontext.BaseContext, tenantID string, channelName string) ([]models.NotificationChannelConfig, *apperrors.Diagnostics) {
+func (s *NotificationDataStore) GetConfigsForChannel(ctx basecontext.BaseContext, channelName string) ([]models.NotificationChannelConfig, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_configs_for_channel")
 	var configs []models.NotificationChannelConfig
 
 	// Join with Channel to filter by channel name
 	result := s.GetDB().WithContext(ctx.Context()).
 		Joins("JOIN notification_channels ON notification_channels.id = notification_channel_configs.channel_id").
-		Where("notification_channel_configs.tenant_id = ? AND notification_channels.name = ?", tenantID, channelName).
+		Where("notification_channel_configs.tenant_id = ? AND notification_channels.name = ?", channelName).
 		Find(&configs)
 
 	if result.Error != nil {

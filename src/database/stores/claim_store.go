@@ -28,26 +28,26 @@ var (
 
 type ClaimDataStoreInterface interface {
 	interfaces.Store
-	GetClaims(ctx basecontext.BaseContext, tenantID string) ([]models.Claim, *apperrors.Diagnostics)
+	GetClaims(ctx basecontext.BaseContext) ([]models.Claim, *apperrors.Diagnostics)
 
-	GetClaimsByQuery(ctx basecontext.BaseContext, tenantID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Claim], *apperrors.Diagnostics)
-	GetClaimBySlugOrID(ctx basecontext.BaseContext, tenantID string, slugOrID string) (*models.Claim, *apperrors.Diagnostics)
-	GetClaimUsers(ctx basecontext.BaseContext, tenantID string, claimID string) ([]models.User, *apperrors.Diagnostics)
-	GetClaimUsersByQuery(ctx basecontext.BaseContext, tenantID string, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.User], *apperrors.Diagnostics)
-	CreateClaim(ctx basecontext.BaseContext, tenantID string, claim *models.Claim) (*models.Claim, *apperrors.Diagnostics)
-	UpdateClaim(ctx basecontext.BaseContext, tenantID string, claim *models.Claim) *apperrors.Diagnostics
-	DeleteClaim(ctx basecontext.BaseContext, tenantID string, id string) *apperrors.Diagnostics
-	GetClaimsByLevel(ctx basecontext.BaseContext, tenantID string, level models.SecurityLevel) ([]models.Claim, *apperrors.Diagnostics)
-	AddClaimToUser(ctx basecontext.BaseContext, tenantID string, userID string, claimIdOrSlug string) *apperrors.Diagnostics
-	RemoveClaimFromUser(ctx basecontext.BaseContext, tenantID string, userID string, claimIdOrSlug string) *apperrors.Diagnostics
-	GetClaimApiKeys(ctx basecontext.BaseContext, tenantID string, claimID string) ([]models.ApiKey, *apperrors.Diagnostics)
-	GetClaimApiKeysByQuery(ctx basecontext.BaseContext, tenantID string, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.ApiKey], *apperrors.Diagnostics)
-	AddClaimToApiKey(ctx basecontext.BaseContext, tenantID string, claimID string, apiKeyID string) *apperrors.Diagnostics
-	RemoveClaimFromApiKey(ctx basecontext.BaseContext, tenantID string, claimID string, apiKeyID string) *apperrors.Diagnostics
-	GetClaimRoles(ctx basecontext.BaseContext, tenantID string, claimID string) ([]models.Role, *apperrors.Diagnostics)
-	GetClaimRolesByQuery(ctx basecontext.BaseContext, tenantID string, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Role], *apperrors.Diagnostics)
-	AddClaimToRole(ctx basecontext.BaseContext, tenantID string, claimID string, roleID string) *apperrors.Diagnostics
-	RemoveClaimFromRole(ctx basecontext.BaseContext, tenantID string, claimID string, roleID string) *apperrors.Diagnostics
+	GetClaimsByQuery(ctx basecontext.BaseContext, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Claim], *apperrors.Diagnostics)
+	GetClaimBySlugOrID(ctx basecontext.BaseContext, slugOrID string) (*models.Claim, *apperrors.Diagnostics)
+	GetClaimUsers(ctx basecontext.BaseContext, claimID string) ([]models.User, *apperrors.Diagnostics)
+	GetClaimUsersByQuery(ctx basecontext.BaseContext, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.User], *apperrors.Diagnostics)
+	CreateClaim(ctx basecontext.BaseContext, claim *models.Claim) (*models.Claim, *apperrors.Diagnostics)
+	UpdateClaim(ctx basecontext.BaseContext, claim *models.Claim) *apperrors.Diagnostics
+	DeleteClaim(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics
+	GetClaimsByLevel(ctx basecontext.BaseContext, level models.SecurityLevel) ([]models.Claim, *apperrors.Diagnostics)
+	AddClaimToUser(ctx basecontext.BaseContext, userID string, claimIdOrSlug string) *apperrors.Diagnostics
+	RemoveClaimFromUser(ctx basecontext.BaseContext, userID string, claimIdOrSlug string) *apperrors.Diagnostics
+	GetClaimApiKeys(ctx basecontext.BaseContext, claimID string) ([]models.ApiKey, *apperrors.Diagnostics)
+	GetClaimApiKeysByQuery(ctx basecontext.BaseContext, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.ApiKey], *apperrors.Diagnostics)
+	AddClaimToApiKey(ctx basecontext.BaseContext, claimID string, apiKeyID string) *apperrors.Diagnostics
+	RemoveClaimFromApiKey(ctx basecontext.BaseContext, claimID string, apiKeyID string) *apperrors.Diagnostics
+	GetClaimRoles(ctx basecontext.BaseContext, claimID string) ([]models.Role, *apperrors.Diagnostics)
+	GetClaimRolesByQuery(ctx basecontext.BaseContext, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Role], *apperrors.Diagnostics)
+	AddClaimToRole(ctx basecontext.BaseContext, claimID string, roleID string) *apperrors.Diagnostics
+	RemoveClaimFromRole(ctx basecontext.BaseContext, claimID string, roleID string) *apperrors.Diagnostics
 }
 
 type ClaimDataStore struct {
@@ -135,16 +135,12 @@ func (s *ClaimDataStore) Migrate() error {
 	return nil
 }
 
-func (s *ClaimDataStore) GetClaims(ctx basecontext.BaseContext, tenantID string) ([]models.Claim, *apperrors.Diagnostics) {
+func (s *ClaimDataStore) GetClaims(ctx basecontext.BaseContext) ([]models.Claim, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claims")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return nil, diag
-	}
 	db := s.GetDB()
 
 	var claims []models.Claim
-	result := db.WithContext(ctx.Context()).Where("tenant_id = ?", tenantID).Find(&claims)
+	result := db.WithContext(ctx.Context()).Find(&claims)
 	if result.Error != nil {
 		diag.AddError("failed_to_get_claims", fmt.Sprintf("failed to get claims: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
 		return nil, diag
@@ -152,12 +148,8 @@ func (s *ClaimDataStore) GetClaims(ctx basecontext.BaseContext, tenantID string)
 	return claims, diag
 }
 
-func (s *ClaimDataStore) GetClaimsByQuery(ctx basecontext.BaseContext, tenantID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Claim], *apperrors.Diagnostics) {
+func (s *ClaimDataStore) GetClaimsByQuery(ctx basecontext.BaseContext, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Claim], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claims_by_query")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return nil, diag
-	}
 
 	db := s.GetDB().WithContext(ctx.Context())
 
@@ -165,7 +157,7 @@ func (s *ClaimDataStore) GetClaimsByQuery(ctx basecontext.BaseContext, tenantID 
 		queryBuilder = filters.NewQueryBuilder("")
 	}
 
-	result, err := filters.QueryDatabase[models.Claim](db, tenantID, queryBuilder)
+	result, err := filters.QueryDatabase[models.Claim](db, "", queryBuilder)
 	if err != nil {
 		diag.AddError("failed_to_get_claims_by_query", fmt.Sprintf("failed to get claims by query: %s", common.MapError(err).Error()), "claim_data_store", nil)
 		return nil, diag
@@ -174,15 +166,11 @@ func (s *ClaimDataStore) GetClaimsByQuery(ctx basecontext.BaseContext, tenantID 
 	return result, diag
 }
 
-func (s *ClaimDataStore) GetClaimBySlugOrID(ctx basecontext.BaseContext, tenantID string, slugOrID string) (*models.Claim, *apperrors.Diagnostics) {
+func (s *ClaimDataStore) GetClaimBySlugOrID(ctx basecontext.BaseContext, slugOrID string) (*models.Claim, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claim_by_slug_or_id")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return nil, diag
-	}
 
 	db := s.GetDB().WithContext(ctx.Context())
-	db = db.Where("tenant_id = ?", tenantID)
+	db = db
 
 	var claim models.Claim
 	result := db.First(&claim, "(slug = ? OR id = ?)", slugOrID, slugOrID)
@@ -196,15 +184,11 @@ func (s *ClaimDataStore) GetClaimBySlugOrID(ctx basecontext.BaseContext, tenantI
 	return &claim, diag
 }
 
-func (s *ClaimDataStore) GetClaimUsers(ctx basecontext.BaseContext, tenantID string, claimID string) ([]models.User, *apperrors.Diagnostics) {
+func (s *ClaimDataStore) GetClaimUsers(ctx basecontext.BaseContext, claimID string) ([]models.User, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claim_users")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return nil, diag
-	}
 
 	var users []models.User
-	claim, userDiag := s.GetClaimBySlugOrID(ctx, tenantID, claimID)
+	claim, userDiag := s.GetClaimBySlugOrID(ctx, claimID)
 	if userDiag.HasErrors() {
 		diag.Append(userDiag)
 		return nil, diag
@@ -222,9 +206,6 @@ func (s *ClaimDataStore) GetClaimUsers(ctx basecontext.BaseContext, tenantID str
 		}).
 		Joins("JOIN user_claims ON users.id = user_claims.user_id").
 		Where("user_claims.claim_id = ?", claim.ID)
-	if tenantID != "" {
-		query = query.Where("users.tenant_id = ?", tenantID)
-	}
 	result := query.Find(&users)
 	if result.Error != nil {
 		diag.AddError("failed_to_get_claim_users", fmt.Sprintf("failed to get claim users: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
@@ -233,14 +214,10 @@ func (s *ClaimDataStore) GetClaimUsers(ctx basecontext.BaseContext, tenantID str
 	return users, diag
 }
 
-func (s *ClaimDataStore) GetClaimUsersByQuery(ctx basecontext.BaseContext, tenantID string, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.User], *apperrors.Diagnostics) {
+func (s *ClaimDataStore) GetClaimUsersByQuery(ctx basecontext.BaseContext, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.User], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claim_users_by_query")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return nil, diag
-	}
 
-	claim, userDiag := s.GetClaimBySlugOrID(ctx, tenantID, claimID)
+	claim, userDiag := s.GetClaimBySlugOrID(ctx, claimID)
 	if userDiag.HasErrors() {
 		diag.Append(userDiag)
 		return nil, diag
@@ -259,7 +236,7 @@ func (s *ClaimDataStore) GetClaimUsersByQuery(ctx basecontext.BaseContext, tenan
 		Joins("JOIN user_claims ON users.id = user_claims.user_id").
 		Where("user_claims.claim_id = ?", claim.ID)
 
-	result, err := filters.QueryDatabase[models.User](db, tenantID, queryBuilder)
+	result, err := filters.QueryDatabase[models.User](db, "", queryBuilder)
 	if err != nil {
 		diag.AddError("failed_to_get_claim_users_by_query", fmt.Sprintf("failed to get claim users by query: %s", common.MapError(err).Error()), "claim_data_store", nil)
 		return nil, diag
@@ -268,12 +245,8 @@ func (s *ClaimDataStore) GetClaimUsersByQuery(ctx basecontext.BaseContext, tenan
 	return result, diag
 }
 
-func (s *ClaimDataStore) CreateClaim(ctx basecontext.BaseContext, tenantID string, claim *models.Claim) (*models.Claim, *apperrors.Diagnostics) {
+func (s *ClaimDataStore) CreateClaim(ctx basecontext.BaseContext, claim *models.Claim) (*models.Claim, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_create_claim")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return nil, diag
-	}
 
 	if claim.ID == "" {
 		claim.ID = uuid.New().String()
@@ -289,17 +262,13 @@ func (s *ClaimDataStore) CreateClaim(ctx basecontext.BaseContext, tenantID strin
 	return claim, diag
 }
 
-func (s *ClaimDataStore) UpdateClaim(ctx basecontext.BaseContext, tenantID string, claim *models.Claim) *apperrors.Diagnostics {
+func (s *ClaimDataStore) UpdateClaim(ctx basecontext.BaseContext, claim *models.Claim) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("store_update_claim")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return diag
-	}
 
 	claim.UpdatedAt = time.Now()
 
 	// check if the claim exists in the database
-	existingClaim, getClaimDiag := s.GetClaimBySlugOrID(ctx, tenantID, claim.ID)
+	existingClaim, getClaimDiag := s.GetClaimBySlugOrID(ctx, claim.ID)
 	if getClaimDiag.HasErrors() {
 		diag.Append(getClaimDiag)
 		return diag
@@ -322,15 +291,11 @@ func (s *ClaimDataStore) UpdateClaim(ctx basecontext.BaseContext, tenantID strin
 	return diag
 }
 
-func (s *ClaimDataStore) DeleteClaim(ctx basecontext.BaseContext, tenantID string, id string) *apperrors.Diagnostics {
+func (s *ClaimDataStore) DeleteClaim(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("store_delete_claim")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return diag
-	}
 
 	err := s.GetDB().WithContext(ctx.Context()).
-		Where("tenant_id = ?", tenantID).
+		Where("tenant_id = ?").
 		Where("id = ? OR slug = ?", id, id).
 		Delete(&models.Claim{}).Error
 	if err != nil {
@@ -341,16 +306,12 @@ func (s *ClaimDataStore) DeleteClaim(ctx basecontext.BaseContext, tenantID strin
 	return diag
 }
 
-func (s *ClaimDataStore) GetClaimsByLevel(ctx basecontext.BaseContext, tenantID string, level models.SecurityLevel) ([]models.Claim, *apperrors.Diagnostics) {
+func (s *ClaimDataStore) GetClaimsByLevel(ctx basecontext.BaseContext, level models.SecurityLevel) ([]models.Claim, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claims_by_level")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return nil, diag
-	}
 
 	var claims []models.Claim
 	result := s.GetDB().WithContext(ctx.Context()).
-		Where("tenant_id = ?", tenantID).
+		Where("tenant_id = ?").
 		Where("security_level = ?", level).
 		Find(&claims)
 	if result.Error != nil {
@@ -360,15 +321,11 @@ func (s *ClaimDataStore) GetClaimsByLevel(ctx basecontext.BaseContext, tenantID 
 	return claims, diag
 }
 
-func (s *ClaimDataStore) AddClaimToUser(ctx basecontext.BaseContext, tenantID string, userID string, claimIdOrSlug string) *apperrors.Diagnostics {
+func (s *ClaimDataStore) AddClaimToUser(ctx basecontext.BaseContext, userID string, claimIdOrSlug string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("store_add_claim_to_user")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return diag
-	}
 
 	var user models.User
-	result := s.GetDB().Where("tenant_id = ? AND id = ?", tenantID, userID).First(&user)
+	result := s.GetDB().Where("id = ?", userID).First(&user)
 	if result.Error != nil {
 		diag.AddError("failed_to_get_user", fmt.Sprintf("failed to get user: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
 		return diag
@@ -379,7 +336,7 @@ func (s *ClaimDataStore) AddClaimToUser(ctx basecontext.BaseContext, tenantID st
 	}
 
 	// check if the claim exists
-	existingClaim, err := s.GetClaimBySlugOrID(ctx, tenantID, claimIdOrSlug)
+	existingClaim, err := s.GetClaimBySlugOrID(ctx, claimIdOrSlug)
 	if err != nil && err.HasErrors() {
 		diag.Append(err)
 		return diag
@@ -398,15 +355,11 @@ func (s *ClaimDataStore) AddClaimToUser(ctx basecontext.BaseContext, tenantID st
 	return diag
 }
 
-func (s *ClaimDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, tenantID string, userID string, claimIdOrSlug string) *apperrors.Diagnostics {
+func (s *ClaimDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, userID string, claimIdOrSlug string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("store_remove_claim_from_user")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return diag
-	}
 
 	var user models.User
-	result := s.GetDB().Where("tenant_id = ? AND id = ?", tenantID, userID).First(&user)
+	result := s.GetDB().Where("id = ?", userID).First(&user)
 	if result.Error != nil {
 		diag.AddError("failed_to_get_user", fmt.Sprintf("failed to get user: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
 		return diag
@@ -417,7 +370,7 @@ func (s *ClaimDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, tenant
 	}
 
 	// check if the claim exists
-	existingClaim, err := s.GetClaimBySlugOrID(ctx, tenantID, claimIdOrSlug)
+	existingClaim, err := s.GetClaimBySlugOrID(ctx, claimIdOrSlug)
 	if err != nil && err.HasErrors() {
 		diag.Append(err)
 		return diag
@@ -436,42 +389,38 @@ func (s *ClaimDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, tenant
 	return diag
 }
 
-func (s *ClaimDataStore) GetClaimApiKeys(ctx basecontext.BaseContext, tenantID string, claimID string) ([]models.ApiKey, *apperrors.Diagnostics) {
+func (s *ClaimDataStore) GetClaimApiKeys(ctx basecontext.BaseContext, claimID string) ([]models.ApiKey, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claim_api_keys")
 	// API keys don't have a Claims relationship in the current model
 	diag.AddError("not_implemented", "API key claims are not implemented in the current model", "claim_data_store", nil)
 	return nil, diag
 }
 
-func (s *ClaimDataStore) GetClaimApiKeysByQuery(ctx basecontext.BaseContext, tenantID string, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.ApiKey], *apperrors.Diagnostics) {
+func (s *ClaimDataStore) GetClaimApiKeysByQuery(ctx basecontext.BaseContext, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.ApiKey], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claim_api_keys_by_query")
 	// API keys don't have a Claims relationship in the current model
 	diag.AddError("not_implemented", "API key claims are not implemented in the current model", "claim_data_store", nil)
 	return nil, diag
 }
 
-func (s *ClaimDataStore) AddClaimToApiKey(ctx basecontext.BaseContext, tenantID string, claimID string, apiKeyID string) *apperrors.Diagnostics {
+func (s *ClaimDataStore) AddClaimToApiKey(ctx basecontext.BaseContext, claimID string, apiKeyID string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("store_add_claim_to_api_key")
 	// API keys don't have a Claims relationship in the current model
 	diag.AddError("not_implemented", "API key claims are not implemented in the current model", "claim_data_store", nil)
 	return diag
 }
 
-func (s *ClaimDataStore) RemoveClaimFromApiKey(ctx basecontext.BaseContext, tenantID string, claimID string, apiKeyID string) *apperrors.Diagnostics {
+func (s *ClaimDataStore) RemoveClaimFromApiKey(ctx basecontext.BaseContext, claimID string, apiKeyID string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("store_remove_claim_from_api_key")
 	// API keys don't have a Claims relationship in the current model
 	diag.AddError("not_implemented", "API key claims are not implemented in the current model", "claim_data_store", nil)
 	return diag
 }
 
-func (s *ClaimDataStore) GetClaimRolesByQuery(ctx basecontext.BaseContext, tenantID string, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Role], *apperrors.Diagnostics) {
+func (s *ClaimDataStore) GetClaimRolesByQuery(ctx basecontext.BaseContext, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Role], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claim_roles_by_query")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return nil, diag
-	}
 
-	claim, getDiag := s.GetClaimBySlugOrID(ctx, tenantID, claimID)
+	claim, getDiag := s.GetClaimBySlugOrID(ctx, claimID)
 	if getDiag.HasErrors() {
 		diag.Append(getDiag)
 		return nil, diag
@@ -491,7 +440,7 @@ func (s *ClaimDataStore) GetClaimRolesByQuery(ctx basecontext.BaseContext, tenan
 		queryBuilder = filters.NewQueryBuilder("")
 	}
 
-	result, err := filters.QueryDatabase[models.Role](db, tenantID, queryBuilder)
+	result, err := filters.QueryDatabase[models.Role](db, "", queryBuilder)
 	if err != nil {
 		diag.AddError("failed_to_get_roles", fmt.Sprintf("failed to get roles: %s", common.MapError(err).Error()), "claim_data_store", nil)
 		return nil, diag
@@ -500,14 +449,10 @@ func (s *ClaimDataStore) GetClaimRolesByQuery(ctx basecontext.BaseContext, tenan
 	return result, diag
 }
 
-func (s *ClaimDataStore) GetClaimRoles(ctx basecontext.BaseContext, tenantID string, claimID string) ([]models.Role, *apperrors.Diagnostics) {
+func (s *ClaimDataStore) GetClaimRoles(ctx basecontext.BaseContext, claimID string) ([]models.Role, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claim_roles")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return nil, diag
-	}
 
-	claim, getDiag := s.GetClaimBySlugOrID(ctx, tenantID, claimID)
+	claim, getDiag := s.GetClaimBySlugOrID(ctx, claimID)
 	if getDiag.HasErrors() {
 		diag.Append(getDiag)
 		return nil, diag
@@ -534,15 +479,11 @@ func (s *ClaimDataStore) GetClaimRoles(ctx basecontext.BaseContext, tenantID str
 	return roles, diag
 }
 
-func (s *ClaimDataStore) AddClaimToRole(ctx basecontext.BaseContext, tenantID string, claimID string, roleID string) *apperrors.Diagnostics {
+func (s *ClaimDataStore) AddClaimToRole(ctx basecontext.BaseContext, claimID string, roleID string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("store_add_claim_to_role")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return diag
-	}
 
 	var role models.Role
-	result := s.GetDB().Where("tenant_id = ? AND id = ?", tenantID, roleID).First(&role)
+	result := s.GetDB().Where("id = ?", roleID).First(&role)
 	if result.Error != nil {
 		diag.AddError("failed_to_get_role", fmt.Sprintf("failed to get role: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
 		return diag
@@ -553,7 +494,7 @@ func (s *ClaimDataStore) AddClaimToRole(ctx basecontext.BaseContext, tenantID st
 	}
 
 	// check if the claim exists
-	existingClaim, existingClaimDiag := s.GetClaimBySlugOrID(ctx, tenantID, claimID)
+	existingClaim, existingClaimDiag := s.GetClaimBySlugOrID(ctx, claimID)
 	if existingClaimDiag.HasErrors() {
 		diag.Append(existingClaimDiag)
 		return diag
@@ -590,15 +531,11 @@ func (s *ClaimDataStore) AddClaimToRole(ctx basecontext.BaseContext, tenantID st
 	return diag
 }
 
-func (s *ClaimDataStore) RemoveClaimFromRole(ctx basecontext.BaseContext, tenantID string, claimID string, roleID string) *apperrors.Diagnostics {
+func (s *ClaimDataStore) RemoveClaimFromRole(ctx basecontext.BaseContext, claimID string, roleID string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("store_remove_claim_from_role")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return diag
-	}
 
 	var role models.Role
-	result := s.GetDB().Where("tenant_id = ? AND id = ?", tenantID, roleID).First(&role)
+	result := s.GetDB().Where("id = ?", roleID).First(&role)
 	if result.Error != nil {
 		diag.AddError("failed_to_get_role", fmt.Sprintf("failed to get role: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
 		return diag
@@ -609,7 +546,7 @@ func (s *ClaimDataStore) RemoveClaimFromRole(ctx basecontext.BaseContext, tenant
 	}
 
 	// check if the claim exists
-	existingClaim, existingClaimDiag := s.GetClaimBySlugOrID(ctx, tenantID, claimID)
+	existingClaim, existingClaimDiag := s.GetClaimBySlugOrID(ctx, claimID)
 	if existingClaimDiag.HasErrors() {
 		diag.Append(existingClaimDiag)
 		return diag

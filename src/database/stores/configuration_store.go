@@ -24,7 +24,7 @@ var (
 
 type ConfigurationDataStoreInterface interface {
 	interfaces.Store
-	GetConfigurationValue(ctx context.Context, tenantID string, key string, value interface{}) (interface{}, *apperrors.Diagnostics)
+	GetConfigurationValue(ctx context.Context, key string, value interface{}) (interface{}, *apperrors.Diagnostics)
 }
 
 type ConfigurationDataStore struct {
@@ -111,20 +111,16 @@ func (s *ConfigurationDataStore) Migrate() error {
 	return nil
 }
 
-func (s *ConfigurationDataStore) GetConfigurationValue(ctx context.Context, tenantID string, key string, value interface{}) (interface{}, *apperrors.Diagnostics) {
+func (s *ConfigurationDataStore) GetConfigurationValue(ctx context.Context, key string, value interface{}) (interface{}, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_configuration_value")
 	db := s.GetDB()
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "configuration_data_store")
-		return nil, diag
-	}
 	if key == "" {
 		diag.AddError("key_cannot_be_empty", "key cannot be empty", "configuration_data_store")
 		return nil, diag
 	}
 
 	err := db.Where("key = ?", key).
-		Where("tenant_id = ?", tenantID).
+		Where("tenant_id = ?").
 		First(&models.Configuration{}).
 		Scan(&value).Error
 	if err != nil {

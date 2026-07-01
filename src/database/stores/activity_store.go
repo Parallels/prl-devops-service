@@ -31,28 +31,28 @@ type ActivityDataStoreInterface interface {
 
 	// Activity CRUD operations
 
-	CreateActivity(ctx basecontext.BaseContext, tenantID string, activity *models.Activity) (*models.Activity, *apperrors.Diagnostics)
-	GetActivityByID(ctx basecontext.BaseContext, tenantID string, id string) (*models.Activity, *apperrors.Diagnostics)
-	GetActivities(ctx basecontext.BaseContext, tenantID string) ([]models.Activity, *apperrors.Diagnostics)
-	GetActivitiesByQuery(ctx basecontext.BaseContext, tenantID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Activity], *apperrors.Diagnostics)
-	UpdateActivity(ctx basecontext.BaseContext, tenantID string, activity *models.Activity) *apperrors.Diagnostics
-	DeleteActivity(ctx basecontext.BaseContext, tenantID string, id string) *apperrors.Diagnostics
+	CreateActivity(ctx basecontext.BaseContext, activity *models.Activity) (*models.Activity, *apperrors.Diagnostics)
+	GetActivityByID(ctx basecontext.BaseContext, id string) (*models.Activity, *apperrors.Diagnostics)
+	GetActivities(ctx basecontext.BaseContext) ([]models.Activity, *apperrors.Diagnostics)
+	GetActivitiesByQuery(ctx basecontext.BaseContext, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Activity], *apperrors.Diagnostics)
+	UpdateActivity(ctx basecontext.BaseContext, activity *models.Activity) *apperrors.Diagnostics
+	DeleteActivity(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics
 
 	// Activity querying and reporting
-	GetActivitiesByFilterAdvanced(ctx basecontext.BaseContext, tenantID string, filter *models.ActivityFilter, page, pageSize int) (*filters.FilterResponse[models.Activity], *apperrors.Diagnostics)
-	GetActivityStats(ctx basecontext.BaseContext, tenantID string, filter *models.ActivityFilter) (map[string]interface{}, *apperrors.Diagnostics)
-	GetTopActors(ctx basecontext.BaseContext, tenantID string, limit int, filter *models.ActivityFilter) ([]map[string]interface{}, *apperrors.Diagnostics)
-	GetActivityTrends(ctx basecontext.BaseContext, tenantID string, days int, filter *models.ActivityFilter) ([]map[string]interface{}, *apperrors.Diagnostics)
+	GetActivitiesByFilterAdvanced(ctx basecontext.BaseContext, filter *models.ActivityFilter, page, pageSize int) (*filters.FilterResponse[models.Activity], *apperrors.Diagnostics)
+	GetActivityStats(ctx basecontext.BaseContext, filter *models.ActivityFilter) (map[string]interface{}, *apperrors.Diagnostics)
+	GetTopActors(ctx basecontext.BaseContext, limit int, filter *models.ActivityFilter) ([]map[string]interface{}, *apperrors.Diagnostics)
+	GetActivityTrends(ctx basecontext.BaseContext, days int, filter *models.ActivityFilter) ([]map[string]interface{}, *apperrors.Diagnostics)
 
 	// Activity summary operations
-	CreateActivitySummary(ctx basecontext.BaseContext, tenantID string, summary *models.ActivitySummary) (*models.ActivitySummary, *apperrors.Diagnostics)
-	GetActivitySummaryByID(ctx basecontext.BaseContext, tenantID string, id string) (*models.ActivitySummary, *apperrors.Diagnostics)
-	UpdateActivitySummary(ctx basecontext.BaseContext, tenantID string, summary *models.ActivitySummary) *apperrors.Diagnostics
-	DeleteActivitySummary(ctx basecontext.BaseContext, tenantID string, id string) *apperrors.Diagnostics
+	CreateActivitySummary(ctx basecontext.BaseContext, summary *models.ActivitySummary) (*models.ActivitySummary, *apperrors.Diagnostics)
+	GetActivitySummaryByID(ctx basecontext.BaseContext, id string) (*models.ActivitySummary, *apperrors.Diagnostics)
+	UpdateActivitySummary(ctx basecontext.BaseContext, summary *models.ActivitySummary) *apperrors.Diagnostics
+	DeleteActivitySummary(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics
 
 	// Maintenance operations
-	CleanupOldActivities(ctx basecontext.BaseContext, tenantID string, retentionDays int) *apperrors.Diagnostics
-	ArchiveActivities(ctx basecontext.BaseContext, tenantID string, beforeDate time.Time) *apperrors.Diagnostics
+	CleanupOldActivities(ctx basecontext.BaseContext, retentionDays int) *apperrors.Diagnostics
+	ArchiveActivities(ctx basecontext.BaseContext, beforeDate time.Time) *apperrors.Diagnostics
 }
 
 type ActivityDataStore struct {
@@ -157,7 +157,7 @@ func (s *ActivityDataStore) Migrate() error {
 	return nil
 }
 
-func (s *ActivityDataStore) CreateActivity(ctx basecontext.BaseContext, tenantID string, activity *models.Activity) (*models.Activity, *apperrors.Diagnostics) {
+func (s *ActivityDataStore) CreateActivity(ctx basecontext.BaseContext, activity *models.Activity) (*models.Activity, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("create_activity")
 
 	if activity == nil {
@@ -189,7 +189,7 @@ func (s *ActivityDataStore) CreateActivity(ctx basecontext.BaseContext, tenantID
 	return activity, diag
 }
 
-func (s *ActivityDataStore) GetActivityByID(ctx basecontext.BaseContext, tenantID string, id string) (*models.Activity, *apperrors.Diagnostics) {
+func (s *ActivityDataStore) GetActivityByID(ctx basecontext.BaseContext, id string) (*models.Activity, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_activity_by_id")
 
 	if id == "" {
@@ -199,10 +199,6 @@ func (s *ActivityDataStore) GetActivityByID(ctx basecontext.BaseContext, tenantI
 
 	var activity models.Activity
 	query := s.GetDB().WithContext(ctx.Context()).Where("id = ?", id)
-
-	if tenantID != "" {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
 
 	if err := query.First(&activity).Error; err != nil {
 		if goerrors.Is(err, gorm.ErrRecordNotFound) {
@@ -215,14 +211,10 @@ func (s *ActivityDataStore) GetActivityByID(ctx basecontext.BaseContext, tenantI
 	return &activity, diag
 }
 
-func (s *ActivityDataStore) GetActivities(ctx basecontext.BaseContext, tenantID string) ([]models.Activity, *apperrors.Diagnostics) {
+func (s *ActivityDataStore) GetActivities(ctx basecontext.BaseContext) ([]models.Activity, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_activities")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "activity_data_store", nil)
-		return nil, diag
-	}
 
-	query := s.GetDB().WithContext(ctx.Context()).Where("tenant_id = ?", tenantID)
+	query := s.GetDB().WithContext(ctx.Context())
 	var activities []models.Activity
 	if err := query.Find(&activities).Error; err != nil {
 		diag.AddError("failed_to_get_activities", fmt.Sprintf("failed to get activities, error: %s", common.MapError(err).Error()), "activity_data_store", nil)
@@ -232,7 +224,7 @@ func (s *ActivityDataStore) GetActivities(ctx basecontext.BaseContext, tenantID 
 	return activities, diag
 }
 
-func (s *ActivityDataStore) GetActivitiesByQuery(ctx basecontext.BaseContext, tenantID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Activity], *apperrors.Diagnostics) {
+func (s *ActivityDataStore) GetActivitiesByQuery(ctx basecontext.BaseContext, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Activity], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_activities")
 	db := s.GetDB().WithContext(ctx.Context())
 
@@ -240,7 +232,7 @@ func (s *ActivityDataStore) GetActivitiesByQuery(ctx basecontext.BaseContext, te
 		queryBuilder = filters.NewQueryBuilder("")
 	}
 
-	result, err := filters.QueryDatabase[models.Activity](db, tenantID, queryBuilder)
+	result, err := filters.QueryDatabase[models.Activity](db, "", queryBuilder)
 	if err != nil {
 		diag.AddError("failed_to_get_activities", fmt.Sprintf("failed to get activities, error: %s", common.MapError(err).Error()), "activity_data_store", nil)
 		return nil, diag
@@ -248,7 +240,7 @@ func (s *ActivityDataStore) GetActivitiesByQuery(ctx basecontext.BaseContext, te
 	return result, diag
 }
 
-func (s *ActivityDataStore) UpdateActivity(ctx basecontext.BaseContext, tenantID string, activity *models.Activity) *apperrors.Diagnostics {
+func (s *ActivityDataStore) UpdateActivity(ctx basecontext.BaseContext, activity *models.Activity) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("update_activity")
 
 	if activity == nil {
@@ -264,9 +256,6 @@ func (s *ActivityDataStore) UpdateActivity(ctx basecontext.BaseContext, tenantID
 	activity.UpdatedAt = time.Now()
 
 	query := s.GetDB().WithContext(ctx.Context()).Where("id = ?", activity.ID)
-	if tenantID != "" {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
 
 	if err := query.Updates(activity).Error; err != nil {
 		diag.AddError("failed_to_update_activity", fmt.Sprintf("failed to update activity, error: %s", common.MapError(err).Error()), "activity_data_store", nil)
@@ -276,7 +265,7 @@ func (s *ActivityDataStore) UpdateActivity(ctx basecontext.BaseContext, tenantID
 	return diag
 }
 
-func (s *ActivityDataStore) DeleteActivity(ctx basecontext.BaseContext, tenantID string, id string) *apperrors.Diagnostics {
+func (s *ActivityDataStore) DeleteActivity(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("delete_activity")
 
 	if id == "" {
@@ -285,9 +274,6 @@ func (s *ActivityDataStore) DeleteActivity(ctx basecontext.BaseContext, tenantID
 	}
 
 	query := s.GetDB().Where("id = ?", id)
-	if tenantID != "" {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
 
 	if err := query.Delete(&models.Activity{}).Error; err != nil {
 		diag.AddError("failed_to_delete_activity", fmt.Sprintf("failed to delete activity, error: %s", common.MapError(err).Error()), "activity_data_store", nil)
@@ -297,7 +283,7 @@ func (s *ActivityDataStore) DeleteActivity(ctx basecontext.BaseContext, tenantID
 	return diag
 }
 
-func (s *ActivityDataStore) GetActivitiesByFilterAdvanced(ctx basecontext.BaseContext, tenantID string, filter *models.ActivityFilter, page, pageSize int) (*filters.FilterResponse[models.Activity], *apperrors.Diagnostics) {
+func (s *ActivityDataStore) GetActivitiesByFilterAdvanced(ctx basecontext.BaseContext, filter *models.ActivityFilter, page, pageSize int) (*filters.FilterResponse[models.Activity], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_activities_by_filter_advanced")
 
 	if filter == nil {
@@ -305,10 +291,6 @@ func (s *ActivityDataStore) GetActivitiesByFilterAdvanced(ctx basecontext.BaseCo
 	}
 	var activities []models.Activity
 	query := s.GetDB().WithContext(ctx.Context()).Model(&models.Activity{})
-
-	if tenantID != "" {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
 
 	// Apply advanced filters
 	if filter != nil {
@@ -378,9 +360,6 @@ func (s *ActivityDataStore) GetActivitiesByFilterAdvanced(ctx basecontext.BaseCo
 	// Get total count
 	var total int64
 	countQuery := s.GetDB().WithContext(ctx.Context()).Model(&models.Activity{})
-	if tenantID != "" {
-		countQuery = countQuery.Where("tenant_id = ?", tenantID)
-	}
 	if err := countQuery.Count(&total).Error; err != nil {
 		diag.AddError("failed_to_count_activities", fmt.Sprintf("failed to count activities, error: %s", common.MapError(err).Error()), "activity_data_store", nil)
 		return nil, diag
@@ -395,13 +374,9 @@ func (s *ActivityDataStore) GetActivitiesByFilterAdvanced(ctx basecontext.BaseCo
 	}, diag
 }
 
-func (s *ActivityDataStore) GetActivityStats(ctx basecontext.BaseContext, tenantID string, filter *models.ActivityFilter) (map[string]interface{}, *apperrors.Diagnostics) {
+func (s *ActivityDataStore) GetActivityStats(ctx basecontext.BaseContext, filter *models.ActivityFilter) (map[string]interface{}, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_activity_stats")
 	query := s.GetDB().WithContext(ctx.Context()).Model(&models.Activity{})
-
-	if tenantID != "" {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
 
 	// Apply filters (same logic as GetActivitiesByFilterAdvanced)
 	if filter != nil {
@@ -439,13 +414,9 @@ func (s *ActivityDataStore) GetActivityStats(ctx basecontext.BaseContext, tenant
 	}, diag
 }
 
-func (s *ActivityDataStore) GetTopActors(ctx basecontext.BaseContext, tenantID string, limit int, filter *models.ActivityFilter) ([]map[string]interface{}, *apperrors.Diagnostics) {
+func (s *ActivityDataStore) GetTopActors(ctx basecontext.BaseContext, limit int, filter *models.ActivityFilter) ([]map[string]interface{}, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_top_actors")
 	query := s.GetDB().WithContext(ctx.Context()).Model(&models.Activity{})
-
-	if tenantID != "" {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
 
 	// Apply filters (simplified)
 	if filter != nil {
@@ -472,13 +443,9 @@ func (s *ActivityDataStore) GetTopActors(ctx basecontext.BaseContext, tenantID s
 	return results, diag
 }
 
-func (s *ActivityDataStore) GetActivityTrends(ctx basecontext.BaseContext, tenantID string, days int, filter *models.ActivityFilter) ([]map[string]interface{}, *apperrors.Diagnostics) {
+func (s *ActivityDataStore) GetActivityTrends(ctx basecontext.BaseContext, days int, filter *models.ActivityFilter) ([]map[string]interface{}, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_activity_trends")
 	query := s.GetDB().WithContext(ctx.Context()).Model(&models.Activity{})
-
-	if tenantID != "" {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
 
 	// Apply filters (simplified)
 	if filter != nil {
@@ -504,7 +471,7 @@ func (s *ActivityDataStore) GetActivityTrends(ctx basecontext.BaseContext, tenan
 }
 
 // ActivitySummary operations
-func (s *ActivityDataStore) CreateActivitySummary(ctx basecontext.BaseContext, tenantID string, summary *models.ActivitySummary) (*models.ActivitySummary, *apperrors.Diagnostics) {
+func (s *ActivityDataStore) CreateActivitySummary(ctx basecontext.BaseContext, summary *models.ActivitySummary) (*models.ActivitySummary, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("create_activity_summary")
 
 	if summary == nil {
@@ -529,7 +496,7 @@ func (s *ActivityDataStore) CreateActivitySummary(ctx basecontext.BaseContext, t
 	return summary, diag
 }
 
-func (s *ActivityDataStore) GetActivitySummaryByID(ctx basecontext.BaseContext, tenantID string, id string) (*models.ActivitySummary, *apperrors.Diagnostics) {
+func (s *ActivityDataStore) GetActivitySummaryByID(ctx basecontext.BaseContext, id string) (*models.ActivitySummary, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_activity_summary_by_id")
 
 	if id == "" {
@@ -539,10 +506,6 @@ func (s *ActivityDataStore) GetActivitySummaryByID(ctx basecontext.BaseContext, 
 
 	var summary models.ActivitySummary
 	query := s.GetDB().WithContext(ctx.Context()).Where("id = ?", id)
-
-	if tenantID != "" {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
 
 	if err := query.First(&summary).Error; err != nil {
 		if goerrors.Is(err, gorm.ErrRecordNotFound) {
@@ -555,7 +518,7 @@ func (s *ActivityDataStore) GetActivitySummaryByID(ctx basecontext.BaseContext, 
 	return &summary, diag
 }
 
-func (s *ActivityDataStore) UpdateActivitySummary(ctx basecontext.BaseContext, tenantID string, summary *models.ActivitySummary) *apperrors.Diagnostics {
+func (s *ActivityDataStore) UpdateActivitySummary(ctx basecontext.BaseContext, summary *models.ActivitySummary) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("update_activity_summary")
 
 	if summary == nil {
@@ -571,9 +534,6 @@ func (s *ActivityDataStore) UpdateActivitySummary(ctx basecontext.BaseContext, t
 	summary.UpdatedAt = time.Now()
 
 	query := s.GetDB().WithContext(ctx.Context()).Where("id = ?", summary.ID)
-	if tenantID != "" {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
 
 	if err := query.Updates(summary).Error; err != nil {
 		diag.AddError("failed_to_update_activity_summary", fmt.Sprintf("failed to update activity summary, error: %s", common.MapError(err).Error()), "activity_data_store", nil)
@@ -583,7 +543,7 @@ func (s *ActivityDataStore) UpdateActivitySummary(ctx basecontext.BaseContext, t
 	return diag
 }
 
-func (s *ActivityDataStore) DeleteActivitySummary(ctx basecontext.BaseContext, tenantID string, id string) *apperrors.Diagnostics {
+func (s *ActivityDataStore) DeleteActivitySummary(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("delete_activity_summary")
 
 	if id == "" {
@@ -592,9 +552,6 @@ func (s *ActivityDataStore) DeleteActivitySummary(ctx basecontext.BaseContext, t
 	}
 
 	query := s.GetDB().Where("id = ?", id)
-	if tenantID != "" {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
 
 	if err := query.Delete(&models.ActivitySummary{}).Error; err != nil {
 		diag.AddError("failed_to_delete_activity_summary", fmt.Sprintf("failed to delete activity summary, error: %s", common.MapError(err).Error()), "activity_data_store", nil)
@@ -605,7 +562,7 @@ func (s *ActivityDataStore) DeleteActivitySummary(ctx basecontext.BaseContext, t
 }
 
 // Maintenance operations
-func (s *ActivityDataStore) CleanupOldActivities(ctx basecontext.BaseContext, tenantID string, retentionDays int) *apperrors.Diagnostics {
+func (s *ActivityDataStore) CleanupOldActivities(ctx basecontext.BaseContext, retentionDays int) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("cleanup_old_activities")
 
 	if retentionDays <= 0 {
@@ -616,10 +573,6 @@ func (s *ActivityDataStore) CleanupOldActivities(ctx basecontext.BaseContext, te
 	cutoffDate := time.Now().AddDate(0, 0, -retentionDays)
 	query := s.GetDB().WithContext(ctx.Context()).Where("created_at < ?", cutoffDate)
 
-	if tenantID != "" {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
-
 	if err := query.Delete(&models.Activity{}).Error; err != nil {
 		diag.AddError("failed_to_cleanup_old_activities", fmt.Sprintf("failed to cleanup old activities, error: %s", common.MapError(err).Error()), "activity_data_store", nil)
 		return diag
@@ -628,14 +581,10 @@ func (s *ActivityDataStore) CleanupOldActivities(ctx basecontext.BaseContext, te
 	return diag
 }
 
-func (s *ActivityDataStore) ArchiveActivities(ctx basecontext.BaseContext, tenantID string, beforeDate time.Time) *apperrors.Diagnostics {
+func (s *ActivityDataStore) ArchiveActivities(ctx basecontext.BaseContext, beforeDate time.Time) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("archive_activities")
 
 	query := s.GetDB().WithContext(ctx.Context()).Where("created_at < ?", beforeDate)
-
-	if tenantID != "" {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
 
 	// Mark activities as archived (you might want to move them to an archive table)
 	// For now, we'll just delete them

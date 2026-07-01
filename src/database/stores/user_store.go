@@ -29,25 +29,25 @@ var (
 
 type UserDataStoreInterface interface {
 	interfaces.Store
-	GetUserByID(ctx basecontext.BaseContext, tenantID string, id string) (*models.User, *apperrors.Diagnostics)
+	GetUserByID(ctx basecontext.BaseContext, id string) (*models.User, *apperrors.Diagnostics)
 
-	GetUserByUsername(ctx basecontext.BaseContext, tenantID string, username string) (*models.User, *apperrors.Diagnostics)
-	GetUsers(ctx basecontext.BaseContext, tenantID string) ([]models.User, *apperrors.Diagnostics)
-	GetUsersByQuery(ctx basecontext.BaseContext, tenantID string, filterObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.User], *apperrors.Diagnostics)
-	CreateUser(ctx basecontext.BaseContext, tenantID string, user *models.User) (*models.User, *apperrors.Diagnostics)
-	UpdateUser(ctx basecontext.BaseContext, tenantID string, user *models.User) *apperrors.Diagnostics
-	UpdateUserPassword(ctx basecontext.BaseContext, tenantID string, id string, password string) *apperrors.Diagnostics
-	BlockUser(ctx basecontext.BaseContext, tenantID string, id string) *apperrors.Diagnostics
-	SetRefreshToken(ctx basecontext.BaseContext, tenantID string, id string, refreshToken string) *apperrors.Diagnostics
-	DeleteUser(ctx basecontext.BaseContext, tenantID string, id string) *apperrors.Diagnostics
-	GetUserClaims(ctx basecontext.BaseContext, tenantID string, userID string) ([]models.Claim, *apperrors.Diagnostics)
-	GetUserClaimsByQuery(ctx basecontext.BaseContext, tenantID string, userID string, filterObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Claim], *apperrors.Diagnostics)
-	AddClaimToUser(ctx basecontext.BaseContext, tenantID string, userID string, claimIdOrSlug string) *apperrors.Diagnostics
-	RemoveClaimFromUser(ctx basecontext.BaseContext, tenantID string, userID string, claimIdOrSlug string) *apperrors.Diagnostics
-	GetUserRoles(ctx basecontext.BaseContext, tenantID string, userID string) ([]models.Role, *apperrors.Diagnostics)
-	GetUserRolesByQuery(ctx basecontext.BaseContext, tenantID string, userID string, filterObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Role], *apperrors.Diagnostics)
-	AddUserToRole(ctx basecontext.BaseContext, tenantID string, userID string, roleId string) *apperrors.Diagnostics
-	RemoveUserFromRole(ctx basecontext.BaseContext, tenantID string, userID string, roleId string) *apperrors.Diagnostics
+	GetUserByUsername(ctx basecontext.BaseContext, username string) (*models.User, *apperrors.Diagnostics)
+	GetUsers(ctx basecontext.BaseContext) ([]models.User, *apperrors.Diagnostics)
+	GetUsersByQuery(ctx basecontext.BaseContext, filterObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.User], *apperrors.Diagnostics)
+	CreateUser(ctx basecontext.BaseContext, user *models.User) (*models.User, *apperrors.Diagnostics)
+	UpdateUser(ctx basecontext.BaseContext, user *models.User) *apperrors.Diagnostics
+	UpdateUserPassword(ctx basecontext.BaseContext, id string, password string) *apperrors.Diagnostics
+	BlockUser(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics
+	SetRefreshToken(ctx basecontext.BaseContext, id string, refreshToken string) *apperrors.Diagnostics
+	DeleteUser(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics
+	GetUserClaims(ctx basecontext.BaseContext, userID string) ([]models.Claim, *apperrors.Diagnostics)
+	GetUserClaimsByQuery(ctx basecontext.BaseContext, userID string, filterObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Claim], *apperrors.Diagnostics)
+	AddClaimToUser(ctx basecontext.BaseContext, userID string, claimIdOrSlug string) *apperrors.Diagnostics
+	RemoveClaimFromUser(ctx basecontext.BaseContext, userID string, claimIdOrSlug string) *apperrors.Diagnostics
+	GetUserRoles(ctx basecontext.BaseContext, userID string) ([]models.Role, *apperrors.Diagnostics)
+	GetUserRolesByQuery(ctx basecontext.BaseContext, userID string, filterObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Role], *apperrors.Diagnostics)
+	AddUserToRole(ctx basecontext.BaseContext, userID string, roleId string) *apperrors.Diagnostics
+	RemoveUserFromRole(ctx basecontext.BaseContext, userID string, roleId string) *apperrors.Diagnostics
 }
 
 type UserDataStore struct {
@@ -146,7 +146,7 @@ func (s *UserDataStore) Migrate() error {
 }
 
 // CreateUser creates a new user
-func (s *UserDataStore) CreateUser(ctx basecontext.BaseContext, tenantID string, user *models.User) (*models.User, *apperrors.Diagnostics) {
+func (s *UserDataStore) CreateUser(ctx basecontext.BaseContext, user *models.User) (*models.User, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("create_user")
 	if user.ID == "" {
 		user.ID = uuid.New().String()
@@ -224,10 +224,10 @@ func (s *UserDataStore) CreateUser(ctx basecontext.BaseContext, tenantID string,
 }
 
 // GetUserByID retrieves a user by ID
-func (s *UserDataStore) GetUserByID(ctx basecontext.BaseContext, tenantID string, id string) (*models.User, *apperrors.Diagnostics) {
+func (s *UserDataStore) GetUserByID(ctx basecontext.BaseContext, id string) (*models.User, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_user_by_id")
 	var user models.User
-	result := s.GetDB().WithContext(ctx.Context()).Preload("Roles").Preload("Roles.Claims").Preload("Claims").First(&user, "tenant_id = ? AND (id = ? OR slug = ?)", tenantID, id, id)
+	result := s.GetDB().WithContext(ctx.Context()).Preload("Roles").Preload("Roles.Claims").Preload("Claims").First(&user, "id = ?", id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil // Return nil, nil if record not found as per requirement
@@ -239,7 +239,7 @@ func (s *UserDataStore) GetUserByID(ctx basecontext.BaseContext, tenantID string
 }
 
 // GetUserByUsername retrieves a user by username
-func (s *UserDataStore) GetUserByUsername(ctx basecontext.BaseContext, tenantID string, username string) (*models.User, *apperrors.Diagnostics) {
+func (s *UserDataStore) GetUserByUsername(ctx basecontext.BaseContext, username string) (*models.User, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_user_by_username")
 	var user models.User
 	result := s.GetDB().WithContext(ctx.Context()).
@@ -250,7 +250,7 @@ func (s *UserDataStore) GetUserByUsername(ctx basecontext.BaseContext, tenantID 
 		Preload("Claims", func(db *gorm.DB) *gorm.DB {
 			return db.Order("claims.created_at DESC")
 		}).
-		First(&user, "tenant_id = ? AND username = ?", tenantID, username)
+		First(&user, "username = ?", username)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil // Return nil, nil if record not found
@@ -261,10 +261,10 @@ func (s *UserDataStore) GetUserByUsername(ctx basecontext.BaseContext, tenantID 
 	return &user, diag
 }
 
-func (s *UserDataStore) GetUsers(ctx basecontext.BaseContext, tenantID string) ([]models.User, *apperrors.Diagnostics) {
+func (s *UserDataStore) GetUsers(ctx basecontext.BaseContext) ([]models.User, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_users")
 	var users []models.User
-	result := s.GetDB().WithContext(ctx.Context()).Where("tenant_id = ?", tenantID).Find(&users)
+	result := s.GetDB().WithContext(ctx.Context()).Find(&users)
 	if result.Error != nil {
 		diag.AddError("failed_to_get_users", fmt.Sprintf("failed to get users: %s", common.MapError(result.Error).Error()), "user_data_store", nil)
 		return nil, diag
@@ -272,16 +272,16 @@ func (s *UserDataStore) GetUsers(ctx basecontext.BaseContext, tenantID string) (
 	return users, diag
 }
 
-func (s *UserDataStore) GetUsersByQuery(ctx basecontext.BaseContext, tenantID string, queryObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.User], *apperrors.Diagnostics) {
+func (s *UserDataStore) GetUsersByQuery(ctx basecontext.BaseContext, queryObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.User], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_users_by_query")
 	db := s.GetDB().WithContext(ctx.Context())
 	db = db.Preload("Roles", func(db *gorm.DB) *gorm.DB {
 		return db.Order("roles.created_at DESC")
 	}).Preload("Claims", func(db *gorm.DB) *gorm.DB {
 		return db.Order("claims.created_at DESC")
-	}).Where("tenant_id = ?", tenantID)
+	})
 
-	result, err := filters.QueryDatabase[models.User](db, tenantID, queryObj)
+	result, err := filters.QueryDatabase[models.User](db, "", queryObj)
 	if err != nil {
 		diag.AddError("failed_to_get_users_by_query", fmt.Sprintf("failed to get users by query: %s", common.MapError(err).Error()), "user_data_store", nil)
 		return nil, diag
@@ -290,10 +290,10 @@ func (s *UserDataStore) GetUsersByQuery(ctx basecontext.BaseContext, tenantID st
 }
 
 // UpdateUser updates an existing user
-func (s *UserDataStore) UpdateUser(ctx basecontext.BaseContext, tenantID string, user *models.User) *apperrors.Diagnostics {
+func (s *UserDataStore) UpdateUser(ctx basecontext.BaseContext, user *models.User) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("update_user")
 	user.UpdatedAt = time.Now()
-	currentUser, getUserDiag := s.GetUserByID(ctx, tenantID, user.ID)
+	currentUser, getUserDiag := s.GetUserByID(ctx, user.ID)
 	if getUserDiag.HasErrors() {
 		diag.Append(getUserDiag)
 		return diag
@@ -323,9 +323,9 @@ func (s *UserDataStore) UpdateUser(ctx basecontext.BaseContext, tenantID string,
 	return diag
 }
 
-func (s *UserDataStore) UpdateUserPassword(ctx basecontext.BaseContext, tenantID string, id string, newPassword string) *apperrors.Diagnostics {
+func (s *UserDataStore) UpdateUserPassword(ctx basecontext.BaseContext, id string, newPassword string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("update_password")
-	user, getUserDiag := s.GetUserByID(ctx, tenantID, id)
+	user, getUserDiag := s.GetUserByID(ctx, id)
 	if getUserDiag.HasErrors() {
 		diag.Append(getUserDiag)
 		return diag
@@ -360,9 +360,9 @@ func (s *UserDataStore) UpdateUserPassword(ctx basecontext.BaseContext, tenantID
 	return diag
 }
 
-func (s *UserDataStore) BlockUser(ctx basecontext.BaseContext, tenantID string, id string) *apperrors.Diagnostics {
+func (s *UserDataStore) BlockUser(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("block_user")
-	user, getUserDiag := s.GetUserByID(ctx, tenantID, id)
+	user, getUserDiag := s.GetUserByID(ctx, id)
 	if getUserDiag.HasErrors() {
 		diag.Append(getUserDiag)
 		return diag
@@ -390,9 +390,9 @@ func (s *UserDataStore) BlockUser(ctx basecontext.BaseContext, tenantID string, 
 	return diag
 }
 
-func (s *UserDataStore) SetRefreshToken(ctx basecontext.BaseContext, tenantID string, id string, refreshToken string) *apperrors.Diagnostics {
+func (s *UserDataStore) SetRefreshToken(ctx basecontext.BaseContext, id string, refreshToken string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("set_refresh_token")
-	user, getUserDiag := s.GetUserByID(ctx, tenantID, id)
+	user, getUserDiag := s.GetUserByID(ctx, id)
 	if getUserDiag.HasErrors() {
 		diag.Append(getUserDiag)
 		return diag
@@ -421,9 +421,9 @@ func (s *UserDataStore) SetRefreshToken(ctx basecontext.BaseContext, tenantID st
 }
 
 // DeleteUser deletes a user
-func (s *UserDataStore) DeleteUser(ctx basecontext.BaseContext, tenantID string, id string) *apperrors.Diagnostics {
+func (s *UserDataStore) DeleteUser(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("delete_user")
-	user, getUserDiag := s.GetUserByID(ctx, tenantID, id)
+	user, getUserDiag := s.GetUserByID(ctx, id)
 	if getUserDiag.HasErrors() {
 		diag.Append(getUserDiag)
 		return diag
@@ -445,7 +445,7 @@ func (s *UserDataStore) DeleteUser(ctx basecontext.BaseContext, tenantID string,
 	return diag
 }
 
-func (s *UserDataStore) GetUserClaims(ctx basecontext.BaseContext, tenantID string, userID string) ([]models.Claim, *apperrors.Diagnostics) {
+func (s *UserDataStore) GetUserClaims(ctx basecontext.BaseContext, userID string) ([]models.Claim, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_user_claims")
 	var user models.User
 	result := s.GetDB().WithContext(ctx.Context()).
@@ -468,15 +468,14 @@ func (s *UserDataStore) GetUserClaims(ctx basecontext.BaseContext, tenantID stri
 	return user.Claims, diag
 }
 
-func (s *UserDataStore) GetUserClaimsByQuery(ctx basecontext.BaseContext, tenantID string, userID string, queryObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Claim], *apperrors.Diagnostics) {
+func (s *UserDataStore) GetUserClaimsByQuery(ctx basecontext.BaseContext, userID string, queryObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Claim], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_user_claims_by_query")
 	db := s.GetDB().WithContext(ctx.Context())
 	db = db.Table("user_claims").
 		Joins("JOIN claims ON claims.id = user_claims.claim_id").
-		Where("user_claims.user_id = ?", userID).
-		Where("claims.tenant_id = ?", tenantID)
+		Where("user_claims.user_id = ?", userID)
 
-	result, err := filters.QueryDatabase[models.Claim](db, tenantID, queryObj)
+	result, err := filters.QueryDatabase[models.Claim](db, "", queryObj)
 	if err != nil {
 		diag.AddError("failed_to_get_user_claims_by_query", fmt.Sprintf("failed to get user claims by query: %s", common.MapError(err).Error()), "user_data_store", nil)
 		return nil, diag
@@ -484,7 +483,7 @@ func (s *UserDataStore) GetUserClaimsByQuery(ctx basecontext.BaseContext, tenant
 	return result, diag
 }
 
-func (s *UserDataStore) GetUserRoles(ctx basecontext.BaseContext, tenantID string, userID string) ([]models.Role, *apperrors.Diagnostics) {
+func (s *UserDataStore) GetUserRoles(ctx basecontext.BaseContext, userID string) ([]models.Role, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_user_roles")
 	var user models.User
 	result := s.GetDB().WithContext(ctx.Context()).
@@ -505,7 +504,7 @@ func (s *UserDataStore) GetUserRoles(ctx basecontext.BaseContext, tenantID strin
 	return user.Roles, diag
 }
 
-func (s *UserDataStore) GetUserRolesByQuery(ctx basecontext.BaseContext, tenantID string, userID string, queryObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Role], *apperrors.Diagnostics) {
+func (s *UserDataStore) GetUserRolesByQuery(ctx basecontext.BaseContext, userID string, queryObj *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.Role], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_user_roles_by_query")
 	db := s.GetDB().WithContext(ctx.Context())
 
@@ -513,10 +512,9 @@ func (s *UserDataStore) GetUserRolesByQuery(ctx basecontext.BaseContext, tenantI
 	// and apply the query object to the query
 	db = db.Table("user_roles").
 		Joins("JOIN roles ON roles.id = user_roles.role_id").
-		Where("user_roles.user_id = ?", userID).
-		Where("roles.tenant_id = ?", tenantID)
+		Where("user_roles.user_id = ?", userID)
 
-	result, err := filters.QueryDatabase[models.Role](db, tenantID, queryObj)
+	result, err := filters.QueryDatabase[models.Role](db, "", queryObj)
 	if err != nil {
 		diag.AddError("failed_to_get_user_roles_by_query", fmt.Sprintf("failed to get user roles by query: %s", common.MapError(err).Error()), "user_data_store", nil)
 		return nil, diag
@@ -524,9 +522,9 @@ func (s *UserDataStore) GetUserRolesByQuery(ctx basecontext.BaseContext, tenantI
 	return result, diag
 }
 
-func (s *UserDataStore) AddUserToRole(ctx basecontext.BaseContext, tenantID string, userID string, roleId string) *apperrors.Diagnostics {
+func (s *UserDataStore) AddUserToRole(ctx basecontext.BaseContext, userID string, roleId string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("add_user_to_role")
-	user, getUserDiag := s.GetUserByID(ctx, tenantID, userID)
+	user, getUserDiag := s.GetUserByID(ctx, userID)
 	if getUserDiag.HasErrors() {
 		diag.Append(getUserDiag)
 		return diag
@@ -538,7 +536,7 @@ func (s *UserDataStore) AddUserToRole(ctx basecontext.BaseContext, tenantID stri
 
 	// checking if the dbRole exists in the database
 	var dbRole models.Role
-	roleDbResult := s.GetDB().WithContext(ctx.Context()).Where("tenant_id = ? AND id = ?", tenantID, roleId).First(&dbRole)
+	roleDbResult := s.GetDB().WithContext(ctx.Context()).Where("id = ?", roleId).First(&dbRole)
 	if roleDbResult.Error != nil {
 		// TODO: Refactor this to use GetRoleByID from RoleStore theoretically, but simple check here
 		if errors.Is(roleDbResult.Error, gorm.ErrRecordNotFound) {
@@ -558,9 +556,9 @@ func (s *UserDataStore) AddUserToRole(ctx basecontext.BaseContext, tenantID stri
 	return diag
 }
 
-func (s *UserDataStore) RemoveUserFromRole(ctx basecontext.BaseContext, tenantID string, userID string, roleId string) *apperrors.Diagnostics {
+func (s *UserDataStore) RemoveUserFromRole(ctx basecontext.BaseContext, userID string, roleId string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("remove_user_from_role")
-	user, getUserDiag := s.GetUserByID(ctx, tenantID, userID)
+	user, getUserDiag := s.GetUserByID(ctx, userID)
 	if getUserDiag.HasErrors() {
 		diag.Append(getUserDiag)
 		return diag
@@ -586,9 +584,9 @@ func (s *UserDataStore) RemoveUserFromRole(ctx basecontext.BaseContext, tenantID
 	return diag
 }
 
-func (s *UserDataStore) AddClaimToUser(ctx basecontext.BaseContext, tenantID string, userID string, claimIdOrSlug string) *apperrors.Diagnostics {
+func (s *UserDataStore) AddClaimToUser(ctx basecontext.BaseContext, userID string, claimIdOrSlug string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("add_claim_to_user")
-	user, getUserDiag := s.GetUserByID(ctx, tenantID, userID)
+	user, getUserDiag := s.GetUserByID(ctx, userID)
 	if getUserDiag.HasErrors() {
 		diag.Append(getUserDiag)
 		return diag
@@ -599,7 +597,7 @@ func (s *UserDataStore) AddClaimToUser(ctx basecontext.BaseContext, tenantID str
 	}
 
 	var claim models.Claim
-	result := s.GetDB().WithContext(ctx.Context()).Where("tenant_id = ? AND id = ?", tenantID, claimIdOrSlug).First(&claim)
+	result := s.GetDB().WithContext(ctx.Context()).Where("id = ?", claimIdOrSlug).First(&claim)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			diag.AddError("claim_not_found", "claim not found", "user_data_store", nil)
@@ -618,9 +616,9 @@ func (s *UserDataStore) AddClaimToUser(ctx basecontext.BaseContext, tenantID str
 	return diag
 }
 
-func (s *UserDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, tenantID string, userID string, claimIdOrSlug string) *apperrors.Diagnostics {
+func (s *UserDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, userID string, claimIdOrSlug string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("remove_claim_from_user")
-	user, getUserDiag := s.GetUserByID(ctx, tenantID, userID)
+	user, getUserDiag := s.GetUserByID(ctx, userID)
 	if getUserDiag.HasErrors() {
 		diag.Append(getUserDiag)
 		return diag
@@ -631,7 +629,7 @@ func (s *UserDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, tenantI
 	}
 
 	var claim models.Claim
-	result := s.GetDB().WithContext(ctx.Context()).Where("tenant_id = ? AND id = ?", tenantID, claimIdOrSlug).First(&claim)
+	result := s.GetDB().WithContext(ctx.Context()).Where("id = ?", claimIdOrSlug).First(&claim)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			diag.AddError("claim_not_found", "claim not found", "user_data_store", nil)

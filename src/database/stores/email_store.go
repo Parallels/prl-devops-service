@@ -29,7 +29,7 @@ type EmailDataStoreInterface interface {
 	GetTemplateBySlug(ctx basecontext.BaseContext, slug string) (*models.EmailTemplate, *apperrors.Diagnostics)
 
 	CreateTemplate(ctx basecontext.BaseContext, template *models.EmailTemplate) (*models.EmailTemplate, *apperrors.Diagnostics)
-	GetTemplatesByTenant(ctx basecontext.BaseContext, tenantID string) ([]models.EmailTemplate, *apperrors.Diagnostics)
+	GetTemplatesByTenant(ctx basecontext.BaseContext) ([]models.EmailTemplate, *apperrors.Diagnostics)
 }
 
 type EmailDataStore struct {
@@ -144,11 +144,11 @@ func (s *EmailDataStore) CreateTemplate(ctx basecontext.BaseContext, template *m
 	return template, diag
 }
 
-func (s *EmailDataStore) GetTemplatesByTenant(ctx basecontext.BaseContext, tenantID string) ([]models.EmailTemplate, *apperrors.Diagnostics) {
+func (s *EmailDataStore) GetTemplatesByTenant(ctx basecontext.BaseContext) ([]models.EmailTemplate, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("get_templates_by_tenant")
 	var templates []models.EmailTemplate
 
-	err := s.GetDB().WithContext(ctx.Context()).Where("tenant_id = ?", tenantID).Find(&templates).Error
+	err := s.GetDB().WithContext(ctx.Context()).Find(&templates).Error
 	if err != nil {
 		diag.AddError("failed_to_get_templates_by_tenant", fmt.Sprintf("failed to get templates by tenant: %s", common.MapError(err).Error()), "email_data_store", nil)
 		return nil, diag
