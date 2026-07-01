@@ -54,6 +54,8 @@ type VirtualMachine struct {
 	NetworkInformation    VirtualMachineNetworkInformation   `json:"network_information,omitempty" gorm:"column:network_information;type:json;serializer:json"`
 	CreatedAt             string                             `json:"created_at,omitempty" gorm:"column:created_at;type:timestamp"`
 	UpdatedAt             string                             `json:"updated_at,omitempty" gorm:"column:updated_at;type:timestamp"`
+	CreatedBy             string                             `json:"created_by,omitempty" gorm:"column:created_by;type:varchar(64)"`
+	CreatedByUser         *User                              `json:"created_by_user,omitempty" gorm:"foreignKey:CreatedBy;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (m *VirtualMachine) Diff(source VirtualMachine) bool {

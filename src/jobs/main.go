@@ -71,9 +71,9 @@ func (jms *JobManagerService) Stop() error {
 	return nil
 }
 
-func (jms *JobManagerService) CreateNewJob(owner string, jobType string, jobOperation string, action string) (*data_models.Job, error) {
+func (jms *JobManagerService) CreateNewJob(ownerId string, jobType string, jobOperation string, action string) (*data_models.Job, error) {
 	job := data_models.Job{
-		Owner:        owner,
+		CreatedBy:    ownerId,
 		State:        constants.JobStatePending,
 		JobType:      jobType,
 		JobOperation: jobOperation,
@@ -90,10 +90,10 @@ func (jms *JobManagerService) CreateNewJob(owner string, jobType string, jobOper
 	return createdJob, nil
 }
 
-func (jms *JobManagerService) CreateOrchestratorJob(owner string, jobType string, jobOperation string, action string, externalJobID string) (*data_models.Job, error) {
+func (jms *JobManagerService) CreateOrchestratorJob(ownerId string, jobType string, jobOperation string, action string, externalJobID string) (*data_models.Job, error) {
 	job := data_models.Job{
 		ID:                externalJobID,
-		Owner:             owner,
+		CreatedBy:         ownerId,
 		State:             constants.JobStatePending,
 		JobType:           jobType,
 		JobOperation:      jobOperation,

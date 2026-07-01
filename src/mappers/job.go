@@ -8,9 +8,7 @@ import (
 func MapJobToApiJob(job data_models.Job) *api_models.JobResponse {
 	response := &api_models.JobResponse{
 		ID:                 job.ID,
-		Owner:              job.Owner,
-		OwnerName:          job.OwnerName,
-		OwnerEmail:         job.OwnerEmail,
+		CreatedBy:          job.CreatedBy,
 		State:              job.State,
 		Message:            job.Message,
 		Progress:           job.Progress,
@@ -27,9 +25,13 @@ func MapJobToApiJob(job data_models.Job) *api_models.JobResponse {
 		UpdatedAt:          job.UpdatedAt,
 		Steps:              make([]api_models.JobStepResponse, 0),
 	}
-
+	if job.CreatedByUser != nil {
+		response.OwnerName = job.CreatedByUser.Name
+		response.OwnerEmail = job.CreatedByUser.Email
+	}
 	for _, step := range job.Steps {
 		response.Steps = append(response.Steps, api_models.JobStepResponse{
+
 			Name:              step.Name,
 			DisplayName:       step.DisplayName,
 			Weight:            step.Weight,

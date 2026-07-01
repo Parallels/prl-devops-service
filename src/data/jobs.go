@@ -23,9 +23,8 @@ func (j *JsonDatabase) GetJobs(ctx basecontext.ApiContext) ([]models.Job, error)
 
 	jobs := make([]models.Job, len(j.data.Jobs))
 	for i, job := range j.data.Jobs {
-		if owner, err := j.GetUser(ctx, job.Owner); err == nil {
-			job.OwnerName = owner.Name
-			job.OwnerEmail = owner.Email
+		if owner, err := j.GetUser(ctx, job.CreatedBy); err == nil {
+			job.CreatedByUser = owner
 		}
 		jobs[i] = job
 	}
@@ -33,17 +32,16 @@ func (j *JsonDatabase) GetJobs(ctx basecontext.ApiContext) ([]models.Job, error)
 	return jobs, nil
 }
 
-func (j *JsonDatabase) GetJobsByOwner(ctx basecontext.ApiContext, owner string) ([]models.Job, error) {
+func (j *JsonDatabase) GetJobsByOwner(ctx basecontext.ApiContext, ownerId string) ([]models.Job, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
 	}
 
 	var jobs []models.Job
 	for _, job := range j.data.Jobs {
-		if strings.EqualFold(job.Owner, owner) {
-			if user, err := j.GetUser(ctx, job.Owner); err == nil {
-				job.OwnerName = user.Name
-				job.OwnerEmail = user.Email
+		if strings.EqualFold(job.CreatedBy, ownerId) {
+			if user, err := j.GetUser(ctx, job.CreatedBy); err == nil {
+				job.CreatedByUser = user
 			}
 			jobs = append(jobs, job)
 		}
@@ -59,9 +57,8 @@ func (j *JsonDatabase) GetJob(ctx basecontext.ApiContext, id string) (*models.Jo
 
 	for _, job := range j.data.Jobs {
 		if strings.EqualFold(job.ID, id) {
-			if user, err := j.GetUser(ctx, job.Owner); err == nil {
-				job.OwnerName = user.Name
-				job.OwnerEmail = user.Email
+			if user, err := j.GetUser(ctx, job.CreatedBy); err == nil {
+				job.CreatedByUser = user
 			}
 			return &job, nil
 		}
@@ -89,9 +86,8 @@ func (j *JsonDatabase) CreateJob(ctx basecontext.ApiContext, job models.Job) (*m
 	j.data.Jobs = append(j.data.Jobs, job)
 
 	// Enrich the returned struct so the immediately emitted event has the names
-	if user, err := j.GetUser(ctx, job.Owner); err == nil {
-		job.OwnerName = user.Name
-		job.OwnerEmail = user.Email
+	if user, err := j.GetUser(ctx, job.CreatedBy); err == nil {
+		job.CreatedByUser = user
 	}
 
 	return &job, nil
