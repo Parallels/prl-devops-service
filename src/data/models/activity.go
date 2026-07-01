@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/Parallels/prl-devops-service/database/common"
+)
 
 type Activity struct {
 	BaseModel
@@ -23,8 +27,8 @@ type Activity struct {
 	CorrelationID string `json:"correlation_id" gorm:"type:text;index"` // Correlation ID for distributed tracing
 
 	// Additional data
-	Metadata JSONObject[map[string]interface{}] `json:"metadata" gorm:"type:text"` // Additional structured data
-	Tags     StringSlice                        `json:"tags" gorm:"type:text"`     // Searchable tags
+	Metadata common.JSONObject[map[string]interface{}] `json:"metadata" gorm:"type:text"` // Additional structured data
+	Tags     common.StringSlice                        `json:"tags" gorm:"type:text"`     // Searchable tags
 
 	// Timing information
 	StartedAt   *time.Time `json:"started_at" gorm:"type:timestamp;not null;default:CURRENT_TIMESTAMP"`
@@ -56,8 +60,8 @@ type ActivitySummary struct {
 	ErrorCount      int64 `json:"error_count" gorm:"type:bigint;not null;default:0"`
 
 	// Actor statistics
-	UniqueActors int64                                `json:"unique_actors" gorm:"type:bigint;not null;default:0"`
-	TopActors    JSONObject[[]map[string]interface{}] `json:"top_actors" gorm:"type:text"`
+	UniqueActors int64                                       `json:"unique_actors" gorm:"type:bigint;not null;default:0"`
+	TopActors    common.JSONObject[[]map[string]interface{}] `json:"top_actors" gorm:"type:text"`
 
 	// Performance metrics
 	AvgDurationMs float64 `json:"avg_duration_ms" gorm:"type:float"`
@@ -65,7 +69,7 @@ type ActivitySummary struct {
 	MinDurationMs int64   `json:"min_duration_ms" gorm:"type:bigint"`
 
 	// Activity type breakdown
-	ActivityBreakdown JSONObject[map[string]int64] `json:"activity_breakdown" gorm:"type:text"`
+	ActivityBreakdown common.JSONObject[map[string]int64] `json:"activity_breakdown" gorm:"type:text"`
 }
 
 // ActivityFilter represents filtering options for activity queries

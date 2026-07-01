@@ -4,28 +4,23 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Parallels/prl-devops-service/database/common"
 	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/database/common"
 	"github.com/Parallels/prl-devops-service/database/stores"
-	"github.com/cjlapao/common-go-logger/models"
-	"github.com/cjlapao/common-go-logger/service"
+	"github.com/Parallels/prl-devops-service/database/stores/testhelpers"
+	logging "github.com/cjlapao/common-go-logger"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 func TestMessageDataStore(t *testing.T) {
-	service.Initialize(models.LogConfig{})
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	require.NoError(t, err)
+	logger := logging.Get()
+	logger.Info("Starting message store tests")
+	db := testhelpers.NewTestDB(t)
+	defer testhelpers.CleanupDB(db)
 
 	store := &stores.MessageDataStore{
 		BaseDataStore: *common.NewBaseDataStore(db),
 	}
-
-	err = store.Migrate()
-	assert.NoError(t, err)
 
 	ctx := context.Background()
 
@@ -48,7 +43,7 @@ func TestMessageDataStore(t *testing.T) {
 			Status:  models.MessageStatusPending,
 		}
 		err := store.CreateMessage(ctx, message)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		messages, err := store.GetPendingMessages(ctx, 10)
 		assert.NoError(t, err)

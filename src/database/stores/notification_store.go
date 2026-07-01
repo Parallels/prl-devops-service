@@ -171,7 +171,7 @@ func (s *NotificationDataStore) MarkAsRead(ctx basecontext.BaseContext, notifica
 	}
 
 	result := s.GetDB().WithContext(ctx.Context()).Model(&models.Notification{}).
-		Where("tenant_id = ? AND user_id = ? AND id = ?", userID, notificationID).
+		Where("user_id = ? AND id = ?", userID, notificationID).
 		Updates(updates)
 
 	if result.Error != nil {
@@ -199,7 +199,7 @@ func (s *NotificationDataStore) MarkAllAsRead(ctx basecontext.BaseContext, userI
 	}
 
 	result := s.GetDB().WithContext(ctx.Context()).Model(&models.Notification{}).
-		Where("tenant_id = ? AND user_id = ? AND read = ?", userID, false).
+		Where("user_id = ? AND read = ?", userID, false).
 		Updates(updates)
 
 	if result.Error != nil {
@@ -215,7 +215,7 @@ func (s *NotificationDataStore) GetUnreadCount(ctx basecontext.BaseContext, user
 	var count int64
 
 	result := s.GetDB().WithContext(ctx.Context()).Model(&models.Notification{}).
-		Where("tenant_id = ? AND user_id = ? AND read = ?", userID, false).
+		Where("user_id = ? AND read = ?", userID, false).
 		Count(&count)
 
 	if result.Error != nil {

@@ -142,7 +142,7 @@ func (s *ActivityDataStore) Migrate() error {
 	}
 
 	// Create indexes for better query performance
-	if err := s.GetDB().Exec("CREATE INDEX IF NOT EXISTS idx_activities_tenant_module_service ON activities(tenant_id, module, service)").Error; err != nil {
+	if err := s.GetDB().Exec("CREATE INDEX IF NOT EXISTS idx_activities_module_service ON activities(module, service)").Error; err != nil {
 		return fmt.Errorf("failed to create activities index: %v", err)
 	}
 

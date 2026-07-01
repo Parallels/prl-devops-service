@@ -1,41 +1,32 @@
 package stores_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/database/common"
 	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/database/common"
 	"github.com/Parallels/prl-devops-service/database/stores"
-	"github.com/cjlapao/common-go-logger/models"
-	"github.com/cjlapao/common-go-logger/service"
+	"github.com/Parallels/prl-devops-service/database/stores/testhelpers"
+	logging "github.com/cjlapao/common-go-logger"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 func TestWebAuthnDataStore(t *testing.T) {
-	service.Initialize(models.LogConfig{})
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	require.NoError(t, err)
+	logger := logging.Get()
+	logger.Info("Starting webauthn store tests")
+	db := testhelpers.NewTestDB(t)
+	defer testhelpers.CleanupDB(db)
 
 	store := &stores.WebAuthnDataStore{
 		BaseDataStore: *common.NewBaseDataStore(db),
 	}
 
-	err = store.Migrate()
-	assert.NoError(t, err)
-
-	ctx := basecontext.NewContext(context.Background())
+	ctx := basecontext.NewBaseContext()
 	userID := "test-user-id"
 
 	t.Run("SaveCredential", func(t *testing.T) {
 		cred := &models.WebAuthnCredential{
-			BaseModelWithTenant: common.BaseModelWithTenant{
-				ID: "cred-1",
-			},
 			UserID:          userID,
 			CredentialID:    []byte("cred-id-1"),
 			PublicKey:       []byte("public-key"),
@@ -43,26 +34,26 @@ func TestWebAuthnDataStore(t *testing.T) {
 			SignCount:       0,
 		}
 
-		diag := store.SaveCredential(ctx, cred)
+		diag := store.SaveCredential(*ctx, cred)
 		assert.False(t, diag.HasErrors())
 	})
 
 	t.Run("GetCredentialsByUser", func(t *testing.T) {
-		creds, diag := store.GetCredentialsByUser(ctx, userID)
+		creds, diag := store.GetCredentialsByUser(*ctx, userID)
 		assert.False(t, diag.HasErrors())
 		assert.NotEmpty(t, creds)
-		assert.Equal(t, "cred-1", creds[0].ID)
+		assert.NotEmpty(t, creds[0].ID) // ID should be auto-generated
 	})
 
 	t.Run("GetCredentialByCredentialID", func(t *testing.T) {
-		cred, diag := store.GetCredentialByCredentialID(ctx, []byte("cred-id-1"))
+		cred, diag := store.GetCredentialByCredentialID(*ctx, []byte("cred-id-1"))
 		assert.False(t, diag.HasErrors())
 		assert.NotNil(t, cred)
 		assert.Equal(t, userID, cred.UserID)
 	})
 
 	t.Run("GetCredentialByCredentialID_NotFound", func(t *testing.T) {
-		cred, diag := store.GetCredentialByCredentialID(ctx, []byte("non-existent"))
+		cred, diag := store.GetCredentialByCredentialID(*ctx, []byte("non-existent"))
 		assert.Nil(t, cred)
 		// Should return nil, nil for not found
 		if diag != nil {
