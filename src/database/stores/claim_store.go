@@ -1,12 +1,13 @@
 package stores
 
 import (
-	"github.com/Parallels/prl-devops-service/data/models"
 	"context"
 	goerrors "errors"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/Parallels/prl-devops-service/data/models"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
@@ -14,8 +15,8 @@ import (
 	"github.com/Parallels/prl-devops-service/database/filters"
 	"github.com/Parallels/prl-devops-service/database/interfaces"
 
-	logging "github.com/cjlapao/common-go-logger"
 	apperrors "github.com/Parallels/prl-devops-service/errors"
+	logging "github.com/cjlapao/common-go-logger"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -93,17 +94,18 @@ func (s *ClaimDataStore) Dependencies() []string {
 }
 
 func (s *ClaimDataStore) initialize(ctx context.Context, db *gorm.DB) error {
-	cfg := config.Get().Get()
-	logger := logging.Get(); logger.Info("Initializing claim store...")
+	cfg := config.Get()
+	logger := logging.Get()
+	logger.Info("Initializing claim store...")
 
 	s.BaseDataStore = *common.NewBaseDataStore(db)
 
-	if cfg.Get("database_migrate").GetBool() {
-		logger := logging.Get(); logger.Info("Running claim migrations")
+	if cfg.IsDatabaseAutoMigrateEnabled() {
+		logger.Info("Running claim migrations")
 		if err := s.Migrate(); err != nil {
 			return fmt.Errorf("failed to migrate claim store: %v", err)
 		}
-		logger := logging.Get(); logger.Info("Claim migrations completed")
+		logger.Info("Claim migrations completed")
 	}
 
 	claimDataStoreInstance = s
@@ -185,7 +187,7 @@ func (s *ClaimDataStore) GetClaimBySlugOrID(ctx basecontext.BaseContext, tenantI
 	var claim models.Claim
 	result := db.First(&claim, "(slug = ? OR id = ?)", slugOrID, slugOrID)
 	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if goerrors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil // Return nil, nil if record not found
 		}
 		diag.AddError("failed_to_get_claim", fmt.Sprintf("failed to get claim: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
@@ -295,13 +297,6 @@ func (s *ClaimDataStore) UpdateClaim(ctx basecontext.BaseContext, tenantID strin
 	}
 
 	claim.UpdatedAt = time.Now()
-	if claim.Slug != "" {
-	}
-
-	// check if the claim exists in the database
-	claim.UpdatedAt = time.Now()
-	if claim.Slug != "" {
-	}
 
 	// check if the claim exists in the database
 	existingClaim, getClaimDiag := s.GetClaimBySlugOrID(ctx, tenantID, claim.ID)
@@ -394,26 +389,9 @@ func (s *ClaimDataStore) AddClaimToUser(ctx basecontext.BaseContext, tenantID st
 		return diag
 	}
 
-	// check if the claim is already assigned to the user
-	var userClaims models.UserClaims
-	result = s.GetDB().WithContext(ctx.Context()).Where("user_id = ? AND claim_id = ?", user.ID, existingClaim.ID).First(&userClaims)
-	if result.Error != nil {
-		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			diag.AddError("failed_to_get_user_claim", fmt.Sprintf("failed to get user claim: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
-			return diag
-		}
-	}
-	if userClaims.ClaimID != "" {
-		diag.AddError("claim_already_assigned_to_user", "claim already assigned to user", "claim_data_store", nil)
-		return diag
-	}
-
-	// create the user claim
-	userClaims.UserID = user.ID
-	userClaims.ClaimID = existingClaim.ID
-	result = s.GetDB().WithContext(ctx.Context()).Create(&userClaims)
-	if result.Error != nil {
-		diag.AddError("failed_to_create_user_claim", fmt.Sprintf("failed to create user claim: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
+	// Use GORM's Association API to add the claim to the user
+	if err := s.GetDB().WithContext(ctx.Context()).Model(&user).Association("Claims").Append(existingClaim); err != nil {
+		diag.AddError("failed_to_add_claim_to_user", fmt.Sprintf("failed to add claim to user: %s", common.MapError(err).Error()), "claim_data_store", nil)
 		return diag
 	}
 
@@ -449,22 +427,9 @@ func (s *ClaimDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, tenant
 		return diag
 	}
 
-	// check if the claim is assigned to the user
-	var userClaims models.UserClaims
-	result = s.GetDB().WithContext(ctx.Context()).Where("user_id = ? AND claim_id = ?", user.ID, existingClaim.ID).First(&userClaims)
-	if result.Error != nil {
-		diag.AddError("failed_to_get_user_claim", fmt.Sprintf("failed to get user claim: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
-		return diag
-	}
-	if userClaims.ClaimID == "" {
-		diag.AddError("claim_not_assigned_to_user", "claim not assigned to user", "claim_data_store", nil)
-		return diag
-	}
-
-	// delete the user claim
-	result = s.GetDB().WithContext(ctx.Context()).Where("user_id = ? AND claim_id = ?", user.ID, existingClaim.ID).Delete(&userClaims)
-	if result.Error != nil {
-		diag.AddError("failed_to_delete_user_claim", fmt.Sprintf("failed to delete user claim: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
+	// Use GORM's Association API to remove the claim from the user
+	if err := s.GetDB().WithContext(ctx.Context()).Model(&user).Association("Claims").Delete(existingClaim); err != nil {
+		diag.AddError("failed_to_remove_claim_from_user", fmt.Sprintf("failed to remove claim from user: %s", common.MapError(err).Error()), "claim_data_store", nil)
 		return diag
 	}
 
@@ -473,178 +438,29 @@ func (s *ClaimDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, tenant
 
 func (s *ClaimDataStore) GetClaimApiKeys(ctx basecontext.BaseContext, tenantID string, claimID string) ([]models.ApiKey, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claim_api_keys")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return nil, diag
-	}
-
-	var apiKeys []models.ApiKey
-	claim, err := s.GetClaimBySlugOrID(ctx, tenantID, claimID)
-	if err != nil && err.HasErrors() {
-		diag.Append(err)
-		return nil, diag
-	}
-	if claim == nil {
-		diag.AddError("claim_not_found", "claim not found", "claim_data_store", nil)
-		return nil, diag
-	}
-
-	query := s.GetDB().WithContext(ctx.Context()).
-		Preload("Claims").
-		Joins("JOIN api_key_claims ON api_keys.id = api_key_claims.api_key_id").
-		Where("api_key_claims.claim_id = ?", claim.ID)
-	if tenantID != "" {
-		query = query.Where("api_keys.tenant_id = ?", tenantID)
-	}
-
-	result := query.Find(&apiKeys)
-	if result.Error != nil {
-		diag.AddError("failed_to_get_api_keys", fmt.Sprintf("failed to get API keys: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
-		return nil, diag
-	}
-
-	return apiKeys, diag
+	// API keys don't have a Claims relationship in the current model
+	diag.AddError("not_implemented", "API key claims are not implemented in the current model", "claim_data_store", nil)
+	return nil, diag
 }
 
 func (s *ClaimDataStore) GetClaimApiKeysByQuery(ctx basecontext.BaseContext, tenantID string, claimID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.ApiKey], *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("store_get_claim_api_keys_by_query")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return nil, diag
-	}
-
-	claim, getClaimDiag := s.GetClaimBySlugOrID(ctx, tenantID, claimID)
-	if getClaimDiag.HasErrors() {
-		diag.Append(getClaimDiag)
-		return nil, diag
-	}
-	if claim == nil {
-		diag.AddError("claim_not_found", "claim not found", "claim_data_store", nil)
-		return nil, diag
-	}
-
-	db := s.GetDB().
-		Preload("Claims", func(db *gorm.DB) *gorm.DB {
-			return db.Order("claims.created_at DESC")
-		}).
-		Joins("JOIN api_key_claims ON api_keys.id = api_key_claims.api_key_id").
-		Where("api_key_claims.claim_id = ?", claim.ID)
-
-	if queryBuilder == nil {
-		queryBuilder = filters.NewQueryBuilder("")
-	}
-
-	result, err := filters.QueryDatabase[models.ApiKey](db, tenantID, queryBuilder)
-	if err != nil {
-		diag.AddError("failed_to_get_api_keys", fmt.Sprintf("failed to get API keys: %s", common.MapError(err).Error()), "claim_data_store", nil)
-		return nil, diag
-	}
-
-	return result, diag
+	// API keys don't have a Claims relationship in the current model
+	diag.AddError("not_implemented", "API key claims are not implemented in the current model", "claim_data_store", nil)
+	return nil, diag
 }
 
 func (s *ClaimDataStore) AddClaimToApiKey(ctx basecontext.BaseContext, tenantID string, claimID string, apiKeyID string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("store_add_claim_to_api_key")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return diag
-	}
-
-	var apiKey models.ApiKey
-	result := s.GetDB().Where("tenant_id = ? AND id = ?", tenantID, apiKeyID).First(&apiKey)
-	if result.Error != nil {
-		diag.AddError("failed_to_get_api_key", fmt.Sprintf("failed to get API key: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
-		return diag
-	}
-	if apiKey.ID == "" {
-		diag.AddError("api_key_not_found", "API key not found", "claim_data_store", nil)
-		return diag
-	}
-
-	// check if the claim exists
-	existingClaim, err := s.GetClaimBySlugOrID(ctx, tenantID, claimID)
-	if err != nil && err.HasErrors() {
-		diag.Append(err)
-		return diag
-	}
-	if existingClaim == nil {
-		diag.AddError("claim_not_found", "claim not found", "claim_data_store", nil)
-		return diag
-	}
-
-	// check if the claim is already assigned to the api key
-	var apiKeyClaims models.ApiKeyClaims
-	result = s.GetDB().WithContext(ctx.Context()).Where("api_key_id = ? AND claim_id = ?", apiKey.ID, existingClaim.ID).First(&apiKeyClaims)
-	if result.Error != nil {
-		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			diag.AddError("failed_to_get_api_key_claim", fmt.Sprintf("failed to get API key claim: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
-			return diag
-		}
-	}
-	if apiKeyClaims.ClaimID != "" {
-		diag.AddError("claim_already_assigned_to_api_key", "claim already assigned to API key", "claim_data_store", nil)
-		return diag
-	}
-
-	// create the api key claim
-	apiKeyClaims.ApiKeyID = apiKey.ID
-	apiKeyClaims.ClaimID = existingClaim.ID
-	result = s.GetDB().WithContext(ctx.Context()).Create(&apiKeyClaims)
-	if result.Error != nil {
-		diag.AddError("failed_to_create_api_key_claim", fmt.Sprintf("failed to create API key claim: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
-		return diag
-	}
-
+	// API keys don't have a Claims relationship in the current model
+	diag.AddError("not_implemented", "API key claims are not implemented in the current model", "claim_data_store", nil)
 	return diag
 }
 
 func (s *ClaimDataStore) RemoveClaimFromApiKey(ctx basecontext.BaseContext, tenantID string, claimID string, apiKeyID string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("store_remove_claim_from_api_key")
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "claim_data_store", nil)
-		return diag
-	}
-
-	var apiKey models.ApiKey
-	result := s.GetDB().Where("tenant_id = ? AND id = ?", tenantID, apiKeyID).First(&apiKey)
-	if result.Error != nil {
-		diag.AddError("failed_to_get_api_key", fmt.Sprintf("failed to get API key: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
-		return diag
-	}
-	if apiKey.ID == "" {
-		diag.AddError("api_key_not_found", "API key not found", "claim_data_store", nil)
-	}
-
-	// check if the claim exists
-	existingClaim, err := s.GetClaimBySlugOrID(ctx, tenantID, claimID)
-	if err != nil && err.HasErrors() {
-		diag.Append(err)
-		return diag
-	}
-	if existingClaim == nil {
-		diag.AddError("claim_not_found", "claim not found", "claim_data_store", nil)
-		return diag
-	}
-
-	// check if the claim is assigned to the api key
-	var apiKeyClaims models.ApiKeyClaims
-	result = s.GetDB().WithContext(ctx.Context()).Where("api_key_id = ? AND claim_id = ?", apiKey.ID, existingClaim.ID).First(&apiKeyClaims)
-	if result.Error != nil {
-		diag.AddError("failed_to_get_api_key_claim", fmt.Sprintf("failed to get API key claim: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
-		return diag
-	}
-	if apiKeyClaims.ClaimID == "" {
-		diag.AddError("claim_not_assigned_to_api_key", "claim not assigned to API key", "claim_data_store", nil)
-		return diag
-	}
-
-	// delete the api key claim
-	result = s.GetDB().WithContext(ctx.Context()).Where("api_key_id = ? AND claim_id = ?", apiKey.ID, existingClaim.ID).Delete(&apiKeyClaims)
-	if result.Error != nil {
-		diag.AddError("failed_to_delete_api_key_claim", fmt.Sprintf("failed to delete API key claim: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
-		return diag
-	}
-
+	// API keys don't have a Claims relationship in the current model
+	diag.AddError("not_implemented", "API key claims are not implemented in the current model", "claim_data_store", nil)
 	return diag
 }
 
@@ -751,7 +567,7 @@ func (s *ClaimDataStore) AddClaimToRole(ctx basecontext.BaseContext, tenantID st
 	var roleClaims models.RoleClaims
 	result = s.GetDB().WithContext(ctx.Context()).Where("role_id = ? AND claim_id = ?", role.ID, existingClaim.ID).First(&roleClaims)
 	if result.Error != nil {
-		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if !goerrors.Is(result.Error, gorm.ErrRecordNotFound) {
 			diag.AddError("failed_to_get_role_claim", fmt.Sprintf("failed to get role claim: %s", common.MapError(result.Error).Error()), "claim_data_store", nil)
 			return diag
 		}

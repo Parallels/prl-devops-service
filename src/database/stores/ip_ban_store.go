@@ -1,12 +1,13 @@
 package stores
 
 import (
-	"github.com/Parallels/prl-devops-service/data/models"
 	"context"
-	goerrors "errors"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/Parallels/prl-devops-service/data/models"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
@@ -78,17 +79,18 @@ func (s *IpBanDataStore) Dependencies() []string {
 }
 
 func (s *IpBanDataStore) initialize(ctx context.Context, db *gorm.DB) error {
-	cfg := config.Get().Get()
-	logger := logging.Get(); logger.Info("Initializing ip ban store...")
+	cfg := config.Get()
+	logger := logging.Get()
+	logger.Info("Initializing ip ban store...")
 
 	s.BaseDataStore = *common.NewBaseDataStore(db)
 
-	if cfg.Get("database_migrate").GetBool() {
-		logger := logging.Get(); logger.Info("Running ip ban migrations")
+	if cfg.IsDatabaseAutoMigrateEnabled() {
+		logger.Info("Running ip ban migrations")
 		if err := s.Migrate(); err != nil {
 			return fmt.Errorf("failed to migrate ip ban store: %v", err)
 		}
-		logger := logging.Get(); logger.Info("Ip ban migrations completed")
+		logger.Info("Ip ban migrations completed")
 	}
 
 	ipBanDataStoreInstance = s

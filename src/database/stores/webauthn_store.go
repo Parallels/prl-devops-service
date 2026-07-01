@@ -1,20 +1,21 @@
 package stores
 
 import (
-	"github.com/Parallels/prl-devops-service/data/models"
 	"context"
-	goerrors "errors"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/Parallels/prl-devops-service/data/models"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/database/common"
 	"github.com/Parallels/prl-devops-service/database/interfaces"
 
-	logging "github.com/cjlapao/common-go-logger"
 	apperrors "github.com/Parallels/prl-devops-service/errors"
+	logging "github.com/cjlapao/common-go-logger"
 	"gorm.io/gorm"
 )
 
@@ -76,17 +77,18 @@ func (s *WebAuthnDataStore) Dependencies() []string {
 }
 
 func (s *WebAuthnDataStore) initialize(ctx context.Context, db *gorm.DB) error {
-	cfg := config.Get().Get()
-	logger := logging.Get(); logger.Info("Initializing WebAuthn store...")
+	cfg := config.Get()
+	logger := logging.Get()
+	logger.Info("Initializing WebAuthn store...")
 
 	s.BaseDataStore = *common.NewBaseDataStore(db)
 
-	if cfg.Get("database_migrate").GetBool() {
-		logger := logging.Get(); logger.Info("Running WebAuthn migrations")
+	if cfg.IsDatabaseAutoMigrateEnabled() {
+		logger.Info("Running WebAuthn migrations")
 		if err := s.Migrate(); err != nil {
 			return fmt.Errorf("failed to migrate WebAuthn store: %v", err)
 		}
-		logger := logging.Get(); logger.Info("WebAuthn migrations completed")
+		logger.Info("WebAuthn migrations completed")
 	}
 
 	webAuthnDataStoreInstance = s

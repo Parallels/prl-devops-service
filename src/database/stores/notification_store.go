@@ -1,11 +1,12 @@
 package stores
 
 import (
-	"github.com/Parallels/prl-devops-service/data/models"
 	"context"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/Parallels/prl-devops-service/data/models"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
@@ -13,8 +14,8 @@ import (
 	"github.com/Parallels/prl-devops-service/database/filters"
 	"github.com/Parallels/prl-devops-service/database/interfaces"
 
-	logging "github.com/cjlapao/common-go-logger"
 	apperrors "github.com/Parallels/prl-devops-service/errors"
+	logging "github.com/cjlapao/common-go-logger"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -85,17 +86,18 @@ func (s *NotificationDataStore) Dependencies() []string {
 }
 
 func (s *NotificationDataStore) initialize(ctx context.Context, db *gorm.DB) error {
-	cfg := config.Get().Get()
-	logger := logging.Get(); logger.Info("Initializing notification store...")
+	cfg := config.Get()
+	logger := logging.Get()
+	logger.Info("Initializing notification store...")
 
 	s.BaseDataStore = *common.NewBaseDataStore(db)
 
-	if cfg.Get("database_migrate").GetBool() {
-		logger := logging.Get(); logger.Info("Running notification migrations")
+	if cfg.IsDatabaseAutoMigrateEnabled() {
+		logger.Info("Running notification migrations")
 		if err := s.Migrate(); err != nil {
 			return fmt.Errorf("failed to migrate notification store: %v", err)
 		}
-		logger := logging.Get(); logger.Info("Notification migrations completed")
+		logger.Info("Notification migrations completed")
 	}
 
 	notificationDataStoreInstance = s

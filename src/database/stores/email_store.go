@@ -1,12 +1,13 @@
 package stores
 
 import (
-	"github.com/Parallels/prl-devops-service/data/models"
 	"context"
-	goerrors "errors"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/Parallels/prl-devops-service/data/models"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
@@ -75,17 +76,18 @@ func (s *EmailDataStore) Dependencies() []string {
 }
 
 func (s *EmailDataStore) initialize(ctx context.Context, db *gorm.DB) error {
-	cfg := config.Get().Get()
-	logger := logging.Get(); logger.Info("Initializing email store...")
+	cfg := config.Get()
+	logger := logging.Get()
+	logger.Info("Initializing email store...")
 
 	s.BaseDataStore = *common.NewBaseDataStore(db)
 
-	if cfg.Get("database_migrate").GetBool() {
-		logger := logging.Get(); logger.Info("Running email migrations")
+	if cfg.IsDatabaseAutoMigrateEnabled() {
+		logger.Info("Running email migrations")
 		if err := s.Migrate(); err != nil {
 			return fmt.Errorf("failed to migrate email store: %v", err)
 		}
-		logger := logging.Get(); logger.Info("Email migrations completed")
+		logger.Info("Email migrations completed")
 	}
 
 	emailDataStoreInstance = s

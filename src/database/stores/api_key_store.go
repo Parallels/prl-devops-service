@@ -2,20 +2,18 @@ package stores
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/data/models"
-	pkg_utils "github.com/Parallels/prl-devops-service/helpers"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/database/common"
 	"github.com/Parallels/prl-devops-service/database/filters"
 	"github.com/Parallels/prl-devops-service/database/interfaces"
+	"github.com/Parallels/prl-devops-service/security/password"
 
 	apperrors "github.com/Parallels/prl-devops-service/errors"
 	logging "github.com/cjlapao/common-go-logger"
@@ -30,21 +28,13 @@ var (
 
 type ApiKeyStoreInterface interface {
 	interfaces.Store
-	CreateApiKey(ctx basecontext.BaseContext, tenantID string, apiKey *models.ApiKey) (*models.ApiKey, *apperrors.Diagnostics)
-
-	GetApiKeyByHash(ctx basecontext.BaseContext, tenantID string, keyHash string) (*models.ApiKey, *apperrors.Diagnostics)
-	GetApiKeyByDigest(ctx basecontext.BaseContext, tenantID string, digest string) (*models.ApiKey, *apperrors.Diagnostics)
-	GetApiKeyByPrefix(ctx basecontext.BaseContext, tenantID string, keyPrefix string) (*models.ApiKey, *apperrors.Diagnostics)
-	GetApiKeyByName(ctx basecontext.BaseContext, tenantID string, name string) (*models.ApiKey, *apperrors.Diagnostics)
-	GetApiKeys(ctx basecontext.BaseContext, tenantID string) ([]models.ApiKey, *apperrors.Diagnostics)
-	GetApiKeysByQuery(ctx basecontext.BaseContext, tenantID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.ApiKey], *apperrors.Diagnostics)
-	GetApiKeyByIDOrSlug(ctx basecontext.BaseContext, tenantID string, id string) (*models.ApiKey, *apperrors.Diagnostics)
-	RevokeApiKey(ctx basecontext.BaseContext, tenantID string, id string, revokedBy string, reason string) *apperrors.Diagnostics
-	DeleteApiKey(ctx basecontext.BaseContext, tenantID string, id string) *apperrors.Diagnostics
-	AddClaimToApiKey(ctx basecontext.BaseContext, tenantID string, id string, claimID string) *apperrors.Diagnostics
-	RemoveClaimFromApiKey(ctx basecontext.BaseContext, tenantID string, id string, claimID string) *apperrors.Diagnostics
-	UpdateApiKeyLastUsed(ctx basecontext.BaseContext, tenantID string, apiKeyID string) *apperrors.Diagnostics
-	UpdateApiKeyClaims(ctx basecontext.BaseContext, tenantID string, apiKey *models.ApiKey, claims []models.Claim) *apperrors.Diagnostics
+	CreateApiKey(ctx basecontext.BaseContext, apiKey *models.ApiKey) (*models.ApiKey, *apperrors.Diagnostics)
+	GetApiKey(ctx basecontext.BaseContext, idOrName string) (*models.ApiKey, *apperrors.Diagnostics)
+	GetApiKeys(ctx basecontext.BaseContext) ([]models.ApiKey, *apperrors.Diagnostics)
+	GetApiKeysByQuery(ctx basecontext.BaseContext, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.ApiKey], *apperrors.Diagnostics)
+	RevokeApiKey(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics
+	DeleteApiKey(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics
+	UpdateApiKey(ctx basecontext.BaseContext, apiKey *models.ApiKey) *apperrors.Diagnostics
 	GetDB() *gorm.DB
 }
 
@@ -94,12 +84,13 @@ func (s *ApiKeyDataStore) Dependencies() []string {
 }
 
 func (s *ApiKeyDataStore) initialize(ctx context.Context, db *gorm.DB) error {
+	cfg := config.Get()
 	logger := logging.Get()
-	logger.Info("Initializing. api key store...")
+	logger.Info("Initializing api key store...")
 
 	s.BaseDataStore = *common.NewBaseDataStore(db)
 
-	if true {
+	if cfg.IsDatabaseAutoMigrateEnabled() {
 		logger.Info("Running api key migrations")
 		if err := s.Migrate(); err != nil {
 			return fmt.Errorf("failed to migrate api key store: %v", err)
@@ -145,8 +136,8 @@ func (s *ApiKeyDataStore) Migrate() error {
 	return nil
 }
 
-// CreateApiKey creates a new API key for a user
-func (s *ApiKeyDataStore) CreateApiKey(ctx basecontext.BaseContext, tenantID string, apiKey *models.ApiKey) (*models.ApiKey, *apperrors.Diagnostics) {
+// CreateApiKey creates a new API key
+func (s *ApiKeyDataStore) CreateApiKey(ctx basecontext.BaseContext, apiKey *models.ApiKey) (*models.ApiKey, *apperrors.Diagnostics) {
 	diag := apperrors.NewDiagnostics("create_api_key")
 	defer diag.Complete()
 
@@ -155,23 +146,8 @@ func (s *ApiKeyDataStore) CreateApiKey(ctx basecontext.BaseContext, tenantID str
 		return nil, diag
 	}
 
-	if apiKey.KeyHash == "" {
-		diag.AddError("api_key_hash_is_empty", "api key hash is empty", "api_key_data_store", nil)
-		return nil, diag
-	}
-
-	if apiKey.KeyPrefix == "" {
-		diag.AddError("api_key_prefix_is_empty", "api key prefix is empty", "api_key_data_store", nil)
-		return nil, diag
-	}
-
 	if apiKey.Name == "" {
 		diag.AddError("api_key_name_is_empty", "api key name is empty", "api_key_data_store", nil)
-		return nil, diag
-	}
-
-	if apiKey.Claims == nil {
-		diag.AddError("api_key_claims_are_empty", "api key claims are empty", "api_key_data_store", nil)
 		return nil, diag
 	}
 
@@ -183,35 +159,19 @@ func (s *ApiKeyDataStore) CreateApiKey(ctx basecontext.BaseContext, tenantID str
 	if apiKey.ID == "" {
 		apiKey.ID = uuid.New().String()
 	}
-	if apiKey.Slug == "" {
-		apiKey.Slug = pkg_utils.Slugify(apiKey.Name)
-	}
-
 	apiKey.CreatedAt = time.Now()
 	apiKey.UpdatedAt = time.Now()
-	baseModel := common.GetTenantBaseModelFromContext(ctx, &apiKey.BaseModelWithTenant)
-	apiKey.ID = baseModel.ID
-	apiKey.CreatedAt = baseModel.CreatedAt
-	apiKey.UpdatedAt = baseModel.UpdatedAt
-	apiKey.CreatedBy = baseModel.CreatedBy
-	apiKey.UpdatedBy = baseModel.UpdatedBy
-	apiKey.TenantID = baseModel.TenantID
-	if apiKey.TenantID == "" {
-		apiKey.TenantID = tenantID
-	}
 
-	// Hash the API key before storing
-	encryptionService := encryption.GetInstance()
-	keyHash, err := encryptionService.HashPassword(apiKey.KeyHash)
-	if err != nil {
-		diag.AddError("failed_to_hash_api_key", fmt.Sprintf("failed to hash API key: %s", err.Error()), "api_key_data_store", nil)
-		return nil, diag
+	// Hash the secret before storing
+	if apiKey.Secret != "" {
+		passwdSvc := password.Get()
+		hashSecret, err := passwdSvc.Hash(apiKey.Secret, apiKey.ID)
+		if err != nil {
+			diag.AddError("failed_to_hash_secret", fmt.Sprintf("failed to hash secret: %s", err.Error()), "api_key_data_store", nil)
+			return nil, diag
+		}
+		apiKey.Secret = hashSecret
 	}
-	apiKey.KeyHash = keyHash
-
-	// Create deterministic digest (SHA-256 of the full key)
-	sha := sha256.Sum256([]byte(apiKey.KeyDigest))
-	apiKey.KeyDigest = hex.EncodeToString(sha[:])
 
 	result := s.GetDB().WithContext(ctx.Context()).Create(apiKey)
 	if result.Error != nil {
@@ -222,94 +182,68 @@ func (s *ApiKeyDataStore) CreateApiKey(ctx basecontext.BaseContext, tenantID str
 	return apiKey, diag
 }
 
-// GetApiKeyByDigest retrieves an API key by its deterministic digest
-func (s *ApiKeyDataStore) GetApiKeyByDigest(ctx basecontext.BaseContext, tenantID string, digest string) (*models.ApiKey, *apperrors.Diagnostics) {
-	diag := apperrors.NewDiagnostics("get_api_key_by_digest")
+// GetApiKey retrieves an API key by ID, name, or key
+func (s *ApiKeyDataStore) GetApiKey(ctx basecontext.BaseContext, idOrName string) (*models.ApiKey, *apperrors.Diagnostics) {
+	diag := apperrors.NewDiagnostics("get_api_key")
 	defer diag.Complete()
 
 	var apiKey models.ApiKey
-	result := s.GetDB().WithContext(ctx.Context()).Preload("Claims", func(db *gorm.DB) *gorm.DB {
-		return db.Order("claims.created_at DESC")
-	}).First(&apiKey, "key_digest = ? AND tenant_id = ?", digest, tenantID)
+	result := s.GetDB().WithContext(ctx.Context()).Where("id = ? OR name = ? OR key = ?", idOrName, idOrName, idOrName).First(&apiKey)
 	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if result.Error == gorm.ErrRecordNotFound {
 			return nil, nil // Return nil, nil if record not found
 		}
-		diag.AddError("failed_to_get_api_key_by_digest", fmt.Sprintf("failed to get API key by digest: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
+		diag.AddError("failed_to_get_api_key", fmt.Sprintf("failed to get API key: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
 		return nil, diag
 	}
 	return &apiKey, diag
 }
 
-// GetApiKeyByHash retrieves an API key by its hash
-func (s *ApiKeyDataStore) GetApiKeyByHash(ctx basecontext.BaseContext, tenantID string, keyHash string) (*models.ApiKey, *apperrors.Diagnostics) {
-	diag := apperrors.NewDiagnostics("get_api_key_by_hash")
+// GetApiKeys retrieves all API keys
+func (s *ApiKeyDataStore) GetApiKeys(ctx basecontext.BaseContext) ([]models.ApiKey, *apperrors.Diagnostics) {
+	diag := apperrors.NewDiagnostics("get_api_keys")
 	defer diag.Complete()
 
-	var apiKey models.ApiKey
-	result := s.GetDB().WithContext(ctx.Context()).Preload("Claims", func(db *gorm.DB) *gorm.DB {
-		return db.Order("claims.created_at DESC")
-	}).First(&apiKey, "key_hash = ? AND tenant_id = ?", keyHash, tenantID)
+	var apiKeys []models.ApiKey
+	result := s.GetDB().WithContext(ctx.Context()).Find(&apiKeys)
 	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, nil // Return nil, nil if record not found
-		}
-		diag.AddError("failed_to_get_api_key_by_hash", fmt.Sprintf("failed to get API key by hash: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
+		diag.AddError("failed_to_get_api_keys", fmt.Sprintf("failed to get API keys: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
 		return nil, diag
 	}
-	return &apiKey, diag
+
+	return apiKeys, diag
 }
 
-// GetApiKeyByPrefix retrieves an API key by its prefix (for validation)
-func (s *ApiKeyDataStore) GetApiKeyByPrefix(ctx basecontext.BaseContext, tenantID string, keyPrefix string) (*models.ApiKey, *apperrors.Diagnostics) {
-	diag := apperrors.NewDiagnostics("get_api_key_by_prefix")
+// GetApiKeysByQuery retrieves paginated API keys based on a query
+func (s *ApiKeyDataStore) GetApiKeysByQuery(ctx basecontext.BaseContext, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.ApiKey], *apperrors.Diagnostics) {
+	diag := apperrors.NewDiagnostics("get_api_keys_by_query")
 	defer diag.Complete()
 
-	var apiKey models.ApiKey
-	result := s.GetDB().WithContext(ctx.Context()).Preload("Claims", func(db *gorm.DB) *gorm.DB {
-		return db.Order("claims.created_at DESC")
-	}).First(&apiKey, "key_prefix = ? AND tenant_id = ?", keyPrefix, tenantID)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, nil // Return nil, nil if record not found
-		}
-		diag.AddError("failed_to_get_api_key_by_prefix", fmt.Sprintf("failed to get API key by prefix: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
+	db := s.GetDB().WithContext(ctx.Context())
+
+	if queryBuilder == nil {
+		queryBuilder = filters.NewQueryBuilder("")
+	}
+
+	result, err := filters.QueryDatabase[models.ApiKey](db, "", queryBuilder)
+	if err != nil {
+		diag.AddError("failed_to_get_api_keys", fmt.Sprintf("failed to get API keys: %s", common.MapError(err).Error()), "api_key_data_store", nil)
 		return nil, diag
 	}
-	return &apiKey, diag
-}
 
-// GetApiKeyByIDOrSlug retrieves an API key by ID
-func (s *ApiKeyDataStore) GetApiKeyByIDOrSlug(ctx basecontext.BaseContext, tenantID string, id string) (*models.ApiKey, *apperrors.Diagnostics) {
-	diag := apperrors.NewDiagnostics("get_api_key_by_id_or_slug")
-	defer diag.Complete()
-
-	var apiKey models.ApiKey
-	result := s.GetDB().WithContext(ctx.Context()).Preload("Claims", func(db *gorm.DB) *gorm.DB {
-		return db.Order("claims.created_at DESC")
-	}).First(&apiKey, "id = ? or slug = ? AND tenant_id = ?", id, id, tenantID)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, nil // Return nil, nil if record not found
-		}
-		diag.AddError("failed_to_get_api_key_by_id_or_slug", fmt.Sprintf("failed to get API key by ID: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
-		return nil, diag
-	}
-	return &apiKey, diag
+	return result, diag
 }
 
 // RevokeApiKey revokes an API key
-func (s *ApiKeyDataStore) RevokeApiKey(ctx basecontext.BaseContext, tenantID string, id string, revokedBy string, reason string) *apperrors.Diagnostics {
+func (s *ApiKeyDataStore) RevokeApiKey(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("revoke_api_key")
 	defer diag.Complete()
 
 	now := time.Now()
-	result := s.GetDB().WithContext(ctx.Context()).Model(&models.ApiKey{}).Where("id = ? AND tenant_id = ?", id, tenantID).Updates(map[string]interface{}{
-		"is_active":         false,
-		"revoked_at":        now,
-		"revoked_by":        revokedBy,
-		"revocation_reason": reason,
-		"updated_at":        now,
+	result := s.GetDB().WithContext(ctx.Context()).Model(&models.ApiKey{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"revoked":    true,
+		"revoked_at": now,
+		"updated_at": now,
 	})
 	if result.Error != nil {
 		diag.AddError("failed_to_revoke_api_key", fmt.Sprintf("failed to revoke API key: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
@@ -319,245 +253,33 @@ func (s *ApiKeyDataStore) RevokeApiKey(ctx basecontext.BaseContext, tenantID str
 }
 
 // DeleteApiKey permanently deletes an API key
-func (s *ApiKeyDataStore) DeleteApiKey(ctx basecontext.BaseContext, tenantID string, id string) *apperrors.Diagnostics {
+func (s *ApiKeyDataStore) DeleteApiKey(ctx basecontext.BaseContext, id string) *apperrors.Diagnostics {
 	diag := apperrors.NewDiagnostics("delete_api_key")
 	defer diag.Complete()
 
-	// deleting the api key relationships first
-	err := s.GetDB().WithContext(ctx.Context()).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("api_key_id = ?", id).Delete(&models.ApiKeyClaims{}).Error; err != nil {
-			return err
-		}
-		if err := tx.Where("id = ?", id).Delete(&models.ApiKey{}).Error; err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		diag.AddError("failed_to_delete_api_key", fmt.Sprintf("failed to delete API key: %s", common.MapError(err).Error()), "api_key_data_store", nil)
+	result := s.GetDB().WithContext(ctx.Context()).Where("id = ? OR name = ? OR key = ?", id, id, id).Delete(&models.ApiKey{})
+	if result.Error != nil {
+		diag.AddError("failed_to_delete_api_key", fmt.Sprintf("failed to delete API key: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
 		return diag
 	}
 	return diag
 }
 
-// CleanupExpiredAPIKeys removes expired API keys
-func (s *ApiKeyDataStore) CleanupExpiredAPIKeys(ctx basecontext.BaseContext) *apperrors.Diagnostics {
-	diag := apperrors.NewDiagnostics("cleanup_expired_api_keys")
+// UpdateApiKey updates an API key
+func (s *ApiKeyDataStore) UpdateApiKey(ctx basecontext.BaseContext, apiKey *models.ApiKey) *apperrors.Diagnostics {
+	diag := apperrors.NewDiagnostics("update_api_key")
 	defer diag.Complete()
 
-	now := time.Now()
-	result := s.GetDB().WithContext(ctx.Context()).Where("expires_at IS NOT NULL AND expires_at < ?", now).Delete(&models.ApiKey{})
+	if apiKey == nil {
+		diag.AddError("api_key_is_nil", "api key is nil", "api_key_data_store", nil)
+		return diag
+	}
+
+	apiKey.UpdatedAt = time.Now()
+	result := s.GetDB().WithContext(ctx.Context()).Save(apiKey)
 	if result.Error != nil {
-		diag.AddError("failed_to_cleanup_expired_api_keys", fmt.Sprintf("failed to cleanup expired API keys: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
+		diag.AddError("failed_to_update_api_key", fmt.Sprintf("failed to update API key: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
 		return diag
 	}
-	return diag
-}
-
-func (s *ApiKeyDataStore) GetApiKeys(ctx basecontext.BaseContext, tenantID string) ([]models.ApiKey, *apperrors.Diagnostics) {
-	diag := apperrors.NewDiagnostics("get_api_keys")
-	defer diag.Complete()
-
-	if tenantID == "" {
-		diag.AddError("tenant_id_cannot_be_empty", "tenant ID cannot be empty", "api_key_data_store", nil)
-		return nil, diag
-	}
-
-	var apiKeys []models.ApiKey
-	db := s.GetDB().WithContext(ctx.Context()).
-		Preload("Claims", func(db *gorm.DB) *gorm.DB {
-			return db.Order("claims.created_at DESC")
-		})
-
-	if tenantID != "" {
-		db = db.Where("tenant_id = ?", tenantID)
-	}
-
-	result := db.Find(&apiKeys)
-	if result.Error != nil {
-		diag.AddError("failed_to_get_api_keys", fmt.Sprintf("failed to get API keys: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
-		return nil, diag
-	}
-
-	return apiKeys, diag
-}
-
-// GetApiKeysByQuery retrieves paginated API keys based on a pagination and filter
-func (s *ApiKeyDataStore) GetApiKeysByQuery(ctx basecontext.BaseContext, tenantID string, queryBuilder *filters.QueryBuilder) (*filters.QueryBuilderResponse[models.ApiKey], *apperrors.Diagnostics) {
-	diag := apperrors.NewDiagnostics("get_paginated_api_keys")
-	defer diag.Complete()
-
-	db := s.GetDB().WithContext(ctx.Context())
-	db = db.Preload("Claims", func(db *gorm.DB) *gorm.DB {
-		return db.Order("claims.created_at DESC")
-	})
-
-	if queryBuilder == nil {
-		queryBuilder = filters.NewQueryBuilder("")
-	}
-
-	result, err := filters.QueryDatabase[models.ApiKey](db, tenantID, queryBuilder)
-	if err != nil {
-		diag.AddError("failed_to_get_api_keys", fmt.Sprintf("failed to get API keys: %s", common.MapError(err).Error()), "api_key_data_store", nil)
-		return nil, diag
-	}
-
-	return result, diag
-}
-
-func (s *ApiKeyDataStore) AddClaimToApiKey(ctx basecontext.BaseContext, tenantID string, id string, claimID string) *apperrors.Diagnostics {
-	diag := apperrors.NewDiagnostics("add_claim_to_api_key")
-	defer diag.Complete()
-
-	var dbClaim models.Claim
-	result := s.GetDB().WithContext(ctx.Context()).First(&dbClaim, "id = ? AND tenant_id = ?", claimID, tenantID)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			diag.AddError("claim_not_found", "claim not found", "api_key_data_store", nil)
-			return diag
-		}
-		diag.AddError("failed_to_get_claim", fmt.Sprintf("failed to get claim: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
-		return diag
-	}
-
-	existingApiKey, getApiKeyDiag := s.GetApiKeyByIDOrSlug(ctx, tenantID, id)
-	if getApiKeyDiag.HasErrors() {
-		diag.Append(getApiKeyDiag)
-		return diag
-	}
-	if existingApiKey == nil {
-		diag.AddError("api_key_not_found", "API key not found", "api_key_data_store", nil)
-		return diag
-	}
-	// checking if the claim is already assigned to the api key
-	var apiKeyClaims models.ApiKeyClaims
-	result = s.GetDB().WithContext(ctx.Context()).Where("api_key_id = ? AND claim_id = ?", id, claimID).First(&apiKeyClaims)
-	if result.Error != nil {
-		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			diag.AddError("failed_to_get_user_claim", fmt.Sprintf("failed to get user claim: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
-			return diag
-		}
-	}
-	if apiKeyClaims.ClaimID != "" {
-		diag.AddError("claim_already_assigned_to_api_key", "claim already assigned to API key", "api_key_data_store", nil)
-		return diag
-	}
-
-	// creating the api key claim
-	apiKeyClaims.ApiKeyID = id
-	apiKeyClaims.ClaimID = dbClaim.ID
-	result = s.GetDB().WithContext(ctx.Context()).Create(&apiKeyClaims)
-	if result.Error != nil {
-		diag.AddError("failed_to_create_api_key_claim", fmt.Sprintf("failed to create API key claim: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
-		return diag
-	}
-	return diag
-}
-
-func (s *ApiKeyDataStore) RemoveClaimFromApiKey(ctx basecontext.BaseContext, tenantID string, id string, claimID string) *apperrors.Diagnostics {
-	diag := apperrors.NewDiagnostics("remove_claim_from_api_key")
-	defer diag.Complete()
-
-	var dbClaim models.Claim
-	result := s.GetDB().WithContext(ctx.Context()).First(&dbClaim, "id = ? AND tenant_id = ?", claimID, tenantID)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			diag.AddError("claim_not_found", "claim not found", "api_key_data_store", nil)
-			return diag
-		}
-		diag.AddError("failed_to_get_claim", fmt.Sprintf("failed to get claim: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
-		return diag
-	}
-
-	existingApiKey, getApiKeyDiag := s.GetApiKeyByIDOrSlug(ctx, tenantID, id)
-	if getApiKeyDiag.HasErrors() {
-		diag.Append(getApiKeyDiag)
-		return diag
-	}
-	if existingApiKey == nil {
-		diag.AddError("api_key_not_found", "API key not found", "api_key_data_store", nil)
-		return diag
-	}
-
-	// checking if the claim is assigned to the api key
-	var apiKeyClaims models.ApiKeyClaims
-	result = s.GetDB().WithContext(ctx.Context()).Where("api_key_id = ? AND claim_id = ? AND tenant_id = ?", id, claimID, tenantID).First(&apiKeyClaims)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			diag.AddError("claim_not_assigned_to_api_key", "claim not assigned to API key", "api_key_data_store", nil)
-			return diag
-		}
-		diag.AddError("failed_to_get_api_key_claim", fmt.Sprintf("failed to get API key claim: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
-		return diag
-	}
-
-	// deleting the api key claim
-	result = s.GetDB().WithContext(ctx.Context()).Where("api_key_id = ? AND claim_id = ? AND tenant_id = ?", id, claimID, tenantID).Delete(&apiKeyClaims)
-	if result.Error != nil {
-		diag.AddError("failed_to_delete_api_key_claim", fmt.Sprintf("failed to delete API key claim: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
-		return diag
-	}
-
-	return diag
-}
-
-func (s *ApiKeyDataStore) GetApiKeyByName(ctx basecontext.BaseContext, tenantID string, name string) (*models.ApiKey, *apperrors.Diagnostics) {
-	diag := apperrors.NewDiagnostics("get_api_key_by_name")
-	defer diag.Complete()
-
-	var apiKey models.ApiKey
-	result := s.GetDB().WithContext(ctx.Context()).Preload("Claims", func(db *gorm.DB) *gorm.DB {
-		return db.Order("claims.created_at DESC")
-	}).First(&apiKey, "name = ? AND tenant_id = ?", name, tenantID)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, nil // Return nil, nil if record not found
-		}
-		diag.AddError("failed_to_get_api_key_by_name", fmt.Sprintf("failed to get API key by name: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
-		return nil, diag
-	}
-
-	return &apiKey, diag
-}
-
-func (s *ApiKeyDataStore) UpdateApiKeyLastUsed(ctx basecontext.BaseContext, tenantID string, apiKeyID string) *apperrors.Diagnostics {
-	diag := apperrors.NewDiagnostics("update_api_key_last_used")
-	defer diag.Complete()
-
-	now := time.Now()
-	result := s.GetDB().WithContext(ctx.Context()).
-		Model(&models.ApiKey{}).
-		Where("id = ? AND tenant_id = ?", apiKeyID, tenantID).
-		Update("last_used_at", now)
-	if result.Error != nil {
-		diag.AddError("failed_to_update_api_key_last_used", fmt.Sprintf("failed to update API key last used: %s", common.MapError(result.Error).Error()), "api_key_data_store", nil)
-		return diag
-	}
-	return diag
-}
-
-func (s *ApiKeyDataStore) UpdateApiKeyClaims(ctx basecontext.BaseContext, tenantID string, apiKey *models.ApiKey, claims []models.Claim) *apperrors.Diagnostics {
-	diag := apperrors.NewDiagnostics("update_api_key_claims")
-	defer diag.Complete()
-
-	err := s.GetDB().WithContext(ctx.Context()).Transaction(func(tx *gorm.DB) error {
-		// First, clear any existing claim associations
-		if err := tx.Model(apiKey).Association("Claims").Clear(); err != nil {
-			return err
-		}
-
-		// Then add the new claim associations
-		if len(claims) > 0 {
-			if err := tx.Model(apiKey).Association("Claims").Append(claims); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		diag.AddError("failed_to_update_api_key_claims", fmt.Sprintf("failed to update API key claims: %s", common.MapError(err).Error()), "api_key_data_store", nil)
-		return diag
-	}
-
 	return diag
 }

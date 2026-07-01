@@ -1,21 +1,23 @@
 package stores
 
 import (
-	"github.com/Parallels/prl-devops-service/data/models"
 	"context"
-	goerrors "errors"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/Parallels/prl-devops-service/data/models"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/database/common"
 	"github.com/Parallels/prl-devops-service/database/filters"
 	"github.com/Parallels/prl-devops-service/database/interfaces"
+	"github.com/Parallels/prl-devops-service/security/password"
 
-	logging "github.com/cjlapao/common-go-logger"
 	apperrors "github.com/Parallels/prl-devops-service/errors"
+	logging "github.com/cjlapao/common-go-logger"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -92,17 +94,18 @@ func (s *UserDataStore) Dependencies() []string {
 }
 
 func (s *UserDataStore) initialize(ctx context.Context, db *gorm.DB) error {
-	cfg := config.Get().Get()
-	logger := logging.Get(); logger.Info("Initializing user store...")
+	cfg := config.Get()
+	logger := logging.Get()
+	logger.Info("Initializing user store...")
 
 	s.BaseDataStore = *common.NewBaseDataStore(db)
 
-	if cfg.Get("database_migrate").GetBool() {
-		logger := logging.Get(); logger.Info("Running user migrations")
+	if cfg.IsDatabaseAutoMigrateEnabled() {
+		logger.Info("Running user migrations")
 		if err := s.Migrate(); err != nil {
 			return fmt.Errorf("failed to migrate user store: %v", err)
 		}
-		logger := logging.Get(); logger.Info("User migrations completed")
+		logger.Info("User migrations completed")
 	}
 
 	userDataStoreInstance = s
@@ -126,14 +129,6 @@ func InitializeUserDataStore(db *gorm.DB) (UserDataStoreInterface, *apperrors.Di
 }
 
 func (s *UserDataStore) Migrate() error {
-	if err := s.GetDB().AutoMigrate(&models.UserRoles{}); err != nil {
-		return fmt.Errorf("failed to migrate user role table: %s", err.Error())
-	}
-
-	if err := s.GetDB().AutoMigrate(&models.UserClaims{}); err != nil {
-		return fmt.Errorf("failed to migrate user claim table: %s", err.Error())
-	}
-
 	if err := s.GetDB().AutoMigrate(&models.User{}); err != nil {
 		return fmt.Errorf("failed to migrate user table: %s", err.Error())
 	}
@@ -161,8 +156,8 @@ func (s *UserDataStore) CreateUser(ctx basecontext.BaseContext, tenantID string,
 	if user.Username != "" {
 	}
 
-	encryptionService := encryption.GetInstance()
-	encryptedPassword, err := encryptionService.HashPassword(user.Password)
+	passwdSvc := password.Get()
+	encryptedPassword, err := passwdSvc.Hash(user.Password, user.ID)
 	if err != nil {
 		diag.AddError("failed_to_encrypt_password", fmt.Sprintf("failed to encrypt password: %s", err.Error()), "user_data_store", nil)
 		return nil, diag
@@ -309,8 +304,8 @@ func (s *UserDataStore) UpdateUser(ctx basecontext.BaseContext, tenantID string,
 	}
 
 	if user.Password != "" {
-		encryptionService := encryption.GetInstance()
-		encryptedPassword, err := encryptionService.HashPassword(user.Password)
+		passwdSvc := password.Get()
+		encryptedPassword, err := passwdSvc.Hash(user.Password, user.ID)
 		if err != nil {
 			diag.AddError("failed_to_encrypt_password", fmt.Sprintf("failed to encrypt password: %s", err.Error()), "user_data_store", nil)
 			return diag
@@ -328,8 +323,8 @@ func (s *UserDataStore) UpdateUser(ctx basecontext.BaseContext, tenantID string,
 	return diag
 }
 
-func (s *UserDataStore) UpdateUserPassword(ctx basecontext.BaseContext, tenantID string, id string, password string) *apperrors.Diagnostics {
-	diag := apperrors.NewDiagnostics("update_user_password")
+func (s *UserDataStore) UpdateUserPassword(ctx basecontext.BaseContext, tenantID string, id string, newPassword string) *apperrors.Diagnostics {
+	diag := apperrors.NewDiagnostics("update_password")
 	user, getUserDiag := s.GetUserByID(ctx, tenantID, id)
 	if getUserDiag.HasErrors() {
 		diag.Append(getUserDiag)
@@ -340,8 +335,8 @@ func (s *UserDataStore) UpdateUserPassword(ctx basecontext.BaseContext, tenantID
 		return diag
 	}
 
-	encryptionService := encryption.GetInstance()
-	encryptedPassword, err := encryptionService.HashPassword(password)
+	passwdSvc := password.Get()
+	encryptedPassword, err := passwdSvc.Hash(newPassword, user.ID)
 	if err != nil {
 		diag.AddError("failed_to_encrypt_password", fmt.Sprintf("failed to encrypt password: %s", err.Error()), "user_data_store", nil)
 		return diag
@@ -349,7 +344,7 @@ func (s *UserDataStore) UpdateUserPassword(ctx basecontext.BaseContext, tenantID
 
 	// Create a minimal user object with only the fields we want to update
 	updatedUser := &models.User{
-		BaseModel: common.BaseModel{
+		BaseModel: models.BaseModel{
 			ID:        user.ID,
 			UpdatedAt: time.Now(),
 		},
@@ -379,7 +374,7 @@ func (s *UserDataStore) BlockUser(ctx basecontext.BaseContext, tenantID string, 
 
 	// Create a minimal user object with only the fields we want to update
 	updatedUser := &models.User{
-		BaseModel: common.BaseModel{
+		BaseModel: models.BaseModel{
 			ID:        user.ID,
 			UpdatedAt: time.Now(),
 		},
@@ -409,15 +404,14 @@ func (s *UserDataStore) SetRefreshToken(ctx basecontext.BaseContext, tenantID st
 
 	// Create a minimal user object with only the fields we want to update
 	updatedUser := &models.User{
-		BaseModel: common.BaseModel{
+		BaseModel: models.BaseModel{
 			ID:        user.ID,
 			UpdatedAt: time.Now(),
 		},
-		RefreshToken:          refreshToken,
-		RefreshTokenExpiresAt: time.Now().Add(24 * time.Hour),
 	}
 
-	// Use PartialUpdateMap to only update the refresh token fields and updated_at
+	// Note: RefreshToken fields don't exist in current User model
+	// This method currently just updates the timestamp
 	updates := common.PartialUpdateMap(user, updatedUser, "updated_at")
 	if err := s.GetDB().WithContext(ctx.Context()).Model(&models.User{}).Where("id = ?", user.ID).Updates(updates).Error; err != nil {
 		diag.AddError("failed_to_set_refresh_token", fmt.Sprintf("failed to set refresh token: %s", common.MapError(err).Error()), "user_data_store", nil)
@@ -555,30 +549,9 @@ func (s *UserDataStore) AddUserToRole(ctx basecontext.BaseContext, tenantID stri
 		return diag
 	}
 
-	// role exists in the relationship
-	var userRole models.UserRoles
-	userRoleDbResult := s.GetDB().WithContext(ctx.Context()).Where("user_id = ? AND role_id = ?", userID, roleId).First(&userRole)
-	if userRoleDbResult.Error != nil {
-		// We expect record not found here
-		if !errors.Is(userRoleDbResult.Error, gorm.ErrRecordNotFound) {
-			diag.AddError("failed_to_get_user_role", fmt.Sprintf("failed to get user role: %s", common.MapError(userRoleDbResult.Error).Error()), "user_data_store", nil)
-			return diag
-		}
-	}
-	if userRole.RoleID != "" {
-		diag.AddError("role_already_associated_with_user", "role already associated with user", "user_data_store", nil)
-		return diag
-	}
-
-	// create the user role association
-	userRole = models.UserRoles{
-		UserID: userID,
-		RoleID: roleId,
-	}
-
-	createUserRoleDbResult := s.GetDB().WithContext(ctx.Context()).Create(&userRole)
-	if createUserRoleDbResult.Error != nil {
-		diag.AddError("failed_to_create_user_role", fmt.Sprintf("failed to create user role: %s", common.MapError(createUserRoleDbResult.Error).Error()), "user_data_store", nil)
+	// Use GORM's Association API to add the role to the user
+	if err := s.GetDB().WithContext(ctx.Context()).Model(&user).Association("Roles").Append(&dbRole); err != nil {
+		diag.AddError("failed_to_add_role_to_user", fmt.Sprintf("failed to add role to user: %s", common.MapError(err).Error()), "user_data_store", nil)
 		return diag
 	}
 
@@ -597,22 +570,16 @@ func (s *UserDataStore) RemoveUserFromRole(ctx basecontext.BaseContext, tenantID
 		return diag
 	}
 
-	// checking if the user role exists in the database
-	var userRole models.UserRoles
-	userRoleDbResult := s.GetDB().WithContext(ctx.Context()).Where("user_id = ? AND role_id = ?", userID, roleId).First(&userRole)
-	if userRoleDbResult.Error != nil {
-		if errors.Is(userRoleDbResult.Error, gorm.ErrRecordNotFound) {
-			diag.AddError("user_role_not_found", "user role not found", "user_data_store", nil)
-			return diag
-		}
-		diag.AddError("failed_to_get_user_role", fmt.Sprintf("failed to get user role: %s", common.MapError(userRoleDbResult.Error).Error()), "user_data_store", nil)
+	// Use GORM's Association API to remove the role from the user
+	var dbRole models.Role
+	roleDbResult := s.GetDB().WithContext(ctx.Context()).Where("id = ?", roleId).First(&dbRole)
+	if roleDbResult.Error != nil {
+		diag.AddError("failed_to_get_role", fmt.Sprintf("failed to get role: %s", common.MapError(roleDbResult.Error).Error()), "user_data_store", nil)
 		return diag
 	}
 
-	// delete the user role association
-	userRoleDbResult = s.GetDB().WithContext(ctx.Context()).Delete(&userRole)
-	if userRoleDbResult.Error != nil {
-		diag.AddError("failed_to_delete_user_role", fmt.Sprintf("failed to delete user role: %s", common.MapError(userRoleDbResult.Error).Error()), "user_data_store", nil)
+	if err := s.GetDB().WithContext(ctx.Context()).Model(&user).Association("Roles").Delete(&dbRole); err != nil {
+		diag.AddError("failed_to_remove_role_from_user", fmt.Sprintf("failed to remove role from user: %s", common.MapError(err).Error()), "user_data_store", nil)
 		return diag
 	}
 
@@ -642,29 +609,9 @@ func (s *UserDataStore) AddClaimToUser(ctx basecontext.BaseContext, tenantID str
 		return diag
 	}
 
-	// Check if the claim is already associated with the user
-	var userClaims models.UserClaims
-	result = s.GetDB().WithContext(ctx.Context()).Where("user_id = ? AND claim_id = ?", user.ID, claim.ID).First(&userClaims)
-	if result.Error != nil {
-		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			diag.AddError("failed_to_get_user_claim", fmt.Sprintf("failed to get user claim: %s", common.MapError(result.Error).Error()), "user_data_store", nil)
-			return diag
-		}
-	}
-	if userClaims.ClaimID != "" {
-		diag.AddError("claim_already_associated_with_user", "claim already associated with user", "user_data_store", nil)
-		return diag
-	}
-
-	// Create the user claim association
-	userClaim := models.UserClaims{
-		UserID:  user.ID,
-		ClaimID: claim.ID,
-	}
-
-	result = s.GetDB().WithContext(ctx.Context()).Create(&userClaim)
-	if result.Error != nil {
-		diag.AddError("failed_to_create_user_claim", fmt.Sprintf("failed to create user claim: %s", common.MapError(result.Error).Error()), "user_data_store", nil)
+	// Use GORM's Association API to add the claim to the user
+	if err := s.GetDB().WithContext(ctx.Context()).Model(&user).Association("Claims").Append(&claim); err != nil {
+		diag.AddError("failed_to_add_claim_to_user", fmt.Sprintf("failed to add claim to user: %s", common.MapError(err).Error()), "user_data_store", nil)
 		return diag
 	}
 
@@ -694,22 +641,9 @@ func (s *UserDataStore) RemoveClaimFromUser(ctx basecontext.BaseContext, tenantI
 		return diag
 	}
 
-	// Check if the claim is associated with the user
-	var userClaims models.UserClaims
-	result = s.GetDB().WithContext(ctx.Context()).Where("user_id = ? AND claim_id = ?", user.ID, claim.ID).First(&userClaims)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			diag.AddError("claim_not_associated_with_user", "claim not associated with user", "user_data_store", nil)
-			return diag
-		}
-		diag.AddError("failed_to_get_user_claim", fmt.Sprintf("failed to get user claim: %s", common.MapError(result.Error).Error()), "user_data_store", nil)
-		return diag
-	}
-
-	// Delete the user claim association
-	result = s.GetDB().WithContext(ctx.Context()).Delete(&userClaims)
-	if result.Error != nil {
-		diag.AddError("failed_to_delete_user_claim", fmt.Sprintf("failed to delete user claim: %s", common.MapError(result.Error).Error()), "user_data_store", nil)
+	// Use GORM's Association API to remove the claim from the user
+	if err := s.GetDB().WithContext(ctx.Context()).Model(&user).Association("Claims").Delete(&claim); err != nil {
+		diag.AddError("failed_to_remove_claim_from_user", fmt.Sprintf("failed to remove claim from user: %s", common.MapError(err).Error()), "user_data_store", nil)
 		return diag
 	}
 

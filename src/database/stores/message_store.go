@@ -1,18 +1,19 @@
 package stores
 
 import (
-	"github.com/Parallels/prl-devops-service/data/models"
 	"context"
-	goerrors "errors"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
 
+	"github.com/Parallels/prl-devops-service/data/models"
+
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/database/common"
 	"github.com/Parallels/prl-devops-service/database/interfaces"
-	logging "github.com/cjlapao/common-go-logger"
 	apperrors "github.com/Parallels/prl-devops-service/errors"
+	logging "github.com/cjlapao/common-go-logger"
 	"gorm.io/gorm"
 
 	"github.com/google/uuid"
@@ -94,17 +95,18 @@ func (s *MessageDataStore) Dependencies() []string {
 }
 
 func (s *MessageDataStore) initialize(ctx context.Context, db *gorm.DB) error {
-	cfg := config.Get().Get()
-	logger := logging.Get(); logger.Info("Initializing message store...")
+	cfg := config.Get()
+	logger := logging.Get()
+	logger.Info("Initializing message store...")
 
 	s.BaseDataStore = *common.NewBaseDataStore(db)
 
-	if cfg.Get("database_migrate").GetBool() {
-		logger := logging.Get(); logger.Info("Running message migrations")
+	if cfg.IsDatabaseAutoMigrateEnabled() {
+		logger.Info("Running message migrations")
 		if err := s.Migrate(); err != nil {
 			return fmt.Errorf("failed to run message migrations: %v", err)
 		}
-		logger := logging.Get(); logger.Info("Message migrations completed")
+		logger.Info("Message migrations completed")
 	}
 
 	messageDataStoreInstance = s
@@ -146,7 +148,7 @@ func (s *MessageDataStore) CreateMessage(ctx context.Context, message *models.Me
 	message.CreatedAt = time.Now()
 	message.UpdatedAt = time.Now()
 
-	if err := s.GetDB().WithContext(ctx.Context()).Create(message).Error; err != nil {
+	if err := s.GetDB().WithContext(ctx).Create(message).Error; err != nil {
 		return fmt.Errorf("failed to create message: %w", common.MapError(err))
 	}
 	return nil
@@ -156,7 +158,7 @@ func (s *MessageDataStore) CreateMessage(ctx context.Context, message *models.Me
 func (s *MessageDataStore) GetPendingMessages(ctx context.Context, limit int) ([]*models.Message, error) {
 	var messages []*models.Message
 
-	query := s.GetDB().WithContext(ctx.Context()).
+	query := s.GetDB().WithContext(ctx).
 		Where("status = ? AND (scheduled_at IS NULL OR scheduled_at <= ?)", models.MessageStatusPending, time.Now()).
 		Order("priority DESC, created_at ASC")
 
@@ -175,7 +177,7 @@ func (s *MessageDataStore) GetPendingMessages(ctx context.Context, limit int) ([
 func (s *MessageDataStore) GetScheduledMessages(ctx context.Context) ([]*models.Message, error) {
 	var messages []*models.Message
 
-	if err := s.GetDB().WithContext(ctx.Context()).
+	if err := s.GetDB().WithContext(ctx).
 		Where("status = ? AND scheduled_at IS NOT NULL AND scheduled_at <= ?", models.MessageStatusPending, time.Now()).
 		Order("priority DESC, scheduled_at ASC").
 		Find(&messages).Error; err != nil {
@@ -200,7 +202,7 @@ func (s *MessageDataStore) UpdateMessageStatus(ctx context.Context, messageID st
 		updates["processed_at"] = time.Now()
 	}
 
-	if err := s.GetDB().WithContext(ctx.Context()).
+	if err := s.GetDB().WithContext(ctx).
 		Model(&models.Message{}).
 		Where("id = ?", messageID).
 		Updates(updates).Error; err != nil {
@@ -224,7 +226,7 @@ func (s *MessageDataStore) CompleteMessage(ctx context.Context, messageID string
 func (s *MessageDataStore) FailMessage(ctx context.Context, messageID string, errorMsg string) error {
 	// First, increment the retry count and check if we should retry or mark as failed
 	var message models.Message
-	if err := s.GetDB().WithContext(ctx.Context()).First(&message, "id = ?", messageID).Error; err != nil {
+	if err := s.GetDB().WithContext(ctx).First(&message, "id = ?", messageID).Error; err != nil {
 		return fmt.Errorf("failed to get message for retry: %w", common.MapError(err))
 	}
 
@@ -243,7 +245,7 @@ func (s *MessageDataStore) FailMessage(ctx context.Context, messageID string, er
 		message.ScheduledAt = &retryAt
 	}
 
-	if err := s.GetDB().WithContext(ctx.Context()).Save(&message).Error; err != nil {
+	if err := s.GetDB().WithContext(ctx).Save(&message).Error; err != nil {
 		return fmt.Errorf("failed to update message for retry: %w", common.MapError(err))
 	}
 
@@ -252,7 +254,7 @@ func (s *MessageDataStore) FailMessage(ctx context.Context, messageID string, er
 
 // DeleteMessage removes a message from the queue
 func (s *MessageDataStore) DeleteMessage(ctx context.Context, messageID string) error {
-	if err := s.GetDB().WithContext(ctx.Context()).Delete(&models.Message{}, "id = ?", messageID).Error; err != nil {
+	if err := s.GetDB().WithContext(ctx).Delete(&models.Message{}, "id = ?", messageID).Error; err != nil {
 		return fmt.Errorf("failed to delete message: %w", common.MapError(err))
 	}
 	return nil
@@ -263,7 +265,7 @@ func (s *MessageDataStore) GetMessageStats(ctx context.Context) (*models.Message
 	stats := &models.MessageStats{}
 
 	// Count pending messages
-	if err := s.GetDB().WithContext(ctx.Context()).
+	if err := s.GetDB().WithContext(ctx).
 		Model(&models.Message{}).
 		Where("status = ?", models.MessageStatusPending).
 		Count(&stats.TotalPending).Error; err != nil {
@@ -271,7 +273,7 @@ func (s *MessageDataStore) GetMessageStats(ctx context.Context) (*models.Message
 	}
 
 	// Count processing messages
-	if err := s.GetDB().WithContext(ctx.Context()).
+	if err := s.GetDB().WithContext(ctx).
 		Model(&models.Message{}).
 		Where("status = ?", models.MessageStatusProcessing).
 		Count(&stats.TotalProcessing).Error; err != nil {
@@ -279,7 +281,7 @@ func (s *MessageDataStore) GetMessageStats(ctx context.Context) (*models.Message
 	}
 
 	// Count completed messages
-	if err := s.GetDB().WithContext(ctx.Context()).
+	if err := s.GetDB().WithContext(ctx).
 		Model(&models.Message{}).
 		Where("status = ?", models.MessageStatusCompleted).
 		Count(&stats.TotalCompleted).Error; err != nil {
@@ -287,7 +289,7 @@ func (s *MessageDataStore) GetMessageStats(ctx context.Context) (*models.Message
 	}
 
 	// Count failed messages
-	if err := s.GetDB().WithContext(ctx.Context()).
+	if err := s.GetDB().WithContext(ctx).
 		Model(&models.Message{}).
 		Where("status = ?", models.MessageStatusFailed).
 		Count(&stats.TotalFailed).Error; err != nil {
@@ -295,7 +297,7 @@ func (s *MessageDataStore) GetMessageStats(ctx context.Context) (*models.Message
 	}
 
 	// Count retrying messages
-	if err := s.GetDB().WithContext(ctx.Context()).
+	if err := s.GetDB().WithContext(ctx).
 		Model(&models.Message{}).
 		Where("status = ?", models.MessageStatusRetrying).
 		Count(&stats.TotalRetrying).Error; err != nil {
@@ -303,7 +305,7 @@ func (s *MessageDataStore) GetMessageStats(ctx context.Context) (*models.Message
 	}
 
 	// Count abandoned messages
-	if err := s.GetDB().WithContext(ctx.Context()).
+	if err := s.GetDB().WithContext(ctx).
 		Model(&models.Message{}).
 		Where("status = ?", models.MessageStatusAbandoned).
 		Count(&stats.TotalAbandoned).Error; err != nil {
@@ -319,7 +321,7 @@ func (s *MessageDataStore) RecoverOrphanedMessages(ctx context.Context, maxProce
 	cutoffTime := time.Now().Add(-maxProcessingAge)
 
 	var orphanedMessages []*models.Message
-	if err := s.GetDB().WithContext(ctx.Context()).
+	if err := s.GetDB().WithContext(ctx).
 		Where("status = ? AND updated_at < ?", models.MessageStatusProcessing, cutoffTime).
 		Find(&orphanedMessages).Error; err != nil {
 		return 0, fmt.Errorf("failed to find orphaned messages: %w", common.MapError(err))
@@ -330,7 +332,7 @@ func (s *MessageDataStore) RecoverOrphanedMessages(ctx context.Context, maxProce
 	}
 
 	// Reset orphaned messages to pending status
-	result := s.GetDB().WithContext(ctx.Context()).
+	result := s.GetDB().WithContext(ctx).
 		Model(&models.Message{}).
 		Where("status = ? AND updated_at < ?", models.MessageStatusProcessing, cutoffTime).
 		Updates(map[string]interface{}{
@@ -351,7 +353,7 @@ func (s *MessageDataStore) GetStuckRetryingMessages(ctx context.Context, maxRetr
 	cutoffTime := time.Now().Add(-maxRetryAge)
 
 	var messages []*models.Message
-	if err := s.GetDB().WithContext(ctx.Context()).
+	if err := s.GetDB().WithContext(ctx).
 		Where("status = ? AND (scheduled_at IS NULL OR scheduled_at < ?)", models.MessageStatusRetrying, cutoffTime).
 		Find(&messages).Error; err != nil {
 		return nil, fmt.Errorf("failed to find stuck retrying messages: %w", common.MapError(err))
@@ -364,7 +366,7 @@ func (s *MessageDataStore) GetStuckRetryingMessages(ctx context.Context, maxRetr
 func (s *MessageDataStore) ResetStuckRetryingMessages(ctx context.Context, maxRetryAge time.Duration) (int, error) {
 	cutoffTime := time.Now().Add(-maxRetryAge)
 
-	result := s.GetDB().WithContext(ctx.Context()).
+	result := s.GetDB().WithContext(ctx).
 		Model(&models.Message{}).
 		Where("status = ? AND (scheduled_at IS NULL OR scheduled_at < ?)", models.MessageStatusRetrying, cutoffTime).
 		Updates(map[string]interface{}{
@@ -384,7 +386,7 @@ func (s *MessageDataStore) ResetStuckRetryingMessages(ctx context.Context, maxRe
 func (s *MessageDataStore) CleanupOldMessages(ctx context.Context, maxAge time.Duration) (int, error) {
 	cutoffTime := time.Now().Add(-maxAge)
 
-	result := s.GetDB().WithContext(ctx.Context()).
+	result := s.GetDB().WithContext(ctx).
 		Where("(status = ? OR status = ?) AND processed_at < ?", models.MessageStatusCompleted, models.MessageStatusFailed, cutoffTime).
 		Delete(&models.Message{})
 
@@ -399,7 +401,7 @@ func (s *MessageDataStore) CleanupOldMessages(ctx context.Context, maxAge time.D
 func (s *MessageDataStore) CleanupOldAbandonedMessages(ctx context.Context, maxAge time.Duration) (int, error) {
 	cutoffTime := time.Now().Add(-maxAge)
 
-	result := s.GetDB().WithContext(ctx.Context()).
+	result := s.GetDB().WithContext(ctx).
 		Where("status = ? AND updated_at < ?", models.MessageStatusAbandoned, cutoffTime).
 		Delete(&models.Message{})
 
@@ -414,7 +416,7 @@ func (s *MessageDataStore) CleanupOldAbandonedMessages(ctx context.Context, maxA
 func (s *MessageDataStore) CleanupOldEvents(ctx context.Context, maxAge time.Duration) (int, error) {
 	cutoffTime := time.Now().Add(-maxAge)
 
-	result := s.GetDB().WithContext(ctx.Context()).
+	result := s.GetDB().WithContext(ctx).
 		Where("timestamp < ?", cutoffTime).
 		Delete(&models.MessageEvent{})
 
@@ -428,7 +430,7 @@ func (s *MessageDataStore) CleanupOldEvents(ctx context.Context, maxAge time.Dur
 // CreateMessageEvent creates a new message event
 func (s *MessageDataStore) CreateMessageEvent(ctx context.Context, event *models.MessageEvent) error {
 	event.Timestamp = time.Now()
-	if err := s.GetDB().WithContext(ctx.Context()).Create(event).Error; err != nil {
+	if err := s.GetDB().WithContext(ctx).Create(event).Error; err != nil {
 		return fmt.Errorf("failed to create message event: %w", common.MapError(err))
 	}
 	return nil
@@ -438,7 +440,7 @@ func (s *MessageDataStore) CreateMessageEvent(ctx context.Context, event *models
 func (s *MessageDataStore) CreateWorker(ctx context.Context, worker *models.Worker) error {
 	worker.CreatedAt = time.Now()
 	worker.UpdatedAt = time.Now()
-	if err := s.GetDB().WithContext(ctx.Context()).Create(worker).Error; err != nil {
+	if err := s.GetDB().WithContext(ctx).Create(worker).Error; err != nil {
 		return fmt.Errorf("failed to create worker: %w", common.MapError(err))
 	}
 	return nil
@@ -446,7 +448,7 @@ func (s *MessageDataStore) CreateWorker(ctx context.Context, worker *models.Work
 
 // DeleteWorker deletes a worker record
 func (s *MessageDataStore) DeleteWorker(ctx context.Context, workerName string) error {
-	if err := s.GetDB().WithContext(ctx.Context()).Where("name = ?", workerName).Delete(&models.Worker{}).Error; err != nil {
+	if err := s.GetDB().WithContext(ctx).Where("name = ?", workerName).Delete(&models.Worker{}).Error; err != nil {
 		return fmt.Errorf("failed to delete worker: %w", common.MapError(err))
 	}
 	return nil
@@ -455,7 +457,7 @@ func (s *MessageDataStore) DeleteWorker(ctx context.Context, workerName string) 
 // GetWorkerByName retrieves a worker by name
 func (s *MessageDataStore) GetWorkerByName(ctx context.Context, workerName string) (*models.Worker, error) {
 	var worker models.Worker
-	if err := s.GetDB().WithContext(ctx.Context()).Where("name = ?", workerName).First(&worker).Error; err != nil {
+	if err := s.GetDB().WithContext(ctx).Where("name = ?", workerName).First(&worker).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -467,7 +469,7 @@ func (s *MessageDataStore) GetWorkerByName(ctx context.Context, workerName strin
 // GetAllWorkers retrieves all workers
 func (s *MessageDataStore) GetAllWorkers(ctx context.Context) ([]*models.Worker, error) {
 	var workers []*models.Worker
-	if err := s.GetDB().WithContext(ctx.Context()).Find(&workers).Error; err != nil {
+	if err := s.GetDB().WithContext(ctx).Find(&workers).Error; err != nil {
 		return nil, fmt.Errorf("failed to get workers: %w", common.MapError(err))
 	}
 	return workers, nil
@@ -475,7 +477,7 @@ func (s *MessageDataStore) GetAllWorkers(ctx context.Context) ([]*models.Worker,
 
 // UpdateWorkerStatus updates worker status
 func (s *MessageDataStore) UpdateWorkerStatus(ctx context.Context, workerName string, isRunning bool) error {
-	if err := s.GetDB().WithContext(ctx.Context()).
+	if err := s.GetDB().WithContext(ctx).
 		Model(&models.Worker{}).
 		Where("name = ?", workerName).
 		Updates(map[string]interface{}{
@@ -491,7 +493,7 @@ func (s *MessageDataStore) UpdateWorkerStatus(ctx context.Context, workerName st
 // PerformStartupRecovery performs startup recovery operations
 func (s *MessageDataStore) PerformStartupRecovery(ctx context.Context) error {
 	// Reset processing messages to pending
-	err := s.GetDB().WithContext(ctx.Context()).
+	err := s.GetDB().WithContext(ctx).
 		Model(&models.Message{}).
 		Where("status = ?", models.MessageStatusProcessing).
 		Updates(map[string]interface{}{
@@ -504,7 +506,7 @@ func (s *MessageDataStore) PerformStartupRecovery(ctx context.Context) error {
 	}
 
 	// Reset retrying messages to pending if they haven't exceeded max retries
-	err = s.GetDB().WithContext(ctx.Context()).
+	err = s.GetDB().WithContext(ctx).
 		Model(&models.Message{}).
 		Where("status = ? AND retry_count < max_retries", models.MessageStatusRetrying).
 		Updates(map[string]interface{}{
@@ -516,7 +518,7 @@ func (s *MessageDataStore) PerformStartupRecovery(ctx context.Context) error {
 	}
 
 	// Abandon messages that have exceeded max retries
-	err = s.GetDB().WithContext(ctx.Context()).
+	err = s.GetDB().WithContext(ctx).
 		Model(&models.Message{}).
 		Where("status = ? AND retry_count >= max_retries", models.MessageStatusRetrying).
 		Updates(map[string]interface{}{

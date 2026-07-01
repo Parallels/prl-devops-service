@@ -10,6 +10,7 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/database/common"
 	"github.com/Parallels/prl-devops-service/database/filters"
 	"github.com/Parallels/prl-devops-service/database/interfaces"
@@ -98,12 +99,13 @@ func (s *ActivityDataStore) Dependencies() []string {
 }
 
 func (s *ActivityDataStore) initialize(ctx context.Context, db *gorm.DB) error {
+	cfg := config.Get()
 	logger := logging.Get()
 	logger.Info("Initializing activity store...")
 
 	s.BaseDataStore = *common.NewBaseDataStore(db)
 
-	if true {
+	if cfg.IsDatabaseAutoMigrateEnabled() {
 		logger.Info("Running activity migrations")
 		if err := s.Migrate(); err != nil {
 			return fmt.Errorf("failed to migrate activity store: %v", err)

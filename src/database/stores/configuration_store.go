@@ -1,17 +1,18 @@
 package stores
 
 import (
-	"github.com/Parallels/prl-devops-service/data/models"
 	"context"
-	goerrors "errors"
+	"errors"
 	"fmt"
 	"sync"
+
+	"github.com/Parallels/prl-devops-service/data/models"
 
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/database/common"
 	"github.com/Parallels/prl-devops-service/database/interfaces"
-	logging "github.com/cjlapao/common-go-logger"
 	apperrors "github.com/Parallels/prl-devops-service/errors"
+	logging "github.com/cjlapao/common-go-logger"
 
 	"gorm.io/gorm"
 )
@@ -70,17 +71,18 @@ func (s *ConfigurationDataStore) Dependencies() []string {
 }
 
 func (s *ConfigurationDataStore) initialize(ctx context.Context, db *gorm.DB) error {
-	cfg := config.Get().Get()
-	logger := logging.Get(); logger.Info("Initializing configuration store...")
+	cfg := config.Get()
+	logger := logging.Get()
+	logger.Info("Initializing configuration store...")
 
 	s.BaseDataStore = *common.NewBaseDataStore(db)
 
-	if cfg.Get("database_migrate").GetBool() {
-		logger := logging.Get(); logger.Info("Running configuration migrations")
+	if cfg.IsDatabaseAutoMigrateEnabled() {
+		logger.Info("Running configuration migrations")
 		if err := s.Migrate(); err != nil {
 			return fmt.Errorf("failed to migrate configuration store: %v", err)
 		}
-		logger := logging.Get(); logger.Info("Configuration migrations completed")
+		logger.Info("Configuration migrations completed")
 	}
 
 	configurationDataStoreInstance = s
