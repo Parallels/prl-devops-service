@@ -15,6 +15,7 @@ import (
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider/brew"
+	"github.com/Parallels/prl-devops-service/serviceprovider/dbservice"
 	"github.com/Parallels/prl-devops-service/serviceprovider/git"
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider/packer"
@@ -80,6 +81,13 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
+
+		// Initialize GORM database service
+		_, err = dbservice.InitDatabase(ctx)
+		if err != nil {
+			ctx.LogErrorf("Failed to initialize GORM database: %v", err)
+		}
+
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
@@ -217,6 +225,13 @@ func InitServices(ctx basecontext.ApiContext) {
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase)
 		globalProvider.ParallelsDesktopService.InitSnapshotTreeInDB(ctx)
+
+		// Initialize GORM database service
+		_, err = dbservice.InitDatabase(ctx)
+		if err != nil {
+			ctx.LogErrorf("Failed to initialize GORM database: %v", err)
+		}
+
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
@@ -239,6 +254,13 @@ func InitServices(ctx basecontext.ApiContext) {
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase)
 		globalProvider.ParallelsDesktopService.InitSnapshotTreeInDB(ctx)
+
+		// Initialize GORM database service
+		_, err = dbservice.InitDatabase(ctx)
+		if err != nil {
+			ctx.LogErrorf("Failed to initialize GORM database: %v", err)
+		}
+
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 
