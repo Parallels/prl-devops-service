@@ -177,7 +177,7 @@ func (s *CatalogManifestService) GenerateManifestContent(r *models.PushCatalogMa
 
 	s.ns.NotifyInfof("Compressing manifest files for %v", r.CatalogId)
 	s.sendPushStepInfo(r, "Compressing manifest files")
-	packFilePath, err := s.compressMachine(r.LocalPath, manifestPackFileName, "/tmp", r.CompressPack, *r.CompressPackLevel, r.JobId, nil)
+	packFilePath, err := s.compressMachine(r.LocalPath, manifestPackFileName, "/tmp", r.CompressPack, r.CompressPackLevel, r.JobId, nil)
 	if err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func (s *CatalogManifestService) GenerateManifestContent(r *models.PushCatalogMa
 	manifest.CompressedPath = packFilePath
 	manifest.PackFile = "/tmp/" + manifestPackFileName
 	manifest.IsCompressed = r.CompressPack
-	manifest.CompressLevel = *r.CompressPackLevel
+	manifest.CompressLevel = r.CompressPackLevel
 
 	fileInfo, err := os.Stat(packFilePath)
 	if err != nil {
