@@ -1,6 +1,11 @@
 package models
 
-import "github.com/Parallels/prl-devops-service/errors"
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/Parallels/prl-devops-service/errors"
+)
 
 type ReverseProxyHostTcpRoute struct {
 	ID              string                      `json:"id,omitempty" yaml:"id,omitempty"`
@@ -10,15 +15,15 @@ type ReverseProxyHostTcpRoute struct {
 	TargetVmDetails *ReverseProxyRouteVmDetails `json:"target_vm_details,omitempty" yaml:"target_vm_details,omitempty"`
 }
 
-func (r *ReverseProxyHostTcpRoute) Validate() error {
+func (r *ReverseProxyHostTcpRoute) Validate(diag *errors.Diagnostics) {
 	if r.TargetHost == "" && r.TargetVmId == "" {
-		return errors.NewWithCode("missing target host or target vm id for TCP route", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing target host or target vm id for TCP route", "")
+		return
 	}
 	if r.TargetPort == "" {
-		return errors.NewWithCode("missing target port for TCP route", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing target port for TCP route", "")
+		return
 	}
-
-	return nil
 }
 
 type ReverseProxyHostTcpRouteCreateRequest struct {
@@ -27,13 +32,15 @@ type ReverseProxyHostTcpRouteCreateRequest struct {
 	TargetVmId string `json:"target_vm_id,omitempty" yaml:"target_vm_id,omitempty"`
 }
 
-func (r *ReverseProxyHostTcpRouteCreateRequest) Validate() error {
+func (r *ReverseProxyHostTcpRouteCreateRequest) Validate(diag *errors.Diagnostics) {
 	if r.TargetHost == "" && r.TargetVmId == "" {
-		return errors.NewWithCode("missing target host or target vm id for TCP route", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing target host or target vm id for TCP route", "")
+		return
 	}
 	if r.TargetPort == "" {
-		return errors.NewWithCode("missing target port for TCP route", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing target port for TCP route", "")
+		return
 	}
 
-	return nil
+	return
 }
