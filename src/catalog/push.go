@@ -109,6 +109,12 @@ func (s *CatalogManifestService) Push(r *models.PushCatalogManifestRequest) *mod
 		// Validate stage
 		s.ns.StartStepf(r.JobId, constants.ActionPushValidateStage, "Validating push request for %v", r.CatalogId)
 
+		if err := r.Validate(); err != nil {
+			s.ns.FailStepf(r.JobId, constants.ActionPushValidateStage, "Validation failed for %v: %v", r.CatalogId, err)
+			manifest.AddError(err)
+			break
+		}
+
 		if err := manifest.Provider.Parse(r.Connection); err != nil {
 			s.ns.FailStepf(r.JobId, constants.ActionPushValidateStage, "Error parsing provider %v: %v", r.Connection, err)
 			manifest.AddError(err)
@@ -119,7 +125,6 @@ func (s *CatalogManifestService) Push(r *models.PushCatalogManifestRequest) *mod
 			s.ns.NotifyDebugf("Testing remote provider %v", manifest.Provider.Host)
 			apiClient.SetAuthorization(GetAuthenticator(manifest.Provider))
 		}
-
 		// // We now need to ask the provider if we already have this manifest
 		// manifestPath := filepath.Join(rs.GetProviderRootPath(s.ctx), manifest.CatalogId)
 		// exists, _ := rs.FileExists(s.ctx, manifestPath, s.getMetaFilename(manifest.Name))

@@ -26,7 +26,7 @@ type PushCatalogManifestRequest struct {
 	Compress                bool                   `json:"compress,omitempty"`
 	CompressLevel           string                 `json:"compress_level,omitempty"`
 	CompressPack            bool                   `json:"compress_pack,omitempty"`
-	CompressPackLevel       *int                   `json:"compress_pack_level,omitempty"`
+	CompressPackLevel       int                    `json:"compress_pack_level,omitempty"`
 	Uuid                    string                 `json:"uuid,omitempty"`
 	OverrideExisting        bool                   `json:"override_existing,omitempty"`
 	RequiredRoles           []string               `json:"required_roles,omitempty"`
@@ -90,27 +90,25 @@ func (r *PushCatalogManifestRequest) Validate() error {
 
 	if r.CompressPack {
 		r.Compress = true
-		if r.CompressLevel == "" && r.CompressPackLevel == nil {
+		if r.CompressLevel == "" && r.CompressPackLevel == 0 {
 			r.CompressLevel = "balanced"
-			compressLevel := 5
-			r.CompressPackLevel = &compressLevel
+			r.CompressPackLevel = 5
 		}
 
 		if r.CompressLevel != "" {
 			compressLevel, err := helpers.ConvertCompressRatioFromString(r.CompressLevel)
 			if err != nil {
 				r.CompressLevel = "balanced"
-				compressLevel := 5
-				r.CompressPackLevel = &compressLevel
+				r.CompressPackLevel = 5
+			} else {
+				r.CompressPackLevel = compressLevel
 			}
-			r.CompressPackLevel = &compressLevel
 		}
 	}
 
 	// Set default compress pack level if not set
-	if r.CompressPackLevel == nil {
-		defaultCompressLevel := -1
-		r.CompressPackLevel = &defaultCompressLevel
+	if r.CompressPackLevel == 0 {
+		r.CompressPackLevel = -1
 	}
 
 	if helpers.ContainsIllegalChars(r.Version) {
