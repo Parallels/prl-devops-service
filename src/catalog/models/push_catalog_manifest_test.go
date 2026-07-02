@@ -2,6 +2,8 @@ package models
 
 import (
 	"testing"
+
+	"github.com/Parallels/prl-devops-service/errors"
 )
 
 func TestPushCatalogManifestRequestValidate_MissingLocalPath(t *testing.T) {
@@ -11,12 +13,13 @@ func TestPushCatalogManifestRequestValidate_MissingLocalPath(t *testing.T) {
 		Architecture: "x86_64",
 		Connection:   "provider://something",
 	}
-	err := r.Validate()
-	if err == nil {
-		t.Fatal("expected error for missing local_path, got nil")
+	diag := errors.NewDiagnostics("Test")
+	r.Validate(diag)
+	if !diag.HasErrors() {
+		t.Fatal("expected error for missing local_path, got none")
 	}
-	if err != ErrPushMissingLocalPath {
-		t.Errorf("expected ErrPushMissingLocalPath, got %v", err)
+	if diag.GetErrors()[0].Message != ErrPushMissingLocalPath.Error() {
+		t.Errorf("expected ErrPushMissingLocalPath, got %v", diag.GetErrors()[0].Message)
 	}
 }
 
@@ -27,12 +30,13 @@ func TestPushCatalogManifestRequestValidate_MissingCatalogId(t *testing.T) {
 		Architecture: "x86_64",
 		Connection:   "provider://something",
 	}
-	err := r.Validate()
-	if err == nil {
-		t.Fatal("expected error for missing catalog_id, got nil")
+	diag := errors.NewDiagnostics("Test")
+	r.Validate(diag)
+	if !diag.HasErrors() {
+		t.Fatal("expected error for missing catalog_id, got none")
 	}
-	if err != ErrPushMissingCatalogId {
-		t.Errorf("expected ErrPushMissingCatalogId, got %v", err)
+	if diag.GetErrors()[0].Message != ErrPushMissingCatalogId.Error() {
+		t.Errorf("expected ErrPushMissingCatalogId, got %v", diag.GetErrors()[0].Message)
 	}
 }
 
@@ -43,12 +47,13 @@ func TestPushCatalogManifestRequestValidate_MissingConnection(t *testing.T) {
 		Version:      "v1.0",
 		Architecture: "x86_64",
 	}
-	err := r.Validate()
-	if err == nil {
-		t.Fatal("expected error for missing connection, got nil")
+	diag := errors.NewDiagnostics("Test")
+	r.Validate(diag)
+	if !diag.HasErrors() {
+		t.Fatal("expected error for missing connection, got none")
 	}
-	if err != ErrMissingConnection {
-		t.Errorf("expected ErrMissingConnection, got %v", err)
+	if diag.GetErrors()[0].Message != ErrMissingConnection.Error() {
+		t.Errorf("expected ErrMissingConnection, got %v", diag.GetErrors()[0].Message)
 	}
 }
 
@@ -59,12 +64,30 @@ func TestPushCatalogManifestRequestValidate_MissingVersion(t *testing.T) {
 		Architecture: "x86_64",
 		Connection:   "provider://something",
 	}
-	err := r.Validate()
-	if err == nil {
-		t.Fatal("expected error for missing version, got nil")
+	diag := errors.NewDiagnostics("Test")
+	r.Validate(diag)
+	if !diag.HasErrors() {
+		t.Fatal("expected error for missing version, got none")
 	}
-	if err != ErrPushMissingVersion {
-		t.Errorf("expected ErrPushMissingVersion, got %v", err)
+	if diag.GetErrors()[0].Message != ErrPushMissingVersion.Error() {
+		t.Errorf("expected ErrPushMissingVersion, got %v", diag.GetErrors()[0].Message)
+	}
+}
+
+func TestPushCatalogManifestRequestValidate_MissingArchitecture(t *testing.T) {
+	r := PushCatalogManifestRequest{
+		LocalPath:    "/some/path",
+		CatalogId:    "test-catalog",
+		Version:      "v1.0",
+		Connection:   "provider://something",
+	}
+	diag := errors.NewDiagnostics("Test")
+	r.Validate(diag)
+	if !diag.HasErrors() {
+		t.Fatal("expected error for missing architecture, got none")
+	}
+	if diag.GetErrors()[0].Message != ErrMissingArchitecture.Error() {
+		t.Errorf("expected ErrMissingArchitecture, got %v", diag.GetErrors()[0].Message)
 	}
 }
 
@@ -76,12 +99,13 @@ func TestPushCatalogManifestRequestValidate_InvalidArchitecture(t *testing.T) {
 		Architecture: "mips",
 		Connection:   "provider://something",
 	}
-	err := r.Validate()
-	if err == nil {
-		t.Fatal("expected error for invalid architecture, got nil")
+	diag := errors.NewDiagnostics("Test")
+	r.Validate(diag)
+	if !diag.HasErrors() {
+		t.Fatal("expected error for invalid architecture, got none")
 	}
-	if err != ErrInvalidArchitecture {
-		t.Errorf("expected ErrInvalidArchitecture, got %v", err)
+	if diag.GetErrors()[0].Message != ErrInvalidArchitecture.Error() {
+		t.Errorf("expected ErrInvalidArchitecture, got %v", diag.GetErrors()[0].Message)
 	}
 }
 
@@ -105,8 +129,10 @@ func TestPushCatalogManifestRequestValidate_ArchitectureNormalization(t *testing
 			Architecture: tt.input,
 			Connection:   "provider://something",
 		}
-		if err := r.Validate(); err != nil {
-			t.Errorf("input %q: unexpected error: %v", tt.input, err)
+		diag := errors.NewDiagnostics("Test")
+		r.Validate(diag)
+		if diag.HasErrors() {
+			t.Errorf("input %q: unexpected error: %v", tt.input, diag.GetErrors()[0].Message)
 			continue
 		}
 		if r.Architecture != tt.expected {
@@ -123,12 +149,13 @@ func TestPushCatalogManifestRequestValidate_VersionWithIllegalChars(t *testing.T
 		Architecture: "x86_64",
 		Connection:   "provider://something",
 	}
-	err := r.Validate()
-	if err == nil {
-		t.Fatal("expected error for version with illegal chars, got nil")
+	diag := errors.NewDiagnostics("Test")
+	r.Validate(diag)
+	if !diag.HasErrors() {
+		t.Fatal("expected error for version with illegal chars, got none")
 	}
-	if err != ErrPushVersionInvalidChars {
-		t.Errorf("expected ErrPushVersionInvalidChars, got %v", err)
+	if diag.GetErrors()[0].Message != ErrPushVersionInvalidChars.Error() {
+		t.Errorf("expected ErrPushVersionInvalidChars, got %v", diag.GetErrors()[0].Message)
 	}
 }
 
@@ -140,8 +167,10 @@ func TestPushCatalogManifestRequestValidate_Valid(t *testing.T) {
 		Architecture: "x86_64",
 		Connection:   "provider://something",
 	}
-	if err := r.Validate(); err != nil {
-		t.Errorf("expected no error, got %v", err)
+	diag := errors.NewDiagnostics("Test")
+	r.Validate(diag)
+	if diag.HasErrors() {
+		t.Errorf("expected no error, got %v", diag.GetErrors()[0].Message)
 	}
 }
 
@@ -169,8 +198,10 @@ func TestPushCatalogManifestRequestValidate_MinimumSpecDefaults(t *testing.T) {
 			Disk:   20480,
 		},
 	}
-	if err := r.Validate(); err != nil {
-		t.Errorf("expected no error for valid request with min spec requirements, got %v", err)
+	diag := errors.NewDiagnostics("Test")
+	r.Validate(diag)
+	if diag.HasErrors() {
+		t.Errorf("expected no error for valid request with min spec requirements, got %v", diag.GetErrors()[0].Message)
 	}
 	if r.MinimumSpecRequirements.Cpu != 2 {
 		t.Errorf("expected Cpu=2, got %v", r.MinimumSpecRequirements.Cpu)
