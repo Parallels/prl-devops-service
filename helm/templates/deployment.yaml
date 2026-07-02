@@ -43,11 +43,21 @@ spec:
       serviceAccountName: {{ include "helm.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      {{- if .Values.storage.databasePath }}
+      {{- if or .Values.storage.databasePath .Values.secretProviderClass.name }}
       volumes:
+        {{- if .Values.storage.databasePath }}
         - name: db-storage
           persistentVolumeClaim:
             claimName: {{ include "helm.fullname" . }}
+        {{- end }}
+        {{- if .Values.secretProviderClass.name }}
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ .Values.secretProviderClass.name }}
+        {{- end }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
@@ -72,7 +82,7 @@ spec:
                   name: {{ include "helm.fullname" . }}
                   key: LOG_LEVEL
             {{- end }}
-            {{- if .Values.security.key }}
+            {{- if .Values.security.encryption_private_key }}
             - name: ENCRYPTION_PRIVATE_KEY
               valueFrom:
                 secretKeyRef:
@@ -265,10 +275,17 @@ spec:
               port: {{ .Values.service.targetPort }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- if .Values.storage.databasePath }}
+          {{- if or .Values.storage.databasePath .Values.secretProviderClass.name }}
           volumeMounts:
+            {{- if .Values.storage.databasePath }}
             - mountPath: {{ .Values.storage.databasePath }}
               name: db-storage
+            {{- end }}
+            {{- if .Values.secretProviderClass.name }}
+            - name: secrets-store
+              mountPath: {{ .Values.secretProviderClass.mountPath }}
+              readOnly: true
+            {{- end }}
           {{- end }}
       {{- if .Values.node_name }}
       {{- with .Values.nodeSelector }}
