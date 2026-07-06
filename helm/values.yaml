@@ -36,6 +36,13 @@ envFrom:
   # - secretRef:
   #     name: mySecret
 
+# Optional CSI SecretProviderClass mount for external secret sync.
+# Leave empty for generic/open-source installs and provide envFrom secrets
+# using your preferred backend/operator.
+secretProviderClass:
+  name: ""
+  mountPath: /mnt/secrets
+
 storage:
   node_name: ""
   storage_class: "manual"
