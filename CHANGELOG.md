@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-07-06
+
+- Fixed a nill ptr panic when the compression level is not mentioned in the PD file.
+- Invoking a validate call when push is invoked via CLI, the validate call is being invoked in a REST call
+- Jenkins plugin use case with prldevops 
+- Fixes #470 
+- Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. List any dependencies that are required for this change.
+- Fixes # (issue)
+
 ## [1.0.3] - 2026-06-22
 
 - change the way we install the service, reducing the amount of environment variables and adding more in the config file
