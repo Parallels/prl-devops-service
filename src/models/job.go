@@ -4,7 +4,7 @@ import "github.com/Parallels/prl-devops-service/constants"
 
 type JobResponse struct {
 	ID                 string             `json:"id"`
-	Owner              string             `json:"owner"`
+	CreatedBy          string             `json:"created_by"`
 	OwnerName          string             `json:"owner_name,omitempty"`
 	OwnerEmail         string             `json:"owner_email,omitempty"`
 	State              constants.JobState `json:"state"`

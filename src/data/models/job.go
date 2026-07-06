@@ -4,9 +4,8 @@ import "github.com/Parallels/prl-devops-service/constants"
 
 type Job struct {
 	ID                 string             `json:"id" gorm:"primaryKey;column:id;type:varchar(64)"`
-	Owner              string             `json:"owner" gorm:"column:owner;type:varchar(255)"`
-	OwnerName          string             `json:"owner_name,omitempty" gorm:"column:owner_name;type:varchar(255)"`
-	OwnerEmail         string             `json:"owner_email,omitempty" gorm:"column:owner_email;type:varchar(255)"`
+	CreatedBy          string             `json:"created_by,omitempty" gorm:"column:created_by;type:varchar(64)"`
+	CreatedByUser      *User              `json:"created_by_user,omitempty" gorm:"foreignKey:CreatedBy;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	State              constants.JobState `json:"state" gorm:"column:state;type:varchar(32)"`
 	Message            string             `json:"message,omitempty" gorm:"column:message;type:text"`
 	Progress           int                `json:"progress" gorm:"column:progress;type:integer;default:0;not null"`

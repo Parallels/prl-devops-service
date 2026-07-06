@@ -154,7 +154,7 @@ func GetJobHandler() restapi.ControllerHandler {
 
 		authCtx := ctx.GetAuthorizationContext()
 		canListAll := authCtx != nil && authCtx.UserHasClaim("job_manager_list")
-		if !canListAll && !strings.EqualFold(dbJob.Owner, userContext.ID) {
+		if !canListAll && !strings.EqualFold(dbJob.CreatedBy, userContext.ID) {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusForbidden, Message: "Forbidden to view this job"})
 			return
 		}
@@ -208,7 +208,7 @@ func DeleteJobHandler() restapi.ControllerHandler {
 
 		authCtx := ctx.GetAuthorizationContext()
 		canDeleteAll := authCtx != nil && authCtx.UserHasClaim("job_manager_delete")
-		if !canDeleteAll && !strings.EqualFold(dbJob.Owner, userContext.ID) {
+		if !canDeleteAll && !strings.EqualFold(dbJob.CreatedBy, userContext.ID) {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusForbidden, Message: "Forbidden to delete this job"})
 			return
 		}
