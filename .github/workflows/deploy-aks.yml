@@ -45,7 +45,7 @@ on:
         default: false
         type: boolean
       atomic:
-        description: "Rollback on failure (atomic deployment)"
+        description: Rollback on failure (atomic deployment)
         required: false
         type: boolean
         default: false
@@ -73,6 +73,10 @@ jobs:
 
       - name: Install kubelogin
         uses: azure/use-kubelogin@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          kubelogin-version: 'v0.2.14'
 
       - name: Set AKS context
         uses: azure/aks-set-context@v4
@@ -87,7 +91,7 @@ jobs:
         run: |
           set -euo pipefail
           helm lint ./helm \
-            -f ./helm/values-${{ inputs.environment }}.yaml \
+            -f "./helm/values-${{ inputs.environment }}.yaml" \
             --set config.mode=orchestrator \
             --set fullnameOverride=prl-devops-orchestrator \
             --set image.tag="${{ inputs.image_tag }}"
@@ -139,6 +143,10 @@ jobs:
 
       - name: Install kubelogin
         uses: azure/use-kubelogin@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          kubelogin-version: 'v0.2.14'
 
       - name: Set AKS context
         uses: azure/aks-set-context@v4
@@ -153,7 +161,7 @@ jobs:
         run: |
           set -euo pipefail
           helm lint ./helm \
-            -f ./helm/values-${{ inputs.environment }}.yaml \
+            -f "./helm/values-${{ inputs.environment }}.yaml" \
             --set config.mode=catalog \
             --set fullnameOverride=prl-devops-catalog \
             --set image.tag="${{ inputs.image_tag }}"
