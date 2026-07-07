@@ -52,8 +52,8 @@ on:
 
 jobs:
   deploy-orchestrator:
-    name: Deploy Orchestrator (${{ inputs.environment }})
-    if: ${{ inputs.deploy_orchestrator == 'true' }}
+    name: Deploy Orchestrator
+    if: ${{ inputs.deploy_orchestrator }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -115,8 +115,8 @@ jobs:
           fi
 
   deploy-catalog:
-    name: Deploy Catalog (${{ inputs.environment }})
-    if: ${{ inputs.deploy_catalog == 'true' }}
+    name: Deploy Catalog
+    if: ${{ inputs.deploy_catalog }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
