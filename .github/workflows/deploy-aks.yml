@@ -71,6 +71,9 @@ jobs:
           tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
           subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
 
+      - name: Install kubelogin
+        uses: azure/use-kubelogin@v1
+
       - name: Set AKS context
         uses: azure/aks-set-context@v4
         with:
@@ -133,6 +136,9 @@ jobs:
           client-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_CLIENT_ID || secrets.PRD_AZURE_CLIENT_ID }}
           tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
           subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install kubelogin
+        uses: azure/use-kubelogin@v1
 
       - name: Set AKS context
         uses: azure/aks-set-context@v4
