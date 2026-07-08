@@ -1,5 +1,11 @@
 name: Deploy to AKS
 
+# WORKAROUND: Self-hosted runner (github-dockerbuild02) has outdated glibc (<2.27),
+# which is incompatible with Node 24. This forces actions to use Node 20 until the
+# runner OS is upgraded. Remove once the runner supports glibc 2.27+.
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
 # DEPLOYMENT STRATEGY:
 # - Workaround reason: GitHub Environments are not available on this GitHub plan,
 #   so we cannot use environment-based OIDC subjects.
