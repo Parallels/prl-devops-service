@@ -524,6 +524,19 @@ func (c *Config) DatabaseFolder() string {
 	return c.GetKey(constants.DATABASE_FOLDER_ENV_VAR)
 }
 
+func (c *Config) DatabaseType() string {
+	dbType := c.GetKey(constants.DATABASE_TYPE_ENV_VAR)
+	if dbType == "" {
+		return "sqlite" // Default to SQLite
+	}
+	return dbType
+}
+
+func (c *Config) IsDebugEnabled() bool {
+	logLevel := c.GetKey(constants.LOG_LEVEL_ENV_VAR)
+	return logLevel == "debug" || logLevel == "trace"
+}
+
 func (c *Config) Localhost() string {
 	schema := "http"
 	host := "localhost"
