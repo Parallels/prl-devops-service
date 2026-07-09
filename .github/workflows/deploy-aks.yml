@@ -87,18 +87,6 @@ jobs:
             --set fullnameOverride=prl-devops-orchestrator \
             --set image.tag="${{ inputs.image_tag }}"
 
-      - name: Verify helm chart accessible
-        env:
-          RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
-        run: |
-          set -euo pipefail
-          az aks command invoke \
-            --resource-group "$RESOURCE_GROUP" \
-            --name "$CLUSTER_NAME" \
-            --command "ls -la ./helm/ && test -f ./helm/Chart.yaml && echo '✓ Chart.yaml found'" \
-            --file .
-
       - name: Helm deploy orchestrator
         env:
           RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
@@ -128,7 +116,7 @@ jobs:
             --resource-group "$RESOURCE_GROUP" \
             --name "$CLUSTER_NAME" \
             --command "$HELM_CMD" \
-            --file .
+            --file ./helm
 
   deploy-catalog:
     name: Deploy Catalog
@@ -163,18 +151,6 @@ jobs:
             --set fullnameOverride=prl-devops-catalog \
             --set image.tag="${{ inputs.image_tag }}"
 
-      - name: Verify helm chart accessible
-        env:
-          RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
-        run: |
-          set -euo pipefail
-          az aks command invoke \
-            --resource-group "$RESOURCE_GROUP" \
-            --name "$CLUSTER_NAME" \
-            --command "ls -la ./helm/ && test -f ./helm/Chart.yaml && echo '✓ Chart.yaml found'" \
-            --file .
-
       - name: Helm deploy catalog
         env:
           RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
@@ -204,4 +180,4 @@ jobs:
             --resource-group "$RESOURCE_GROUP" \
             --name "$CLUSTER_NAME" \
             --command "$HELM_CMD" \
-            --file .
+            --file ./helm
