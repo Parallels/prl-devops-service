@@ -1,12 +1,9 @@
 name: Deploy to AKS
 
-# WORKAROUND: Self-hosted runner (github-dockerbuild02) has outdated glibc (<2.27),
-# which is incompatible with Node 24. This forces actions to use Node 20 until the
-# runner OS is upgraded. Remove once the runner supports glibc 2.27+.
-env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-
 # DEPLOYMENT STRATEGY:
+# - Uses az aks command invoke to deploy through Azure ARM API, which bypasses the
+#   private AKS API endpoint. The runner never connects to the cluster directly.
+#   All cluster operations run in a temporary pod inside the cluster via Azure ARM.
 # - Workaround reason: GitHub Environments are not available on this GitHub plan,
 #   so we cannot use environment-based OIDC subjects.
 # - Therefore deployments are executed under the trusted main ref subject
@@ -60,7 +57,7 @@ jobs:
   deploy-orchestrator:
     name: Deploy Orchestrator
     if: ${{ inputs.deploy_orchestrator }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       id-token: write
@@ -77,22 +74,6 @@ jobs:
           client-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_CLIENT_ID || secrets.PRD_AZURE_CLIENT_ID }}
           tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
           subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
-
-      - name: Install kubelogin
-        uses: azure/use-kubelogin@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          kubelogin-version: 'v0.2.14'
-
-      - name: Set AKS context
-        uses: azure/aks-set-context@v4
-        with:
-          resource-group: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          cluster-name: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
-
-      - name: Convert kubeconfig for non-interactive login
-        run: kubelogin convert-kubeconfig -l azurecli
 
       - name: Setup Helm
         uses: azure/setup-helm@v4
@@ -108,33 +89,39 @@ jobs:
 
       - name: Helm deploy orchestrator
         env:
-          K8S_NAMESPACE: ${{ inputs.namespace }}
+          RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
+          CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
           DRY_RUN: ${{ inputs.dry_run }}
           ATOMIC: ${{ inputs.atomic }}
         run: |
           set -euo pipefail
-          HELM_ARGS=(
-            -f "./helm/values-${{ inputs.environment }}.yaml"
-            --namespace "$K8S_NAMESPACE"
-            --set "image.tag=${{ inputs.image_tag }}"
-            --set config.mode=orchestrator
-            --set fullnameOverride=prl-devops-orchestrator
-          )
+
+          HELM_CMD="helm upgrade --install prl-devops-orchestrator ./helm"
+          HELM_CMD+=" -f ./helm/values-${{ inputs.environment }}.yaml"
+          HELM_CMD+=" --namespace ${{ inputs.namespace }}"
+          HELM_CMD+=" --set image.tag=${{ inputs.image_tag }}"
+          HELM_CMD+=" --set config.mode=orchestrator"
+          HELM_CMD+=" --set fullnameOverride=prl-devops-orchestrator"
 
           if [[ "$DRY_RUN" == "true" ]]; then
-            helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" --dry-run --debug
+            HELM_CMD+=" --dry-run --debug"
           else
-            DEPLOY_ARGS=(--wait --timeout 5m)
+            HELM_CMD+=" --wait --timeout 5m"
             if [[ "$ATOMIC" == "true" ]]; then
-              DEPLOY_ARGS+=("--atomic")
+              HELM_CMD+=" --atomic"
             fi
-            helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           fi
+
+          az aks command invoke \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$CLUSTER_NAME" \
+            --command "$HELM_CMD" \
+            --file helm
 
   deploy-catalog:
     name: Deploy Catalog
     if: ${{ inputs.deploy_catalog }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       id-token: write
@@ -152,22 +139,6 @@ jobs:
           tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
           subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
 
-      - name: Install kubelogin
-        uses: azure/use-kubelogin@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          kubelogin-version: 'v0.2.14'
-
-      - name: Set AKS context
-        uses: azure/aks-set-context@v4
-        with:
-          resource-group: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          cluster-name: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
-
-      - name: Convert kubeconfig for non-interactive login
-        run: kubelogin convert-kubeconfig -l azurecli
-
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
@@ -182,25 +153,31 @@ jobs:
 
       - name: Helm deploy catalog
         env:
-          K8S_NAMESPACE: ${{ inputs.namespace }}
+          RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
+          CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
           DRY_RUN: ${{ inputs.dry_run }}
           ATOMIC: ${{ inputs.atomic }}
         run: |
           set -euo pipefail
-          HELM_ARGS=(
-            -f "./helm/values-${{ inputs.environment }}.yaml"
-            --namespace "$K8S_NAMESPACE"
-            --set "image.tag=${{ inputs.image_tag }}"
-            --set config.mode=catalog
-            --set fullnameOverride=prl-devops-catalog
-          )
+
+          HELM_CMD="helm upgrade --install prl-devops-catalog ./helm"
+          HELM_CMD+=" -f ./helm/values-${{ inputs.environment }}.yaml"
+          HELM_CMD+=" --namespace ${{ inputs.namespace }}"
+          HELM_CMD+=" --set image.tag=${{ inputs.image_tag }}"
+          HELM_CMD+=" --set config.mode=catalog"
+          HELM_CMD+=" --set fullnameOverride=prl-devops-catalog"
 
           if [[ "$DRY_RUN" == "true" ]]; then
-            helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" --dry-run --debug
+            HELM_CMD+=" --dry-run --debug"
           else
-            DEPLOY_ARGS=(--wait --timeout 5m)
+            HELM_CMD+=" --wait --timeout 5m"
             if [[ "$ATOMIC" == "true" ]]; then
-              DEPLOY_ARGS+=("--atomic")
+              HELM_CMD+=" --atomic"
             fi
-            helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           fi
+
+          az aks command invoke \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$CLUSTER_NAME" \
+            --command "$HELM_CMD" \
+            --file helm
