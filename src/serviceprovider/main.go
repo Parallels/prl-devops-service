@@ -11,11 +11,11 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
+	"github.com/Parallels/prl-devops-service/database"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider/brew"
-	"github.com/Parallels/prl-devops-service/serviceprovider/dbservice"
 	"github.com/Parallels/prl-devops-service/serviceprovider/git"
 	"github.com/Parallels/prl-devops-service/serviceprovider/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider/packer"
@@ -83,7 +83,7 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 
 		// Initialize GORM database service
-		_, err = dbservice.InitDatabase(ctx)
+		_, err = database.InitDatabase(ctx)
 		if err != nil {
 			ctx.LogErrorf("Failed to initialize GORM database: %v", err)
 		}
@@ -227,7 +227,7 @@ func InitServices(ctx basecontext.ApiContext) {
 		globalProvider.ParallelsDesktopService.InitSnapshotTreeInDB(ctx)
 
 		// Initialize GORM database service
-		_, err = dbservice.InitDatabase(ctx)
+		_, err = database.InitDatabase(ctx)
 		if err != nil {
 			ctx.LogErrorf("Failed to initialize GORM database: %v", err)
 		}
@@ -256,7 +256,7 @@ func InitServices(ctx basecontext.ApiContext) {
 		globalProvider.ParallelsDesktopService.InitSnapshotTreeInDB(ctx)
 
 		// Initialize GORM database service
-		_, err = dbservice.InitDatabase(ctx)
+		_, err = database.InitDatabase(ctx)
 		if err != nil {
 			ctx.LogErrorf("Failed to initialize GORM database: %v", err)
 		}

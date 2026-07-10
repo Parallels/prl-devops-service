@@ -1,4 +1,4 @@
-package dbservice
+package database
 
 import (
 	"context"

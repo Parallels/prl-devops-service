@@ -1,4 +1,4 @@
-package dbservice
+package database
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/database/common"
-	"github.com/Parallels/prl-devops-service/database/service"
+	"github.com/Parallels/prl-devops-service/database/connection"
 	apperrors "github.com/Parallels/prl-devops-service/errors"
 	"gorm.io/gorm"
 )
@@ -56,7 +56,7 @@ func (b *Builder) Build() (*DatabaseService, *apperrors.Diagnostics) {
 	dbConfig := buildDatabaseConfig(b.cfg)
 
 	// Step 2: Initialize centralized database service
-	dbSvc, err := service.Initialize(dbConfig)
+	dbSvc, err := connection.Initialize(dbConfig)
 	if err != nil {
 		diag.AddError("db_init_failed", fmt.Sprintf("failed to initialize database service: %v", err), "builder", nil)
 		return nil, diag
@@ -78,8 +78,8 @@ func (b *Builder) Build() (*DatabaseService, *apperrors.Diagnostics) {
 	}
 
 	// Step 4: Configure logger
-	logLevel := service.ConvertLogLevel(b.cfg.IsDebugEnabled())
-	customLogger := service.NewGormContextLogger(b.ctx, logLevel)
+	logLevel := ConvertLogLevel(b.cfg.IsDebugEnabled())
+	customLogger := NewGormContextLogger(b.ctx, logLevel)
 	db.Logger = customLogger
 
 	// Step 5: Auto-migrate (optional)

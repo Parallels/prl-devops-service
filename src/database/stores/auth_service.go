@@ -1,33 +1,32 @@
-package auth
+package stores
 
 import (
 	"fmt"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data/models"
-	"github.com/Parallels/prl-devops-service/database/stores"
+	"github.com/Parallels/prl-devops-service/database/interfaces"
 	apperrors "github.com/Parallels/prl-devops-service/errors"
-	"github.com/Parallels/prl-devops-service/serviceprovider/dbservice/interfaces"
 )
 
 // Compile-time interface compliance check
-var _ interfaces.AuthDomain = (*Service)(nil)
+var _ interfaces.AuthDomain = (*AuthService)(nil)
 
-// Service handles authentication and authorization domain operations with business logic
+// AuthService handles authentication and authorization domain operations with business logic
 // For simple CRUD operations, use db.Stores() directly instead of adding pass-through methods here
-type Service struct {
-	userStore  stores.UserDataStoreInterface
-	roleStore  stores.RoleDataStoreInterface
-	claimStore stores.ClaimDataStoreInterface
+type AuthService struct {
+	userStore  UserDataStoreInterface
+	roleStore  RoleDataStoreInterface
+	claimStore ClaimDataStoreInterface
 }
 
-// NewService creates a new auth domain service
-func NewService(
-	userStore stores.UserDataStoreInterface,
-	roleStore stores.RoleDataStoreInterface,
-	claimStore stores.ClaimDataStoreInterface,
-) *Service {
-	return &Service{
+// NewAuthService creates a new auth domain service
+func NewAuthService(
+	userStore UserDataStoreInterface,
+	roleStore RoleDataStoreInterface,
+	claimStore ClaimDataStoreInterface,
+) *AuthService {
+	return &AuthService{
 		userStore:  userStore,
 		roleStore:  roleStore,
 		claimStore: claimStore,
@@ -45,7 +44,7 @@ func toBaseContext(ctx basecontext.ApiContext) *basecontext.BaseContext {
 
 // GetUser retrieves a user by ID or username with smart fallback logic
 // This method adds value by trying multiple lookup strategies
-func (s *Service) GetUser(ctx basecontext.ApiContext, idOrEmail string) (*models.User, *apperrors.Diagnostics) {
+func (s *AuthService) GetUser(ctx basecontext.ApiContext, idOrEmail string) (*models.User, *apperrors.Diagnostics) {
 	baseCtx := toBaseContext(ctx)
 
 	// Try by ID first

@@ -1,13 +1,13 @@
-package dbservice
+package database
 
 import (
 	"sync"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/database/interfaces"
+	"github.com/Parallels/prl-devops-service/database/stores"
 	apperrors "github.com/Parallels/prl-devops-service/errors"
-	"github.com/Parallels/prl-devops-service/serviceprovider/dbservice/domains/auth"
-	"github.com/Parallels/prl-devops-service/serviceprovider/dbservice/interfaces"
 	"gorm.io/gorm"
 )
 
@@ -34,7 +34,7 @@ func NewDatabaseService(cfg *config.Config, ctx basecontext.ApiContext) (*Databa
 // Auth returns the authentication domain service (lazy-loaded)
 func (s *DatabaseService) Auth() interfaces.AuthDomain {
 	s.authOnce.Do(func() {
-		s.auth = auth.NewService(
+		s.auth = stores.NewAuthService(
 			s.stores.User(),
 			s.stores.Role(),
 			s.stores.Claim(),
