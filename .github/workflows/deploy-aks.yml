@@ -72,6 +72,28 @@ jobs:
           tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
           subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
 
+      - name: Debug connectivity
+        run: |
+          echo "=== Runner IP ==="
+          ip addr show | grep "inet " | grep -v 127.0.0.1
+          echo "=== DNS nameservers ==="
+          cat /etc/resolv.conf || true
+          echo "=== DNS resolution ==="
+          nslookup di-aks-plt-stg-we-2ietnykd.privatelink.westeurope.azmk8s.io || true
+          AKS_IP=$(dig +short di-aks-plt-stg-we-2ietnykd.privatelink.westeurope.azmk8s.io | tail -1)
+          echo "Resolved AKS IP: $AKS_IP"
+          echo "=== Full routing table ==="
+          ip route show || true
+          echo "=== Route to AKS API ==="
+          ip route get 100.64.146.1 || true
+          echo "=== TCP port 443 test (bash socket) ==="
+          timeout 5 bash -c "</dev/tcp/100.64.146.1/443" 2>&1 && echo "Port 443 open" || echo "Port 443 blocked/timeout"
+          echo "=== TLS curl test ==="
+          curl -vk --connect-timeout 10 https://di-aks-plt-stg-we-2ietnykd.privatelink.westeurope.azmk8s.io:443/version 2>&1 || true
+          echo "=== Environment ==="
+          echo "KUBECONFIG: ${KUBECONFIG:-not set}"
+          echo "PATH: $PATH"
+
       - name: Install kubelogin
         run: |
           set -euo pipefail
@@ -156,6 +178,7 @@ jobs:
           client-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_CLIENT_ID || secrets.PRD_AZURE_CLIENT_ID }}
           tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
           subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
+
 
       - name: Install kubelogin
         run: |
