@@ -3,15 +3,18 @@ package serviceprovider
 import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data"
+	apperrors "github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/serviceprovider/dbservice"
 )
 
 // GetDatabaseService returns the GORM-based database service
 // This is the new implementation using database stores
-func GetDatabaseService(ctx basecontext.ApiContext) (*dbservice.DatabaseService, error) {
+func GetDatabaseService(ctx basecontext.ApiContext) (*dbservice.DatabaseService, *apperrors.Diagnostics) {
 	db := dbservice.GetDatabaseService()
 	if db == nil {
-		return nil, data.ErrDatabaseNotConnected
+		diag := apperrors.NewDiagnostics("get_database_service")
+		diag.AddError("not_connected", "database not connected - call InitDatabase first", "serviceprovider", nil)
+		return nil, diag
 	}
 	return db, nil
 }
