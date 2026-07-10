@@ -72,16 +72,23 @@ jobs:
           tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
           subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
 
-      - name: Install dependencies
-        run: |
-          which unzip || sudo dnf install -y unzip
-
       - name: Install kubelogin
-        uses: azure/use-kubelogin@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          kubelogin-version: 'v0.2.14'
+        run: |
+          set -euo pipefail
+          KUBELOGIN_VERSION="v0.2.14"
+          # Skip download if already installed at correct version
+          if kubelogin --version 2>/dev/null | grep -q "$KUBELOGIN_VERSION"; then
+            echo "kubelogin $KUBELOGIN_VERSION already installed"
+            exit 0
+          fi
+          curl -sSL "https://github.com/Azure/kubelogin/releases/download/${KUBELOGIN_VERSION}/kubelogin-linux-amd64.zip" -o /tmp/kubelogin.zip
+          # Use python3 zipfile instead of unzip: runner has no unzip and no passwordless sudo to install it
+          python3 -m zipfile -e /tmp/kubelogin.zip /tmp/kubelogin
+          chmod +x /tmp/kubelogin/bin/linux_amd64/kubelogin
+          mkdir -p "$HOME/.local/bin"
+          cp /tmp/kubelogin/bin/linux_amd64/kubelogin "$HOME/.local/bin/kubelogin"
+          rm -rf /tmp/kubelogin /tmp/kubelogin.zip
+          kubelogin --version
 
       - name: Set AKS context
         uses: azure/aks-set-context@v4
@@ -150,16 +157,23 @@ jobs:
           tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
           subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
 
-      - name: Install dependencies
-        run: |
-          which unzip || sudo dnf install -y unzip
-
       - name: Install kubelogin
-        uses: azure/use-kubelogin@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          kubelogin-version: 'v0.2.14'
+        run: |
+          set -euo pipefail
+          KUBELOGIN_VERSION="v0.2.14"
+          # Skip download if already installed at correct version
+          if kubelogin --version 2>/dev/null | grep -q "$KUBELOGIN_VERSION"; then
+            echo "kubelogin $KUBELOGIN_VERSION already installed"
+            exit 0
+          fi
+          curl -sSL "https://github.com/Azure/kubelogin/releases/download/${KUBELOGIN_VERSION}/kubelogin-linux-amd64.zip" -o /tmp/kubelogin.zip
+          # Use python3 zipfile instead of unzip: runner has no unzip and no passwordless sudo to install it
+          python3 -m zipfile -e /tmp/kubelogin.zip /tmp/kubelogin
+          chmod +x /tmp/kubelogin/bin/linux_amd64/kubelogin
+          mkdir -p "$HOME/.local/bin"
+          cp /tmp/kubelogin/bin/linux_amd64/kubelogin "$HOME/.local/bin/kubelogin"
+          rm -rf /tmp/kubelogin /tmp/kubelogin.zip
+          kubelogin --version
 
       - name: Set AKS context
         uses: azure/aks-set-context@v4
