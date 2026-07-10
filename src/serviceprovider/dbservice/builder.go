@@ -79,7 +79,7 @@ func (b *Builder) Build() (*DatabaseService, *apperrors.Diagnostics) {
 
 	// Step 4: Configure logger
 	logLevel := service.ConvertLogLevel(b.cfg.IsDebugEnabled())
-	customLogger := service.NewBaseContextLogger(b.ctx, logLevel)
+	customLogger := service.NewGormContextLogger(b.ctx, logLevel)
 	db.Logger = customLogger
 
 	// Step 5: Auto-migrate (optional)

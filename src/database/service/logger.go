@@ -8,17 +8,17 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// BaseContextLogger is a GORM logger that bridges to basecontext.ApiContext
-type BaseContextLogger struct {
+// GormContextLogger is a GORM logger that bridges to basecontext.ApiContext
+type GormContextLogger struct {
 	ctx                  basecontext.ApiContext
 	SlowThreshold        time.Duration
 	IgnoreRecordNotFound bool
 	LogLevel             logger.LogLevel
 }
 
-// NewBaseContextLogger creates a new GORM logger that writes to basecontext
-func NewBaseContextLogger(ctx basecontext.ApiContext, level logger.LogLevel) *BaseContextLogger {
-	return &BaseContextLogger{
+// NewGormContextLogger creates a new GORM logger that writes to basecontext
+func NewGormContextLogger(ctx basecontext.ApiContext, level logger.LogLevel) *GormContextLogger {
+	return &GormContextLogger{
 		ctx:                  ctx,
 		SlowThreshold:        200 * time.Millisecond,
 		IgnoreRecordNotFound: true,
@@ -27,35 +27,35 @@ func NewBaseContextLogger(ctx basecontext.ApiContext, level logger.LogLevel) *Ba
 }
 
 // LogMode sets the log level
-func (l *BaseContextLogger) LogMode(level logger.LogLevel) logger.Interface {
+func (l *GormContextLogger) LogMode(level logger.LogLevel) logger.Interface {
 	newLogger := *l
 	newLogger.LogLevel = level
 	return &newLogger
 }
 
 // Info logs info messages
-func (l *BaseContextLogger) Info(ctx context.Context, msg string, data ...interface{}) {
+func (l *GormContextLogger) Info(ctx context.Context, msg string, data ...interface{}) {
 	if l.LogLevel >= logger.Info {
 		l.ctx.LogInfof(msg, data...)
 	}
 }
 
 // Warn logs warning messages
-func (l *BaseContextLogger) Warn(ctx context.Context, msg string, data ...interface{}) {
+func (l *GormContextLogger) Warn(ctx context.Context, msg string, data ...interface{}) {
 	if l.LogLevel >= logger.Warn {
 		l.ctx.LogWarnf(msg, data...)
 	}
 }
 
 // Error logs error messages
-func (l *BaseContextLogger) Error(ctx context.Context, msg string, data ...interface{}) {
+func (l *GormContextLogger) Error(ctx context.Context, msg string, data ...interface{}) {
 	if l.LogLevel >= logger.Error {
 		l.ctx.LogErrorf(msg, data...)
 	}
 }
 
 // Trace logs SQL queries and execution time
-func (l *BaseContextLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+func (l *GormContextLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
 	if l.LogLevel <= logger.Silent {
 		return
 	}
