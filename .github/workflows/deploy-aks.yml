@@ -72,91 +72,54 @@ jobs:
           tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
           subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
 
-      - name: Debug connectivity
-        run: |
-          echo "=== Runner IP ==="
-          ip addr show | grep "inet " | grep -v 127.0.0.1
-          echo "=== DNS nameservers ==="
-          cat /etc/resolv.conf || true
-          echo "=== DNS resolution ==="
-          nslookup di-aks-plt-stg-we-2ietnykd.privatelink.westeurope.azmk8s.io || true
-          AKS_IP=$(dig +short di-aks-plt-stg-we-2ietnykd.privatelink.westeurope.azmk8s.io | tail -1)
-          echo "Resolved AKS IP: $AKS_IP"
-          echo "=== Full routing table ==="
-          ip route show || true
-          echo "=== Route to AKS API ==="
-          ip route get 100.64.146.1 || true
-          echo "=== TCP port 443 test (bash socket) ==="
-          timeout 5 bash -c "</dev/tcp/100.64.146.1/443" 2>&1 && echo "Port 443 open" || echo "Port 443 blocked/timeout"
-          echo "=== TLS curl test ==="
-          curl -vk --connect-timeout 10 https://di-aks-plt-stg-we-2ietnykd.privatelink.westeurope.azmk8s.io:443/version 2>&1 || true
-          echo "=== Environment ==="
-          echo "KUBECONFIG: ${KUBECONFIG:-not set}"
-          echo "PATH: $PATH"
-
-      - name: Install kubelogin
-        run: |
-          set -euo pipefail
-          KUBELOGIN_VERSION="v0.2.14"
-          # Skip download if already installed at correct version
-          if kubelogin --version 2>/dev/null | grep -q "$KUBELOGIN_VERSION"; then
-            echo "kubelogin $KUBELOGIN_VERSION already installed"
-            exit 0
-          fi
-          curl -sSL "https://github.com/Azure/kubelogin/releases/download/${KUBELOGIN_VERSION}/kubelogin-linux-amd64.zip" -o /tmp/kubelogin.zip
-          # Use python3 zipfile instead of unzip: runner has no unzip and no passwordless sudo to install it
-          python3 -m zipfile -e /tmp/kubelogin.zip /tmp/kubelogin
-          chmod +x /tmp/kubelogin/bin/linux_amd64/kubelogin
-          mkdir -p "$HOME/.local/bin"
-          cp /tmp/kubelogin/bin/linux_amd64/kubelogin "$HOME/.local/bin/kubelogin"
-          rm -rf /tmp/kubelogin /tmp/kubelogin.zip
-          kubelogin --version
-
-      - name: Set AKS context
-        uses: azure/aks-set-context@v4
-        with:
-          resource-group: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          cluster-name: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
-
-      - name: Convert kubeconfig for non-interactive login
-        run: kubelogin convert-kubeconfig -l azurecli
-
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
       - name: Helm lint orchestrator
+        env:
+          AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
+          AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
         run: |
           set -euo pipefail
-          helm lint ./helm \
-            -f "./helm/values-${{ inputs.environment }}.yaml" \
-            --set config.mode=orchestrator \
-            --set fullnameOverride=prl-devops-orchestrator \
-            --set image.tag="${{ inputs.image_tag }}"
+          az aks command invoke \
+            -g "$AKS_RESOURCE_GROUP" \
+            -n "$AKS_CLUSTER_NAME" \
+            -c "helm lint ./helm \
+              -f ./helm/values-${{ inputs.environment }}.yaml \
+              --set config.mode=orchestrator \
+              --set fullnameOverride=prl-devops-orchestrator \
+              --set image.tag=${{ inputs.image_tag }}"
 
       - name: Helm deploy orchestrator
         env:
+          AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
+          AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
           K8S_NAMESPACE: ${{ inputs.namespace }}
           DRY_RUN: ${{ inputs.dry_run }}
           ATOMIC: ${{ inputs.atomic }}
         run: |
           set -euo pipefail
-          HELM_ARGS=(
-            -f "./helm/values-${{ inputs.environment }}.yaml"
-            --namespace "$K8S_NAMESPACE"
-            --set "image.tag=${{ inputs.image_tag }}"
-            --set config.mode=orchestrator
-            --set fullnameOverride=prl-devops-orchestrator
-          )
-
+          
+          HELM_CMD="helm upgrade --install prl-devops-orchestrator ./helm \
+            -f ./helm/values-${{ inputs.environment }}.yaml \
+            --namespace $K8S_NAMESPACE \
+            --set image.tag=${{ inputs.image_tag }} \
+            --set config.mode=orchestrator \
+            --set fullnameOverride=prl-devops-orchestrator"
+          
           if [[ "$DRY_RUN" == "true" ]]; then
-            helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" --dry-run --debug
+            HELM_CMD="$HELM_CMD --dry-run --debug"
           else
-            DEPLOY_ARGS=(--wait --timeout 5m)
+            HELM_CMD="$HELM_CMD --wait --timeout 5m"
             if [[ "$ATOMIC" == "true" ]]; then
-              DEPLOY_ARGS+=("--atomic")
+              HELM_CMD="$HELM_CMD --atomic"
             fi
-            helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           fi
+          
+          az aks command invoke \
+            -g "$AKS_RESOURCE_GROUP" \
+            -n "$AKS_CLUSTER_NAME" \
+            -c "$HELM_CMD"
 
   deploy-catalog:
     name: Deploy Catalog
@@ -179,67 +142,51 @@ jobs:
           tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
           subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
 
-
-      - name: Install kubelogin
-        run: |
-          set -euo pipefail
-          KUBELOGIN_VERSION="v0.2.14"
-          # Skip download if already installed at correct version
-          if kubelogin --version 2>/dev/null | grep -q "$KUBELOGIN_VERSION"; then
-            echo "kubelogin $KUBELOGIN_VERSION already installed"
-            exit 0
-          fi
-          curl -sSL "https://github.com/Azure/kubelogin/releases/download/${KUBELOGIN_VERSION}/kubelogin-linux-amd64.zip" -o /tmp/kubelogin.zip
-          # Use python3 zipfile instead of unzip: runner has no unzip and no passwordless sudo to install it
-          python3 -m zipfile -e /tmp/kubelogin.zip /tmp/kubelogin
-          chmod +x /tmp/kubelogin/bin/linux_amd64/kubelogin
-          mkdir -p "$HOME/.local/bin"
-          cp /tmp/kubelogin/bin/linux_amd64/kubelogin "$HOME/.local/bin/kubelogin"
-          rm -rf /tmp/kubelogin /tmp/kubelogin.zip
-          kubelogin --version
-
-      - name: Set AKS context
-        uses: azure/aks-set-context@v4
-        with:
-          resource-group: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          cluster-name: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
-
-      - name: Convert kubeconfig for non-interactive login
-        run: kubelogin convert-kubeconfig -l azurecli
-
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
       - name: Helm lint catalog
+        env:
+          AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
+          AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
         run: |
           set -euo pipefail
-          helm lint ./helm \
-            -f "./helm/values-${{ inputs.environment }}.yaml" \
-            --set config.mode=catalog \
-            --set fullnameOverride=prl-devops-catalog \
-            --set image.tag="${{ inputs.image_tag }}"
+          az aks command invoke \
+            -g "$AKS_RESOURCE_GROUP" \
+            -n "$AKS_CLUSTER_NAME" \
+            -c "helm lint ./helm \
+              -f ./helm/values-${{ inputs.environment }}.yaml \
+              --set config.mode=catalog \
+              --set fullnameOverride=prl-devops-catalog \
+              --set image.tag=${{ inputs.image_tag }}"
 
       - name: Helm deploy catalog
         env:
+          AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
+          AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
           K8S_NAMESPACE: ${{ inputs.namespace }}
           DRY_RUN: ${{ inputs.dry_run }}
           ATOMIC: ${{ inputs.atomic }}
         run: |
           set -euo pipefail
-          HELM_ARGS=(
-            -f "./helm/values-${{ inputs.environment }}.yaml"
-            --namespace "$K8S_NAMESPACE"
-            --set "image.tag=${{ inputs.image_tag }}"
-            --set config.mode=catalog
-            --set fullnameOverride=prl-devops-catalog
-          )
-
+          
+          HELM_CMD="helm upgrade --install prl-devops-catalog ./helm \
+            -f ./helm/values-${{ inputs.environment }}.yaml \
+            --namespace $K8S_NAMESPACE \
+            --set image.tag=${{ inputs.image_tag }} \
+            --set config.mode=catalog \
+            --set fullnameOverride=prl-devops-catalog"
+          
           if [[ "$DRY_RUN" == "true" ]]; then
-            helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" --dry-run --debug
+            HELM_CMD="$HELM_CMD --dry-run --debug"
           else
-            DEPLOY_ARGS=(--wait --timeout 5m)
+            HELM_CMD="$HELM_CMD --wait --timeout 5m"
             if [[ "$ATOMIC" == "true" ]]; then
-              DEPLOY_ARGS+=("--atomic")
+              HELM_CMD="$HELM_CMD --atomic"
             fi
-            helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           fi
+          
+          az aks command invoke \
+            -g "$AKS_RESOURCE_GROUP" \
+            -n "$AKS_CLUSTER_NAME" \
+            -c "$HELM_CMD"
