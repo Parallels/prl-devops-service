@@ -75,6 +75,28 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
+      - name: Check internal connectivity (via netcat)
+        run: |
+          echo "Testing TCP connectivity to private endpoint..."
+          ENDPOINT="di-aks-plt-stg-we-2ietnykd.privatelink.westeurope.azmk8s.io"
+          if command -v nc &> /dev/null; then
+            nc -vz "$ENDPOINT" 443 || echo "Netcat test failed"
+          else
+            echo "Netcat not available"
+          fi
+
+      - name: Check internal connectivity (via bash)
+        run: |
+          echo "Testing TCP connectivity via bash..."
+          ENDPOINT="di-aks-plt-stg-we-2ietnykd.privatelink.westeurope.azmk8s.io"
+          timeout 5 bash -c "</dev/tcp/$ENDPOINT/443" 2>&1 && echo "Bash TCP test successful!" || echo "Bash TCP test failed"
+
+      - name: Test TLS connectivity to private endpoint
+        run: |
+          echo "Testing direct TLS to private endpoint..."
+          PRIVATE_ENDPOINT="di-aks-plt-stg-we-2ietnykd.privatelink.westeurope.azmk8s.io"
+          curl -vv https://${PRIVATE_ENDPOINT}:443/version 2>&1 | head -50 || echo "TLS connection failed (expected with proxy)"
+
       - name: Helm lint orchestrator
         env:
           AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
