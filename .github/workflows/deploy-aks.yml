@@ -103,12 +103,13 @@ jobs:
           AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
         run: |
           set -euo pipefail
+          cd helm
           az aks command invoke \
             -g "$AKS_RESOURCE_GROUP" \
             -n "$AKS_CLUSTER_NAME" \
             --file . \
-            -c "helm lint ./helm \
-              -f ./helm/values-${{ inputs.environment }}.yaml \
+            -c "helm lint . \
+              -f ./values-${{ inputs.environment }}.yaml \
               --set config.mode=orchestrator \
               --set fullnameOverride=prl-devops-orchestrator \
               --set image.tag=${{ inputs.image_tag }}"
@@ -122,9 +123,10 @@ jobs:
           ATOMIC: ${{ inputs.atomic }}
         run: |
           set -euo pipefail
+          cd helm
           
-          HELM_CMD="helm upgrade --install prl-devops-orchestrator ./helm \
-            -f ./helm/values-${{ inputs.environment }}.yaml \
+          HELM_CMD="helm upgrade --install prl-devops-orchestrator . \
+            -f ./values-${{ inputs.environment }}.yaml \
             --namespace $K8S_NAMESPACE \
             --set image.tag=${{ inputs.image_tag }} \
             --set config.mode=orchestrator \
@@ -175,12 +177,13 @@ jobs:
           AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
         run: |
           set -euo pipefail
+          cd helm
           az aks command invoke \
             -g "$AKS_RESOURCE_GROUP" \
             -n "$AKS_CLUSTER_NAME" \
             --file . \
-            -c "helm lint ./helm \
-              -f ./helm/values-${{ inputs.environment }}.yaml \
+            -c "helm lint . \
+              -f ./values-${{ inputs.environment }}.yaml \
               --set config.mode=catalog \
               --set fullnameOverride=prl-devops-catalog \
               --set image.tag=${{ inputs.image_tag }}"
@@ -194,9 +197,10 @@ jobs:
           ATOMIC: ${{ inputs.atomic }}
         run: |
           set -euo pipefail
+          cd helm
           
-          HELM_CMD="helm upgrade --install prl-devops-catalog ./helm \
-            -f ./helm/values-${{ inputs.environment }}.yaml \
+          HELM_CMD="helm upgrade --install prl-devops-catalog . \
+            -f ./values-${{ inputs.environment }}.yaml \
             --namespace $K8S_NAMESPACE \
             --set image.tag=${{ inputs.image_tag }} \
             --set config.mode=catalog \
