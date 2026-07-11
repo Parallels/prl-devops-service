@@ -106,6 +106,7 @@ jobs:
           az aks command invoke \
             -g "$AKS_RESOURCE_GROUP" \
             -n "$AKS_CLUSTER_NAME" \
+            --file . \
             -c "helm lint ./helm \
               -f ./helm/values-${{ inputs.environment }}.yaml \
               --set config.mode=orchestrator \
@@ -141,6 +142,7 @@ jobs:
           az aks command invoke \
             -g "$AKS_RESOURCE_GROUP" \
             -n "$AKS_CLUSTER_NAME" \
+            --file . \
             -c "$HELM_CMD"
 
   deploy-catalog:
@@ -176,6 +178,7 @@ jobs:
           az aks command invoke \
             -g "$AKS_RESOURCE_GROUP" \
             -n "$AKS_CLUSTER_NAME" \
+            --file . \
             -c "helm lint ./helm \
               -f ./helm/values-${{ inputs.environment }}.yaml \
               --set config.mode=catalog \
@@ -211,4 +214,5 @@ jobs:
           az aks command invoke \
             -g "$AKS_RESOURCE_GROUP" \
             -n "$AKS_CLUSTER_NAME" \
+            --file . \
             -c "$HELM_CMD"
