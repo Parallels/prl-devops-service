@@ -51,9 +51,9 @@ on:
         default: false
 
 jobs:
-  deploy-orchestrator:
-    name: Deploy Orchestrator
-    if: ${{ inputs.deploy_orchestrator }}
+  deploy-services:
+    name: Deploy Orchestrator and/or Catalog 
+    if: ${{ inputs.deploy_orchestrator || inputs.deploy_catalog }}
     runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
     permissions:
@@ -75,29 +75,8 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
-      - name: Check internal connectivity (via netcat)
-        run: |
-          echo "Testing TCP connectivity to private endpoint..."
-          ENDPOINT="di-aks-plt-stg-we-2ietnykd.privatelink.westeurope.azmk8s.io"
-          if command -v nc &> /dev/null; then
-            nc -vz "$ENDPOINT" 443 || echo "Netcat test failed"
-          else
-            echo "Netcat not available"
-          fi
-
-      - name: Check internal connectivity (via bash)
-        run: |
-          echo "Testing TCP connectivity via bash..."
-          ENDPOINT="di-aks-plt-stg-we-2ietnykd.privatelink.westeurope.azmk8s.io"
-          timeout 5 bash -c "</dev/tcp/$ENDPOINT/443" 2>&1 && echo "Bash TCP test successful!" || echo "Bash TCP test failed"
-
-      - name: Test TLS connectivity to private endpoint
-        run: |
-          echo "Testing direct TLS to private endpoint..."
-          PRIVATE_ENDPOINT="di-aks-plt-stg-we-2ietnykd.privatelink.westeurope.azmk8s.io"
-          curl -vv https://${PRIVATE_ENDPOINT}:443/version 2>&1 | head -50 || echo "TLS connection failed (expected with proxy)"
-
       - name: Helm lint orchestrator
+        if: ${{ inputs.deploy_orchestrator }}
         env:
           AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
           AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
@@ -115,6 +94,7 @@ jobs:
               --set image.tag=${{ inputs.image_tag }}"
 
       - name: Helm deploy orchestrator
+        if: ${{ inputs.deploy_orchestrator }}
         env:
           AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
           AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
@@ -147,31 +127,8 @@ jobs:
             --file . \
             -c "$HELM_CMD"
 
-  deploy-catalog:
-    name: Deploy Catalog
-    if: ${{ inputs.deploy_catalog }}
-    runs-on: [self-hosted, Linux, X64]
-    timeout-minutes: 30
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_CLIENT_ID || secrets.PRD_AZURE_CLIENT_ID }}
-          tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
-          subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
-
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
-
       - name: Helm lint catalog
+        if: ${{ inputs.deploy_catalog }}
         env:
           AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
           AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
@@ -189,6 +146,7 @@ jobs:
               --set image.tag=${{ inputs.image_tag }}"
 
       - name: Helm deploy catalog
+        if: ${{ inputs.deploy_catalog }}
         env:
           AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
           AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
