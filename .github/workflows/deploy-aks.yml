@@ -54,7 +54,7 @@ jobs:
   deploy-services:
     name: Deploy Orchestrator and/or Catalog 
     if: ${{ inputs.deploy_orchestrator || inputs.deploy_catalog }}
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       id-token: write
@@ -74,6 +74,11 @@ jobs:
 
       - name: Setup Helm
         uses: azure/setup-helm@v4
+
+      - name: Mask infra names
+        run: |
+          echo "::add-mask::${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}"
+          echo "::add-mask::${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}"
 
       - name: Helm lint orchestrator
         if: ${{ inputs.deploy_orchestrator }}
