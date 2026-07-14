@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/database/models"
 
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/database/common"

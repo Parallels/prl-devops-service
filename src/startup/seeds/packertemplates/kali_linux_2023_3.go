@@ -5,7 +5,7 @@ import (
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
-	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/database/models"
 )
 
 func AddKaliLinux2023_3_gnome(ctx *basecontext.BaseContext, svc *data.JsonDatabase) error {

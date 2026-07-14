@@ -3,7 +3,7 @@ package orchestrator
 import (
 	"time"
 
-	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/database/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	api_models "github.com/Parallels/prl-devops-service/models"

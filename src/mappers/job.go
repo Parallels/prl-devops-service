@@ -1,7 +1,7 @@
 package mappers
 
 import (
-	data_models "github.com/Parallels/prl-devops-service/data/models"
+	data_models "github.com/Parallels/prl-devops-service/database/models"
 	api_models "github.com/Parallels/prl-devops-service/models"
 )
 
