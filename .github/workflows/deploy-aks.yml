@@ -114,11 +114,10 @@ jobs:
           
           if [[ "$DRY_RUN" == "true" ]]; then
             HELM_CMD="$HELM_CMD --dry-run --debug"
+          elif [[ "$ATOMIC" == "true" ]]; then
+            HELM_CMD="$HELM_CMD --atomic --timeout 5m"
           else
             HELM_CMD="$HELM_CMD --wait --timeout 5m"
-            if [[ "$ATOMIC" == "true" ]]; then
-              HELM_CMD="$HELM_CMD --atomic"
-            fi
           fi
           
           az aks command invoke \
@@ -166,11 +165,10 @@ jobs:
           
           if [[ "$DRY_RUN" == "true" ]]; then
             HELM_CMD="$HELM_CMD --dry-run --debug"
+          elif [[ "$ATOMIC" == "true" ]]; then
+            HELM_CMD="$HELM_CMD --atomic --timeout 5m"
           else
             HELM_CMD="$HELM_CMD --wait --timeout 5m"
-            if [[ "$ATOMIC" == "true" ]]; then
-              HELM_CMD="$HELM_CMD --atomic"
-            fi
           fi
           
           az aks command invoke \
