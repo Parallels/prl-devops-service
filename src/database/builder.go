@@ -6,9 +6,9 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
-	"github.com/Parallels/prl-devops-service/database/models"
 	"github.com/Parallels/prl-devops-service/database/common"
 	"github.com/Parallels/prl-devops-service/database/connection"
+	"github.com/Parallels/prl-devops-service/database/models"
 	apperrors "github.com/Parallels/prl-devops-service/errors"
 	"gorm.io/gorm"
 )
@@ -103,7 +103,13 @@ func (b *Builder) Build() (*DatabaseService, *apperrors.Diagnostics) {
 		stores: stores,
 	}
 
-	b.ctx.LogInfof("Database initialized successfully (type: %s)", dbConfig.Type)
+	// Log successful initialization with safe connection info (no credentials)
+	if dbConfig.Type == common.PostgreSQL {
+		b.ctx.LogInfof("Database initialized successfully (type: %s, connection: %s)",
+			dbConfig.Type, dbConfig.PostgreSQL.SafeDSN())
+	} else {
+		b.ctx.LogInfof("Database initialized successfully (type: %s)", dbConfig.Type)
+	}
 	return dbService, nil
 }
 
@@ -148,26 +154,50 @@ func buildDatabaseConfig(cfg *config.Config) common.Config {
 		}
 
 	case common.PostgreSQL:
-		dbConfig.PostgreSQL = common.PostgreSQLConfig{
-			Host:     cfg.GetKey("DATABASE_HOST"),
-			Port:     cfg.GetIntKey("DATABASE_PORT"),
-			Database: cfg.GetKey("DATABASE_NAME"),
-			Username: cfg.GetKey("DATABASE_USERNAME"),
-			Password: cfg.GetKey("DATABASE_PASSWORD"),
-			SSLMode:  cfg.GetBoolKey("DATABASE_SSL_MODE"),
-		}
-		// Apply defaults
-		if dbConfig.PostgreSQL.Host == "" {
-			dbConfig.PostgreSQL.Host = "localhost"
-		}
-		if dbConfig.PostgreSQL.Port == 0 {
-			dbConfig.PostgreSQL.Port = 5432
-		}
-		if dbConfig.PostgreSQL.Database == "" {
-			dbConfig.PostgreSQL.Database = "prl_devops"
-		}
-		if dbConfig.PostgreSQL.Username == "" {
-			dbConfig.PostgreSQL.Username = "postgres"
+		// Check if DSN is provided first (takes precedence)
+		dsn := cfg.DatabaseDSN()
+		if dsn != "" {
+			// Parse DSN to populate individual fields for validation/logging
+			host, port, database, username, password, sslMode, err := common.ParseDSN(dsn)
+			if err != nil {
+				// If DSN parsing fails, store DSN as-is and let connection handle it
+				dbConfig.PostgreSQL = common.PostgreSQLConfig{
+					DSN: dsn,
+				}
+			} else {
+				dbConfig.PostgreSQL = common.PostgreSQLConfig{
+					DSN:      dsn,
+					Host:     host,
+					Port:     port,
+					Database: database,
+					Username: username,
+					Password: password,
+					SSLMode:  sslMode,
+				}
+			}
+		} else {
+			// Use individual fields
+			dbConfig.PostgreSQL = common.PostgreSQLConfig{
+				Host:     cfg.GetKey("DATABASE_HOST"),
+				Port:     cfg.GetIntKey("DATABASE_PORT"),
+				Database: cfg.GetKey("DATABASE_NAME"),
+				Username: cfg.GetKey("DATABASE_USERNAME"),
+				Password: cfg.GetKey("DATABASE_PASSWORD"),
+				SSLMode:  cfg.GetBoolKey("DATABASE_SSL_MODE"),
+			}
+			// Apply defaults
+			if dbConfig.PostgreSQL.Host == "" {
+				dbConfig.PostgreSQL.Host = "localhost"
+			}
+			if dbConfig.PostgreSQL.Port == 0 {
+				dbConfig.PostgreSQL.Port = 5432
+			}
+			if dbConfig.PostgreSQL.Database == "" {
+				dbConfig.PostgreSQL.Database = "prl_devops"
+			}
+			if dbConfig.PostgreSQL.Username == "" {
+				dbConfig.PostgreSQL.Username = "postgres"
+			}
 		}
 	}
 

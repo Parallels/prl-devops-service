@@ -55,6 +55,33 @@ func initializePostgreSQL(config *common.Config, gormConfig *gorm.Config) (*gorm
 
 // buildPostgresConnectionString creates a PostgreSQL connection string
 func buildPostgresConnectionString(config *common.Config, dbName string) string {
+	// If DSN is provided, use it (with database override if specified)
+	if config.PostgreSQL.DSN != "" {
+		// If dbName is different from the one in config, we need to override it
+		// For DSN format, we'll parse and rebuild it with the new database name
+		if dbName != "" && dbName != config.PostgreSQL.Database {
+			// Parse existing DSN and replace database name
+			dsn := config.PostgreSQL.DSN
+			// Simple string replacement for database name in path
+			// Format: postgresql://user:pass@host:port/dbname?params
+			parts := strings.Split(dsn, "/")
+			if len(parts) >= 4 {
+				// Replace database name in path
+				lastPart := parts[len(parts)-1]
+				if idx := strings.Index(lastPart, "?"); idx >= 0 {
+					// Has query params: dbname?params
+					parts[len(parts)-1] = dbName + lastPart[idx:]
+				} else {
+					// No query params: just dbname
+					parts[len(parts)-1] = dbName
+				}
+				return strings.Join(parts, "/")
+			}
+		}
+		return config.PostgreSQL.DSN
+	}
+
+	// Build connection string from individual fields
 	if config.PostgreSQL.Host == "" {
 		config.PostgreSQL.Host = "localhost"
 	}

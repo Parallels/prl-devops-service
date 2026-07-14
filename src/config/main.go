@@ -454,22 +454,6 @@ func (c *Config) IsDatabaseAutoRecover() bool {
 	return false
 }
 
-func (c *Config) IsDatabaseAutoMigrateEnabled() bool {
-	envVar := c.GetKey(constants.DATABASE_AUTO_MIGRATE_ENV_VAR)
-	// Default to true if not explicitly set (backward compatibility)
-	if envVar == "" ||
-		envVar == "true" ||
-		envVar == "1" ||
-		envVar == "yes" ||
-		envVar == "y" ||
-		envVar == "t" ||
-		envVar == "on" {
-		return true
-	}
-
-	return false
-}
-
 func (c *Config) Mode() string {
 	c.mode = c.GetKey(constants.MODE_ENV_VAR)
 	if c.mode != "" {
@@ -530,6 +514,16 @@ func (c *Config) DatabaseType() string {
 		return "sqlite" // Default to SQLite
 	}
 	return dbType
+}
+
+// DatabaseDSN returns the PostgreSQL connection string
+// Format: postgresql://user:password@host:port/database?sslmode=disable
+func (c *Config) DatabaseDSN() string {
+	return c.GetKey(constants.DATABASE_DSN_ENV_VAR)
+}
+
+func (c *Config) IsDatabaseAutoMigrateEnabled() bool {
+	return c.GetBoolKeyWithDefault(constants.DATABASE_AUTO_MIGRATE_ENV_VAR, true)
 }
 
 func (c *Config) IsDebugEnabled() bool {
@@ -910,6 +904,20 @@ func (c *Config) GetBoolKey(key string) bool {
 	boolVal, err := strconv.ParseBool(value)
 	if err != nil {
 		return false
+	}
+
+	return boolVal
+}
+
+func (c *Config) GetBoolKeyWithDefault(key string, defaultValue bool) bool {
+	value := c.GetKey(key)
+	if value == "" {
+		return defaultValue
+	}
+
+	boolVal, err := strconv.ParseBool(value)
+	if err != nil {
+		return defaultValue
 	}
 
 	return boolVal
