@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	data_models "github.com/Parallels/prl-devops-service/data/models"
+	data_models "github.com/Parallels/prl-devops-service/database/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"

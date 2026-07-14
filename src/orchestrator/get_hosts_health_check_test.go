@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	data_models "github.com/Parallels/prl-devops-service/data/models"
+	data_models "github.com/Parallels/prl-devops-service/database/models"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

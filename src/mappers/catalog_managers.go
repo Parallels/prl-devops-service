@@ -2,7 +2,7 @@ package mappers
 
 import (
 	"github.com/Parallels/prl-devops-service/config"
-	data_models "github.com/Parallels/prl-devops-service/data/models"
+	data_models "github.com/Parallels/prl-devops-service/database/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/security"

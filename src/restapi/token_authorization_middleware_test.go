@@ -10,7 +10,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
-	data_modules "github.com/Parallels/prl-devops-service/data/models"
+	data_modules "github.com/Parallels/prl-devops-service/database/models"
 	"github.com/Parallels/prl-devops-service/security/jwt"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/stretchr/testify/assert"

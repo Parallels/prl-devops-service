@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/database/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

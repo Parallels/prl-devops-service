@@ -20,7 +20,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
-	data_models "github.com/Parallels/prl-devops-service/data/models"
+	data_models "github.com/Parallels/prl-devops-service/database/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	global_models "github.com/Parallels/prl-devops-service/models"

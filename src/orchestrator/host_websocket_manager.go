@@ -7,7 +7,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/database/models"
 	event "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider"

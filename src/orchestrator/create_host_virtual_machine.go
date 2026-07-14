@@ -11,7 +11,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/constants"
-	data_models "github.com/Parallels/prl-devops-service/data/models"
+	data_models "github.com/Parallels/prl-devops-service/database/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
