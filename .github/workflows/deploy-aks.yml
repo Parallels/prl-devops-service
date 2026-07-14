@@ -76,9 +76,12 @@ jobs:
         uses: azure/setup-helm@v4
 
       - name: Mask infra names
+        env:
+          AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
+          AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
         run: |
-          echo "::add-mask::${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}"
-          echo "::add-mask::${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}"
+          echo "::add-mask::$AKS_RESOURCE_GROUP"
+          echo "::add-mask::$AKS_CLUSTER_NAME"
 
       - name: Helm lint orchestrator
         if: ${{ inputs.deploy_orchestrator }}
