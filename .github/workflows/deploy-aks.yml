@@ -53,7 +53,7 @@ jobs:
   deploy-services:
     name: Deploy Orchestrator and/or Catalog 
     if: ${{ inputs.deploy_orchestrator || inputs.deploy_catalog }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
     permissions:
       id-token: write
@@ -83,91 +83,88 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
-      - name: Prepare AKS command helper
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Network checks to AKS private API
         run: |
-          cat > "$RUNNER_TEMP/aks-command-helper.sh" <<'EOF'
-          #!/usr/bin/env bash
           set -euo pipefail
 
-          resource_group="$1"
-          cluster_name="$2"
-          command="$3"
-          shift 3
+          runner_source_ip="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')"
+          if [[ -n "$runner_source_ip" ]]; then
+            echo "Runner local source IP: $runner_source_ip"
+          else
+            echo "Runner local source IP could not be determined"
+          fi
 
-          invoke_json="$(az aks command invoke \
-            -g "$resource_group" \
-            -n "$cluster_name" \
-            -c "$command" \
-            "$@" \
-            --only-show-errors \
-            -o json)"
+          AKS_API_FQDN="$(az aks show \
+            -g "$AKS_RESOURCE_GROUP" \
+            -n "$AKS_CLUSTER_NAME" \
+            --query privateFqdn \
+            -o tsv)"
 
-          command_id="$(printf '%s' "$invoke_json" | jq -r '.id // .commandId // empty')"
-          if [[ -z "$command_id" ]]; then
-            echo "Unable to determine AKS command id from invoke response." >&2
+          if [[ -z "$AKS_API_FQDN" || "$AKS_API_FQDN" == "null" ]]; then
+            echo "Unable to read privateFqdn from AKS metadata" >&2
             exit 1
           fi
 
-          while true; do
-            result_raw="$(az aks command result \
-              -g "$resource_group" \
-              -n "$cluster_name" \
-              -i "$command_id" \
-              --only-show-errors \
-              -o json 2>&1 || true)"
+          echo "AKS private API FQDN: $AKS_API_FQDN"
 
-            if ! printf '%s' "$result_raw" | jq -e . >/dev/null 2>&1; then
-              if printf '%s' "$result_raw" | grep -Eq ' is in Running state|status: (Running|Pending|InProgress|Queued)'; then
-                echo "AKS command status: Running"
-                sleep 10
-                continue
-              fi
-              echo "AKS command status check failed." >&2
-              exit 1
-            fi
+          echo "DNS lookup via getent"
+          getent hosts "$AKS_API_FQDN" || true
 
-            state="$(printf '%s' "$result_raw" | jq -r '.provisioningState // .status // ""')"
-            exit_code="$(printf '%s' "$result_raw" | jq -r 'if .exitCode == null then "" else (.exitCode | tostring) end')"
-            output="$(printf '%s' "$result_raw" | jq -r '.logs // .text // .message // ""')"
+          if command -v nslookup >/dev/null 2>&1; then
+            echo "DNS lookup via nslookup"
+            nslookup "$AKS_API_FQDN" || true
+          fi
 
-            if [[ -n "$output" ]]; then
-              printf '%s\n' "$output"
-            fi
+          AKS_API_IP="$(getent ahostsv4 "$AKS_API_FQDN" | awk 'NR==1{print $1}')"
+          if [[ -z "$AKS_API_IP" ]]; then
+            echo "Failed to resolve AKS private API IP for $AKS_API_FQDN" >&2
+            exit 1
+          fi
 
-            case "$state" in
-              Succeeded)
-                [[ -z "$exit_code" || "$exit_code" == "0" ]] && exit 0
-                exit "$exit_code"
-                ;;
-              Failed|Canceled)
-                [[ -n "$exit_code" ]] && exit "$exit_code"
-                exit 1
-                ;;
-              *)
-                echo "AKS command status: ${state:-Running}"
-                sleep 10
-                ;;
-            esac
-          done
-          EOF
+          echo "AKS private API resolved IP: $AKS_API_IP"
 
-          chmod +x "$RUNNER_TEMP/aks-command-helper.sh"
-          echo "AKS_COMMAND_HELPER=$RUNNER_TEMP/aks-command-helper.sh" >> "$GITHUB_ENV"
+          echo "TCP check to FQDN:443"
+          timeout 15 bash -c "exec 3<>/dev/tcp/$AKS_API_FQDN/443"
+
+          echo "TCP check to resolved IP:443"
+          timeout 15 bash -c "exec 3<>/dev/tcp/$AKS_API_IP/443"
+
+      - name: Install kubelogin
+        run: |
+          set -euo pipefail
+          az aks install-cli --kubelogin
+
+      - name: Get AKS credentials
+        run: |
+          set -euo pipefail
+          az aks get-credentials \
+            -g "$AKS_RESOURCE_GROUP" \
+            -n "$AKS_CLUSTER_NAME" \
+            --overwrite-existing
+
+      - name: Convert kubeconfig for kubelogin
+        run: |
+          set -euo pipefail
+          kubelogin convert-kubeconfig -l azurecli
+
+      - name: Validate Kubernetes API connectivity
+        run: |
+          set -euo pipefail
+          kubectl version --short
+          kubectl cluster-info
 
       - name: Helm lint orchestrator
         if: ${{ inputs.deploy_orchestrator }}
         run: |
           set -euo pipefail
-          cd helm
-          "$AKS_COMMAND_HELPER" \
-            "$AKS_RESOURCE_GROUP" \
-            "$AKS_CLUSTER_NAME" \
-            "helm lint . \
-              -f ./values-${{ inputs.environment }}.yaml \
-              --set config.mode=orchestrator \
-              --set fullnameOverride=prl-devops-orchestrator \
-              --set image.tag=${{ inputs.image_tag }}" \
-            --file .
+          helm lint helm \
+            -f helm/values-${{ inputs.environment }}.yaml \
+            --set config.mode=orchestrator \
+            --set fullnameOverride=prl-devops-orchestrator \
+            --set image.tag=${{ inputs.image_tag }}
 
       - name: Helm deploy orchestrator
         if: ${{ inputs.deploy_orchestrator }}
@@ -177,10 +174,9 @@ jobs:
           ATOMIC: ${{ inputs.atomic }}
         run: |
           set -euo pipefail
-          cd helm
           
-          HELM_CMD="helm upgrade --install prl-devops-orchestrator . \
-            -f ./values-${{ inputs.environment }}.yaml \
+          HELM_CMD="helm upgrade --install prl-devops-orchestrator helm \
+            -f helm/values-${{ inputs.environment }}.yaml \
             --namespace $K8S_NAMESPACE \
             --set image.tag=${{ inputs.image_tag }} \
             --set config.mode=orchestrator \
@@ -194,27 +190,18 @@ jobs:
           else
             HELM_CMD="$HELM_CMD --wait --timeout 5m"
           fi
-          
-          "$AKS_COMMAND_HELPER" \
-            "$AKS_RESOURCE_GROUP" \
-            "$AKS_CLUSTER_NAME" \
-            "$HELM_CMD" \
-            --file .
+
+          $HELM_CMD
 
       - name: Helm lint catalog
         if: ${{ inputs.deploy_catalog }}
         run: |
           set -euo pipefail
-          cd helm
-          "$AKS_COMMAND_HELPER" \
-            "$AKS_RESOURCE_GROUP" \
-            "$AKS_CLUSTER_NAME" \
-            "helm lint . \
-              -f ./values-${{ inputs.environment }}.yaml \
-              --set config.mode=catalog \
-              --set fullnameOverride=prl-devops-catalog \
-              --set image.tag=${{ inputs.image_tag }}" \
-            --file .
+          helm lint helm \
+            -f helm/values-${{ inputs.environment }}.yaml \
+            --set config.mode=catalog \
+            --set fullnameOverride=prl-devops-catalog \
+            --set image.tag=${{ inputs.image_tag }}
 
       - name: Helm deploy catalog
         if: ${{ inputs.deploy_catalog }}
@@ -224,10 +211,9 @@ jobs:
           ATOMIC: ${{ inputs.atomic }}
         run: |
           set -euo pipefail
-          cd helm
-          
-          HELM_CMD="helm upgrade --install prl-devops-catalog . \
-            -f ./values-${{ inputs.environment }}.yaml \
+
+          HELM_CMD="helm upgrade --install prl-devops-catalog helm \
+            -f helm/values-${{ inputs.environment }}.yaml \
             --namespace $K8S_NAMESPACE \
             --set image.tag=${{ inputs.image_tag }} \
             --set config.mode=catalog \
@@ -241,9 +227,5 @@ jobs:
           else
             HELM_CMD="$HELM_CMD --wait --timeout 5m"
           fi
-          
-          "$AKS_COMMAND_HELPER" \
-            "$AKS_RESOURCE_GROUP" \
-            "$AKS_CLUSTER_NAME" \
-            "$HELM_CMD" \
-            --file .
+
+          $HELM_CMD
