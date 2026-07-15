@@ -48,7 +48,7 @@ on:
         description: Rollback on failure (atomic deployment)
         required: false
         type: boolean
-        default: false
+        default: true
 
 jobs:
   deploy-services:
@@ -59,6 +59,9 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    env:
+      AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && secrets.STG_AKS_RESOURCE_GROUP || secrets.PRD_AKS_RESOURCE_GROUP }}
+      AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && secrets.STG_AKS_CLUSTER_NAME || secrets.PRD_AKS_CLUSTER_NAME }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -75,37 +78,99 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
-      - name: Mask infra names
-        env:
-          AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
+      - name: Prepare AKS command helper
         run: |
-          echo "::add-mask::$AKS_RESOURCE_GROUP"
-          echo "::add-mask::$AKS_CLUSTER_NAME"
+          cat > "$RUNNER_TEMP/aks-command-helper.sh" <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          resource_group="$1"
+          cluster_name="$2"
+          command="$3"
+          shift 3
+
+          invoke_json="$(az aks command invoke \
+            -g "$resource_group" \
+            -n "$cluster_name" \
+            -c "$command" \
+            "$@" \
+            -o json)"
+
+          command_id="$(printf '%s' "$invoke_json" | jq -r '.id // .commandId // empty')"
+          if [[ -z "$command_id" ]]; then
+            echo "$invoke_json"
+            echo "Unable to determine AKS command id from invoke response." >&2
+            exit 1
+          fi
+
+          echo "AKS command id: $command_id"
+
+          while true; do
+            result_json="$(az aks command result \
+              -g "$resource_group" \
+              -n "$cluster_name" \
+              -i "$command_id" \
+              -o json)"
+
+            state="$(printf '%s' "$result_json" | jq -r '.provisioningState // .status // empty')"
+            output="$(printf '%s' "$result_json" | jq -r '.logs // .text // .message // empty')"
+            exit_code="$(printf '%s' "$result_json" | jq -r 'if .exitCode == null then "" else (.exitCode | tostring) end')"
+
+            case "$state" in
+              Succeeded)
+                if [[ -n "$output" ]]; then
+                  printf '%s\n' "$output"
+                fi
+                if [[ -n "$exit_code" && "$exit_code" != "0" ]]; then
+                  echo "$result_json"
+                  exit "$exit_code"
+                fi
+                exit 0
+                ;;
+              Failed|Canceled)
+                echo "$result_json"
+                if [[ -n "$output" ]]; then
+                  printf '%s\n' "$output"
+                fi
+                if [[ -n "$exit_code" ]]; then
+                  exit "$exit_code"
+                fi
+                exit 1
+                ;;
+              '' )
+                echo "$result_json"
+                echo "AKS command result did not include a provisioning state." >&2
+                exit 1
+                ;;
+              *)
+                echo "AKS command status: $state"
+                sleep 10
+                ;;
+            esac
+          done
+          EOF
+
+          chmod +x "$RUNNER_TEMP/aks-command-helper.sh"
+          echo "AKS_COMMAND_HELPER=$RUNNER_TEMP/aks-command-helper.sh" >> "$GITHUB_ENV"
 
       - name: Helm lint orchestrator
         if: ${{ inputs.deploy_orchestrator }}
-        env:
-          AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
         run: |
           set -euo pipefail
           cd helm
-          az aks command invoke \
-            -g "$AKS_RESOURCE_GROUP" \
-            -n "$AKS_CLUSTER_NAME" \
-            --file . \
-            -c "helm lint . \
+          "$AKS_COMMAND_HELPER" \
+            "$AKS_RESOURCE_GROUP" \
+            "$AKS_CLUSTER_NAME" \
+            "helm lint . \
               -f ./values-${{ inputs.environment }}.yaml \
               --set config.mode=orchestrator \
               --set fullnameOverride=prl-devops-orchestrator \
-              --set image.tag=${{ inputs.image_tag }}"
+              --set image.tag=${{ inputs.image_tag }}" \
+            --file .
 
       - name: Helm deploy orchestrator
         if: ${{ inputs.deploy_orchestrator }}
         env:
-          AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
           K8S_NAMESPACE: ${{ inputs.namespace }}
           DRY_RUN: ${{ inputs.dry_run }}
           ATOMIC: ${{ inputs.atomic }}
@@ -128,35 +193,30 @@ jobs:
             HELM_CMD="$HELM_CMD --wait --timeout 5m"
           fi
           
-          az aks command invoke \
-            -g "$AKS_RESOURCE_GROUP" \
-            -n "$AKS_CLUSTER_NAME" \
-            --file . \
-            -c "$HELM_CMD"
+          "$AKS_COMMAND_HELPER" \
+            "$AKS_RESOURCE_GROUP" \
+            "$AKS_CLUSTER_NAME" \
+            "$HELM_CMD" \
+            --file .
 
       - name: Helm lint catalog
         if: ${{ inputs.deploy_catalog }}
-        env:
-          AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
         run: |
           set -euo pipefail
           cd helm
-          az aks command invoke \
-            -g "$AKS_RESOURCE_GROUP" \
-            -n "$AKS_CLUSTER_NAME" \
-            --file . \
-            -c "helm lint . \
+          "$AKS_COMMAND_HELPER" \
+            "$AKS_RESOURCE_GROUP" \
+            "$AKS_CLUSTER_NAME" \
+            "helm lint . \
               -f ./values-${{ inputs.environment }}.yaml \
               --set config.mode=catalog \
               --set fullnameOverride=prl-devops-catalog \
-              --set image.tag=${{ inputs.image_tag }}"
+              --set image.tag=${{ inputs.image_tag }}" \
+            --file .
 
       - name: Helm deploy catalog
         if: ${{ inputs.deploy_catalog }}
         env:
-          AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
           K8S_NAMESPACE: ${{ inputs.namespace }}
           DRY_RUN: ${{ inputs.dry_run }}
           ATOMIC: ${{ inputs.atomic }}
@@ -179,8 +239,8 @@ jobs:
             HELM_CMD="$HELM_CMD --wait --timeout 5m"
           fi
           
-          az aks command invoke \
-            -g "$AKS_RESOURCE_GROUP" \
-            -n "$AKS_CLUSTER_NAME" \
-            --file . \
-            -c "$HELM_CMD"
+          "$AKS_COMMAND_HELPER" \
+            "$AKS_RESOURCE_GROUP" \
+            "$AKS_CLUSTER_NAME" \
+            "$HELM_CMD" \
+            --file .
