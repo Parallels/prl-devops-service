@@ -106,15 +106,30 @@ jobs:
           echo "AKS command id: $command_id"
 
           while true; do
-            result_json="$(az aks command result \
+            if ! result_raw="$(az aks command result \
               -g "$resource_group" \
               -n "$cluster_name" \
               -i "$command_id" \
-              -o json)"
+              -o json 2>&1)"; then
+              echo "$result_raw"
+              exit 1
+            fi
 
-            state="$(printf '%s' "$result_json" | jq -r '.provisioningState // .status // empty')"
-            output="$(printf '%s' "$result_json" | jq -r '.logs // .text // .message // empty')"
-            exit_code="$(printf '%s' "$result_json" | jq -r 'if .exitCode == null then "" else (.exitCode | tostring) end')"
+            if ! printf '%s' "$result_raw" | jq -e . >/dev/null 2>&1; then
+              if printf '%s' "$result_raw" | grep -q ' is in Running state'; then
+                echo "$result_raw"
+                sleep 10
+                continue
+              fi
+
+              echo "$result_raw"
+              echo "AKS command result was not valid JSON." >&2
+              exit 1
+            fi
+
+            state="$(printf '%s' "$result_raw" | jq -r '.provisioningState // .status // empty')"
+            output="$(printf '%s' "$result_raw" | jq -r '.logs // .text // .message // empty')"
+            exit_code="$(printf '%s' "$result_raw" | jq -r 'if .exitCode == null then "" else (.exitCode | tostring) end')"
 
             case "$state" in
               Succeeded)
@@ -122,13 +137,13 @@ jobs:
                   printf '%s\n' "$output"
                 fi
                 if [[ -n "$exit_code" && "$exit_code" != "0" ]]; then
-                  echo "$result_json"
+                  echo "$result_raw"
                   exit "$exit_code"
                 fi
                 exit 0
                 ;;
               Failed|Canceled)
-                echo "$result_json"
+                echo "$result_raw"
                 if [[ -n "$output" ]]; then
                   printf '%s\n' "$output"
                 fi
@@ -138,7 +153,7 @@ jobs:
                 exit 1
                 ;;
               '' )
-                echo "$result_json"
+                echo "$result_raw"
                 echo "AKS command result did not include a provisioning state." >&2
                 exit 1
                 ;;
