@@ -7,7 +7,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
-	dbmodels "github.com/Parallels/prl-devops-service/database/models"
+	dbmodels "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
 	models "github.com/Parallels/prl-devops-service/models"
@@ -65,7 +65,7 @@ func GetTokenHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getTokenDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")

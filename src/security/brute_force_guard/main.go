@@ -58,7 +58,7 @@ func (s *BruteForceGuard) Options() *BruteForceGuardOptions {
 
 func (s *BruteForceGuard) Process(userId string, loginState bool, reason string) *errors.Diagnostics {
 	diag := errors.NewDiagnostics("Brute Force Guard")
-	dbService, err := serviceprovider.GetDatabaseService(s.ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(s.ctx)
 	if err != nil {
 		diag.AddError("dbServiceNotAvailable", err.Error(), "BruteForceGuard")
 		return diag
@@ -118,7 +118,7 @@ func (s *BruteForceGuard) Process(userId string, loginState bool, reason string)
 }
 
 func (s *BruteForceGuard) IsBlocked(userId string) bool {
-	dbService, err := serviceprovider.GetDatabaseService(s.ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(s.ctx)
 	if err != nil {
 		return false
 	}

@@ -5,7 +5,7 @@ import (
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 )
 
 func AddUbuntu23_04(ctx *basecontext.BaseContext, svc *data.JsonDatabase) error {

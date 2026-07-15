@@ -1747,7 +1747,7 @@ func createPackerTemplate(ctx basecontext.ApiContext, request models.CreateVirtu
 
 	parallelsDesktopService := provider.ParallelsDesktopService
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}

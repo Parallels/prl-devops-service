@@ -86,7 +86,7 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		getPackerTemplatesDiag := errors.NewDiagnostics("/templates/packer")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getPackerTemplatesDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -137,7 +137,7 @@ func GetPackerTemplateHandler() restapi.ControllerHandler {
 		params := mux.Vars(r)
 		name := params["id"]
 		getPackerTemplateDiag := errors.NewDiagnostics("/templates/packer/" + name)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getPackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -197,7 +197,7 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			createPackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -255,7 +255,7 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			updatePackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -300,7 +300,7 @@ func DeletePackerTemplateHandler() restapi.ControllerHandler {
 		params := mux.Vars(r)
 		id := params["id"]
 		deletePackerTemplateDiag := errors.NewDiagnostics("/templates/packer/" + id)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			deletePackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")

@@ -80,7 +80,7 @@ func GetJobsHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -131,7 +131,7 @@ func GetJobHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -194,7 +194,7 @@ func DeleteJobHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		jobId := vars["id"]
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -234,7 +234,7 @@ func CleanupJobsHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return

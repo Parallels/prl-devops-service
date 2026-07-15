@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
 func (s *OrchestratorService) GetHosts(ctx basecontext.ApiContext, filter string) ([]*models.OrchestratorHost, error) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (s *OrchestratorService) GetHosts(ctx basecontext.ApiContext, filter string
 }
 
 func (s *OrchestratorService) GetHost(ctx basecontext.ApiContext, idOrName string) (*models.OrchestratorHost, error) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (s *OrchestratorService) GetHost(ctx basecontext.ApiContext, idOrName strin
 }
 
 func (s *OrchestratorService) GetDatabaseHost(ctx basecontext.ApiContext, idOrName string) (*models.OrchestratorHost, error) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (s *OrchestratorService) GetDatabaseHost(ctx basecontext.ApiContext, idOrNa
 }
 
 func (s *OrchestratorService) GetHostResources(ctx basecontext.ApiContext, idOrName string) (*models.HostResources, error) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}

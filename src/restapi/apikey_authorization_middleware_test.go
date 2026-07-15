@@ -12,7 +12,7 @@ import (
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	log "github.com/cjlapao/common-go-logger"
 	"github.com/stretchr/testify/assert"

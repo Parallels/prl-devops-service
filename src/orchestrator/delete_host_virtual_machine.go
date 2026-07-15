@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -47,7 +47,7 @@ func (s *OrchestratorService) DeleteVirtualMachine(ctx basecontext.ApiContext, v
 }
 
 func (s *OrchestratorService) DeleteHostVirtualMachine(ctx basecontext.ApiContext, hostId string, vmId string, force bool) error {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return err
 	}

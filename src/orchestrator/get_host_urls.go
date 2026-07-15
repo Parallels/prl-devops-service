@@ -9,7 +9,7 @@ import (
 )
 
 func (s *OrchestratorService) GetHostBaseUrl(ctx basecontext.ApiContext, hostId string) (string, error) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -37,7 +37,7 @@ func (s *OrchestratorService) GetHostBaseUrl(ctx basecontext.ApiContext, hostId 
 }
 
 func (s *OrchestratorService) GetHostWebsocketBaseUrl(ctx basecontext.ApiContext, hostId string) (string, error) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return "", err
 	}

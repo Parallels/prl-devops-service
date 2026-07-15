@@ -36,7 +36,7 @@ func (t *TelemetryService) TrackEvent(item TelemetryItem) {
 		item.DeviceId = "service"
 	}
 
-	dbService, err := serviceprovider.GetDatabaseService(t.ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(t.ctx)
 	if err == nil {
 		id, idErr := dbService.GetId(t.ctx)
 		if idErr == nil {

@@ -21,7 +21,7 @@ import (
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
-	data_models "github.com/Parallels/prl-devops-service/database/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
@@ -372,7 +372,7 @@ func GetCatalogManagersHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -466,7 +466,7 @@ func GetCatalogManagerByIdHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -586,7 +586,7 @@ func CreateCatalogManagerHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -630,7 +630,7 @@ func UpdateCatalogManagerHandler() restapi.ControllerHandler {
 		}
 		defer r.Body.Close()
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -709,7 +709,7 @@ func DeleteCatalogManagerHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -930,7 +930,7 @@ func PullCatalogManifestFromCatalogManagerHandler(async bool) restapi.Controller
 }
 
 func getAuthorizedCatalogManagerForUse(ctx basecontext.ApiContext, managerID string) (*data_models.CatalogManager, *models.ApiErrorResponse) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		apiErr := models.NewFromErrorWithCode(err, http.StatusInternalServerError)
 		return nil, &apiErr

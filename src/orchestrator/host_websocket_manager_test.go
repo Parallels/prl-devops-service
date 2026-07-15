@@ -6,7 +6,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
-	dataModels "github.com/Parallels/prl-devops-service/database/models"
+	dataModels "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/interfaces"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

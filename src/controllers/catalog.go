@@ -14,7 +14,7 @@ import (
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
-	data_models "github.com/Parallels/prl-devops-service/database/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
@@ -254,7 +254,7 @@ func GetCatalogManifestsHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -356,7 +356,7 @@ func GetCatalogManifestHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -428,7 +428,7 @@ func GetCatalogManifestVersionHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -495,7 +495,7 @@ func GetCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -560,7 +560,7 @@ func DownloadCatalogManifestVersionHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -646,7 +646,7 @@ func TaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -733,7 +733,7 @@ func UnTaintCatalogManifestVersionHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -820,7 +820,7 @@ func RevokeCatalogManifestVersionHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -917,7 +917,7 @@ func AddClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -1036,7 +1036,7 @@ func RemoveClaimsToCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -1154,7 +1154,7 @@ func AddRolesToCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -1273,7 +1273,7 @@ func RemoveRolesToCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -1392,7 +1392,7 @@ func AddTagsToCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -1511,7 +1511,7 @@ func RemoveTagsToCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -1615,7 +1615,7 @@ func CreateCatalogManifestHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -1676,7 +1676,7 @@ func DeleteCatalogManifestHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -1744,7 +1744,7 @@ func DeleteCatalogManifestVersionHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -1814,7 +1814,7 @@ func DeleteCatalogManifestVersionArchitectureHandler() restapi.ControllerHandler
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -2425,7 +2425,7 @@ func UpdateCatalogManifestProviderHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
@@ -2534,7 +2534,7 @@ func UpdateCatalogManifestMetadataHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return

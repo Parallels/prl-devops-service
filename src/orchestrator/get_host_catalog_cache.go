@@ -2,7 +2,7 @@ package orchestrator
 
 import (
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	api_models "github.com/Parallels/prl-devops-service/models"
@@ -10,7 +10,7 @@ import (
 )
 
 func (s *OrchestratorService) GetHostCatalogCache(ctx basecontext.ApiContext, hostId string) (*api_models.VirtualMachineCatalogManifestList, error) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}

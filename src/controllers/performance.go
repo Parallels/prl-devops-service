@@ -49,7 +49,7 @@ func PerformDbTestHandler() restapi.ControllerHandler {
 			request.TimeBetweenCalls = 1
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			performDBDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")

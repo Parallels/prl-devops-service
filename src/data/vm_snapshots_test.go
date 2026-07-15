@@ -3,7 +3,7 @@ package data
 import (
 	"testing"
 
-	data_models "github.com/Parallels/prl-devops-service/database/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/mappers"
 	apiModels "github.com/Parallels/prl-devops-service/models"
 	"github.com/stretchr/testify/assert"
