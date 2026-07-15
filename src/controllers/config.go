@@ -311,7 +311,7 @@ func GetHardwareInfo() restapi.ControllerHandler {
 
 		if cfg.IsReverseProxyEnabled() {
 			hardwareInfo.IsReverseProxyEnabled = true
-			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
+			if dbService, err := serviceprovider.GetJsonDatabaseService(ctx); err == nil {
 				if reverseProxy, err := dbService.GetReverseProxyConfig(ctx); err == nil {
 					hardwareInfo.ReverseProxy = &models.SystemReverseProxy{
 						Enabled: true,

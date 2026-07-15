@@ -7,7 +7,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
-	data_models "github.com/Parallels/prl-devops-service/database/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/interfaces"
@@ -108,7 +108,7 @@ func unmarshalEventBody[T any](ctx basecontext.ApiContext, event models.EventMes
 // getHostConnectionInfo retrieves the host record to populate VM metadata fields.
 // Returns an error if the host is not found or the DB is unavailable.
 func (h *PDfMEventHandler) getHostConnectionInfo(ctx basecontext.ApiContext, hostID string) (*data_models.OrchestratorHost, error) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
 		return nil, err
@@ -152,7 +152,7 @@ func (h *PDfMEventHandler) handleVmStateChange(ctx basecontext.ApiContext, hostI
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM state changed: %s -> %s (VM: %s, Host: %s)",
 		stateChange.PreviousState, stateChange.CurrentState, stateChange.VmID, hostID)
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
 		return
@@ -182,7 +182,7 @@ func (h *PDfMEventHandler) handleVmAdded(ctx basecontext.ApiContext, hostID stri
 		return
 	}
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
 		return
@@ -212,7 +212,7 @@ func (h *PDfMEventHandler) handleVmRemoved(ctx basecontext.ApiContext, hostID st
 
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] VM removed: %s (Host: %s)", vmRemoved.VmID, hostID)
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
 		return
@@ -242,7 +242,7 @@ func (h *PDfMEventHandler) handleVmUpdated(ctx basecontext.ApiContext, hostID st
 		return
 	}
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
 		return
@@ -273,7 +273,7 @@ func (h *PDfMEventHandler) handleVmUptimeChanged(ctx basecontext.ApiContext, hos
 	ctx.LogInfof("[PDfMEventHandler] [orchestrator] [uptime] VM uptime changed: %s (VM: %s, Host: %s)",
 		uptimeChanged.Uptime, uptimeChanged.VmID, hostID)
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
 		return
@@ -294,7 +294,7 @@ func (h *PDfMEventHandler) handleVMSnapshotsUpdated(ctx basecontext.ApiContext, 
 		return
 	}
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error getting database service: %v", err)
 		return

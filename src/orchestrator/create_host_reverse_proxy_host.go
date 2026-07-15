@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	data_models "github.com/Parallels/prl-devops-service/database/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -13,7 +13,7 @@ import (
 func (s *OrchestratorService) CreateHostReverseProxyHost(ctx basecontext.ApiContext, hostId string, r models.ReverseProxyHostCreateRequest) (*models.ReverseProxyHost, *models.ApiErrorResponse) {
 	var api_error *models.ApiErrorResponse
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		api_error = &models.ApiErrorResponse{
 			Message: "There was an error getting the database",

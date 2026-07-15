@@ -77,7 +77,7 @@ func GetClaimsHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		getClaimsDiag := errors.NewDiagnostics("/auth/claims [get]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getClaimsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -126,7 +126,7 @@ func GetGroupedClaimsHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		diag := errors.NewDiagnostics("/auth/claims/grouped [get]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -167,7 +167,7 @@ func GetClaimHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		getClaimDiag := errors.NewDiagnostics("/auth/claims/{id} [get]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getClaimDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -223,7 +223,7 @@ func CreateClaimHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			createClaimDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -267,7 +267,7 @@ func DeleteClaimHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		deleteClaimDiag := errors.NewDiagnostics("/auth/claims/{id} [delete]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			deleteClaimDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")

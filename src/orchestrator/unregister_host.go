@@ -8,7 +8,7 @@ import (
 )
 
 func (s *OrchestratorService) UnregisterHost(ctx basecontext.ApiContext, hostId string) error {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return err
 	}

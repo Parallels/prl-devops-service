@@ -7,7 +7,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
-	data_models "github.com/Parallels/prl-devops-service/database/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/mappers"
 	global_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -23,7 +23,7 @@ type JobManagerService struct {
 }
 
 func Get(ctx basecontext.ApiContext) *JobManagerService {
-	db, err := serviceprovider.GetDatabaseService(ctx)
+	db, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		globalJobManagerService = nil
 		return nil
@@ -42,7 +42,7 @@ func Get(ctx basecontext.ApiContext) *JobManagerService {
 }
 
 func New(ctx basecontext.ApiContext) *JobManagerService {
-	db, err := serviceprovider.GetDatabaseService(ctx)
+	db, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		globalJobManagerService = nil
 		ctx.LogErrorf("Error getting database service for job manager: %v", err)

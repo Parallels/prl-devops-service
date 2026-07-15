@@ -2,13 +2,13 @@ package orchestrator
 
 import (
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
 func (s *OrchestratorService) EnableHost(ctx basecontext.ApiContext, hostIdOrHost string) (*models.OrchestratorHost, error) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (s *OrchestratorService) EnableHost(ctx basecontext.ApiContext, hostIdOrHos
 }
 
 func (s *OrchestratorService) DisableHost(ctx basecontext.ApiContext, hostIdOrHost string) (*models.OrchestratorHost, error) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,7 @@ import (
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/security/password"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	cryptorand "github.com/cjlapao/common-go-cryptorand"

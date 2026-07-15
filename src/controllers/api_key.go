@@ -23,7 +23,7 @@ func enrichApiKeyWithUser(ctx basecontext.ApiContext, apiKey *models.ApiKeyRespo
 		return
 	}
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return
 	}
@@ -129,7 +129,7 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			createApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -191,7 +191,7 @@ func GetApiKeysHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		getApiKeysDiag := errors.NewDiagnostics("/auth/api_keys [get]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getApiKeysDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -237,7 +237,7 @@ func DeleteApiKeyHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		deleteApiKeyDiag := errors.NewDiagnostics("/auth/api_keys/{id} [delete]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			deleteApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -279,7 +279,7 @@ func GetApiKeyHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		getApiKeyDiag := errors.NewDiagnostics("/auth/api_keys/{id} [get]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -328,7 +328,7 @@ func RevokeApiKeyHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		revokeApiKeyDiag := errors.NewDiagnostics("/auth/api_keys/{id}/revoke [put]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			revokeApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")

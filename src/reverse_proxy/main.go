@@ -20,7 +20,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
-	data_models "github.com/Parallels/prl-devops-service/database/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
 	global_models "github.com/Parallels/prl-devops-service/models"
@@ -137,7 +137,7 @@ func GetConfig() models.ReverseProxyConfig {
 }
 
 func New(ctx basecontext.ApiContext) *ReverseProxyService {
-	db, err := serviceprovider.GetDatabaseService(ctx)
+	db, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("Error getting database service: %s", err)
 		return nil

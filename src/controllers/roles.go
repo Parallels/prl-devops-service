@@ -94,7 +94,7 @@ func GetRolesHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		getRolesDiag := errors.NewDiagnostics("/auth/roles [get]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getRolesDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -144,7 +144,7 @@ func GetRoleHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		getRoleDiag := errors.NewDiagnostics("/auth/roles/{id} [get]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getRoleDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -200,7 +200,7 @@ func CreateRoleHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			createRoleDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -244,7 +244,7 @@ func DeleteRoleHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		deleteRoleDiag := errors.NewDiagnostics("/auth/roles/{id} [delete]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 
 			rsp := models.NewFromError(err)
@@ -287,7 +287,7 @@ func GetRoleClaimsHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		diag := errors.NewDiagnostics("/auth/roles/{id}/claims [get]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -347,7 +347,7 @@ func AddClaimToRoleHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -408,7 +408,7 @@ func RemoveClaimFromRoleHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		diag := errors.NewDiagnostics("/auth/roles/{id}/claims/{claim_id} [delete]")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")

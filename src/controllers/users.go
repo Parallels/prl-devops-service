@@ -125,7 +125,7 @@ func GetUsersHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		getUserDiag := errors.NewDiagnostics("/auth/users")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -177,7 +177,7 @@ func GetUserHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		getUserDiag := errors.NewDiagnostics("/auth/users/" + id)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -244,7 +244,7 @@ func CreateUserHandler() restapi.ControllerHandler {
 			}
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			userCreationDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -346,7 +346,7 @@ func DeleteUserHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		deleteUserDiag := errors.NewDiagnostics("/auth/users/" + id)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			deleteUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -399,7 +399,7 @@ func UpdateUserHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			updateUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -442,7 +442,7 @@ func GetUserRolesHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		getUserRolesDiag := errors.NewDiagnostics("/auth/users/" + id + "/roles")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getUserRolesDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -499,7 +499,7 @@ func AddRoleToUserHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			addRoleToUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -542,7 +542,7 @@ func RemoveRoleFromUserHandler() restapi.ControllerHandler {
 		id := vars["id"]
 		roleId := vars["role_id"]
 		removeRoleFromUserDiag := errors.NewDiagnostics("/auth/users/" + id + "/roles/" + roleId)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			removeRoleFromUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -582,7 +582,7 @@ func GetUserClaimsHandler() restapi.ControllerHandler {
 		vars := mux.Vars(r)
 		id := vars["id"]
 		getUserClaimsDiag := errors.NewDiagnostics("/auth/users/" + id + "/claims")
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			getUserClaimsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -639,7 +639,7 @@ func AddClaimToUserHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			addClaimToUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
@@ -682,7 +682,7 @@ func RemoveClaimFromUserHandler() restapi.ControllerHandler {
 		id := vars["id"]
 		claimId := vars["claim_id"]
 		removeClaimFromUserDiag := errors.NewDiagnostics("/auth/users/" + id + "/claims/" + claimId)
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 		if err != nil {
 			rsp := models.NewFromError(err)
 			removeClaimFromUserDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")

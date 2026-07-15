@@ -7,7 +7,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 	event "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -132,7 +132,7 @@ func (m *HostWebSocketManager) DisconnectHost(hostID string) {
 		m.ctx.LogInfof("[HostWebSocketManager] Disconnected host %s", hostID)
 
 		// Update DB status
-		dbService, err := serviceprovider.GetDatabaseService(m.ctx)
+		dbService, err := serviceprovider.GetJsonDatabaseService(m.ctx)
 		if err == nil {
 			updated, _ := dbService.UpdateOrchestratorHostWebsocketStatus(m.ctx, hostID, false)
 			if updated {
@@ -226,7 +226,7 @@ func (m *HostWebSocketManager) ProbeAndConnect(host models.OrchestratorHost) {
 
 		// Probe confirmed WebSocket support — update the flag immediately so that
 		// the API reflects the capability before the first pong comes in.
-		if dbService, err := serviceprovider.GetDatabaseService(m.ctx); err == nil {
+		if dbService, err := serviceprovider.GetJsonDatabaseService(m.ctx); err == nil {
 			if updated, _ := dbService.UpdateOrchestratorHostWebsocketStatus(m.ctx, host.ID, true); updated {
 				if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
 					msg := event.NewEventMessage(constants.EventTypeOrchestrator, "HOST_WEBSOCKET_CONNECTED", event.HostHealthUpdate{
@@ -268,7 +268,7 @@ func (m *HostWebSocketManager) StartConnectionMonitor(checkInterval time.Duratio
 // checkAndReconnectHosts checks all enabled hosts and attempts to reconnect disconnected ones
 func (m *HostWebSocketManager) checkAndReconnectHosts() {
 	// Get database service
-	dbService, err := serviceprovider.GetDatabaseService(m.ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(m.ctx)
 	if err != nil {
 		m.ctx.LogErrorf("[HostWebSocketManager] Error getting database service: %v", err)
 		return

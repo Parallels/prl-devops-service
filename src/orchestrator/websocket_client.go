@@ -13,7 +13,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	api_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -324,7 +324,7 @@ func (c *HostWebSocketClient) notifyDisconnection() {
 	c.setConnected(false)
 
 	// Update DB status
-	if dbService, err := serviceprovider.GetDatabaseService(c.ctx); err == nil {
+	if dbService, err := serviceprovider.GetJsonDatabaseService(c.ctx); err == nil {
 		updated, _ := dbService.UpdateOrchestratorHostWebsocketStatus(c.ctx, c.hostID, false)
 		if updated {
 			if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {

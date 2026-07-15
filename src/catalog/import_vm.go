@@ -11,7 +11,7 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/interfaces"
 	"github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/data"
-	data_models "github.com/Parallels/prl-devops-service/database/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"

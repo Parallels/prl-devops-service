@@ -3,7 +3,7 @@ package data
 import (
 	"errors"
 
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 )
 
 func (j *JsonDatabase) SetListVMSnapshotsByVMId(vmID string, newVmSnap models.VMSnapshots) error {

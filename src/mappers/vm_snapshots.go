@@ -3,7 +3,7 @@ package mappers
 import (
 	"strings"
 
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 	apiModels "github.com/Parallels/prl-devops-service/models"
 )
 

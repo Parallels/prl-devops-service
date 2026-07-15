@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	api_models "github.com/Parallels/prl-devops-service/models"
@@ -17,7 +17,7 @@ func (s *OrchestratorService) GetHostVirtualMachines(ctx basecontext.ApiContext,
 		s.Refresh()
 	}
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (s *OrchestratorService) GetHostVirtualMachine(ctx basecontext.ApiContext, 
 		s.Refresh()
 	}
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (s *OrchestratorService) GetHostVirtualMachine(ctx basecontext.ApiContext, 
 }
 
 func (s *OrchestratorService) GetHostAppleVirtualMachines(ctx basecontext.ApiContext, hostId string, vmId string) ([]*models.VirtualMachine, error) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}

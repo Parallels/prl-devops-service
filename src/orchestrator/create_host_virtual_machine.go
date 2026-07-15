@@ -11,7 +11,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/constants"
-	data_models "github.com/Parallels/prl-devops-service/database/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
@@ -68,7 +68,7 @@ func (s *OrchestratorService) DispatchCreateVirtualMachine(ctx basecontext.ApiCo
 		}
 	}
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		apiError = &models.ApiErrorResponse{
 			Message: "There was an error getting the database",
@@ -233,7 +233,7 @@ func (s *OrchestratorService) DispatchCreateHosVirtualMachine(ctx basecontext.Ap
 }
 
 func (s *OrchestratorService) getValidHostsForCreate(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest, updateJob func(string)) ([]data_models.OrchestratorHost, *models.ApiErrorResponse) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		apiError := &models.ApiErrorResponse{
 			Message: "There was an error getting the database",
@@ -289,7 +289,7 @@ func (s *OrchestratorService) getValidHostsForCreate(ctx basecontext.ApiContext,
 }
 
 func (s *OrchestratorService) getValidHostForCreate(ctx basecontext.ApiContext, hostId string, request models.CreateVirtualMachineRequest, updateJob func(string)) (*data_models.OrchestratorHost, *models.ApiErrorResponse) {
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		apiError := &models.ApiErrorResponse{
 			Message: "There was an error getting the database",

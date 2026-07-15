@@ -2,7 +2,7 @@ package orchestrator
 
 import (
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
@@ -12,7 +12,7 @@ func (s *OrchestratorService) GetResources(ctx basecontext.ApiContext, noCache b
 		s.Refresh()
 	}
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil, err
 	}

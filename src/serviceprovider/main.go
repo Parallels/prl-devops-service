@@ -83,9 +83,9 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 
 		// Initialize GORM database service
-		_, err = database.InitDatabase(ctx)
-		if err != nil {
-			ctx.LogErrorf("Failed to initialize GORM database: %v", err)
+		_, diag := database.InitDatabase(ctx)
+		if diag != nil {
+			ctx.LogErrorf("Failed to initialize GORM database: %v", diag)
 		}
 
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
@@ -227,9 +227,9 @@ func InitServices(ctx basecontext.ApiContext) {
 		globalProvider.ParallelsDesktopService.InitSnapshotTreeInDB(ctx)
 
 		// Initialize GORM database service
-		_, err = database.InitDatabase(ctx)
-		if err != nil {
-			ctx.LogErrorf("Failed to initialize GORM database: %v", err)
+		_, diag := database.InitDatabase(ctx)
+		if diag != nil {
+			ctx.LogErrorf("Failed to initialize GORM database: %v", diag)
 		}
 
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
@@ -256,9 +256,9 @@ func InitServices(ctx basecontext.ApiContext) {
 		globalProvider.ParallelsDesktopService.InitSnapshotTreeInDB(ctx)
 
 		// Initialize GORM database service
-		_, err = database.InitDatabase(ctx)
-		if err != nil {
-			ctx.LogErrorf("Failed to initialize GORM database: %v", err)
+		_, diag := database.InitDatabase(ctx)
+		if diag != nil {
+			ctx.LogErrorf("Failed to initialize GORM database: %v", diag)
 		}
 
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)

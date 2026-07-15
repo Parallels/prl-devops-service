@@ -50,7 +50,7 @@ func (h *HostHealthHandler) Handle(ctx basecontext.ApiContext, hostID string, ev
 func (h *HostHealthHandler) handlePong(ctx basecontext.ApiContext, hostID string) {
 	ctx.LogDebugf("[HostHealthHandler] Received pong from host %s", hostID)
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("[HostHealthHandler] Error getting database service: %v", err)
 		return

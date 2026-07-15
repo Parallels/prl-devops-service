@@ -9,7 +9,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
-	"github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/mappers"
 	apimodels "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/handlers"
@@ -49,7 +49,7 @@ func NewOrchestratorService(ctx basecontext.ApiContext) *OrchestratorService {
 	} else {
 		globalOrchestratorService.ctx = ctx
 	}
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		return nil
 	}
@@ -64,7 +64,7 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	ts.TrackEvent(telemetry.NewTelemetryItem(s.ctx, telemetry.EventStartOrchestrator, nil, nil))
 	s.syncContext, s.cancel = context.WithCancel(context.Background())
 
-	dbService, err := serviceprovider.GetDatabaseService(s.ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(s.ctx)
 	if err != nil {
 		return
 	}

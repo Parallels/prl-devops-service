@@ -6,7 +6,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
 	"github.com/Parallels/prl-devops-service/catalog/models"
-	db_models "github.com/Parallels/prl-devops-service/database/models"
+	db_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
