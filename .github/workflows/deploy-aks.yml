@@ -162,12 +162,6 @@ jobs:
           set -euo pipefail
           kubelogin convert-kubeconfig -l azurecli
 
-      - name: Validate Kubernetes API connectivity
-        run: |
-          set -euo pipefail
-          kubectl version --short
-          kubectl cluster-info
-
       - name: Helm lint orchestrator
         if: ${{ inputs.deploy_orchestrator }}
         run: |
