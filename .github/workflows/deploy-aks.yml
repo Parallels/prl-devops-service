@@ -67,15 +67,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Mask non-secret identifiers
-        env:
-          OIDC_SUBJECT: repo:${{ github.repository }}:ref:${{ github.ref }}
+      - name: Mask runtime identifiers
         run: |
-          echo "::add-mask::$OIDC_SUBJECT"
+          oidc_subject="repo:${GITHUB_REPOSITORY}:ref:${GITHUB_REF}"
+          echo "::add-mask::$oidc_subject"
           echo "::add-mask::api://AzureADTokenExchange"
-          echo "::add-mask::prl-devops-services"
-          echo "::add-mask::prl-devops-orchestrator"
-          echo "::add-mask::prl-devops-catalog"
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
