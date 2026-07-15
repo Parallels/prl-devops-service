@@ -7,8 +7,8 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/database/models"
-	data_models "github.com/Parallels/prl-devops-service/database/models"
+	"github.com/Parallels/prl-devops-service/data/models"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/install"
@@ -126,7 +126,7 @@ func Start(ctx basecontext.ApiContext) {
 	}
 
 	// Clean up expired/used enrollment tokens at startup
-	if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
+	if dbService, err := serviceprovider.GetJsonDatabaseService(ctx); err == nil {
 		if err := dbService.DeleteExpiredEnrollmentTokens(ctx); err != nil {
 			ctx.LogWarnf("Could not purge expired enrollment tokens: %v", err)
 		}
@@ -145,7 +145,7 @@ func Start(ctx basecontext.ApiContext) {
 	// if rpConfig != nil {
 	// 	for _, host := range rpConfig.Hosts {
 	// 		if host != nil {
-	// 			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
+	// 			if dbService, err := serviceprovider.GetJsonDatabaseService(ctx); err == nil {
 	// 				if _, err := dbService.GetReverseProxyHost(ctx, host.Host); err != nil {
 	// 					if errors.GetSystemErrorCode(err) == 404 {
 	// 						dbHost := models.ReverseProxyHost{
@@ -175,7 +175,7 @@ func Start(ctx basecontext.ApiContext) {
 
 		// Checking if we need to add the current host to the orchestrator hosts
 		if cfg.UseOrchestratorResources() && canUseOwnResources {
-			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
+			if dbService, err := serviceprovider.GetJsonDatabaseService(ctx); err == nil {
 				createdKey := false
 				// Find the local host by description or IsLocal flag — URL matching via
 				// GetOrchestratorHost is unreliable here because the stored host includes
@@ -256,7 +256,7 @@ func Start(ctx basecontext.ApiContext) {
 			}
 		} else {
 			// checking if we need to remove the current host from the orchestrator hosts
-			if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
+			if dbService, err := serviceprovider.GetJsonDatabaseService(ctx); err == nil {
 				if allHosts, hErr := dbService.GetOrchestratorHosts(ctx, ""); hErr == nil {
 					for _, h := range allHosts {
 						if h.IsLocal || h.Description == constants.LOCAL_ORCHESTRATOR_DESCRIPTION {

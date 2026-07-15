@@ -143,7 +143,7 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 	// --- Create a permanent local API key and persist it to disk ---
 	// We write directly to the DB file and then restart the service so that
 	// the running process reloads from disk and sees the new key.
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("Failed to initialise database: %v", err)
 		os.Exit(1)

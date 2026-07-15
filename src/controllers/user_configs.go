@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	data_models "github.com/Parallels/prl-devops-service/database/models"
+	db_models "github.com/Parallels/prl-devops-service/database/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -85,23 +85,21 @@ func GetUserConfigsHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getUserConfigsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigsDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil {
+			getUserConfigsDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigsDiag, http.StatusInternalServerError))
 			return
 		}
 
-		dtoConfigs, err := dbService.GetUserConfigs(ctx, userContext.ID, GetFilterHeader(r))
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getUserConfigsDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUserConfigs")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigsDiag, rsp.Code))
+		dtoConfigs, diag := dbService.GetUserConfigs(ctx, userContext.ID, GetFilterHeader(r))
+		if diag != nil {
+			getUserConfigsDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "GetUserConfigs")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigsDiag, http.StatusInternalServerError))
 			return
 		}
 
-		result := mappers.UserConfigsDtoToResponse(dtoConfigs)
+		result := mappers.GormUserConfigsQueryResponseToResponse(dtoConfigs)
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(result)
@@ -136,23 +134,21 @@ func GetUserConfigHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil {
+			getUserConfigDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigDiag, http.StatusInternalServerError))
 			return
 		}
 
-		dtoConfig, err := dbService.GetUserConfig(ctx, userContext.ID, id)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetUserConfig")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigDiag, rsp.Code))
+		dtoConfig, diag := dbService.GetUserConfig(ctx, userContext.ID, id)
+		if diag != nil {
+			getUserConfigDiag.AddError(strconv.Itoa(http.StatusNotFound), diag.GetSummary(), "GetUserConfig")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getUserConfigDiag, http.StatusNotFound))
 			return
 		}
 
-		response := mappers.UserConfigDtoToResponse(*dtoConfig)
+		response := mappers.GormUserConfigDtoToResponse(*dtoConfig)
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
@@ -197,27 +193,25 @@ func CreateUserConfigHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			createUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createUserConfigDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil {
+			createUserConfigDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createUserConfigDiag, http.StatusInternalServerError))
 			return
 		}
 
-		dtoConfig := mappers.UserConfigRequestToDto(userContext.ID, request)
+		dtoConfig := mappers.GormUserConfigRequestToDto(userContext.ID, request)
 
 		existing, _ := dbService.GetUserConfig(ctx, userContext.ID, request.Slug)
 
-		dtoResult, err := dbService.UpsertUserConfig(ctx, dtoConfig)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			createUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "UpsertUserConfig")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createUserConfigDiag, rsp.Code))
+		dtoResult, diag := dbService.UpsertUserConfig(ctx, dtoConfig)
+		if diag != nil {
+			createUserConfigDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "UpsertUserConfig")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createUserConfigDiag, http.StatusInternalServerError))
 			return
 		}
 
-		response := mappers.UserConfigDtoToResponse(*dtoResult)
+		response := mappers.GormUserConfigDtoToResponse(*dtoResult)
 
 		if existing != nil {
 			w.WriteHeader(http.StatusOK)
@@ -271,40 +265,38 @@ func UpdateUserConfigHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			updateUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil {
+			updateUserConfigDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, http.StatusInternalServerError))
 			return
 		}
 
-		existing, err := dbService.GetUserConfig(ctx, userContext.ID, id)
-		if err != nil {
+		existing, diag := dbService.GetUserConfig(ctx, userContext.ID, id)
+		if diag != nil {
 			// Not found — create a new record using the path id as slug.
 			name := request.Name
 			if name == "" {
 				name = id
 			}
-			cfgType := data_models.UserConfigValueType(request.Type)
+			cfgType := db_models.UserConfigValueType(request.Type)
 			if cfgType == "" {
-				cfgType = data_models.UserConfigValueTypeString
+				cfgType = db_models.UserConfigValueTypeString
 			}
-			newCfg := data_models.UserConfig{
+			newCfg := db_models.UserConfig{
 				UserID: userContext.ID,
 				Slug:   id,
 				Name:   name,
 				Type:   cfgType,
 				Value:  request.Value,
 			}
-			dtoResult, createErr := dbService.UpsertUserConfig(ctx, newCfg)
-			if createErr != nil {
-				rsp := models.NewFromError(createErr)
-				updateUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "UpsertUserConfig")
-				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, rsp.Code))
+			dtoResult, createDiag := dbService.UpsertUserConfig(ctx, newCfg)
+			if createDiag != nil {
+				updateUserConfigDiag.AddError(strconv.Itoa(http.StatusInternalServerError), createDiag.GetSummary(), "UpsertUserConfig")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, http.StatusInternalServerError))
 				return
 			}
-			response := mappers.UserConfigDtoToResponse(*dtoResult)
+			response := mappers.GormUserConfigDtoToResponse(*dtoResult)
 			w.WriteHeader(http.StatusCreated)
 			_ = json.NewEncoder(w).Encode(response)
 			ctx.LogInfof("User config created successfully (upsert)")
@@ -315,21 +307,20 @@ func UpdateUserConfigHandler() restapi.ControllerHandler {
 			existing.Name = request.Name
 		}
 		if request.Type != "" {
-			existing.Type = data_models.UserConfigValueType(request.Type)
+			existing.Type = db_models.UserConfigValueType(request.Type)
 		}
 		if request.Value != "" {
 			existing.Value = request.Value
 		}
 
-		dtoResult, err := dbService.UpdateUserConfig(ctx, *existing)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			updateUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "UpdateUserConfig")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, rsp.Code))
+		dtoResult, diag := dbService.UpdateUserConfig(ctx, *existing)
+		if diag != nil {
+			updateUserConfigDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "UpdateUserConfig")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateUserConfigDiag, http.StatusInternalServerError))
 			return
 		}
 
-		response := mappers.UserConfigDtoToResponse(*dtoResult)
+		response := mappers.GormUserConfigDtoToResponse(*dtoResult)
 
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
@@ -364,18 +355,16 @@ func DeleteUserConfigHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			deleteUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteUserConfigDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil {
+			deleteUserConfigDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteUserConfigDiag, http.StatusInternalServerError))
 			return
 		}
 
-		if err := dbService.DeleteUserConfig(ctx, userContext.ID, id); err != nil {
-			rsp := models.NewFromError(err)
-			deleteUserConfigDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DeleteUserConfig")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteUserConfigDiag, rsp.Code))
+		if diag := dbService.DeleteUserConfig(ctx, userContext.ID, id); diag != nil {
+			deleteUserConfigDiag.AddError(strconv.Itoa(http.StatusNotFound), diag.GetSummary(), "DeleteUserConfig")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteUserConfigDiag, http.StatusNotFound))
 			return
 		}
 
