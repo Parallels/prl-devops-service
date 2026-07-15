@@ -116,7 +116,7 @@ jobs:
             fi
 
             if ! printf '%s' "$result_raw" | jq -e . >/dev/null 2>&1; then
-              if printf '%s' "$result_raw" | grep -q ' is in Running state'; then
+              if printf '%s' "$result_raw" | grep -Eq ' is in Running state|status: (Running|Pending|InProgress|Queued)'; then
                 echo "$result_raw"
                 sleep 10
                 continue
