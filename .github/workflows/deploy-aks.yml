@@ -3,8 +3,7 @@ name: Deploy to AKS
 # DEPLOYMENT STRATEGY:
 # - Workaround reason: GitHub Environments are not available on this GitHub plan,
 #   so we cannot use environment-based OIDC subjects.
-# - Therefore deployments are executed under the trusted main ref subject
-#   (repo:Parallels/prl-devops-service:ref:refs/heads/main).
+# - Therefore deployments are executed under a trusted branch-ref based OIDC subject.
 # - When dispatched from main: both Helm chart AND app image (image_tag) are deployed
 # - When dispatched from feature branch: only app image is deployed; chart always comes from main
 #   (This is because chart source is determined by the checkout ref, while image_tag is independent input)
@@ -68,6 +67,16 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Mask non-secret identifiers
+        env:
+          OIDC_SUBJECT: repo:${{ github.repository }}:ref:${{ github.ref }}
+        run: |
+          echo "::add-mask::$OIDC_SUBJECT"
+          echo "::add-mask::api://AzureADTokenExchange"
+          echo "::add-mask::prl-devops-services"
+          echo "::add-mask::prl-devops-orchestrator"
+          echo "::add-mask::prl-devops-catalog"
+
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
@@ -94,71 +103,52 @@ jobs:
             -n "$cluster_name" \
             -c "$command" \
             "$@" \
+            --only-show-errors \
             -o json)"
 
           command_id="$(printf '%s' "$invoke_json" | jq -r '.id // .commandId // empty')"
           if [[ -z "$command_id" ]]; then
-            echo "$invoke_json"
             echo "Unable to determine AKS command id from invoke response." >&2
             exit 1
           fi
 
-          echo "AKS command id: $command_id"
-
           while true; do
-            if ! result_raw="$(az aks command result \
+            result_raw="$(az aks command result \
               -g "$resource_group" \
               -n "$cluster_name" \
               -i "$command_id" \
-              -o json 2>&1)"; then
-              echo "$result_raw"
-              exit 1
-            fi
+              --only-show-errors \
+              -o json 2>&1 || true)"
 
             if ! printf '%s' "$result_raw" | jq -e . >/dev/null 2>&1; then
               if printf '%s' "$result_raw" | grep -Eq ' is in Running state|status: (Running|Pending|InProgress|Queued)'; then
-                echo "$result_raw"
+                echo "AKS command status: Running"
                 sleep 10
                 continue
               fi
-
-              echo "$result_raw"
-              echo "AKS command result was not valid JSON." >&2
+              echo "AKS command status check failed." >&2
               exit 1
             fi
 
-            state="$(printf '%s' "$result_raw" | jq -r '.provisioningState // .status // empty')"
-            output="$(printf '%s' "$result_raw" | jq -r '.logs // .text // .message // empty')"
+            state="$(printf '%s' "$result_raw" | jq -r '.provisioningState // .status // ""')"
             exit_code="$(printf '%s' "$result_raw" | jq -r 'if .exitCode == null then "" else (.exitCode | tostring) end')"
+            output="$(printf '%s' "$result_raw" | jq -r '.logs // .text // .message // ""')"
+
+            if [[ -n "$output" ]]; then
+              printf '%s\n' "$output"
+            fi
 
             case "$state" in
               Succeeded)
-                if [[ -n "$output" ]]; then
-                  printf '%s\n' "$output"
-                fi
-                if [[ -n "$exit_code" && "$exit_code" != "0" ]]; then
-                  echo "$result_raw"
-                  exit "$exit_code"
-                fi
-                exit 0
+                [[ -z "$exit_code" || "$exit_code" == "0" ]] && exit 0
+                exit "$exit_code"
                 ;;
               Failed|Canceled)
-                echo "$result_raw"
-                if [[ -n "$output" ]]; then
-                  printf '%s\n' "$output"
-                fi
-                if [[ -n "$exit_code" ]]; then
-                  exit "$exit_code"
-                fi
-                exit 1
-                ;;
-              '' )
-                echo "$result_raw"
-                echo "AKS command result did not include a provisioning state." >&2
+                [[ -n "$exit_code" ]] && exit "$exit_code"
                 exit 1
                 ;;
               *)
-                echo "AKS command status: $state"
+                echo "AKS command status: ${state:-Running}"
                 sleep 10
                 ;;
             esac
@@ -198,7 +188,8 @@ jobs:
             --namespace $K8S_NAMESPACE \
             --set image.tag=${{ inputs.image_tag }} \
             --set config.mode=orchestrator \
-            --set fullnameOverride=prl-devops-orchestrator"
+            --set fullnameOverride=prl-devops-orchestrator \
+            --hide-notes"
           
           if [[ "$DRY_RUN" == "true" ]]; then
             HELM_CMD="$HELM_CMD --dry-run --debug"
@@ -244,7 +235,8 @@ jobs:
             --namespace $K8S_NAMESPACE \
             --set image.tag=${{ inputs.image_tag }} \
             --set config.mode=catalog \
-            --set fullnameOverride=prl-devops-catalog"
+            --set fullnameOverride=prl-devops-catalog \
+            --hide-notes"
           
           if [[ "$DRY_RUN" == "true" ]]; then
             HELM_CMD="$HELM_CMD --dry-run --debug"
