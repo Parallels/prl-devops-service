@@ -133,9 +133,11 @@ jobs:
           timeout 15 bash -c "exec 3<>/dev/tcp/$AKS_API_IP/443"
 
       - name: Install kubelogin
-        run: |
-          set -euo pipefail
-          az aks install-cli --kubelogin
+        uses: azure/use-kubelogin@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          kubelogin-version: 'v0.2.14'
 
       - name: Get AKS credentials
         run: |
