@@ -43,8 +43,8 @@ on:
         required: false
         default: false
         type: boolean
-      atomic:
-        description: Rollback on failure (atomic deployment)
+      rollback_on_failure:
+        description: Roll back on failure
         required: false
         type: boolean
         default: true
@@ -72,7 +72,6 @@ jobs:
           oidc_subject="repo:${GITHUB_REPOSITORY}:ref:${GITHUB_REF}"
           echo "::add-mask::$oidc_subject"
           echo "::add-mask::api://AzureADTokenExchange"
-          echo "::add-mask::$RUNNER_NAME"
           echo "::add-mask::$GITHUB_WORKFLOW_REF"
 
       - name: Azure login (OIDC)
@@ -131,7 +130,7 @@ jobs:
         env:
           K8S_NAMESPACE: ${{ inputs.namespace }}
           DRY_RUN: ${{ inputs.dry_run }}
-          ATOMIC: ${{ inputs.atomic }}
+          ROLLBACK_ON_FAILURE: ${{ inputs.rollback_on_failure }}
         run: |
           set -euo pipefail
 
@@ -146,8 +145,8 @@ jobs:
 
           if [[ "$DRY_RUN" == "true" ]]; then
             helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" --dry-run --debug
-          elif [[ "$ATOMIC" == "true" ]]; then
-            DEPLOY_ARGS=(--atomic --timeout 5m)
+          elif [[ "$ROLLBACK_ON_FAILURE" == "true" ]]; then
+            DEPLOY_ARGS=(--rollback-on-failure --timeout 5m)
             helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           else
             DEPLOY_ARGS=(--wait --timeout 5m)
@@ -169,7 +168,7 @@ jobs:
         env:
           K8S_NAMESPACE: ${{ inputs.namespace }}
           DRY_RUN: ${{ inputs.dry_run }}
-          ATOMIC: ${{ inputs.atomic }}
+          ROLLBACK_ON_FAILURE: ${{ inputs.rollback_on_failure }}
         run: |
           set -euo pipefail
 
@@ -184,8 +183,8 @@ jobs:
 
           if [[ "$DRY_RUN" == "true" ]]; then
             helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" --dry-run --debug
-          elif [[ "$ATOMIC" == "true" ]]; then
-            DEPLOY_ARGS=(--atomic --timeout 5m)
+          elif [[ "$ROLLBACK_ON_FAILURE" == "true" ]]; then
+            DEPLOY_ARGS=(--rollback-on-failure --timeout 5m)
             helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           else
             DEPLOY_ARGS=(--wait --timeout 5m)
