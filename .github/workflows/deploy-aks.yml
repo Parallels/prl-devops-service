@@ -72,6 +72,8 @@ jobs:
           oidc_subject="repo:${GITHUB_REPOSITORY}:ref:${GITHUB_REF}"
           echo "::add-mask::$oidc_subject"
           echo "::add-mask::api://AzureADTokenExchange"
+          echo "::add-mask::$RUNNER_NAME"
+          echo "::add-mask::$GITHUB_WORKFLOW_REF"
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
