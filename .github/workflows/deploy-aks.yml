@@ -103,7 +103,7 @@ jobs:
           cp /tmp/kubelogin/bin/linux_amd64/kubelogin "$HOME/.local/bin/kubelogin"
           rm -rf /tmp/kubelogin /tmp/kubelogin.zip
 
-      - name: Get AKS credentials
+      - name: Set AKS context
         run: |
           set -euo pipefail
           az aks get-credentials \
@@ -111,10 +111,8 @@ jobs:
             -n "$AKS_CLUSTER_NAME" \
             --overwrite-existing
 
-      - name: Convert kubeconfig for kubelogin
-        run: |
-          set -euo pipefail
-          kubelogin convert-kubeconfig -l azurecli
+      - name: Convert kubeconfig for non-interactive login
+        run: kubelogin convert-kubeconfig -l azurecli
 
       - name: Helm lint orchestrator
         if: ${{ inputs.deploy_orchestrator }}
@@ -134,24 +132,25 @@ jobs:
           ATOMIC: ${{ inputs.atomic }}
         run: |
           set -euo pipefail
-          
-          HELM_CMD="helm upgrade --install prl-devops-orchestrator helm \
-            -f helm/values-${{ inputs.environment }}.yaml \
-            --namespace $K8S_NAMESPACE \
-            --set image.tag=${{ inputs.image_tag }} \
-            --set config.mode=orchestrator \
-            --set fullnameOverride=prl-devops-orchestrator \
-            --hide-notes"
-          
-          if [[ "$DRY_RUN" == "true" ]]; then
-            HELM_CMD="$HELM_CMD --dry-run --debug"
-          elif [[ "$ATOMIC" == "true" ]]; then
-            HELM_CMD="$HELM_CMD --atomic --timeout 5m"
-          else
-            HELM_CMD="$HELM_CMD --wait --timeout 5m"
-          fi
 
-          $HELM_CMD
+          HELM_ARGS=(
+            -f "helm/values-${{ inputs.environment }}.yaml"
+            --namespace "$K8S_NAMESPACE"
+            --set "image.tag=${{ inputs.image_tag }}"
+            --set config.mode=orchestrator
+            --set fullnameOverride=prl-devops-orchestrator
+            --hide-notes
+          )
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            helm upgrade --install prl-devops-orchestrator helm "${HELM_ARGS[@]}" --dry-run --debug
+          elif [[ "$ATOMIC" == "true" ]]; then
+            DEPLOY_ARGS=(--atomic --timeout 5m)
+            helm upgrade --install prl-devops-orchestrator helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
+          else
+            DEPLOY_ARGS=(--wait --timeout 5m)
+            helm upgrade --install prl-devops-orchestrator helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
+          fi
 
       - name: Helm lint catalog
         if: ${{ inputs.deploy_catalog }}
@@ -172,20 +171,21 @@ jobs:
         run: |
           set -euo pipefail
 
-          HELM_CMD="helm upgrade --install prl-devops-catalog helm \
-            -f helm/values-${{ inputs.environment }}.yaml \
-            --namespace $K8S_NAMESPACE \
-            --set image.tag=${{ inputs.image_tag }} \
-            --set config.mode=catalog \
-            --set fullnameOverride=prl-devops-catalog \
-            --hide-notes"
-          
-          if [[ "$DRY_RUN" == "true" ]]; then
-            HELM_CMD="$HELM_CMD --dry-run --debug"
-          elif [[ "$ATOMIC" == "true" ]]; then
-            HELM_CMD="$HELM_CMD --atomic --timeout 5m"
-          else
-            HELM_CMD="$HELM_CMD --wait --timeout 5m"
-          fi
+          HELM_ARGS=(
+            -f "helm/values-${{ inputs.environment }}.yaml"
+            --namespace "$K8S_NAMESPACE"
+            --set "image.tag=${{ inputs.image_tag }}"
+            --set config.mode=catalog
+            --set fullnameOverride=prl-devops-catalog
+            --hide-notes
+          )
 
-          $HELM_CMD
+          if [[ "$DRY_RUN" == "true" ]]; then
+            helm upgrade --install prl-devops-catalog helm "${HELM_ARGS[@]}" --dry-run --debug
+          elif [[ "$ATOMIC" == "true" ]]; then
+            DEPLOY_ARGS=(--atomic --timeout 5m)
+            helm upgrade --install prl-devops-catalog helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
+          else
+            DEPLOY_ARGS=(--wait --timeout 5m)
+            helm upgrade --install prl-devops-catalog helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
+          fi
