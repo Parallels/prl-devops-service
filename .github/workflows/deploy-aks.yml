@@ -118,11 +118,11 @@ jobs:
         if: ${{ inputs.deploy_orchestrator }}
         run: |
           set -euo pipefail
-          helm lint helm \
-            -f helm/values-${{ inputs.environment }}.yaml \
+          helm lint ./helm \
+            -f "./helm/values-${{ inputs.environment }}.yaml" \
             --set config.mode=orchestrator \
             --set fullnameOverride=prl-devops-orchestrator \
-            --set image.tag=${{ inputs.image_tag }}
+            --set image.tag="${{ inputs.image_tag }}"
 
       - name: Helm deploy orchestrator
         if: ${{ inputs.deploy_orchestrator }}
@@ -134,7 +134,7 @@ jobs:
           set -euo pipefail
 
           HELM_ARGS=(
-            -f "helm/values-${{ inputs.environment }}.yaml"
+            -f "./helm/values-${{ inputs.environment }}.yaml"
             --namespace "$K8S_NAMESPACE"
             --set "image.tag=${{ inputs.image_tag }}"
             --set config.mode=orchestrator
@@ -143,24 +143,24 @@ jobs:
           )
 
           if [[ "$DRY_RUN" == "true" ]]; then
-            helm upgrade --install prl-devops-orchestrator helm "${HELM_ARGS[@]}" --dry-run --debug
+            helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" --dry-run --debug
           elif [[ "$ATOMIC" == "true" ]]; then
             DEPLOY_ARGS=(--atomic --timeout 5m)
-            helm upgrade --install prl-devops-orchestrator helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
+            helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           else
             DEPLOY_ARGS=(--wait --timeout 5m)
-            helm upgrade --install prl-devops-orchestrator helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
+            helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           fi
 
       - name: Helm lint catalog
         if: ${{ inputs.deploy_catalog }}
         run: |
           set -euo pipefail
-          helm lint helm \
-            -f helm/values-${{ inputs.environment }}.yaml \
+          helm lint ./helm \
+            -f "./helm/values-${{ inputs.environment }}.yaml" \
             --set config.mode=catalog \
             --set fullnameOverride=prl-devops-catalog \
-            --set image.tag=${{ inputs.image_tag }}
+            --set image.tag="${{ inputs.image_tag }}"
 
       - name: Helm deploy catalog
         if: ${{ inputs.deploy_catalog }}
@@ -172,7 +172,7 @@ jobs:
           set -euo pipefail
 
           HELM_ARGS=(
-            -f "helm/values-${{ inputs.environment }}.yaml"
+            -f "./helm/values-${{ inputs.environment }}.yaml"
             --namespace "$K8S_NAMESPACE"
             --set "image.tag=${{ inputs.image_tag }}"
             --set config.mode=catalog
@@ -181,11 +181,11 @@ jobs:
           )
 
           if [[ "$DRY_RUN" == "true" ]]; then
-            helm upgrade --install prl-devops-catalog helm "${HELM_ARGS[@]}" --dry-run --debug
+            helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" --dry-run --debug
           elif [[ "$ATOMIC" == "true" ]]; then
             DEPLOY_ARGS=(--atomic --timeout 5m)
-            helm upgrade --install prl-devops-catalog helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
+            helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           else
             DEPLOY_ARGS=(--wait --timeout 5m)
-            helm upgrade --install prl-devops-catalog helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
+            helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           fi
