@@ -3,8 +3,7 @@ name: Deploy to AKS
 # DEPLOYMENT STRATEGY:
 # - Workaround reason: GitHub Environments are not available on this GitHub plan,
 #   so we cannot use environment-based OIDC subjects.
-# - Therefore deployments are executed under the trusted main ref subject
-#   (repo:Parallels/prl-devops-service:ref:refs/heads/main).
+# - Therefore deployments are executed under a trusted branch-ref based OIDC subject.
 # - When dispatched from main: both Helm chart AND app image (image_tag) are deployed
 # - When dispatched from feature branch: only app image is deployed; chart always comes from main
 #   (This is because chart source is determined by the checkout ref, while image_tag is independent input)
@@ -44,26 +43,36 @@ on:
         required: false
         default: false
         type: boolean
-      atomic:
-        description: Rollback on failure (atomic deployment)
+      rollback_on_failure:
+        description: Roll back on failure
         required: false
         type: boolean
-        default: false
+        default: true
 
 jobs:
-  deploy-orchestrator:
-    name: Deploy Orchestrator
-    if: ${{ inputs.deploy_orchestrator }}
+  deploy-services:
+    name: Deploy Orchestrator and/or Catalog 
+    if: ${{ inputs.deploy_orchestrator || inputs.deploy_catalog }}
     runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 30
     permissions:
       id-token: write
       contents: read
+    env:
+      AKS_RESOURCE_GROUP: ${{ inputs.environment == 'stg' && secrets.STG_AKS_RESOURCE_GROUP || secrets.PRD_AKS_RESOURCE_GROUP }}
+      AKS_CLUSTER_NAME: ${{ inputs.environment == 'stg' && secrets.STG_AKS_CLUSTER_NAME || secrets.PRD_AKS_CLUSTER_NAME }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+
+      - name: Mask runtime identifiers
+        run: |
+          oidc_subject="repo:${GITHUB_REPOSITORY}:ref:${GITHUB_REF}"
+          echo "::add-mask::$oidc_subject"
+          echo "::add-mask::api://AzureADTokenExchange"
+          echo "::add-mask::$GITHUB_WORKFLOW_REF"
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
@@ -72,26 +81,42 @@ jobs:
           tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
           subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
 
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
       - name: Install kubelogin
-        uses: azure/use-kubelogin@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          kubelogin-version: 'v0.2.14'
+        run: |
+          set -euo pipefail
+          KUBELOGIN_VERSION="v0.2.14"
+          # Skip download if already installed at correct version
+          if kubelogin --version 2>/dev/null | grep -q "$KUBELOGIN_VERSION"; then
+            echo "kubelogin $KUBELOGIN_VERSION already installed"
+            exit 0
+          fi
+          curl -sSL "https://github.com/Azure/kubelogin/releases/download/${KUBELOGIN_VERSION}/kubelogin-linux-amd64.zip" -o /tmp/kubelogin.zip
+          # Use python3 zipfile instead of unzip: runner has no unzip and no passwordless sudo to install it
+          python3 -m zipfile -e /tmp/kubelogin.zip /tmp/kubelogin
+          chmod +x /tmp/kubelogin/bin/linux_amd64/kubelogin
+          mkdir -p "$HOME/.local/bin"
+          cp /tmp/kubelogin/bin/linux_amd64/kubelogin "$HOME/.local/bin/kubelogin"
+          rm -rf /tmp/kubelogin /tmp/kubelogin.zip
 
       - name: Set AKS context
-        uses: azure/aks-set-context@v4
-        with:
-          resource-group: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          cluster-name: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
+        run: |
+          set -euo pipefail
+          az aks get-credentials \
+            -g "$AKS_RESOURCE_GROUP" \
+            -n "$AKS_CLUSTER_NAME" \
+            --overwrite-existing
 
       - name: Convert kubeconfig for non-interactive login
         run: kubelogin convert-kubeconfig -l azurecli
 
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
-
       - name: Helm lint orchestrator
+        if: ${{ inputs.deploy_orchestrator }}
         run: |
           set -euo pipefail
           helm lint ./helm \
@@ -101,71 +126,35 @@ jobs:
             --set image.tag="${{ inputs.image_tag }}"
 
       - name: Helm deploy orchestrator
+        if: ${{ inputs.deploy_orchestrator }}
         env:
           K8S_NAMESPACE: ${{ inputs.namespace }}
           DRY_RUN: ${{ inputs.dry_run }}
-          ATOMIC: ${{ inputs.atomic }}
+          ROLLBACK_ON_FAILURE: ${{ inputs.rollback_on_failure }}
         run: |
           set -euo pipefail
+
           HELM_ARGS=(
             -f "./helm/values-${{ inputs.environment }}.yaml"
             --namespace "$K8S_NAMESPACE"
             --set "image.tag=${{ inputs.image_tag }}"
             --set config.mode=orchestrator
             --set fullnameOverride=prl-devops-orchestrator
+            --hide-notes
           )
 
           if [[ "$DRY_RUN" == "true" ]]; then
             helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" --dry-run --debug
+          elif [[ "$ROLLBACK_ON_FAILURE" == "true" ]]; then
+            DEPLOY_ARGS=(--rollback-on-failure --timeout 5m)
+            helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           else
             DEPLOY_ARGS=(--wait --timeout 5m)
-            if [[ "$ATOMIC" == "true" ]]; then
-              DEPLOY_ARGS+=("--atomic")
-            fi
             helm upgrade --install prl-devops-orchestrator ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           fi
 
-  deploy-catalog:
-    name: Deploy Catalog
-    if: ${{ inputs.deploy_catalog }}
-    runs-on: [self-hosted, Linux, X64]
-    timeout-minutes: 30
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Azure login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_CLIENT_ID || secrets.PRD_AZURE_CLIENT_ID }}
-          tenant-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_TENANT_ID || secrets.PRD_AZURE_TENANT_ID }}
-          subscription-id: ${{ inputs.environment == 'stg' && secrets.STG_AZURE_SUBSCRIPTION_ID || secrets.PRD_AZURE_SUBSCRIPTION_ID }}
-
-      - name: Install kubelogin
-        uses: azure/use-kubelogin@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          kubelogin-version: 'v0.2.14'
-
-      - name: Set AKS context
-        uses: azure/aks-set-context@v4
-        with:
-          resource-group: ${{ inputs.environment == 'stg' && vars.STG_AKS_RESOURCE_GROUP || vars.PRD_AKS_RESOURCE_GROUP }}
-          cluster-name: ${{ inputs.environment == 'stg' && vars.STG_AKS_CLUSTER_NAME || vars.PRD_AKS_CLUSTER_NAME }}
-
-      - name: Convert kubeconfig for non-interactive login
-        run: kubelogin convert-kubeconfig -l azurecli
-
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
-
       - name: Helm lint catalog
+        if: ${{ inputs.deploy_catalog }}
         run: |
           set -euo pipefail
           helm lint ./helm \
@@ -175,26 +164,29 @@ jobs:
             --set image.tag="${{ inputs.image_tag }}"
 
       - name: Helm deploy catalog
+        if: ${{ inputs.deploy_catalog }}
         env:
           K8S_NAMESPACE: ${{ inputs.namespace }}
           DRY_RUN: ${{ inputs.dry_run }}
-          ATOMIC: ${{ inputs.atomic }}
+          ROLLBACK_ON_FAILURE: ${{ inputs.rollback_on_failure }}
         run: |
           set -euo pipefail
+
           HELM_ARGS=(
             -f "./helm/values-${{ inputs.environment }}.yaml"
             --namespace "$K8S_NAMESPACE"
             --set "image.tag=${{ inputs.image_tag }}"
             --set config.mode=catalog
             --set fullnameOverride=prl-devops-catalog
+            --hide-notes
           )
 
           if [[ "$DRY_RUN" == "true" ]]; then
             helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" --dry-run --debug
+          elif [[ "$ROLLBACK_ON_FAILURE" == "true" ]]; then
+            DEPLOY_ARGS=(--rollback-on-failure --timeout 5m)
+            helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           else
             DEPLOY_ARGS=(--wait --timeout 5m)
-            if [[ "$ATOMIC" == "true" ]]; then
-              DEPLOY_ARGS+=("--atomic")
-            fi
             helm upgrade --install prl-devops-catalog ./helm "${HELM_ARGS[@]}" "${DEPLOY_ARGS[@]}"
           fi
