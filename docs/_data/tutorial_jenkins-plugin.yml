@@ -40,7 +40,7 @@ introduction:
   prerequisites:
     hard:
       - "**Parallels DevOps Service** installed and running — [Complete this tutorial first](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/)"
-      - Jenkins LTS 2.440.x or newer
+      - Jenkins LTS 2.528.3 or newer
       - JDK 17 or 21 for running Jenkins
     soft:
       - "**Catalog Service** (optional) — Only needed for catalog-based provisioning. [Setup guide](/prl-devops-service/examples/remote-catalog/)"
