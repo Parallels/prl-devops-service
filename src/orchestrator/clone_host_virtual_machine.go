@@ -36,7 +36,7 @@ func (s *OrchestratorService) CloneVirtualMachine(ctx basecontext.ApiContext, vm
 		return nil, errors.NewWithCodef(400, "Host %s is not healthy", host.ID)
 	}
 
-	result, err := s.CloneHostVirtualMachine(ctx, vm.HostId, vmId, request, false)
+	result, err := s.CloneHostVirtualMachine(ctx, vm.HostId, vm.ID, request, false)
 	if err != nil {
 		return nil, err
 	}
