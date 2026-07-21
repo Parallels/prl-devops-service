@@ -187,7 +187,7 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/orchestrator/machines/{id}/start").
-		WithRequiredClaim(constants.UPDATE_CLAIM).
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
 		WithHandler(StartOrchestratorVirtualMachineHandler()).
 		Register()
 
@@ -195,7 +195,7 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/orchestrator/machines/{id}/stop").
-		WithRequiredClaim(constants.UPDATE_CLAIM).
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
 		WithHandler(StopOrchestratorVirtualMachineHandler()).
 		Register()
 
@@ -203,7 +203,7 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/orchestrator/machines/{id}/restart").
-		WithRequiredClaim(constants.UPDATE_CLAIM).
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
 		WithHandler(RestartOrchestratorVirtualMachineHandler()).
 		Register()
 
@@ -211,7 +211,7 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/orchestrator/machines/{id}/suspend").
-		WithRequiredClaim(constants.UPDATE_CLAIM).
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
 		WithHandler(SuspendOrchestratorVirtualMachineHandler()).
 		Register()
 
@@ -219,7 +219,7 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/orchestrator/machines/{id}/resume").
-		WithRequiredClaim(constants.UPDATE_CLAIM).
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
 		WithHandler(ResumeOrchestratorVirtualMachineHandler()).
 		Register()
 
@@ -227,7 +227,7 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/orchestrator/machines/{id}/reset").
-		WithRequiredClaim(constants.UPDATE_CLAIM).
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
 		WithHandler(ResetOrchestratorVirtualMachineHandler()).
 		Register()
 
@@ -235,7 +235,7 @@ func registerOrchestratorHostsHandlers(ctx basecontext.ApiContext, version strin
 		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/orchestrator/machines/{id}/pause").
-		WithRequiredClaim(constants.UPDATE_CLAIM).
+		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
 		WithHandler(PauseOrchestratorVirtualMachineHandler()).
 		Register()
 

@@ -138,7 +138,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
-		WithMethod(restapi.GET).
+		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/machines/{id}/start").
 		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
@@ -146,7 +146,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
-		WithMethod(restapi.GET).
+		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/machines/{id}/stop").
 		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
@@ -154,7 +154,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
-		WithMethod(restapi.GET).
+		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/machines/{id}/restart").
 		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
@@ -162,7 +162,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
-		WithMethod(restapi.GET).
+		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/machines/{id}/pause").
 		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
@@ -170,7 +170,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
-		WithMethod(restapi.GET).
+		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/machines/{id}/resume").
 		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
@@ -178,7 +178,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
-		WithMethod(restapi.GET).
+		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/machines/{id}/reset").
 		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
@@ -186,7 +186,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 		Register()
 
 	restapi.NewController().
-		WithMethod(restapi.GET).
+		WithMethod(restapi.PUT).
 		WithVersion(version).
 		WithPath("/machines/{id}/suspend").
 		WithRequiredClaim(constants.UPDATE_VM_STATES_CLAIM).
@@ -334,7 +334,7 @@ func GetVirtualMachineHandler() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/start [get]
+// @Router			/v1/machines/{id}/start [put]
 func StartVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -375,7 +375,7 @@ func StartVirtualMachineHandler() restapi.ControllerHandler {
 // @Failure		401		{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/stop [get]
+// @Router			/v1/machines/{id}/stop [put]
 func StopVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -429,7 +429,7 @@ func StopVirtualMachineHandler() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/restart [get]
+// @Router			/v1/machines/{id}/restart [put]
 func RestartVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -468,7 +468,7 @@ func RestartVirtualMachineHandler() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/suspend [get]
+// @Router			/v1/machines/{id}/suspend [put]
 func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -507,7 +507,7 @@ func SuspendVirtualMachineHandler() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/resume [get]
+// @Router			/v1/machines/{id}/resume [put]
 func ResumeMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -546,7 +546,7 @@ func ResumeMachineController() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/reset [get]
+// @Router			/v1/machines/{id}/reset [put]
 func ResetMachineController() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
@@ -585,7 +585,7 @@ func ResetMachineController() restapi.ControllerHandler {
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
-// @Router			/v1/machines/{id}/pause [get]
+// @Router			/v1/machines/{id}/pause [put]
 func PauseVirtualMachineHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
