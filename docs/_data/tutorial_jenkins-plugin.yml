@@ -29,7 +29,7 @@ introduction:
     - Ensure build isolation by giving each job a fresh, clean VM
     - Reduce costs by only running VMs when builds are actively executing
     
-    **Before you begin**: This tutorial assumes you have a working Parallels DevOps Service instance. If you haven't 
+    **Before you begin**: This tutorial assumes you have a working Parallels DevOps Service instance with min version **1.0.5**. If you haven't
     set it up yet, complete the [DevOps CLI Quick Start](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/) 
     tutorial first.
   key_outcomes:
@@ -39,7 +39,7 @@ introduction:
     - Run dynamically provisioned builds on macOS, Linux, and Windows
   prerequisites:
     hard:
-      - "**Parallels DevOps Service** installed and running — [Complete this tutorial first](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/)"
+      - "**Parallels DevOps Service min 1.0.5** installed and running — [Complete this tutorial first](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/)"
       - Jenkins LTS 2.528.3 or newer
       - JDK 17 or 21 for running Jenkins
     soft:
