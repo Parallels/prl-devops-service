@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "1.0.4"
+        "version": "1.0.5"
     },
     "basePath": "/api",
     "paths": {
@@ -4128,7 +4128,7 @@
             }
         },
         "/v1/machines/{id}/pause": {
-            "get": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -4235,7 +4235,7 @@
             }
         },
         "/v1/machines/{id}/reset": {
-            "get": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -4284,7 +4284,7 @@
             }
         },
         "/v1/machines/{id}/restart": {
-            "get": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -4333,7 +4333,7 @@
             }
         },
         "/v1/machines/{id}/resume": {
-            "get": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -4706,7 +4706,7 @@
             }
         },
         "/v1/machines/{id}/start": {
-            "get": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -4804,7 +4804,7 @@
             }
         },
         "/v1/machines/{id}/stop": {
-            "get": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -4859,7 +4859,7 @@
             }
         },
         "/v1/machines/{id}/suspend": {
-            "get": {
+            "put": {
                 "security": [
                     {
                         "ApiKeyAuth": []

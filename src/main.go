@@ -19,7 +19,7 @@ import (
 )
 
 //	@title			Parallels Desktop DevOps Service
-//	@version		1.0.4
+//	@version		1.0.5
 //	@description	Parallels Desktop DevOps Service
 //	@termsOfService	http://swagger.io/terms/
 
