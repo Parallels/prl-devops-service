@@ -75,7 +75,7 @@ CHANGELOG_CONTENT=${CHANGELOG_CONTENT%\"} # Remove trailing quote
 # Check if changelog content is longer than 4096 characters
 if [ ${#CHANGELOG_CONTENT} -gt 4096 ]; then
   CHANGELOG_CONTENT="${CHANGELOG_CONTENT:0:3900}..."
-  CHANGELOG_CONTENT+=$"\nFor the complete changelog, visit: https://github.com/Parallels/terraform-provider-parallels-desktop/releases/tag/v${VERSION}"
+  CHANGELOG_CONTENT+=$"\nFor the complete changelog, visit: https://github.com/Parallels/prl-devops-service/releases/tag/v${VERSION}"
 fi
 
 if [[ ! $VERSION == v* ]]; then
