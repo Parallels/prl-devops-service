@@ -165,8 +165,8 @@ jobs:
 
           gsed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
 
-          rm -f $(which swag) 2>/dev/null || true
-          go clean -cache -modcache -cache -testcache
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          rm -f "$(go env GOPATH)/bin/swag"
           go install github.com/swaggo/swag/cmd/swag@latest
           cd src
           go mod tidy
