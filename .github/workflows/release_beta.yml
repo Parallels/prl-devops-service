@@ -165,6 +165,8 @@ jobs:
 
           gsed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
 
+          rm -f $(which swag) 2>/dev/null || true
+          go clean -cache -modcache -cache -testcache
           go install github.com/swaggo/swag/cmd/swag@latest
           cd src
           go mod tidy
@@ -282,6 +284,8 @@ jobs:
     name: Deploy to Staging
     needs:
       - beta-release
+      - beta-releases-matrix
+      - beta-releases-macos
       - build-containers
     runs-on: ubuntu-latest
     permissions:
@@ -366,7 +370,6 @@ jobs:
   discord-announce:
     if: ${{ inputs.announce_discord == true }}
     needs:
-      - beta-release
       - beta-releases-matrix
       - beta-releases-macos
       - build-containers

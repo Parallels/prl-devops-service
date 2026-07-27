@@ -135,6 +135,8 @@ jobs:
 
           gsed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
 
+          rm -f $(which swag) 2>/dev/null || true
+          go clean -cache -modcache -cache -testcache
           go install github.com/swaggo/swag/cmd/swag@latest
           cd src
           go mod tidy
@@ -251,6 +253,8 @@ jobs:
     name: Deploy to Production
     needs:
       - release
+      - releases-matrix
+      - releases-macos-matrix
       - build-containers
     runs-on: ubuntu-latest
     permissions:
@@ -383,6 +387,8 @@ jobs:
             }
   discord-announce:
     needs:
+      - releases-matrix
+      - releases-macos-matrix
       - build-containers
     name: Announce on Discord
     runs-on: ubuntu-latest
