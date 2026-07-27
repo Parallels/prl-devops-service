@@ -72,10 +72,10 @@ jobs:
             goos: darwin
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Go 1.21.x
-        uses: actions/setup-go@v4
+      - name: Setup Go
+        uses: actions/setup-go@v7
         with:
-          go-version: "1.21.x"
+          go-version-file: '${{ github.workspace }}/src/go.mod'
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Add Inbuilt Variables
         run: |
@@ -83,6 +83,8 @@ jobs:
           echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
           sed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
 
+          export GOPATH="/tmp/gotools"
+          export PATH="$GOPATH/bin:$PATH"
           go install github.com/swaggo/swag/cmd/swag@latest
           cd src
           go mod tidy
@@ -95,7 +97,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
-          goversion: "https://dl.google.com/go/go1.21.1.linux-amd64.tar.gz"
           project_path: "./src"
           binary_name: "prldevops"
           release_name: "v${{ env.EXT_VERSION }}"
@@ -122,10 +123,10 @@ jobs:
         goarch: [amd64, arm64]
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Go 1.21.x
-        uses: actions/setup-go@v4
+      - name: Setup Go
+        uses: actions/setup-go@v7
         with:
-          go-version: "1.21.x"
+          go-version-file: '${{ github.workspace }}/src/go.mod'
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
       - name: Add Inbuilt Variables
         run: |
@@ -135,6 +136,8 @@ jobs:
 
           gsed -i "/@version/c\//\t@version\t\t$EXT_VERSION" ./src/main.go
 
+          export GOPATH="/tmp/gotools"
+          export PATH="$GOPATH/bin:$PATH"
           go install github.com/swaggo/swag/cmd/swag@latest
           cd src
           go mod tidy
@@ -251,6 +254,8 @@ jobs:
     name: Deploy to Production
     needs:
       - release
+      - releases-matrix
+      - releases-macos-matrix
       - build-containers
     runs-on: ubuntu-latest
     permissions:
@@ -383,6 +388,8 @@ jobs:
             }
   discord-announce:
     needs:
+      - releases-matrix
+      - releases-macos-matrix
       - build-containers
     name: Announce on Discord
     runs-on: ubuntu-latest
