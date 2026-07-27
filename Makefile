@@ -130,6 +130,13 @@ endif
 	@cd src && CGO_ENABLED=0 GOOS="windows" GOARCH="amd64" go build -ldflags="$(BASE_LDFLAGS) -X '$(VERSION_PKG).buildChannel=stable'" -o ../out/binaries/$(PACKAGE_NAME)-windows-amd64
 	@echo "Build finished."
 
+.PHONY: build-macos-arm64
+build-macos-arm64:
+	@echo "Building macOS ARM64..."							
+	mkdir -p out/binaries
+	cd src && GOOS=darwin GOARCH=arm64 go build -o ../out/binaries/prl-devops-service-darwin-arm64
+	@echo "Build finished."
+
 .PHONY: build-alpine
 build-alpine:
 	@echo "Building..."
