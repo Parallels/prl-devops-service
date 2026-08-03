@@ -4229,14 +4229,42 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		go func(jobID string, req models.CreateVirtualMachineRequest) {
+		go func(jobID string, callerID string, req models.CreateVirtualMachineRequest) {
 			asyncCtx := basecontext.NewRootBaseContext()
+
+			// Track temp key name for cleanup
+			var tempKeyName string
+
+			// CLEANUP DEFER: Must be FIRST so it runs LAST (after panic recovery)
+			defer func() {
+				if tempKeyName != "" {
+					db := serviceprovider.Get().JsonDatabase
+					if db != nil {
+						_ = db.Connect(asyncCtx)
+						_ = db.DeleteApiKey(asyncCtx, tempKeyName)
+					}
+				}
+			}()
+
+			// PANIC RECOVERY: Second defer, runs before cleanup
 			defer func() {
 				if rec := recover(); rec != nil {
 					asyncCtx.LogErrorf("[Orchestrator] Panic in async create goroutine for job %s: %v", jobID, rec)
 					_ = jobManager.MarkJobError(jobID, fmt.Errorf("internal error: %v", rec))
 				}
 			}()
+
+			// NEW: Build connection string if orchestrator is the catalog
+			if req.CatalogManifest != nil && req.CatalogManifest.Connection == "" {
+				connStr, keyName, err := buildLocalCatalogConnection(asyncCtx, callerID, jobID)
+				if err != nil {
+					_ = jobManager.MarkJobError(jobID, fmt.Errorf("failed to resolve catalog connection: %w", err))
+					return
+				}
+				req.CatalogManifest.Connection = connStr
+				tempKeyName = keyName
+			}
+
 			_, _ = jobManager.UpdateJobProgress(jobID, 1, constants.JobStateRunning)
 			orchSvc := orchestrator.NewOrchestratorService(asyncCtx)
 			result, apiErr := orchSvc.DispatchCreateVirtualMachine(asyncCtx, jobID, req)
@@ -4249,7 +4277,7 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 				return
 			}
 			_ = jobManager.MarkJobCompleteWithRecord(jobID, fmt.Sprintf("Virtual machine %s created", result.ID), result.ID, result.Name, "virtual_machine", result.Host)
-		}(job.ID, request)
+		}(job.ID, callerID, request)
 
 		response := mappers.MapJobToApiJob(*job)
 		w.WriteHeader(http.StatusAccepted)
