@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -125,6 +126,21 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 
 	// Background: periodic full refresh (self-healing) on a longer interval.
 	go s.runFullRefreshLoop()
+
+	// Background: periodic cleanup of orphaned temp keys (every hour)
+	go func() {
+		cleanupTicker := time.NewTicker(1 * time.Hour)
+		defer cleanupTicker.Stop()
+
+		for {
+			select {
+			case <-s.syncContext.Done():
+				return
+			case <-cleanupTicker.C:
+				cleanupOrphanedTempKeys(s.ctx)
+			}
+		}
+	}()
 
 	// Background: lightweight health check on every refreshInterval tick.
 	for {
@@ -658,4 +674,55 @@ func getHostName(host models.OrchestratorHost) string {
 		return host.Description
 	}
 	return host.Host
+}
+
+// cleanupOrphanedTempKeys removes expired temporary API keys created for VM operations
+// This is a safety net for keys that weren't cleaned up by the normal defer mechanism
+func cleanupOrphanedTempKeys(ctx basecontext.ApiContext) {
+	db := serviceprovider.Get().JsonDatabase
+	if db == nil {
+		return
+	}
+
+	if err := db.Connect(ctx); err != nil {
+		ctx.LogErrorf("[Orchestrator] Failed to connect to database for temp key cleanup: %v", err)
+		return
+	}
+
+	// CRITICAL: Use GetAllApiKeysIncludingInternal to see internal keys
+	// GetApiKeys() filters out internal keys after Task 2, so we can't use it
+	allKeys, err := db.GetAllApiKeysIncludingInternal(ctx)
+	if err != nil {
+		ctx.LogErrorf("[Orchestrator] Failed to get API keys for cleanup: %v", err)
+		return
+	}
+
+	cutoff := time.Now().Add(-3 * time.Hour)
+	deletedCount := 0
+
+	for _, k := range allKeys {
+		// Only process internal temp keys
+		if k.Type != "internal" {
+			continue
+		}
+		if !strings.HasPrefix(k.Name, "temp-vm-") {
+			continue
+		}
+
+		// Check if expired more than 3 hours ago (temp keys expire in 2 hours)
+		if k.ExpiresAt != "" {
+			expiresAt, err := time.Parse(time.RFC3339, k.ExpiresAt)
+			if err == nil && expiresAt.Before(cutoff) {
+				if err := db.DeleteApiKey(ctx, k.ID); err == nil {
+					deletedCount++
+				} else {
+					ctx.LogErrorf("[Orchestrator] Failed to delete orphaned temp key %s: %v", k.Name, err)
+				}
+			}
+		}
+	}
+
+	if deletedCount > 0 {
+		ctx.LogInfof("[Orchestrator] Cleaned up %d orphaned temporary API keys", deletedCount)
+	}
 }

@@ -85,6 +85,28 @@ func (j *JsonDatabase) GetApiKeys(ctx basecontext.ApiContext, filter string) ([]
 	return filteredData, nil
 }
 
+// GetAllApiKeysIncludingInternal returns all API keys including internal ones
+// This is used for administrative tasks like cleanup and should NOT be exposed via API
+func (j *JsonDatabase) GetAllApiKeysIncludingInternal(ctx basecontext.ApiContext) ([]models.ApiKey, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
+	// Return a copy to avoid mutation issues
+	result := make([]models.ApiKey, len(j.data.ApiKeys))
+	copy(result, j.data.ApiKeys)
+
+	// Normalize types for consistency
+	for i := range result {
+		normalizeApiKeyType(&result[i])
+	}
+
+	return result, nil
+}
+
 func (j *JsonDatabase) GetApiKey(ctx basecontext.ApiContext, idOrName string) (*models.ApiKey, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
