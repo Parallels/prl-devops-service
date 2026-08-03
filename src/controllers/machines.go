@@ -13,7 +13,9 @@ import (
 	catalog_models "github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -2071,4 +2073,70 @@ func populateMachineRequestArchitecture(ctx basecontext.ApiContext, request *mod
 
 	request.Architecture = arch
 	return nil
+}
+
+// buildLocalCatalogConnection creates a temporary internal API key for catalog access
+// Used when orchestrator IS the catalog and needs to provide credentials to remote hosts
+func buildLocalCatalogConnection(ctx basecontext.ApiContext, callerID string, jobID string) (string, string, error) {
+	cfg := config.Get()
+	apiPort := cfg.ApiPort()
+	if apiPort == "" {
+		return "", "", fmt.Errorf("API port not configured")
+	}
+
+	// Determine schema and host
+	schema := "http"
+	if cfg.TlsEnabled() {
+		schema = "https"
+	}
+
+	host := cfg.OrchestratorPublicUrl()
+
+	// Sanitize host to handle various input formats:
+	// - Remove protocol prefixes (http://, https://)
+	// - Remove trailing slashes
+	// - Remove port numbers (we add apiPort separately)
+	host = strings.TrimSpace(host)
+	host = strings.TrimPrefix(host, "https://")
+	host = strings.TrimPrefix(host, "http://")
+	host = strings.TrimSuffix(host, "/")
+	if idx := strings.Index(host, ":"); idx != -1 {
+		host = host[:idx] // Remove port if present
+	}
+	if host == "" {
+		host = "localhost" // Fallback to localhost if empty after sanitization
+	}
+
+	// Generate unique key name and secret
+	keyName := "temp-vm-" + jobID
+	fullSecret := helpers.GenerateId()
+	// Limit secret to 40 chars (password hashing limitation)
+	plaintextSecret := fullSecret
+	if len(plaintextSecret) > 40 {
+		plaintextSecret = plaintextSecret[:40]
+	}
+
+	db := serviceprovider.Get().JsonDatabase
+	if err := db.Connect(ctx); err != nil {
+		return "", "", fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	tempKey := data_models.ApiKey{
+		ID:        helpers.GenerateId(),
+		Name:      keyName,
+		Key:       keyName,
+		Secret:    plaintextSecret, // Will be hashed by CreateApiKey
+		Type:      "internal",
+		UserID:    callerID,
+		ExpiresAt: time.Now().Add(2 * time.Hour).Format(time.RFC3339),
+	}
+
+	_, err := db.CreateApiKey(ctx, tempKey)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to create temp API key: %w", err)
+	}
+
+	// Use plaintext secret in connection string (before it was hashed)
+	connStr := fmt.Sprintf("host=%s@%s://%s:%s", plaintextSecret, schema, host, apiPort)
+	return connStr, keyName, nil
 }

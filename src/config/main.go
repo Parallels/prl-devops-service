@@ -518,6 +518,14 @@ func (c *Config) OrchestratorPullFrequency() int {
 	return intVal
 }
 
+func (c *Config) OrchestratorPublicUrl() string {
+	url := c.GetKey(constants.ORCHESTRATOR_PUBLIC_URL)
+	if url == "" {
+		return "localhost"
+	}
+	return url
+}
+
 func (c *Config) DatabaseFolder() string {
 	return c.GetKey(constants.DATABASE_FOLDER_ENV_VAR)
 }
