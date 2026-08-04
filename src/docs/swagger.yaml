@@ -2602,7 +2602,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 1.0.4
+  version: 1.0.5
 paths:
   /config/diskspace:
     post:
@@ -5090,7 +5090,7 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/pause:
-    get:
+    put:
       description: This endpoint pauses a virtual machine
       parameters:
       - description: Machine ID
@@ -5156,7 +5156,7 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/reset:
-    get:
+    put:
       description: This endpoint reset a virtual machine
       parameters:
       - description: Machine ID
@@ -5186,7 +5186,7 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/restart:
-    get:
+    put:
       description: This endpoint restarts a virtual machine
       parameters:
       - description: Machine ID
@@ -5216,7 +5216,7 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/resume:
-    get:
+    put:
       description: This endpoint resumes a virtual machine
       parameters:
       - description: Machine ID
@@ -5447,7 +5447,7 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/start:
-    get:
+    put:
       description: This endpoint starts a virtual machine
       parameters:
       - description: Machine ID
@@ -5507,7 +5507,7 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/stop:
-    get:
+    put:
       description: This endpoint stops a virtual machine
       parameters:
       - description: Machine ID
@@ -5541,7 +5541,7 @@ paths:
       tags:
       - Machines
   /v1/machines/{id}/suspend:
-    get:
+    put:
       description: This endpoint suspends a virtual machine
       parameters:
       - description: Machine ID

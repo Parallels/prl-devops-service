@@ -265,7 +265,7 @@ steps:
           
           > **Note:** Remember to stop the daemon before making any future configuration changes.
         cmd: |
-          sudo prldevops install service /usr/bin/prldevops
+          sudo prldevops install service /usr/local/bin/prldevops
         copy_button: true
       - kind: terminal
         id: start-daemon-windows
