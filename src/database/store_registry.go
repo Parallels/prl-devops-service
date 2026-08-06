@@ -15,6 +15,7 @@ type StoreRegistry struct {
 	userStore  stores.UserDataStoreInterface
 	roleStore  stores.RoleDataStoreInterface
 	claimStore stores.ClaimDataStoreInterface
+	packerTemplateStore stores.PackerTemplateDataStoreInterface
 }
 
 // NewStoreRegistry creates and initializes all stores
@@ -39,11 +40,18 @@ func NewStoreRegistry(db *gorm.DB) (*StoreRegistry, error) {
 		return nil, fmt.Errorf("failed to initialize claim store: %w", err)
 	}
 
+	// Initialize packer template store
+	packerTemplateStore := stores.GetPackerTemplateDataStoreInstance()
+	if err := packerTemplateStore.Init(ctx, db); err != nil {
+		return nil, fmt.Errorf("failed to initialize packer template store: %w", err)
+	}
+
 	return &StoreRegistry{
-		db:         db,
-		userStore:  userStore,
-		roleStore:  roleStore,
-		claimStore: claimStore,
+		db:                  db,
+		userStore:           userStore,
+		roleStore:           roleStore,
+		claimStore:          claimStore,
+		packerTemplateStore: packerTemplateStore,
 	}, nil
 }
 
@@ -60,6 +68,11 @@ func (r *StoreRegistry) Role() stores.RoleDataStoreInterface {
 // Claim returns the claim data store
 func (r *StoreRegistry) Claim() stores.ClaimDataStoreInterface {
 	return r.claimStore
+}
+
+// PackerTemplate returns the packer template data store
+func (r *StoreRegistry) PackerTemplate() stores.PackerTemplateDataStoreInterface {
+	return r.packerTemplateStore
 }
 
 // DB returns the underlying database connection

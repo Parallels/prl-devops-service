@@ -9,6 +9,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/database/filters"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -86,23 +87,26 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		getPackerTemplatesDiag := errors.NewDiagnostics("/templates/packer")
-		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getPackerTemplatesDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getPackerTemplatesDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil {
+			getPackerTemplatesDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getPackerTemplatesDiag, http.StatusInternalServerError))
 			return
 		}
 
-		result, err := dbService.GetPackerTemplates(ctx, GetFilterHeader(r))
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getPackerTemplatesDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetPackerTemplates")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getPackerTemplatesDiag, rsp.Code))
+		// Build query from URL query params (e.g., ?type=bool&order_by=name&order=desc)
+		queryBuilder := filters.NewQueryBuilder(r.URL.RawQuery)
+
+		// Access store directly - NO domain layer, NO convenience methods
+		store := dbService.Stores().PackerTemplate()
+		result, storeDiag := store.Find(*ctx, queryBuilder)
+		if storeDiag != nil {
+			getPackerTemplatesDiag.AddError(strconv.Itoa(http.StatusInternalServerError), storeDiag.GetSummary(), "Store.Find")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getPackerTemplatesDiag, http.StatusInternalServerError))
 			return
 		}
 
-		if len(result) == 0 {
+		if result == nil || result.Total == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.PackerTemplateResponse, 0)
 			defer r.Body.Close()
@@ -110,7 +114,7 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 			return
 		}
 
-		response := mappers.DtoPackerTemplatesToApResponse(result)
+		response := mappers.GormPackerTemplatesQueryResponseToResponse(result)
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Packer templates returned: %v", len(response))
@@ -137,29 +141,29 @@ func GetPackerTemplateHandler() restapi.ControllerHandler {
 		params := mux.Vars(r)
 		name := params["id"]
 		getPackerTemplateDiag := errors.NewDiagnostics("/templates/packer/" + name)
-		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getPackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getPackerTemplateDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil {
+			getPackerTemplateDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getPackerTemplateDiag, http.StatusInternalServerError))
 			return
 		}
 
-		result, err := dbService.GetPackerTemplate(ctx, name)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getPackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetPackerTemplate")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getPackerTemplateDiag, rsp.Code))
+		// Access store directly - NO domain layer, NO convenience methods
+		store := dbService.Stores().PackerTemplate()
+		result, storeDiag := store.Get(*ctx, name)
+		if storeDiag != nil {
+			getPackerTemplateDiag.AddError(strconv.Itoa(http.StatusInternalServerError), storeDiag.GetSummary(), "Store.Get")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getPackerTemplateDiag, http.StatusInternalServerError))
 			return
 		}
 
 		if result == nil {
-			getPackerTemplateDiag.AddError(strconv.Itoa(http.StatusNotFound), fmt.Sprintf("Packer template %v not found", name), "GetPackerTemplate")
+			getPackerTemplateDiag.AddError(strconv.Itoa(http.StatusNotFound), fmt.Sprintf("Packer template %v not found", name), "GetPackerTemplate", nil)
 			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getPackerTemplateDiag, http.StatusNotFound))
 			return
 		}
 
-		response := mappers.DtoPackerTemplateToApResponse(*result)
+		response := mappers.GormPackerTemplateDtoToResponse(*result)
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Packer template returned: %v", response.ID)
@@ -197,27 +201,29 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			createPackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createPackerTemplateDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil {
+			createPackerTemplateDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createPackerTemplateDiag, http.StatusInternalServerError))
 			return
 		}
 
-		dto := mappers.DtoPackerTemplateFromApiCreateRequest(request)
-		if result, err := dbService.AddPackerTemplate(ctx, &dto); err != nil {
-			rsp := models.NewFromError(err)
-			createPackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "AddPackerTemplate")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createPackerTemplateDiag, rsp.Code))
+		dto := mappers.GormPackerTemplateRequestToDto(request)
+
+		// Access store directly - NO domain layer, NO convenience methods
+		store := dbService.Stores().PackerTemplate()
+		result, storeDiag := store.Create(*ctx, &dto)
+		if storeDiag != nil {
+			createPackerTemplateDiag.AddError(strconv.Itoa(http.StatusInternalServerError), storeDiag.GetSummary(), "Store.Create")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createPackerTemplateDiag, http.StatusInternalServerError))
 			return
-		} else {
-			response := mappers.DtoPackerTemplateToApResponse(*result)
-			w.WriteHeader(http.StatusOK)
-			defer r.Body.Close()
-			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfof("Packer template created: %v", response.ID)
 		}
+
+		response := mappers.GormPackerTemplateDtoToResponse(*result)
+		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Packer template created: %v", response.ID)
 	}
 }
 
@@ -255,28 +261,37 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			updatePackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updatePackerTemplateDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil {
+			updatePackerTemplateDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updatePackerTemplateDiag, http.StatusInternalServerError))
 			return
 		}
 
-		dto := mappers.DtoPackerTemplateFromApiCreateRequest(request)
+		dto := mappers.GormPackerTemplateRequestToDto(request)
 		dto.ID = id
-		if result, err := dbService.UpdatePackerTemplate(ctx, &dto); err != nil {
-			rsp := models.NewFromError(err)
-			updatePackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "UpdatePackerTemplate")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updatePackerTemplateDiag, rsp.Code))
+
+		// Access store directly - NO domain layer, NO convenience methods
+		store := dbService.Stores().PackerTemplate()
+		storeDiag := store.Update(*ctx, &dto)
+		if storeDiag != nil {
+			updatePackerTemplateDiag.AddError(strconv.Itoa(http.StatusInternalServerError), storeDiag.GetSummary(), "Store.Update")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updatePackerTemplateDiag, http.StatusInternalServerError))
 			return
-		} else {
-			response := mappers.DtoPackerTemplateToApResponse(*result)
-			w.WriteHeader(http.StatusOK)
-			defer r.Body.Close()
-			_ = json.NewEncoder(w).Encode(response)
-			ctx.LogInfof("Packer template updated: %v", response.ID)
 		}
+
+		result, storeDiagGet := store.Get(*ctx, id)
+		if storeDiagGet != nil {
+			updatePackerTemplateDiag.AddError(strconv.Itoa(http.StatusInternalServerError), storeDiagGet.GetSummary(), "Store.Get")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updatePackerTemplateDiag, http.StatusInternalServerError))
+			return
+		}
+
+		response := mappers.GormPackerTemplateDtoToResponse(*result)
+		w.WriteHeader(http.StatusOK)
+		defer r.Body.Close()
+		_ = json.NewEncoder(w).Encode(response)
+		ctx.LogInfof("Packer template updated: %v", response.ID)
 	}
 }
 
@@ -300,18 +315,18 @@ func DeletePackerTemplateHandler() restapi.ControllerHandler {
 		params := mux.Vars(r)
 		id := params["id"]
 		deletePackerTemplateDiag := errors.NewDiagnostics("/templates/packer/" + id)
-		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			deletePackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deletePackerTemplateDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil {
+			deletePackerTemplateDiag.AddError(strconv.Itoa(http.StatusInternalServerError), diag.GetSummary(), "ServiceProvider")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deletePackerTemplateDiag, http.StatusInternalServerError))
 			return
 		}
 
-		if err := dbService.DeletePackerTemplate(ctx, id); err != nil {
-			rsp := models.NewFromError(err)
-			deletePackerTemplateDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DeletePackerTemplate")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deletePackerTemplateDiag, rsp.Code))
+		// Access store directly - NO domain layer, NO convenience methods
+		store := dbService.Stores().PackerTemplate()
+		if storeDiag := store.Delete(*ctx, id); storeDiag != nil {
+			deletePackerTemplateDiag.AddError(strconv.Itoa(http.StatusInternalServerError), storeDiag.GetSummary(), "Store.Delete")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deletePackerTemplateDiag, http.StatusInternalServerError))
 			return
 		}
 
