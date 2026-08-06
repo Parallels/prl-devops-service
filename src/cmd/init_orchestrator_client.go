@@ -73,7 +73,7 @@ func processInitOrchestratorClient(ctx basecontext.ApiContext, command string) {
 		ctx.LogInfof("Parallels Desktop is already installed. Version: %s", pdService.Version())
 	}
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
+	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
 	if err != nil {
 		ctx.LogErrorf("Failed to initialize database service: %v", err)
 		os.Exit(1)

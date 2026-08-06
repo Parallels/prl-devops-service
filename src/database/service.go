@@ -65,6 +65,11 @@ func (s *DatabaseService) IsConnected() bool {
 	return s != nil && s.db != nil
 }
 
+// ============================================================================
+// ============================================================================
+// Database lifecycle methods
+// ============================================================================
+
 // InitDatabase initializes the global database service
 // This should be called once during application startup
 func InitDatabase(ctx basecontext.ApiContext) (*DatabaseService, *apperrors.Diagnostics) {

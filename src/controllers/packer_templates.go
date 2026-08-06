@@ -109,7 +109,6 @@ func GetPackerTemplatesHandler() restapi.ControllerHandler {
 		if result == nil || result.Total == 0 {
 			w.WriteHeader(http.StatusOK)
 			response := make([]models.PackerTemplateResponse, 0)
-			defer r.Body.Close()
 			_ = json.NewEncoder(w).Encode(response)
 			return
 		}
@@ -221,7 +220,6 @@ func CreatePackerTemplateHandler() restapi.ControllerHandler {
 
 		response := mappers.GormPackerTemplateDtoToResponse(*result)
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Packer template created: %v", response.ID)
 	}
@@ -289,7 +287,6 @@ func UpdatePackerTemplateHandler() restapi.ControllerHandler {
 
 		response := mappers.GormPackerTemplateDtoToResponse(*result)
 		w.WriteHeader(http.StatusOK)
-		defer r.Body.Close()
 		_ = json.NewEncoder(w).Encode(response)
 		ctx.LogInfof("Packer template updated: %v", response.ID)
 	}

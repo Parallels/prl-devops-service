@@ -199,6 +199,8 @@ func (s *PackerTemplateDataStore) Update(ctx basecontext.BaseContext, template *
 
 	result := s.GetDB().WithContext(ctx.Context()).
 		Where("id = ?", template.ID).
+		Select("*").
+		Omit("created_at").
 		Updates(template)
 
 	if result.Error != nil {
