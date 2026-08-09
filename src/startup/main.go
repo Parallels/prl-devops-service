@@ -164,6 +164,9 @@ func Start(ctx basecontext.ApiContext) {
 	if cfg.IsOrchestrator() {
 		ctx := basecontext.NewRootBaseContext()
 		ctx.LogInfof("Starting Orchestrator Background Service")
+		ctx.LogInfof("[Orchestrator] Public URL: %s", cfg.OrchestratorPublicUrl())
+		ctx.LogInfof("[Orchestrator] API Port: %s, TLS: %v", cfg.ApiPort(), cfg.TlsEnabled())
+		ctx.LogInfof("[Orchestrator] Catalog Enabled: %v", cfg.IsCatalog())
 		canUseOwnResources := false
 		if system.GetOperatingSystem() == "linux" {
 			canUseOwnResources = false

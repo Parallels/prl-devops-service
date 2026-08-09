@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -2091,6 +2092,8 @@ func buildLocalCatalogConnection(ctx basecontext.ApiContext, callerID string, jo
 	}
 
 	host := cfg.OrchestratorPublicUrl()
+	ctx.LogDebugf("[Temp API Key] ORCHESTRATOR_PUBLIC_URL from config: '%s'", host)
+	ctx.LogDebugf("[Temp API Key] API Port: %s, TLS Enabled: %v, Schema: %s", apiPort, cfg.TlsEnabled(), schema)
 
 	// Sanitize host to handle various input formats:
 	// - Remove protocol prefixes (http://, https://)
@@ -2136,7 +2139,16 @@ func buildLocalCatalogConnection(ctx basecontext.ApiContext, callerID string, jo
 		return "", "", fmt.Errorf("failed to create temp API key: %w", err)
 	}
 
-	// Use plaintext secret in connection string (before it was hashed)
-	connStr := fmt.Sprintf("host=%s@%s://%s:%s", plaintextSecret, schema, host, apiPort)
+	// Connection string format for API key authentication:
+	// host=<base64_encoded_apikey>@protocol://host:port
+	// API key format: base64(keyName:secret)
+	apiKeyValue := keyName + ":" + plaintextSecret
+	encodedApiKey := base64.StdEncoding.EncodeToString([]byte(apiKeyValue))
+	connStr := fmt.Sprintf("host=%s@%s://%s:%s", encodedApiKey, schema, host, apiPort)
+
+	ctx.LogInfof("[Temp API Key] Created temp key '%s' for job %s", keyName, jobID)
+	ctx.LogInfof("[Temp API Key] Connection string: host=<base64>@%s://%s:%s", schema, host, apiPort)
+	ctx.LogInfof("[Temp API Key] Base64 API key starts with: %s...", encodedApiKey[:20])
+
 	return connStr, keyName, nil
 }
