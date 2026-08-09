@@ -3084,16 +3084,6 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			}
 		}
 
-		if request.CatalogManifest != nil {
-			catalogConnection, connErr := resolveCatalogMachineConnection(ctx, request.CatalogManifest)
-			if connErr != nil {
-				ReturnApiError(ctx, w, models.NewFromError(connErr))
-				return
-			}
-			request.CatalogManifest.Connection = catalogConnection
-			request.CatalogManifest.CatalogManagerId = ""
-		}
-
 		callerID, ok := getEffectiveCallerID(ctx)
 		if !ok {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
@@ -3110,6 +3100,29 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 		if jobErr != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(jobErr, http.StatusInternalServerError))
 			return
+		}
+
+		if request.CatalogManifest != nil {
+			catalogConnection, connErr := resolveCatalogMachineConnection(ctx, request.CatalogManifest)
+			if connErr != nil {
+				ReturnApiError(ctx, w, models.NewFromError(connErr))
+				return
+			}
+
+			// Generate temp API key if orchestrator IS the catalog and no connection provided
+			if catalogConnection == "" && config.Get().IsCatalog() {
+				ctx.LogInfof("[Temp API Key] Building temp credentials for direct VM creation")
+				connStr, _, buildErr := buildLocalCatalogConnection(ctx, callerID, job.ID)
+				if buildErr != nil {
+					_ = jobManager.MarkJobError(job.ID, buildErr)
+					ReturnApiError(ctx, w, models.NewFromErrorWithCode(buildErr, http.StatusInternalServerError))
+					return
+				}
+				catalogConnection = connStr
+			}
+
+			request.CatalogManifest.Connection = catalogConnection
+			request.CatalogManifest.CatalogManagerId = ""
 		}
 
 		_, _ = jobManager.UpdateJobProgress(job.ID, 1, constants.JobStateRunning)
