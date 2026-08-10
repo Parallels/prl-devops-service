@@ -160,7 +160,7 @@ func TestBuildLocalCatalogConnection_CleanDNS(t *testing.T) {
 	connStr, keyName, err := buildLocalCatalogConnection(ctx, "caller-123", "job-456")
 
 	require.NoError(t, err)
-	assert.Equal(t, "temp-vm-job-456", keyName)
+	assert.Equal(t, "local-catalog-job-456", keyName)
 
 	// Verify connection string format: host=<secret>@http://my-service-orchestrator.com:9999
 	assert.Contains(t, connStr, "@http://my-service-orchestrator.com:9999")
@@ -189,7 +189,7 @@ func TestBuildLocalCatalogConnection_HTTPSPrefix(t *testing.T) {
 	connStr, keyName, err := buildLocalCatalogConnection(ctx, "user-1", "job-1")
 
 	require.NoError(t, err)
-	assert.Equal(t, "temp-vm-job-1", keyName)
+	assert.Equal(t, "local-catalog-job-1", keyName)
 
 	// Should strip https:// prefix and use http (TLS disabled)
 	assert.Contains(t, connStr, "@http://my-orchestrator.com:8080")

@@ -2111,7 +2111,7 @@ func buildLocalCatalogConnection(ctx basecontext.ApiContext, callerID string, jo
 	}
 
 	// Generate unique key name and secret
-	keyName := "temp-vm-" + jobID
+	keyName := "local-catalog-" + jobID
 	fullSecret := helpers.GenerateId()
 	// Limit secret to 40 chars (password hashing limitation)
 	plaintextSecret := fullSecret

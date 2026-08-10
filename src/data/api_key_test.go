@@ -511,11 +511,11 @@ func TestInternalKeysNotInListButRetrievableByID(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
 	ctx.DisableLog()
 
-	// Create a temp internal key (like temp-vm-* keys)
+	// Create a temp internal key (like local-catalog-* keys)
 	tempKey := models.ApiKey{
-		ID:        "temp-vm-job123",
-		Name:      "temp-vm-job123",
-		Key:       "temp-vm-job123",
+		ID:        "local-catalog-job123",
+		Name:      "local-catalog-job123",
+		Key:       "local-catalog-job123",
 		Secret:    "temporary-secret",
 		Type:      "internal",
 		ExpiresAt: time.Now().Add(2 * time.Hour).Format(time.RFC3339),
@@ -541,15 +541,15 @@ func TestInternalKeysNotInListButRetrievableByID(t *testing.T) {
 	assert.Equal(t, "regular-key", allKeys[0].ID)
 
 	// Verify internal key is still retrievable by ID (needed for auth)
-	loadedTemp, err := db.GetApiKey(ctx, "temp-vm-job123")
+	loadedTemp, err := db.GetApiKey(ctx, "local-catalog-job123")
 	require.NoError(t, err)
-	assert.Equal(t, "temp-vm-job123", loadedTemp.ID)
+	assert.Equal(t, "local-catalog-job123", loadedTemp.ID)
 	assert.Equal(t, "internal", loadedTemp.Type)
 
 	// Verify can also retrieve by Name
-	loadedByName, err := db.GetApiKey(ctx, "temp-vm-job123")
+	loadedByName, err := db.GetApiKey(ctx, "local-catalog-job123")
 	require.NoError(t, err)
-	assert.Equal(t, "temp-vm-job123", loadedByName.ID)
+	assert.Equal(t, "local-catalog-job123", loadedByName.ID)
 	assert.Equal(t, "internal", loadedByName.Type)
 }
 

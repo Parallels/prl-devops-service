@@ -705,7 +705,7 @@ func cleanupOrphanedTempKeys(ctx basecontext.ApiContext) {
 		if k.Type != "internal" {
 			continue
 		}
-		if !strings.HasPrefix(k.Name, "temp-vm-") {
+		if !strings.HasPrefix(k.Name, "local-catalog-") {
 			continue
 		}
 
