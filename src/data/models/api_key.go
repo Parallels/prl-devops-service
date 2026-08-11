@@ -11,6 +11,7 @@ type ApiKey struct {
 	RevokedAt string `json:"revoked_at"`
 	ExpiresAt string `json:"expires_at"`
 	UserID    string `json:"user_id,omitempty"`
+	Type      string `json:"type,omitempty"` // "internal" or "external". Default: "external"
 	*DbRecord `json:"db_record"`
 }
 

@@ -32,6 +32,27 @@ func GetOwnRecords[T interface{ GetUserID() string }](ctx basecontext.ApiContext
 	return result
 }
 
+// normalizeApiKeyType converts empty Type to "external" for backward compat
+func normalizeApiKeyType(key *models.ApiKey) {
+	if key.Type == "" {
+		key.Type = "external"
+	}
+}
+
+// filterInternalKeys removes internal keys from a list
+// Note: This creates a new slice, so normalization should happen after this
+func filterInternalKeys(keys []models.ApiKey) []models.ApiKey {
+	result := make([]models.ApiKey, 0, len(keys))
+	for _, k := range keys {
+		// Normalize before checking type
+		normalizeApiKeyType(&k)
+		if k.Type != "internal" {
+			result = append(result, k)
+		}
+	}
+	return result
+}
+
 func (j *JsonDatabase) GetApiKeys(ctx basecontext.ApiContext, filter string) ([]models.ApiKey, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -46,6 +67,9 @@ func (j *JsonDatabase) GetApiKeys(ctx basecontext.ApiContext, filter string) ([]
 		return nil, err
 	}
 
+	// Filter internal keys (function also normalizes types) - do this BEFORE auth check
+	filteredData = filterInternalKeys(filteredData)
+
 	authContext := ctx.GetAuthorizationContext()
 	if authContext == nil || authContext.User == nil {
 		return filteredData, nil
@@ -59,6 +83,28 @@ func (j *JsonDatabase) GetApiKeys(ctx basecontext.ApiContext, filter string) ([]
 	}
 
 	return filteredData, nil
+}
+
+// GetAllApiKeysIncludingInternal returns all API keys including internal ones
+// This is used for administrative tasks like cleanup and should NOT be exposed via API
+func (j *JsonDatabase) GetAllApiKeysIncludingInternal(ctx basecontext.ApiContext) ([]models.ApiKey, error) {
+	if !j.IsConnected() {
+		return nil, ErrDatabaseNotConnected
+	}
+
+	j.dataMutex.RLock()
+	defer j.dataMutex.RUnlock()
+
+	// Return a copy to avoid mutation issues
+	result := make([]models.ApiKey, len(j.data.ApiKeys))
+	copy(result, j.data.ApiKeys)
+
+	// Normalize types for consistency
+	for i := range result {
+		normalizeApiKeyType(&result[i])
+	}
+
+	return result, nil
 }
 
 func (j *JsonDatabase) GetApiKey(ctx basecontext.ApiContext, idOrName string) (*models.ApiKey, error) {
@@ -78,6 +124,7 @@ func (j *JsonDatabase) GetApiKey(ctx basecontext.ApiContext, idOrName string) (*
 				}
 			}
 
+			normalizeApiKeyType(&apiKey)
 			return &apiKey, nil
 		}
 	}
@@ -118,6 +165,11 @@ func (j *JsonDatabase) CreateApiKey(ctx basecontext.ApiContext, apiKey models.Ap
 
 	if a, _ := j.GetApiKey(ctx, apiKey.Name); a != nil {
 		return nil, ErrApiKeyAlreadyExists
+	}
+
+	// Set default type if not provided
+	if apiKey.Type == "" {
+		apiKey.Type = "external"
 	}
 
 	passwdSvc := password.Get()

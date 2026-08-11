@@ -3084,16 +3084,6 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			}
 		}
 
-		if request.CatalogManifest != nil {
-			catalogConnection, connErr := resolveCatalogMachineConnection(ctx, request.CatalogManifest)
-			if connErr != nil {
-				ReturnApiError(ctx, w, models.NewFromError(connErr))
-				return
-			}
-			request.CatalogManifest.Connection = catalogConnection
-			request.CatalogManifest.CatalogManagerId = ""
-		}
-
 		callerID, ok := getEffectiveCallerID(ctx)
 		if !ok {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
@@ -3110,6 +3100,29 @@ func CreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 		if jobErr != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(jobErr, http.StatusInternalServerError))
 			return
+		}
+
+		if request.CatalogManifest != nil {
+			catalogConnection, connErr := resolveCatalogMachineConnection(ctx, request.CatalogManifest)
+			if connErr != nil {
+				ReturnApiError(ctx, w, models.NewFromError(connErr))
+				return
+			}
+
+			// Generate temp API key if orchestrator IS the catalog and no connection provided
+			if catalogConnection == "" && config.Get().IsCatalog() {
+				ctx.LogInfof("[Temp API Key] Building temp credentials for direct VM creation")
+				connStr, _, buildErr := buildLocalCatalogConnection(ctx, callerID, job.ID)
+				if buildErr != nil {
+					_ = jobManager.MarkJobError(job.ID, buildErr)
+					ReturnApiError(ctx, w, models.NewFromErrorWithCode(buildErr, http.StatusInternalServerError))
+					return
+				}
+				catalogConnection = connStr
+			}
+
+			request.CatalogManifest.Connection = catalogConnection
+			request.CatalogManifest.CatalogManagerId = ""
 		}
 
 		_, _ = jobManager.UpdateJobProgress(job.ID, 1, constants.JobStateRunning)
@@ -4213,6 +4226,75 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 				ReturnApiError(ctx, w, models.NewFromError(connErr))
 				return
 			}
+
+			ctx.LogDebugf("[Async VM] catalogConnection='%s', IsCatalog=%v", catalogConnection, config.Get().IsCatalog())
+
+			// TEMP API KEY LOGIC: If orchestrator IS catalog and connection is empty,
+			// build temp API key connection string before entering goroutine
+			if catalogConnection == "" && config.Get().IsCatalog() {
+				ctx.LogInfof("[Temp API Key] Building temp credentials for async VM creation")
+
+				jobManager := jobs.Get(ctx)
+				if jobManager == nil {
+					ReturnApiError(ctx, w, models.NewFromErrorWithCode(fmt.Errorf("job manager not available"), http.StatusInternalServerError))
+					return
+				}
+
+				job, err := jobManager.CreateNewJob(callerID, "orchestrator", "create", "Initializing orchestrator virtual machine creation")
+				if err != nil {
+					ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+					return
+				}
+
+				connStr, _, err := buildLocalCatalogConnection(ctx, callerID, job.ID)
+				if err != nil {
+					ReturnApiError(ctx, w, models.ApiErrorResponse{
+						Message: "Failed to create temporary catalog credentials: " + err.Error(),
+						Code:    http.StatusInternalServerError,
+					})
+					return
+				}
+				request.CatalogManifest.Connection = connStr
+				request.CatalogManifest.CatalogManagerId = ""
+
+				// Spawn dedicated goroutine for async dispatch
+				// NOTE: Temp key cleanup is handled by:
+				//   1. Background cleanup process (hourly) for orphaned keys
+				//   2. Key expiration (2 hours)
+				// We DON'T clean up here because the remote host needs the key
+				// to pull the catalog AFTER this goroutine completes.
+				go func(jobID string, req models.CreateVirtualMachineRequest) {
+					asyncCtx := basecontext.NewRootBaseContext()
+
+					defer func() {
+						if rec := recover(); rec != nil {
+							asyncCtx.LogErrorf("[Orchestrator] Panic in async create with temp key for job %s: %v", jobID, rec)
+							_ = jobManager.MarkJobError(jobID, fmt.Errorf("internal error: %v", rec))
+						}
+					}()
+
+					_, _ = jobManager.UpdateJobProgress(jobID, 1, constants.JobStateRunning)
+					orchSvc := orchestrator.NewOrchestratorService(asyncCtx)
+					result, apiErr := orchSvc.DispatchCreateVirtualMachine(asyncCtx, jobID, req)
+					if apiErr != nil {
+						_ = jobManager.MarkJobError(jobID, fmt.Errorf("%s", apiErr.Message))
+						return
+					}
+					if result == nil {
+						// Async dispatch to remote host - remote will complete the job
+						asyncCtx.LogInfof("[Temp API Key] Remote host will use temp key for job %s", jobID)
+						return
+					}
+					_ = jobManager.MarkJobCompleteWithRecord(jobID, fmt.Sprintf("Virtual machine %s created", result.ID), result.ID, result.Name, "virtual_machine", result.Host)
+				}(job.ID, request)
+
+				response := mappers.MapJobToApiJob(*job)
+				w.WriteHeader(http.StatusAccepted)
+				_ = json.NewEncoder(w).Encode(response)
+				ctx.LogInfof("Async orchestrator machine create started with temp API key, job ID: %v", response.ID)
+				return
+			}
+
 			request.CatalogManifest.Connection = catalogConnection
 			request.CatalogManifest.CatalogManagerId = ""
 		}
@@ -4229,14 +4311,16 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 			return
 		}
 
-		go func(jobID string, req models.CreateVirtualMachineRequest) {
+		go func(jobID string, callerID string, req models.CreateVirtualMachineRequest) {
 			asyncCtx := basecontext.NewRootBaseContext()
+
 			defer func() {
 				if rec := recover(); rec != nil {
 					asyncCtx.LogErrorf("[Orchestrator] Panic in async create goroutine for job %s: %v", jobID, rec)
 					_ = jobManager.MarkJobError(jobID, fmt.Errorf("internal error: %v", rec))
 				}
 			}()
+
 			_, _ = jobManager.UpdateJobProgress(jobID, 1, constants.JobStateRunning)
 			orchSvc := orchestrator.NewOrchestratorService(asyncCtx)
 			result, apiErr := orchSvc.DispatchCreateVirtualMachine(asyncCtx, jobID, req)
@@ -4249,7 +4333,7 @@ func AsyncCreateOrchestratorVirtualMachineHandler() restapi.ControllerHandler {
 				return
 			}
 			_ = jobManager.MarkJobCompleteWithRecord(jobID, fmt.Sprintf("Virtual machine %s created", result.ID), result.ID, result.Name, "virtual_machine", result.Host)
-		}(job.ID, request)
+		}(job.ID, callerID, request)
 
 		response := mappers.MapJobToApiJob(*job)
 		w.WriteHeader(http.StatusAccepted)
