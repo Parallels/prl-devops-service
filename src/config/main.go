@@ -1,7 +1,10 @@
 package config
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -327,6 +330,70 @@ func (c *Config) TlsEnabled() bool {
 	if c.TlsCertificate() == "" || c.TlsPrivateKey() == "" {
 		return false
 	}
+	return true
+}
+
+// ValidateTlsConfiguration performs comprehensive validation of TLS configuration
+// Returns (isValid bool, errorMessage string)
+func (c *Config) ValidateTlsConfiguration() (bool, string) {
+	// Check if TLS is enabled
+	if !c.TlsEnabled() {
+		return false, "TLS is not enabled or missing certificate/key"
+	}
+
+	cert := c.TlsCertificate()
+	key := c.TlsPrivateKey()
+
+	// Validate certificate and key can form a valid keypair
+	_, err := tls.X509KeyPair([]byte(cert), []byte(key))
+	if err != nil {
+		return false, fmt.Sprintf("Invalid TLS certificate/key pair: %v", err)
+	}
+
+	// Check certificate expiration
+	block, _ := pem.Decode([]byte(cert))
+	if block == nil {
+		return false, "Failed to parse certificate PEM"
+	}
+
+	certObj, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return false, fmt.Sprintf("Failed to parse certificate: %v", err)
+	}
+
+	// Check if certificate is expired or not yet valid
+	now := time.Now()
+	if now.Before(certObj.NotBefore) {
+		return false, fmt.Sprintf("Certificate not yet valid (valid from: %v)", certObj.NotBefore)
+	}
+	if now.After(certObj.NotAfter) {
+		return false, fmt.Sprintf("Certificate expired on: %v", certObj.NotAfter)
+	}
+
+	// Warn if certificate expires soon (30 days)
+	daysUntilExpiry := certObj.NotAfter.Sub(now).Hours() / 24
+	if daysUntilExpiry < 30 {
+		common.Logger.Warn("TLS certificate expires in %.0f days", daysUntilExpiry)
+	}
+
+	return true, ""
+}
+
+// ShouldDisableHttpWhenTls checks if HTTP should be disabled when TLS is enabled
+func (c *Config) ShouldDisableHttpWhenTls() bool {
+	// Check environment variable (default: false for backward compatibility)
+	disableHttp := c.GetBoolKey(constants.DISABLE_HTTP_WHEN_TLS_ENV_VAR)
+	if !disableHttp {
+		return false
+	}
+
+	// Only disable HTTP if TLS is properly validated
+	isValid, errMsg := c.ValidateTlsConfiguration()
+	if !isValid {
+		common.Logger.Warn("HTTP cannot be disabled: %s", errMsg)
+		return false
+	}
+
 	return true
 }
 
