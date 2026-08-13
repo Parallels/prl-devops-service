@@ -416,47 +416,10 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 	l.Router.HandleFunc(l.GetApiPrefix()+"/", defaultHomepageController)
 	l.Router.HandleFunc(l.GetApiPrefix()+"/shutdown", globalHttpListener.ShutdownHandler)
 
-	// Creating and starting the http server
-	var srv *http.Server
-
-	if config.IsCorsEnabled() {
-		l.Logger.Info("Enabling CORS for HTTP")
-		srv = &http.Server{
-			Addr:              ":" + l.Options.HttpPort,
-			Handler:           buildCORSHandler(config, l.Router),
-			ReadHeaderTimeout: time.Duration(30) * time.Second,
-			ReadTimeout:       time.Duration(5) * time.Hour,
-			WriteTimeout:      time.Duration(5) * time.Hour,
-			IdleTimeout:       time.Duration(60) * time.Second,
-		}
-	} else {
-		srv = &http.Server{
-			Addr:              ":" + l.Options.HttpPort,
-			Handler:           l.Router,
-			ReadHeaderTimeout: time.Duration(30) * time.Second,
-			ReadTimeout:       time.Duration(5) * time.Hour,
-			WriteTimeout:      time.Duration(5) * time.Hour,
-			IdleTimeout:       time.Duration(60) * time.Second,
-		}
-	}
-
-	l.Servers = append(l.Servers, srv)
-
-	for _, controller := range l.Controllers {
-		_ = controller.Serve()
-	}
-
-	go func() {
-		l.Logger.Info("Api listening on http://::" + l.Options.HttpPort + l.GetApiPrefix())
-		l.Logger.Success("Finished Initiating http server")
-		if err := srv.ListenAndServe(); err != nil {
-			if !strings.Contains(err.Error(), "http: Server closed") {
-				l.Logger.Error("There was an error shutting down the http server: %v", err.Error())
-			}
-		}
-		done <- true
-	}()
-
+	// =====================================================
+	// HTTPS/TLS SERVER SETUP (Start first)
+	// =====================================================
+	tlsStarted := false
 	if l.Options.EnableTLS {
 		cert, err := tls.X509KeyPair([]byte(l.Options.TLSCertificate), []byte(l.Options.TLSPrivateKey))
 		if err == nil {
@@ -495,7 +458,7 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 
 			go func() {
 				l.Logger.Info("Api listening on https://::" + l.Options.TLSPort + l.GetApiPrefix())
-				l.Logger.Success("Finished Initiating https server")
+				l.Logger.Success("✓ HTTPS server started successfully")
 				if err := sslSrv.ListenAndServeTLS("", ""); err != nil {
 					if !strings.Contains(err.Error(), "http: Server closed") {
 						l.Logger.Error("There was an error shutting down the https server: %v", err.Error())
@@ -503,9 +466,70 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 				}
 				done <- true
 			}()
+
+			tlsStarted = true
 		} else {
-			l.Logger.Error("There was an error reading the certificates to enable HTTPS")
+			l.Logger.Error("Failed to start HTTPS server: %v", err.Error())
+			l.Logger.Warn("Falling back to HTTP-only mode")
 		}
+	}
+
+	// =====================================================
+	// HTTP SERVER SETUP (Conditionally start)
+	// =====================================================
+	// Check if HTTP should be disabled when TLS is enabled
+	if l.Options.DisableHttpWhenTls && tlsStarted {
+		l.Logger.Info("HTTP server disabled (DISABLE_HTTP_WHEN_TLS=true and TLS is active)")
+		l.Logger.Warn("All HTTP requests will fail. Ensure clients use HTTPS://::" + l.Options.TLSPort)
+	} else {
+		// Start HTTP server (original behavior)
+		var srv *http.Server
+
+		if config.IsCorsEnabled() {
+			l.Logger.Info("Enabling CORS for HTTP")
+			srv = &http.Server{
+				Addr:              ":" + l.Options.HttpPort,
+				Handler:           buildCORSHandler(config, l.Router),
+				ReadHeaderTimeout: time.Duration(30) * time.Second,
+				ReadTimeout:       time.Duration(5) * time.Hour,
+				WriteTimeout:      time.Duration(5) * time.Hour,
+				IdleTimeout:       time.Duration(60) * time.Second,
+			}
+		} else {
+			srv = &http.Server{
+				Addr:              ":" + l.Options.HttpPort,
+				Handler:           l.Router,
+				ReadHeaderTimeout: time.Duration(30) * time.Second,
+				ReadTimeout:       time.Duration(5) * time.Hour,
+				WriteTimeout:      time.Duration(5) * time.Hour,
+				IdleTimeout:       time.Duration(60) * time.Second,
+			}
+		}
+
+		l.Servers = append(l.Servers, srv)
+
+		for _, controller := range l.Controllers {
+			_ = controller.Serve()
+		}
+
+		go func() {
+			l.Logger.Info("Api listening on http://::" + l.Options.HttpPort + l.GetApiPrefix())
+
+			if tlsStarted && !l.Options.DisableHttpWhenTls {
+				l.Logger.Warn("⚠ HTTP server running alongside HTTPS. Consider setting DISABLE_HTTP_WHEN_TLS=true for production")
+			} else if !tlsStarted {
+				l.Logger.Info("Running in HTTP-only mode (TLS not configured)")
+			}
+
+			l.Logger.Success("✓ HTTP server started successfully")
+
+			if err := srv.ListenAndServe(); err != nil {
+				if !strings.Contains(err.Error(), "http: Server closed") {
+					l.Logger.Error("There was an error shutting down the http server: %v", err.Error())
+				}
+			}
+			done <- true
+		}()
 	}
 
 	Initialized <- true

@@ -2,6 +2,7 @@ package startup
 
 import (
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/controllers"
 	"github.com/Parallels/prl-devops-service/restapi"
@@ -22,6 +23,13 @@ func InitApi() *restapi.HttpListener {
 		listener.Options.TLSCertificate = cfg.TlsCertificate()
 		listener.Options.TLSPrivateKey = cfg.TlsPrivateKey()
 		listener.Options.TLSPort = cfg.TlsPort()
+
+		// Check if HTTP should be disabled when TLS is enabled
+		listener.Options.DisableHttpWhenTls = cfg.ShouldDisableHttpWhenTls()
+
+		if listener.Options.DisableHttpWhenTls {
+			common.Logger.Info("HTTPS-only mode enabled: HTTP traffic will be rejected")
+		}
 	}
 
 	listener.AddSwagger()

@@ -7,6 +7,7 @@ type HttpListenerOptions struct {
 	TLSPort                 string
 	TLSCertificate          string
 	TLSPrivateKey           string
+	DisableHttpWhenTls      bool
 	UseAuthBackend          bool
 	MongoDbConnectionString string
 	DatabaseName            string
