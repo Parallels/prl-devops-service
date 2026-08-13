@@ -390,7 +390,8 @@ func (c *Config) ShouldDisableHttpWhenTls() bool {
 	// Only disable HTTP if TLS is properly validated
 	isValid, errMsg := c.ValidateTlsConfiguration()
 	if !isValid {
-		common.Logger.Warn("HTTP cannot be disabled: %s", errMsg)
+		common.Logger.Warn("⚠ DISABLE_HTTP_WHEN_TLS ignored: %s", errMsg)
+		common.Logger.Warn("⚠ Falling back to dual-protocol mode (HTTP + HTTPS)")
 		return false
 	}
 

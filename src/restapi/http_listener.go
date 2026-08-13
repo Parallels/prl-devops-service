@@ -458,7 +458,7 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 
 			go func() {
 				l.Logger.Info("Api listening on https://::" + l.Options.TLSPort + l.GetApiPrefix())
-				l.Logger.Success("Finished Initiating https server")
+				l.Logger.Success("✓ HTTPS server started successfully")
 				if err := sslSrv.ListenAndServeTLS("", ""); err != nil {
 					if !strings.Contains(err.Error(), "http: Server closed") {
 						l.Logger.Error("There was an error shutting down the https server: %v", err.Error())
@@ -517,6 +517,8 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 
 			if tlsStarted && !l.Options.DisableHttpWhenTls {
 				l.Logger.Warn("⚠ HTTP server running alongside HTTPS. Consider setting DISABLE_HTTP_WHEN_TLS=true for production")
+			} else if !tlsStarted {
+				l.Logger.Info("Running in HTTP-only mode (TLS not configured)")
 			}
 
 			l.Logger.Success("✓ HTTP server started successfully")
