@@ -212,6 +212,10 @@ spec:
             - name: TLS_DISABLE_VALIDATION
               value: "true"
             {{- end }}
+            {{- if .Values.security.disable_http_when_tls }}
+            - name: DISABLE_HTTP_WHEN_TLS
+              value: "true"
+            {{- end }}
             {{- if .Values.config.disableCatalogCaching }}
             - name: DISABLE_CATALOG_CACHING
               value: "true"
