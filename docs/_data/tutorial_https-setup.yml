@@ -1,0 +1,766 @@
+id: tutorial-https-setup
+title: HTTPS-Only Mode Setup
+level: intermediate
+duration: "~25 min"
+group: Tutorials
+category: Security
+order: 4
+tags:
+  - security
+  - https
+  - tls
+  - ssl
+  - encryption
+
+scenario: >
+  Learn how to secure your Parallels DevOps Service with HTTPS/TLS encryption and enforce HTTPS-only mode 
+  to prevent unencrypted HTTP traffic in production environments.
+
+introduction:
+  markdown_scenario: >
+    **Security First**: Running production services over unencrypted HTTP exposes sensitive data (API keys, 
+    VM credentials, configuration) to network eavesdropping and man-in-the-middle attacks. The Parallels 
+    DevOps Service supports **TLS/HTTPS encryption** and can optionally **disable HTTP entirely** when TLS 
+    is properly configured.
+    
+    
+    With HTTPS-only mode, you can:
+    
+    - Encrypt all API traffic between clients and the DevOps Service
+    - Prevent accidental plaintext communication in production
+    - Validate TLS certificates automatically before disabling HTTP
+    - Maintain backward compatibility with dual-protocol mode (HTTP + HTTPS)
+    - Get safety fallbacks if TLS configuration fails
+    
+    **Before you begin**: This tutorial assumes you have a working Parallels DevOps Service instance. If you 
+    haven't set it up yet, complete the [DevOps CLI Quick Start](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/) 
+    tutorial first.
+  key_outcomes:
+    - Generate TLS certificates (self-signed or CA-signed)
+    - Configure HTTPS/TLS on Parallels DevOps Service
+    - Understand dual-protocol vs HTTPS-only mode behavior
+    - Implement HTTPS-only mode for production security
+    - Troubleshoot common TLS configuration issues
+  prerequisites:
+    hard:
+      - "**Parallels DevOps Service** installed and running — [Setup guide](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/)"
+      - Access to service configuration (config.yaml or environment variables)
+      - OpenSSL installed for certificate generation
+    soft:
+      - Basic understanding of TLS/SSL certificates
+      - Familiarity with DNS and networking concepts
+      - Command-line experience
+  architecture_diagram: |
+    flowchart TB
+        A[Client] -->|HTTPS Request| B{TLS Enabled?}
+        B -->|Yes| C[HTTPS Server :8443]
+        C -->|TLS Validation| D{Certificate Valid?}
+        D -->|✓ Valid| E[Encrypted Response]
+        D -->|✗ Invalid| F[TLS Error]
+        
+        B -->|No| G[HTTP Server :8080]
+        G -->|Plaintext| H[Unencrypted Response]
+        
+        I{DISABLE_HTTP_WHEN_TLS?} -->|true + Valid TLS| J[HTTP Disabled]
+        I -->|false| K[Both HTTP & HTTPS]
+        I -->|true + Invalid TLS| L[Fallback to HTTP]
+
+steps:
+  - id: verify-prerequisites
+    kind: narrative
+    title: Verify Prerequisites
+    duration: "~2 min"
+    tag: SETUP
+    layout: rows
+    markdown_body: |
+      Before configuring HTTPS, ensure your DevOps Service is running and accessible. We'll verify the 
+      current HTTP endpoint and check that OpenSSL is available for certificate generation.
+    panel:
+      kind: terminal
+      name: Verify Service & Tools
+      cmd: |
+        # Check if service is running (HTTP)
+        curl http://localhost:8080/api/health/probe
+        
+        # Verify OpenSSL is installed
+        openssl version
+        
+        # Check current configuration
+        prldevops --version
+      output: |
+        {"status":"OK"}
+        OpenSSL 3.0.8 7 Feb 2023
+        Version: 1.0.0
+      copy_button: true
+    checklist:
+      - DevOps Service responds to HTTP health check
+      - OpenSSL is installed and accessible
+      - You have access to service configuration files or environment variables
+
+  - id: choose-certificate-type
+    kind: choice
+    title: Choose Certificate Type
+    duration: "~1 min"
+    tag: CERT
+    question: What type of TLS certificate do you want to use?
+    icon: fa-certificate
+    branches:
+      self-signed:
+        label: Self-Signed Certificate
+        value: self-signed
+        description: Quick setup for development/testing (browsers will show warnings)
+        icon: fa-shield-halved
+      ca-signed:
+        label: CA-Signed Certificate
+        value: ca-signed
+        description: Production-ready certificate from Let's Encrypt or commercial CA
+        icon: fa-shield-check
+
+  - id: generate-self-signed-cert
+    kind: narrative
+    title: "Generate ${{ choose-certificate-type.label }}"
+    duration: "~5 min"
+    if: choose-certificate-type.value == 'self-signed'
+    tag: CERT
+    layout: rows
+    markdown_body: |
+      Self-signed certificates are perfect for development and testing. While browsers will show security 
+      warnings (which you can bypass), the traffic is still encrypted. For production, use a CA-signed 
+      certificate from Let's Encrypt or a commercial provider.
+      
+      We'll generate a 2048-bit RSA certificate valid for 365 days.
+    panel:
+      kind: terminal
+      name: Generate Self-Signed Certificate
+      cmd: |
+        # Generate private key and certificate in one command
+        openssl req -x509 -newkey rsa:2048 -nodes \
+          -keyout prldevops-key.pem \
+          -out prldevops-cert.pem \
+          -days 365 \
+          -subj "/C=US/ST=California/L=San Francisco/O=MyOrg/CN=localhost"
+        
+        # View certificate details
+        openssl x509 -in prldevops-cert.pem -text -noout | head -20
+        
+        # Encode for environment variables (base64)
+        TLS_CERTIFICATE=$(base64 -i prldevops-cert.pem)
+        TLS_PRIVATE_KEY=$(base64 -i prldevops-key.pem)
+        
+        echo "Certificate and key generated successfully!"
+        echo "Files: prldevops-cert.pem, prldevops-key.pem"
+      copy_button: true
+    resources:
+      - title: OpenSSL Documentation
+        url: https://www.openssl.org/docs/
+    checklist:
+      - Certificate file created (prldevops-cert.pem)
+      - Private key file created (prldevops-key.pem)
+      - Files are readable and not empty
+      - Base64-encoded values are ready for configuration
+
+  - id: use-ca-signed-cert
+    kind: narrative
+    title: "Use ${{ choose-certificate-type.label }}"
+    duration: "~10 min"
+    if: choose-certificate-type.value == 'ca-signed'
+    tag: CERT
+    layout: rows
+    markdown_body: |
+      For production deployments, use a CA-signed certificate from Let's Encrypt (free, automated) or a 
+      commercial certificate authority. This tutorial shows Let's Encrypt with Certbot.
+      
+      **Prerequisites:**
+      - Domain name pointing to your server (e.g., `prldevops.example.com`)
+      - Port 80 accessible for ACME challenge
+      - Certbot installed
+    panel:
+      kind: terminal
+      name: Generate Let's Encrypt Certificate
+      cmd: |
+        # Install Certbot (Ubuntu/Debian)
+        sudo apt update
+        sudo apt install -y certbot
+        
+        # Generate certificate (standalone mode - stops temporarily on port 80)
+        sudo certbot certonly --standalone \
+          -d prldevops.example.com \
+          --email admin@example.com \
+          --agree-tos \
+          --non-interactive
+        
+        # Certificate files are saved to:
+        # /etc/letsencrypt/live/prldevops.example.com/fullchain.pem
+        # /etc/letsencrypt/live/prldevops.example.com/privkey.pem
+        
+        # Encode for environment variables
+        TLS_CERTIFICATE=$(sudo base64 -w 0 /etc/letsencrypt/live/prldevops.example.com/fullchain.pem)
+        TLS_PRIVATE_KEY=$(sudo base64 -w 0 /etc/letsencrypt/live/prldevops.example.com/privkey.pem)
+        
+        echo "Let's Encrypt certificate generated successfully!"
+      copy_button: true
+    resources:
+      - title: Let's Encrypt Documentation
+        url: https://letsencrypt.org/docs/
+      - title: Certbot Instructions
+        url: https://certbot.eff.org/
+    checklist:
+      - Domain name is configured and resolves to your server
+      - Certbot successfully generated certificates
+      - Certificate files exist in /etc/letsencrypt/live/
+      - Base64-encoded values are ready for configuration
+
+  - id: choose-deployment-mode
+    kind: choice
+    title: Choose Deployment Mode
+    duration: "~1 min"
+    tag: CONFIG
+    question: How do you want to run the service?
+    icon: fa-server
+    branches:
+      dual-protocol:
+        label: Dual Protocol (HTTP + HTTPS)
+        value: dual-protocol
+        description: Both HTTP and HTTPS enabled (backward compatible, default behavior)
+        icon: fa-arrows-split-up-and-left
+      https-only:
+        label: HTTPS-Only Mode
+        value: https-only
+        description: HTTP disabled, HTTPS required (recommended for production)
+        icon: fa-lock
+
+  - id: configure-dual-protocol
+    kind: narrative
+    title: "Configure ${{ choose-deployment-mode.label }}"
+    duration: "~5 min"
+    if: choose-deployment-mode.value == 'dual-protocol'
+    tag: CONFIG
+    layout: rows
+    markdown_body: |
+      ## Dual Protocol Mode (HTTP + HTTPS)
+      
+      This is the **default behavior** and maintains backward compatibility. Both protocols run simultaneously:
+      
+      - **HTTP** on port 8080 (unencrypted)
+      - **HTTPS** on port 8443 (encrypted)
+      
+      Clients can connect using either protocol. This mode is useful for:
+      - Development environments
+      - Gradual migration from HTTP to HTTPS
+      - Services behind a TLS-terminating reverse proxy
+      
+      ### ⚠️ Security Warning
+      
+      The service will log: *"HTTP server running alongside HTTPS. Consider setting DISABLE_HTTP_WHEN_TLS=true for production"*
+    panels:
+      - kind: terminal
+        name: Configure via Environment Variables
+        markdown_body: |
+          Set TLS environment variables while keeping HTTP enabled:
+        cmd: |
+          # Enable TLS with certificates (base64-encoded)
+          export TLS_ENABLED=true
+          export TLS_PORT=8443
+          export TLS_CERTIFICATE="<base64-encoded-certificate>"
+          export TLS_PRIVATE_KEY="<base64-encoded-private-key>"
+          
+          # Leave DISABLE_HTTP_WHEN_TLS unset or explicitly false
+          export DISABLE_HTTP_WHEN_TLS=false
+          
+          # API port remains enabled
+          export API_PORT=8080
+          
+          # Start service
+          ./prldevops api
+        copy_button: true
+      - kind: terminal
+        name: Configure via config.yaml
+        markdown_body: |
+          Alternative: Update your config.yaml file:
+        cmd: |
+          # config.yaml
+          environment:
+            tls_enabled: true
+            tls_port: 8443
+            tls_certificate: "<base64-encoded-certificate>"
+            tls_private_key: "<base64-encoded-private-key>"
+            disable_http_when_tls: false  # Explicit dual-protocol mode
+            api_port: 8080
+          
+          # Start service with config file
+          ./prldevops api --config config.yaml
+        copy_button: true
+    checklist:
+      - TLS_ENABLED is set to true
+      - TLS certificates are configured
+      - DISABLE_HTTP_WHEN_TLS is false or unset
+      - Service starts successfully
+
+  - id: configure-https-only
+    kind: narrative
+    title: "Configure ${{ choose-deployment-mode.label }}"
+    duration: "~5 min"
+    if: choose-deployment-mode.value == 'https-only'
+    tag: CONFIG
+    layout: rows
+    markdown_body: |
+      ## HTTPS-Only Mode (Recommended for Production)
+      
+      When `DISABLE_HTTP_WHEN_TLS=true`, the service:
+      
+      1. ✅ **Validates TLS configuration** (certificate, key, expiration)
+      2. ✅ **Starts HTTPS server** on port 8443
+      3. ✅ **Disables HTTP server** completely
+      4. ⚠️ **Falls back to HTTP** if TLS validation fails (with warning logs)
+      
+      ### Benefits
+      
+      - 🔒 **Enforces encryption** - No accidental plaintext communication
+      - 🛡️ **Security compliance** - Meets industry standards for encrypted-only APIs
+      - ✅ **Automatic validation** - TLS errors are caught at startup
+      - 🔄 **Safe fallback** - HTTP remains available if TLS fails
+    panels:
+      - kind: terminal
+        name: Configure via Environment Variables
+        markdown_body: |
+          Enable HTTPS-only mode with TLS validation:
+        cmd: |
+          # Enable TLS with certificates
+          export TLS_ENABLED=true
+          export TLS_PORT=8443
+          export TLS_CERTIFICATE="<base64-encoded-certificate>"
+          export TLS_PRIVATE_KEY="<base64-encoded-private-key>"
+          
+          # ✨ NEW: Disable HTTP when TLS is properly configured
+          export DISABLE_HTTP_WHEN_TLS=true
+          
+          # API port (ignored when DISABLE_HTTP_WHEN_TLS=true and TLS is valid)
+          export API_PORT=8080
+          
+          # Start service
+          ./prldevops api
+        copy_button: true
+      - kind: terminal
+        name: Configure via config.yaml
+        markdown_body: |
+          Alternative: Update your config.yaml file:
+        cmd: |
+          # config.yaml
+          environment:
+            tls_enabled: true
+            tls_port: 8443
+            tls_certificate: "<base64-encoded-certificate>"
+            tls_private_key: "<base64-encoded-private-key>"
+            disable_http_when_tls: true  # 🔒 HTTPS-only mode
+            api_port: 8080  # Fallback if TLS fails
+          
+          # Start service with config file
+          ./prldevops api --config config.yaml
+        copy_button: true
+    checklist:
+      - TLS_ENABLED is set to true
+      - TLS certificates are configured
+      - DISABLE_HTTP_WHEN_TLS is set to true
+      - Service starts successfully
+
+  - id: verify-configuration
+    kind: narrative
+    title: Verify HTTPS Configuration
+    duration: "~5 min"
+    tag: TEST
+    layout: rows
+    markdown_body: |
+      Test your HTTPS setup and verify the expected behavior based on your chosen deployment mode.
+      
+      ### Expected Startup Logs
+      
+      **Dual Protocol Mode:**
+      ```
+      ✓ HTTPS server started successfully
+      Api listening on https://::8443/api
+      ✓ HTTP server started successfully
+      Api listening on http://::8080/api
+      ⚠ HTTP server running alongside HTTPS. Consider setting DISABLE_HTTP_WHEN_TLS=true for production
+      ```
+      
+      **HTTPS-Only Mode:**
+      ```
+      HTTPS-only mode enabled: HTTP traffic will be rejected
+      ✓ HTTPS server started successfully
+      Api listening on https://::8443/api
+      HTTP server disabled (DISABLE_HTTP_WHEN_TLS=true and TLS is active)
+      All HTTP requests will fail. Ensure clients use HTTPS::8443
+      ```
+    panels:
+      - kind: terminal
+        name: Test HTTPS Endpoint
+        markdown_body: |
+          Verify HTTPS is working (use `-k` for self-signed certificates):
+        cmd: |
+          # Test HTTPS health check
+          curl -k https://localhost:8443/api/health/probe
+          
+          # Expected output: {"status":"OK"}
+          
+          # For CA-signed certificates (remove -k flag):
+          curl https://prldevops.example.com:8443/api/health/probe
+        copy_button: true
+      - kind: terminal
+        name: Test HTTP Endpoint (Dual Protocol)
+        if: choose-deployment-mode.value == 'dual-protocol'
+        markdown_body: |
+          In dual-protocol mode, HTTP should also work:
+        cmd: |
+          # Test HTTP health check (should succeed)
+          curl http://localhost:8080/api/health/probe
+          
+          # Expected output: {"status":"OK"}
+        copy_button: true
+      - kind: terminal
+        name: Verify HTTP is Disabled (HTTPS-Only)
+        if: choose-deployment-mode.value == 'https-only'
+        markdown_body: |
+          In HTTPS-only mode, HTTP should fail:
+        cmd: |
+          # Test HTTP health check (should fail with connection refused)
+          curl http://localhost:8080/api/health/probe
+          
+          # Expected output: curl: (7) Failed to connect to localhost port 8080: Connection refused
+        copy_button: true
+    checklist:
+      - HTTPS endpoint responds successfully
+      - HTTP behavior matches chosen deployment mode
+      - Startup logs show expected messages
+      - No TLS validation errors in logs
+
+  - id: behavior-table
+    kind: narrative
+    title: Understanding Configuration Behaviors
+    duration: "~3 min"
+    tag: REFERENCE
+    layout: single
+    markdown_body: |
+      ## Configuration Behavior Matrix
+      
+      | `DISABLE_HTTP_WHEN_TLS` | TLS Configured | HTTP Server | HTTPS Server | Use Case |
+      |-------------------------|----------------|-------------|--------------|----------|
+      | **`false`** (default) | ✅ Yes | ✅ Running | ✅ Running | Development, gradual migration, reverse proxy |
+      | **`false`** (default) | ❌ No | ✅ Running | ❌ Not started | HTTP-only mode (no TLS) |
+      | **`true`** | ✅ Valid | ❌ Disabled | ✅ Running | **Production HTTPS-only mode** 🔒 |
+      | **`true`** | ⚠️ Invalid | ✅ Running | ❌ Failed | Safety fallback (logs warning) |
+      | **`true`** | ❌ Not set | ✅ Running | ❌ Not started | Treats as TLS disabled |
+      
+      ### Key Points
+      
+      - **Default behavior**: Both HTTP and HTTPS run when TLS is configured (backward compatible)
+      - **Production mode**: Set `DISABLE_HTTP_WHEN_TLS=true` to enforce HTTPS-only
+      - **Safety first**: Falls back to HTTP if TLS validation fails (prevents total outage)
+      - **Validation includes**: Certificate/key pair validity, expiration dates, PEM format
+      
+      ### Logging Examples
+      
+      **Successful HTTPS-Only Mode:**
+      ```
+      [INFO] HTTPS-only mode enabled: HTTP traffic will be rejected
+      [INFO] Api listening on https://::8443/api
+      [SUCCESS] ✓ HTTPS server started successfully
+      [INFO] HTTP server disabled (DISABLE_HTTP_WHEN_TLS=true and TLS is active)
+      ```
+      
+      **Fallback to Dual Protocol (Invalid Certificate):**
+      ```
+      [WARN] ⚠ DISABLE_HTTP_WHEN_TLS ignored: Invalid TLS certificate/key pair: tls: failed to find any PEM data
+      [WARN] ⚠ Falling back to dual-protocol mode (HTTP + HTTPS)
+      [INFO] Api listening on http://::8080/api
+      [SUCCESS] ✓ HTTP server started successfully
+      ```
+
+  - id: client-migration
+    kind: narrative
+    title: Migrating Clients to HTTPS
+    duration: "~5 min"
+    tag: MIGRATION
+    layout: rows
+    markdown_body: |
+      When switching to HTTPS-only mode, update all clients to use the HTTPS endpoint.
+      
+      ### API Client Updates
+      
+      Change base URLs from `http://` to `https://` and update ports:
+    panels:
+      - kind: terminal
+        name: prldevops CLI
+        markdown_body: |
+          Update CLI configuration to use HTTPS:
+        cmd: |
+          # Before (HTTP)
+          prldevops config set host http://localhost:8080
+          
+          # After (HTTPS)
+          prldevops config set host https://localhost:8443
+          
+          # For self-signed certificates, disable TLS validation (dev only)
+          prldevops config set disable-tls-validation true
+          
+          # For CA-signed certificates, enable validation
+          prldevops config set disable-tls-validation false
+        copy_button: true
+      - kind: terminal
+        name: Jenkins Plugin
+        markdown_body: |
+          Update Jenkins cloud configuration:
+        cmd: |
+          # In Jenkins: Manage Jenkins → Clouds → parallels-cloud
+          
+          # Before:
+          Service URL: http://prldevops.example.com:8080
+          
+          # After:
+          Service URL: https://prldevops.example.com:8443
+          
+          # For self-signed certificates, enable "Disable TLS Validation"
+        copy_button: false
+      - kind: terminal
+        name: Custom Scripts
+        markdown_body: |
+          Update API calls in scripts:
+        cmd: |
+          # Before (HTTP)
+          curl http://localhost:8080/api/v1/machines
+          
+          # After (HTTPS with self-signed cert)
+          curl -k https://localhost:8443/api/v1/machines
+          
+          # After (HTTPS with CA-signed cert)
+          curl https://prldevops.example.com:8443/api/v1/machines
+        copy_button: true
+    checklist:
+      - All API clients updated to use HTTPS URLs
+      - Port changed from 8080 to 8443
+      - TLS validation configured appropriately (enabled for CA certs, disabled for self-signed)
+      - Authentication still works over HTTPS
+
+  - id: certificate-renewal
+    kind: narrative
+    title: Certificate Renewal & Monitoring
+    duration: "~3 min"
+    tag: MAINTENANCE
+    layout: rows
+    markdown_body: |
+      TLS certificates expire and must be renewed periodically. The DevOps Service validates certificate 
+      expiration at startup and warns if expiration is within 30 days.
+      
+      ### Certificate Expiration Warning
+      
+      ```
+      [WARN] TLS certificate expires in 25 days
+      ```
+      
+      ### Let's Encrypt Auto-Renewal
+      
+      Certbot automatically renews Let's Encrypt certificates. Verify auto-renewal is working:
+    panel:
+      kind: terminal
+      name: Certificate Renewal
+      cmd: |
+        # Test Let's Encrypt renewal (dry run)
+        sudo certbot renew --dry-run
+        
+        # Manual renewal (if needed)
+        sudo certbot renew
+        
+        # After renewal, restart the service with updated certificates
+        # Re-encode the new certificates
+        TLS_CERTIFICATE=$(sudo base64 -w 0 /etc/letsencrypt/live/prldevops.example.com/fullchain.pem)
+        TLS_PRIVATE_KEY=$(sudo base64 -w 0 /etc/letsencrypt/live/prldevops.example.com/privkey.pem)
+        
+        # Update environment variables and restart service
+        ./prldevops api
+      copy_button: true
+    resources:
+      - title: Certbot Renewal Documentation
+        url: https://eff-certbot.readthedocs.io/en/stable/using.html#renewing-certificates
+    checklist:
+      - Certbot auto-renewal is configured (for Let's Encrypt)
+      - Certificate expiration is monitored
+      - Service restart procedure is documented
+      - Backup certificates are stored securely
+
+  - id: troubleshooting
+    kind: narrative
+    title: Troubleshooting
+    duration: "~5 min"
+    tag: HELP
+    layout: single
+    markdown_body: |
+      ## Common Issues and Solutions
+      
+      ### TLS Handshake Failures
+      
+      **Symptom:** `curl: (35) error:1408F10B:SSL routines:ssl3_get_record:wrong version number`
+      
+      **Solution:**
+      ```bash
+      # Check certificate is valid
+      openssl x509 -in prldevops-cert.pem -text -noout
+      
+      # Verify certificate and key match
+      openssl x509 -noout -modulus -in prldevops-cert.pem | openssl md5
+      openssl rsa -noout -modulus -in prldevops-key.pem | openssl md5
+      # (MD5 hashes should match)
+      
+      # Test TLS connection
+      openssl s_client -connect localhost:8443 -servername localhost
+      ```
+      
+      ---
+      
+      ### Service Falls Back to HTTP
+      
+      **Symptom:** Logs show `"⚠ DISABLE_HTTP_WHEN_TLS ignored: Invalid TLS certificate/key pair"`
+      
+      **Solution:**
+      - Verify base64 encoding is correct (no line breaks, complete string)
+      - Check certificate file is PEM format (not DER)
+      - Ensure private key is not encrypted (use `-nodes` flag with OpenSSL)
+      - Validate certificate hasn't expired
+      
+      ```bash
+      # Check certificate expiration
+      openssl x509 -in prldevops-cert.pem -noout -dates
+      ```
+      
+      ---
+      
+      ### Certificate Expired
+      
+      **Symptom:** `"Certificate expired on: 2026-01-15 10:30:00 +0000 UTC"`
+      
+      **Solution:**
+      ```bash
+      # Generate new self-signed certificate
+      openssl req -x509 -newkey rsa:2048 -nodes \
+        -keyout prldevops-key.pem \
+        -out prldevops-cert.pem \
+        -days 365 \
+        -subj "/CN=localhost"
+      
+      # Or renew Let's Encrypt certificate
+      sudo certbot renew --force-renewal
+      
+      # Update service configuration and restart
+      ```
+      
+      ---
+      
+      ### Browser Security Warnings (Self-Signed)
+      
+      **Symptom:** Browser shows "Your connection is not private" for self-signed certificates.
+      
+      **Solution:**
+      - Click "Advanced" → "Proceed to localhost (unsafe)" for testing
+      - For production, use CA-signed certificate from Let's Encrypt or commercial provider
+      - Alternatively, add self-signed certificate to browser's trusted root store (dev only)
+      
+      ---
+      
+      ### Port Already in Use
+      
+      **Symptom:** `"bind: address already in use"`
+      
+      **Solution:**
+      ```bash
+      # Check what's using the port
+      sudo lsof -i :8443
+      
+      # Kill the process or change TLS_PORT to different value
+      export TLS_PORT=9443
+      ```
+      
+      ---
+      
+      ### HTTPS Works But HTTP Still Accessible
+      
+      **Symptom:** Both HTTP and HTTPS respond despite DISABLE_HTTP_WHEN_TLS=true
+      
+      **Solution:**
+      - Verify environment variable is actually set: `echo $DISABLE_HTTP_WHEN_TLS`
+      - Check startup logs for "HTTPS-only mode enabled" message
+      - Ensure no reverse proxy is forwarding HTTP traffic
+      - Restart service after configuration changes
+    resources:
+      - title: OpenSSL Troubleshooting
+        url: https://www.openssl.org/docs/man1.1.1/man1/openssl.html
+      - title: Let's Encrypt Community Support
+        url: https://community.letsencrypt.org/
+      - title: DevOps Service Documentation
+        url: /docs/devops/getting-started/configuration/
+
+  - id: next-steps
+    kind: narrative
+    title: Next Steps
+    duration: "~2 min"
+    tag: SUMMARY
+    layout: single
+    markdown_body: |
+      ## 🎉 Congratulations!
+      
+      You've successfully configured HTTPS for your Parallels DevOps Service. Your API traffic is now encrypted 
+      and secure.
+      
+      ### What You Accomplished
+      
+      - ✅ Generated TLS certificates (self-signed or CA-signed)
+      - ✅ Configured HTTPS on port 8443
+      - ✅ Understood dual-protocol vs HTTPS-only mode
+      - ✅ Implemented production-ready HTTPS-only configuration
+      - ✅ Learned certificate renewal and troubleshooting
+      
+      ### Recommended Next Steps
+      
+      1. **Production Checklist:**
+         - [ ] Use CA-signed certificate (Let's Encrypt or commercial)
+         - [ ] Enable `DISABLE_HTTP_WHEN_TLS=true`
+         - [ ] Close port 8080 in firewall (HTTP)
+         - [ ] Set up certificate auto-renewal
+         - [ ] Monitor certificate expiration
+      
+      2. **Security Enhancements:**
+         - [ ] Configure reverse proxy with HSTS headers
+         - [ ] Enable HTTP to HTTPS redirects at reverse proxy
+         - [ ] Implement certificate pinning for critical clients
+         - [ ] Review TLS cipher suites (TLS 1.2+ only)
+      
+      3. **Monitoring:**
+         - [ ] Set up alerts for certificate expiration (30 days before)
+         - [ ] Monitor TLS handshake failures
+         - [ ] Log and audit HTTPS access patterns
+      
+      4. **Related Tutorials:**
+         - [Deploy Behind Reverse Proxy](/prl-devops-service/docs/devops/examples/reverse-proxy/)
+         - [Jenkins Dynamic Agents](/prl-devops-service/tutorials/tutorial_jenkins-plugin/)
+         - [Kubernetes Deployment](/prl-devops-service/docs/devops/examples/kubernetes/)
+      
+      ### Configuration Reference
+      
+      ```yaml
+      # Production HTTPS-only configuration
+      environment:
+        # TLS Configuration
+        tls_enabled: true
+        tls_port: 8443
+        tls_certificate: "<base64-encoded-certificate>"
+        tls_private_key: "<base64-encoded-private-key>"
+        
+        # 🔒 Enforce HTTPS-only
+        disable_http_when_tls: true
+        
+        # HTTP port (fallback only)
+        api_port: 8080
+      ```
+      
+      ### Get Help
+      
+      - 📖 [Configuration Documentation](/prl-devops-service/docs/devops/getting-started/configuration/)
+      - 🐛 [Report Issues](https://github.com/Parallels/prl-devops-service/issues)
+      - 💬 [Community Discord](https://discord.gg/parallels)
