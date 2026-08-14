@@ -261,8 +261,8 @@ steps:
           # Enable TLS with certificates (base64-encoded)
           export TLS_ENABLED=true
           export TLS_PORT=8443
-          export TLS_CERTIFICATE="<base64-encoded-certificate>"
-          export TLS_PRIVATE_KEY="<base64-encoded-private-key>"
+          export TLS_CERTIFICATE="YOUR_CERTIFICATE_BASE64"
+          export TLS_PRIVATE_KEY="YOUR_KEY_BASE64"
           
           # Leave DISABLE_HTTP_WHEN_TLS unset or explicitly false
           export DISABLE_HTTP_WHEN_TLS=false
@@ -282,8 +282,8 @@ steps:
           environment:
             tls_enabled: true
             tls_port: 8443
-            tls_certificate: "<base64-encoded-certificate>"
-            tls_private_key: "<base64-encoded-private-key>"
+            tls_certificate: "YOUR_CERTIFICATE_BASE64"
+            tls_private_key: "YOUR_KEY_BASE64"
             disable_http_when_tls: false  # Explicit dual-protocol mode
             api_port: 8080
           
@@ -328,8 +328,8 @@ steps:
           # Enable TLS with certificates
           export TLS_ENABLED=true
           export TLS_PORT=8443
-          export TLS_CERTIFICATE="<base64-encoded-certificate>"
-          export TLS_PRIVATE_KEY="<base64-encoded-private-key>"
+          export TLS_CERTIFICATE="YOUR_CERTIFICATE_BASE64"
+          export TLS_PRIVATE_KEY="YOUR_KEY_BASE64"
           
           # ✨ NEW: Disable HTTP when TLS is properly configured
           export DISABLE_HTTP_WHEN_TLS=true
@@ -349,8 +349,8 @@ steps:
           environment:
             tls_enabled: true
             tls_port: 8443
-            tls_certificate: "<base64-encoded-certificate>"
-            tls_private_key: "<base64-encoded-private-key>"
+            tls_certificate: "YOUR_CERTIFICATE_BASE64"
+            tls_private_key: "YOUR_KEY_BASE64"
             disable_http_when_tls: true  # 🔒 HTTPS-only mode
             api_port: 8080  # Fallback if TLS fails
           
@@ -749,8 +749,8 @@ steps:
         # TLS Configuration
         tls_enabled: true
         tls_port: 8443
-        tls_certificate: "<base64-encoded-certificate>"
-        tls_private_key: "<base64-encoded-private-key>"
+        tls_certificate: "YOUR_CERTIFICATE_BASE64"
+        tls_private_key: "YOUR_KEY_BASE64"
         
         # 🔒 Enforce HTTPS-only
         disable_http_when_tls: true
