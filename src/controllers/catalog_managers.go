@@ -5,13 +5,13 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +22,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
@@ -362,7 +363,7 @@ func registerCatalogManagerCatalogHandlers(version string) {
 // @Tags			CatalogManagers
 // @Produce		json
 // @Success		200	{object}	[]models.CatalogManager
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -372,6 +373,7 @@ func GetCatalogManagersHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		getCatalogManagers := errors.NewDiagnostics("/catalog-managers")
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
@@ -380,7 +382,8 @@ func GetCatalogManagersHandler() restapi.ControllerHandler {
 
 		user := ctx.GetUser()
 		if user == nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("User not contextually found"), http.StatusUnauthorized))
+			getCatalogManagers.AddError(strconv.Itoa(http.StatusUnauthorized), "No user context available", "GetCatalogManagersHandler")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getCatalogManagers, http.StatusUnauthorized))
 			return
 		}
 
@@ -399,7 +402,8 @@ func GetCatalogManagersHandler() restapi.ControllerHandler {
 		}
 
 		if !canListAll && !canListOwn {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Not authorized to view catalog managers"), http.StatusForbidden))
+			getCatalogManagers.AddError(strconv.Itoa(http.StatusForbidden), "User does not have permission to list catalog managers", "GetCatalogManagersHandler")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getCatalogManagers, http.StatusForbidden))
 			return
 		}
 
@@ -456,7 +460,7 @@ func GetCatalogManagersHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path		string	true	"Manager ID"
 // @Success		200	{object}	models.CatalogManager
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -466,18 +470,19 @@ func GetCatalogManagerByIdHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		id := vars["id"]
+		getCatalogManagerById := errors.NewDiagnostics("/catalog-managers" + id)
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
 			return
 		}
 
-		vars := mux.Vars(r)
-		id := vars["id"]
-
 		user := ctx.GetUser()
 		if user == nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("User not contextually found"), http.StatusUnauthorized))
+			getCatalogManagerById.AddError(strconv.Itoa(http.StatusUnauthorized), "No user context available", "GetCatalogManagerByIdHandler")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getCatalogManagerById, http.StatusUnauthorized))
 			return
 		}
 
@@ -523,7 +528,8 @@ func GetCatalogManagerByIdHandler() restapi.ControllerHandler {
 		}
 
 		if !isAuthorized {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Not authorized to view this catalog manager"), http.StatusForbidden))
+			getCatalogManagerById.AddError(strconv.Itoa(http.StatusForbidden), "Not authorized to view this catalog manager", "GetCatalogManagerByIdHandler")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getCatalogManagerById, http.StatusForbidden))
 			return
 		}
 
@@ -538,7 +544,7 @@ func GetCatalogManagerByIdHandler() restapi.ControllerHandler {
 // @Tags			CatalogManagers
 // @Produce		json
 // @Success		200	{object}	models.CatalogManager
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -547,11 +553,13 @@ func CreateCatalogManagerHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		createCatalogManager := errors.NewDiagnostics("/catalog-managers")
 		var req models.CatalogManagerRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+			rsp := models.NewFromError(err)
+			createCatalogManager.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Failed to decode request body")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createCatalogManager, http.StatusBadRequest))
 			return
 		}
 		defer r.Body.Close()
@@ -563,8 +571,10 @@ func CreateCatalogManagerHandler() restapi.ControllerHandler {
 		newMgr.CreatedAt = helpers.GetUtcCurrentDateTime()
 		newMgr.UpdatedAt = helpers.GetUtcCurrentDateTime()
 
-		if err := validateCatalogManagerUrl(newMgr.URL); err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+		validateCatalogManagerUrl(newMgr.URL, createCatalogManager)
+
+		if createCatalogManager.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createCatalogManager, http.StatusBadRequest))
 			return
 		}
 
@@ -576,13 +586,15 @@ func CreateCatalogManagerHandler() restapi.ControllerHandler {
 		}
 		if req.Global || req.Internal {
 			if !canCreateGlobalInternal {
-				ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Not authorized to create global or internal catalog manager"), http.StatusForbidden))
+				createCatalogManager.AddError(strconv.Itoa(http.StatusForbidden), "Not authorized to create global or internal catalog manager", "Failed to create catalog manager")
+				ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createCatalogManager, http.StatusForbidden))
 				return
 			}
 		}
 
-		if err := validateCatalogManagerConnection(ctx, newMgr.URL, newMgr.Username, decryptCatalogManagerSecret(newMgr.Password), decryptCatalogManagerSecret(newMgr.ApiKey)); err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+		validateCatalogManagerConnection(ctx, newMgr.URL, newMgr.Username, decryptCatalogManagerSecret(newMgr.Password), decryptCatalogManagerSecret(newMgr.ApiKey), createCatalogManager)
+		if createCatalogManager.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createCatalogManager, http.StatusBadRequest))
 			return
 		}
 
@@ -609,7 +621,7 @@ func CreateCatalogManagerHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path		string	true	"Manager ID"
 // @Success		200	{object}	models.CatalogManager
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -618,14 +630,15 @@ func UpdateCatalogManagerHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
 		vars := mux.Vars(r)
 		id := vars["id"]
+		updateCatalogManager := errors.NewDiagnostics("/catalog-managers/" + id)
 
 		var req models.CatalogManagerRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+			updateCatalogManager.AddError(strconv.Itoa(http.StatusBadRequest), err.Error(), "Failed to decode request body")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateCatalogManager, http.StatusBadRequest))
 			return
 		}
 		defer r.Body.Close()
@@ -659,7 +672,8 @@ func UpdateCatalogManagerHandler() restapi.ControllerHandler {
 		}
 
 		if mgr.OwnerID != user.ID && !canSystemUpdate {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Not authorized to update this catalog manager"), http.StatusForbidden))
+			updateCatalogManager.AddError(strconv.Itoa(http.StatusForbidden), "Not authorized to update this catalog manager", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateCatalogManager, http.StatusForbidden))
 			return
 		}
 
@@ -667,13 +681,15 @@ func UpdateCatalogManagerHandler() restapi.ControllerHandler {
 		mappers.UpdateCatalogManagerFromRequest(&updatedMgr, &req)
 		updatedMgr.UpdatedAt = helpers.GetUtcCurrentDateTime()
 
-		if err := validateCatalogManagerUrl(updatedMgr.URL); err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+		validateCatalogManagerUrl(updatedMgr.URL, updateCatalogManager)
+		if updateCatalogManager.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateCatalogManager, http.StatusBadRequest))
 			return
 		}
 
-		if err := validateCatalogManagerConnection(ctx, updatedMgr.URL, updatedMgr.Username, decryptCatalogManagerSecret(updatedMgr.Password), decryptCatalogManagerSecret(updatedMgr.ApiKey)); err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+		validateCatalogManagerConnection(ctx, updatedMgr.URL, updatedMgr.Username, decryptCatalogManagerSecret(updatedMgr.Password), decryptCatalogManagerSecret(updatedMgr.ApiKey), updateCatalogManager)
+		if updateCatalogManager.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(updateCatalogManager, http.StatusBadRequest))
 			return
 		}
 
@@ -696,7 +712,7 @@ func UpdateCatalogManagerHandler() restapi.ControllerHandler {
 // @Produce		json
 // @Param			id	path		string	true	"Manager ID"
 // @Success		200	{object}	models.ApiCommonResponse
-// @Failure		400	{object}	models.ApiErrorResponse
+// @Failure		400	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
@@ -708,6 +724,7 @@ func DeleteCatalogManagerHandler() restapi.ControllerHandler {
 
 		vars := mux.Vars(r)
 		id := vars["id"]
+		deleteCatalogManager := errors.NewDiagnostics("/catalog-managers/" + id)
 
 		dbService, err := serviceprovider.GetDatabaseService(ctx)
 		if err != nil {
@@ -738,7 +755,8 @@ func DeleteCatalogManagerHandler() restapi.ControllerHandler {
 		}
 
 		if mgr.OwnerID != user.ID && !canSystemDelete {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Not authorized to delete this catalog manager"), http.StatusForbidden))
+			deleteCatalogManager.AddError(strconv.Itoa(http.StatusForbidden), "Not authorized to delete this catalog manager", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteCatalogManager, http.StatusForbidden))
 			return
 		}
 
@@ -766,76 +784,71 @@ func AsyncPushCatalogManifestToCatalogManagerHandler() restapi.ControllerHandler
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		vars := mux.Vars(r)
+		managerID := vars["id"]
+		asyncPushCatalogManifest := errors.NewDiagnostics("/catalog-managers/" + managerID + "/push")
 
 		userContext := ctx.GetUser()
 		if userContext == nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
+			asyncPushCatalogManifest.AddError(strconv.Itoa(http.StatusUnauthorized), "User not found", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifest, http.StatusUnauthorized))
 			return
 		}
 
-		vars := mux.Vars(r)
-		managerID := vars["id"]
-
 		mgr, errResp := getAuthorizedCatalogManagerForUse(ctx, managerID)
 		if errResp != nil {
-			ReturnApiError(ctx, w, *errResp)
+			asyncPushCatalogManifest.AddError(strconv.Itoa(errResp.Code), errResp.Message, "Failed to get authorized catalog manager")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifest, errResp.Code))
 			return
 		}
 
 		var request catalog_models.PushCatalogManifestRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			asyncPushCatalogManifest.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifest, http.StatusBadRequest))
 			return
 		}
 
 		if request.Connection == "" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Code:    http.StatusBadRequest,
-				Message: "connection is required in the request body (storage provider connection string, e.g. provider=minio;endpoint=...;bucket=...)",
-			})
+			asyncPushCatalogManifest.AddError(strconv.Itoa(http.StatusBadRequest), "connection is required in the request body (storage provider connection string, e.g. provider=minio;endpoint=...;bucket=...)", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifest, http.StatusBadRequest))
 			return
 		}
 
 		// Build the host= part from the catalog manager credentials and merge with the
 		// user-provided storage connection (stripping any host= they may have included).
-		hostPart, err := buildCatalogManagerConnection(*mgr)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+		hostPart := buildCatalogManagerConnection(*mgr, asyncPushCatalogManifest)
+		if asyncPushCatalogManifest.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifest, http.StatusBadRequest))
 			return
 		}
 		storageParts := stripHostFromConnection(request.Connection)
 		request.Connection = hostPart + ";" + storageParts
 
-		arch, err := catalog_helpers.ValidateArch(request.Architecture)
-		if err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid architecture: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		arch := catalog_helpers.ValidateArch(request.Architecture, asyncPushCatalogManifest)
+		if asyncPushCatalogManifest.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifest, http.StatusBadRequest))
 			return
 		}
 		request.Architecture = arch
 
-		if err := request.Validate(); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+		request.Validate(asyncPushCatalogManifest)
+		if asyncPushCatalogManifest.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifest, http.StatusBadRequest))
 			return
 		}
 
 		jobManager := jobs.Get(ctx)
 		if jobManager == nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(errors.New("Job Manager is not available"), http.StatusInternalServerError))
+			asyncPushCatalogManifest.AddError(strconv.Itoa(http.StatusInternalServerError), "Job Manager is not available", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifest, http.StatusInternalServerError))
 			return
 		}
 
 		localJob, err := jobManager.CreateNewJob(userContext.ID, "catalog", "push", "Initializing catalog push to manager "+mgr.Name)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			asyncPushCatalogManifest.AddError(strconv.Itoa(http.StatusInternalServerError), "Failed to create job: "+err.Error(), "CreateNewJob")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(asyncPushCatalogManifest, http.StatusInternalServerError))
 			return
 		}
 
@@ -855,19 +868,21 @@ func ForwardCatalogManagerCatalogRequestHandler(remotePathTemplate string) resta
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		diag := errors.NewDiagnostics("/catalog-managers/")
 		vars := mux.Vars(r)
 		managerID := vars["id"]
 
 		mgr, err := getAuthorizedCatalogManagerForUse(ctx, managerID)
 		if err != nil {
-			ReturnApiError(ctx, w, *err)
+			diag.AddError(strconv.Itoa(err.Code), err.Message, "Failed to get authorized catalog manager")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, err.Code))
 			return
 		}
 
 		relativePath := resolveMuxPath(remotePathTemplate, vars)
-		if err := forwardCatalogManagerRequest(ctx, w, r, mgr, relativePath); err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadGateway))
+		forwardCatalogManagerRequest(ctx, w, r, mgr, relativePath, diag)
+		if diag.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(diag, http.StatusBadGateway))
 			return
 		}
 	}
@@ -878,21 +893,17 @@ func PullCatalogManifestFromCatalogManagerHandler(async bool) restapi.Controller
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		pullCatalogManifest := errors.NewDiagnostics("PullCatalogManifestFromCatalogManagerHandler")
 		var request catalog_models.PullCatalogManifestRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
-				Code:    http.StatusBadRequest,
-			})
+			pullCatalogManifest.AddError(strconv.Itoa(http.StatusBadRequest), "Invalid request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(pullCatalogManifest, http.StatusBadRequest))
 			return
 		}
 
 		if request.Connection != "" {
-			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "connection is not allowed for catalog manager pull endpoints",
-				Code:    http.StatusBadRequest,
-			})
+			pullCatalogManifest.AddError(strconv.Itoa(http.StatusBadRequest), "connection is not allowed for catalog manager pull endpoints", "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(pullCatalogManifest, http.StatusBadRequest))
 			return
 		}
 
@@ -901,20 +912,22 @@ func PullCatalogManifestFromCatalogManagerHandler(async bool) restapi.Controller
 
 		mgr, errResp := getAuthorizedCatalogManagerForUse(ctx, managerID)
 		if errResp != nil {
-			ReturnApiError(ctx, w, *errResp)
+			pullCatalogManifest.AddError(strconv.Itoa(errResp.Code), errResp.Message, "Failed to get authorized catalog manager")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(pullCatalogManifest, errResp.Code))
 			return
 		}
 
-		connection, err := buildCatalogManagerConnection(*mgr)
-		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusBadRequest))
+		connection := buildCatalogManagerConnection(*mgr, pullCatalogManifest)
+		if pullCatalogManifest.HasErrors() {
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(pullCatalogManifest, http.StatusBadRequest))
 			return
 		}
 
 		request.Connection = connection
 		payload, err := json.Marshal(request)
 		if err != nil {
-			ReturnApiError(ctx, w, models.NewFromErrorWithCode(err, http.StatusInternalServerError))
+			pullCatalogManifest.AddError(strconv.Itoa(http.StatusInternalServerError), "Failed to marshal request body: "+err.Error(), "")
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(pullCatalogManifest, http.StatusInternalServerError))
 			return
 		}
 
@@ -1003,10 +1016,12 @@ func resolveMuxPath(pathTemplate string, vars map[string]string) string {
 	return resolvedPath
 }
 
-func buildCatalogManagerTargetUrl(baseURL string, endpointPath string, rawQuery string) (string, error) {
+func buildCatalogManagerTargetUrl(baseURL string, endpointPath string, rawQuery string, diag *errors.Diagnostics) string {
 	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
-		return "", err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "Failed to build catalog manager target url")
+		return ""
 	}
 
 	basePath := strings.TrimRight(parsedURL.Path, "/")
@@ -1017,7 +1032,7 @@ func buildCatalogManagerTargetUrl(baseURL string, endpointPath string, rawQuery 
 	}
 
 	parsedURL.RawQuery = rawQuery
-	return parsedURL.String(), nil
+	return parsedURL.String()
 }
 
 func decryptCatalogManagerSecret(value string) string {
@@ -1058,24 +1073,25 @@ func getCatalogManagerAuthorizer(ctx basecontext.ApiContext, manager data_models
 	return client.Authorize(ctx, targetUrl)
 }
 
-func buildCatalogManagerConnection(manager data_models.CatalogManager) (string, error) {
+func buildCatalogManagerConnection(manager data_models.CatalogManager, diag *errors.Diagnostics) string {
 	host := strings.TrimSpace(manager.URL)
 	if host == "" {
-		return "", errors.New("catalog manager url is required")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "catalog manager url is required", "")
+		return ""
 	}
 
 	password := decryptCatalogManagerSecret(manager.Password)
 	apiKey := decryptCatalogManagerSecret(manager.ApiKey)
 
 	if apiKey != "" {
-		return fmt.Sprintf("host=%s@%s", apiKey, host), nil
+		return fmt.Sprintf("host=%s@%s", apiKey, host)
 	}
 
 	if manager.Username != "" && password != "" {
-		return fmt.Sprintf("host=%s:%s@%s", manager.Username, password, host), nil
+		return fmt.Sprintf("host=%s:%s@%s", manager.Username, password, host)
 	}
 
-	return "host=" + host, nil
+	return "host=" + host
 }
 
 // stripHostFromConnection removes any host= segment from a semicolon-separated
@@ -1091,30 +1107,35 @@ func stripHostFromConnection(connection string) string {
 	return strings.Join(filtered, ";")
 }
 
-func validateCatalogManagerUrl(managerURL string) error {
-	return helpers.ValidateCatalogManagerUrl(managerURL)
+func validateCatalogManagerUrl(managerURL string, diag *errors.Diagnostics) {
+	helpers.ValidateCatalogManagerUrl(managerURL, diag)
+
 }
 
-func validateCatalogManagerConnection(ctx basecontext.ApiContext, managerURL string, username string, password string, apiKey string) error {
+func validateCatalogManagerConnection(ctx basecontext.ApiContext, managerURL string, username string, password string, apiKey string, diag *errors.Diagnostics) {
 	if strings.TrimSpace(managerURL) == "" {
-		return errors.New("catalog manager url is required")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "catalog manager url is required", "Failed to validate catalog manager connection")
+		return
 	}
 
 	if apiKey == "" && username == "" && password == "" {
-		return errors.New("missing authentication credentials, provide api_key or username/password")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing authentication credentials, provide api_key or username/password", "Failed to validate catalog manager connection")
+		return
 	}
 
 	if apiKey == "" && ((username != "" && password == "") || (username == "" && password != "")) {
-		return errors.New("both username and password are required for password authentication")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "both username and password are required for password authentication", "Failed to validate catalog manager connection")
+		return
 	}
 
-	if err := validateCatalogManagerUrl(managerURL); err != nil {
-		return fmt.Errorf("invalid catalog manager url: %w", err)
+	validateCatalogManagerUrl(managerURL, diag)
+	if diag.HasErrors() {
+		return
 	}
 
-	targetURL, err := buildCatalogManagerTargetUrl(managerURL, "/catalog", "")
-	if err != nil {
-		return fmt.Errorf("invalid catalog manager url: %w", err)
+	targetURL := buildCatalogManagerTargetUrl(managerURL, "/catalog", "", diag)
+	if diag.HasErrors() {
+		return
 	}
 
 	client := apiclient.NewHttpClient(ctx)
@@ -1126,10 +1147,11 @@ func validateCatalogManagerConnection(ctx basecontext.ApiContext, managerURL str
 
 	var response interface{}
 	if _, err := client.Get(targetURL, &response); err != nil {
-		return fmt.Errorf("unable to authenticate catalog manager connection: %w", err)
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), fmt.Sprintf("unable to authenticate catalog manager connection: %v", err), "validateCatalogManagerConnection")
+		return
 	}
 
-	return nil
 }
 
 // isCatalogManifestVisible returns true if the calling user's effective
@@ -1258,25 +1280,31 @@ func filterCatalogManifestResponse(authCtx *basecontext.AuthorizationContext, bo
 	return body, originalStatus
 }
 
-func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWriter, r *http.Request, manager *data_models.CatalogManager, endpointPath string) error {
-	targetURL, err := buildCatalogManagerTargetUrl(manager.URL, endpointPath, r.URL.RawQuery)
-	if err != nil {
-		return err
+func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWriter, r *http.Request, manager *data_models.CatalogManager, endpointPath string, diag *errors.Diagnostics) {
+	targetURL := buildCatalogManagerTargetUrl(manager.URL, endpointPath, r.URL.RawQuery, diag)
+	if diag.HasErrors() {
+		return
 	}
 
 	requestBody, err := io.ReadAll(r.Body)
 	if err != nil {
-		return err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), "Failed to read request body: "+rsp.Message, "forwardCatalogManagerRequest")
+		return
 	}
 
 	outboundRequest, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, bytes.NewReader(requestBody))
 	if err != nil {
-		return err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), "Failed to create outbound request: "+rsp.Message, "forwardCatalogManagerRequest")
+		return
 	}
 
 	authorizer, err := getCatalogManagerAuthorizer(ctx, *manager, targetURL)
 	if err != nil {
-		return err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), "Failed to get catalog manager authorizer: "+rsp.Message, "forwardCatalogManagerRequest")
+		return
 	}
 
 	for headerKey, values := range r.Header {
@@ -1347,7 +1375,9 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 
 	response, err := httpClient.Do(outboundRequest)
 	if err != nil {
-		return err
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "forwardCatalogManagerRequest")
+		return
 	}
 	defer response.Body.Close()
 
@@ -1383,17 +1413,28 @@ func forwardCatalogManagerRequest(ctx basecontext.ApiContext, w http.ResponseWri
 	if r.Method == http.MethodGet && response.StatusCode == http.StatusOK {
 		bodyBytes, readErr := io.ReadAll(response.Body)
 		if readErr != nil {
-			return readErr
+			rsp := models.NewFromError(readErr)
+			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "forwardCatalogManagerRequest")
+			return
 		}
 		// authCtx := ctx.GetAuthorizationContext()
 		// filteredBody, filteredStatus := filterCatalogManifestResponse(authCtx, bodyBytes, response.StatusCode)
 		// w.WriteHeader(filteredStatus)
 		w.WriteHeader(response.StatusCode)
 		_, err = w.Write(bodyBytes)
-		return err
+		if err != nil {
+			rsp := models.NewFromError(err)
+			diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "forwardCatalogManagerRequest")
+			return
+		}
+		return
 	}
 
 	w.WriteHeader(response.StatusCode)
 	_, err = io.Copy(w, response.Body)
-	return err
+	if err != nil {
+		rsp := models.NewFromError(err)
+		diag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "forwardCatalogManagerRequest")
+		return
+	}
 }

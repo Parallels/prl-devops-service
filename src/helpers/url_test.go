@@ -3,6 +3,8 @@ package helpers
 import (
 	"net"
 	"testing"
+
+	"github.com/Parallels/prl-devops-service/errors"
 )
 
 func TestValidateUrl(t *testing.T) {
@@ -23,12 +25,13 @@ func TestValidateUrl(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateUrl(tt.url)
-			if tt.expectError && err == nil {
+			diag := errors.NewDiagnostics("test")
+			ValidateUrl(tt.url, diag)
+			if tt.expectError && !diag.HasErrors() {
 				t.Errorf("expected error, got nil")
 			}
-			if !tt.expectError && err != nil {
-				t.Errorf("unexpected error: %v", err)
+			if !tt.expectError && diag.HasErrors() {
+				t.Errorf("unexpected error: %v", diag.GetErrors()[0].Message)
 			}
 		})
 	}
@@ -57,12 +60,13 @@ func TestIsUrlAllowed(t *testing.T) {
 			continue
 		}
 		t.Run(tt.name, func(t *testing.T) {
-			err := IsUrlAllowed(tt.url)
-			if tt.expectError && err == nil {
+			diag := errors.NewDiagnostics("test")
+			IsUrlAllowed(tt.url, diag)
+			if tt.expectError && !diag.HasErrors() {
 				t.Errorf("expected error, got nil")
 			}
-			if !tt.expectError && err != nil {
-				t.Errorf("unexpected error: %v", err)
+			if !tt.expectError && diag.HasErrors() {
+				t.Errorf("unexpected error: %v", diag.GetErrors()[0].Message)
 			}
 		})
 	}
@@ -185,12 +189,13 @@ func TestIsUrlAllowed_WithWhitelist(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := IsUrlAllowed(tt.url)
-			if tt.expectError && err == nil {
+			diag := errors.NewDiagnostics("test")
+			IsUrlAllowed(tt.url, diag)
+			if tt.expectError && !diag.HasErrors() {
 				t.Errorf("expected error, got nil")
 			}
-			if !tt.expectError && err != nil {
-				t.Errorf("unexpected error: %v", err)
+			if !tt.expectError && diag.HasErrors() {
+				t.Errorf("unexpected error: %v", diag.GetErrors()[0].Message)
 			}
 		})
 	}

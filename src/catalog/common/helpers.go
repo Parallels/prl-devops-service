@@ -1,10 +1,12 @@
 package common
 
 import (
-	"errors"
 	"fmt"
+	"net/http"
+	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
 )
@@ -31,14 +33,15 @@ func CalculatePartSize(fileSize int64) int64 {
 	return size
 }
 
-func ValidateArch(arch string) (string, error) {
+func ValidateArch(arch string, diag *errors.Diagnostics) string {
 	currentArch := arch
 	if arch == "" {
 		ctx := basecontext.NewRootBaseContext()
 		svcCtl := system.Get()
 		arch, err := svcCtl.GetArchitecture(ctx)
 		if err != nil {
-			return "", errors.New("unable to determine architecture")
+			diag.AddError(strconv.Itoa(http.StatusInternalServerError), "unable to determine architecture", "ValidateArch")
+			return ""
 		}
 
 		currentArch = arch
@@ -55,10 +58,11 @@ func ValidateArch(arch string) (string, error) {
 	}
 
 	if currentArch != "x86_64" && currentArch != "arm64" {
-		return "", errors.New("invalid architecture")
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "invalid architecture", "ValidateArch")
+		return ""
 	}
 
-	return currentArch, nil
+	return currentArch
 }
 
 func ValidatePath(path string, owner string) (string, error) {
