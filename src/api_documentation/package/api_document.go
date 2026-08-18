@@ -39,7 +39,7 @@ func NewApiDocument() *ApiDocument {
 		Title:            "API Documentation",
 		Endpoints:        []*models.Endpoint{},
 		DefaultHost:      "http://localhost",
-		OutputFolder:     "../../docs/docs/devops/restapi/reference",
+		OutputFolder:     "docs/docs/devops/restapi/reference",
 		ExportCategories: true,
 		Categories:       []*models.Category{},
 		ApiPrefix:        "/api",
@@ -171,7 +171,7 @@ func (d *ApiDocument) Save() error {
 
 func (d *ApiDocument) extractBlocks() ([]*models.Endpoint, error) {
 	var endpoints []*models.Endpoint
-	root := "../"
+	root := "src/"
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
