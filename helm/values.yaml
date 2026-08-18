@@ -73,6 +73,7 @@ security:
   root_password: ""
   enable_tls: false
   disable_tls_validation: false
+  disable_http_when_tls: false
 
 service:
   type: ClusterIP
