@@ -1,6 +1,6 @@
 ---
 layout: api
-title: Events
+title: User Configs
 default_host: http://localhost
 api_prefix: /api
 is_category_document: true
@@ -1084,18 +1084,99 @@ categories:
           description: This endpoint removes a claim from a user
           title: Removes a claim from a user
 endpoints:
-    - title: Subscribe to event notifications via WebSocket
-      description: This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or query parameters (access_token or authorization).
+    - title: Gets all user configs
+      description: This endpoint returns all configuration entries for the authenticated user
       requires_authorization: true
-      category: Events
-      category_path: events
-      path: /v1/ws/subscribe
+      category: User Configs
+      category_path: user_configs
+      path: /v1/user/configs
+      method: get
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: '[]models.UserConfigResponse'
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/user/configs' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/user/configs");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/user/configs"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Gets a user config by id or slug
+      description: This endpoint returns a single configuration entry for the authenticated user
+      requires_authorization: true
+      category: User Configs
+      category_path: user_configs
+      path: /v1/user/configs/{id}
       method: get
       parameters:
-        - name: event_types
-          required: false
-          type: query
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Config ID or Slug
       response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.UserConfigResponse
+          language: json
         - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
@@ -1107,23 +1188,18 @@ endpoints:
           title: models.ApiErrorDiagnosticsResponse
           language: json
         - code_block: '{ object }'
-          code: "409"
-          code_description: Conflict
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-        - code_block: '{ object }'
-          code: "503"
-          code_description: Service Unavailable
+          code: "404"
+          code_description: Not Found
           title: models.ApiErrorDiagnosticsResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/subscribe' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/user/configs/{id}' \n--header 'Authorization ••••••'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/subscribe");
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/user/configs/{id}");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -1141,7 +1217,7 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/ws/subscribe"
+              url := "http://localhost/api/v1/user/configs/{id}"
               method := "get"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
@@ -1167,172 +1243,44 @@ endpoints:
             }
           title: Go
           language: go
-    - title: List connected WebSocket clients
-      description: Returns all currently connected WebSocket clients with queue depth and ping/pong timestamps. Useful for diagnosing stale or dead clients whose queues are filling up.
+    - title: Creates a user config
+      description: This endpoint creates a configuration entry for the authenticated user
       requires_authorization: true
-      category: Events
-      category_path: events
-      path: /v1/ws/clients
-      method: get
-      response_blocks:
-        - code_block: '{ object }'
-          code: "503"
-          code_description: Service Unavailable
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-      example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/clients' \n--header 'Authorization ••••••'\n"
-          title: cURL
-          language: powershell
-        - code_block: |
-            var client = new HttpClient();
-
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/clients");
-            request.Headers.Add("Authorization", "••••••");
-            var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var responseString = await response.Content.ReadAsStringAsync();
-          title: C#
-          language: csharp
-        - code_block: |
-            package main
-
-            import (
-              "fmt"
-              "net/http"
-              "strings"
-              "io"
-            )
-
-            func main() {
-              url := "http://localhost/api/v1/ws/clients"
-              method := "get"
-              client := &http.Client{}
-              req, err := http.NewRequest(method, url, payload)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              req.Header.Add("Content-Type", "application/json")
-
-              req.Header.Add("Authorization", "••••••")
-              res, err := client.Do(req)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              defer res.Body.Close()
-              body, err := io.ReadAll(res.Body)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              fmt.Println(string(body))
-            }
-          title: Go
-          language: go
-    - title: Get WebSocket event emitter statistics
-      description: Returns aggregate statistics including total connected clients, subscription counts per event type, uptime, and per-client details with queue depths.
-      requires_authorization: true
-      category: Events
-      category_path: events
-      path: /v1/ws/stats
-      method: get
-      response_blocks:
-        - code_block: '{ object }'
-          code: "200"
-          code_description: OK
-          title: models.EventEmitterStats
-          language: json
-        - code_block: '{ object }'
-          code: "503"
-          code_description: Service Unavailable
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-      example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/stats' \n--header 'Authorization ••••••'\n"
-          title: cURL
-          language: powershell
-        - code_block: |
-            var client = new HttpClient();
-
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/stats");
-            request.Headers.Add("Authorization", "••••••");
-            var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var responseString = await response.Content.ReadAsStringAsync();
-          title: C#
-          language: csharp
-        - code_block: |
-            package main
-
-            import (
-              "fmt"
-              "net/http"
-              "strings"
-              "io"
-            )
-
-            func main() {
-              url := "http://localhost/api/v1/ws/stats"
-              method := "get"
-              client := &http.Client{}
-              req, err := http.NewRequest(method, url, payload)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              req.Header.Add("Content-Type", "application/json")
-
-              req.Header.Add("Authorization", "••••••")
-              res, err := client.Do(req)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              defer res.Body.Close()
-              body, err := io.ReadAll(res.Body)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              fmt.Println(string(body))
-            }
-          title: Go
-          language: go
-    - title: Unsubscribe from specific event types
-      description: Unsubscribe an active WebSocket client from specific event types without disconnecting. The client must belong to the authenticated user.
-      requires_authorization: true
-      category: Events
-      category_path: events
-      path: /v1/ws/unsubscribe
+      category: User Configs
+      category_path: user_configs
+      path: /v1/user/configs
       method: post
       parameters:
-        - name: body
+        - name: userConfig
           required: false
           type: body
           value_type: object
-          description: Unsubscribe request with client ID and event types
+          description: Body
           body: '{ object }'
       response_blocks:
+        - code_block: '{ object }'
+          code: "201"
+          code_description: Created
+          title: models.UserConfigResponse
+          language: json
         - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorDiagnosticsResponse
           language: json
         - code_block: '{ object }'
-          code: "503"
-          code_description: Service Unavailable
+          code: "401"
+          code_description: Unauthorized
           title: models.ApiErrorDiagnosticsResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/unsubscribe' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/user/configs' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/ws/unsubscribe");
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/user/configs");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
             request.Content = new StringContent("{ object }");
@@ -1353,7 +1301,7 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/ws/unsubscribe"
+              url := "http://localhost/api/v1/user/configs"
               method := "post"
               payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
@@ -1380,10 +1328,185 @@ endpoints:
             }
           title: Go
           language: go
+    - title: Updates a user config
+      description: This endpoint updates a configuration entry for the authenticated user
+      requires_authorization: true
+      category: User Configs
+      category_path: user_configs
+      path: /v1/user/configs/{id}
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Config ID or Slug
+        - name: userConfig
+          required: false
+          type: body
+          value_type: object
+          description: Body
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.UserConfigResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/user/configs/{id}' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/user/configs/{id}");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/user/configs/{id}"
+              method := "put"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes a user config
+      description: This endpoint deletes a configuration entry for the authenticated user
+      requires_authorization: true
+      category: User Configs
+      category_path: user_configs
+      path: /v1/user/configs/{id}
+      method: delete
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Config ID or Slug
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/user/configs/{id}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/user/configs/{id}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/user/configs/{id}"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
 
 ---
-# Events endpoints 
+# User Configs endpoints 
 
- This document contains the endpoints for the Events category.
+ This document contains the endpoints for the User Configs category.
 
 
