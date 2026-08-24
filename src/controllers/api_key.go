@@ -8,6 +8,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/database/filters"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -18,18 +19,18 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func enrichApiKeyWithUser(ctx basecontext.ApiContext, apiKey *models.ApiKeyResponse) {
+func enrichApiKeyWithUser(ctx *basecontext.BaseContext, apiKey *models.ApiKeyResponse) {
 	if apiKey.UserID == "" {
 		return
 	}
 
-	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-	if err != nil {
+	dbService, diag := serviceprovider.GetDatabaseService(ctx)
+	if diag != nil && diag.HasErrors() {
 		return
 	}
 
-	user, err := dbService.GetUser(ctx, apiKey.UserID)
-	if err != nil {
+	user, diag := dbService.Stores().User().GetUserByID(*ctx, apiKey.UserID)
+	if diag != nil && diag.HasErrors() {
 		return
 	}
 
@@ -129,15 +130,14 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 			return
 		}
 
-		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			createApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createApiKeyDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil && diag.HasErrors() {
+			createApiKeyDiag.Append(diag)
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createApiKeyDiag, http.StatusInternalServerError))
 			return
 		}
 
-		dtoApiKey := mappers.ApiKeyRequestToDto(request)
+		dbApiKey := mappers.ApiKeyRequestToDbModel(request)
 
 		authContext := ctx.GetAuthorizationContext()
 		if authContext != nil && authContext.User != nil {
@@ -147,25 +147,24 @@ func CreateApiKeyHandler() restapi.ControllerHandler {
 			if hasOwnCreateClaim {
 				// Users with CREATE_OWN_API_KEY_CLAIM can only create for themselves
 				if !hasFullCreateClaim && request.UserID != "" && request.UserID != authContext.User.ID {
-					createApiKeyDiag.AddError(strconv.Itoa(http.StatusForbidden), "You do not have permission to create API keys for other users", "Validation")
+					createApiKeyDiag.AddError(strconv.Itoa(http.StatusForbidden), "You do not have permission to create API keys for other users", "Validation", nil)
 					ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createApiKeyDiag, http.StatusForbidden))
 					return
 				}
 				// Auto-assign to user's ID if not provided
-				if dtoApiKey.UserID == "" {
-					dtoApiKey.UserID = authContext.User.ID
+				if dbApiKey.UserID == "" {
+					dbApiKey.UserID = authContext.User.ID
 				}
 			}
 		}
 
-		dtoApiKeyResult, err := dbService.CreateApiKey(ctx, dtoApiKey)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			createApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "CreateApiKey")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createApiKeyDiag, rsp.Code))
+		dbApiKeyResult, diag := dbService.Stores().ApiKey().CreateApiKey(*ctx, &dbApiKey)
+		if diag != nil && diag.HasErrors() {
+			createApiKeyDiag.Append(diag)
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(createApiKeyDiag, http.StatusInternalServerError))
 			return
 		}
-		response := mappers.ApiKeyDtoToApiKeyResponse(*dtoApiKeyResult)
+		response := mappers.ApiKeyDbModelToApiKeyResponse(*dbApiKeyResult)
 		response.Encoded = base64.StdEncoding.EncodeToString([]byte(request.Key + ":" + request.Secret))
 
 		w.WriteHeader(http.StatusCreated)
@@ -191,23 +190,22 @@ func GetApiKeysHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		getApiKeysDiag := errors.NewDiagnostics("/auth/api_keys [get]")
-		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getApiKeysDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeysDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil && diag.HasErrors() {
+			getApiKeysDiag.Append(diag)
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeysDiag, http.StatusInternalServerError))
 			return
 		}
 
-		dtoApiKeys, err := dbService.GetApiKeys(ctx, GetFilterHeader(r))
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getApiKeysDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetApiKeys")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeysDiag, rsp.Code))
+		queryBuilder := filters.NewQueryBuilder(GetFilterHeader(r))
+		queryResponse, diag := dbService.Stores().ApiKey().GetApiKeysByQuery(*ctx, queryBuilder)
+		if diag != nil && diag.HasErrors() {
+			getApiKeysDiag.Append(diag)
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeysDiag, http.StatusInternalServerError))
 			return
 		}
 
-		result := mappers.ApiKeysDtoToApiKeyResponse(dtoApiKeys)
+		result := mappers.ApiKeysDbModelToApiKeyResponse(queryResponse.Items)
 
 		for i := range result {
 			enrichApiKeyWithUser(ctx, &result[i])
@@ -237,22 +235,20 @@ func DeleteApiKeyHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		deleteApiKeyDiag := errors.NewDiagnostics("/auth/api_keys/{id} [delete]")
-		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			deleteApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteApiKeyDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil && diag.HasErrors() {
+			deleteApiKeyDiag.Append(diag)
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteApiKeyDiag, http.StatusInternalServerError))
 			return
 		}
 
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		err = dbService.DeleteApiKey(ctx, id)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			deleteApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "DeleteApiKey")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteApiKeyDiag, rsp.Code))
+		diag = dbService.Stores().ApiKey().DeleteApiKey(*ctx, id)
+		if diag != nil && diag.HasErrors() {
+			deleteApiKeyDiag.Append(diag)
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(deleteApiKeyDiag, http.StatusInternalServerError))
 			return
 		}
 
@@ -279,26 +275,30 @@ func GetApiKeyHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		getApiKeyDiag := errors.NewDiagnostics("/auth/api_keys/{id} [get]")
-		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeyDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil && diag.HasErrors() {
+			getApiKeyDiag.Append(diag)
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeyDiag, http.StatusInternalServerError))
 			return
 		}
 
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		dtoApiKey, err := dbService.GetApiKey(ctx, id)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			getApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "GetApiKey")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeyDiag, rsp.Code))
+		dbApiKey, diag := dbService.Stores().ApiKey().GetApiKey(*ctx, id)
+		if diag != nil && diag.HasErrors() {
+			getApiKeyDiag.Append(diag)
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeyDiag, http.StatusInternalServerError))
+			return
+		}
+		
+		if dbApiKey == nil {
+			getApiKeyDiag.AddError(strconv.Itoa(http.StatusNotFound), "API Key not found", "GetApiKey", nil)
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(getApiKeyDiag, http.StatusNotFound))
 			return
 		}
 
-		response := mappers.ApiKeyDtoToApiKeyResponse(*dtoApiKey)
+		response := mappers.ApiKeyDbModelToApiKeyResponse(*dbApiKey)
 
 		enrichApiKeyWithUser(ctx, &response)
 
@@ -328,22 +328,20 @@ func RevokeApiKeyHandler() restapi.ControllerHandler {
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
 		revokeApiKeyDiag := errors.NewDiagnostics("/auth/api_keys/{id}/revoke [put]")
-		dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			revokeApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "ServiceProvider")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(revokeApiKeyDiag, rsp.Code))
+		dbService, diag := serviceprovider.GetDatabaseService(ctx)
+		if diag != nil && diag.HasErrors() {
+			revokeApiKeyDiag.Append(diag)
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(revokeApiKeyDiag, http.StatusInternalServerError))
 			return
 		}
 
 		vars := mux.Vars(r)
 		id := vars["id"]
 
-		err = dbService.RevokeKey(ctx, id)
-		if err != nil {
-			rsp := models.NewFromError(err)
-			revokeApiKeyDiag.AddError(strconv.Itoa(rsp.Code), rsp.Message, "RevokeKey")
-			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(revokeApiKeyDiag, rsp.Code))
+		diag = dbService.Stores().ApiKey().RevokeApiKey(*ctx, id)
+		if diag != nil && diag.HasErrors() {
+			revokeApiKeyDiag.Append(diag)
+			ReturnApiErrorWithDiagnostics(ctx, w, models.NewDiagnosticsWithCode(revokeApiKeyDiag, http.StatusInternalServerError))
 			return
 		}
 

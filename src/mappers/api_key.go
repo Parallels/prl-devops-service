@@ -1,46 +1,62 @@
 package mappers
 
 import (
-	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"time"
+
+	database_models "github.com/Parallels/prl-devops-service/database/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
 )
 
-func ApiKeyRequestToDto(model models.ApiKeyRequest) data_models.ApiKey {
-	mapped := data_models.ApiKey{
-		ID:        helpers.GenerateId(),
-		Name:      model.Name,
-		Key:       model.Key,
-		Secret:    model.Secret,
-		Revoked:   model.Revoked,
-		CreatedAt: model.CreatedAt,
-		UpdatedAt: model.UpdatedAt,
-		RevokedAt: model.RevokedAt,
-		ExpiresAt: model.ExpiresAt,
-		UserID:    model.UserID,
+func ApiKeyRequestToDbModel(model models.ApiKeyRequest) database_models.ApiKey {
+	mapped := database_models.ApiKey{
+		BaseModel: database_models.BaseModel{
+			ID: helpers.GenerateId(),
+		},
+		Name:    model.Name,
+		Key:     model.Key,
+		Secret:  model.Secret,
+		Revoked: model.Revoked,
+		UserID:  model.UserID,
+	}
+
+	if model.RevokedAt != "" {
+		if t, err := time.Parse(time.RFC3339Nano, model.RevokedAt); err == nil {
+			mapped.RevokedAt = &t
+		}
+	}
+	if model.ExpiresAt != "" {
+		if t, err := time.Parse(time.RFC3339Nano, model.ExpiresAt); err == nil {
+			mapped.ExpiresAt = &t
+		}
 	}
 
 	return mapped
 }
 
-func ApiKeyDtoToApiKeyResponse(m data_models.ApiKey) models.ApiKeyResponse {
+func ApiKeyDbModelToApiKeyResponse(m database_models.ApiKey) models.ApiKeyResponse {
 	mapped := models.ApiKeyResponse{
-		ID:        m.ID,
-		Name:      m.Name,
-		Key:       m.Key,
-		Revoked:   m.Revoked,
-		ExpiresAt: m.ExpiresAt,
-		RevokedAt: m.RevokedAt,
-		UserID:    m.UserID,
+		ID:      m.ID,
+		Name:    m.Name,
+		Key:     m.Key,
+		Revoked: m.Revoked,
+		UserID:  m.UserID,
+	}
+
+	if m.RevokedAt != nil {
+		mapped.RevokedAt = m.RevokedAt.Format(time.RFC3339Nano)
+	}
+	if m.ExpiresAt != nil {
+		mapped.ExpiresAt = m.ExpiresAt.Format(time.RFC3339Nano)
 	}
 
 	return mapped
 }
 
-func ApiKeysDtoToApiKeyResponse(m []data_models.ApiKey) []models.ApiKeyResponse {
+func ApiKeysDbModelToApiKeyResponse(m []database_models.ApiKey) []models.ApiKeyResponse {
 	mapped := make([]models.ApiKeyResponse, 0)
 	for _, v := range m {
-		mapped = append(mapped, ApiKeyDtoToApiKeyResponse(v))
+		mapped = append(mapped, ApiKeyDbModelToApiKeyResponse(v))
 	}
 
 	return mapped

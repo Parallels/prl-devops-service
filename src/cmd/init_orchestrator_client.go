@@ -73,9 +73,15 @@ func processInitOrchestratorClient(ctx basecontext.ApiContext, command string) {
 		ctx.LogInfof("Parallels Desktop is already installed. Version: %s", pdService.Version())
 	}
 
-	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-	if err != nil {
-		ctx.LogErrorf("Failed to initialize database service: %v", err)
+	baseCtx, ok := ctx.(*basecontext.BaseContext)
+	if !ok {
+		ctx.LogErrorf("Failed to cast context to BaseContext")
+		os.Exit(1)
+	}
+
+	dbService, diag := serviceprovider.GetDatabaseService(baseCtx)
+	if diag != nil && diag.HasErrors() {
+		ctx.LogErrorf("Failed to initialize database service: %v", diag.GetSummary())
 		os.Exit(1)
 	}
 
@@ -87,10 +93,10 @@ func processInitOrchestratorClient(ctx basecontext.ApiContext, command string) {
 		Secret: helper.RandomString(40),
 	}
 
-	dtoApiKey := mappers.ApiKeyRequestToDto(apiKeyReq)
-	_, err = dbService.CreateApiKey(ctx, dtoApiKey)
-	if err != nil {
-		ctx.LogErrorf("Failed to generate local API key: %v", err)
+	dbApiKey := mappers.ApiKeyRequestToDbModel(apiKeyReq)
+	_, diag = dbService.Stores().ApiKey().CreateApiKey(*baseCtx, &dbApiKey)
+	if diag != nil && diag.HasErrors() {
+		ctx.LogErrorf("Failed to generate local API key: %v", diag.GetSummary())
 		os.Exit(1)
 	}
 
@@ -104,7 +110,7 @@ func processInitOrchestratorClient(ctx basecontext.ApiContext, command string) {
 		},
 	}
 
-	err = orchestratorHostReq.Validate()
+	err := orchestratorHostReq.Validate()
 	if err != nil {
 		ctx.LogErrorf("Invalid orchestrator host request: %v", err)
 		os.Exit(1)

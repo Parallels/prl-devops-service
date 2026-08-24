@@ -16,6 +16,7 @@ type StoreRegistry struct {
 	userConfigStore stores.UserConfigDataStoreInterface
 	roleStore       stores.RoleDataStoreInterface
 	claimStore      stores.ClaimDataStoreInterface
+	apiKeyStore     stores.ApiKeyStoreInterface
 }
 
 // NewStoreRegistry creates and initializes all stores
@@ -46,12 +47,19 @@ func NewStoreRegistry(db *gorm.DB) (*StoreRegistry, error) {
 		return nil, fmt.Errorf("failed to initialize claim store: %w", err)
 	}
 
+	// Initialize api key store
+	apiKeyStore := stores.GetApiKeyDataStoreInstance()
+	if err := apiKeyStore.Init(ctx, db); err != nil {
+		return nil, fmt.Errorf("failed to initialize api key store: %w", err)
+	}
+
 	return &StoreRegistry{
 		db:              db,
 		userStore:       userStore,
 		userConfigStore: userConfigStore,
 		roleStore:       roleStore,
 		claimStore:      claimStore,
+		apiKeyStore:     apiKeyStore,
 	}, nil
 }
 
@@ -73,6 +81,11 @@ func (r *StoreRegistry) Role() stores.RoleDataStoreInterface {
 // Claim returns the claim data store
 func (r *StoreRegistry) Claim() stores.ClaimDataStoreInterface {
 	return r.claimStore
+}
+
+// ApiKey returns the api key data store
+func (r *StoreRegistry) ApiKey() stores.ApiKeyStoreInterface {
+	return r.apiKeyStore
 }
 
 // DB returns the underlying database connection

@@ -143,17 +143,23 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 	// --- Create a permanent local API key and persist it to disk ---
 	// We write directly to the DB file and then restart the service so that
 	// the running process reloads from disk and sees the new key.
-	dbService, err := serviceprovider.GetJsonDatabaseService(ctx)
-	if err != nil {
-		ctx.LogErrorf("Failed to initialise database: %v", err)
+	baseCtx, ok := ctx.(*basecontext.BaseContext)
+	if !ok {
+		ctx.LogErrorf("Failed to cast context to BaseContext")
+		os.Exit(1)
+	}
+
+	dbService, diag := serviceprovider.GetDatabaseService(baseCtx)
+	if diag != nil && diag.HasErrors() {
+		ctx.LogErrorf("Failed to initialise database: %v", diag.GetSummary())
 		os.Exit(1)
 	}
 
 	// If a key with this host name already exists (re-deploy), replace it.
-	if existing, _ := dbService.GetApiKey(ctx, hostName); existing != nil {
+	if existing, _ := dbService.Stores().ApiKey().GetApiKey(*baseCtx, hostName); existing != nil {
 		ctx.LogInfof("Existing API key for %q found, replacing it...", hostName)
-		if err := dbService.DeleteApiKey(ctx, existing.ID); err != nil {
-			ctx.LogErrorf("Failed to delete existing API key: %v", err)
+		if diag := dbService.Stores().ApiKey().DeleteApiKey(*baseCtx, existing.ID); diag != nil && diag.HasErrors() {
+			ctx.LogErrorf("Failed to delete existing API key: %v", diag.GetSummary())
 			os.Exit(1)
 		}
 	}
@@ -163,15 +169,12 @@ func processRegisterWithOrchestrator(ctx basecontext.ApiContext, command string)
 		Key:    helper.RandomString(32),
 		Secret: helper.RandomString(40),
 	}
-	dtoApiKey := mappers.ApiKeyRequestToDto(apiKeyReq)
-	if _, err := dbService.CreateApiKey(ctx, dtoApiKey); err != nil {
-		ctx.LogErrorf("Failed to create local API key: %v", err)
+	dbApiKey := mappers.ApiKeyRequestToDbModel(apiKeyReq)
+	if _, diag := dbService.Stores().ApiKey().CreateApiKey(*baseCtx, &dbApiKey); diag != nil && diag.HasErrors() {
+		ctx.LogErrorf("Failed to create local API key: %v", diag.GetSummary())
 		os.Exit(1)
 	}
-	if err := dbService.SaveNow(ctx); err != nil {
-		ctx.LogErrorf("Failed to persist API key to disk: %v", err)
-		os.Exit(1)
-	}
+
 	ctx.LogInfof("API key persisted to disk, restarting service to reload...")
 
 	// Restart the service so it reloads the DB and picks up the new key.
