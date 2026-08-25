@@ -1925,7 +1925,7 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 		pullRequest.Architecture = request.Architecture
 	}
 
-	pullRequest.StartAfterPull = false
+	pullRequest.StartAfterPull = request.StartOnCreate
 
 	// Validate architecture and path
 	arch, err := catalog_helpers.ValidateArch(pullRequest.Architecture)
@@ -2017,10 +2017,6 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 	}
 
 	if request.StartOnCreate && response.CurrentState == "stopped" {
-		err := parallelsDesktopService.StartVm(ctx, response.ID)
-		if err != nil {
-			return nil, err
-		}
 		response.CurrentState = "running"
 	}
 
