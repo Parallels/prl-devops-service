@@ -1925,7 +1925,7 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 		pullRequest.Architecture = request.Architecture
 	}
 
-	pullRequest.StartAfterPull = request.StartOnCreate
+	pullRequest.StartAfterPull = false
 
 	// Validate architecture and path
 	arch, err := catalog_helpers.ValidateArch(pullRequest.Architecture)
