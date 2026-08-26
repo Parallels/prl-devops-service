@@ -450,7 +450,7 @@ func (s *OrchestratorService) CallCreateHostVirtualMachineAsync(host data_models
 		httpClient.WithHeader(constants.ORCHESTRATOR_JOB_ID_HEADER, jobID)
 	}
 
-	path := "/machines/async"
+	path := "/v1/machines/async"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {
 		return nil, err
@@ -482,7 +482,7 @@ func (s *OrchestratorService) CallCreateHostVirtualMachine(host data_models.Orch
 		httpClient.WithHeader(constants.ORCHESTRATOR_JOB_ID_HEADER, jobID)
 	}
 
-	path := "/machines"
+	path := "/v1/machines"
 	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
 	if err != nil {
 		return nil, err
