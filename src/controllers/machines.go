@@ -2017,10 +2017,6 @@ func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtu
 	}
 
 	if request.StartOnCreate && response.CurrentState == "stopped" {
-		err := parallelsDesktopService.StartVm(ctx, response.ID)
-		if err != nil {
-			return nil, err
-		}
 		response.CurrentState = "running"
 	}
 
