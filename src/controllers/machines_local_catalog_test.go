@@ -162,8 +162,8 @@ func TestBuildLocalCatalogConnection_CleanDNS(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "local-catalog-job-456", keyName)
 
-	// Verify connection string format: host=<secret>@http://my-service-orchestrator.com:9999
-	assert.Contains(t, connStr, "@http://my-service-orchestrator.com:9999")
+	// Verify connection string format: host=<secret>@http://my-service-orchestrator.com
+	assert.Contains(t, connStr, "@http://my-service-orchestrator.com")
 	assert.True(t, strings.HasPrefix(connStr, "host="))
 
 	// Verify API key was created
@@ -191,9 +191,9 @@ func TestBuildLocalCatalogConnection_HTTPSPrefix(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "local-catalog-job-1", keyName)
 
-	// Should strip https:// prefix and use http (TLS disabled)
-	assert.Contains(t, connStr, "@http://my-orchestrator.com:8080")
-	assert.NotContains(t, connStr, "https://https://")
+	// Should preserve https:// scheme as specified by user
+	assert.Contains(t, connStr, "@https://my-orchestrator.com")
+	assert.NotContains(t, connStr, ":8080")
 }
 
 // TestBuildLocalCatalogConnection_HTTPPrefix tests DNS with http:// prefix
@@ -212,9 +212,9 @@ func TestBuildLocalCatalogConnection_HTTPPrefix(t *testing.T) {
 	connStr, _, err := buildLocalCatalogConnection(ctx, "admin", "job-999")
 
 	require.NoError(t, err)
-	// Should strip http:// prefix and use http (TLS disabled)
-	assert.Contains(t, connStr, "@http://orchestrator.local:7777")
-	assert.NotContains(t, connStr, "http://http://")
+	// Should preserve http:// prefix as specified by user
+	assert.Contains(t, connStr, "@http://orchestrator.local")
+	assert.NotContains(t, connStr, ":7777")
 }
 
 // TestBuildLocalCatalogConnection_TrailingSlash tests DNS with trailing slash
@@ -233,11 +233,11 @@ func TestBuildLocalCatalogConnection_TrailingSlash(t *testing.T) {
 
 	require.NoError(t, err)
 	// Should strip trailing slash
-	assert.Contains(t, connStr, "@http://my-service.com:5000")
-	assert.NotContains(t, connStr, "my-service.com/:")
+	assert.Contains(t, connStr, "@http://my-service.com")
+	assert.NotContains(t, connStr, "my-service.com/")
 }
 
-// TestBuildLocalCatalogConnection_WithPort tests DNS with port number
+// TestBuildLocalCatalogConnection_WithPort tests DNS with custom port number
 func TestBuildLocalCatalogConnection_WithPort(t *testing.T) {
 	db, tmpDir, ctx := setupTestDBForController(t)
 	defer cleanupTestDBForController(t, tmpDir, db)
@@ -253,12 +253,12 @@ func TestBuildLocalCatalogConnection_WithPort(t *testing.T) {
 	connStr, _, err := buildLocalCatalogConnection(ctx, "user", "job-xyz")
 
 	require.NoError(t, err)
-	// Should strip port 8888 and use apiPort 9999 with HTTP
-	assert.Contains(t, connStr, "@http://orchestrator.example.com:9999")
-	assert.NotContains(t, connStr, ":8888")
+	// Should preserve custom port 8888 specified in ORCHESTRATOR_PUBLIC_URL
+	assert.Contains(t, connStr, "@http://orchestrator.example.com:8888")
+	assert.NotContains(t, connStr, ":9999")
 }
 
-// TestBuildLocalCatalogConnection_LocalhostDefault tests empty/whitespace falls back to localhost
+// TestBuildLocalCatalogConnection_LocalhostDefault tests empty/whitespace falls back to localhost:apiPort
 func TestBuildLocalCatalogConnection_LocalhostDefault(t *testing.T) {
 	db, tmpDir, ctx := setupTestDBForController(t)
 	defer cleanupTestDBForController(t, tmpDir, db)
@@ -273,7 +273,7 @@ func TestBuildLocalCatalogConnection_LocalhostDefault(t *testing.T) {
 	connStr, _, err := buildLocalCatalogConnection(ctx, "default-user", "job-default")
 
 	require.NoError(t, err)
-	// Should use localhost default
+	// Should use localhost:3000 default
 	assert.Contains(t, connStr, "@http://localhost:3000")
 }
 
@@ -282,7 +282,7 @@ func TestBuildLocalCatalogConnection_ComplexScenario(t *testing.T) {
 	db, tmpDir, ctx := setupTestDBForController(t)
 	defer cleanupTestDBForController(t, tmpDir, db)
 
-	// Combination: https prefix + port + trailing slash
+	// Combination: https prefix + custom port + trailing slash
 	t.Setenv(constants.ORCHESTRATOR_PUBLIC_URL, "https://my-complex-host.io:7777/")
 	t.Setenv(constants.API_PORT_ENV_VAR, "9999")
 	// TLS disabled
@@ -294,11 +294,10 @@ func TestBuildLocalCatalogConnection_ComplexScenario(t *testing.T) {
 	connStr, _, err := buildLocalCatalogConnection(ctx, "complex-user", "job-complex")
 
 	require.NoError(t, err)
-	// Should clean all: remove https://, remove :7777, remove /, use :9999 with HTTP
-	assert.Contains(t, connStr, "@http://my-complex-host.io:9999")
-	assert.NotContains(t, connStr, "https://https://")
-	assert.NotContains(t, connStr, ":7777")
-	assert.NotContains(t, connStr, "/:")
+	// Should preserve https:// and custom port :7777 while stripping trailing slash
+	assert.Contains(t, connStr, "@https://my-complex-host.io:7777")
+	assert.NotContains(t, connStr, "https://my-complex-host.io:7777/")
+	assert.NotContains(t, connStr, ":9999")
 }
 
 // TestBuildLocalCatalogConnection_WhitespaceHandling tests whitespace in config
@@ -317,7 +316,7 @@ func TestBuildLocalCatalogConnection_WhitespaceHandling(t *testing.T) {
 
 	require.NoError(t, err)
 	// Should trim whitespace
-	assert.Contains(t, connStr, "@http://orchestrator.space.com:4000")
+	assert.Contains(t, connStr, "@http://orchestrator.space.com")
 	assert.NotContains(t, connStr, "  ")
 }
 
