@@ -2076,34 +2076,32 @@ func populateMachineRequestArchitecture(ctx basecontext.ApiContext, request *mod
 // Used when orchestrator IS the catalog and needs to provide credentials to remote hosts
 func buildLocalCatalogConnection(ctx basecontext.ApiContext, callerID string, jobID string) (string, string, error) {
 	cfg := config.Get()
-	apiPort := cfg.ApiPort()
-	if apiPort == "" {
-		return "", "", fmt.Errorf("API port not configured")
-	}
+	rawUrl := strings.TrimSpace(cfg.OrchestratorPublicUrl())
 
-	// Determine schema and host
-	schema := "http"
-	if cfg.TlsEnabled() {
-		schema = "https"
-	}
+	ctx.LogDebugf("[Temp API Key] ORCHESTRATOR_PUBLIC_URL from config: '%s'", rawUrl)
 
-	host := cfg.OrchestratorPublicUrl()
-	ctx.LogDebugf("[Temp API Key] ORCHESTRATOR_PUBLIC_URL from config: '%s'", host)
-	ctx.LogDebugf("[Temp API Key] API Port: %s, TLS Enabled: %v, Schema: %s", apiPort, cfg.TlsEnabled(), schema)
-
-	// Sanitize host to handle various input formats:
-	// - Remove protocol prefixes (http://, https://)
-	// - Remove trailing slashes
-	// - Remove port numbers (we add apiPort separately)
-	host = strings.TrimSpace(host)
-	host = strings.TrimPrefix(host, "https://")
-	host = strings.TrimPrefix(host, "http://")
-	host = strings.TrimSuffix(host, "/")
-	if idx := strings.Index(host, ":"); idx != -1 {
-		host = host[:idx] // Remove port if present
-	}
-	if host == "" {
-		host = "localhost" // Fallback to localhost if empty after sanitization
+	// Fallback to localhost:apiPort if ORCHESTRATOR_PUBLIC_URL is empty or localhost
+	if rawUrl == "" || rawUrl == "localhost" {
+		apiPort := cfg.ApiPort()
+		if apiPort == "" {
+			return "", "", fmt.Errorf("API port not configured")
+		}
+		schema := "http"
+		if cfg.TlsEnabled() {
+			schema = "https"
+		}
+		rawUrl = fmt.Sprintf("%s://localhost:%s", schema, apiPort)
+	} else {
+		// Ensure scheme (http:// or https://) is present
+		if !strings.HasPrefix(rawUrl, "http://") && !strings.HasPrefix(rawUrl, "https://") {
+			schema := "http"
+			if cfg.TlsEnabled() {
+				schema = "https"
+			}
+			rawUrl = fmt.Sprintf("%s://%s", schema, rawUrl)
+		}
+		// Remove trailing slash
+		rawUrl = strings.TrimSuffix(rawUrl, "/")
 	}
 
 	// Generate unique key name and secret
@@ -2136,14 +2134,14 @@ func buildLocalCatalogConnection(ctx basecontext.ApiContext, callerID string, jo
 	}
 
 	// Connection string format for API key authentication:
-	// host=<base64_encoded_apikey>@protocol://host:port
+	// host=<base64_encoded_apikey>@target_url
 	// API key format: base64(keyName:secret)
 	apiKeyValue := keyName + ":" + plaintextSecret
 	encodedApiKey := base64.StdEncoding.EncodeToString([]byte(apiKeyValue))
-	connStr := fmt.Sprintf("host=%s@%s://%s:%s", encodedApiKey, schema, host, apiPort)
+	connStr := fmt.Sprintf("host=%s@%s", encodedApiKey, rawUrl)
 
 	ctx.LogInfof("[Temp API Key] Created temp key '%s' for job %s", keyName, jobID)
-	ctx.LogInfof("[Temp API Key] Connection string: host=<base64>@%s://%s:%s", schema, host, apiPort)
+	ctx.LogInfof("[Temp API Key] Connection string: host=<base64>@%s", rawUrl)
 	ctx.LogInfof("[Temp API Key] Base64 API key starts with: %s...", encodedApiKey[:20])
 
 	return connStr, keyName, nil
