@@ -1,7 +1,9 @@
 package models
 
 import (
+	"net/http"
 	"regexp"
+	"strconv"
 
 	"github.com/Parallels/prl-devops-service/errors"
 )
@@ -21,22 +23,26 @@ type ReverseProxyHostHttpRoute struct {
 	ResponseHeaders map[string]string           `json:"response_headers,omitempty" yaml:"response_headers,omitempty"`
 }
 
-func (r *ReverseProxyHostHttpRoute) Validate() error {
+func (r *ReverseProxyHostHttpRoute) Validate(diag *errors.Diagnostics) {
 	if r.TargetHost == "" && r.TargetVmId == "" {
-		return errors.NewWithCode("missing target host or target vm id for TCP route", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing target host or target vm id for TCP route", "")
+		return
 	}
 	if r.TargetPort == "" {
-		return errors.NewWithCode("missing target port for TCP route", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing target port for TCP route", "")
+		return
 	}
 	if r.Path == "" && r.Pattern == "" {
-		return errors.NewWithCode("missing path or pattern for HTTP route", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing path or pattern for HTTP route", "")
+		return
 	}
 
 	if r.Path != "" && r.Pattern != "" {
-		return errors.NewWithCode("HTTP route cannot have both path and pattern", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "HTTP route cannot have both path and pattern", "")
+		return
 	}
 
-	return nil
+	return
 }
 
 type ReverseProxyHostHttpRouteCreateRequest struct {
@@ -51,30 +57,35 @@ type ReverseProxyHostHttpRouteCreateRequest struct {
 	ResponseHeaders map[string]string `json:"response_headers,omitempty" yaml:"response_headers,omitempty"`
 }
 
-func (r *ReverseProxyHostHttpRouteCreateRequest) Validate() error {
+func (r *ReverseProxyHostHttpRouteCreateRequest) Validate(diag *errors.Diagnostics) {
 	if r.TargetPort == "" {
-		return errors.NewWithCode("missing target port for TCP route", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing target port for TCP route", "")
+		return
 	}
 
 	if r.TargetHost == "" && r.TargetVmId == "" {
-		return errors.NewWithCode("missing target host or target vm id for TCP route", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing target host or target vm id for TCP route", "")
+		return
 	}
 	if r.Path == "" && r.Pattern == "" {
-		return errors.NewWithCode("missing path or pattern for HTTP route", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing path or pattern for HTTP route", "")
+		return
 	}
 
 	if r.Path != "" && r.Pattern != "" {
-		return errors.NewWithCode("HTTP route cannot have both path and pattern", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "HTTP route cannot have both path and pattern", "")
+		return
 	}
 
 	if r.Pattern != "" {
 		_, err := regexp.Compile(r.Pattern)
 		if err != nil {
-			return errors.NewWithCode("invalid pattern for HTTP route", 400)
+			diag.AddError(strconv.Itoa(http.StatusBadRequest), "invalid pattern for HTTP route", "")
+			return
 		}
 	}
 
-	return nil
+	return
 }
 
 func (r *ReverseProxyHostHttpRouteCreateRequest) GetRoute() string {
@@ -93,13 +104,15 @@ type ReverseProxyHostHttpRouteReorderRequest struct {
 	Order int    `json:"order"`
 }
 
-func (r *ReverseProxyHostHttpRouteReorderRequest) Validate() error {
+func (r *ReverseProxyHostHttpRouteReorderRequest) Validate(diag *errors.Diagnostics) {
 	if r.ID == "" {
-		return errors.NewWithCode("missing http route id", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "missing http route id", "")
+		return
 	}
 	if r.Order < 1 {
-		return errors.NewWithCode("invalid order for HTTP route", 400)
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), "invalid order for HTTP route", "")
+		return
 	}
 
-	return nil
+	return
 }
