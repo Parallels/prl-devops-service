@@ -1,0 +1,22 @@
+---
+layout: post
+title:  "Release 1.0.6"
+date:   2026-08-18 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- Documentation, helm charts updated for new flag DISABLE_HTTP_WHEN_TLS
+- Documentation for HTTPS-Only Mode Setup
+- Added `DISABLE_HTTP_WHEN_TLS` environment variable
+- Comprehensive TLS validation (cert/key pair, expiration)
+- HTTP server conditionally disabled when TLS enabled
+- HTTPS-first architecture (starts before HTTP)
+- Safety fallback to HTTP if TLS fails
+- 10 new unit tests covering all scenarios
+- Orchestrator-as-Catalog VM creation support
+- Fixes [532](https://github.com/Parallels/prl-devops-service/issues/524)
+- [x] New feature (non-breaking change which adds functionality)
+
+

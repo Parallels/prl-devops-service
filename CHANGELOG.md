@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2026-08-18
+
+- Documentation, helm charts updated for new flag DISABLE_HTTP_WHEN_TLS
+- Documentation for HTTPS-Only Mode Setup
+- Added `DISABLE_HTTP_WHEN_TLS` environment variable
+- Comprehensive TLS validation (cert/key pair, expiration)
+- HTTP server conditionally disabled when TLS enabled
+- HTTPS-first architecture (starts before HTTP)
+- Safety fallback to HTTP if TLS fails
+- 10 new unit tests covering all scenarios
+- Orchestrator-as-Catalog VM creation support
+- Fixes [532](https://github.com/Parallels/prl-devops-service/issues/524)
+- [x] New feature (non-breaking change which adds functionality)
+
 ## [1.0.5] - 2026-07-22
 
 - fixed HTTP method types in /machines
