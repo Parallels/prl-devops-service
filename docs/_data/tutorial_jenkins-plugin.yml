@@ -29,7 +29,7 @@ introduction:
     - Ensure build isolation by giving each job a fresh, clean VM
     - Reduce costs by only running VMs when builds are actively executing
     
-    **Before you begin**: This tutorial assumes you have a working Parallels DevOps Service instance with min version **1.0.5**. If you haven't
+    **Before you begin**: This tutorial assumes you have a working Parallels DevOps Service instance with min version **1.0.6**. If you haven't
     set it up yet, complete the [DevOps CLI Quick Start](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/) 
     tutorial first.
   key_outcomes:
@@ -39,8 +39,9 @@ introduction:
     - Run dynamically provisioned builds on macOS, Linux, and Windows
   prerequisites:
     hard:
-      - "**Parallels DevOps Service min 1.0.5** installed and running — [Complete this tutorial first](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/)"
+      - "**Parallels DevOps Service min 1.0.6** installed and running — [Complete this tutorial first](/prl-devops-service/tutorials/tutorial_devops-cli-quickstart/)"
       - Jenkins LTS 2.528.3 or newer
+      - Jenkins plugin **0.1.75** or newer
       - JDK 17 or 21 for running Jenkins
     soft:
       - "**Catalog Service** (optional) — Only needed for catalog-based provisioning. [Setup guide](/prl-devops-service/examples/remote-catalog/)"
@@ -429,8 +430,9 @@ steps:
       - Name: `parallels-cloud`
       - Service URL: `http://prldevops.example.com` (replace with your DevOps Service URL)
       - Jenkins URL: `http://jenkins.example.com` (replace with your Jenkins URL)
-      - Connection Mode: `HOST` or `ORCHESTRATOR`
+      - Connection Mode: `HOST` (connect directly to host) or `ORCHESTRATOR` (connect to fleet orchestrator)
       - Max Concurrent Agents: `5` (or adjust based on your needs)
+      - Use WebSocket: tick to connect using WebSockets
       - API Credentials
          1. Click **Add** next to **API Credentials**
          2. Select **Jenkins** as domain
@@ -441,7 +443,8 @@ steps:
          7. Select the credential from dropdown
       - Test Connection to verify Jenkins can communicate with the DevOps Service API
       
-      ![Cloud Configuration Screenshot](/prl-devops-service/img/examples/service-configurations.png)
+      ![Cloud Configuration Screenshot (Host mode)](/prl-devops-service/img/examples/service-configurations-host.png)
+      ![Cloud Configuration Screenshot (Orchestrator mode)](/prl-devops-service/img/examples/service-configurations-orchestrator.png)
      
     checklist:
       - Cloud is created with name `parallels-cloud`
@@ -461,7 +464,7 @@ steps:
       use-existing:
         label: Clone Existing VM
         value: clone-existing
-        description: Use an existing VM that is already prepared with build tools and Java, and is registered in the DevOps Service
+        description: Use an existing VM that is already prepared with build tools and Java, and is registered in the DevOps Service (HOST mode only)
         icon: fa-check-circle
       clone:
         label: Clone from Golden Image
@@ -480,13 +483,18 @@ steps:
       Agent templates define how Jenkins provisions VMs. Each template has a **label** that jobs use to request 
       specific agent types (e.g., `ubuntu-arm64`, `ubuntu-x86_64`, `windows11`).
       
+      > **Note**: Clone mode is supported **only in HOST connection mode**. In ORCHESTRATOR mode, Clone mode is disabled because orchestrator deployments rely on centralized catalog provisioning.
+      
       Scroll to **Agent Templates** and click **Add Template**.
       
-      ### Template Configuration
+      ### Template Configuration (Host Mode)
       
-      Configure the template with a label like `ubuntu-arm64` to match your Ubuntu Server VM.
+      Configure the template:
+      - Label: `ubuntu-arm64` (to match your base VM)
+      - Provisioning Mode: `Clone existing VM`
+      - Base VM Name or VM ID: `Ubuntu-Builder` (name or UUID of base VM on host)
       
-      ![Template Configuration Screenshot](/prl-devops-service/img/examples/template-label.png)
+      ![Template Configuration Screenshot](/prl-devops-service/img/examples/template-clone.png)
     checklist:
       - Template label matches your build needs (e.g., `ubuntu-arm64`, `linux`)
       - VM user account has necessary permissions
@@ -502,7 +510,7 @@ steps:
     layout: rows
     markdown_body: |
       Agent templates define how Jenkins provisions VMs. Each template has a **label** that jobs use to request 
-      specific agent types (e.g., `ubuntu-arm64`, `ubuntu-x86_64`, `windows11`). In this example, we will create a template that provisions VMs from the Catalog Service.
+      specific agent types (e.g., `ubuntu-arm64`, `ubuntu-x86_64`, `windows11`). In this example, we will create a template that provisions VMs from a catalog.
       
       Scroll to **Agent Templates** and click **Add Template**.
       
@@ -511,14 +519,20 @@ steps:
       Configure the template:
       - Label: `ubuntu-arm64` (or your desired label)
       - Provisioning Mode: `Create from Catalog`
-      - Catalog URL: `http://prldevops-catalog.example.com/`
-      - Architecture: `arm64` (or `x86_64` depending on your catalog image)
-      - Catalog ID: 'Id of the catalog image you want to use eg. `ubuntu-server-24.04-arm64`'
-      - Catalog Version: 'Version of the catalog image you want to use eg. `1.0.0`'
-      - Catalog Credentials: Select the credentials you created for the Catalog Service
-      - Test Connection to verify Jenkins can communicate with the Catalog Service 
+      - Catalog ID: `JENKINS_UBUNTU_SSH` (ID of the catalog item)
+      - Catalog Version: `0.1` (or `latest`)
+      - Architecture: `arm64` (or `x86_64`)
       
-      ![Template Configuration Screenshot](/prl-devops-service/img/examples/catalog-based.png)
+      **Mode-specific fields:**
+      - **In HOST mode**:
+        - Catalog Service URL: `https://devops-catalog.example.com`
+        - Catalog Credentials: Select the credentials created for accessing the Catalog Service
+        - Test Catalog Connection to verify Jenkins can communicate with the Catalog Service
+      - **In ORCHESTRATOR mode**:
+        - Catalog Manager ID: `cat-mgr-1234` (optional ID of registered Catalog Manager; leave empty if Orchestrator built-in catalog is used)
+      
+      ![Template Configuration Screenshot (Host Mode)](/prl-devops-service/img/examples/catalog-based-host.png)
+      ![Template Configuration Screenshot (Orchestrator Mode)](/prl-devops-service/img/examples/catalog-based-orchestrator.png)
     checklist:
       - Template label matches your build needs (e.g., `ubuntu-arm64`, `linux`)
       - VM user account has necessary permissions
