@@ -48,6 +48,26 @@ categories:
     - name: Catalogs
       path: catalogs
       endpoints:
+        - anchor: /v1/cache-get
+          method: get
+          path: /v1/cache
+          description: This endpoint returns all the remote catalog cache if any
+          title: Gets catalog cache
+        - anchor: /v1/cache-delete
+          method: delete
+          path: /v1/cache
+          description: This endpoint returns all the remote catalog cache if any
+          title: Deletes all catalog cache
+        - anchor: /v1/cache/{catalogId}-delete
+          method: delete
+          path: /v1/cache/{catalogId}
+          description: This endpoint returns all the remote catalog cache if any and all its versions
+          title: Deletes catalog cache item and all its versions
+        - anchor: /v1/cache/{catalogId}/{version}-delete
+          method: delete
+          path: /v1/cache/{catalogId}/{version}
+          description: This endpoint deletes a version of a cache ite,
+          title: Deletes catalog cache version item
         - anchor: /v1/catalog-get
           method: get
           path: /v1/catalog
@@ -138,11 +158,21 @@ categories:
           path: /v1/catalog/push
           description: This endpoint pushes a catalog manifest to the catalog inventory
           title: Pushes a catalog manifest to the catalog inventory
+        - anchor: /v1/catalog/push/async-post
+          method: post
+          path: /v1/catalog/push/async
+          description: This endpoint pushes a catalog manifest to the catalog inventory in the background and returns a Job ID to track progress
+          title: Push a catalog manifest to the catalog inventory asynchronously
         - anchor: /v1/catalog/pull-put
           method: put
           path: /v1/catalog/pull
           description: This endpoint pulls a remote catalog manifest
           title: Pull a remote catalog manifest
+        - anchor: /v1/catalog/pull/async-put
+          method: put
+          path: /v1/catalog/pull/async
+          description: This endpoint pulls a remote catalog manifest in the background and returns a Job ID to track progress
+          title: Pull a remote catalog manifest asynchronously
         - anchor: /v1/catalog/import-put
           method: put
           path: /v1/catalog/import
@@ -158,26 +188,39 @@ categories:
           path: /v1/catalog/{catalogId}/{version}/{architecture}/claims
           description: This endpoint adds claims to a catalog manifest version
           title: Updates a catalog
-        - anchor: /v1/catalog/cache-get
+        - anchor: /v1/catalog/{catalogId}/{version}/{architecture}/metadata-put
+          method: put
+          path: /v1/catalog/{catalogId}/{version}/{architecture}/metadata
+          description: This endpoint atomically updates description, tags, required claims, and required roles for a catalog manifest version. Omit a field to leave it unchanged.
+          title: Updates metadata for a catalog manifest version
+    - name: CatalogManagers
+      path: catalogmanagers
+      endpoints:
+        - anchor: /v1/catalog-managers-get
           method: get
-          path: /v1/catalog/cache
-          description: This endpoint returns all the remote catalog cache if any
-          title: Gets catalog cache
-        - anchor: /v1/catalog/cache-delete
+          path: /v1/catalog-managers
+          description: This endpoint returns all the catalog managers
+          title: Gets all the catalog managers
+        - anchor: /v1/catalog-managers/{id}-get
+          method: get
+          path: /v1/catalog-managers/{id}
+          description: This endpoint returns a catalog manager
+          title: Gets a specific catalog manager
+        - anchor: /v1/catalog-managers-post
+          method: post
+          path: /v1/catalog-managers
+          description: This endpoint creates a catalog manager
+          title: Creates a catalog manager
+        - anchor: /v1/catalog-managers/{id}-put
+          method: put
+          path: /v1/catalog-managers/{id}
+          description: This endpoint updates a catalog manager
+          title: Updates a catalog manager
+        - anchor: /v1/catalog-managers/{id}-delete
           method: delete
-          path: /v1/catalog/cache
-          description: This endpoint returns all the remote catalog cache if any
-          title: Deletes all catalog cache
-        - anchor: /v1/catalog/cache/{catalogId}-delete
-          method: delete
-          path: /v1/catalog/cache/{catalogId}
-          description: This endpoint returns all the remote catalog cache if any and all its versions
-          title: Deletes catalog cache item and all its versions
-        - anchor: /v1/catalog/cache/{catalogId}/{version}-delete
-          method: delete
-          path: /v1/catalog/cache/{catalogId}/{version}
-          description: This endpoint deletes a version of a cache ite,
-          title: Deletes catalog cache version item
+          path: /v1/catalog-managers/{id}
+          description: This endpoint deletes a catalog manager
+          title: Deletes a catalog manager
     - name: Claims
       path: claims
       endpoints:
@@ -186,6 +229,11 @@ categories:
           path: /v1/auth/claims
           description: This endpoint returns all the claims
           title: Gets all the claims
+        - anchor: /v1/auth/claims/grouped-get
+          method: get
+          path: /v1/auth/claims/grouped
+          description: This endpoint returns all claims organised by group and resource
+          title: Gets all claims grouped for the matrix UI
         - anchor: /v1/auth/claims/{id}-get
           method: get
           path: /v1/auth/claims/{id}
@@ -244,6 +292,11 @@ categories:
           path: /logs/stream
           description: This endpoint streams the system logs in real-time via WebSocket
           title: Streams the system logs via WebSocket
+        - anchor: /config/diskspace-post
+          method: post
+          path: /config/diskspace
+          description: This endpoint returns the available disk space for the cache folder.
+          title: Gets the Parallels disk space information
         - anchor: /v1/orchestrator/hosts/{id}/logs-get
           method: get
           path: /v1/orchestrator/hosts/{id}/logs
@@ -265,13 +318,31 @@ categories:
         - anchor: /v1/ws/subscribe-get
           method: get
           path: /v1/ws/subscribe
-          description: This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or X-Api-Key header.
+          description: This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or query parameters (access_token or authorization).
           title: Subscribe to event notifications via WebSocket
+        - anchor: /v1/ws/clients-get
+          method: get
+          path: /v1/ws/clients
+          description: Returns all currently connected WebSocket clients with queue depth and ping/pong timestamps. Useful for diagnosing stale or dead clients whose queues are filling up.
+          title: List connected WebSocket clients
+        - anchor: /v1/ws/stats-get
+          method: get
+          path: /v1/ws/stats
+          description: Returns aggregate statistics including total connected clients, subscription counts per event type, uptime, and per-client details with queue depths.
+          title: Get WebSocket event emitter statistics
         - anchor: /v1/ws/unsubscribe-post
           method: post
           path: /v1/ws/unsubscribe
           description: Unsubscribe an active WebSocket client from specific event types without disconnecting. The client must belong to the authenticated user.
           title: Unsubscribe from specific event types
+    - name: Jobs
+      path: jobs
+      endpoints:
+        - anchor: /v1/jobs/{id}-delete
+          method: delete
+          path: /v1/jobs/{id}
+          description: This endpoint deletes a single job. Users with JOB_MANAGER_DELETE can delete any job; users with JOB_MANAGER_LIST_OWN can only delete their own.
+          title: Deletes a job by ID
     - name: Machines
       path: machines
       endpoints:
@@ -285,38 +356,38 @@ categories:
           path: /v1/machines/{id}
           description: This endpoint returns a virtual machine
           title: Gets a virtual machine
-        - anchor: /v1/machines/{id}/start-get
-          method: get
+        - anchor: /v1/machines/{id}/start-put
+          method: put
           path: /v1/machines/{id}/start
           description: This endpoint starts a virtual machine
           title: Starts a virtual machine
-        - anchor: /v1/machines/{id}/stop-get
-          method: get
+        - anchor: /v1/machines/{id}/stop-put
+          method: put
           path: /v1/machines/{id}/stop
           description: This endpoint stops a virtual machine
           title: Stops a virtual machine
-        - anchor: /v1/machines/{id}/restart-get
-          method: get
+        - anchor: /v1/machines/{id}/restart-put
+          method: put
           path: /v1/machines/{id}/restart
           description: This endpoint restarts a virtual machine
           title: Restarts a virtual machine
-        - anchor: /v1/machines/{id}/suspend-get
-          method: get
+        - anchor: /v1/machines/{id}/suspend-put
+          method: put
           path: /v1/machines/{id}/suspend
           description: This endpoint suspends a virtual machine
           title: Suspends a virtual machine
-        - anchor: /v1/machines/{id}/resume-get
-          method: get
+        - anchor: /v1/machines/{id}/resume-put
+          method: put
           path: /v1/machines/{id}/resume
           description: This endpoint resumes a virtual machine
           title: Resumes a virtual machine
-        - anchor: /v1/machines/{id}/reset-get
-          method: get
+        - anchor: /v1/machines/{id}/reset-put
+          method: put
           path: /v1/machines/{id}/reset
           description: This endpoint reset a virtual machine
           title: Reset a virtual machine
-        - anchor: /v1/machines/{id}/pause-get
-          method: get
+        - anchor: /v1/machines/{id}/pause-put
+          method: put
           path: /v1/machines/{id}/pause
           description: This endpoint pauses a virtual machine
           title: Pauses a virtual machine
@@ -370,6 +441,36 @@ categories:
           path: /v1/machines
           description: This endpoint creates a virtual machine
           title: Creates a virtual machine
+        - anchor: /v1/machines/async-post
+          method: post
+          path: /v1/machines/async
+          description: This endpoint creates a virtual machine in the background and returns a Job ID to track progress
+          title: Creates a virtual machine asynchronously
+        - anchor: /v1/machines/{id}/snapshots-post
+          method: post
+          path: /v1/machines/{id}/snapshots
+          description: This endpoint creates a snapshot for a virtual machine
+          title: Creates a snapshot for a virtual machine
+        - anchor: /v1/machines/{id}/snapshots/{snapshot_id}-delete
+          method: delete
+          path: /v1/machines/{id}/snapshots/{snapshot_id}
+          description: This endpoint deletes a snapshot of a virtual machine
+          title: Deletes a snapshot of a virtual machine
+        - anchor: /v1/machines/{id}/snapshots-delete
+          method: delete
+          path: /v1/machines/{id}/snapshots
+          description: This endpoint deletes all snapshots of a virtual machine
+          title: Deletes all snapshots of a virtual machine
+        - anchor: /v1/machines/{id}/snapshots-get
+          method: get
+          path: /v1/machines/{id}/snapshots
+          description: This endpoint lists snapshots of a virtual machine
+          title: Lists snapshots of a virtual machine
+        - anchor: /v1/machines/{id}/snapshots/{snapshot_id}/revert-post
+          method: post
+          path: /v1/machines/{id}/snapshots/{snapshot_id}/revert
+          description: This endpoint reverts a virtual machine to a snapshot
+          title: Reverts a virtual machine to a snapshot
     - name: Orchestrator
       path: orchestrator
       endpoints:
@@ -438,9 +539,9 @@ categories:
           path: /v1/orchestrator/machines/{id}
           description: This endpoint deletes orchestrator virtual machine
           title: Deletes orchestrator virtual machine
-        - anchor: /v1/orchestrator/machines/{vmId}/status-get
+        - anchor: /v1/orchestrator/machines/{id}/status-get
           method: get
-          path: /v1/orchestrator/machines/{vmId}/status
+          path: /v1/orchestrator/machines/{id}/status
           description: This endpoint returns orchestrator virtual machine status
           title: Get orchestrator virtual machine status
         - anchor: /v1/orchestrator/machines/{id}/rename-put
@@ -448,24 +549,54 @@ categories:
           path: /v1/orchestrator/machines/{id}/rename
           description: This endpoint renames orchestrator virtual machine
           title: Renames orchestrator virtual machine
-        - anchor: /v1/orchestrator/machines/{vmId}/set-put
+        - anchor: /v1/orchestrator/machines/{id}/set-put
           method: put
-          path: /v1/orchestrator/machines/{vmId}/set
+          path: /v1/orchestrator/machines/{id}/set
           description: This endpoint configures orchestrator virtual machine
           title: Configures orchestrator virtual machine
-        - anchor: /v1/orchestrator/machines/{vmId}/start-put
+        - anchor: /v1/orchestrator/machines/{id}/start-put
           method: put
-          path: /v1/orchestrator/machines/{vmId}/start
+          path: /v1/orchestrator/machines/{id}/start
           description: This endpoint starts orchestrator virtual machine
           title: Starts orchestrator virtual machine
-        - anchor: /v1/orchestrator/machines/{vmId}/stop-put
+        - anchor: /v1/orchestrator/machines/{id}/stop-put
           method: put
-          path: /v1/orchestrator/machines/{vmId}/stop
+          path: /v1/orchestrator/machines/{id}/stop
           description: This endpoint sops orchestrator virtual machine
           title: Stops orchestrator virtual machine
-        - anchor: /v1/orchestrator/machines/{vmId}/execute-put
+        - anchor: /v1/orchestrator/machines/{id}/restart-put
           method: put
-          path: /v1/orchestrator/machines/{vmId}/execute
+          path: /v1/orchestrator/machines/{id}/restart
+          description: This endpoint restarts orchestrator virtual machine
+          title: Restarts orchestrator virtual machine
+        - anchor: /v1/orchestrator/machines/{id}/suspend-put
+          method: put
+          path: /v1/orchestrator/machines/{id}/suspend
+          description: This endpoint suspends orchestrator virtual machine
+          title: Suspends orchestrator virtual machine
+        - anchor: /v1/orchestrator/machines/{id}/resume-put
+          method: put
+          path: /v1/orchestrator/machines/{id}/resume
+          description: This endpoint resumes orchestrator virtual machine
+          title: Resumes orchestrator virtual machine
+        - anchor: /v1/orchestrator/machines/{id}/reset-put
+          method: put
+          path: /v1/orchestrator/machines/{id}/reset
+          description: This endpoint resets orchestrator virtual machine
+          title: Resets orchestrator virtual machine
+        - anchor: /v1/orchestrator/machines/{id}/pause-put
+          method: put
+          path: /v1/orchestrator/machines/{id}/pause
+          description: This endpoint pauses orchestrator virtual machine
+          title: Pauses orchestrator virtual machine
+        - anchor: /v1/orchestrator/machines/{id}/clone-put
+          method: put
+          path: /v1/orchestrator/machines/{id}/clone
+          description: This endpoint clones orchestrator virtual machine
+          title: Clones orchestrator virtual machine
+        - anchor: /v1/orchestrator/machines/{id}/execute-put
+          method: put
+          path: /v1/orchestrator/machines/{id}/execute
           description: This endpoint executes a command in a orchestrator virtual machine
           title: Executes a command in a orchestrator virtual machine
         - anchor: /v1/orchestrator/hosts/{id}/machines-get
@@ -506,13 +637,93 @@ categories:
         - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/stop-put
           method: put
           path: /v1/orchestrator/hosts/{id}/machines/{vmId}/stop
-          description: This endpoint starts orchestrator host virtual machine
-          title: Starts orchestrator host virtual machine
+          description: This endpoint stops orchestrator host virtual machine
+          title: Stops orchestrator host virtual machine
+        - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/restart-put
+          method: put
+          path: /v1/orchestrator/hosts/{id}/machines/{vmId}/restart
+          description: This endpoint restarts orchestrator host virtual machine
+          title: Restarts orchestrator host virtual machine
+        - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/suspend-put
+          method: put
+          path: /v1/orchestrator/hosts/{id}/machines/{vmId}/suspend
+          description: This endpoint suspends orchestrator host virtual machine
+          title: Suspends orchestrator host virtual machine
+        - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/resume-put
+          method: put
+          path: /v1/orchestrator/hosts/{id}/machines/{vmId}/resume
+          description: This endpoint resumes orchestrator host virtual machine
+          title: Resumes orchestrator host virtual machine
+        - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/reset-put
+          method: put
+          path: /v1/orchestrator/hosts/{id}/machines/{vmId}/reset
+          description: This endpoint resets orchestrator host virtual machine
+          title: Resets orchestrator host virtual machine
+        - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/pause-put
+          method: put
+          path: /v1/orchestrator/hosts/{id}/machines/{vmId}/pause
+          description: This endpoint pauses orchestrator host virtual machine
+          title: Pauses orchestrator host virtual machine
+        - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/clone-put
+          method: put
+          path: /v1/orchestrator/hosts/{id}/machines/{vmId}/clone
+          description: This endpoint clones orchestrator host virtual machine
+          title: Clones orchestrator host virtual machine
         - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/execute-put
           method: put
           path: /v1/orchestrator/hosts/{id}/machines/{vmId}/execute
           description: This endpoint executes a command in a orchestrator host virtual machine
           title: Executes a command in a orchestrator host virtual machine
+        - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots-get
+          method: get
+          path: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots
+          description: This endpoint lists snapshots of orchestrator host virtual machine
+          title: Lists snapshots of orchestrator host virtual machine
+        - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots-post
+          method: post
+          path: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots
+          description: This endpoint creates a snapshot for orchestrator host virtual machine
+          title: Creates a snapshot for orchestrator host virtual machine
+        - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots-delete
+          method: delete
+          path: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots
+          description: This endpoint deletes all snapshots of orchestrator host virtual machine
+          title: Deletes all snapshots of orchestrator host virtual machine
+        - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}-delete
+          method: delete
+          path: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}
+          description: This endpoint deletes a snapshot of orchestrator host virtual machine
+          title: Deletes a snapshot of orchestrator host virtual machine
+        - anchor: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}/revert-post
+          method: post
+          path: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}/revert
+          description: This endpoint reverts orchestrator host virtual machine to a snapshot
+          title: Reverts orchestrator host virtual machine to a snapshot
+        - anchor: /v1/orchestrator/machines/{id}/snapshots-get
+          method: get
+          path: /v1/orchestrator/machines/{id}/snapshots
+          description: This endpoint lists snapshots of an orchestrator virtual machine (host resolved automatically)
+          title: Lists snapshots of an orchestrator virtual machine
+        - anchor: /v1/orchestrator/machines/{id}/snapshots-post
+          method: post
+          path: /v1/orchestrator/machines/{id}/snapshots
+          description: This endpoint creates a snapshot for an orchestrator virtual machine (host resolved automatically)
+          title: Creates a snapshot for an orchestrator virtual machine
+        - anchor: /v1/orchestrator/machines/{id}/snapshots-delete
+          method: delete
+          path: /v1/orchestrator/machines/{id}/snapshots
+          description: This endpoint deletes all snapshots of an orchestrator virtual machine (host resolved automatically)
+          title: Deletes all snapshots of an orchestrator virtual machine
+        - anchor: /v1/orchestrator/machines/{id}/snapshots/{snapshot_id}-delete
+          method: delete
+          path: /v1/orchestrator/machines/{id}/snapshots/{snapshot_id}
+          description: This endpoint deletes a snapshot of an orchestrator virtual machine (host resolved automatically)
+          title: Deletes a snapshot of an orchestrator virtual machine
+        - anchor: /v1/orchestrator/machines/{id}/snapshots/{snapshot_id}/revert-post
+          method: post
+          path: /v1/orchestrator/machines/{id}/snapshots/{snapshot_id}/revert
+          description: This endpoint reverts an orchestrator virtual machine to a snapshot (host resolved automatically)
+          title: Reverts an orchestrator virtual machine to a snapshot
         - anchor: /v1/orchestrator/hosts/{id}/machines/register-post
           method: post
           path: /v1/orchestrator/hosts/{id}/machines/register
@@ -613,33 +824,63 @@ categories:
           path: /v1/orchestrator/hosts/{id}/catalog/cache/{catalog_id}/{catalog_version}
           description: This endpoint deletes an orchestrator host cache item and all its children
           title: Deletes an orchestrator host cache item and all its children
+        - anchor: /v1/orchestrator/enrollment-token-post
+          method: post
+          path: /v1/orchestrator/enrollment-token
+          description: Generates a short-lived, single-use token that allows a freshly installed agent to register itself with the orchestrator without requiring a permanent credential.
+          title: Create an enrollment token
+        - anchor: /v1/orchestrator/enrollment-token/{token}/validate-get
+          method: get
+          path: /v1/orchestrator/enrollment-token/{token}/validate
+          description: Public endpoint that checks whether an enrollment token is valid, unused, and not expired. Used by agents before starting the registration flow.
+          title: Validate an enrollment token
+        - anchor: /v1/orchestrator/hosts/deploy-post
+          method: post
+          path: /v1/orchestrator/hosts/deploy
+          description: SSHes into a remote host, installs the devops agent, and registers it with this orchestrator. Blocks until the operation completes.
+          title: Deploy and register an agent via SSH (synchronous)
+        - anchor: /v1/orchestrator/hosts/deploy/async-post
+          method: post
+          path: /v1/orchestrator/hosts/deploy/async
+          description: SSHes into a remote host, installs the devops agent, and registers it with this orchestrator. Returns a job ID immediately; poll /jobs/{id} for status.
+          title: Deploy and register an agent via SSH (asynchronous)
+        - anchor: /v1/orchestrator/machines/async-post
+          method: post
+          path: /v1/orchestrator/machines/async
+          description: This endpoint creates a virtual machine in one of the orchestrator hosts in the background and returns a Job ID to track progress
+          title: Creates a virtual machine in one of the orchestrator hosts asynchronously
+        - anchor: /v1/orchestrator/hosts/{id}/machines/async-post
+          method: post
+          path: /v1/orchestrator/hosts/{id}/machines/async
+          description: This endpoint creates a virtual machine in a specific orchestrator host in the background and returns a Job ID to track progress
+          title: Creates a virtual machine in a specific orchestrator host asynchronously
     - name: Packer Templates
       path: packer_templates
       endpoints:
         - anchor: /v1/templates/packer-get
           method: get
           path: /v1/templates/packer
-          description: This endpoint returns all the packer templates
+          description: This endpoint returns all the packer templates. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
           title: Gets all the packer templates
         - anchor: /v1/templates/packer/{id}-get
           method: get
           path: /v1/templates/packer/{id}
-          description: This endpoint returns a packer template
+          description: This endpoint returns a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
           title: Gets a packer template
         - anchor: /v1/templates/packer -post
           method: post
           path: '/v1/templates/packer '
-          description: This endpoint creates a packer template
+          description: This endpoint creates a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
           title: Creates a packer template
         - anchor: /v1/templates/packer/{id} -PUT
           method: PUT
           path: '/v1/templates/packer/{id} '
-          description: This endpoint updates a packer template
+          description: This endpoint updates a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
           title: Updates a packer template
         - anchor: /v1/templates/packer/{id} -DELETE
           method: DELETE
           path: '/v1/templates/packer/{id} '
-          description: This endpoint deletes a packer template
+          description: This endpoint deletes a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
           title: Deletes a packer template
     - name: ReverseProxy
       path: reverseproxy
@@ -684,6 +925,11 @@ categories:
           path: /v1/reverse-proxy/hosts/{id}/http_routes/{http_route_id}
           description: This endpoint Deletes a reverse proxy host HTTP route
           title: Delete a a reverse proxy host HTTP route
+        - anchor: /v1/reverse-proxy/hosts/{id}/http_routes/order-put
+          method: put
+          path: /v1/reverse-proxy/hosts/{id}/http_routes/order
+          description: This endpoint reorders HTTP routes for a reverse proxy host
+          title: Updates the order of a reverse proxy host HTTP route
         - anchor: /v1/reverse-proxy/hosts/{id}/http_routes-post
           method: post
           path: /v1/reverse-proxy/hosts/{id}/http_routes
@@ -720,13 +966,64 @@ categories:
         - anchor: /v1/auth/roles -post
           method: post
           path: '/v1/auth/roles '
-          description: This endpoint returns a role
-          title: Gets a role
+          description: This endpoint creates a role
+          title: Creates a role
         - anchor: /v1/auth/roles/{id} -delete
           method: delete
           path: '/v1/auth/roles/{id} '
           description: This endpoint deletes a role
           title: Delete a role
+        - anchor: /v1/auth/roles/{id}/claims -get
+          method: get
+          path: '/v1/auth/roles/{id}/claims '
+          description: This endpoint returns all claims associated with a role
+          title: Gets all claims for a role
+        - anchor: /v1/auth/roles/{id}/claims -post
+          method: post
+          path: '/v1/auth/roles/{id}/claims '
+          description: This endpoint adds a claim to a role
+          title: Adds a claim to a role
+        - anchor: /v1/auth/roles/{id}/claims/{claim_id} -delete
+          method: delete
+          path: '/v1/auth/roles/{id}/claims/{claim_id} '
+          description: This endpoint removes a claim from a role
+          title: Removes a claim from a role
+    - name: SSH
+      path: ssh
+      endpoints:
+        - anchor: /v1/ssh/execute-post
+          method: post
+          path: /v1/ssh/execute
+          description: Executes a command on a remote host via SSH
+          title: Execute SSH Command
+    - name: User Configs
+      path: user_configs
+      endpoints:
+        - anchor: /v1/user/configs-get
+          method: get
+          path: /v1/user/configs
+          description: This endpoint returns all configuration entries for the authenticated user
+          title: Gets all user configs
+        - anchor: /v1/user/configs/{id}-get
+          method: get
+          path: /v1/user/configs/{id}
+          description: This endpoint returns a single configuration entry for the authenticated user
+          title: Gets a user config by id or slug
+        - anchor: /v1/user/configs-post
+          method: post
+          path: /v1/user/configs
+          description: This endpoint creates a configuration entry for the authenticated user
+          title: Creates a user config
+        - anchor: /v1/user/configs/{id}-put
+          method: put
+          path: /v1/user/configs/{id}
+          description: This endpoint updates a configuration entry for the authenticated user
+          title: Updates a user config
+        - anchor: /v1/user/configs/{id}-delete
+          method: delete
+          path: /v1/user/configs/{id}
+          description: This endpoint deletes a configuration entry for the authenticated user
+          title: Deletes a user config
     - name: Users
       path: users
       endpoints:
@@ -805,16 +1102,7 @@ endpoints:
           type: body
           value_type: object
           description: Body
-          body: |-
-            {
-              "created_at": "string",
-              "key": "string",
-              "name": "string",
-              "revoked": "bool",
-              "revoked_at": "string",
-              "secret": "string",
-              "updated_at": "string"
-            }
+          body: '{ object }'
       default_required_roles:
         - SUPER_USER
       default_required_claims:
@@ -827,41 +1115,17 @@ endpoints:
         A user normally has a password and is used to authenticate with the system
         An api key is used to authenticate with the system from an external application
       response_blocks:
-        - code_block: |-
-            {
-              "encoded": "string",
-              "id": "string",
-              "key": "string",
-              "name": "string",
-              "revoked": "bool"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ApiKeyResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -876,15 +1140,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/auth/api_keys");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "created_at": "string",
-              "key": "string",
-              "name": "string",
-              "revoked": "bool",
-              "revoked_at": "string",
-              "secret": "string",
-              "updated_at": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -904,15 +1160,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/auth/api_keys"
               method := "post"
-              payload := strings.NewReader(`{
-              "created_at": "string",
-              "key": "string",
-              "name": "string",
-              "revoked": "bool",
-              "revoked_at": "string",
-              "secret": "string",
-              "updated_at": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -947,41 +1195,17 @@ endpoints:
       default_required_claims:
         - LIST_API_KEY
       response_blocks:
-        - code_block: |-
-            {
-              "encoded": "string",
-              "id": "string",
-              "key": "string",
-              "name": "string",
-              "revoked": "bool"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]models.ApiKeyResponse'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -1053,29 +1277,12 @@ endpoints:
       default_required_claims:
         - DELETE_API_KEY
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -1147,41 +1354,17 @@ endpoints:
       default_required_claims:
         - LIST_API_KEY
       response_blocks:
-        - code_block: |-
-            {
-              "encoded": "string",
-              "id": "string",
-              "key": "string",
-              "name": "string",
-              "revoked": "bool"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ApiKeyResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -1256,29 +1439,12 @@ endpoints:
         - LIST_API_KEY
         - DELETE_API_KEY
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -1347,51 +1513,25 @@ endpoints:
           type: body
           value_type: object
           description: Body
-          body: |-
-            {
-              "email": "string",
-              "password": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "email": "string",
-              "expires_at": "int64",
-              "token": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.LoginResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
-          title: models.OAuthErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/auth/token' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"email\": \"string\",\n  \"password\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/auth/token' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -1400,10 +1540,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/auth/token");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "email": "string",
-              "password": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -1423,10 +1560,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/auth/token"
               method := "post"
-              payload := strings.NewReader(`{
-              "email": "string",
-              "password": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -1464,48 +1598,25 @@ endpoints:
           type: body
           value_type: object
           description: Body
-          body: |-
-            {
-              "token": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "valid": "bool"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ValidateTokenResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
-          title: models.OAuthErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/auth/token/validate' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"token\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/auth/token/validate' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -1514,9 +1625,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/auth/token/validate");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "token": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -1536,9 +1645,311 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/auth/token/validate"
               method := "post"
-              payload := strings.NewReader(`{
-              "token": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Gets catalog cache
+      description: This endpoint returns all the remote catalog cache if any
+      requires_authorization: true
+      category: Catalogs
+      category_path: catalogs
+      path: /v1/cache
+      method: get
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: '[]models.CatalogManifest'
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/cache' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/cache");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/cache"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes all catalog cache
+      description: This endpoint returns all the remote catalog cache if any
+      requires_authorization: true
+      category: Catalogs
+      category_path: catalogs
+      path: /v1/cache
+      method: delete
+      parameters:
+        - name: catalogId
+          required: true
+          type: path
+          value_type: string
+          description: Catalog ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/cache' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/cache");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/cache"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes catalog cache item and all its versions
+      description: This endpoint returns all the remote catalog cache if any and all its versions
+      requires_authorization: true
+      category: Catalogs
+      category_path: catalogs
+      path: /v1/cache/{catalogId}
+      method: delete
+      parameters:
+        - name: catalogId
+          required: true
+          type: path
+          value_type: string
+          description: Catalog ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/cache/{catalogId}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/cache/{catalogId}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/cache/{catalogId}"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes catalog cache version item
+      description: This endpoint deletes a version of a cache ite,
+      requires_authorization: true
+      category: Catalogs
+      category_path: catalogs
+      path: /v1/cache/{catalogId}/{version}
+      method: delete
+      parameters:
+        - name: catalogId
+          required: true
+          type: path
+          value_type: string
+          description: Catalog ID
+        - name: version
+          required: true
+          type: path
+          value_type: string
+          description: Version
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/cache/{catalogId}/{version}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/cache/{catalogId}/{version}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/cache/{catalogId}/{version}"
+              method := "delete"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -1571,93 +1982,17 @@ endpoints:
       path: /v1/catalog
       method: get
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]map[string][]models.CatalogManifest'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -1727,93 +2062,17 @@ endpoints:
           value_type: string
           description: Catalog ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]models.CatalogManifest'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -1888,93 +2147,17 @@ endpoints:
           value_type: string
           description: Version
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -2054,93 +2237,17 @@ endpoints:
           value_type: string
           description: Architecture
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -2220,93 +2327,17 @@ endpoints:
           value_type: string
           description: Architecture
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -2386,93 +2417,17 @@ endpoints:
           value_type: string
           description: Architecture
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -2552,93 +2507,17 @@ endpoints:
           value_type: string
           description: Architecture
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -2718,93 +2597,17 @@ endpoints:
           value_type: string
           description: Architecture
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -2888,107 +2691,25 @@ endpoints:
           type: body
           value_type: object
           description: Body
-          body: |-
-            {
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/claims' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"connection\": \"string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/claims' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -2997,12 +2718,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Patch, "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/claims");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -3022,12 +2738,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/claims"
               method := "patch"
-              payload := strings.NewReader(`{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -3080,107 +2791,25 @@ endpoints:
           type: body
           value_type: object
           description: Body
-          body: |-
-            {
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/claims' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"connection\": \"string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/claims' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -3189,12 +2818,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/claims");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -3214,12 +2838,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/claims"
               method := "delete"
-              payload := strings.NewReader(`{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -3272,107 +2891,25 @@ endpoints:
           type: body
           value_type: object
           description: Body
-          body: |-
-            {
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/roles' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"connection\": \"string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/roles' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -3381,12 +2918,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Patch, "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/roles");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -3406,12 +2938,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/roles"
               method := "patch"
-              payload := strings.NewReader(`{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -3464,107 +2991,25 @@ endpoints:
           type: body
           value_type: object
           description: Body
-          body: |-
-            {
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/roles' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"connection\": \"string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/roles' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -3573,12 +3018,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/roles");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -3598,12 +3038,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/roles"
               method := "delete"
-              payload := strings.NewReader(`{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -3656,107 +3091,25 @@ endpoints:
           type: body
           value_type: object
           description: Body
-          body: |-
-            {
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/tags' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"connection\": \"string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/tags' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -3765,12 +3118,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Patch, "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/tags");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -3790,12 +3138,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/tags"
               method := "patch"
-              payload := strings.NewReader(`{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -3848,107 +3191,25 @@ endpoints:
           type: body
           value_type: object
           description: Body
-          body: |-
-            {
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/tags' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"connection\": \"string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/tags' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -3957,12 +3218,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/tags");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -3982,12 +3238,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/tags"
               method := "delete"
-              payload := strings.NewReader(`{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -4026,29 +3277,12 @@ endpoints:
           value_type: string
           description: Catalog ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -4123,29 +3357,12 @@ endpoints:
           value_type: string
           description: Version
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -4225,29 +3442,12 @@ endpoints:
           value_type: string
           description: Architecture
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -4316,121 +3516,25 @@ endpoints:
           type: body
           value_type: object
           description: Push request
-          body: |-
-            {
-              "architecture": "string",
-              "catalog_id": "string",
-              "compress_pack": "bool",
-              "compress_pack_level": "int",
-              "connection": "string",
-              "description": "string",
-              "local_path": "string",
-              "minimum_requirements": {
-                "cpu": "int",
-                "disk": "int",
-                "memory": "int"
-              },
-              "pack_size": "int64",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string",
-              "uuid": "string",
-              "version": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/push' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"compress_pack\": \"bool\",\n  \"compress_pack_level\": \"int\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"local_path\": \"string\",\n  \"minimum_requirements\": {\n    \"cpu\": \"int\",\n    \"disk\": \"int\",\n    \"memory\": \"int\"\n  },\n  \"pack_size\": \"int64\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\",\n  \"uuid\": \"string\",\n  \"version\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/push' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -4439,26 +3543,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/catalog/push");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "architecture": "string",
-              "catalog_id": "string",
-              "compress_pack": "bool",
-              "compress_pack_level": "int",
-              "connection": "string",
-              "description": "string",
-              "local_path": "string",
-              "minimum_requirements": {
-                "cpu": "int",
-                "disk": "int",
-                "memory": "int"
-              },
-              "pack_size": "int64",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string",
-              "uuid": "string",
-              "version": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -4478,26 +3563,92 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/catalog/push"
               method := "post"
-              payload := strings.NewReader(`{
-              "architecture": "string",
-              "catalog_id": "string",
-              "compress_pack": "bool",
-              "compress_pack_level": "int",
-              "connection": "string",
-              "description": "string",
-              "local_path": "string",
-              "minimum_requirements": {
-                "cpu": "int",
-                "disk": "int",
-                "memory": "int"
-              },
-              "pack_size": "int64",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string",
-              "uuid": "string",
-              "version": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Push a catalog manifest to the catalog inventory asynchronously
+      description: This endpoint pushes a catalog manifest to the catalog inventory in the background and returns a Job ID to track progress
+      requires_authorization: true
+      category: Catalogs
+      category_path: catalogs
+      path: /v1/catalog/push/async
+      method: post
+      parameters:
+        - name: pushRequest
+          required: false
+          type: body
+          value_type: object
+          description: Push request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.JobResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/push/async' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/catalog/push/async");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/catalog/push/async"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -4535,65 +3686,25 @@ endpoints:
           type: body
           value_type: object
           description: Pull request
-          body: |-
-            {
-              "architecture": "string",
-              "catalog_id": "string",
-              "client": "string",
-              "connection": "string",
-              "machine_name": "string",
-              "owner": "string",
-              "path": "string",
-              "provider_metadata": "map[string]string",
-              "start_after_pull": "bool",
-              "version": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "architecture": "string",
-              "catalog_id": "string",
-              "id": "string",
-              "local_cache_path": "string",
-              "local_path": "string",
-              "machine_id": "string",
-              "machine_name": "string",
-              "manifest": "*VirtualMachineCatalogManifest",
-              "version": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.PullCatalogManifestResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/pull' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"client\": \"string\",\n  \"connection\": \"string\",\n  \"machine_name\": \"string\",\n  \"owner\": \"string\",\n  \"path\": \"string\",\n  \"provider_metadata\": \"map[string]string\",\n  \"start_after_pull\": \"bool\",\n  \"version\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/pull' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -4602,18 +3713,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/catalog/pull");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "architecture": "string",
-              "catalog_id": "string",
-              "client": "string",
-              "connection": "string",
-              "machine_name": "string",
-              "owner": "string",
-              "path": "string",
-              "provider_metadata": "map[string]string",
-              "start_after_pull": "bool",
-              "version": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -4633,18 +3733,92 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/catalog/pull"
               method := "put"
-              payload := strings.NewReader(`{
-              "architecture": "string",
-              "catalog_id": "string",
-              "client": "string",
-              "connection": "string",
-              "machine_name": "string",
-              "owner": "string",
-              "path": "string",
-              "provider_metadata": "map[string]string",
-              "start_after_pull": "bool",
-              "version": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Pull a remote catalog manifest asynchronously
+      description: This endpoint pulls a remote catalog manifest in the background and returns a Job ID to track progress
+      requires_authorization: true
+      category: Catalogs
+      category_path: catalogs
+      path: /v1/catalog/pull/async
+      method: put
+      parameters:
+        - name: pullRequest
+          required: false
+          type: body
+          value_type: object
+          description: Pull request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.JobResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/pull/async' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/catalog/pull/async");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/catalog/pull/async"
+              method := "put"
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -4682,55 +3856,25 @@ endpoints:
           type: body
           value_type: object
           description: Pull request
-          body: |-
-            {
-              "architecture": "string",
-              "catalog_id": "string",
-              "connection": "string",
-              "provider_metadata": "map[string]string",
-              "version": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "id": "string",
-              "local_path": "string",
-              "machine_name": "string",
-              "manifest": "*VirtualMachineCatalogManifest"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ImportCatalogManifestResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/import' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"connection\": \"string\",\n  \"provider_metadata\": \"map[string]string\",\n  \"version\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/import' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -4739,13 +3883,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/catalog/import");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "architecture": "string",
-              "catalog_id": "string",
-              "connection": "string",
-              "provider_metadata": "map[string]string",
-              "version": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -4765,13 +3903,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/catalog/import"
               method := "put"
-              payload := strings.NewReader(`{
-              "architecture": "string",
-              "catalog_id": "string",
-              "connection": "string",
-              "provider_metadata": "map[string]string",
-              "version": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -4809,64 +3941,25 @@ endpoints:
           type: body
           value_type: object
           description: Vm Impoty request
-          body: |-
-            {
-              "architecture": "string",
-              "catalog_id": "string",
-              "connection": "string",
-              "description": "string",
-              "force": "bool",
-              "is_compressed": "bool",
-              "machine_remote_path": "string",
-              "provider_metadata": "map[string]string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "size": "int64",
-              "tags": "[]string",
-              "type": "string",
-              "version": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "id": "string",
-              "local_path": "string",
-              "machine_name": "string",
-              "manifest": "*VirtualMachineCatalogManifest"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ImportVmResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/import-vm' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_id\": \"string\",\n  \"connection\": \"string\",\n  \"description\": \"string\",\n  \"force\": \"bool\",\n  \"is_compressed\": \"bool\",\n  \"machine_remote_path\": \"string\",\n  \"provider_metadata\": \"map[string]string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"size\": \"int64\",\n  \"tags\": \"[]string\",\n  \"type\": \"string\",\n  \"version\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/import-vm' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -4875,22 +3968,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/catalog/import-vm");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "architecture": "string",
-              "catalog_id": "string",
-              "connection": "string",
-              "description": "string",
-              "force": "bool",
-              "is_compressed": "bool",
-              "machine_remote_path": "string",
-              "provider_metadata": "map[string]string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "size": "int64",
-              "tags": "[]string",
-              "type": "string",
-              "version": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -4910,22 +3988,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/catalog/import-vm"
               method := "put"
-              payload := strings.NewReader(`{
-              "architecture": "string",
-              "catalog_id": "string",
-              "connection": "string",
-              "description": "string",
-              "force": "bool",
-              "is_compressed": "bool",
-              "machine_remote_path": "string",
-              "provider_metadata": "map[string]string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "size": "int64",
-              "tags": "[]string",
-              "type": "string",
-              "version": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -4968,107 +4031,25 @@ endpoints:
           type: body
           value_type: object
           description: Body
-          body: |-
-            {
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/claims' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"connection\": \"string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"tags\": \"[]string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/claims' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -5077,12 +4058,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Patch, "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/claims");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -5102,12 +4078,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/claims"
               method := "patch"
-              payload := strings.NewReader(`{
-              "connection": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "tags": "[]string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -5132,113 +4103,137 @@ endpoints:
             }
           title: Go
           language: go
-    - title: Gets catalog cache
-      description: This endpoint returns all the remote catalog cache if any
+    - title: Updates metadata for a catalog manifest version
+      description: This endpoint atomically updates description, tags, required claims, and required roles for a catalog manifest version. Omit a field to leave it unchanged.
       requires_authorization: true
       category: Catalogs
       category_path: catalogs
-      path: /v1/catalog/cache
-      method: get
+      path: /v1/catalog/{catalogId}/{version}/{architecture}/metadata
+      method: put
+      parameters:
+        - name: catalogId
+          required: true
+          type: path
+          value_type: string
+          description: Catalog ID
+        - name: version
+          required: true
+          type: path
+          value_type: string
+          description: Version
+        - name: architecture
+          required: true
+          type: path
+          value_type: string
+          description: Architecture
+        - name: request
+          required: false
+          type: body
+          value_type: object
+          description: Body
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "catalog_id": "string",
-                "created_at": "string",
-                "description": "string",
-                "download_count": "int",
-                "id": "string",
-                "is_compressed": "bool",
-                "last_downloaded_at": "string",
-                "last_downloaded_user": "string",
-                "metadata_path": "string",
-                "minimum_requirements": "*MinimumSpecRequirement",
-                "name": "string",
-                "pack_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ],
-                "pack_path": "string",
-                "pack_relative_path": "string",
-                "pack_size": "int64",
-                "path": "string",
-                "provider": "*CatalogManifestProvider",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "revoked": "bool",
-                "revoked_at": "string",
-                "revoked_by": "string",
-                "size": "int64",
-                "tags": "[]string",
-                "tainted": "bool",
-                "tainted_at": "string",
-                "tainted_by": "string",
-                "type": "string",
-                "untainted_by": "string",
-                "updated_at": "string",
-                "version": "string",
-                "virtual_machine_contents": [
-                  {
-                    "created_at": "string",
-                    "deleted_at": "string",
-                    "hash": "string",
-                    "is_dir": "bool",
-                    "name": "string",
-                    "path": "string",
-                    "size": "int64",
-                    "updated_at": "string"
-                  }
-                ]
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
-          title: '[]models.CatalogManifest'
+          title: models.CatalogManifest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/cache' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/metadata' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/catalog/cache");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/metadata");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/catalog/{catalogId}/{version}/{architecture}/metadata"
+              method := "put"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Gets all the catalog managers
+      description: This endpoint returns all the catalog managers
+      requires_authorization: true
+      category: CatalogManagers
+      category_path: catalogmanagers
+      path: /v1/catalog-managers
+      method: get
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: '[]models.CatalogManager'
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/catalog-managers' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/catalog-managers");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -5256,7 +4251,7 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/catalog/cache"
+              url := "http://localhost/api/v1/catalog-managers"
               method := "get"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
@@ -5282,55 +4277,43 @@ endpoints:
             }
           title: Go
           language: go
-    - title: Deletes all catalog cache
-      description: This endpoint returns all the remote catalog cache if any
+    - title: Gets a specific catalog manager
+      description: This endpoint returns a catalog manager
       requires_authorization: true
-      category: Catalogs
-      category_path: catalogs
-      path: /v1/catalog/cache
-      method: delete
+      category: CatalogManagers
+      category_path: catalogmanagers
+      path: /v1/catalog-managers/{id}
+      method: get
       parameters:
-        - name: catalogId
+        - name: id
           required: true
           type: path
           value_type: string
-          description: Catalog ID
+          description: Manager ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.CatalogManager
+          language: json
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/cache' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog-managers/{id}' \n--header 'Authorization ••••••'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/catalog/cache");
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/catalog-managers/{id}");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -5348,8 +4331,8 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/catalog/cache"
-              method := "delete"
+              url := "http://localhost/api/v1/catalog-managers/{id}"
+              method := "get"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -5374,55 +4357,37 @@ endpoints:
             }
           title: Go
           language: go
-    - title: Deletes catalog cache item and all its versions
-      description: This endpoint returns all the remote catalog cache if any and all its versions
+    - title: Creates a catalog manager
+      description: This endpoint creates a catalog manager
       requires_authorization: true
-      category: Catalogs
-      category_path: catalogs
-      path: /v1/catalog/cache/{catalogId}
-      method: delete
-      parameters:
-        - name: catalogId
-          required: true
-          type: path
-          value_type: string
-          description: Catalog ID
+      category: CatalogManagers
+      category_path: catalogmanagers
+      path: /v1/catalog-managers
+      method: post
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.CatalogManager
+          language: json
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/cache/{catalogId}' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog-managers' \n--header 'Authorization ••••••'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/catalog/cache/{catalogId}");
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/catalog-managers");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -5440,8 +4405,8 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/catalog/cache/{catalogId}"
-              method := "delete"
+              url := "http://localhost/api/v1/catalog-managers"
+              method := "post"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -5466,60 +4431,43 @@ endpoints:
             }
           title: Go
           language: go
-    - title: Deletes catalog cache version item
-      description: This endpoint deletes a version of a cache ite,
+    - title: Updates a catalog manager
+      description: This endpoint updates a catalog manager
       requires_authorization: true
-      category: Catalogs
-      category_path: catalogs
-      path: /v1/catalog/cache/{catalogId}/{version}
-      method: delete
+      category: CatalogManagers
+      category_path: catalogmanagers
+      path: /v1/catalog-managers/{id}
+      method: put
       parameters:
-        - name: catalogId
+        - name: id
           required: true
           type: path
           value_type: string
-          description: Catalog ID
-        - name: version
-          required: true
-          type: path
-          value_type: string
-          description: Version
+          description: Manager ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.CatalogManager
+          language: json
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/catalog/cache/{catalogId}/{version}' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog-managers/{id}' \n--header 'Authorization ••••••'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/catalog/cache/{catalogId}/{version}");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/catalog-managers/{id}");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -5537,7 +4485,87 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/catalog/cache/{catalogId}/{version}"
+              url := "http://localhost/api/v1/catalog-managers/{id}"
+              method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes a catalog manager
+      description: This endpoint deletes a catalog manager
+      requires_authorization: true
+      category: CatalogManagers
+      category_path: catalogmanagers
+      path: /v1/catalog-managers/{id}
+      method: delete
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Manager ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.ApiCommonResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/catalog-managers/{id}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/catalog-managers/{id}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/catalog-managers/{id}"
               method := "delete"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
@@ -5571,40 +4599,17 @@ endpoints:
       path: /v1/auth/claims
       method: get
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "id": "string",
-                "name": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]models.ClaimResponse'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -5660,6 +4665,80 @@ endpoints:
             }
           title: Go
           language: go
+    - title: Gets all claims grouped for the matrix UI
+      description: This endpoint returns all claims organised by group and resource
+      requires_authorization: true
+      category: Claims
+      category_path: claims
+      path: /v1/auth/claims/grouped
+      method: get
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: '[]models.ClaimGroupResponse'
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/auth/claims/grouped' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/auth/claims/grouped");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/auth/claims/grouped"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
     - title: Gets a claim
       description: This endpoint returns a claim
       requires_authorization: true
@@ -5674,40 +4753,17 @@ endpoints:
           value_type: string
           description: Claim ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "id": "string",
-                "name": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ClaimResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -5776,51 +4832,25 @@ endpoints:
           type: body
           value_type: object
           description: Claim Request
-          body: |-
-            {
-              "name": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "id": "string",
-                "name": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ClaimResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/auth/claims' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"name\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/auth/claims' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -5829,9 +4859,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/auth/claims");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "name": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -5851,9 +4879,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/auth/claims"
               method := "post"
-              payload := strings.NewReader(`{
-              "name": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -5892,29 +4918,12 @@ endpoints:
           value_type: string
           description: Claim ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -5978,48 +4987,17 @@ endpoints:
       path: /v1/parallels_desktop/key
       method: get
       response_blocks:
-        - code_block: |-
-            {
-              "advanced_restrictions": "string",
-              "cpu_total": "int64",
-              "deferred_activation": "string",
-              "edition": "string",
-              "expiration": "string",
-              "grace_period_ends_at": "string",
-              "is_volume": "string",
-              "main_period_ends_at": "string",
-              "max_memory": "int64",
-              "serial": "string",
-              "status": "string",
-              "uuid": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ParallelsDesktopLicense
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -6088,51 +5066,25 @@ endpoints:
           type: body
           value_type: object
           description: Install Tools Request
-          body: |-
-            {
-              "all": "bool",
-              "run_as": "string",
-              "tools": "map[string]InstallToolsRequestItem"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "installed_tools": "map[string]InstallToolsResponseItem",
-              "success": "bool"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.InstallToolsResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/config/tools/install' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"all\": \"bool\",\n  \"run_as\": \"string\",\n  \"tools\": \"map[string]InstallToolsRequestItem\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/config/tools/install' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -6141,11 +5093,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/config/tools/install");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "all": "bool",
-              "run_as": "string",
-              "tools": "map[string]InstallToolsRequestItem"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -6165,11 +5113,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/config/tools/install"
               method := "post"
-              payload := strings.NewReader(`{
-              "all": "bool",
-              "run_as": "string",
-              "tools": "map[string]InstallToolsRequestItem"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -6207,52 +5151,25 @@ endpoints:
           type: body
           value_type: object
           description: Uninstall Tools Request
-          body: |-
-            {
-              "all": "bool",
-              "run_as": "string",
-              "tools": "map[string]UninstallToolsRequestItem",
-              "uninstall_dependencies": "bool"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "installed_tools": "map[string]InstallToolsResponseItem",
-              "success": "bool"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.InstallToolsResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/config/tools/uninstall' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"all\": \"bool\",\n  \"run_as\": \"string\",\n  \"tools\": \"map[string]UninstallToolsRequestItem\",\n  \"uninstall_dependencies\": \"bool\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/config/tools/uninstall' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -6261,12 +5178,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/config/tools/uninstall");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "all": "bool",
-              "run_as": "string",
-              "tools": "map[string]UninstallToolsRequestItem",
-              "uninstall_dependencies": "bool"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -6286,12 +5198,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/config/tools/uninstall"
               method := "post"
-              payload := strings.NewReader(`{
-              "all": "bool",
-              "run_as": "string",
-              "tools": "map[string]UninstallToolsRequestItem",
-              "uninstall_dependencies": "bool"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -6324,29 +5231,12 @@ endpoints:
       path: /v1/config/tools/restart
       method: post
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -6410,52 +5300,17 @@ endpoints:
       path: /v1/config/hardware
       method: get
       response_blocks:
-        - code_block: |-
-            {
-              "cpu_brand": "string",
-              "cpu_type": "string",
-              "devops_version": "string",
-              "external_ip_address": "string",
-              "is_log_streaming_enabled": "bool",
-              "is_reverse_proxy_enabled": "bool",
-              "os_name": "string",
-              "os_version": "string",
-              "parallels_desktop_licensed": "bool",
-              "parallels_desktop_version": "string",
-              "reverse_proxy": "*SystemReverseProxy",
-              "system_reserved": "*SystemUsageItem",
-              "total": "*SystemUsageItem",
-              "total_available": "*SystemUsageItem",
-              "total_in_use": "*SystemUsageItem",
-              "total_reserved": "*SystemUsageItem"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.SystemUsageResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -6523,13 +5378,7 @@ endpoints:
           required: false
           type: query
       response_blocks:
-        - code_block: |-
-            {
-              "error_message": "string",
-              "healthy": "bool",
-              "message": "string",
-              "name": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ServiceHealthCheck
@@ -6593,29 +5442,12 @@ endpoints:
       path: /logs
       method: get
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -6679,29 +5511,12 @@ endpoints:
       path: /logs/stream
       method: get
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -6757,8 +5572,93 @@ endpoints:
             }
           title: Go
           language: go
+    - title: Gets the Parallels disk space information
+      description: This endpoint returns the available disk space for the cache folder.
+      requires_authorization: true
+      category: Config
+      category_path: config
+      path: /config/diskspace
+      method: post
+      parameters:
+        - name: createRequest
+          required: false
+          type: body
+          value_type: object
+          description: Disk Space Available Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.DiskSpaceAvailable
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/config/diskspace' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/config/diskspace");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/config/diskspace"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
     - title: Subscribe to event notifications via WebSocket
-      description: This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or X-Api-Key header.
+      description: This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or query parameters (access_token or authorization).
       requires_authorization: true
       category: Events
       category_path: events
@@ -6769,73 +5669,25 @@ endpoints:
           required: false
           type: query
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "409"
           code_description: Conflict
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "503"
           code_description: Service Unavailable
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
       example_blocks:
         - code_block: "curl --location 'http://localhost/api/v1/ws/subscribe' \n--header 'Authorization ••••••'\n"
@@ -6888,6 +5740,139 @@ endpoints:
             }
           title: Go
           language: go
+    - title: List connected WebSocket clients
+      description: Returns all currently connected WebSocket clients with queue depth and ping/pong timestamps. Useful for diagnosing stale or dead clients whose queues are filling up.
+      requires_authorization: true
+      category: Events
+      category_path: events
+      path: /v1/ws/clients
+      method: get
+      response_blocks:
+        - code_block: '{ object }'
+          code: "503"
+          code_description: Service Unavailable
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/ws/clients' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/clients");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/ws/clients"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Get WebSocket event emitter statistics
+      description: Returns aggregate statistics including total connected clients, subscription counts per event type, uptime, and per-client details with queue depths.
+      requires_authorization: true
+      category: Events
+      category_path: events
+      path: /v1/ws/stats
+      method: get
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.EventEmitterStats
+          language: json
+        - code_block: '{ object }'
+          code: "503"
+          code_description: Service Unavailable
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/ws/stats' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/stats");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/ws/stats"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
     - title: Unsubscribe from specific event types
       description: Unsubscribe an active WebSocket client from specific event types without disconnecting. The client must belong to the authenticated user.
       requires_authorization: true
@@ -6901,83 +5886,20 @@ endpoints:
           type: body
           value_type: object
           description: Unsubscribe request with client ID and event types
-          body: |-
-            {
-              "client_id": "string",
-              "event_types": "[]string",
-              "user_id": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
-          code: "401"
-          code_description: Unauthorized
-          title: models.ApiErrorResponse
-          language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
-          code: "404"
-          code_description: Not Found
-          title: models.ApiErrorResponse
-          language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "503"
           code_description: Service Unavailable
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/unsubscribe' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"client_id\": \"string\",\n  \"event_types\": \"[]string\",\n  \"user_id\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/ws/unsubscribe' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -6986,11 +5908,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/ws/unsubscribe");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "client_id": "string",
-              "event_types": "[]string",
-              "user_id": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -7010,11 +5928,92 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/ws/unsubscribe"
               method := "post"
-              payload := strings.NewReader(`{
-              "client_id": "string",
-              "event_types": "[]string",
-              "user_id": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes a job by ID
+      description: This endpoint deletes a single job. Users with JOB_MANAGER_DELETE can delete any job; users with JOB_MANAGER_LIST_OWN can only delete their own.
+      requires_authorization: true
+      category: Jobs
+      category_path: jobs
+      path: /v1/jobs/{id}
+      method: delete
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Job ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "403"
+          code_description: Forbidden
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/jobs/{id}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/jobs/{id}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/jobs/{id}"
+              method := "delete"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -7051,267 +6050,17 @@ endpoints:
           required: false
           type: header
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]models.ParallelsVM'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -7381,267 +6130,17 @@ endpoints:
           value_type: string
           description: Machine ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ParallelsVM
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -7703,7 +6202,7 @@ endpoints:
       category: Machines
       category_path: machines
       path: /v1/machines/{id}/start
-      method: get
+      method: put
       parameters:
         - name: id
           required: true
@@ -7711,39 +6210,17 @@ endpoints:
           value_type: string
           description: Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "id": "string",
-              "operation": "string",
-              "status": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineOperationResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -7755,7 +6232,7 @@ endpoints:
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/machines/{id}/start");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/machines/{id}/start");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -7774,7 +6251,7 @@ endpoints:
 
             func main() {
               url := "http://localhost/api/v1/machines/{id}/start"
-              method := "get"
+              method := "put"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -7805,47 +6282,28 @@ endpoints:
       category: Machines
       category_path: machines
       path: /v1/machines/{id}/stop
-      method: get
+      method: put
       parameters:
         - name: id
           required: true
           type: path
           value_type: string
           description: Machine ID
+        - name: force
+          required: false
+          type: query
       response_blocks:
-        - code_block: |-
-            {
-              "id": "string",
-              "operation": "string",
-              "status": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineOperationResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -7857,7 +6315,7 @@ endpoints:
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/machines/{id}/stop");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/machines/{id}/stop");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -7876,7 +6334,7 @@ endpoints:
 
             func main() {
               url := "http://localhost/api/v1/machines/{id}/stop"
-              method := "get"
+              method := "put"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -7907,7 +6365,7 @@ endpoints:
       category: Machines
       category_path: machines
       path: /v1/machines/{id}/restart
-      method: get
+      method: put
       parameters:
         - name: id
           required: true
@@ -7915,39 +6373,17 @@ endpoints:
           value_type: string
           description: Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "id": "string",
-              "operation": "string",
-              "status": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineOperationResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -7959,7 +6395,7 @@ endpoints:
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/machines/{id}/restart");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/machines/{id}/restart");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -7978,7 +6414,7 @@ endpoints:
 
             func main() {
               url := "http://localhost/api/v1/machines/{id}/restart"
-              method := "get"
+              method := "put"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -8009,7 +6445,7 @@ endpoints:
       category: Machines
       category_path: machines
       path: /v1/machines/{id}/suspend
-      method: get
+      method: put
       parameters:
         - name: id
           required: true
@@ -8017,39 +6453,17 @@ endpoints:
           value_type: string
           description: Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "id": "string",
-              "operation": "string",
-              "status": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineOperationResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -8061,7 +6475,7 @@ endpoints:
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/machines/{id}/suspend");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/machines/{id}/suspend");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -8080,7 +6494,7 @@ endpoints:
 
             func main() {
               url := "http://localhost/api/v1/machines/{id}/suspend"
-              method := "get"
+              method := "put"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -8111,7 +6525,7 @@ endpoints:
       category: Machines
       category_path: machines
       path: /v1/machines/{id}/resume
-      method: get
+      method: put
       parameters:
         - name: id
           required: true
@@ -8119,39 +6533,17 @@ endpoints:
           value_type: string
           description: Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "id": "string",
-              "operation": "string",
-              "status": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineOperationResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -8163,7 +6555,7 @@ endpoints:
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/machines/{id}/resume");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/machines/{id}/resume");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -8182,7 +6574,7 @@ endpoints:
 
             func main() {
               url := "http://localhost/api/v1/machines/{id}/resume"
-              method := "get"
+              method := "put"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -8213,7 +6605,7 @@ endpoints:
       category: Machines
       category_path: machines
       path: /v1/machines/{id}/reset
-      method: get
+      method: put
       parameters:
         - name: id
           required: true
@@ -8221,39 +6613,17 @@ endpoints:
           value_type: string
           description: Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "id": "string",
-              "operation": "string",
-              "status": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineOperationResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -8265,7 +6635,7 @@ endpoints:
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/machines/{id}/reset");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/machines/{id}/reset");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -8284,7 +6654,7 @@ endpoints:
 
             func main() {
               url := "http://localhost/api/v1/machines/{id}/reset"
-              method := "get"
+              method := "put"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -8315,7 +6685,7 @@ endpoints:
       category: Machines
       category_path: machines
       path: /v1/machines/{id}/pause
-      method: get
+      method: put
       parameters:
         - name: id
           required: true
@@ -8323,39 +6693,17 @@ endpoints:
           value_type: string
           description: Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "id": "string",
-              "operation": "string",
-              "status": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineOperationResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -8367,7 +6715,7 @@ endpoints:
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/machines/{id}/pause");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/machines/{id}/pause");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -8386,7 +6734,7 @@ endpoints:
 
             func main() {
               url := "http://localhost/api/v1/machines/{id}/pause"
-              method := "get"
+              method := "put"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -8425,29 +6773,12 @@ endpoints:
           value_type: string
           description: Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -8517,39 +6848,17 @@ endpoints:
           value_type: string
           description: Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "id": "string",
-              "ip_configured": "string",
-              "status": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineStatusResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -8623,56 +6932,25 @@ endpoints:
           type: body
           value_type: object
           description: Machine Set Request
-          body: |-
-            {
-              "operations": "[]*VirtualMachineConfigRequestOperation",
-              "owner": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "operations": [
-                {
-                  "error": "string",
-                  "group": "string",
-                  "operation": "string",
-                  "status": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineConfigResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/set' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"operations\": \"[]*VirtualMachineConfigRequestOperation\",\n  \"owner\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/set' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -8681,10 +6959,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/machines/{id}/set");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "operations": "[]*VirtualMachineConfigRequestOperation",
-              "owner": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -8704,10 +6979,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/machines/{id}/set"
               method := "put"
-              payload := strings.NewReader(`{
-              "operations": "[]*VirtualMachineConfigRequestOperation",
-              "owner": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -8750,50 +7022,25 @@ endpoints:
           type: body
           value_type: object
           description: Machine Clone Request
-          body: |-
-            {
-              "clone_name": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "error": "string",
-              "id": "string",
-              "status": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineCloneCommandResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/clone' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"clone_name\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/clone' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -8802,9 +7049,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/machines/{id}/clone");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "clone_name": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -8824,9 +7069,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/machines/{id}/clone"
               method := "put"
-              payload := strings.NewReader(`{
-              "clone_name": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -8869,56 +7112,25 @@ endpoints:
           type: body
           value_type: object
           description: Machine Execute Command Request
-          body: |-
-            {
-              "command": "string",
-              "environment_variables": "map[string]string",
-              "script": "*VirtualMachineExecuteCommandScript",
-              "use_ssh": "bool",
-              "use_sudo": "bool",
-              "user": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "error": "string",
-              "exit_code": "int",
-              "stderr": "string",
-              "stdout": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineExecuteCommandResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/execute' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"command\": \"string\",\n  \"environment_variables\": \"map[string]string\",\n  \"script\": \"*VirtualMachineExecuteCommandScript\",\n  \"use_ssh\": \"bool\",\n  \"use_sudo\": \"bool\",\n  \"user\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/execute' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -8927,14 +7139,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/machines/{id}/execute");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "command": "string",
-              "environment_variables": "map[string]string",
-              "script": "*VirtualMachineExecuteCommandScript",
-              "use_ssh": "bool",
-              "use_sudo": "bool",
-              "user": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -8954,14 +7159,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/machines/{id}/execute"
               method := "put"
-              payload := strings.NewReader(`{
-              "command": "string",
-              "environment_variables": "map[string]string",
-              "script": "*VirtualMachineExecuteCommandScript",
-              "use_ssh": "bool",
-              "use_sudo": "bool",
-              "user": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -9004,50 +7202,25 @@ endpoints:
           type: body
           value_type: object
           description: Machine Upload file Command Request
-          body: |-
-            {
-              "path": "string",
-              "remote_path": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "error": "string",
-              "path": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineUploadResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/upload' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"path\": \"string\",\n  \"remote_path\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/upload' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -9056,10 +7229,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/machines/{id}/upload");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "path": "string",
-              "remote_path": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -9079,10 +7249,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/machines/{id}/upload"
               method := "post"
-              payload := strings.NewReader(`{
-              "path": "string",
-              "remote_path": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -9125,281 +7292,25 @@ endpoints:
           type: body
           value_type: object
           description: Machine Rename Request
-          body: |-
-            {
-              "current_name": "string",
-              "description": "string",
-              "id": "string",
-              "new_name": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ParallelsVM
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/rename' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"current_name\": \"string\",\n  \"description\": \"string\",\n  \"id\": \"string\",\n  \"new_name\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/rename' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -9408,12 +7319,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/machines/{id}/rename");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "current_name": "string",
-              "description": "string",
-              "id": "string",
-              "new_name": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -9433,12 +7339,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/machines/{id}/rename"
               method := "put"
-              payload := strings.NewReader(`{
-              "current_name": "string",
-              "description": "string",
-              "id": "string",
-              "new_name": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -9481,284 +7382,25 @@ endpoints:
           type: body
           value_type: object
           description: Machine Register Request
-          body: |-
-            {
-              "delay_applying_restrictions": "bool",
-              "force": "bool",
-              "machine_name": "string",
-              "owner": "string",
-              "path": "string",
-              "regenerate_source_uuid": "bool",
-              "uuid": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ParallelsVM
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/machines/register' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"delay_applying_restrictions\": \"bool\",\n  \"force\": \"bool\",\n  \"machine_name\": \"string\",\n  \"owner\": \"string\",\n  \"path\": \"string\",\n  \"regenerate_source_uuid\": \"bool\",\n  \"uuid\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/machines/register' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -9767,15 +7409,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/machines/register");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "delay_applying_restrictions": "bool",
-              "force": "bool",
-              "machine_name": "string",
-              "owner": "string",
-              "path": "string",
-              "regenerate_source_uuid": "bool",
-              "uuid": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -9795,15 +7429,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/machines/register"
               method := "post"
-              payload := strings.NewReader(`{
-              "delay_applying_restrictions": "bool",
-              "force": "bool",
-              "machine_name": "string",
-              "owner": "string",
-              "path": "string",
-              "regenerate_source_uuid": "bool",
-              "uuid": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -9846,54 +7472,25 @@ endpoints:
           type: body
           value_type: object
           description: Machine Unregister Request
-          body: |-
-            {
-              "clean_source_uuid": "bool",
-              "id": "string",
-              "owner": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "data": "unknown",
-              "error": "unknown",
-              "operation": "string",
-              "success": "bool"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ApiCommonResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/unregister' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"clean_source_uuid\": \"bool\",\n  \"id\": \"string\",\n  \"owner\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/unregister' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -9902,11 +7499,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/machines/{id}/unregister");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "clean_source_uuid": "bool",
-              "id": "string",
-              "owner": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -9926,11 +7519,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/machines/{id}/unregister"
               method := "post"
-              payload := strings.NewReader(`{
-              "clean_source_uuid": "bool",
-              "id": "string",
-              "owner": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -9968,58 +7557,25 @@ endpoints:
           type: body
           value_type: object
           description: New Machine Request
-          body: |-
-            {
-              "architecture": "string",
-              "catalog_manifest": "*CreateCatalogVirtualMachineRequest",
-              "name": "string",
-              "owner": "string",
-              "packer_template": "*CreatePackerVirtualMachineRequest",
-              "start_on_create": "bool",
-              "vagrant_box": "*CreateVagrantMachineRequest"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "current_state": "string",
-              "host": "string",
-              "id": "string",
-              "name": "string",
-              "owner": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CreateVirtualMachineResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/machines' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_manifest\": \"*CreateCatalogVirtualMachineRequest\",\n  \"name\": \"string\",\n  \"owner\": \"string\",\n  \"packer_template\": \"*CreatePackerVirtualMachineRequest\",\n  \"start_on_create\": \"bool\",\n  \"vagrant_box\": \"*CreateVagrantMachineRequest\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/machines' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -10028,15 +7584,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/machines");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "architecture": "string",
-              "catalog_manifest": "*CreateCatalogVirtualMachineRequest",
-              "name": "string",
-              "owner": "string",
-              "packer_template": "*CreatePackerVirtualMachineRequest",
-              "start_on_create": "bool",
-              "vagrant_box": "*CreateVagrantMachineRequest"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -10056,15 +7604,512 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/machines"
               method := "post"
-              payload := strings.NewReader(`{
-              "architecture": "string",
-              "catalog_manifest": "*CreateCatalogVirtualMachineRequest",
-              "name": "string",
-              "owner": "string",
-              "packer_template": "*CreatePackerVirtualMachineRequest",
-              "start_on_create": "bool",
-              "vagrant_box": "*CreateVagrantMachineRequest"
-            }`)
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Creates a virtual machine asynchronously
+      description: This endpoint creates a virtual machine in the background and returns a Job ID to track progress
+      requires_authorization: true
+      category: Machines
+      category_path: machines
+      path: /v1/machines/async
+      method: post
+      parameters:
+        - name: createRequest
+          required: false
+          type: body
+          value_type: object
+          description: New Machine Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.JobResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/machines/async' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/machines/async");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/machines/async"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Creates a snapshot for a virtual machine
+      description: This endpoint creates a snapshot for a virtual machine
+      requires_authorization: true
+      category: Machines
+      category_path: machines
+      path: /v1/machines/{id}/snapshots
+      method: post
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Machine ID
+        - name: createRequest
+          required: false
+          type: body
+          value_type: object
+          description: Create Snapshot Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.ApiCommonResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/snapshots' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/machines/{id}/snapshots");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/machines/{id}/snapshots"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes a snapshot of a virtual machine
+      description: This endpoint deletes a snapshot of a virtual machine
+      requires_authorization: true
+      category: Machines
+      category_path: machines
+      path: /v1/machines/{id}/snapshots/{snapshot_id}
+      method: delete
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Machine ID
+        - name: snapshot_id
+          required: true
+          type: path
+          value_type: string
+          description: Snapshot ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/snapshots/{snapshot_id}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/machines/{id}/snapshots/{snapshot_id}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/machines/{id}/snapshots/{snapshot_id}"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes all snapshots of a virtual machine
+      description: This endpoint deletes all snapshots of a virtual machine
+      requires_authorization: true
+      category: Machines
+      category_path: machines
+      path: /v1/machines/{id}/snapshots
+      method: delete
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/snapshots' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/machines/{id}/snapshots");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/machines/{id}/snapshots"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Lists snapshots of a virtual machine
+      description: This endpoint lists snapshots of a virtual machine
+      requires_authorization: true
+      category: Machines
+      category_path: machines
+      path: /v1/machines/{id}/snapshots
+      method: get
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.ApiCommonResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/snapshots' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/machines/{id}/snapshots");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/machines/{id}/snapshots"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Reverts a virtual machine to a snapshot
+      description: This endpoint reverts a virtual machine to a snapshot
+      requires_authorization: true
+      category: Machines
+      category_path: machines
+      path: /v1/machines/{id}/snapshots/{snapshot_id}/revert
+      method: post
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Machine ID
+        - name: snapshot_id
+          required: true
+          type: path
+          value_type: string
+          description: Snapshot ID
+        - name: revertRequest
+          required: false
+          type: body
+          value_type: object
+          description: Revert Snapshot Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.ApiCommonResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/machines/{id}/snapshots/{snapshot_id}/revert' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/machines/{id}/snapshots/{snapshot_id}/revert");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/machines/{id}/snapshots/{snapshot_id}/revert"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -10097,66 +8142,17 @@ endpoints:
       path: /v1/orchestrator/hosts
       method: get
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "cpu_model": "string",
-                "description": "string",
-                "detailed_resources": "*HostResources",
-                "devops_version": "string",
-                "enabled": "bool",
-                "external_ip_address": "string",
-                "host": "string",
-                "id": "string",
-                "is_reverse_proxy_enabled": "bool",
-                "os_name": "string",
-                "os_version": "string",
-                "parallels_desktop_licensed": "bool",
-                "parallels_desktop_version": "string",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "resources": {
-                  "disk_size": "float64",
-                  "free_disk_size": "float64",
-                  "logical_cpu_count": "int64",
-                  "memory_size": "float64",
-                  "physical_cpu_count": "int64",
-                  "total_apple_vms": "int64"
-                },
-                "reverse_proxy": "*HostReverseProxy",
-                "reverse_proxy_hosts": "[]*ReverseProxyHost",
-                "state": "string",
-                "tags": "[]string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]models.OrchestratorHostResponse'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -10226,66 +8222,17 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "cpu_model": "string",
-                "description": "string",
-                "detailed_resources": "*HostResources",
-                "devops_version": "string",
-                "enabled": "bool",
-                "external_ip_address": "string",
-                "host": "string",
-                "id": "string",
-                "is_reverse_proxy_enabled": "bool",
-                "os_name": "string",
-                "os_version": "string",
-                "parallels_desktop_licensed": "bool",
-                "parallels_desktop_version": "string",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "resources": {
-                  "disk_size": "float64",
-                  "free_disk_size": "float64",
-                  "logical_cpu_count": "int64",
-                  "memory_size": "float64",
-                  "physical_cpu_count": "int64",
-                  "total_apple_vms": "int64"
-                },
-                "reverse_proxy": "*HostReverseProxy",
-                "reverse_proxy_hosts": "[]*ReverseProxyHost",
-                "state": "string",
-                "tags": "[]string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.OrchestratorHostResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -10355,52 +8302,17 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            {
-              "cpu_brand": "string",
-              "cpu_type": "string",
-              "devops_version": "string",
-              "external_ip_address": "string",
-              "is_log_streaming_enabled": "bool",
-              "is_reverse_proxy_enabled": "bool",
-              "os_name": "string",
-              "os_version": "string",
-              "parallels_desktop_licensed": "bool",
-              "parallels_desktop_version": "string",
-              "reverse_proxy": "*SystemReverseProxy",
-              "system_reserved": "*SystemUsageItem",
-              "total": "*SystemUsageItem",
-              "total_available": "*SystemUsageItem",
-              "total_in_use": "*SystemUsageItem",
-              "total_reserved": "*SystemUsageItem"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.SystemUsageResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -10469,85 +8381,25 @@ endpoints:
           type: body
           value_type: object
           description: Host Request
-          body: |-
-            {
-              "authentication": "*OrchestratorAuthentication",
-              "description": "string",
-              "host": "string",
-              "port": "string",
-              "prefix": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "schema": "string",
-              "tags": "[]string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "cpu_model": "string",
-                "description": "string",
-                "detailed_resources": "*HostResources",
-                "devops_version": "string",
-                "enabled": "bool",
-                "external_ip_address": "string",
-                "host": "string",
-                "id": "string",
-                "is_reverse_proxy_enabled": "bool",
-                "os_name": "string",
-                "os_version": "string",
-                "parallels_desktop_licensed": "bool",
-                "parallels_desktop_version": "string",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "resources": {
-                  "disk_size": "float64",
-                  "free_disk_size": "float64",
-                  "logical_cpu_count": "int64",
-                  "memory_size": "float64",
-                  "physical_cpu_count": "int64",
-                  "total_apple_vms": "int64"
-                },
-                "reverse_proxy": "*HostReverseProxy",
-                "reverse_proxy_hosts": "[]*ReverseProxyHost",
-                "state": "string",
-                "tags": "[]string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.OrchestratorHostResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"authentication\": \"*OrchestratorAuthentication\",\n  \"description\": \"string\",\n  \"host\": \"string\",\n  \"port\": \"string\",\n  \"prefix\": \"string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"schema\": \"string\",\n  \"tags\": \"[]string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -10556,17 +8408,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/hosts");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "authentication": "*OrchestratorAuthentication",
-              "description": "string",
-              "host": "string",
-              "port": "string",
-              "prefix": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "schema": "string",
-              "tags": "[]string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -10586,17 +8428,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/orchestrator/hosts"
               method := "post"
-              payload := strings.NewReader(`{
-              "authentication": "*OrchestratorAuthentication",
-              "description": "string",
-              "host": "string",
-              "port": "string",
-              "prefix": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "schema": "string",
-              "tags": "[]string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -10635,29 +8467,12 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -10721,66 +8536,17 @@ endpoints:
       path: /v1/orchestrator/hosts/{id}/enable
       method: put
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "cpu_model": "string",
-                "description": "string",
-                "detailed_resources": "*HostResources",
-                "devops_version": "string",
-                "enabled": "bool",
-                "external_ip_address": "string",
-                "host": "string",
-                "id": "string",
-                "is_reverse_proxy_enabled": "bool",
-                "os_name": "string",
-                "os_version": "string",
-                "parallels_desktop_licensed": "bool",
-                "parallels_desktop_version": "string",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "resources": {
-                  "disk_size": "float64",
-                  "free_disk_size": "float64",
-                  "logical_cpu_count": "int64",
-                  "memory_size": "float64",
-                  "physical_cpu_count": "int64",
-                  "total_apple_vms": "int64"
-                },
-                "reverse_proxy": "*HostReverseProxy",
-                "reverse_proxy_hosts": "[]*ReverseProxyHost",
-                "state": "string",
-                "tags": "[]string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.OrchestratorHostResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -10844,66 +8610,17 @@ endpoints:
       path: /v1/orchestrator/hosts/{id}/disable
       method: put
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "cpu_model": "string",
-                "description": "string",
-                "detailed_resources": "*HostResources",
-                "devops_version": "string",
-                "enabled": "bool",
-                "external_ip_address": "string",
-                "host": "string",
-                "id": "string",
-                "is_reverse_proxy_enabled": "bool",
-                "os_name": "string",
-                "os_version": "string",
-                "parallels_desktop_licensed": "bool",
-                "parallels_desktop_version": "string",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "resources": {
-                  "disk_size": "float64",
-                  "free_disk_size": "float64",
-                  "logical_cpu_count": "int64",
-                  "memory_size": "float64",
-                  "physical_cpu_count": "int64",
-                  "total_apple_vms": "int64"
-                },
-                "reverse_proxy": "*HostReverseProxy",
-                "reverse_proxy_hosts": "[]*ReverseProxyHost",
-                "state": "string",
-                "tags": "[]string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.OrchestratorHostResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -10972,82 +8689,25 @@ endpoints:
           type: body
           value_type: object
           description: Host Update Request
-          body: |-
-            {
-              "authentication": "*OrchestratorAuthentication",
-              "description": "string",
-              "host": "string",
-              "port": "string",
-              "prefix": "string",
-              "schema": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "architecture": "string",
-                "cpu_model": "string",
-                "description": "string",
-                "detailed_resources": "*HostResources",
-                "devops_version": "string",
-                "enabled": "bool",
-                "external_ip_address": "string",
-                "host": "string",
-                "id": "string",
-                "is_reverse_proxy_enabled": "bool",
-                "os_name": "string",
-                "os_version": "string",
-                "parallels_desktop_licensed": "bool",
-                "parallels_desktop_version": "string",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "resources": {
-                  "disk_size": "float64",
-                  "free_disk_size": "float64",
-                  "logical_cpu_count": "int64",
-                  "memory_size": "float64",
-                  "physical_cpu_count": "int64",
-                  "total_apple_vms": "int64"
-                },
-                "reverse_proxy": "*HostReverseProxy",
-                "reverse_proxy_hosts": "[]*ReverseProxyHost",
-                "state": "string",
-                "tags": "[]string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.OrchestratorHostResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"authentication\": \"*OrchestratorAuthentication\",\n  \"description\": \"string\",\n  \"host\": \"string\",\n  \"port\": \"string\",\n  \"prefix\": \"string\",\n  \"schema\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -11056,14 +8716,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/hosts");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "authentication": "*OrchestratorAuthentication",
-              "description": "string",
-              "host": "string",
-              "port": "string",
-              "prefix": "string",
-              "schema": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -11083,14 +8736,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/orchestrator/hosts"
               method := "put"
-              payload := strings.NewReader(`{
-              "authentication": "*OrchestratorAuthentication",
-              "description": "string",
-              "host": "string",
-              "port": "string",
-              "prefix": "string",
-              "schema": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -11123,43 +8769,17 @@ endpoints:
       path: /v1/orchestrator/overview/resources
       method: get
       response_blocks:
-        - code_block: |-
-            {
-              "cpu_brand": "string",
-              "cpu_type": "string",
-              "system_reserved": "HostResourceItem",
-              "total": "HostResourceItem",
-              "total_available": "HostResourceItem",
-              "total_in_use": "HostResourceItem",
-              "total_reserved": "HostResourceItem"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.HostResourceOverviewResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -11229,43 +8849,17 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            {
-              "cpu_brand": "string",
-              "cpu_type": "string",
-              "system_reserved": "HostResourceItem",
-              "total": "HostResourceItem",
-              "total_available": "HostResourceItem",
-              "total_in_use": "HostResourceItem",
-              "total_reserved": "HostResourceItem"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.HostResourceOverviewResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -11329,267 +8923,17 @@ endpoints:
       path: /v1/orchestrator/machines
       method: get
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]models.ParallelsVM'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -11653,267 +8997,17 @@ endpoints:
       path: /v1/orchestrator/machines/{id}
       method: get
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ParallelsVM
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -11982,30 +9076,16 @@ endpoints:
           type: path
           value_type: string
           description: Virtual Machine ID
+        - name: force
+          required: false
+          type: query
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -12066,7 +9146,7 @@ endpoints:
       requires_authorization: true
       category: Orchestrator
       category_path: orchestrator
-      path: /v1/orchestrator/machines/{vmId}/status
+      path: /v1/orchestrator/machines/{id}/status
       method: get
       parameters:
         - name: id
@@ -12075,279 +9155,29 @@ endpoints:
           value_type: string
           description: Virtual Machine ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ParallelsVM
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{vmId}/status' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/status' \n--header 'Authorization ••••••'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/orchestrator/machines/{vmId}/status");
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/orchestrator/machines/{id}/status");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -12365,7 +9195,7 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/orchestrator/machines/{vmId}/status"
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/status"
               method := "get"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
@@ -12405,267 +9235,17 @@ endpoints:
           value_type: string
           description: Virtual Machine ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ParallelsVM
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -12726,7 +9306,7 @@ endpoints:
       requires_authorization: true
       category: Orchestrator
       category_path: orchestrator
-      path: /v1/orchestrator/machines/{vmId}/set
+      path: /v1/orchestrator/machines/{id}/set
       method: put
       parameters:
         - name: id
@@ -12735,56 +9315,29 @@ endpoints:
           value_type: string
           description: Virtual Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "operations": [
-                {
-                  "error": "string",
-                  "group": "string",
-                  "operation": "string",
-                  "status": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineConfigResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{vmId}/set' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/set' \n--header 'Authorization ••••••'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{vmId}/set");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{id}/set");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -12802,7 +9355,7 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/orchestrator/machines/{vmId}/set"
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/set"
               method := "put"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
@@ -12833,7 +9386,7 @@ endpoints:
       requires_authorization: true
       category: Orchestrator
       category_path: orchestrator
-      path: /v1/orchestrator/machines/{vmId}/start
+      path: /v1/orchestrator/machines/{id}/start
       method: put
       parameters:
         - name: id
@@ -12842,56 +9395,29 @@ endpoints:
           value_type: string
           description: Virtual Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "operations": [
-                {
-                  "error": "string",
-                  "group": "string",
-                  "operation": "string",
-                  "status": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
-          title: models.VirtualMachineConfigResponse
+          title: models.VirtualMachineOperationResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{vmId}/start' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/start' \n--header 'Authorization ••••••'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{vmId}/start");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{id}/start");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -12909,7 +9435,7 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/orchestrator/machines/{vmId}/start"
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/start"
               method := "put"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
@@ -12940,7 +9466,7 @@ endpoints:
       requires_authorization: true
       category: Orchestrator
       category_path: orchestrator
-      path: /v1/orchestrator/machines/{vmId}/stop
+      path: /v1/orchestrator/machines/{id}/stop
       method: put
       parameters:
         - name: id
@@ -12948,57 +9474,33 @@ endpoints:
           type: path
           value_type: string
           description: Virtual Machine ID
+        - name: force
+          required: false
+          type: query
       response_blocks:
-        - code_block: |-
-            {
-              "operations": [
-                {
-                  "error": "string",
-                  "group": "string",
-                  "operation": "string",
-                  "status": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
-          title: models.VirtualMachineConfigResponse
+          title: models.VirtualMachineOperationResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{vmId}/stop' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/stop' \n--header 'Authorization ••••••'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{vmId}/stop");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{id}/stop");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -13016,8 +9518,498 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/orchestrator/machines/{vmId}/stop"
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/stop"
               method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Restarts orchestrator virtual machine
+      description: This endpoint restarts orchestrator virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/{id}/restart
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.VirtualMachineOperationResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/restart' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{id}/restart");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/restart"
+              method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Suspends orchestrator virtual machine
+      description: This endpoint suspends orchestrator virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/{id}/suspend
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.VirtualMachineOperationResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/suspend' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{id}/suspend");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/suspend"
+              method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Resumes orchestrator virtual machine
+      description: This endpoint resumes orchestrator virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/{id}/resume
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.VirtualMachineOperationResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/resume' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{id}/resume");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/resume"
+              method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Resets orchestrator virtual machine
+      description: This endpoint resets orchestrator virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/{id}/reset
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.VirtualMachineOperationResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/reset' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{id}/reset");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/reset"
+              method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Pauses orchestrator virtual machine
+      description: This endpoint pauses orchestrator virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/{id}/pause
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.VirtualMachineOperationResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/pause' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{id}/pause");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/pause"
+              method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Clones orchestrator virtual machine
+      description: This endpoint clones orchestrator virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/{id}/clone
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+        - name: configRequest
+          required: false
+          type: body
+          value_type: object
+          description: Machine Clone Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.VirtualMachineCloneCommandResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/clone' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{id}/clone");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/clone"
+              method := "put"
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -13047,7 +10039,7 @@ endpoints:
       requires_authorization: true
       category: Orchestrator
       category_path: orchestrator
-      path: /v1/orchestrator/machines/{vmId}/execute
+      path: /v1/orchestrator/machines/{id}/execute
       method: put
       parameters:
         - name: id
@@ -13056,56 +10048,29 @@ endpoints:
           value_type: string
           description: Virtual Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "operations": [
-                {
-                  "error": "string",
-                  "group": "string",
-                  "operation": "string",
-                  "status": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineConfigResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{vmId}/execute' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/execute' \n--header 'Authorization ••••••'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{vmId}/execute");
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/machines/{id}/execute");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -13123,7 +10088,7 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/orchestrator/machines/{vmId}/execute"
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/execute"
               method := "put"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
@@ -13163,267 +10128,17 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]models.ParallelsVM'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -13498,267 +10213,17 @@ endpoints:
           value_type: string
           description: Virtual Machine ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ParallelsVM
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -13832,30 +10297,16 @@ endpoints:
           type: path
           value_type: string
           description: Virtual Machine ID
+        - name: force
+          required: false
+          type: query
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -13930,267 +10381,17 @@ endpoints:
           value_type: string
           description: Virtual Machine ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ParallelsVM
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -14265,267 +10466,17 @@ endpoints:
           value_type: string
           description: Virtual Machine ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ParallelsVM
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -14600,44 +10551,17 @@ endpoints:
           value_type: string
           description: Virtual Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "operations": [
-                {
-                  "error": "string",
-                  "group": "string",
-                  "operation": "string",
-                  "status": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineConfigResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -14712,44 +10636,17 @@ endpoints:
           value_type: string
           description: Virtual Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "operations": [
-                {
-                  "error": "string",
-                  "group": "string",
-                  "operation": "string",
-                  "status": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
-          title: models.VirtualMachineConfigResponse
+          title: models.VirtualMachineOperationResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -14805,8 +10702,8 @@ endpoints:
             }
           title: Go
           language: go
-    - title: Starts orchestrator host virtual machine
-      description: This endpoint starts orchestrator host virtual machine
+    - title: Stops orchestrator host virtual machine
+      description: This endpoint stops orchestrator host virtual machine
       requires_authorization: true
       category: Orchestrator
       category_path: orchestrator
@@ -14823,45 +10720,21 @@ endpoints:
           type: path
           value_type: string
           description: Virtual Machine ID
+        - name: force
+          required: false
+          type: query
       response_blocks:
-        - code_block: |-
-            {
-              "operations": [
-                {
-                  "error": "string",
-                  "group": "string",
-                  "operation": "string",
-                  "status": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
-          title: models.VirtualMachineConfigResponse
+          title: models.VirtualMachineOperationResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -14917,6 +10790,526 @@ endpoints:
             }
           title: Go
           language: go
+    - title: Restarts orchestrator host virtual machine
+      description: This endpoint restarts orchestrator host virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/machines/{vmId}/restart
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: vmId
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.VirtualMachineOperationResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/restart' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/restart");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/restart"
+              method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Suspends orchestrator host virtual machine
+      description: This endpoint suspends orchestrator host virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/machines/{vmId}/suspend
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: vmId
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.VirtualMachineOperationResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/suspend' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/suspend");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/suspend"
+              method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Resumes orchestrator host virtual machine
+      description: This endpoint resumes orchestrator host virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/machines/{vmId}/resume
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: vmId
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.VirtualMachineOperationResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/resume' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/resume");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/resume"
+              method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Resets orchestrator host virtual machine
+      description: This endpoint resets orchestrator host virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/machines/{vmId}/reset
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: vmId
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.VirtualMachineOperationResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/reset' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/reset");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/reset"
+              method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Pauses orchestrator host virtual machine
+      description: This endpoint pauses orchestrator host virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/machines/{vmId}/pause
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: vmId
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.VirtualMachineOperationResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/pause' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/pause");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/pause"
+              method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Clones orchestrator host virtual machine
+      description: This endpoint clones orchestrator host virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/machines/{vmId}/clone
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: vmId
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+        - name: configRequest
+          required: false
+          type: body
+          value_type: object
+          description: Machine Clone Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.VirtualMachineCloneCommandResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/clone' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/clone");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/clone"
+              method := "put"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
     - title: Executes a command in a orchestrator host virtual machine
       description: This endpoint executes a command in a orchestrator host virtual machine
       requires_authorization: true
@@ -14936,44 +11329,17 @@ endpoints:
           value_type: string
           description: Virtual Machine ID
       response_blocks:
-        - code_block: |-
-            {
-              "operations": [
-                {
-                  "error": "string",
-                  "group": "string",
-                  "operation": "string",
-                  "status": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.VirtualMachineConfigResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -15029,6 +11395,871 @@ endpoints:
             }
           title: Go
           language: go
+    - title: Lists snapshots of orchestrator host virtual machine
+      description: This endpoint lists snapshots of orchestrator host virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots
+      method: get
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: vmId
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.ListVMSnapshotResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Creates a snapshot for orchestrator host virtual machine
+      description: This endpoint creates a snapshot for orchestrator host virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots
+      method: post
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: vmId
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+        - name: createRequest
+          required: false
+          type: body
+          value_type: object
+          description: Create Snapshot Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.CreateVMSnapshotResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes all snapshots of orchestrator host virtual machine
+      description: This endpoint deletes all snapshots of orchestrator host virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots
+      method: delete
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: vmId
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes a snapshot of orchestrator host virtual machine
+      description: This endpoint deletes a snapshot of orchestrator host virtual machine
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}
+      method: delete
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: vmId
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+        - name: snapshot_id
+          required: true
+          type: path
+          value_type: string
+          description: Snapshot ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Reverts orchestrator host virtual machine to a snapshot
+      description: This endpoint reverts orchestrator host virtual machine to a snapshot
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}/revert
+      method: post
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: vmId
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+        - name: snapshot_id
+          required: true
+          type: path
+          value_type: string
+          description: Snapshot ID
+        - name: revertRequest
+          required: false
+          type: body
+          value_type: object
+          description: Revert Snapshot Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.ApiCommonResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}/revert' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}/revert");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/snapshots/{snapshot_id}/revert"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Lists snapshots of an orchestrator virtual machine
+      description: This endpoint lists snapshots of an orchestrator virtual machine (host resolved automatically)
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/{id}/snapshots
+      method: get
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.ListVMSnapshotResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/snapshots' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/orchestrator/machines/{id}/snapshots");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/snapshots"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Creates a snapshot for an orchestrator virtual machine
+      description: This endpoint creates a snapshot for an orchestrator virtual machine (host resolved automatically)
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/{id}/snapshots
+      method: post
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+        - name: createRequest
+          required: false
+          type: body
+          value_type: object
+          description: Create Snapshot Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.CreateVMSnapshotResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/snapshots' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/machines/{id}/snapshots");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/snapshots"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes all snapshots of an orchestrator virtual machine
+      description: This endpoint deletes all snapshots of an orchestrator virtual machine (host resolved automatically)
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/{id}/snapshots
+      method: delete
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/snapshots' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/orchestrator/machines/{id}/snapshots");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/snapshots"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes a snapshot of an orchestrator virtual machine
+      description: This endpoint deletes a snapshot of an orchestrator virtual machine (host resolved automatically)
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/{id}/snapshots/{snapshot_id}
+      method: delete
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+        - name: snapshot_id
+          required: true
+          type: path
+          value_type: string
+          description: Snapshot ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/snapshots/{snapshot_id}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/orchestrator/machines/{id}/snapshots/{snapshot_id}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/snapshots/{snapshot_id}"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Reverts an orchestrator virtual machine to a snapshot
+      description: This endpoint reverts an orchestrator virtual machine to a snapshot (host resolved automatically)
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/{id}/snapshots/{snapshot_id}/revert
+      method: post
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Virtual Machine ID
+        - name: snapshot_id
+          required: true
+          type: path
+          value_type: string
+          description: Snapshot ID
+        - name: revertRequest
+          required: false
+          type: body
+          value_type: object
+          description: Revert Snapshot Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.ApiCommonResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/{id}/snapshots/{snapshot_id}/revert' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/machines/{id}/snapshots/{snapshot_id}/revert");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/{id}/snapshots/{snapshot_id}/revert"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
     - title: Register a virtual machine in a orchestrator host
       description: This endpoint registers a virtual machine in a orchestrator host
       requires_authorization: true
@@ -15047,284 +12278,25 @@ endpoints:
           type: body
           value_type: object
           description: Register Virtual Machine Request
-          body: |-
-            {
-              "delay_applying_restrictions": "bool",
-              "force": "bool",
-              "machine_name": "string",
-              "owner": "string",
-              "path": "string",
-              "regenerate_source_uuid": "bool",
-              "uuid": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ParallelsVM
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/register' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"delay_applying_restrictions\": \"bool\",\n  \"force\": \"bool\",\n  \"machine_name\": \"string\",\n  \"owner\": \"string\",\n  \"path\": \"string\",\n  \"regenerate_source_uuid\": \"bool\",\n  \"uuid\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/register' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -15333,15 +12305,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/register");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "delay_applying_restrictions": "bool",
-              "force": "bool",
-              "machine_name": "string",
-              "owner": "string",
-              "path": "string",
-              "regenerate_source_uuid": "bool",
-              "uuid": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -15361,15 +12325,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/register"
               method := "post"
-              payload := strings.NewReader(`{
-              "delay_applying_restrictions": "bool",
-              "force": "bool",
-              "machine_name": "string",
-              "owner": "string",
-              "path": "string",
-              "regenerate_source_uuid": "bool",
-              "uuid": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -15417,280 +12373,25 @@ endpoints:
           type: body
           value_type: object
           description: Register Virtual Machine Request
-          body: |-
-            {
-              "clean_source_uuid": "bool",
-              "id": "string",
-              "owner": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "Advanced": {
-                  "Public SSH keys synchronization": "string",
-                  "Rosetta Linux": "string",
-                  "Share host location": "string",
-                  "Show developer tools": "string",
-                  "Swipe from edges": "string",
-                  "VM hostname synchronization": "string"
-                },
-                "Allow select boot device": "string",
-                "BIOS type": "string",
-                "Boot order": "string",
-                "Coherence": {
-                  "Auto-switch to full screen": "string",
-                  "Disable aero": "string",
-                  "Hide minimized windows": "string",
-                  "Show Windows systray in Mac menu": "string"
-                },
-                "Description": "string",
-                "EFI Secure boot": "string",
-                "Expiration": {
-                  "enabled": "bool"
-                },
-                "External boot device": "string",
-                "Fullscreen": {
-                  "Activate spaces on click": "string",
-                  "Gamma control": "string",
-                  "Optimize for games": "string",
-                  "Scale view mode": "string",
-                  "Use all displays": "string"
-                },
-                "Guest Shared Folders": {
-                  "Automount": "string",
-                  "enabled": "bool"
-                },
-                "GuestTools": {
-                  "state": "string",
-                  "version": "string"
-                },
-                "Hardware": {
-                  "cdrom0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "port": "string",
-                    "state": "string"
-                  },
-                  "cpu": {
-                    "VT-x": "bool",
-                    "accl": "string",
-                    "auto": "string",
-                    "cpus": "int64",
-                    "hotplug": "bool",
-                    "mode": "string",
-                    "type": "string"
-                  },
-                  "hdd0": {
-                    "enabled": "bool",
-                    "image": "string",
-                    "online-compact": "string",
-                    "port": "string",
-                    "size": "string",
-                    "type": "string"
-                  },
-                  "memory": {
-                    "auto": "string",
-                    "hotplug": "bool",
-                    "size": "string"
-                  },
-                  "memory_quota": {
-                    "auto": "string"
-                  },
-                  "net0": {
-                    "card": "string",
-                    "enabled": "bool",
-                    "mac": "string",
-                    "type": "string"
-                  },
-                  "sound0": {
-                    "enabled": "bool",
-                    "mixer": "string",
-                    "output": "string"
-                  },
-                  "usb": {
-                    "enabled": "bool"
-                  },
-                  "video": {
-                    "3d-acceleration": "string",
-                    "adapter-type": "string",
-                    "automatic-video-memory": "string",
-                    "high-resolution": "string",
-                    "high-resolution-in-guest": "string",
-                    "native-scaling-in-guest": "string",
-                    "size": "string",
-                    "vertical-sync": "string"
-                  }
-                },
-                "Home": "string",
-                "Home path": "string",
-                "Host Shared Folders": "map[string]unknown",
-                "Host defined sharing": "string",
-                "ID": "string",
-                "Miscellaneous Sharing": {
-                  "Shared clipboard": "string",
-                  "Shared cloud": "string"
-                },
-                "Modality": {
-                  "Capture mouse clicks": "string",
-                  "Opacity (percentage)": "int64",
-                  "Show on all spaces ": "string",
-                  "Stay on top": "string"
-                },
-                "Mouse and Keyboard": {
-                  "Keyboard optimization mode": "string",
-                  "Smart mouse optimized for games": "string",
-                  "Smooth scrolling": "string",
-                  "Sticky mouse": "string"
-                },
-                "Name": "string",
-                "Network": {
-                  "Conditioned": "string",
-                  "Inbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "Outbound": {
-                    "Bandwidth": "string",
-                    "Delay": "string",
-                    "Packet Loss": "string"
-                  },
-                  "ipAddresses": [
-                    {
-                      "ip": "string",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "OS": "string",
-                "Optimization": {
-                  "Adaptive hypervisor": "string",
-                  "Auto compress virtual disks": "string",
-                  "Disabled Windows logo": "string",
-                  "Faster virtual machine": "string",
-                  "Hypervisor type": "string",
-                  "Longer battery life": "string",
-                  "Nested virtualization": "string",
-                  "PMU virtualization": "string",
-                  "Resource quota": "string",
-                  "Show battery status": "string"
-                },
-                "Print Management": {
-                  "Show host printer UI": "string",
-                  "Synchronize default printer": "string",
-                  "Synchronize with host printers": "string"
-                },
-                "Restore Image": "string",
-                "SMBIOS settings": {
-                  "BIOS Version": "string",
-                  "Board Manufacturer": "string",
-                  "System serial number": "string"
-                },
-                "Security": {
-                  "Archived": "string",
-                  "Configuration is locked": "string",
-                  "Custom password protection": "string",
-                  "Encrypted": "string",
-                  "Packed": "string",
-                  "Protected": "string",
-                  "TPM enabled": "string",
-                  "TPM type": "string"
-                },
-                "Shared Applications": {
-                  "Bounce dock icon when app flashes": "string",
-                  "Guest-to-host apps sharing": "string",
-                  "Host-to-guest apps sharing": "string",
-                  "Show guest apps folder in Dock": "string",
-                  "Show guest notifications": "string",
-                  "enabled": "bool"
-                },
-                "Shared Profile": {
-                  "enabled": "bool"
-                },
-                "Smart Guard": {
-                  "enabled": "bool"
-                },
-                "SmartMount": {
-                  "CD/DVD drives": "string",
-                  "Network shares": "string",
-                  "Removable drives": "string",
-                  "enabled": "bool"
-                },
-                "Startup and Shutdown": {
-                  "Autostart": "string",
-                  "Autostart delay": "int64",
-                  "Autostop": "string",
-                  "On shutdown": "string",
-                  "On window close": "string",
-                  "Pause idle": "string",
-                  "Startup view": "string",
-                  "Undo disks": "string"
-                },
-                "State": "string",
-                "Template": "string",
-                "Time Synchronization": {
-                  "Interval (in seconds)": "int64",
-                  "Smart mode": "string",
-                  "Timezone synchronization disabled": "string",
-                  "enabled": "bool"
-                },
-                "Travel mode": {
-                  "Enter condition": "string",
-                  "Enter threshold": "int64",
-                  "Quit condition": "string"
-                },
-                "Type": "string",
-                "USB and Bluetooth": {
-                  "Automatic sharing bluetooth": "string",
-                  "Automatic sharing cameras": "string",
-                  "Automatic sharing gamepads": "string",
-                  "Automatic sharing smart cards": "string",
-                  "Support USB 3.0": "string"
-                },
-                "Uptime": "string",
-                "host": "string",
-                "host_external_ip_address": "string",
-                "host_id": "string",
-                "host_state": "string",
-                "host_url": "string",
-                "internal_ip_address": "string",
-                "user": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ParallelsVM
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/unregister' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"clean_source_uuid\": \"bool\",\n  \"id\": \"string\",\n  \"owner\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/unregister' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -15699,11 +12400,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/unregister");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "clean_source_uuid": "bool",
-              "id": "string",
-              "owner": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -15723,11 +12420,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/{vmId}/unregister"
               method := "post"
-              payload := strings.NewReader(`{
-              "clean_source_uuid": "bool",
-              "id": "string",
-              "owner": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -15770,58 +12463,25 @@ endpoints:
           type: body
           value_type: object
           description: Create Virtual Machine Request
-          body: |-
-            {
-              "architecture": "string",
-              "catalog_manifest": "*CreateCatalogVirtualMachineRequest",
-              "name": "string",
-              "owner": "string",
-              "packer_template": "*CreatePackerVirtualMachineRequest",
-              "start_on_create": "bool",
-              "vagrant_box": "*CreateVagrantMachineRequest"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "current_state": "string",
-              "host": "string",
-              "id": "string",
-              "name": "string",
-              "owner": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CreateVirtualMachineResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_manifest\": \"*CreateCatalogVirtualMachineRequest\",\n  \"name\": \"string\",\n  \"owner\": \"string\",\n  \"packer_template\": \"*CreatePackerVirtualMachineRequest\",\n  \"start_on_create\": \"bool\",\n  \"vagrant_box\": \"*CreateVagrantMachineRequest\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -15830,15 +12490,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/hosts/{id}/machines");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "architecture": "string",
-              "catalog_manifest": "*CreateCatalogVirtualMachineRequest",
-              "name": "string",
-              "owner": "string",
-              "packer_template": "*CreatePackerVirtualMachineRequest",
-              "start_on_create": "bool",
-              "vagrant_box": "*CreateVagrantMachineRequest"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -15858,15 +12510,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines"
               method := "post"
-              payload := strings.NewReader(`{
-              "architecture": "string",
-              "catalog_manifest": "*CreateCatalogVirtualMachineRequest",
-              "name": "string",
-              "owner": "string",
-              "packer_template": "*CreatePackerVirtualMachineRequest",
-              "start_on_create": "bool",
-              "vagrant_box": "*CreateVagrantMachineRequest"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -15904,58 +12548,25 @@ endpoints:
           type: body
           value_type: object
           description: Create Virtual Machine Request
-          body: |-
-            {
-              "architecture": "string",
-              "catalog_manifest": "*CreateCatalogVirtualMachineRequest",
-              "name": "string",
-              "owner": "string",
-              "packer_template": "*CreatePackerVirtualMachineRequest",
-              "start_on_create": "bool",
-              "vagrant_box": "*CreateVagrantMachineRequest"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "current_state": "string",
-              "host": "string",
-              "id": "string",
-              "name": "string",
-              "owner": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.CreateVirtualMachineResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"architecture\": \"string\",\n  \"catalog_manifest\": \"*CreateCatalogVirtualMachineRequest\",\n  \"name\": \"string\",\n  \"owner\": \"string\",\n  \"packer_template\": \"*CreatePackerVirtualMachineRequest\",\n  \"start_on_create\": \"bool\",\n  \"vagrant_box\": \"*CreateVagrantMachineRequest\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -15964,15 +12575,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/machines");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "architecture": "string",
-              "catalog_manifest": "*CreateCatalogVirtualMachineRequest",
-              "name": "string",
-              "owner": "string",
-              "packer_template": "*CreatePackerVirtualMachineRequest",
-              "start_on_create": "bool",
-              "vagrant_box": "*CreateVagrantMachineRequest"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -15992,15 +12595,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/orchestrator/machines"
               method := "post"
-              payload := strings.NewReader(`{
-              "architecture": "string",
-              "catalog_manifest": "*CreateCatalogVirtualMachineRequest",
-              "name": "string",
-              "owner": "string",
-              "packer_template": "*CreatePackerVirtualMachineRequest",
-              "start_on_create": "bool",
-              "vagrant_box": "*CreateVagrantMachineRequest"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -16039,39 +12634,17 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            {
-              "enabled": "bool",
-              "host": "string",
-              "port": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ReverseProxy
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -16141,45 +12714,17 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "cors": "*ReverseProxyHostCors",
-                "host": "string",
-                "http_routes": "[]*ReverseProxyHostHttpRoute",
-                "id": "string",
-                "port": "string",
-                "tcp_route": "*ReverseProxyHostTcpRoute",
-                "tls": "*ReverseProxyHostTls"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]models.ReverseProxyHost'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -16249,45 +12794,17 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "cors": "*ReverseProxyHostCors",
-                "host": "string",
-                "http_routes": "[]*ReverseProxyHostHttpRoute",
-                "id": "string",
-                "port": "string",
-                "tcp_route": "*ReverseProxyHostTcpRoute",
-                "tls": "*ReverseProxyHostTls"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ReverseProxyHost
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -16356,61 +12873,25 @@ endpoints:
           type: body
           value_type: object
           description: Create Host Reverse Proxy Host Request
-          body: |-
-            {
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "http_routes": "[]*ReverseProxyHostHttpRoute",
-              "port": "string",
-              "tcp_route": "*ReverseProxyHostTcpRoute",
-              "tls": "*ReverseProxyHostTls"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "cors": "*ReverseProxyHostCors",
-                "host": "string",
-                "http_routes": "[]*ReverseProxyHostHttpRoute",
-                "id": "string",
-                "port": "string",
-                "tcp_route": "*ReverseProxyHostTcpRoute",
-                "tls": "*ReverseProxyHostTls"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ReverseProxyHost
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"cors\": \"*ReverseProxyHostCors\",\n  \"host\": \"string\",\n  \"http_routes\": \"[]*ReverseProxyHostHttpRoute\",\n  \"port\": \"string\",\n  \"tcp_route\": \"*ReverseProxyHostTcpRoute\",\n  \"tls\": \"*ReverseProxyHostTls\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -16419,14 +12900,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "http_routes": "[]*ReverseProxyHostHttpRoute",
-              "port": "string",
-              "tcp_route": "*ReverseProxyHostTcpRoute",
-              "tls": "*ReverseProxyHostTls"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -16446,14 +12920,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts"
               method := "post"
-              payload := strings.NewReader(`{
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "http_routes": "[]*ReverseProxyHostHttpRoute",
-              "port": "string",
-              "tcp_route": "*ReverseProxyHostTcpRoute",
-              "tls": "*ReverseProxyHostTls"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -16491,59 +12958,25 @@ endpoints:
           type: body
           value_type: object
           description: Update Host Reverse Proxy Host Request
-          body: |-
-            {
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "port": "string",
-              "tls": "*ReverseProxyHostTls"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "cors": "*ReverseProxyHostCors",
-                "host": "string",
-                "http_routes": "[]*ReverseProxyHostHttpRoute",
-                "id": "string",
-                "port": "string",
-                "tcp_route": "*ReverseProxyHostTcpRoute",
-                "tls": "*ReverseProxyHostTls"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ReverseProxyHost
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"cors\": \"*ReverseProxyHostCors\",\n  \"host\": \"string\",\n  \"port\": \"string\",\n  \"tls\": \"*ReverseProxyHostTls\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -16552,12 +12985,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "port": "string",
-              "tls": "*ReverseProxyHostTls"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -16577,12 +13005,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}"
               method := "put"
-              payload := strings.NewReader(`{
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "port": "string",
-              "tls": "*ReverseProxyHostTls"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -16626,29 +13049,12 @@ endpoints:
           value_type: string
           description: Reverse Proxy Host ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -16717,59 +13123,25 @@ endpoints:
           type: body
           value_type: object
           description: Upsert Host Reverse Proxy Host Http Routes Request
-          body: |-
-            {
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "port": "string",
-              "tls": "*ReverseProxyHostTls"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "cors": "*ReverseProxyHostCors",
-                "host": "string",
-                "http_routes": "[]*ReverseProxyHostHttpRoute",
-                "id": "string",
-                "port": "string",
-                "tcp_route": "*ReverseProxyHostTcpRoute",
-                "tls": "*ReverseProxyHostTls"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ReverseProxyHost
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/http_routes' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"cors\": \"*ReverseProxyHostCors\",\n  \"host\": \"string\",\n  \"port\": \"string\",\n  \"tls\": \"*ReverseProxyHostTls\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/http_routes' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -16778,12 +13150,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/http_routes");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "port": "string",
-              "tls": "*ReverseProxyHostTls"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -16803,12 +13170,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/http_routes"
               method := "post"
-              payload := strings.NewReader(`{
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "port": "string",
-              "tls": "*ReverseProxyHostTls"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -16857,29 +13219,12 @@ endpoints:
           value_type: string
           description: Route ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -16948,59 +13293,25 @@ endpoints:
           type: body
           value_type: object
           description: Update Host Reverse Proxy Host tcp Routes Request
-          body: |-
-            {
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "port": "string",
-              "tls": "*ReverseProxyHostTls"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "cors": "*ReverseProxyHostCors",
-                "host": "string",
-                "http_routes": "[]*ReverseProxyHostHttpRoute",
-                "id": "string",
-                "port": "string",
-                "tcp_route": "*ReverseProxyHostTcpRoute",
-                "tls": "*ReverseProxyHostTls"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ReverseProxyHost
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/tcp_route' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"cors\": \"*ReverseProxyHostCors\",\n  \"host\": \"string\",\n  \"port\": \"string\",\n  \"tls\": \"*ReverseProxyHostTls\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/tcp_route' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -17009,12 +13320,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/tcp_route");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "port": "string",
-              "tls": "*ReverseProxyHostTls"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -17034,12 +13340,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/orchestrator/hosts/{id}/reverse-proxy/hosts/{reverse_proxy_host_id}/tcp_route"
               method := "post"
-              payload := strings.NewReader(`{
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "port": "string",
-              "tls": "*ReverseProxyHostTls"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -17078,29 +13379,12 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -17170,29 +13454,12 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -17262,29 +13529,12 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -17354,29 +13604,12 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -17446,29 +13679,12 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -17543,29 +13759,12 @@ endpoints:
           value_type: string
           description: Catalog ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -17645,29 +13844,12 @@ endpoints:
           value_type: string
           description: Catalog Version
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -17737,29 +13919,12 @@ endpoints:
           value_type: string
           description: Host ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -17823,19 +13988,7 @@ endpoints:
       path: /logs/stream
       method: get
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
@@ -17891,59 +14044,525 @@ endpoints:
             }
           title: Go
           language: go
+    - title: Create an enrollment token
+      description: Generates a short-lived, single-use token that allows a freshly installed agent to register itself with the orchestrator without requiring a permanent credential.
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/enrollment-token
+      method: post
+      parameters:
+        - name: request
+          required: false
+          type: body
+          value_type: object
+          description: Enrollment token request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "201"
+          code_description: Created
+          title: models.CreateEnrollmentTokenResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/enrollment-token' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/enrollment-token");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/enrollment-token"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Validate an enrollment token
+      description: Public endpoint that checks whether an enrollment token is valid, unused, and not expired. Used by agents before starting the registration flow.
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/enrollment-token/{token}/validate
+      method: get
+      parameters:
+        - name: token
+          required: true
+          type: path
+          value_type: string
+          description: Enrollment token value
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.ValidateEnrollmentTokenResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/enrollment-token/{token}/validate' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/orchestrator/enrollment-token/{token}/validate");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/enrollment-token/{token}/validate"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deploy and register an agent via SSH (synchronous)
+      description: SSHes into a remote host, installs the devops agent, and registers it with this orchestrator. Blocks until the operation completes.
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/deploy
+      method: post
+      parameters:
+        - name: request
+          required: false
+          type: body
+          value_type: object
+          description: Deploy request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "201"
+          code_description: Created
+          title: models.DeployOrchestratorHostResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/deploy' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/hosts/deploy");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/deploy"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deploy and register an agent via SSH (asynchronous)
+      description: SSHes into a remote host, installs the devops agent, and registers it with this orchestrator. Returns a job ID immediately; poll /jobs/{id} for status.
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/deploy/async
+      method: post
+      parameters:
+        - name: request
+          required: false
+          type: body
+          value_type: object
+          description: Deploy request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.JobResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/deploy/async' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/hosts/deploy/async");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/deploy/async"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Creates a virtual machine in one of the orchestrator hosts asynchronously
+      description: This endpoint creates a virtual machine in one of the orchestrator hosts in the background and returns a Job ID to track progress
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/async
+      method: post
+      parameters:
+        - name: request
+          required: false
+          type: body
+          value_type: object
+          description: Create Virtual Machine Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.JobResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/async' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/machines/async");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/async"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Creates a virtual machine in a specific orchestrator host asynchronously
+      description: This endpoint creates a virtual machine in a specific orchestrator host in the background and returns a Job ID to track progress
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/hosts/{id}/machines/async
+      method: post
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Host ID
+        - name: request
+          required: false
+          type: body
+          value_type: object
+          description: Create Virtual Machine Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "202"
+          code_description: Accepted
+          title: models.JobResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/hosts/{id}/machines/async' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/hosts/{id}/machines/async");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/async"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
     - title: Gets all the packer templates
-      description: This endpoint returns all the packer templates
+      description: This endpoint returns all the packer templates. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
       requires_authorization: true
       category: Packer Templates
       category_path: packer_templates
       path: /v1/templates/packer
       method: get
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "addons": "[]string",
-                "created_at": "string",
-                "defaults": "map[string]string",
-                "description": "string",
-                "id": "string",
-                "internal": "bool",
-                "name": "string",
-                "packer_folder": "string",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "specs": "map[string]string",
-                "updated_at": "string",
-                "variables": "map[string]string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]models.PackerTemplateResponse'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -18000,7 +14619,7 @@ endpoints:
           title: Go
           language: go
     - title: Gets a packer template
-      description: This endpoint returns a packer template
+      description: This endpoint returns a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
       requires_authorization: true
       category: Packer Templates
       category_path: packer_templates
@@ -18013,51 +14632,17 @@ endpoints:
           value_type: string
           description: Packer Template ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "addons": "[]string",
-                "created_at": "string",
-                "defaults": "map[string]string",
-                "description": "string",
-                "id": "string",
-                "internal": "bool",
-                "name": "string",
-                "packer_folder": "string",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "specs": "map[string]string",
-                "updated_at": "string",
-                "variables": "map[string]string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.PackerTemplateResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -18114,7 +14699,7 @@ endpoints:
           title: Go
           language: go
     - title: Creates a packer template
-      description: This endpoint creates a packer template
+      description: This endpoint creates a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
       requires_authorization: true
       category: Packer Templates
       category_path: packer_templates
@@ -18126,74 +14711,25 @@ endpoints:
           type: body
           value_type: object
           description: Create Packer Template Request
-          body: |-
-            {
-              "addons": "[]string",
-              "created_at": "string",
-              "defaults": "map[string]string",
-              "description": "string",
-              "id": "string",
-              "internal": "bool",
-              "name": "string",
-              "packer_folder": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "specs": "map[string]string",
-              "updated_at": "string",
-              "variables": "map[string]string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "addons": "[]string",
-                "created_at": "string",
-                "defaults": "map[string]string",
-                "description": "string",
-                "id": "string",
-                "internal": "bool",
-                "name": "string",
-                "packer_folder": "string",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "specs": "map[string]string",
-                "updated_at": "string",
-                "variables": "map[string]string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.PackerTemplateResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/templates/packer ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"addons\": \"[]string\",\n  \"created_at\": \"string\",\n  \"defaults\": \"map[string]string\",\n  \"description\": \"string\",\n  \"id\": \"string\",\n  \"internal\": \"bool\",\n  \"name\": \"string\",\n  \"packer_folder\": \"string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"specs\": \"map[string]string\",\n  \"updated_at\": \"string\",\n  \"variables\": \"map[string]string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/templates/packer ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -18202,21 +14738,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/templates/packer ");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "addons": "[]string",
-              "created_at": "string",
-              "defaults": "map[string]string",
-              "description": "string",
-              "id": "string",
-              "internal": "bool",
-              "name": "string",
-              "packer_folder": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "specs": "map[string]string",
-              "updated_at": "string",
-              "variables": "map[string]string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -18236,21 +14758,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/templates/packer "
               method := "post"
-              payload := strings.NewReader(`{
-              "addons": "[]string",
-              "created_at": "string",
-              "defaults": "map[string]string",
-              "description": "string",
-              "id": "string",
-              "internal": "bool",
-              "name": "string",
-              "packer_folder": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "specs": "map[string]string",
-              "updated_at": "string",
-              "variables": "map[string]string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -18276,7 +14784,7 @@ endpoints:
           title: Go
           language: go
     - title: Updates a packer template
-      description: This endpoint updates a packer template
+      description: This endpoint updates a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
       requires_authorization: true
       category: Packer Templates
       category_path: packer_templates
@@ -18288,79 +14796,30 @@ endpoints:
           type: body
           value_type: object
           description: Update Packer Template Request
-          body: |-
-            {
-              "addons": "[]string",
-              "created_at": "string",
-              "defaults": "map[string]string",
-              "description": "string",
-              "id": "string",
-              "internal": "bool",
-              "name": "string",
-              "packer_folder": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "specs": "map[string]string",
-              "updated_at": "string",
-              "variables": "map[string]string"
-            }
+          body: '{ object }'
         - name: id
           required: true
           type: path
           value_type: string
           description: Packer Template ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "addons": "[]string",
-                "created_at": "string",
-                "defaults": "map[string]string",
-                "description": "string",
-                "id": "string",
-                "internal": "bool",
-                "name": "string",
-                "packer_folder": "string",
-                "required_claims": "[]string",
-                "required_roles": "[]string",
-                "specs": "map[string]string",
-                "updated_at": "string",
-                "variables": "map[string]string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.PackerTemplateResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/templates/packer/{id} ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"addons\": \"[]string\",\n  \"created_at\": \"string\",\n  \"defaults\": \"map[string]string\",\n  \"description\": \"string\",\n  \"id\": \"string\",\n  \"internal\": \"bool\",\n  \"name\": \"string\",\n  \"packer_folder\": \"string\",\n  \"required_claims\": \"[]string\",\n  \"required_roles\": \"[]string\",\n  \"specs\": \"map[string]string\",\n  \"updated_at\": \"string\",\n  \"variables\": \"map[string]string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/templates/packer/{id} ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -18369,21 +14828,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/templates/packer/{id} ");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "addons": "[]string",
-              "created_at": "string",
-              "defaults": "map[string]string",
-              "description": "string",
-              "id": "string",
-              "internal": "bool",
-              "name": "string",
-              "packer_folder": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "specs": "map[string]string",
-              "updated_at": "string",
-              "variables": "map[string]string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -18403,21 +14848,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/templates/packer/{id} "
               method := "PUT"
-              payload := strings.NewReader(`{
-              "addons": "[]string",
-              "created_at": "string",
-              "defaults": "map[string]string",
-              "description": "string",
-              "id": "string",
-              "internal": "bool",
-              "name": "string",
-              "packer_folder": "string",
-              "required_claims": "[]string",
-              "required_roles": "[]string",
-              "specs": "map[string]string",
-              "updated_at": "string",
-              "variables": "map[string]string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -18443,7 +14874,7 @@ endpoints:
           title: Go
           language: go
     - title: Deletes a packer template
-      description: This endpoint deletes a packer template
+      description: This endpoint deletes a packer template. **DEPRECATED:** This endpoint will be deprecated in the future, please upgrade your calls to use the catalog service, see https://parallels.github.io/prl-devops-service/docs/devops/catalog/overview/
       requires_authorization: true
       category: Packer Templates
       category_path: packer_templates
@@ -18456,29 +14887,12 @@ endpoints:
           value_type: string
           description: Packer Template ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -18542,39 +14956,17 @@ endpoints:
       path: /v1/reverse-proxy
       method: get
       response_blocks:
-        - code_block: |-
-            {
-              "enabled": "bool",
-              "host": "string",
-              "port": "string"
-            }
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
-          title: '[]models.ReverseProxy'
+          title: models.ReverseProxy
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -18638,45 +15030,17 @@ endpoints:
       path: /v1/reverse-proxy/hosts
       method: get
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "cors": "*ReverseProxyHostCors",
-                "host": "string",
-                "http_routes": "[]*ReverseProxyHostHttpRoute",
-                "id": "string",
-                "port": "string",
-                "tcp_route": "*ReverseProxyHostTcpRoute",
-                "tls": "*ReverseProxyHostTls"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]models.ReverseProxyHost'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -18746,45 +15110,17 @@ endpoints:
           value_type: string
           description: Reverse Proxy Host ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "cors": "*ReverseProxyHostCors",
-                "host": "string",
-                "http_routes": "[]*ReverseProxyHostHttpRoute",
-                "id": "string",
-                "port": "string",
-                "tcp_route": "*ReverseProxyHostTcpRoute",
-                "tls": "*ReverseProxyHostTls"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ReverseProxyHost
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -18853,61 +15189,25 @@ endpoints:
           type: body
           value_type: object
           description: Reverse Host Request
-          body: |-
-            {
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "http_routes": "[]*ReverseProxyHostHttpRoute",
-              "port": "string",
-              "tcp_route": "*ReverseProxyHostTcpRoute",
-              "tls": "*ReverseProxyHostTls"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "cors": "*ReverseProxyHostCors",
-                "host": "string",
-                "http_routes": "[]*ReverseProxyHostHttpRoute",
-                "id": "string",
-                "port": "string",
-                "tcp_route": "*ReverseProxyHostTcpRoute",
-                "tls": "*ReverseProxyHostTls"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ReverseProxyHost
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/reverse-proxy/hosts' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"cors\": \"*ReverseProxyHostCors\",\n  \"host\": \"string\",\n  \"http_routes\": \"[]*ReverseProxyHostHttpRoute\",\n  \"port\": \"string\",\n  \"tcp_route\": \"*ReverseProxyHostTcpRoute\",\n  \"tls\": \"*ReverseProxyHostTls\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/reverse-proxy/hosts' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -18916,14 +15216,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/reverse-proxy/hosts");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "http_routes": "[]*ReverseProxyHostHttpRoute",
-              "port": "string",
-              "tcp_route": "*ReverseProxyHostTcpRoute",
-              "tls": "*ReverseProxyHostTls"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -18943,14 +15236,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/reverse-proxy/hosts"
               method := "post"
-              payload := strings.NewReader(`{
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "http_routes": "[]*ReverseProxyHostHttpRoute",
-              "port": "string",
-              "tcp_route": "*ReverseProxyHostTcpRoute",
-              "tls": "*ReverseProxyHostTls"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -18988,59 +15274,25 @@ endpoints:
           type: body
           value_type: object
           description: Reverse Host Request
-          body: |-
-            {
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "port": "string",
-              "tls": "*ReverseProxyHostTls"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "cors": "*ReverseProxyHostCors",
-                "host": "string",
-                "http_routes": "[]*ReverseProxyHostHttpRoute",
-                "id": "string",
-                "port": "string",
-                "tcp_route": "*ReverseProxyHostTcpRoute",
-                "tls": "*ReverseProxyHostTls"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ReverseProxyHost
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/reverse-proxy/hosts/{id}' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"cors\": \"*ReverseProxyHostCors\",\n  \"host\": \"string\",\n  \"port\": \"string\",\n  \"tls\": \"*ReverseProxyHostTls\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/reverse-proxy/hosts/{id}' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -19049,12 +15301,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/reverse-proxy/hosts/{id}");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "port": "string",
-              "tls": "*ReverseProxyHostTls"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -19074,12 +15321,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/reverse-proxy/hosts/{id}"
               method := "put"
-              payload := strings.NewReader(`{
-              "cors": "*ReverseProxyHostCors",
-              "host": "string",
-              "port": "string",
-              "tls": "*ReverseProxyHostTls"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -19118,29 +15360,12 @@ endpoints:
           value_type: string
           description: Reverse Proxy Host ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -19209,63 +15434,25 @@ endpoints:
           type: body
           value_type: object
           description: Reverse Host Request
-          body: |-
-            {
-              "path": "string",
-              "pattern": "string",
-              "request_headers": "map[string]string",
-              "response_headers": "map[string]string",
-              "schema": "string",
-              "target_host": "string",
-              "target_port": "string",
-              "target_vm_id": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "cors": "*ReverseProxyHostCors",
-                "host": "string",
-                "http_routes": "[]*ReverseProxyHostHttpRoute",
-                "id": "string",
-                "port": "string",
-                "tcp_route": "*ReverseProxyHostTcpRoute",
-                "tls": "*ReverseProxyHostTls"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ReverseProxyHost
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/reverse-proxy/hosts/{id}/http_route' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"path\": \"string\",\n  \"pattern\": \"string\",\n  \"request_headers\": \"map[string]string\",\n  \"response_headers\": \"map[string]string\",\n  \"schema\": \"string\",\n  \"target_host\": \"string\",\n  \"target_port\": \"string\",\n  \"target_vm_id\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/reverse-proxy/hosts/{id}/http_route' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -19274,16 +15461,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/reverse-proxy/hosts/{id}/http_route");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "path": "string",
-              "pattern": "string",
-              "request_headers": "map[string]string",
-              "response_headers": "map[string]string",
-              "schema": "string",
-              "target_host": "string",
-              "target_port": "string",
-              "target_vm_id": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -19303,16 +15481,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/reverse-proxy/hosts/{id}/http_route"
               method := "post"
-              payload := strings.NewReader(`{
-              "path": "string",
-              "pattern": "string",
-              "request_headers": "map[string]string",
-              "response_headers": "map[string]string",
-              "schema": "string",
-              "target_host": "string",
-              "target_port": "string",
-              "target_vm_id": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -19356,29 +15525,12 @@ endpoints:
           value_type: string
           description: Reverse Proxy Host HTTP Route ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -19434,6 +15586,96 @@ endpoints:
             }
           title: Go
           language: go
+    - title: Updates the order of a reverse proxy host HTTP route
+      description: This endpoint reorders HTTP routes for a reverse proxy host
+      requires_authorization: true
+      category: ReverseProxy
+      category_path: reverseproxy
+      path: /v1/reverse-proxy/hosts/{id}/http_routes/order
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Reverse Proxy Host ID
+        - name: reverse_proxy_http_route_reorder_request
+          required: false
+          type: body
+          value_type: object
+          description: Reverse Proxy Host HTTP Route Reorder Request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.ReverseProxyHost
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/reverse-proxy/hosts/{id}/http_routes/order' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/reverse-proxy/hosts/{id}/http_routes/order");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/reverse-proxy/hosts/{id}/http_routes/order"
+              method := "put"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
     - title: Updates a reverse proxy host TCP route
       description: This endpoint updates a reverse proxy host TCP route
       requires_authorization: true
@@ -19447,58 +15689,25 @@ endpoints:
           type: body
           value_type: object
           description: Reverse Host Request
-          body: |-
-            {
-              "target_host": "string",
-              "target_port": "string",
-              "target_vm_id": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "cors": "*ReverseProxyHostCors",
-                "host": "string",
-                "http_routes": "[]*ReverseProxyHostHttpRoute",
-                "id": "string",
-                "port": "string",
-                "tcp_route": "*ReverseProxyHostTcpRoute",
-                "tls": "*ReverseProxyHostTls"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ReverseProxyHost
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/reverse-proxy/hosts/{id}/http_routes' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"target_host\": \"string\",\n  \"target_port\": \"string\",\n  \"target_vm_id\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/reverse-proxy/hosts/{id}/http_routes' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -19507,11 +15716,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/reverse-proxy/hosts/{id}/http_routes");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "target_host": "string",
-              "target_port": "string",
-              "target_vm_id": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -19531,11 +15736,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/reverse-proxy/hosts/{id}/http_routes"
               method := "post"
-              payload := strings.NewReader(`{
-              "target_host": "string",
-              "target_port": "string",
-              "target_vm_id": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -19568,29 +15769,12 @@ endpoints:
       path: /v1/reverse-proxy/restart
       method: put
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -19654,29 +15838,12 @@ endpoints:
       path: /v1/reverse-proxy/enable
       method: put
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -19740,29 +15907,12 @@ endpoints:
       path: /v1/reverse-proxy/disable
       method: put
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -19826,40 +15976,17 @@ endpoints:
       path: '/v1/auth/roles '
       method: get
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "id": "string",
-                "name": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]models.RoleResponse'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -19929,40 +16056,17 @@ endpoints:
           value_type: string
           description: Role ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "id": "string",
-                "name": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.RoleResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -20018,8 +16122,8 @@ endpoints:
             }
           title: Go
           language: go
-    - title: Gets a role
-      description: This endpoint returns a role
+    - title: Creates a role
+      description: This endpoint creates a role
       requires_authorization: true
       category: Roles
       category_path: roles
@@ -20031,51 +16135,25 @@ endpoints:
           type: body
           value_type: object
           description: Role Request
-          body: |-
-            {
-              "name": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "id": "string",
-                "name": "string"
-              }
-            ]
-          code: "200"
-          code_description: OK
+        - code_block: '{ object }'
+          code: "201"
+          code_description: Created
           title: models.RoleResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/auth/roles ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"name\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/auth/roles ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -20084,9 +16162,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/auth/roles ");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "name": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -20106,9 +16182,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/auth/roles "
               method := "post"
-              payload := strings.NewReader(`{
-              "name": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -20147,29 +16221,12 @@ endpoints:
           value_type: string
           description: Role ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -20225,6 +16282,794 @@ endpoints:
             }
           title: Go
           language: go
+    - title: Gets all claims for a role
+      description: This endpoint returns all claims associated with a role
+      requires_authorization: true
+      category: Roles
+      category_path: roles
+      path: '/v1/auth/roles/{id}/claims '
+      method: get
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Role ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: '[]models.ClaimResponse'
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/auth/roles/{id}/claims ' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/auth/roles/{id}/claims ");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/auth/roles/{id}/claims "
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Adds a claim to a role
+      description: This endpoint adds a claim to a role
+      requires_authorization: true
+      category: Roles
+      category_path: roles
+      path: '/v1/auth/roles/{id}/claims '
+      method: post
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Role ID
+        - name: body
+          required: false
+          type: body
+          value_type: object
+          description: Claim Name
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "201"
+          code_description: Created
+          title: models.ClaimResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/auth/roles/{id}/claims ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/auth/roles/{id}/claims ");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/auth/roles/{id}/claims "
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Removes a claim from a role
+      description: This endpoint removes a claim from a role
+      requires_authorization: true
+      category: Roles
+      category_path: roles
+      path: '/v1/auth/roles/{id}/claims/{claim_id} '
+      method: delete
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Role ID
+        - name: claim_id
+          required: true
+          type: path
+          value_type: string
+          description: Claim ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/auth/roles/{id}/claims/{claim_id} ' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/auth/roles/{id}/claims/{claim_id} ");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/auth/roles/{id}/claims/{claim_id} "
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Execute SSH Command
+      description: Executes a command on a remote host via SSH
+      requires_authorization: true
+      category: SSH
+      category_path: ssh
+      path: /v1/ssh/execute
+      method: post
+      parameters:
+        - name: sshRequest
+          required: false
+          type: body
+          value_type: object
+          description: Body
+          body: |-
+            {
+              "command": "string",
+              "enable_insecure_key": "bool",
+              "host": "string",
+              "key": "string",
+              "password": "string",
+              "port": "int",
+              "username": "string"
+            }
+      response_blocks:
+        - code_block: |-
+            {
+              "error": "string",
+              "output": "string"
+            }
+          code: "200"
+          code_description: OK
+          title: SshExecutionResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "500"
+          code_description: Internal Server Error
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/ssh/execute' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"command\": \"string\",\n  \"enable_insecure_key\": \"bool\",\n  \"host\": \"string\",\n  \"key\": \"string\",\n  \"password\": \"string\",\n  \"port\": \"int\",\n  \"username\": \"string\"\n}'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/ssh/execute");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{
+              "command": "string",
+              "enable_insecure_key": "bool",
+              "host": "string",
+              "key": "string",
+              "password": "string",
+              "port": "int",
+              "username": "string"
+            }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/ssh/execute"
+              method := "post"
+              payload := strings.NewReader(`{
+              "command": "string",
+              "enable_insecure_key": "bool",
+              "host": "string",
+              "key": "string",
+              "password": "string",
+              "port": "int",
+              "username": "string"
+            }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Gets all user configs
+      description: This endpoint returns all configuration entries for the authenticated user
+      requires_authorization: true
+      category: User Configs
+      category_path: user_configs
+      path: /v1/user/configs
+      method: get
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: '[]models.UserConfigResponse'
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/user/configs' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/user/configs");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/user/configs"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Gets a user config by id or slug
+      description: This endpoint returns a single configuration entry for the authenticated user
+      requires_authorization: true
+      category: User Configs
+      category_path: user_configs
+      path: /v1/user/configs/{id}
+      method: get
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Config ID or Slug
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.UserConfigResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/user/configs/{id}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/user/configs/{id}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/user/configs/{id}"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Creates a user config
+      description: This endpoint creates a configuration entry for the authenticated user
+      requires_authorization: true
+      category: User Configs
+      category_path: user_configs
+      path: /v1/user/configs
+      method: post
+      parameters:
+        - name: userConfig
+          required: false
+          type: body
+          value_type: object
+          description: Body
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "201"
+          code_description: Created
+          title: models.UserConfigResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/user/configs' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/user/configs");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/user/configs"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Updates a user config
+      description: This endpoint updates a configuration entry for the authenticated user
+      requires_authorization: true
+      category: User Configs
+      category_path: user_configs
+      path: /v1/user/configs/{id}
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Config ID or Slug
+        - name: userConfig
+          required: false
+          type: body
+          value_type: object
+          description: Body
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.UserConfigResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/user/configs/{id}' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/user/configs/{id}");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/user/configs/{id}"
+              method := "put"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes a user config
+      description: This endpoint deletes a configuration entry for the authenticated user
+      requires_authorization: true
+      category: User Configs
+      category_path: user_configs
+      path: /v1/user/configs/{id}
+      method: delete
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Config ID or Slug
+      response_blocks:
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorDiagnosticsResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/user/configs/{id}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/user/configs/{id}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/user/configs/{id}"
+              method := "delete"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
     - title: Gets all the users
       description: This endpoint returns all the users
       requires_authorization: true
@@ -20233,45 +17078,17 @@ endpoints:
       path: '/v1/auth/users '
       method: get
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "claims": "[]string",
-                "email": "string",
-                "id": "string",
-                "isSuperUser": "bool",
-                "name": "string",
-                "roles": "[]string",
-                "username": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: '[]models.ApiUser'
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -20341,45 +17158,17 @@ endpoints:
           value_type: string
           description: User ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "claims": "[]string",
-                "email": "string",
-                "id": "string",
-                "isSuperUser": "bool",
-                "name": "string",
-                "roles": "[]string",
-                "username": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ApiUser
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -20448,91 +17237,25 @@ endpoints:
           type: body
           value_type: object
           description: User
-          body: |-
-            {
-              "claims": "[]string",
-              "email": "string",
-              "is_super_user": "bool",
-              "name": "string",
-              "password": "string",
-              "roles": "[]string",
-              "username": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "claims": "[]string",
-                "email": "string",
-                "id": "string",
-                "isSuperUser": "bool",
-                "name": "string",
-                "roles": "[]string",
-                "username": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "201"
           code_description: Created
           title: models.ApiUser
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "diagnostics": {
-                "end_time": "*time.Time",
-                "errors": [
-                  {
-                    "code": "string",
-                    "component": "string",
-                    "message": "string",
-                    "metadata": "map[string]unknown",
-                    "timestamp": "time.Time"
-                  }
-                ],
-                "metadata": "map[string]unknown",
-                "mu": "sync.RWMutex",
-                "operation": "string",
-                "path": [
-                  {
-                    "component": "string",
-                    "duration": "int64",
-                    "file_name": "string",
-                    "function_name": "string",
-                    "line_number": "int",
-                    "metadata": "map[string]unknown",
-                    "operation": "string",
-                    "timestamp": "time.Time"
-                  }
-                ],
-                "start_time": "time.Time",
-                "warnings": [
-                  {
-                    "code": "string",
-                    "component": "string",
-                    "message": "string",
-                    "metadata": "map[string]unknown",
-                    "timestamp": "time.Time"
-                  }
-                ]
-              },
-              "message": "string"
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
           title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/auth/users ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"claims\": \"[]string\",\n  \"email\": \"string\",\n  \"is_super_user\": \"bool\",\n  \"name\": \"string\",\n  \"password\": \"string\",\n  \"roles\": \"[]string\",\n  \"username\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/auth/users ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -20541,15 +17264,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/auth/users ");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "claims": "[]string",
-              "email": "string",
-              "is_super_user": "bool",
-              "name": "string",
-              "password": "string",
-              "roles": "[]string",
-              "username": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -20569,15 +17284,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/auth/users "
               method := "post"
-              payload := strings.NewReader(`{
-              "claims": "[]string",
-              "email": "string",
-              "is_super_user": "bool",
-              "name": "string",
-              "password": "string",
-              "roles": "[]string",
-              "username": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -20616,29 +17323,12 @@ endpoints:
           value_type: string
           description: User ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -20707,62 +17397,25 @@ endpoints:
           type: body
           value_type: object
           description: User
-          body: |-
-            {
-              "claims": "[]string",
-              "email": "string",
-              "is_super_user": "bool",
-              "name": "string",
-              "password": "string",
-              "roles": "[]string",
-              "username": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "claims": "[]string",
-                "email": "string",
-                "id": "string",
-                "isSuperUser": "bool",
-                "name": "string",
-                "roles": "[]string",
-                "username": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "202"
           code_description: Accepted
           title: models.ApiUser
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/auth/users/{id} ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"claims\": \"[]string\",\n  \"email\": \"string\",\n  \"is_super_user\": \"bool\",\n  \"name\": \"string\",\n  \"password\": \"string\",\n  \"roles\": \"[]string\",\n  \"username\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/auth/users/{id} ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -20771,15 +17424,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/auth/users/{id} ");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "claims": "[]string",
-              "email": "string",
-              "is_super_user": "bool",
-              "name": "string",
-              "password": "string",
-              "roles": "[]string",
-              "username": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -20799,15 +17444,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/auth/users/{id} "
               method := "put"
-              payload := strings.NewReader(`{
-              "claims": "[]string",
-              "email": "string",
-              "is_super_user": "bool",
-              "name": "string",
-              "password": "string",
-              "roles": "[]string",
-              "username": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -20846,40 +17483,17 @@ endpoints:
           value_type: string
           description: User ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "id": "string",
-                "name": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.RoleResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -20953,48 +17567,25 @@ endpoints:
           type: body
           value_type: object
           description: Role Name
-          body: |-
-            {
-              "name": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "name": "string"
-            }
+        - code_block: '{ object }'
           code: "201"
           code_description: Created
           title: models.RoleRequest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/auth/users/{id}/roles ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"name\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/auth/users/{id}/roles ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -21003,9 +17594,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/auth/users/{id}/roles ");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "name": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -21025,9 +17614,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/auth/users/{id}/roles "
               method := "post"
-              payload := strings.NewReader(`{
-              "name": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -21071,29 +17658,12 @@ endpoints:
           value_type: string
           description: Role ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -21163,40 +17733,17 @@ endpoints:
           value_type: string
           description: User ID
       response_blocks:
-        - code_block: |-
-            [
-              {
-                "id": "string",
-                "name": "string"
-              }
-            ]
+        - code_block: '{ object }'
           code: "200"
           code_description: OK
           title: models.ClaimResponse
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -21270,48 +17817,25 @@ endpoints:
           type: body
           value_type: object
           description: Claim Name
-          body: |-
-            {
-              "name": "string"
-            }
+          body: '{ object }'
       response_blocks:
-        - code_block: |-
-            {
-              "name": "string"
-            }
+        - code_block: '{ object }'
           code: "201"
           code_description: Created
           title: models.ClaimRequest
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/auth/users/{id}/claims ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"name\": \"string\"\n}'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/auth/users/{id}/claims ' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
           title: cURL
           language: powershell
         - code_block: |
@@ -21320,9 +17844,7 @@ endpoints:
             var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/auth/users/{id}/claims ");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{
-              "name": "string"
-            }");
+            request.Content = new StringContent("{ object }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -21342,9 +17864,7 @@ endpoints:
             func main() {
               url := "http://localhost/api/v1/auth/users/{id}/claims "
               method := "post"
-              payload := strings.NewReader(`{
-              "name": "string"
-            }`)
+              payload := strings.NewReader(`{ object }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -21388,29 +17908,12 @@ endpoints:
           value_type: string
           description: Claim ID
       response_blocks:
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorResponse
+          title: models.ApiErrorDiagnosticsResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
@@ -21484,29 +17987,12 @@ endpoints:
           code_description: OK
           title: map[string]string
           language: json
-        - code_block: |-
-            {
-              "code": "int",
-              "message": "string",
-              "stack": [
-                {
-                  "code": "int",
-                  "description": "string",
-                  "error": "string",
-                  "path": "string"
-                }
-              ]
-            }
+        - code_block: '{ object }'
           code: "402"
           code_description: Payment Required
           title: models.ApiErrorResponse
           language: json
-        - code_block: |-
-            {
-              "error": "OAuthErrorType",
-              "error_description": "string",
-              "error_uri": "string"
-            }
+        - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
           title: models.OAuthErrorResponse
