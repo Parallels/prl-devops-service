@@ -222,6 +222,7 @@ func (j *JsonDatabase) DetectStaleJobs(ctx basecontext.ApiContext) {
 		if job.State == constants.JobStateRunning || job.State == constants.JobStatePending {
 			updatedAt, err := time.Parse(time.RFC3339Nano, job.UpdatedAt)
 			if err == nil && time.Since(updatedAt) > timeout {
+				ctx.LogWarnf("[Database] Marking stale job as failed: jobID=%s state=%s progress=%v updatedAt=%s inactiveFor=%v timeout=%v reason=%q", job.ID, job.State, job.Progress, job.UpdatedAt, time.Since(updatedAt), timeout, constants.GhostJobCanceledReason)
 				j.data.Jobs[i].State = constants.JobStateFailed
 				j.data.Jobs[i].Error = constants.GhostJobCanceledReason
 				j.data.Jobs[i].UpdatedAt = now

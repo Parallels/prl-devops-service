@@ -331,6 +331,9 @@ func (jms *JobManagerService) MarkJobCompleteWithRecord(jobID string, result str
 }
 
 func (jms *JobManagerService) MarkJobError(jobId string, jobErr error) error {
+	// Log before the database lookup so the original failure remains visible
+	// even if recording the job error fails or its event is not delivered.
+	jms.apiCtx.LogErrorf("[Jobs] Job failed: jobID=%s error=%v", jobId, jobErr)
 	job, err := jms.db.GetJob(jms.apiCtx, jobId)
 	if err != nil {
 		return err
@@ -378,7 +381,7 @@ func (jms *JobManagerService) emitEvent(message string, job *data_models.Job) {
 		jms.apiCtx.LogDebugf("[Orchestrator] [Jobs] emitEvent: emitter not running, message=%s jobID=%s", message, job.ID)
 		return
 	}
-	jms.apiCtx.LogDebugf("[Orchestrator] [Jobs] emitEvent: message=%s jobID=%s jobState=%s progress=%d", message, job.ID, job.State, job.Progress)
+	jms.apiCtx.LogDebugf("[Orchestrator] [Jobs] emitEvent: message=%s jobID=%s jobState=%s progress=%v", message, job.ID, job.State, job.Progress)
 	// Always broadcast the mapped API model so the UI always receives
 	// the full schema including Steps (never the raw DB struct).
 	// NOTE: Broadcast is synchronous (not in a goroutine) to preserve event
