@@ -1,6 +1,7 @@
 package data
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -108,6 +109,7 @@ func (j *JsonDatabase) UpdateJob(ctx basecontext.ApiContext, key models.Job) err
 	for i, job := range j.data.Jobs {
 		if job.ID == key.ID {
 			j.data.Jobs[i].State = key.State
+			j.data.Jobs[i].Message = key.Message
 			j.data.Jobs[i].Progress = key.Progress
 			j.data.Jobs[i].Result = key.Result
 			j.data.Jobs[i].ResultRecordId = key.ResultRecordId
@@ -201,11 +203,16 @@ func (j *JsonDatabase) RecoverOngoingJobs(ctx basecontext.ApiContext) {
 	}
 }
 
-// DetectStaleJobs scans all running/pending jobs and marks as failed those that
-// haven't been updated within the configured timeout window.
-// Uses direct mutation (same pattern as RecoverOngoingJobs) because UpdateJob
-// silently wipes Progress, Result, Steps, and IsOrchestratorJob when passed
-// a partial struct with zero values.
+// SetJobTimeoutHandler registers a notification invoked after timed-out jobs
+// are updated, outside the database lock.
+func (j *JsonDatabase) SetJobTimeoutHandler(handler func(models.Job)) {
+	j.dataMutex.Lock()
+	defer j.dataMutex.Unlock()
+	j.onJobTimeout = handler
+}
+
+// DetectStaleJobs marks pending/running jobs as failed after the configured
+// inactivity timeout, preserving their progress, steps, and result metadata.
 func (j *JsonDatabase) DetectStaleJobs(ctx basecontext.ApiContext) {
 	if !j.IsConnected() {
 		return
@@ -216,24 +223,32 @@ func (j *JsonDatabase) DetectStaleJobs(ctx basecontext.ApiContext) {
 	timeout := time.Duration(timeoutMinutes) * time.Minute
 
 	j.dataMutex.Lock()
-	updated := false
+	var timedOutJobs []models.Job
+	handler := j.onJobTimeout
 	now := helpers.GetUtcCurrentDateTime()
 	for i, job := range j.data.Jobs {
 		if job.State == constants.JobStateRunning || job.State == constants.JobStatePending {
 			updatedAt, err := time.Parse(time.RFC3339Nano, job.UpdatedAt)
 			if err == nil && time.Since(updatedAt) > timeout {
-				ctx.LogWarnf("[Database] Marking stale job as failed: jobID=%s state=%s progress=%v updatedAt=%s inactiveFor=%v timeout=%v reason=%q", job.ID, job.State, job.Progress, job.UpdatedAt, time.Since(updatedAt), timeout, constants.GhostJobCanceledReason)
+				reason := fmt.Sprintf("Job timed out after %d minutes without a progress update. Last update: %s. The operation may still be running on the host; check its status before retrying.", timeoutMinutes, job.UpdatedAt)
+				ctx.LogWarnf("[Database] Marking stale job as failed: jobID=%s state=%s progress=%v inactiveFor=%v timeout=%v reason=%q", job.ID, job.State, job.Progress, time.Since(updatedAt), timeout, reason)
 				j.data.Jobs[i].State = constants.JobStateFailed
-				j.data.Jobs[i].Error = constants.GhostJobCanceledReason
+				j.data.Jobs[i].Error = reason
+				j.data.Jobs[i].Message = reason
 				j.data.Jobs[i].UpdatedAt = now
-				updated = true
+				timedOutJobs = append(timedOutJobs, j.data.Jobs[i])
 			}
 		}
 	}
 	j.dataMutex.Unlock()
 
-	if updated {
-		ctx.LogInfof("[Database] Detected and canceled stale jobs (timeout: %v)", timeout)
+	if len(timedOutJobs) > 0 {
+		ctx.LogInfof("[Database] Marked %d stale jobs as failed (timeout: %v)", len(timedOutJobs), timeout)
 		_ = j.SaveNow(ctx)
+		if handler != nil {
+			for _, job := range timedOutJobs {
+				handler(job)
+			}
+		}
 	}
 }

@@ -34,6 +34,7 @@ func Get(ctx basecontext.ApiContext) *JobManagerService {
 			apiCtx: ctx,
 			db:     db,
 		}
+		globalJobManagerService.registerTimeoutHandler()
 	} else {
 		globalJobManagerService.apiCtx = ctx
 	}
@@ -53,8 +54,15 @@ func New(ctx basecontext.ApiContext) *JobManagerService {
 		apiCtx: ctx,
 		db:     db,
 	}
+	globalJobManagerService.registerTimeoutHandler()
 
 	return globalJobManagerService
+}
+
+func (jms *JobManagerService) registerTimeoutHandler() {
+	jms.db.SetJobTimeoutHandler(func(job data_models.Job) {
+		jms.emitEvent("JOB_UPDATED", &job)
+	})
 }
 
 func (jms *JobManagerService) Start() error {
@@ -342,6 +350,7 @@ func (jms *JobManagerService) MarkJobError(jobId string, jobErr error) error {
 	job.State = constants.JobStateFailed
 	if jobErr != nil {
 		job.Error = jobErr.Error()
+		job.Message = job.Error
 	}
 
 	err = jms.db.UpdateJob(jms.apiCtx, *job)

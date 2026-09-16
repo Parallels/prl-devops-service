@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -88,6 +89,19 @@ func (c *HostWebSocketClient) Connect(events []constants.EventType) {
 	}
 }
 
+// Use the same certificate-validation policy as the host HTTP client, without
+// mutating the shared default dialer or its TLS configuration.
+func newHostWebSocketDialer() *websocket.Dialer {
+	dialer := *websocket.DefaultDialer
+	if dialer.TLSClientConfig == nil {
+		dialer.TLSClientConfig = &tls.Config{}
+	} else {
+		dialer.TLSClientConfig = dialer.TLSClientConfig.Clone()
+	}
+	dialer.TLSClientConfig.InsecureSkipVerify = config.Get().DisableTlsValidation()
+	return &dialer
+}
+
 func (c *HostWebSocketClient) establishConnection(events []constants.EventType) error {
 	path := "/api/v1/ws/subscribe"
 	c.ctx.LogInfof("[HostWebSocketClient] Establishing connection to host %s", c.hostName)
@@ -137,7 +151,7 @@ func (c *HostWebSocketClient) establishConnection(events []constants.EventType) 
 	}
 
 	c.ctx.LogInfof("[HostWebSocketClient] Connecting to %s", u.String())
-	conn, resp, err := websocket.DefaultDialer.Dial(u.String(), header)
+	conn, resp, err := newHostWebSocketDialer().Dial(u.String(), header)
 	if err != nil {
 		if resp != nil {
 			body := readHandshakeBody(resp)
@@ -396,7 +410,7 @@ func (c *HostWebSocketClient) Probe() bool {
 		return false
 	}
 
-	dialer := *websocket.DefaultDialer
+	dialer := newHostWebSocketDialer()
 	dialer.HandshakeTimeout = 2 * time.Second
 
 	conn, resp, err := dialer.Dial(u.String(), header)

@@ -14,6 +14,7 @@ type ApiKeyValidationResult struct {
 	ApiKeyId   string
 	ApiKeyName string
 	UserID     string
+	Type       string
 }
 
 type ApiKeyValidationError struct {
@@ -93,5 +94,6 @@ func ValidateApiKey(ctx basecontext.ApiContext, dbService interface {
 		ApiKeyId:   dbApiKey.ID,
 		ApiKeyName: dbApiKey.Name,
 		UserID:     dbApiKey.UserID,
+		Type:       dbApiKey.Type,
 	}, nil
 }
