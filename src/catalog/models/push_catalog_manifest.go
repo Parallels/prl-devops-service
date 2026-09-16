@@ -1,6 +1,9 @@
 package models
 
 import (
+	"net/http"
+	"strconv"
+
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 )
@@ -49,25 +52,25 @@ type MinimumSpecRequirement struct {
 	Disk   int `json:"disk"`
 }
 
-func (r *PushCatalogManifestRequest) Validate() error {
+func (r *PushCatalogManifestRequest) Validate(diag *errors.Diagnostics) {
 	if r.LocalPath == "" {
-		return ErrPushMissingLocalPath
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), ErrPushMissingLocalPath.Error(), "Validate")
 	}
 
 	if r.CatalogId == "" {
-		return ErrPushMissingCatalogId
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), ErrPushMissingCatalogId.Error(), "Validate")
 	}
 
 	if r.Connection == "" {
-		return ErrMissingConnection
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), ErrMissingConnection.Error(), "Validate")
 	}
 
 	if r.Version == "" {
-		return ErrPushMissingVersion
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), ErrPushMissingVersion.Error(), "Validate")
 	}
 
 	if r.Architecture == "" {
-		return ErrInvalidArchitecture
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), ErrMissingArchitecture.Error(), "Validate")
 	}
 
 	// Normalize architecture aliases
@@ -80,7 +83,7 @@ func (r *PushCatalogManifestRequest) Validate() error {
 
 	// Validate architecture
 	if r.Architecture != "x86_64" && r.Architecture != "arm64" {
-		return ErrInvalidArchitecture
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), ErrInvalidArchitecture.Error(), "Validate")
 	}
 
 	// Set compress pack level if compress is true and compress level is not set
@@ -112,8 +115,8 @@ func (r *PushCatalogManifestRequest) Validate() error {
 	}
 
 	if helpers.ContainsIllegalChars(r.Version) {
-		return ErrPushVersionInvalidChars
+		diag.AddError(strconv.Itoa(http.StatusBadRequest), ErrPushVersionInvalidChars.Error(), "Validate")
 	}
 
-	return nil
+	return
 }
