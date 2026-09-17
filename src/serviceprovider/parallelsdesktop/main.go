@@ -84,6 +84,8 @@ type ParallelsService struct {
 	fastStateUpdates map[string]time.Time
 	macVMsRunning    []string
 	macVMsRunningMu  sync.RWMutex
+	macAdmissionMu   sync.Mutex
+	macReservations  map[string]string // operation ID -> VM ID (empty before registration)
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
@@ -935,7 +937,7 @@ func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
 	s.Lock()
 	if err != nil {
 		ctx.LogErrorf("Error refreshing Parallels VMs cache: %v", err)
-		s.cachedLocalVms = []models.ParallelsVM{} // Clear cache on error for consistency
+		ctx.LogWarnf("[MacVMCapacity] Inventory refresh failed; retaining %d cached VMs", len(s.cachedLocalVms))
 	} else {
 		s.cachedLocalVms = vms
 		go s.syncMacVmRunningStatus(ctx)
@@ -1162,6 +1164,7 @@ func (s *ParallelsService) getVmsInMachineForCurrentUser(ctx basecontext.ApiCont
 	for _, user := range users {
 		userMachines, err := s.getUserVm(ctx, user.Username, "")
 		if err != nil {
+			ctx.LogErrorf("[MacVMCapacity] VM enumeration failed for user=%s; inventory is incomplete: %v", user.Username, err)
 			return nil, err
 		}
 
@@ -1278,6 +1281,13 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 		}
 	default:
 		return errors.New("Invalid desired state")
+	}
+	if models.IsMacVM(*vm) && (desiredState == ParallelsVirtualMachineDesiredStateStart || desiredState == ParallelsVirtualMachineDesiredStateResume) {
+		release, admissionErr := s.reserveMacVMStart(ctx, id)
+		if admissionErr != nil {
+			return admissionErr
+		}
+		defer release()
 	}
 	cmd := helpers.Command{
 		Command: s.executable,
@@ -2832,8 +2842,9 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 		Total:          &models.SystemUsageItem{},
 	}
 
-	vms, err := s.GetCachedVms(ctx, "")
+	vms, err := s.getVmsInMachineForCurrentUser(ctx)
 	if err != nil {
+		ctx.LogErrorf("[MacVMCapacity] Hardware inventory failed; refusing to publish an empty capacity snapshot: %v", err)
 		return nil, err
 	}
 
@@ -2874,7 +2885,16 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 			}
 		}
 	}
-	result.TotalInUse.MacVMsRunning = s.getMacVMsRunning()
+	// Derive the IDs from the same inventory snapshot as CPU and memory.
+	result.TotalInUse.MacVMsRunning = models.ActiveMacVMIDs(vms)
+	result.PendingMacVMs = s.pendingMacVMs(result.TotalInUse.MacVMsRunning)
+	currentUser, userErr := system.Get().GetCurrentUser(ctx)
+	complete := userErr == nil && currentUser == "root"
+	result.MacVMInventoryComplete = &complete
+	if !complete {
+		ctx.LogWarnf("[MacVMCapacity] Hardware inventory is limited to service user=%s; macVM placement will be rejected", currentUser)
+	}
+	ctx.LogDebugf("[MacVMCapacity] Hardware snapshot: active=%d pending=%d ids=%v inventory_complete=%v", len(result.TotalInUse.MacVMsRunning), result.PendingMacVMs, result.TotalInUse.MacVMsRunning, complete)
 
 	cfg := config.Get()
 	systemSrv := system.Get()
@@ -3009,12 +3029,7 @@ func (s *ParallelsService) resetMacVMsRunning(ids []string) ([]string, bool) {
 
 func (s *ParallelsService) syncMacVmRunningStatus(ctx basecontext.ApiContext) {
 	s.RLock()
-	running := make([]string, 0)
-	for _, vm := range s.cachedLocalVms {
-		if (vm.OS == "macosx" || strings.Contains(strings.ToLower(vm.Name), "mac")) && vm.State == "running" {
-			running = append(running, vm.ID)
-		}
-	}
+	running := models.ActiveMacVMIDs(s.cachedLocalVms)
 	s.RUnlock()
 
 	snapshot, changed := s.resetMacVMsRunning(running)

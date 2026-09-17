@@ -355,7 +355,6 @@ func (s *OrchestratorService) fullRefreshHost(host models.OrchestratorHost, load
 	}
 
 	host.VirtualMachines = make([]models.VirtualMachine, 0, len(vms))
-	totalAppleVms := 0
 	for _, vm := range vms {
 		dtoVm := mappers.MapDtoVirtualMachineFromApi(vm)
 		dtoVm.HostId = host.ID
@@ -363,11 +362,14 @@ func (s *OrchestratorService) fullRefreshHost(host models.OrchestratorHost, load
 		dtoVm.Host = host.GetHost()
 		dtoVm.HostUrl = host.GetHostUrl()
 		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
-		if vm.Type == "APPLE_VZ_VM" && vm.State == "running" {
-			totalAppleVms++
-		}
 	}
-	host.Resources.TotalAppleVms = int64(totalAppleVms)
+	inventoryIDs := apimodels.ActiveMacVMIDs(vms)
+	if int64(len(inventoryIDs)) > host.Resources.TotalAppleVms {
+		s.ctx.LogWarnf("[MacVMCapacity] Full refresh disagreement: hostID=%s hardware=%d inventory=%d; keeping higher count", host.ID, host.Resources.TotalAppleVms, len(inventoryIDs))
+		host.Resources.TotalAppleVms = int64(len(inventoryIDs))
+		host.Resources.TotalInUse.TotalAppleVms = host.Resources.TotalAppleVms
+		host.Resources.TotalInUse.MacVmsRunning = inventoryIDs
+	}
 
 	if loadReverseProxy {
 		host.ReverseProxyHosts = make([]*models.ReverseProxyHost, 0)
@@ -487,6 +489,11 @@ func (s *OrchestratorService) updateHostWithHardwareInfo(host *models.Orchestrat
 	host.OsName = hardwareInfo.OsName
 	host.OsVersion = hardwareInfo.OsVersion
 	host.ExternalIpAddress = hardwareInfo.ExternalIpAddress
+	previousMacVMs := int64(0)
+	if host.Resources != nil {
+		previousMacVMs = host.Resources.TotalAppleVms
+	}
+	s.ctx.LogInfof("[MacVMCapacity] Host resource update: hostID=%s previous=%d active=%d pending=%d ids=%v", host.ID, previousMacVMs, dtoResources.TotalAppleVms, dtoResources.TotalReserved.TotalAppleVms, dtoResources.TotalInUse.MacVmsRunning)
 	host.Resources = &dtoResources
 	host.Architecture = hardwareInfo.CpuType
 	host.CpuModel = hardwareInfo.CpuBrand

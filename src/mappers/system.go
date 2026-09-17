@@ -15,11 +15,18 @@ func MapHostResourcesFromSystemUsageResponse(m models.SystemUsageResponse) data_
 		TotalInUse:     MapHostResourceItemFromSystemUsageItem(m.TotalInUse),
 		TotalReserved:  MapHostResourceItemFromSystemUsageItem(m.TotalReserved),
 	}
+	result.TotalAppleVms = int64(len(result.TotalInUse.MacVmsRunning))
+	result.TotalInUse.TotalAppleVms = result.TotalAppleVms
+	result.TotalReserved.TotalAppleVms = m.PendingMacVMs
+	result.MacVMInventoryComplete = m.MacVMInventoryComplete
 
 	return result
 }
 
 func MapHostResourceItemFromSystemUsageItem(m *models.SystemUsageItem) data_models.HostResourceItem {
+	if m == nil {
+		return data_models.HostResourceItem{}
+	}
 	result := data_models.HostResourceItem{
 		PhysicalCpuCount: m.PhysicalCpuCount,
 		LogicalCpuCount:  m.LogicalCpuCount,
@@ -51,13 +58,15 @@ func MapHostReverseProxyFromSystemReverseProxy(m *models.SystemReverseProxy) dat
 
 func MapSystemUsageResponseFromHostResources(m data_models.HostResources) *models.SystemUsageResponse {
 	result := models.SystemUsageResponse{
-		CpuType:        m.CpuType,
-		CpuBrand:       m.CpuBrand,
-		SystemReserved: MapSystemUsageItemFromHostResourceItem(&m.SystemReserved),
-		Total:          MapSystemUsageItemFromHostResourceItem(&m.Total),
-		TotalAvailable: MapSystemUsageItemFromHostResourceItem(&m.TotalAvailable),
-		TotalInUse:     MapSystemUsageItemFromHostResourceItem(&m.TotalInUse),
-		TotalReserved:  MapSystemUsageItemFromHostResourceItem(&m.TotalReserved),
+		PendingMacVMs:          m.TotalReserved.TotalAppleVms,
+		MacVMInventoryComplete: m.MacVMInventoryComplete,
+		CpuType:                m.CpuType,
+		CpuBrand:               m.CpuBrand,
+		SystemReserved:         MapSystemUsageItemFromHostResourceItem(&m.SystemReserved),
+		Total:                  MapSystemUsageItemFromHostResourceItem(&m.Total),
+		TotalAvailable:         MapSystemUsageItemFromHostResourceItem(&m.TotalAvailable),
+		TotalInUse:             MapSystemUsageItemFromHostResourceItem(&m.TotalInUse),
+		TotalReserved:          MapSystemUsageItemFromHostResourceItem(&m.TotalReserved),
 	}
 
 	return &result
@@ -65,6 +74,7 @@ func MapSystemUsageResponseFromHostResources(m data_models.HostResources) *model
 
 func MapSystemUsageItemFromHostResourceItem(m *data_models.HostResourceItem) *models.SystemUsageItem {
 	result := models.SystemUsageItem{
+		MacVMsRunning:    m.MacVmsRunning,
 		PhysicalCpuCount: m.PhysicalCpuCount,
 		LogicalCpuCount:  m.LogicalCpuCount,
 		MemorySize:       m.MemorySize,

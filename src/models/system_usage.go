@@ -1,6 +1,8 @@
 package models
 
 type SystemUsageResponse struct {
+	PendingMacVMs            int64               `json:"pending_mac_vms"`
+	MacVMInventoryComplete   *bool               `json:"mac_vm_inventory_complete,omitempty"`
 	CpuType                  string              `json:"cpu_type,omitempty"`
 	CpuBrand                 string              `json:"cpu_brand,omitempty"`
 	DevOpsVersion            string              `json:"devops_version,omitempty"`
