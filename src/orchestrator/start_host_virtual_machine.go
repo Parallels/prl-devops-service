@@ -89,7 +89,7 @@ func (s *OrchestratorService) CallStartHostVirtualMachine(host *data_models.Orch
 	}
 
 	var response models.VirtualMachineOperationResponse
-	_, err = httpClient.Get(url.String(), &response)
+	_, err = httpClient.Put(url.String(), nil, &response)
 	if err != nil {
 		return nil, err
 	}
