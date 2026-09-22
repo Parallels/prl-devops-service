@@ -1,6 +1,6 @@
 ---
 layout: api
-title: Events
+title: CatalogManagers
 default_host: http://localhost
 api_prefix: /api
 is_category_document: true
@@ -1084,179 +1084,37 @@ categories:
           description: This endpoint removes a claim from a user
           title: Removes a claim from a user
 endpoints:
-    - title: Subscribe to event notifications via WebSocket
-      description: This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or query parameters (access_token or authorization).
+    - title: Gets all the catalog managers
+      description: This endpoint returns all the catalog managers
       requires_authorization: true
-      category: Events
-      category_path: events
-      path: /v1/ws/subscribe
-      method: get
-      parameters:
-        - name: event_types
-          required: false
-          type: query
-      response_blocks:
-        - code_block: '{ object }'
-          code: "400"
-          code_description: Bad Request
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-        - code_block: '{ object }'
-          code: "401"
-          code_description: Unauthorized
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-        - code_block: '{ object }'
-          code: "409"
-          code_description: Conflict
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-        - code_block: '{ object }'
-          code: "503"
-          code_description: Service Unavailable
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-      example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/subscribe' \n--header 'Authorization ••••••'\n"
-          title: cURL
-          language: powershell
-        - code_block: |
-            var client = new HttpClient();
-
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/subscribe");
-            request.Headers.Add("Authorization", "••••••");
-            var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var responseString = await response.Content.ReadAsStringAsync();
-          title: C#
-          language: csharp
-        - code_block: |
-            package main
-
-            import (
-              "fmt"
-              "net/http"
-              "strings"
-              "io"
-            )
-
-            func main() {
-              url := "http://localhost/api/v1/ws/subscribe"
-              method := "get"
-              client := &http.Client{}
-              req, err := http.NewRequest(method, url, payload)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              req.Header.Add("Content-Type", "application/json")
-
-              req.Header.Add("Authorization", "••••••")
-              res, err := client.Do(req)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              defer res.Body.Close()
-              body, err := io.ReadAll(res.Body)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              fmt.Println(string(body))
-            }
-          title: Go
-          language: go
-    - title: List connected WebSocket clients
-      description: Returns all currently connected WebSocket clients with queue depth and ping/pong timestamps. Useful for diagnosing stale or dead clients whose queues are filling up.
-      requires_authorization: true
-      category: Events
-      category_path: events
-      path: /v1/ws/clients
-      method: get
-      response_blocks:
-        - code_block: '{ object }'
-          code: "503"
-          code_description: Service Unavailable
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-      example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/clients' \n--header 'Authorization ••••••'\n"
-          title: cURL
-          language: powershell
-        - code_block: |
-            var client = new HttpClient();
-
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/clients");
-            request.Headers.Add("Authorization", "••••••");
-            var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var responseString = await response.Content.ReadAsStringAsync();
-          title: C#
-          language: csharp
-        - code_block: |
-            package main
-
-            import (
-              "fmt"
-              "net/http"
-              "strings"
-              "io"
-            )
-
-            func main() {
-              url := "http://localhost/api/v1/ws/clients"
-              method := "get"
-              client := &http.Client{}
-              req, err := http.NewRequest(method, url, payload)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              req.Header.Add("Content-Type", "application/json")
-
-              req.Header.Add("Authorization", "••••••")
-              res, err := client.Do(req)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              defer res.Body.Close()
-              body, err := io.ReadAll(res.Body)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              fmt.Println(string(body))
-            }
-          title: Go
-          language: go
-    - title: Get WebSocket event emitter statistics
-      description: Returns aggregate statistics including total connected clients, subscription counts per event type, uptime, and per-client details with queue depths.
-      requires_authorization: true
-      category: Events
-      category_path: events
-      path: /v1/ws/stats
+      category: CatalogManagers
+      category_path: catalogmanagers
+      path: /v1/catalog-managers
       method: get
       response_blocks:
         - code_block: '{ object }'
           code: "200"
           code_description: OK
-          title: models.EventEmitterStats
+          title: '[]models.CatalogManager'
           language: json
         - code_block: '{ object }'
-          code: "503"
-          code_description: Service Unavailable
-          title: models.ApiErrorDiagnosticsResponse
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/stats' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog-managers' \n--header 'Authorization ••••••'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/stats");
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/catalog-managers");
             request.Headers.Add("Authorization", "••••••");
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -1274,7 +1132,7 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/ws/stats"
+              url := "http://localhost/api/v1/catalog-managers"
               method := "get"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
@@ -1300,43 +1158,44 @@ endpoints:
             }
           title: Go
           language: go
-    - title: Unsubscribe from specific event types
-      description: Unsubscribe an active WebSocket client from specific event types without disconnecting. The client must belong to the authenticated user.
+    - title: Gets a specific catalog manager
+      description: This endpoint returns a catalog manager
       requires_authorization: true
-      category: Events
-      category_path: events
-      path: /v1/ws/unsubscribe
-      method: post
+      category: CatalogManagers
+      category_path: catalogmanagers
+      path: /v1/catalog-managers/{id}
+      method: get
       parameters:
-        - name: body
-          required: false
-          type: body
-          value_type: object
-          description: Unsubscribe request with client ID and event types
-          body: '{ object }'
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Manager ID
       response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.CatalogManager
+          language: json
         - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
-          title: models.ApiErrorDiagnosticsResponse
+          title: models.ApiErrorResponse
           language: json
         - code_block: '{ object }'
-          code: "503"
-          code_description: Service Unavailable
-          title: models.ApiErrorDiagnosticsResponse
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/unsubscribe' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/catalog-managers/{id}' \n--header 'Authorization ••••••'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/ws/unsubscribe");
+            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/catalog-managers/{id}");
             request.Headers.Add("Authorization", "••••••");
-            request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{ object }");
-            request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
             var responseString = await response.Content.ReadAsStringAsync();
@@ -1353,9 +1212,242 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/ws/unsubscribe"
+              url := "http://localhost/api/v1/catalog-managers/{id}"
+              method := "get"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Creates a catalog manager
+      description: This endpoint creates a catalog manager
+      requires_authorization: true
+      category: CatalogManagers
+      category_path: catalogmanagers
+      path: /v1/catalog-managers
+      method: post
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.CatalogManager
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/catalog-managers' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/catalog-managers");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/catalog-managers"
               method := "post"
-              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Updates a catalog manager
+      description: This endpoint updates a catalog manager
+      requires_authorization: true
+      category: CatalogManagers
+      category_path: catalogmanagers
+      path: /v1/catalog-managers/{id}
+      method: put
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Manager ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.CatalogManager
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/catalog-managers/{id}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Put, "http://localhost/api/v1/catalog-managers/{id}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/catalog-managers/{id}"
+              method := "put"
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Deletes a catalog manager
+      description: This endpoint deletes a catalog manager
+      requires_authorization: true
+      category: CatalogManagers
+      category_path: catalogmanagers
+      path: /v1/catalog-managers/{id}
+      method: delete
+      parameters:
+        - name: id
+          required: true
+          type: path
+          value_type: string
+          description: Manager ID
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.ApiCommonResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/catalog-managers/{id}' \n--header 'Authorization ••••••'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost/api/v1/catalog-managers/{id}");
+            request.Headers.Add("Authorization", "••••••");
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/catalog-managers/{id}"
+              method := "delete"
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -1382,8 +1474,8 @@ endpoints:
           language: go
 
 ---
-# Events endpoints 
+# CatalogManagers endpoints 
 
- This document contains the endpoints for the Events category.
+ This document contains the endpoints for the CatalogManagers category.
 
 

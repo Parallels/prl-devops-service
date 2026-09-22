@@ -1,6 +1,6 @@
 ---
 layout: api
-title: Events
+title: SSH
 default_host: http://localhost
 api_prefix: /api
 is_category_document: true
@@ -1084,18 +1084,39 @@ categories:
           description: This endpoint removes a claim from a user
           title: Removes a claim from a user
 endpoints:
-    - title: Subscribe to event notifications via WebSocket
-      description: This endpoint upgrades the HTTP connection to WebSocket and subscribes to event notifications. Authentication is required via Authorization header (Bearer token) or query parameters (access_token or authorization).
+    - title: Execute SSH Command
+      description: Executes a command on a remote host via SSH
       requires_authorization: true
-      category: Events
-      category_path: events
-      path: /v1/ws/subscribe
-      method: get
+      category: SSH
+      category_path: ssh
+      path: /v1/ssh/execute
+      method: post
       parameters:
-        - name: event_types
+        - name: sshRequest
           required: false
-          type: query
+          type: body
+          value_type: object
+          description: Body
+          body: |-
+            {
+              "command": "string",
+              "enable_insecure_key": "bool",
+              "host": "string",
+              "key": "string",
+              "password": "string",
+              "port": "int",
+              "username": "string"
+            }
       response_blocks:
+        - code_block: |-
+            {
+              "error": "string",
+              "output": "string"
+            }
+          code: "200"
+          code_description: OK
+          title: SshExecutionResponse
+          language: json
         - code_block: '{ object }'
           code: "400"
           code_description: Bad Request
@@ -1104,238 +1125,32 @@ endpoints:
         - code_block: '{ object }'
           code: "401"
           code_description: Unauthorized
-          title: models.ApiErrorDiagnosticsResponse
+          title: models.OAuthErrorResponse
           language: json
         - code_block: '{ object }'
-          code: "409"
-          code_description: Conflict
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-        - code_block: '{ object }'
-          code: "503"
-          code_description: Service Unavailable
+          code: "500"
+          code_description: Internal Server Error
           title: models.ApiErrorDiagnosticsResponse
           language: json
       example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/subscribe' \n--header 'Authorization ••••••'\n"
+        - code_block: "curl --location 'http://localhost/api/v1/ssh/execute' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{\n  \"command\": \"string\",\n  \"enable_insecure_key\": \"bool\",\n  \"host\": \"string\",\n  \"key\": \"string\",\n  \"password\": \"string\",\n  \"port\": \"int\",\n  \"username\": \"string\"\n}'\n"
           title: cURL
           language: powershell
         - code_block: |
             var client = new HttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/subscribe");
-            request.Headers.Add("Authorization", "••••••");
-            var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var responseString = await response.Content.ReadAsStringAsync();
-          title: C#
-          language: csharp
-        - code_block: |
-            package main
-
-            import (
-              "fmt"
-              "net/http"
-              "strings"
-              "io"
-            )
-
-            func main() {
-              url := "http://localhost/api/v1/ws/subscribe"
-              method := "get"
-              client := &http.Client{}
-              req, err := http.NewRequest(method, url, payload)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              req.Header.Add("Content-Type", "application/json")
-
-              req.Header.Add("Authorization", "••••••")
-              res, err := client.Do(req)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              defer res.Body.Close()
-              body, err := io.ReadAll(res.Body)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              fmt.Println(string(body))
-            }
-          title: Go
-          language: go
-    - title: List connected WebSocket clients
-      description: Returns all currently connected WebSocket clients with queue depth and ping/pong timestamps. Useful for diagnosing stale or dead clients whose queues are filling up.
-      requires_authorization: true
-      category: Events
-      category_path: events
-      path: /v1/ws/clients
-      method: get
-      response_blocks:
-        - code_block: '{ object }'
-          code: "503"
-          code_description: Service Unavailable
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-      example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/clients' \n--header 'Authorization ••••••'\n"
-          title: cURL
-          language: powershell
-        - code_block: |
-            var client = new HttpClient();
-
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/clients");
-            request.Headers.Add("Authorization", "••••••");
-            var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var responseString = await response.Content.ReadAsStringAsync();
-          title: C#
-          language: csharp
-        - code_block: |
-            package main
-
-            import (
-              "fmt"
-              "net/http"
-              "strings"
-              "io"
-            )
-
-            func main() {
-              url := "http://localhost/api/v1/ws/clients"
-              method := "get"
-              client := &http.Client{}
-              req, err := http.NewRequest(method, url, payload)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              req.Header.Add("Content-Type", "application/json")
-
-              req.Header.Add("Authorization", "••••••")
-              res, err := client.Do(req)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              defer res.Body.Close()
-              body, err := io.ReadAll(res.Body)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              fmt.Println(string(body))
-            }
-          title: Go
-          language: go
-    - title: Get WebSocket event emitter statistics
-      description: Returns aggregate statistics including total connected clients, subscription counts per event type, uptime, and per-client details with queue depths.
-      requires_authorization: true
-      category: Events
-      category_path: events
-      path: /v1/ws/stats
-      method: get
-      response_blocks:
-        - code_block: '{ object }'
-          code: "200"
-          code_description: OK
-          title: models.EventEmitterStats
-          language: json
-        - code_block: '{ object }'
-          code: "503"
-          code_description: Service Unavailable
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-      example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/stats' \n--header 'Authorization ••••••'\n"
-          title: cURL
-          language: powershell
-        - code_block: |
-            var client = new HttpClient();
-
-            var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost/api/v1/ws/stats");
-            request.Headers.Add("Authorization", "••••••");
-            var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var responseString = await response.Content.ReadAsStringAsync();
-          title: C#
-          language: csharp
-        - code_block: |
-            package main
-
-            import (
-              "fmt"
-              "net/http"
-              "strings"
-              "io"
-            )
-
-            func main() {
-              url := "http://localhost/api/v1/ws/stats"
-              method := "get"
-              client := &http.Client{}
-              req, err := http.NewRequest(method, url, payload)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              req.Header.Add("Content-Type", "application/json")
-
-              req.Header.Add("Authorization", "••••••")
-              res, err := client.Do(req)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              defer res.Body.Close()
-              body, err := io.ReadAll(res.Body)
-              if err != nil {
-                fmt.Println(err)
-                return
-              }
-              fmt.Println(string(body))
-            }
-          title: Go
-          language: go
-    - title: Unsubscribe from specific event types
-      description: Unsubscribe an active WebSocket client from specific event types without disconnecting. The client must belong to the authenticated user.
-      requires_authorization: true
-      category: Events
-      category_path: events
-      path: /v1/ws/unsubscribe
-      method: post
-      parameters:
-        - name: body
-          required: false
-          type: body
-          value_type: object
-          description: Unsubscribe request with client ID and event types
-          body: '{ object }'
-      response_blocks:
-        - code_block: '{ object }'
-          code: "400"
-          code_description: Bad Request
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-        - code_block: '{ object }'
-          code: "503"
-          code_description: Service Unavailable
-          title: models.ApiErrorDiagnosticsResponse
-          language: json
-      example_blocks:
-        - code_block: "curl --location 'http://localhost/api/v1/ws/unsubscribe' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
-          title: cURL
-          language: powershell
-        - code_block: |
-            var client = new HttpClient();
-
-            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/ws/unsubscribe");
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/ssh/execute");
             request.Headers.Add("Authorization", "••••••");
             request.Headers.Add("Content-Type", "application/json");
-            request.Content = new StringContent("{ object }");
+            request.Content = new StringContent("{
+              "command": "string",
+              "enable_insecure_key": "bool",
+              "host": "string",
+              "key": "string",
+              "password": "string",
+              "port": "int",
+              "username": "string"
+            }");
             request.Content = content;
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
@@ -1353,9 +1168,17 @@ endpoints:
             )
 
             func main() {
-              url := "http://localhost/api/v1/ws/unsubscribe"
+              url := "http://localhost/api/v1/ssh/execute"
               method := "post"
-              payload := strings.NewReader(`{ object }`)
+              payload := strings.NewReader(`{
+              "command": "string",
+              "enable_insecure_key": "bool",
+              "host": "string",
+              "key": "string",
+              "password": "string",
+              "port": "int",
+              "username": "string"
+            }`)
               client := &http.Client{}
               req, err := http.NewRequest(method, url, payload)
               if err != nil {
@@ -1382,8 +1205,8 @@ endpoints:
           language: go
 
 ---
-# Events endpoints 
+# SSH endpoints 
 
- This document contains the endpoints for the Events category.
+ This document contains the endpoints for the SSH category.
 
 
