@@ -11030,6 +11030,9 @@ const docTemplate = `{
         "github_com_Parallels_prl-devops-service_models.HostResources": {
             "type": "object",
             "properties": {
+                "mac_vm_inventory_complete": {
+                    "type": "boolean"
+                },
                 "system_reserved": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
                 },
@@ -13766,6 +13769,9 @@ const docTemplate = `{
                 "is_reverse_proxy_enabled": {
                     "type": "boolean"
                 },
+                "mac_vm_inventory_complete": {
+                    "type": "boolean"
+                },
                 "os_name": {
                     "type": "string"
                 },
@@ -13777,6 +13783,9 @@ const docTemplate = `{
                 },
                 "parallels_desktop_version": {
                     "type": "string"
+                },
+                "pending_mac_vms": {
+                    "type": "integer"
                 },
                 "reverse_proxy": {
                     "$ref": "#/definitions/models.SystemReverseProxy"
@@ -14297,7 +14306,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.1.0",
+	Version:          "1.1.1",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
