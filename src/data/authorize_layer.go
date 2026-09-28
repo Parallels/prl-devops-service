@@ -48,7 +48,7 @@ func IsAuthorized[T AuthorizedRecord](ctx basecontext.ApiContext, t T) bool {
 	hasInjected := len(authContext.InjectedClaims) > 0 || len(authContext.InjectedRoles) > 0
 
 	if !hasInjected {
-		if authContext.AuthorizedBy == "ApiKeyAuthorization" || authContext.AuthorizedBy == "RootAuthorization" {
+		if (authContext.AuthorizedBy == "ApiKeyAuthorization" && authContext.IsMicroService) || authContext.AuthorizedBy == "RootAuthorization" {
 			return true
 		}
 	}

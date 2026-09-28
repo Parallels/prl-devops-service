@@ -30,12 +30,13 @@ type HostResourceItem struct {
 }
 
 type HostResources struct {
-	TotalAppleVms  int64            `json:"total_apple_vms,omitempty"`
-	SystemReserved HostResourceItem `json:"system_reserved,omitempty"`
-	Total          HostResourceItem `json:"total,omitempty"`
-	TotalAvailable HostResourceItem `json:"total_available,omitempty"`
-	TotalInUse     HostResourceItem `json:"total_in_use,omitempty"`
-	TotalReserved  HostResourceItem `json:"total_reserved,omitempty"`
+	MacVMInventoryComplete *bool            `json:"mac_vm_inventory_complete,omitempty"`
+	TotalAppleVms          int64            `json:"total_apple_vms,omitempty"`
+	SystemReserved         HostResourceItem `json:"system_reserved,omitempty"`
+	Total                  HostResourceItem `json:"total,omitempty"`
+	TotalAvailable         HostResourceItem `json:"total_available,omitempty"`
+	TotalInUse             HostResourceItem `json:"total_in_use,omitempty"`
+	TotalReserved          HostResourceItem `json:"total_reserved,omitempty"`
 }
 
 type HostReverseProxy struct {

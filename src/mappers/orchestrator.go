@@ -39,12 +39,13 @@ func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.O
 		result.Resources.TotalAppleVms = dto.Resources.TotalAppleVms
 
 		result.DetailedResources = &models.HostResources{
-			TotalAppleVms:  dto.Resources.TotalAppleVms,
-			SystemReserved: DtoOrchestratorResourceItemToApi(dto.Resources.SystemReserved),
-			Total:          DtoOrchestratorResourceItemToApi(dto.Resources.Total),
-			TotalAvailable: DtoOrchestratorResourceItemToApi(dto.Resources.TotalAvailable),
-			TotalInUse:     DtoOrchestratorResourceItemToApi(dto.Resources.TotalInUse),
-			TotalReserved:  DtoOrchestratorResourceItemToApi(dto.Resources.TotalReserved),
+			MacVMInventoryComplete: dto.Resources.MacVMInventoryComplete,
+			TotalAppleVms:          dto.Resources.TotalAppleVms,
+			SystemReserved:         DtoOrchestratorResourceItemToApi(dto.Resources.SystemReserved),
+			Total:                  DtoOrchestratorResourceItemToApi(dto.Resources.Total),
+			TotalAvailable:         DtoOrchestratorResourceItemToApi(dto.Resources.TotalAvailable),
+			TotalInUse:             DtoOrchestratorResourceItemToApi(dto.Resources.TotalInUse),
+			TotalReserved:          DtoOrchestratorResourceItemToApi(dto.Resources.TotalReserved),
 		}
 	}
 

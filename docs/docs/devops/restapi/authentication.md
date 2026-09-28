@@ -17,6 +17,18 @@ We support the latest token signing algorithm, RS256, and the tokens are signed 
 
 You can also use the HMAC algorithm to sign the tokens, but we recommend using RS256 as it is more secure.
 
+## Using a user-assigned API key
+
+Send the encoded API key in `X-Api-Key` (`base64(key:secret)`). When a key has a
+`user_id`, requests load that user's current roles and direct and inherited
+claims. Catalog-manager ownership checks use the assigned user's ID. A key whose
+assigned user has been deleted is rejected.
+
+External user-assigned keys cannot override their permissions with `X-Claims`,
+`X-Roles`, or `X-Super-User` headers. Explicitly internal keys and legacy keys
+without a user retain service authentication behavior; internal keys assigned to
+a user also undergo that user's route permission checks.
+
 ## How do I get a token?
 
 To get a token, you need to send a POST request to the `/auth/token` endpoint with the following parameters:

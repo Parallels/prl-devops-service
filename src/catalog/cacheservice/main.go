@@ -771,6 +771,15 @@ func (cs *CacheService) UpdateCacheManifest() error {
 	return nil
 }
 
+func (cs *CacheService) capacityError(reason string) error {
+	message := fmt.Sprintf("Insufficient cache capacity in %s: %s. Package size: %.1f MiB.", cs.cacheFolder, reason, float64(cs.manifest.Size)/(1024*1024))
+	if free, err := cs.getFreeDiskSpace(); err == nil {
+		message += fmt.Sprintf(" Available disk space: %d MiB.", free)
+	}
+	message += fmt.Sprintf(" Minimum free space policy: %d MiB; maximum cache size: %d MiB. Free cache disk space or adjust the cache limits.", cs.keepFreeDiskSpace, cs.maxCacheSize)
+	return errors.NewWithCodef(500, "%s", message)
+}
+
 func (cs *CacheService) Clean() error {
 	cleanupRequirement, err := cs.checkNeedCleanup()
 	if err != nil {
@@ -780,7 +789,7 @@ func (cs *CacheService) Clean() error {
 	// Checking if we have any fatal requirements in the cleanup as that means we
 	// cannot continue with the process
 	if cleanupRequirement.IsFatal {
-		return errors.NewWithCodef(500, "Fatal cleanup requirement: %v", cleanupRequirement.Reason)
+		return cs.capacityError(cleanupRequirement.Reason)
 	}
 
 	// We have enough space, no need to cleanup the cache
@@ -815,8 +824,9 @@ func (cs *CacheService) Clean() error {
 	if cleanupRequirement.SpaceNeeded > 0 {
 		allowedAboveFreeDiskSpace := cs.cfg.GetBoolKey(constants.CATALOG_CACHE_ALLOW_CACHE_ABOVE_FREE_DISK_SPACE_ENV_VAR)
 		if !allowedAboveFreeDiskSpace {
-			cs.notify("Not enough space for the cached item even after cleaning the cache due to required free disk space rule, set the override flag to allow cache above free disk space")
-			return errors.NewWithCodef(500, "Not enough space for the cached item even after cleaning the cache due to required free disk space rule, set the override flag to allow cache above free disk space")
+			err := cs.capacityError(cleanupRequirement.Reason)
+			cs.notify(err.Error())
+			return err
 		}
 	}
 

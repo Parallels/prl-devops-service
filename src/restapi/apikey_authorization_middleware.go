@@ -3,12 +3,14 @@ package restapi
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/security/apikey"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -58,8 +60,56 @@ func ApiKeyAuthorizationMiddlewareAdapter(roles []string, claims []string, roleC
 				return
 			}
 
+			// User-assigned keys carry the same identity and route permissions as
+			// a bearer token. Unassigned legacy keys retain service authentication.
+			if result.UserID != "" {
+				user, userErr := db.GetUser(baseCtx, result.UserID)
+				if userErr != nil || user == nil {
+					authError.ErrorDescription = "The user assigned to this API key was not found"
+				} else {
+					apiUser := mappers.DtoUserToApiResponse(*user)
+					authorizationContext.User = &apiUser
+					for _, role := range user.Roles {
+						if strings.EqualFold(role.Name, constants.SUPER_USER_ROLE) {
+							authorizationContext.IsSuperUser = true
+							apiUser.IsSuperUser = true
+						}
+					}
+					authError.ErrorDescription = ""
+					if !authorizationContext.IsSuperUser {
+						for _, check := range []struct {
+							kind      string
+							required  []string
+							operation ComparisonOperation
+							has       func(string) bool
+						}{
+							{"roles", roles, roleComparisonOperation, authorizationContext.HasEffectiveRole},
+							{"claims", claims, claimComparisonOperation, authorizationContext.HasEffectiveClaim},
+						} {
+							if len(check.required) == 0 {
+								continue
+							}
+							var validations TokenRoleClaimValidationList
+							for _, required := range check.required {
+								validations = append(validations, &TokenRoleClaimValidation{Name: required, exists: check.has(required)})
+							}
+							if !validations.Evaluate(check.operation) {
+								authError.ErrorDescription = fmt.Sprintf("User does not contain enough permissions for %s (%s), missing %v", check.kind, normalizeComparisonOperation(check.operation), validations.GetFailed())
+								break
+							}
+						}
+					}
+				}
+				if authError.ErrorDescription != "" {
+					authorizationContext.IsAuthorized = false
+					authorizationContext.AuthorizationError = &authError
+					ctx := context.WithValue(r.Context(), constants.AUTHORIZATION_CONTEXT_KEY, authorizationContext)
+					next.ServeHTTP(w, r.WithContext(ctx))
+					return
+				}
+			}
 			authorizationContext.IsAuthorized = true
-			authorizationContext.IsMicroService = true
+			authorizationContext.IsMicroService = result.UserID == "" || strings.EqualFold(result.Type, "internal")
 			authorizationContext.AuthorizedBy = "ApiKeyAuthorization"
 			authorizationContext.ApiKeyName = result.ApiKeyId
 			authorizationContext.AuthorizationError = nil

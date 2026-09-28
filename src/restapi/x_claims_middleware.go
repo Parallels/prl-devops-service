@@ -32,7 +32,7 @@ func XClaimsMiddlewareAdapter() Adapter {
 			}
 
 			isTrustedSource := authCtx.IsMicroService ||
-				strings.EqualFold(r.Header.Get("X-SOURCE"), "CATALOG_MANAGER_REQUEST")
+				(authCtx.AuthorizedBy != "ApiKeyAuthorization" && strings.EqualFold(r.Header.Get("X-SOURCE"), "CATALOG_MANAGER_REQUEST"))
 
 			if !isTrustedSource {
 				next.ServeHTTP(w, r)

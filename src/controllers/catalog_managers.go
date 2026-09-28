@@ -569,7 +569,7 @@ func CreateCatalogManagerHandler() restapi.ControllerHandler {
 		}
 
 		canCreateGlobalInternal := false
-		for _, claim := range user.Claims {
+		for _, claim := range ctx.GetAuthorizationContext().GetEffectiveClaims() {
 			if claim == constants.CATALOG_MANAGER_CREATE_CLAIM {
 				canCreateGlobalInternal = true
 			}

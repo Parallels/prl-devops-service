@@ -6,12 +6,13 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data/models"
+	api_models "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider/apiclient"
 )
 
 const (
 	HealthyState      = "healthy"
-	MaxNumberAppleVms = 2
+	MaxNumberAppleVms = api_models.MaxRunningMacVMs
 )
 
 // getApiClient creates and configures an HTTP client for orchestrator requests

@@ -13,18 +13,23 @@ type HostResourceOverviewResponseItem struct {
 }
 
 type HostResources struct {
-	CpuType        string            `json:"cpu_type,omitempty"`
-	CpuBrand       string            `json:"cpu_brand,omitempty"`
-	ReverseProxy   *HostReverseProxy `json:"reverse_proxy,omitempty"`
-	TotalAppleVms  int64             `json:"total_apple_vms,omitempty"`
-	SystemReserved HostResourceItem  `json:"system_reserved,omitempty"`
-	Total          HostResourceItem  `json:"total,omitempty"`
-	TotalAvailable HostResourceItem  `json:"total_available,omitempty"`
-	TotalInUse     HostResourceItem  `json:"total_in_use,omitempty"`
-	TotalReserved  HostResourceItem  `json:"total_reserved,omitempty"`
+	MacVMInventoryComplete *bool             `json:"mac_vm_inventory_complete,omitempty"`
+	CpuType                string            `json:"cpu_type,omitempty"`
+	CpuBrand               string            `json:"cpu_brand,omitempty"`
+	ReverseProxy           *HostReverseProxy `json:"reverse_proxy,omitempty"`
+	TotalAppleVms          int64             `json:"total_apple_vms,omitempty"`
+	SystemReserved         HostResourceItem  `json:"system_reserved,omitempty"`
+	Total                  HostResourceItem  `json:"total,omitempty"`
+	TotalAvailable         HostResourceItem  `json:"total_available,omitempty"`
+	TotalInUse             HostResourceItem  `json:"total_in_use,omitempty"`
+	TotalReserved          HostResourceItem  `json:"total_reserved,omitempty"`
 }
 
 func (c *HostResources) Diff(source HostResources) bool {
+	if (c.MacVMInventoryComplete == nil) != (source.MacVMInventoryComplete == nil) ||
+		(c.MacVMInventoryComplete != nil && source.MacVMInventoryComplete != nil && *c.MacVMInventoryComplete != *source.MacVMInventoryComplete) {
+		return true
+	}
 	if c.CpuType != source.CpuType {
 		return true
 	}

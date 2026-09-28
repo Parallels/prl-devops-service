@@ -51,16 +51,17 @@ type Data struct {
 }
 
 type JsonDatabase struct {
-	ctx         basecontext.ApiContext
-	Config      JsonDatabaseConfig
-	connected   bool
-	isSaving    bool
-	saveProcess chan bool
-	filename    string
-	saveMutex   sync.Mutex
-	dataMutex   sync.RWMutex
-	cancel      chan bool
-	data        Data
+	ctx          basecontext.ApiContext
+	Config       JsonDatabaseConfig
+	connected    bool
+	isSaving     bool
+	saveProcess  chan bool
+	filename     string
+	saveMutex    sync.Mutex
+	dataMutex    sync.RWMutex
+	cancel       chan bool
+	data         Data
+	onJobTimeout func(models.Job)
 }
 
 type JsonDatabaseConfig struct {

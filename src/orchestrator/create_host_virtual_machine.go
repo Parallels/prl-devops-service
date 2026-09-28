@@ -15,6 +15,7 @@ import (
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
+	"github.com/Parallels/prl-devops-service/mappers"
 	"github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/orchestrator/registry"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
@@ -59,8 +60,6 @@ func (s *OrchestratorService) CreateVirtualMachine(ctx basecontext.ApiContext, j
 }
 
 func (s *OrchestratorService) DispatchCreateVirtualMachine(ctx basecontext.ApiContext, jobID string, request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineResponse, *models.ApiErrorResponse) {
-	var apiError *models.ApiErrorResponse
-
 	jobManager := jobs.Get(ctx)
 	updateJob := func(msg string) {
 		if jobID != "" && jobManager != nil {
@@ -68,56 +67,9 @@ func (s *OrchestratorService) DispatchCreateVirtualMachine(ctx basecontext.ApiCo
 		}
 	}
 
-	dbService, err := serviceprovider.GetDatabaseService(ctx)
-	if err != nil {
-		apiError = &models.ApiErrorResponse{
-			Message: "There was an error getting the database",
-			Code:    500,
-		}
-		updateJob(apiError.Message)
+	validHosts, apiError := s.getValidHostsForCreate(ctx, request, updateJob)
+	if apiError != nil {
 		return nil, apiError
-	}
-
-	specs := s.getSpecsFromRequest(request)
-
-	hosts, err := dbService.GetOrchestratorHosts(ctx, "")
-	if err != nil {
-		apiError = &models.ApiErrorResponse{
-			Message: "There was an error getting the hosts from the database",
-			Code:    500,
-		}
-		updateJob(apiError.Message)
-		return nil, apiError
-	}
-
-	var validHosts []data_models.OrchestratorHost
-	for _, orchestratorHost := range hosts {
-		isOk, validateErr := s.validateHost(orchestratorHost, request, specs)
-		if validateErr != nil || !isOk {
-			msg := fmt.Sprintf("Host %s skipped", orchestratorHost.Host)
-			if validateErr != nil {
-				msg = fmt.Sprintf("Host %s skipped: %s", orchestratorHost.Host, validateErr.Message)
-			}
-			ctx.LogInfof("[Orchestrator] %s", msg)
-			updateJob(msg)
-			continue
-		}
-		validHosts = append(validHosts, orchestratorHost)
-	}
-
-	if len(validHosts) == 0 {
-		apiError = &models.ApiErrorResponse{
-			Message: "No host available to create the virtual machine",
-			Code:    400,
-		}
-		updateJob(apiError.Message)
-		return nil, apiError
-	}
-
-	validHosts, filterErr := filterAndSortHosts(validHosts, request, s.pingHostForLatency)
-	if filterErr != nil {
-		updateJob(filterErr.Message)
-		return nil, filterErr
 	}
 
 	// Stage 5: Target Execution — dispatch async to the first willing host.
@@ -243,7 +195,12 @@ func (s *OrchestratorService) getValidHostsForCreate(ctx basecontext.ApiContext,
 		return nil, apiError
 	}
 
-	specs := s.getSpecsFromRequest(request)
+	specs, specsErr := s.getSpecsFromRequest(request)
+	if specsErr != nil {
+		apiError := &models.ApiErrorResponse{Message: specsErr.Error(), Code: 400}
+		updateJob(apiError.Message)
+		return nil, apiError
+	}
 
 	hosts, err := dbService.GetOrchestratorHosts(ctx, "")
 	if err != nil {
@@ -256,6 +213,7 @@ func (s *OrchestratorService) getValidHostsForCreate(ctx basecontext.ApiContext,
 	}
 
 	var validHosts []data_models.OrchestratorHost
+	var rejections []string
 	for _, orchestratorHost := range hosts {
 		isOk, validateErr := s.validateHost(orchestratorHost, request, specs)
 		if validateErr != nil || !isOk {
@@ -263,6 +221,7 @@ func (s *OrchestratorService) getValidHostsForCreate(ctx basecontext.ApiContext,
 			if validateErr != nil {
 				msg = fmt.Sprintf("Host %s skipped: %s", orchestratorHost.Host, validateErr.Message)
 			}
+			rejections = append(rejections, msg)
 			ctx.LogInfof("[Orchestrator] %s", msg)
 			updateJob(msg)
 			continue
@@ -274,6 +233,9 @@ func (s *OrchestratorService) getValidHostsForCreate(ctx basecontext.ApiContext,
 		apiError := &models.ApiErrorResponse{
 			Message: "No host available to create the virtual machine",
 			Code:    400,
+		}
+		if len(rejections) > 0 {
+			apiError.Message += ":\n" + strings.Join(rejections, "\n")
 		}
 		updateJob(apiError.Message)
 		return nil, apiError
@@ -299,7 +261,12 @@ func (s *OrchestratorService) getValidHostForCreate(ctx basecontext.ApiContext, 
 		return nil, apiError
 	}
 
-	specs := s.getSpecsFromRequest(request)
+	specs, specsErr := s.getSpecsFromRequest(request)
+	if specsErr != nil {
+		apiError := &models.ApiErrorResponse{Message: specsErr.Error(), Code: 400}
+		updateJob(apiError.Message)
+		return nil, apiError
+	}
 	if specs == nil {
 		apiError := &models.ApiErrorResponse{
 			Message: "There was an error getting the specs from the request",
@@ -321,7 +288,8 @@ func (s *OrchestratorService) getValidHostForCreate(ctx basecontext.ApiContext, 
 
 	isOk, validateErr := s.validateHost(*host, request, specs)
 	if validateErr != nil {
-		updateJob(fmt.Sprintf("Host %s failed validation: %s", host.Host, validateErr.Message))
+		validateErr.Message = fmt.Sprintf("Host %s failed validation: %s", host.Host, validateErr.Message)
+		updateJob(validateErr.Message)
 		return nil, validateErr
 	}
 
@@ -503,22 +471,14 @@ func (s *OrchestratorService) CallCreateHostVirtualMachine(host data_models.Orch
 	return &response, nil
 }
 
-func (s *OrchestratorService) getSpecsFromRequest(request models.CreateVirtualMachineRequest) *models.CreateVirtualMachineSpecs {
+func (s *OrchestratorService) getSpecsFromRequest(request models.CreateVirtualMachineRequest) (*models.CreateVirtualMachineSpecs, error) {
 	var specs *models.CreateVirtualMachineSpecs
 	var err error
 	switch {
 	case request.CatalogManifest != nil:
 		specs, err = s.getCatalogSpecs(request.CatalogManifest.Connection, request.CatalogManifest.CatalogId, request.CatalogManifest.Version, request.Architecture)
 		if err != nil {
-			// Unable to reach the catalog (e.g. local catalog, no connection string, or
-			// older host that doesn't expose the endpoint). Use safe defaults so host
-			// selection can still proceed based on CPU/memory alone.
-			s.ctx.LogWarnf("[Orchestrator] Could not retrieve catalog specs for %s/%s: %v — using defaults for host selection", request.CatalogManifest.CatalogId, request.CatalogManifest.Version, err)
-			specs = &models.CreateVirtualMachineSpecs{
-				Type:   "pvm",
-				Cpu:    "2",
-				Memory: "2048",
-			}
+			return nil, fmt.Errorf("Cannot determine VM requirements for catalog %s/%s; verify catalog connectivity and authentication before retrying", request.CatalogManifest.CatalogId, request.CatalogManifest.Version)
 		}
 		if request.CatalogManifest.Specs != nil {
 			if request.CatalogManifest.Specs.Cpu != "" && request.CatalogManifest.Specs.Cpu != "0" {
@@ -547,7 +507,7 @@ func (s *OrchestratorService) getSpecsFromRequest(request models.CreateVirtualMa
 		specs.Type = "pvm"
 	}
 
-	return specs
+	return specs, nil
 }
 
 func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest, specs *models.CreateVirtualMachineSpecs) (bool, *models.ApiErrorResponse) {
@@ -589,6 +549,16 @@ func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, re
 	// otherwise we would potentially go above the reserved cpus
 	availableCpus := host.Resources.TotalAvailable.LogicalCpuCount
 	availableMemory := host.Resources.TotalAvailable.MemorySize
+	if specs == nil {
+		return false, &models.ApiErrorResponse{Message: "VM resource requirements are unavailable", Code: 400}
+	}
+	var failures []string
+	if availableCpus < specs.GetCpuCount() {
+		failures = append(failures, fmt.Sprintf("CPU: required %d logical CPUs, available %d", specs.GetCpuCount(), availableCpus))
+	}
+	if availableMemory < specs.GetMemorySize() {
+		failures = append(failures, fmt.Sprintf("Memory: required %.0f MiB, available %.0f MiB", specs.GetMemorySize(), availableMemory))
+	}
 
 	if specs != nil && specs.Size > 0 {
 		diskSpace, diskErr := s.getHostDiskSpace(s.ctx, host, request.Owner)
@@ -610,44 +580,25 @@ func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, re
 				requiredSpace = 2 * (specs.Size / 1024.0 / 1024.0) // Convert from bytes to MB
 			}
 			if diskSpace.ParallelsHome < requiredSpace {
-				return false, &models.ApiErrorResponse{
-					Message: fmt.Sprintf("Host does not have enough disk space: available %d MB, required %d MB, "+
-						"we need 3x / 2x space of vm size depending on the volume configuration", diskSpace.ParallelsHome, requiredSpace),
-					Code: 400,
-				}
+				failures = append(failures, fmt.Sprintf("VM disk (%s): required %d MiB, available %d MiB (estimated download/copy space)", diskSpace.PrlHomePath, requiredSpace, diskSpace.ParallelsHome))
 			}
 		}
 	}
 
-	// Checking for the maximum number of Apple VMs
 	if strings.EqualFold(specs.Type, "macvm") {
-		if host.Resources.TotalAppleVms >= MaxNumberAppleVms {
-			apiError = &models.ApiErrorResponse{
-				Message: "Host has reached the maximum number of Apple VMs",
-				Code:    400,
-			}
-
-			return false, apiError
+		active, pending := host.Resources.TotalAppleVms, host.Resources.TotalReserved.TotalAppleVms
+		s.ctx.LogInfof("[MacVMCapacity] Scheduling host=%s active=%d pending=%d maximum=%d", host.ID, active, pending, MaxNumberAppleVms)
+		if host.Resources.MacVMInventoryComplete != nil && !*host.Resources.MacVMInventoryComplete {
+			failures = append(failures, "macOS VM inventory is incomplete; run the host service as root to enumerate all users")
+		}
+		if active+pending >= MaxNumberAppleVms {
+			failures = append(failures, fmt.Sprintf("Apple VM limit: current %d, pending %d, maximum %d", active, pending, MaxNumberAppleVms))
 		}
 	}
-
-	if availableCpus < specs.GetCpuCount() ||
-		availableMemory < specs.GetMemorySize() {
-		if availableCpus < specs.GetCpuCount() {
-			apiError = &models.ApiErrorResponse{
-				Message: "Host does not have enough CPU resources",
-				Code:    400,
-			}
-
-			return false, apiError
-		}
-		if availableMemory < specs.GetMemorySize() {
-			apiError = &models.ApiErrorResponse{
-				Message: "Host does not have enough Memory resources",
-				Code:    400,
-			}
-
-			return false, apiError
+	if len(failures) > 0 {
+		return false, &models.ApiErrorResponse{
+			Message: "Insufficient host resources: " + strings.Join(failures, "; "),
+			Code:    400,
 		}
 	}
 
@@ -655,35 +606,48 @@ func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, re
 }
 
 func (s *OrchestratorService) getCatalogSpecs(connection string, catalogId string, version string, architecture string) (*models.CreateVirtualMachineSpecs, error) {
-	provider := catalog_models.CatalogManifestProvider{}
-	if err := provider.Parse(connection); err != nil {
-		return nil, err
-	}
-
-	host := data_models.OrchestratorHost{
-		Host: provider.GetUrl(),
-		Authentication: &data_models.OrchestratorHostAuthentication{
-			Username: provider.Username,
-			Password: provider.Password,
-			ApiKey:   provider.ApiKey,
-		},
-	}
-
-	httpClient := s.getApiClient(host)
-	path := "/api/v1/catalog/" + catalogId + "/" + version + "/" + architecture
-	url, err := helpers.JoinUrl([]string{host.GetHost(), path})
-	if err != nil {
-		return nil, err
-	}
-
 	var response models.CatalogManifest
-	apiResponse, err := httpClient.Get(url.String(), &response)
-	if err != nil {
-		return nil, err
-	}
+	if strings.TrimSpace(connection) == "" {
+		db, err := serviceprovider.GetDatabaseService(s.ctx)
+		if err != nil {
+			return nil, err
+		}
+		manifest, err := db.GetCatalogManifestsByCatalogIdVersionAndArch(s.ctx, catalogId, version, architecture)
+		if err != nil {
+			return nil, err
+		}
+		response = mappers.DtoCatalogManifestToApi(*manifest)
+	} else {
+		provider := catalog_models.CatalogManifestProvider{}
+		if err := provider.Parse(connection); err != nil {
+			return nil, err
+		}
 
-	if apiResponse.StatusCode != 200 {
-		return nil, errors.NewWithCodef(400, "Error getting hardware info for host %s: %v", host.Host, apiResponse.StatusCode)
+		host := data_models.OrchestratorHost{
+			Host: provider.GetUrl(),
+			Authentication: &data_models.OrchestratorHostAuthentication{
+				Username: provider.Username,
+				Password: provider.Password,
+				ApiKey:   provider.ApiKey,
+			},
+		}
+
+		httpClient := s.getApiClient(host)
+		path := "/api/v1/catalog/" + catalogId + "/" + version + "/" + architecture
+		url, err := helpers.JoinUrl([]string{host.GetHost(), path})
+		if err != nil {
+			return nil, err
+		}
+
+		apiResponse, err := httpClient.Get(url.String(), &response)
+		if err != nil {
+			return nil, err
+		}
+
+		if apiResponse.StatusCode != 200 {
+			return nil, errors.NewWithCodef(400, "Error getting hardware info for host %s: %v", host.Host, apiResponse.StatusCode)
+		}
+
 	}
 
 	result := models.CreateVirtualMachineSpecs{}
@@ -701,7 +665,7 @@ func (s *OrchestratorService) getCatalogSpecs(connection string, catalogId strin
 
 	// Setting the default values
 	if response.Type == "" {
-		result.Type = "pvm"
+		return nil, fmt.Errorf("catalog manifest does not specify its VM type")
 	}
 	if result.Cpu == "" || result.Cpu == "0" {
 		result.Cpu = "2"

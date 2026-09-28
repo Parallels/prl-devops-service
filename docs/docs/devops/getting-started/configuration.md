@@ -66,13 +66,14 @@ The root object of the configuration file is the environment object, which conta
 | API_PORT                            | The port that the service will listen on                                                                                                         | 8080                                            |
 | API_PREFIX                          | The prefix that will be used for the api endpoints                                                                                               | /api                                            |
 | LOG_LEVEL                           | The log level of the service                                                                                                                     | info                                            |
+| GHOST_JOB_TIMEOUT_MINUTES            | Minutes without job updates before a pending or running job is marked as failed. Must be a positive integer; invalid values fall back to 5.        | 5                                               |
 | HMAC_SECRET                         | The secret that will be used to sign the jwt tokens                                                                                              |                                                 |
 | ENCRYPTION_PRIVATE_KEY              | The private key that will be used to encrypt the database at rest. You can generate one with the `gen-rsa` command                               |                                                 |
 | TLS_ENABLED                         | Specifies whether the service should use tls                                                                                                     | false                                           |
 | TLS_PORT                            | The port that the service will listen on for tls                                                                                                 | 8443                                            |
 | TLS_CERTIFICATE                     | A base64 encoded certificate string                                                                                                              |                                                 |
 | TLS_PRIVATE_KEY                     | A base64 encoded private key string                                                                                                              |                                                 |
-| TLS_DISABLE_VALIDATION              | Specifies whether the service should disable tls validation                                                                                      | false                                           |
+| TLS_DISABLE_VALIDATION              | Disables server certificate verification for outbound HTTP requests and orchestrator host WebSocket probes/connections.                          | false                                           |
 | DISABLE_HTTP_WHEN_TLS               | Specifies whether HTTP should be disabled when TLS is properly configured (HTTPS-only mode). Validates TLS configuration before disabling HTTP   | false                                           |
 | ROOT_PASSWORD                       | The root password to run the service with                                                                                                        |                                                 |
 | DISABLE_CATALOG_CACHING             | Specifies whether the service should disable the catalog caching                                                                                 | false                                           |
@@ -108,6 +109,20 @@ The root object of the configuration file is the environment object, which conta
 | SECURITY_PASSWORD_REQUIRE_NUMBER       | Specifies whether the password should require at least one number              | true          |
 | SECURITY_PASSWORD_REQUIRE_SPECIAL_CHAR | Specifies whether the password should require at least one special character   | true          |
 | SECURITY_PASSWORD_SALT_PASSWORD        | Specifies whether the password should be salted                                | true          |
+
+### Job inactivity timeout
+
+Set `GHOST_JOB_TIMEOUT_MINUTES=30` in the service environment to allow 30 minutes
+without job updates before marking a pending or running job as failed. Configure
+this on both the orchestrator and the hosts, then restart the services. The default
+is 5 minutes; missing, invalid, nonpositive, or excessively large values use the
+default.
+
+This is an inactivity threshold, not a limit on total VM creation time. The checker
+runs every 5 seconds. A timeout publishes a failed job update with the threshold
+and last update timestamp in both `error` and `message`. It does not stop the host
+operation, so check the VM status before retrying. If a host completes successfully
+but the orchestrator times out, check the host's WebSocket event connection.
 
 ### Brute Force Protection
 

@@ -44,9 +44,6 @@ const (
 	// GhostJobCheckIntervalSeconds is how often the stale-job checker runs.
 	GhostJobCheckIntervalSeconds = 5
 
-	// GhostJobCanceledReason is the error message set when a ghost job is canceled.
-	GhostJobCanceledReason = "Canceled Job"
-
 	// GhostJobTimeoutMinutesEnvVar is the environment variable to override the default timeout.
 	GhostJobTimeoutMinutesEnvVar = "GHOST_JOB_TIMEOUT_MINUTES"
 )
