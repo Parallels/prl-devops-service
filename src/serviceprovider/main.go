@@ -245,11 +245,11 @@ func InitServices(ctx basecontext.ApiContext) {
 	if globalProvider.ParallelsDesktopService.Installed() {
 		globalProvider.HardwareInfo, err = globalProvider.ParallelsDesktopService.GetInfo()
 		if err != nil {
-			globalProvider.Logger.Error("Error getting Parallels info")
+			globalProvider.Logger.Error(fmt.Sprintf("Error getting Parallels info, err: %v", err))
 		}
 
 		if globalProvider.HardwareInfo == nil {
-			common.Logger.Error("Error getting Parallels info")
+			common.Logger.Error("Error getting Parallels info, the hardware info is nil")
 			panic(errors.New("Error getting Parallels Hardware Info"))
 		}
 
