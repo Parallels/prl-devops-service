@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-09-28
+
+- Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. List any dependencies that are required for this change.
+- Fixes # (issue)
+
 ## [1.1.0] - 2026-09-22
 
 - added tutorial for Jenkins dynamic build agents 
