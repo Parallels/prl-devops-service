@@ -1799,6 +1799,7 @@ func (s *ParallelsService) GetInfo() (*models.ParallelsDesktopInfo, error) {
 	}
 
 	var info models.ParallelsDesktopInfo
+	fmt.Printf("Raw JSON output: %s\n", stdout)
 	err = json.Unmarshal([]byte(stdout), &info)
 	if err != nil {
 		return nil, err
@@ -1811,6 +1812,7 @@ func (s *ParallelsService) GetInfo() (*models.ParallelsDesktopInfo, error) {
 		s.isLicensed = true
 	}
 
+	fmt.Printf("Parsed ParallelsDesktopInfo: %+v\n", s.Info)
 	return s.Info, nil
 }
 
