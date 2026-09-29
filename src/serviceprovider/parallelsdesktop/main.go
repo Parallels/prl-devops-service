@@ -1790,6 +1790,16 @@ func (s *ParallelsService) GetInfo() (*models.ParallelsDesktopInfo, error) {
 		return s.Info, nil
 	}
 
+	// todo remove this is just for debug
+	stdoutWhoami, errWhoami := helpers.ExecuteWithNoOutput(s.ctx.Context(), helpers.Command{
+		Command: "whoami",
+		Args:    []string{},
+	}, helpers.ExecutionTimeout)
+	if errWhoami != nil {
+		return nil, errWhoami
+	}
+	fmt.Printf("Current user: %s\n", stdoutWhoami)
+
 	stdout, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), helpers.Command{
 		Command: s.serverExecutable,
 		Args:    []string{"info", "--json"},
