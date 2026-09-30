@@ -1790,16 +1790,6 @@ func (s *ParallelsService) GetInfo() (*models.ParallelsDesktopInfo, error) {
 		return s.Info, nil
 	}
 
-	// todo remove this is just for debug
-	stdoutWhoami, errWhoami := helpers.ExecuteWithNoOutput(s.ctx.Context(), helpers.Command{
-		Command: "whoami",
-		Args:    []string{},
-	}, helpers.ExecutionTimeout)
-	if errWhoami != nil {
-		return nil, errWhoami
-	}
-	fmt.Printf("Current user: %s\n", stdoutWhoami)
-
 	stdout, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), helpers.Command{
 		Command: s.serverExecutable,
 		Args:    []string{"info", "--json"},
@@ -1809,7 +1799,6 @@ func (s *ParallelsService) GetInfo() (*models.ParallelsDesktopInfo, error) {
 	}
 
 	var info models.ParallelsDesktopInfo
-	fmt.Printf("Raw JSON output: %s\n", stdout)
 	err = json.Unmarshal([]byte(stdout), &info)
 	if err != nil {
 		return nil, err
@@ -1819,10 +1808,11 @@ func (s *ParallelsService) GetInfo() (*models.ParallelsDesktopInfo, error) {
 	if info.License.State != "valid" {
 		s.ctx.LogErrorf("Parallels license is not active")
 	} else {
+		s.ctx.LogDebugf("Parallels license is active")
 		s.isLicensed = true
 	}
 
-	fmt.Printf("Parsed ParallelsDesktopInfo: %+v\n", s.Info)
+	s.ctx.LogDebugf("Parsed ParallelsDesktopInfo: %+v\n", s.Info)
 	return s.Info, nil
 }
 
