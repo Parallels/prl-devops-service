@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-09-30
+
+- This update introduces additional fields to the ApiServiceConfig struct, allowing for the configuration of system resources such as memory, CPU, and disk space. The writeServiceConfigFile function has been modified to handle these new fields, ensuring they are correctly written to the configuration file. Additionally, tests have been added to verify the correct behavior of these changes.
+
 ## [1.1.1] - 2026-09-28
 
 - Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. List any dependencies that are required for this change.

@@ -1,0 +1,12 @@
+---
+layout: post
+title:  "Release 1.1.2"
+date:   2026-09-30 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- This update introduces additional fields to the ApiServiceConfig struct, allowing for the configuration of system resources such as memory, CPU, and disk space. The writeServiceConfigFile function has been modified to handle these new fields, ensuring they are correctly written to the configuration file. Additionally, tests have been added to verify the correct behavior of these changes.
+
+
