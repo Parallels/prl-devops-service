@@ -1,19 +1,25 @@
 package install
 
 type ApiServiceConfig struct {
-	Port                  string `json:"port,omitempty"`
-	Prefix                string `json:"prefix,omitempty"`
-	InstallVersion        string `json:"install_version,omitempty"`
-	RootPassword          string `json:"root_password,omitempty"`
-	HmacSecret            string `json:"hmac_secret,omitempty"`
-	EncryptionRsaKey      string `json:"encryption_rsa_key,omitempty"`
-	LogLevel              string `json:"log_level,omitempty"`
-	EnableTLS             bool   `json:"enable_tls,omitempty"`
-	TLSPort               string `json:"tls_port,omitempty"`
-	TLSCertificate        string `json:"tls_certificate,omitempty"`
-	TLSPrivateKey         string `json:"tls_private_key,omitempty"`
-	DisableCatalogCaching bool   `json:"disable_catalog_caching,omitempty"`
-	TokenDurationMinutes  string `json:"token_duration_minutes,omitempty"`
+	// Environment contains exact runtime values, including explicit false and zero.
+	// These values override the legacy typed fields when both are supplied.
+	Environment           map[string]string `json:"environment,omitempty"`
+	SystemReservedMemory  string            `json:"system_reserved_memory,omitempty"`
+	SystemReservedCPU     string            `json:"system_reserved_cpu,omitempty"`
+	SystemReservedDisk    string            `json:"system_reserved_disk,omitempty"`
+	Port                  string            `json:"port,omitempty"`
+	Prefix                string            `json:"prefix,omitempty"`
+	InstallVersion        string            `json:"install_version,omitempty"`
+	RootPassword          string            `json:"root_password,omitempty"`
+	HmacSecret            string            `json:"hmac_secret,omitempty"`
+	EncryptionRsaKey      string            `json:"encryption_rsa_key,omitempty"`
+	LogLevel              string            `json:"log_level,omitempty"`
+	EnableTLS             bool              `json:"enable_tls,omitempty"`
+	TLSPort               string            `json:"tls_port,omitempty"`
+	TLSCertificate        string            `json:"tls_certificate,omitempty"`
+	TLSPrivateKey         string            `json:"tls_private_key,omitempty"`
+	DisableCatalogCaching bool              `json:"disable_catalog_caching,omitempty"`
+	TokenDurationMinutes  string            `json:"token_duration_minutes,omitempty"`
 	// EnabledModules is the comma-separated list of modules to enable
 	// (e.g. "api,host,catalog,orchestrator"). "api" is always included.
 	// Replaces the older Mode field; Mode is still accepted for backward

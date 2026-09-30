@@ -163,8 +163,23 @@ func writeServiceConfigFile(cfg ApiServiceConfig, outputDir string) error {
 		envMap[constants.LOG_TO_FILE_ENV_VAR] = "true"
 	}
 
-	cf := config.ConfigFile{
-		Environment: envMap,
+	if cfg.TLSPort != "" {
+		envMap[constants.TLS_PORT_ENV_VAR] = cfg.TLSPort
+	}
+	if cfg.UseOrchestratorResources {
+		envMap[constants.USE_ORCHESTRATOR_RESOURCES_ENV_VAR] = "true"
+	}
+	if cfg.SystemReservedMemory != "" {
+		envMap[constants.SYSTEM_RESERVED_MEMORY_ENV_VAR] = cfg.SystemReservedMemory
+	}
+	if cfg.SystemReservedCPU != "" {
+		envMap[constants.SYSTEM_RESERVED_CPU_ENV_VAR] = cfg.SystemReservedCPU
+	}
+	if cfg.SystemReservedDisk != "" {
+		envMap[constants.SYSTEM_RESERVED_DISK_ENV_VAR] = cfg.SystemReservedDisk
+	}
+	for key, value := range cfg.Environment {
+		envMap[key] = value
 	}
 
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
@@ -172,13 +187,43 @@ func writeServiceConfigFile(cfg ApiServiceConfig, outputDir string) error {
 	}
 
 	filePath := filepath.Join(outputDir, "prldevops_config.yaml")
-	content, err := yaml.Marshal(cf)
-	if err != nil {
-		return fmt.Errorf("could not marshal config: %w", err)
+	// Preserve unrelated runtime sections, replacing only the managed environment.
+	document := map[string]interface{}{}
+	existing, err := os.ReadFile(filePath)
+	if err == nil {
+		if err := yaml.Unmarshal(existing, &document); err != nil {
+			return fmt.Errorf("existing service configuration is invalid YAML")
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("could not read existing service configuration: %w", err)
 	}
-
-	if err := os.WriteFile(filePath, content, 0o644); err != nil {
-		return fmt.Errorf("could not write config file %s: %w", filePath, err)
+	if document == nil {
+		document = map[string]interface{}{}
+	}
+	document["environment"] = envMap
+	content, err := yaml.Marshal(document)
+	if err != nil {
+		return fmt.Errorf("could not marshal service configuration: %w", err)
+	}
+	// CreateTemp uses 0600, including when replacing a previously world-readable file.
+	temporary, err := os.CreateTemp(outputDir, ".prldevops_config-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(temporary.Name())
+	if _, err := temporary.Write(content); err != nil {
+		temporary.Close()
+		return err
+	}
+	if err := temporary.Sync(); err != nil {
+		temporary.Close()
+		return err
+	}
+	if err := temporary.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(temporary.Name(), filePath); err != nil {
+		return err
 	}
 
 	return nil
@@ -419,7 +464,7 @@ func getConfigFromEnv() ApiServiceConfig {
 		config.EnableTLS = false
 	}
 	if cfg.GetKey(constants.TLS_CERTIFICATE_ENV_VAR) != "" {
-		config.TLSPrivateKey = cfg.GetKey(constants.TLS_CERTIFICATE_ENV_VAR)
+		config.TLSCertificate = cfg.GetKey(constants.TLS_CERTIFICATE_ENV_VAR)
 	}
 	if cfg.GetKey(constants.TLS_PRIVATE_KEY_ENV_VAR) != "" {
 		config.TLSPrivateKey = cfg.GetKey(constants.TLS_PRIVATE_KEY_ENV_VAR)
@@ -428,7 +473,7 @@ func getConfigFromEnv() ApiServiceConfig {
 		config.RootPassword = cfg.GetKey(constants.ROOT_PASSWORD_ENV_VAR)
 	}
 	if cfg.GetKey(constants.DISABLE_CATALOG_CACHING_ENV_VAR) != "" {
-		config.DisableCatalogCaching = cfg.GetKey(constants.ROOT_PASSWORD_ENV_VAR) == "true"
+		config.DisableCatalogCaching = cfg.GetKey(constants.DISABLE_CATALOG_CACHING_ENV_VAR) == "true"
 	}
 	if cfg.GetKey(constants.TOKEN_DURATION_MINUTES_ENV_VAR) != "" {
 		config.TokenDurationMinutes = cfg.GetKey(constants.TOKEN_DURATION_MINUTES_ENV_VAR)
@@ -470,6 +515,9 @@ func getConfigFromEnv() ApiServiceConfig {
 		}
 	}
 
+	config.SystemReservedMemory = cfg.GetKey(constants.SYSTEM_RESERVED_MEMORY_ENV_VAR)
+	config.SystemReservedCPU = cfg.GetKey(constants.SYSTEM_RESERVED_CPU_ENV_VAR)
+	config.SystemReservedDisk = cfg.GetKey(constants.SYSTEM_RESERVED_DISK_ENV_VAR)
 	return config
 }
 
@@ -487,6 +535,10 @@ func getConfigFromFile(filePath string) (ApiServiceConfig, error) {
 
 	if err := json.Unmarshal(content, &result); err != nil {
 		return result, err
+	}
+
+	if result.EnabledModules == "" && result.Environment != nil {
+		result.EnabledModules = result.Environment[constants.ENABLED_MODULES_ENV_VAR]
 	}
 
 	// Normalise modules: prefer EnabledModules; fall back to Mode for backward compat.
