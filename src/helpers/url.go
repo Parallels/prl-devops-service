@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/constants"
@@ -48,59 +49,66 @@ func init() {
 	}
 }
 
-func ValidateUrl(urlStr string) error {
+func ValidateUrl(urlStr string, diag *errors.Diagnostics) {
 	if urlStr == "" {
-		return errors.New("url is required")
+		diag.AddError(strconv.Itoa(errors.MissingURL), "url is required", "ValidateUrl")
+		return
 	}
 
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
-		return errors.New("invalid url format")
+		diag.AddError(strconv.Itoa(errors.InvalidURL), "invalid url format", "ValidateUrl")
+		return
 	}
 
 	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-		return errors.New("only http and https protocols are allowed")
+		diag.AddError(strconv.Itoa(errors.InvalidURL), "only http and https protocols are allowed", "")
+		return
 	}
 
 	if parsedURL.Host == "" {
-		return errors.New("url must contain a hostname")
+		diag.AddError(strconv.Itoa(errors.InvalidURL), "url must contain a hostname", "")
+		return
 	}
-
-	return nil
 }
 
-func IsUrlAllowed(urlStr string) error {
-	if err := ValidateUrl(urlStr); err != nil {
-		return err
+func IsUrlAllowed(urlStr string, diag *errors.Diagnostics) {
+	ValidateUrl(urlStr, diag)
+	if diag.HasErrors() {
+		return
 	}
 
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
-		return errors.New("invalid url format")
+		diag.AddError(strconv.Itoa(errors.InvalidURL), "invalid url format", "IsUrlAllowed")
+		return
 	}
 
 	host := parsedURL.Hostname()
 
 	if isWhitelisted(host) {
-		return nil
+		return
 	}
 
 	if isForbiddenHostname(host) {
-		return errors.New("access to this url is not allowed")
+		diag.AddError(strconv.Itoa(errors.InvalidURL), "access to this url is not allowed", "")
+		return
 	}
 
 	ips, err := net.LookupIP(host)
 	if err != nil {
-		return errors.New("unable to resolve hostname")
+		diag.AddError(strconv.Itoa(errors.InvalidURL), "unable to resolve hostname", "")
+		return
 	}
 
 	for _, ip := range ips {
 		if isForbiddenIP(ip) {
-			return errors.New("access to this url is not allowed")
+			diag.AddError(strconv.Itoa(errors.InvalidURL), "access to this url is not allowed", "")
+			return
 		}
 	}
 
-	return nil
+	return
 }
 
 func isForbiddenHostname(hostname string) bool {
@@ -205,16 +213,18 @@ func GetResolvedIPs(hostname string) ([]net.IP, error) {
 	return ips, nil
 }
 
-func ValidateCatalogManagerUrl(managerURL string) error {
+func ValidateCatalogManagerUrl(managerURL string, diag *errors.Diagnostics) {
 	if isUrlValidationDisabled() {
-		return nil
+		return
 	}
 
-	if err := IsUrlAllowed(managerURL); err != nil {
-		return err
+	IsUrlAllowed(managerURL, diag)
+
+	if diag.HasErrors() {
+		return
 	}
 
-	return nil
+	return
 }
 
 func isUrlValidationDisabled() bool {

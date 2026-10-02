@@ -3,7 +3,6 @@ package controllers
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs"
 	"github.com/Parallels/prl-devops-service/mappers"
@@ -1883,6 +1883,8 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+
+		pushCatalogManifestDiag := errors.NewDiagnostics("/catalog/push")
 		var request catalog_models.PushCatalogManifestRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -1893,19 +1895,20 @@ func PushCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		// Validate architecture and path
-		arch, err := catalog_helpers.ValidateArch(request.Architecture)
-		if err != nil {
+		arch := catalog_helpers.ValidateArch(request.Architecture, pushCatalogManifestDiag)
+		if pushCatalogManifestDiag.HasErrors() {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
+				Message: "Invalid request body: " + pushCatalogManifestDiag.GetErrors()[0].Message,
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
 		request.Architecture = arch
 
-		if err := request.Validate(); err != nil {
+		request.Validate(pushCatalogManifestDiag)
+		if pushCatalogManifestDiag.HasErrors() {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
+				Message: "Invalid request body: " + pushCatalogManifestDiag.GetErrors()[0].Message,
 				Code:    http.StatusBadRequest,
 			})
 			return
@@ -1994,7 +1997,7 @@ func AsyncPushCatalogManifestHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		asyncPushCatalogManifestDiag := errors.NewDiagnostics("/catalog/push/async")
 		userContext := ctx.GetUser()
 		if userContext == nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
@@ -2011,19 +2014,20 @@ func AsyncPushCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		// Validate architecture
-		arch, err := catalog_helpers.ValidateArch(request.Architecture)
-		if err != nil {
+		arch := catalog_helpers.ValidateArch(request.Architecture, asyncPushCatalogManifestDiag)
+		if asyncPushCatalogManifestDiag.HasErrors() {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
+				Message: "Invalid request body: " + asyncPushCatalogManifestDiag.GetErrors()[0].Message,
 				Code:    http.StatusBadRequest,
 			})
 			return
 		}
 		request.Architecture = arch
 
-		if err := request.Validate(); err != nil {
+		request.Validate(asyncPushCatalogManifestDiag)
+		if asyncPushCatalogManifestDiag.HasErrors() {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
+				Message: "Invalid request body: " + asyncPushCatalogManifestDiag.GetErrors()[0].Message,
 				Code:    http.StatusBadRequest,
 			})
 			return
@@ -2069,6 +2073,7 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
+		pullCatalogManifestDiag := errors.NewDiagnostics("/catalog/pull")
 		var request catalog_models.PullCatalogManifestRequest
 		if err := http_helper.MapRequestBody(r, &request); err != nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
@@ -2079,10 +2084,10 @@ func PullCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		// Validate architecture and path
-		arch, err := catalog_helpers.ValidateArch(request.Architecture)
-		if err != nil {
+		arch := catalog_helpers.ValidateArch(request.Architecture, pullCatalogManifestDiag)
+		if pullCatalogManifestDiag.HasErrors() {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
+				Message: "Invalid request body: " + pullCatalogManifestDiag.GetErrors()[0].Message,
 				Code:    http.StatusBadRequest,
 			})
 			return
@@ -2207,7 +2212,7 @@ func AsyncPullCatalogManifestHandler() restapi.ControllerHandler {
 		defer r.Body.Close()
 		ctx := GetBaseContext(r)
 		defer Recover(ctx, r, w)
-
+		asyncPullCatalogManifestDiag := errors.NewDiagnostics("/catalog/pull/async")
 		userContext := ctx.GetUser()
 		if userContext == nil {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{Code: http.StatusUnauthorized, Message: "User not found"})
@@ -2224,10 +2229,10 @@ func AsyncPullCatalogManifestHandler() restapi.ControllerHandler {
 		}
 
 		// Validate architecture and path
-		arch, err := catalog_helpers.ValidateArch(request.Architecture)
-		if err != nil {
+		arch := catalog_helpers.ValidateArch(request.Architecture, asyncPullCatalogManifestDiag)
+		if asyncPullCatalogManifestDiag.HasErrors() {
 			ReturnApiError(ctx, w, models.ApiErrorResponse{
-				Message: "Invalid request body: " + err.Error(),
+				Message: "Invalid request body: " + asyncPullCatalogManifestDiag.GetErrors()[0].Message,
 				Code:    http.StatusBadRequest,
 			})
 			return

@@ -200,3 +200,8 @@ func NewWithCodeAndNestedErrorf(sysError SystemError, code int, format string, a
 
 	return err
 }
+
+const (
+	MissingURL = 1000 // Specifically for empty/missing strings
+	InvalidURL = 1001 // Specifically for bad formatting or schemes
+)
