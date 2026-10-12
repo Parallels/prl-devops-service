@@ -416,6 +416,11 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 	l.Router.HandleFunc(l.GetApiPrefix()+"/", defaultHomepageController)
 	l.Router.HandleFunc(l.GetApiPrefix()+"/shutdown", globalHttpListener.ShutdownHandler)
 
+	// Register routes before either listener starts, including in HTTPS-only mode.
+	for _, controller := range l.Controllers {
+		_ = controller.Serve()
+	}
+
 	// =====================================================
 	// HTTPS/TLS SERVER SETUP (Start first)
 	// =====================================================
@@ -507,10 +512,6 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 		}
 
 		l.Servers = append(l.Servers, srv)
-
-		for _, controller := range l.Controllers {
-			_ = controller.Serve()
-		}
 
 		go func() {
 			l.Logger.Info("Api listening on http://::" + l.Options.HttpPort + l.GetApiPrefix())
