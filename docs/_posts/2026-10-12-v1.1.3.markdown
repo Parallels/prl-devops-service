@@ -1,0 +1,12 @@
+---
+layout: post
+title:  "Release 1.1.3"
+date:   2026-10-12 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- This update modifies the `Start` method in `http_listener.go` to register routes before starting the listener, specifically for HTTPS-only mode. This ensures that all controllers are properly served when the server is initialized in a secure context. Additionally, a new test file `http_listener_tls_test.go` has been added to verify that controllers are registered correctly in HTTPS-only mode.
+
+
