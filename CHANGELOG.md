@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2026-10-12
+
+- This update modifies the `Start` method in `http_listener.go` to register routes before starting the listener, specifically for HTTPS-only mode. This ensures that all controllers are properly served when the server is initialized in a secure context. Additionally, a new test file `http_listener_tls_test.go` has been added to verify that controllers are registered correctly in HTTPS-only mode.
+
 ## [1.1.2] - 2026-09-30
 
 - This update introduces additional fields to the ApiServiceConfig struct, allowing for the configuration of system resources such as memory, CPU, and disk space. The writeServiceConfigFile function has been modified to handle these new fields, ensuring they are correctly written to the configuration file. Additionally, tests have been added to verify the correct behavior of these changes.
