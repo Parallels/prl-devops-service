@@ -1,0 +1,12 @@
+---
+layout: post
+title:  "Release 1.1.4"
+date:   2026-10-29 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- updated packages: upgraded curl, coreutils, bash, musl-utils, and ca-certificates in Dockerfile
+
+
