@@ -48,7 +48,7 @@ RUN --mount=type=secret,id=amplitude_api_key \
 ############################
 FROM alpine:latest
 
-RUN apk update && apk add curl coreutils bash musl-utils ca-certificates
+RUN apk update && apk upgrade && apk add curl coreutils bash musl-utils ca-certificates
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /tmp/
