@@ -2,28 +2,42 @@ package system
 
 import (
 	"testing"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/models"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseDfCommand(t *testing.T) {
+func TestRefreshDiskInfoReportsFreeSpace(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
 	svc := New(ctx)
 
-	// Sample df -h / output on typical macOS/Linux
-	output := `Filesystem      Size  Used Avail Use% Mounted on
-/dev/disk3s1s1  460G   14G  330G   5% /`
+	info := &models.SystemHardwareInfo{}
+	svc.refreshDiskInfo(ctx, info)
 
-	total, avail, err := svc.parseDfCommand(output)
+	assert.Greater(t, info.DiskSize, float64(0))
+	assert.Greater(t, info.FreeDiskSize, float64(0))
+	assert.LessOrEqual(t, info.FreeDiskSize, info.DiskSize)
+}
+
+func TestGetHardwareInfoRefreshesDiskAfterTTL(t *testing.T) {
+	ctx := basecontext.NewBaseContext()
+	svc := New(ctx)
+
+	// Seed a stale cache entry with bogus disk values.
+	svc.cache.HardwareInfo = &models.SystemHardwareInfo{DiskSize: 1, FreeDiskSize: 1, LogicalCpuCount: 42}
+	svc.cache.HardwareInfoDiskUpdatedAt = time.Now()
+
+	fresh, err := svc.GetHardwareInfo(ctx)
 	assert.NoError(t, err)
-	assert.Equal(t, float64(493921239040), total) // 460G, field 1
-	// The function actually reads fields[2] for free disk, which is "14G" in this case (index 0,1,2: Filesystem, Size, Used, Avail...)
-	// In the string above fields are [ "/dev/disk3s1s1", "460G", "14G", "330G", "5%", "/" ]
-	// So fields[1] is 460G, fields[2] is 14G.
-	// Our mock string matches the typical Linux `df -h` but the existing Go code reads fields[1] and fields[2] (Used) instead of fields[3] (Avail) for `freeDisk`!
-	// Wait, let's just make the test assert what the function currently does so we verify the parsing logic doesn't break.
-	assert.Equal(t, float64(15032385536), avail) // 14G
+	assert.Equal(t, float64(1), fresh.DiskSize, "disk must be served from cache within the TTL")
+
+	svc.cache.HardwareInfoDiskUpdatedAt = time.Now().Add(-2 * diskInfoTTL)
+	stale, err := svc.GetHardwareInfo(ctx)
+	assert.NoError(t, err)
+	assert.Greater(t, stale.DiskSize, float64(1), "disk must be re-read after the TTL")
+	assert.Equal(t, 42, stale.LogicalCpuCount, "static fields stay cached")
 }
 
 // NOTE: GetOsVersionForLinux and GetOSName use the physical host's OS.
