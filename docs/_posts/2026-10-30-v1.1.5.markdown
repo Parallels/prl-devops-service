@@ -1,0 +1,13 @@
+---
+layout: post
+title:  "Release 1.1.5"
+date:   2026-10-30 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- fix: ensure disk size and free disk size are accurately reported
+- test: add tests for disk info refresh and caching behavior
+
+
