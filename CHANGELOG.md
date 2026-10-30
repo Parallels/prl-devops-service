@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.5] - 2026-10-30
+
+- fix: ensure disk size and free disk size are accurately reported
+- test: add tests for disk info refresh and caching behavior
+
 ## [1.1.4] - 2026-10-29
 
 - updated packages: upgraded curl, coreutils, bash, musl-utils, and ca-certificates in Dockerfile
