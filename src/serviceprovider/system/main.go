@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -20,6 +21,13 @@ var VersionSvc = appversion.Get()
 
 var globalSystemService *SystemService
 
+// diskInfoTTL is how long the disk figures in the cached hardware info are
+// considered fresh; CPU and memory are static and cached for the process lifetime.
+const diskInfoTTL = 60 * time.Second
+
+// macDataVolume holds user data on APFS; "/" is the small read-only system volume.
+const macDataVolume = "/System/Volumes/Data"
+
 type SystemServiceCache struct {
 	IsCached                     bool
 	SystemUsers                  []models.SystemUser
@@ -27,6 +35,7 @@ type SystemServiceCache struct {
 	CurrentUserHome              string
 	UniqueId                     string
 	HardwareInfo                 *models.SystemHardwareInfo
+	HardwareInfoDiskUpdatedAt    time.Time
 	OperatingSystem              string
 	Architecture                 string
 	ExternalIpAddress            string
@@ -39,6 +48,7 @@ type SystemService struct {
 	installed      bool
 	dependencies   []interfaces.Service
 	cache          SystemServiceCache
+	hardwareMu     sync.Mutex
 }
 
 func Get() *SystemService {
@@ -537,9 +547,18 @@ func (s *SystemService) changeLinuxFileUserOwner(userName string, filePath strin
 }
 
 func (s *SystemService) GetHardwareInfo(ctx basecontext.ApiContext) (*models.SystemHardwareInfo, error) {
+	s.hardwareMu.Lock()
+	defer s.hardwareMu.Unlock()
+
 	if s.cache.HardwareInfo != nil {
-		ctx.LogDebugf("[SYSTEM] Returning cached hardware info")
-		return s.cache.HardwareInfo, nil
+		if time.Since(s.cache.HardwareInfoDiskUpdatedAt) < diskInfoTTL {
+			ctx.LogDebugf("[SYSTEM] Returning cached hardware info")
+		} else {
+			ctx.LogDebugf("[SYSTEM] Disk info expired, refreshing")
+			s.refreshDiskInfo(ctx, s.cache.HardwareInfo)
+		}
+		cached := *s.cache.HardwareInfo
+		return &cached, nil
 	}
 
 	var response *models.SystemHardwareInfo
@@ -553,9 +572,43 @@ func (s *SystemService) GetHardwareInfo(ctx basecontext.ApiContext) (*models.Sys
 	default:
 		return nil, errors.New("Not implemented")
 	}
+	if err != nil {
+		return nil, err
+	}
 
 	s.cache.HardwareInfo = response
-	return response, err
+	s.cache.HardwareInfoDiskUpdatedAt = time.Now()
+	cached := *response
+	return &cached, nil
+}
+
+// diskPath returns the path whose filesystem holds the user's data.
+func (s *SystemService) diskPath() string {
+	if s.GetOperatingSystem() == "macos" {
+		if _, err := os.Stat(macDataVolume); err == nil {
+			return macDataVolume
+		}
+	}
+	return "/"
+}
+
+// refreshDiskInfo updates the disk fields of info in place, keeping the previous
+// values if the filesystem cannot be queried.
+func (s *SystemService) refreshDiskInfo(ctx basecontext.ApiContext, info *models.SystemHardwareInfo) {
+	path := s.diskPath()
+	totalDiskMB, err := helpers.GetTotalDiskSpace(path)
+	if err != nil {
+		ctx.LogWarnf("[SYSTEM] Failed to get total disk space for %s: %v", path, err)
+		return
+	}
+	freeDiskMB, err := helpers.GetFreeDiskSpace(path)
+	if err != nil {
+		ctx.LogWarnf("[SYSTEM] Failed to get free disk space for %s: %v", path, err)
+		return
+	}
+	info.DiskSize = float64(totalDiskMB)
+	info.FreeDiskSize = float64(freeDiskMB)
+	s.cache.HardwareInfoDiskUpdatedAt = time.Now()
 }
 
 func (s *SystemService) getMacSystemHardwareInfo(ctx basecontext.ApiContext) (*models.SystemHardwareInfo, error) {
@@ -580,10 +633,6 @@ func (s *SystemService) getMacSystemHardwareInfo(ctx basecontext.ApiContext) (*m
 		Command: "sysctl",
 		Args:    []string{"-n", "hw.memsize"},
 	}
-	diskAvailableCmd := helpers.Command{
-		Command: "df",
-		Args:    []string{"-h", "/"},
-	}
 	cpuBrand, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cpuBrandNameCmd, helpers.ExecutionTimeout)
 	if err != nil {
 		return nil, err
@@ -604,10 +653,6 @@ func (s *SystemService) getMacSystemHardwareInfo(ctx basecontext.ApiContext) (*m
 	if err != nil {
 		return nil, err
 	}
-	diskAvailable, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), diskAvailableCmd, helpers.ExecutionTimeout)
-	if err != nil {
-		return nil, err
-	}
 	result.CpuType = strings.ReplaceAll(cpuType, "\n", "")
 	result.CpuBrand = strings.ReplaceAll(cpuBrand, "\n", "")
 	physicalCpuCountInt, err := strconv.Atoi(helpers.CleanOutputString(physicalCpuCount))
@@ -625,12 +670,7 @@ func (s *SystemService) getMacSystemHardwareInfo(ctx basecontext.ApiContext) (*m
 		return nil, err
 	}
 	result.MemorySize = helpers.ConvertByteToMegabyte(memorySizeInt)
-	totalDiskInt, diskAvailableInt, err := s.parseDfCommand(diskAvailable)
-	if err != nil {
-		return nil, err
-	}
-	result.DiskSize = helpers.ConvertByteToMegabyte(totalDiskInt)
-	result.FreeDiskSize = helpers.ConvertByteToMegabyte(diskAvailableInt)
+	s.refreshDiskInfo(ctx, &result)
 
 	return &result, nil
 }
@@ -695,40 +735,9 @@ func (s *SystemService) getLinuxSystemHardwareInfo(ctx basecontext.ApiContext) (
 		}
 	}
 
-	// Disk — reuse the existing Unix syscall helpers (work on both Linux and Darwin)
-	totalDiskMB, err := helpers.GetTotalDiskSpace("/")
-	if err != nil {
-		ctx.LogWarnf("[SYSTEM] Linux hardware info: failed to get total disk space: %v", err)
-	} else {
-		result.DiskSize = float64(totalDiskMB)
-	}
-	freeDiskMB, err := helpers.GetFreeDiskSpace("/")
-	if err != nil {
-		ctx.LogWarnf("[SYSTEM] Linux hardware info: failed to get free disk space: %v", err)
-	} else {
-		result.FreeDiskSize = float64(freeDiskMB)
-	}
+	s.refreshDiskInfo(ctx, &result)
 
 	return &result, nil
-}
-
-func (s *SystemService) parseDfCommand(output string) (totalDisk float64, freeDisk float64, err error) {
-	lines := strings.Split(output, "\n")
-	if len(lines) > 1 {
-		fields := strings.Fields(lines[1])
-		if len(fields) > 2 {
-			totalDisk, err = helpers.GetSizeByteFromString(helpers.CleanOutputString(fields[1]))
-			if err != nil {
-				return -1, -1, err
-			}
-			freeDisk, err = helpers.GetSizeByteFromString(helpers.CleanOutputString(fields[2]))
-			if err != nil {
-				return -1, -1, err
-			}
-		}
-	}
-
-	return totalDisk, freeDisk, nil
 }
 
 func (s *SystemService) GetArchitecture(ctx basecontext.ApiContext) (string, error) {
