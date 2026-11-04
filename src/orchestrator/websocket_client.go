@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -44,15 +45,60 @@ type HostWebSocketClient struct {
 }
 
 func NewHostWebSocketClient(ctx basecontext.ApiContext, host *models.OrchestratorHost, manager *HostWebSocketManager) *HostWebSocketClient {
+	hostName, hostPort, hostSchema := normalizeHostEndpoint(host)
 	return &HostWebSocketClient{
 		ctx:        ctx,
 		hostID:     host.ID,
-		hostName:   host.Host,
-		hostPort:   host.Port,
-		hostSchema: host.Schema,
+		hostName:   hostName,
+		hostPort:   hostPort,
+		hostSchema: hostSchema,
 		hostAuth:   host.Authentication,
 		stopChan:   make(chan struct{}),
 	}
+}
+
+// normalizeHostEndpoint returns the bare hostname, port and scheme to dial,
+// tolerating every stored form of the Host field:
+//
+//   - "https://host:3080/api" (full URL stored by the update endpoint):
+//     name, port and schema are extracted from the URL;
+//   - "host" or "host:3080" (canonical register form, possibly with an
+//     embedded port and no schema): the port is split out so it is not
+//     appended twice, and the schema comes from the Schema field;
+//   - no schema anywhere: http is assumed.
+//
+// Without this, a Host holding a full URL made the client build
+// "https://https://host:3080/api:3080" and the dialer tried to resolve the
+// literal hostname "https".
+func normalizeHostEndpoint(host *models.OrchestratorHost) (string, string, string) {
+	hostName, hostPort, hostSchema := host.Host, host.Port, host.Schema
+
+	if strings.Contains(hostName, "://") {
+		if parsed, err := url.Parse(hostName); err == nil && parsed.Hostname() != "" {
+			hostName = bracketIPv6(parsed.Hostname())
+			if p := parsed.Port(); p != "" {
+				hostPort = p
+			}
+			hostSchema = parsed.Scheme
+		}
+	} else if name, port, err := net.SplitHostPort(hostName); err == nil && name != "" && port != "" {
+		hostName = bracketIPv6(name)
+		hostPort = port
+	}
+
+	if hostSchema == "" {
+		hostSchema = "http"
+	}
+	return hostName, hostPort, hostSchema
+}
+
+// bracketIPv6 re-wraps a bare IPv6 literal in brackets so appending ":port"
+// still yields a dialable address (Hostnames from url.Parse are unbracketed).
+func bracketIPv6(name string) string {
+	if strings.Contains(name, ":") && !strings.HasPrefix(name, "[") {
+		return "[" + name + "]"
+	}
+	return name
 }
 
 func (c *HostWebSocketClient) Connect(events []constants.EventType) {

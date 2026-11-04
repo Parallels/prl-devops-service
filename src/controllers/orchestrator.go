@@ -1019,7 +1019,13 @@ func UpdateOrchestratorHostHandler() restapi.ControllerHandler {
 		}
 
 		if request.Host != "" {
-			host.Host = request.Host
+			// Store the bare hostname, like the register (POST) flow does in
+			// mappers.ApiOrchestratorRequestToDto. request.Host is re-normalized
+			// by Validate() into a full URL (schema://host:port/prefix); storing
+			// it verbatim here made the WS client dial
+			// "schema://schema://host:port/prefix:port", which resolves to the
+			// literal hostname "schema".
+			host.Host = request.HostName
 			host.Schema = request.Schema
 			host.Port = request.Port
 			host.PathPrefix = request.Prefix
