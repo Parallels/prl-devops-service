@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.7] - 2026-11-04
+
+
+
 ## [1.1.6] - 2026-11-04
 
 - docs: add architecture section and CHANGELOG feature entry in README
