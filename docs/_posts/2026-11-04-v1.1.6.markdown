@@ -1,0 +1,15 @@
+---
+layout: post
+title:  "Release 1.1.6"
+date:   2026-11-04 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- docs: add architecture section and CHANGELOG feature entry in README
+- docs: create feature brief for database layer migration to GORM
+- docs: establish a detailed plan for GORM migration architecture
+- fix: issue with how we processed the host schema for websockets communication
+
+

@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.6] - 2026-11-04
+
+- docs: add architecture section and CHANGELOG feature entry in README
+- docs: create feature brief for database layer migration to GORM
+- docs: establish a detailed plan for GORM migration architecture
+- fix: issue with how we processed the host schema for websockets communication
+
 ## [1.1.5] - 2026-10-30
 
 - fix: ensure disk size and free disk size are accurately reported
