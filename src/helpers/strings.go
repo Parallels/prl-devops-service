@@ -116,13 +116,36 @@ func CleanOutputString(s string) string {
 	return strings.TrimSpace(s)
 }
 
+// SanitizeArchivePath joins an archive entry name onto a destination directory and
+// verifies that the result stays lexically inside that directory.
+//
+// Entry names come from untrusted archive headers, so absolute paths, volume names
+// and any name that resolves above the destination are rejected. The containment test
+// is done with filepath.Rel rather than a string prefix test: a prefix test accepts
+// sibling directories (destination /tmp/dest would happily accept /tmp/dest-evil/x).
 func SanitizeArchivePath(d, t string) (v string, err error) {
-	v = filepath.Join(d, t)
-	if strings.HasPrefix(v, filepath.Clean(d)) {
-		return v, nil
+	if d == "" {
+		return "", fmt.Errorf("%s: %s", "content filepath has no destination", t)
 	}
 
-	return "", fmt.Errorf("%s: %s", "content filepath is tainted", t)
+	if filepath.IsAbs(t) || filepath.VolumeName(t) != "" {
+		return "", fmt.Errorf("%s: %s", "content filepath is tainted", t)
+	}
+
+	root, err := filepath.Abs(filepath.Clean(d))
+	if err != nil {
+		return "", fmt.Errorf("%s: %s", "content filepath is tainted", t)
+	}
+
+	// Archive entries are slash separated on every platform.
+	v = filepath.Join(root, filepath.FromSlash(t))
+
+	rel, err := filepath.Rel(root, v)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return "", fmt.Errorf("%s: %s", "content filepath is tainted", t)
+	}
+
+	return v, nil
 }
 
 func ObfuscateString(value string) string {

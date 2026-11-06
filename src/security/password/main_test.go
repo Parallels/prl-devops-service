@@ -1,8 +1,6 @@
 package password
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"os"
 	"testing"
 
@@ -20,9 +18,7 @@ func TestNoHashingAlgorithm(t *testing.T) {
 	svc.HashingAlgorithm = "test"
 
 	_, err := svc.Hash(input, salt)
-	if err != nil {
-		assert.EqualError(t, err, "error: Unknown password hashing algorithm: test")
-	}
+	assert.EqualError(t, err, "error: Unknown password hashing algorithm: test")
 }
 
 func TestGetWithoutNew(t *testing.T) {
@@ -59,22 +55,20 @@ func TestGetWithoutNew(t *testing.T) {
 	assert.Equal(t, testSvc.GetOptions().SaltPassword(), svc.GetOptions().SaltPassword())
 }
 
-func TestSHA256hash(t *testing.T) {
+// SHA-256 was removed as a hashing option: a fast hash allows anyone holding a stored
+// password to guess it offline. Selecting it must now fail rather than silently hash.
+func TestSha256IsRejected(t *testing.T) {
 	input := "password"
 	salt := "somesalt"
 	ctx := basecontext.NewRootBaseContext()
 	svc := New(ctx)
-	svc.HashingAlgorithm = PasswordHashingAlgorithmSHA256
+	svc.HashingAlgorithm = PasswordHashingAlgorithm("sha256")
 
-	hashedPwd, err := svc.Hash(input, salt)
-	if err != nil {
-		t.Errorf("Error hashing password: %v", err)
-	}
+	_, err := svc.Hash(input, salt)
+	assert.EqualError(t, err, "error: Unknown password hashing algorithm: sha256")
 
-	CompareHashedPwd := sha256.Sum256([]byte(input + salt))
-	hashedPwdStr := hex.EncodeToString(CompareHashedPwd[:])
-
-	assert.Equal(t, hashedPwd, hashedPwdStr)
+	err = svc.Compare(input, salt, "5f4dcc3b5aa765d61d8327deb882cf99b2fb5793ee19f3d2b0d3b6b4b0c3d0b5")
+	assert.EqualError(t, err, "error: Unknown password hashing algorithm: sha256")
 }
 
 func TestBcryptHash(t *testing.T) {
@@ -240,30 +234,12 @@ func TestCompareBcrypt(t *testing.T) {
 	}
 }
 
-func TestCompareSHA256(t *testing.T) {
+func TestCompareBcryptWithWrongPassword(t *testing.T) {
 	input := "password"
 	salt := "somesalt"
 	ctx := basecontext.NewRootBaseContext()
 	svc := New(ctx)
-	svc.HashingAlgorithm = PasswordHashingAlgorithmSHA256
-
-	hashedPwd, err := svc.Hash(input, salt)
-	if err != nil {
-		t.Errorf("Error hashing password: %v", err)
-	}
-
-	err = svc.Compare(input, salt, hashedPwd)
-	if err != nil {
-		t.Errorf("Hashed password does not match input: %v", err)
-	}
-}
-
-func TestCompareSHA256WithWrongPassword(t *testing.T) {
-	input := "password"
-	salt := "somesalt"
-	ctx := basecontext.NewRootBaseContext()
-	svc := New(ctx)
-	svc.HashingAlgorithm = PasswordHashingAlgorithmSHA256
+	svc.HashingAlgorithm = PasswordHashingAlgorithmBCrypt
 
 	hashedPwd, err := svc.Hash(input, salt)
 	if err != nil {
@@ -271,7 +247,7 @@ func TestCompareSHA256WithWrongPassword(t *testing.T) {
 	}
 
 	err = svc.Compare("wrongpassword", salt, hashedPwd)
-	assert.EqualError(t, err, "error: passwords do not match")
+	assert.EqualError(t, err, "crypto/bcrypt: hashedPassword is not the hash of the given password")
 }
 
 func TestCompareWithNoHash(t *testing.T) {
@@ -290,17 +266,6 @@ func TestHashWithBcryptSaltError(t *testing.T) {
 	salt := "somesalt"
 	ctx := basecontext.NewRootBaseContext()
 	svc := New(ctx)
-
-	_, err := svc.Hash(input, salt)
-	assert.EqualError(t, err, "error: password cannot be longer than 40 characters")
-}
-
-func TestHashWithSHA256SaltError(t *testing.T) {
-	input := "passwordpasswordpasswordpasswordpasswordpasswordpasswordpasswordpasswordpassword"
-	salt := "somesalt"
-	ctx := basecontext.NewRootBaseContext()
-	svc := New(ctx)
-	svc.HashingAlgorithm = PasswordHashingAlgorithmSHA256
 
 	_, err := svc.Hash(input, salt)
 	assert.EqualError(t, err, "error: password cannot be longer than 40 characters")
@@ -329,20 +294,6 @@ func TestCompareWithBcryptError(t *testing.T) {
 	assert.Nil(t, err)
 	err = svc.Compare("", salt, "")
 	assert.EqualError(t, err, "crypto/bcrypt: hashedSecret too short to be a bcrypted password")
-}
-
-func TestCompareWithSHA256SaltError(t *testing.T) {
-	input := "password"
-	LongInput := "passwordpasswordpasswordpasswordpasswordpasswordpasswordpasswordpasswordpassword"
-	salt := "somesalt"
-	ctx := basecontext.NewRootBaseContext()
-	svc := New(ctx)
-	svc.HashingAlgorithm = PasswordHashingAlgorithmSHA256
-
-	_, err := svc.Hash(input, salt)
-	assert.Nil(t, err)
-	err = svc.Compare(LongInput, salt, "")
-	assert.EqualError(t, err, "error: password cannot be longer than 40 characters")
 }
 
 func TestPasswordService_processEnvironmentVariables(t *testing.T) {
