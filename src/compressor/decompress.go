@@ -10,7 +10,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -261,6 +260,30 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 	}
 
 	logger.LogInfof("Processing tar archive to %s", destination)
+
+	if _, err := os.Stat(destination); os.IsNotExist(err) {
+		if err := os.MkdirAll(destination, 0o750); err != nil {
+			return err
+		}
+	}
+
+	// SanitizeArchivePath resolves against the absolute destination, so the relative
+	// path handed to the root below has to be resolved against the same value.
+	destinationAbs, err := filepath.Abs(filepath.Clean(destination))
+	if err != nil {
+		return err
+	}
+
+	// Every filesystem write below goes through the opened root, so the operating
+	// system - not a string comparison - is what keeps an archive entry from landing
+	// outside the destination, including through a symlink materialised earlier in the
+	// same archive.
+	root, err := os.OpenRoot(destination)
+	if err != nil {
+		return err
+	}
+	defer root.Close()
+
 	for {
 		header, err := tarReader.Next()
 		if err == io.EOF {
@@ -277,6 +300,11 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 			return err
 		}
 
+		relPath, err := filepath.Rel(destinationAbs, destinationFilePath)
+		if err != nil {
+			return fmt.Errorf("failed to resolve destination for archive entry %s: %v", header.Name, err)
+		}
+
 		correlationId := jobId
 		if correlationId == "" {
 			correlationId = destinationFilePath
@@ -290,9 +318,8 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 		}
 
 		// Creating the basedir if it does not exist
-		baseDir := filepath.Dir(destinationFilePath)
-		if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-			if err := os.MkdirAll(baseDir, 0o750); err != nil {
+		if baseDir := filepath.Dir(relPath); baseDir != "." {
+			if err := root.MkdirAll(baseDir, 0o750); err != nil {
 				return err
 			}
 		}
@@ -300,48 +327,19 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 		switch header.Typeflag {
 		case tar.TypeDir:
 			ctx.LogDebugf("Directory type found for file %v (byte %v, rune %v)", destinationFilePath, header.Typeflag, string(header.Typeflag))
-			if _, err := os.Stat(destinationFilePath); os.IsNotExist(err) {
-				if err := os.MkdirAll(destinationFilePath, os.FileMode(header.Mode)); err != nil {
-					return err
-				}
+			if err := root.MkdirAll(relPath, os.FileMode(header.Mode)); err != nil {
+				return err
 			}
-		case tar.TypeReg:
+		case tar.TypeReg, tar.TypeGNUSparse:
 			ctx.LogDebugf("HardFile type found for file %v (byte %v, rune %v): size %v", destinationFilePath, header.Typeflag, string(header.Typeflag), header.Size)
-			file, err := os.OpenFile(filepath.Clean(destinationFilePath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(header.Mode))
-			if err != nil {
+			if err := extractTarEntry(ctx, root, relPath, header, tarReader, jobId, action); err != nil {
 				return err
 			}
-			defer file.Close()
-
-			if err := copyTarChunks(ctx, file, tarReader, header.Size, jobId, action); err != nil {
-				return err
-			}
-		case tar.TypeGNUSparse:
-			ctx.LogDebugf("Sparse File type found for file %v (byte %v, rune %v): size %v", destinationFilePath, header.Typeflag, string(header.Typeflag), header.Size)
-			file, err := os.OpenFile(filepath.Clean(destinationFilePath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(header.Mode))
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			if err := copyTarChunks(ctx, file, tarReader, header.Size, jobId, action); err != nil {
-				return err
-			}
-		case tar.TypeSymlink:
-			ctx.LogDebugf("Symlink File type found for file %v (byte %v, rune %v)", destinationFilePath, header.Typeflag, string(header.Typeflag))
-			realLinkPath, err := filepath.EvalSymlinks(filepath.Join(destination, header.Linkname))
-			if err != nil {
-				ctx.LogWarnf("Error resolving symlink path: %v", header.Linkname)
-			}
-
-			relLinkPath, err := filepath.Rel(destination, realLinkPath)
-			if err != nil || strings.HasPrefix(filepath.Clean(relLinkPath), "..") {
-				ctx.LogWarnf("Symlink path is not within the destination directory: %v", realLinkPath)
-				continue
-			}
-			if err := os.Symlink(realLinkPath, destinationFilePath); err != nil {
-				return fmt.Errorf("failed to create symlink: %v", err)
-			}
+		case tar.TypeSymlink, tar.TypeLink:
+			// Links are never materialised: an entry that creates a link inside the
+			// destination can aim it at anything on the host, and a later entry would then
+			// follow it and write there.
+			ctx.LogWarnf("Skipping link entry %v (byte %v, rune %v): links are not extracted from archives", destinationFilePath, header.Typeflag, string(header.Typeflag))
 		default:
 			ctx.LogWarnf("Unknown type found for file %v, ignoring (byte %v, rune %v)", destinationFilePath, header.Typeflag, string(header.Typeflag))
 		}
@@ -353,6 +351,29 @@ func processTarFile(ctx basecontext.ApiContext, tarReader *tar.Reader, destinati
 	}
 
 	return nil
+}
+
+// extractTarEntry writes a single regular or sparse entry below root. The handle is
+// closed before returning instead of being deferred, because a caller loops over
+// every entry of the archive and would otherwise hold one descriptor per entry.
+func extractTarEntry(ctx basecontext.ApiContext, root *os.Root, relPath string, header *tar.Header, tarReader *tar.Reader, jobId string, action string) error {
+	file, err := root.Create(relPath)
+	if err != nil {
+		return err
+	}
+
+	// root.Create applies the process umask, so the mode recorded in the archive is
+	// applied straight afterwards.
+	if err := file.Chmod(os.FileMode(header.Mode)); err != nil {
+		ctx.LogWarnf("Could not apply mode %v to %v: %v", os.FileMode(header.Mode), relPath, err)
+	}
+
+	copyErr := copyTarChunks(ctx, file, tarReader, header.Size, jobId, action)
+	closeErr := file.Close()
+	if copyErr != nil {
+		return copyErr
+	}
+	return closeErr
 }
 
 func copyTarChunks(ctx basecontext.ApiContext, file *os.File, reader *tar.Reader, fileSize int64, jobId string, action string) error {
@@ -473,35 +494,18 @@ func readFileHeader(filepath string) ([]byte, error) {
 // It checks for gzip and tar archives.
 //
 // Supported file types:
-//   - "gzip": Files starting with the gzip magic number (0x1F 0x8B).
-//   - "tar":  Files containing the "ustar\000" sequence at offset 257 (can be plain or gzipped).
-//   - "unknown": If no known file type is detected.
+//   - "tar.gz":  Files starting with the gzip magic number (0x1F 0x8B). A bare gzip
+//     member is not told apart from a tar.gz, because that would need a peek into
+//     the decompressed payload.
+//   - "tar":     Files containing the "ustar" sequence at offset 257.
+//   - "unknown": Anything else.
 //
 // Parameters:
 //   - header:  A byte slice representing the beginning of the file's contents.
-//   - data  :  The entire file data.
 //
 // Returns:
-//   - string:  The identified file type ("gzip", "tar", or "unknown").
-//   - error:   An error if the detection process fails, otherwise nil.
-//
-// Examples:
-//
-//		// Example using a gzip file header
-//		gzipHeader := []byte{0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff}
-//		fileType, err := detectFileType(gzipHeader, []byte{})
-//		// fileType will be "gzip", err will be nil
-//
-//		// Example using a tar file header
-//		tarHeader := make([]byte, 512)
-//	 copy(tarHeader[257:], []byte("ustar\x00"))
-//		fileType, err := detectFileType(tarHeader, []byte{})
-//		// fileType will be "tar", err will be nil
-//
-//	 // Example using a non recognizable file header
-//		unknownHeader := []byte{0x01, 0x02, 0x03, 0x04}
-//		fileType, err := detectFileType(unknownHeader, []byte{})
-//		// fileType will be "unknown", err will be non-nil
+//   - string:  The identified file type ("tar.gz", "tar", or "unknown").
+//   - error:   An error when no known file type was detected, otherwise nil.
 func detectFileType(header []byte) (string, error) {
 	// Check for Gzip magic number
 	if len(header) >= 2 && header[0] == 0x1F && header[1] == 0x8B {

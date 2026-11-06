@@ -1,6 +1,10 @@
 package helpers
 
 import (
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -71,6 +75,75 @@ func TestGetSizeByteFromString(t *testing.T) {
 				if result != tt.expected {
 					t.Errorf("For input '%s', expected %.2f, but got %.2f", tt.input, tt.expected, result)
 				}
+			}
+		})
+	}
+}
+
+// Archive entry names are attacker controlled, so no name may resolve outside the
+// directory it is extracted into. The sibling case is the one a plain string prefix
+// test lets through: destination <base>/dest accepts <base>/dest-evil/x.txt.
+func TestSanitizeArchivePath(t *testing.T) {
+	base := t.TempDir()
+
+	for _, dir := range []string{"dest", "dest-evil"} {
+		if err := os.MkdirAll(filepath.Join(base, dir), 0o750); err != nil {
+			t.Fatalf("failed to create %s: %v", dir, err)
+		}
+	}
+
+	tests := []struct {
+		name        string
+		destination string
+		entry       string
+		expectError bool
+		goos        string // run only on this GOOS
+		notGoos     string // skip on this GOOS
+	}{
+		{name: "plain file", destination: "dest", entry: "file.txt"},
+		{name: "nested file", destination: "dest", entry: "a/b/file.txt"},
+		{name: "entry for the destination itself", destination: "dest", entry: "."},
+		{name: "dot slash prefixed", destination: "dest", entry: "./file.txt"},
+		{name: "walks above the destination", destination: "dest", entry: "../../etc/passwd", expectError: true},
+		{name: "walks above after descending", destination: "dest", entry: "a/../../outside.txt", expectError: true},
+		{name: "sibling sharing the destination prefix", destination: "dest", entry: "../dest-evil/x.txt", expectError: true},
+		{name: "absolute path", destination: "dest", entry: "/etc/passwd", expectError: true, notGoos: "windows"},
+		{name: "windows volume path", destination: "dest", entry: `C:\Windows\win.ini`, expectError: true, goos: "windows"},
+		{name: "no destination given", destination: "", entry: "file.txt", expectError: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.goos != "" && runtime.GOOS != tt.goos {
+				t.Skipf("requires GOOS %s", tt.goos)
+			}
+			if tt.notGoos != "" && runtime.GOOS == tt.notGoos {
+				t.Skipf("not applicable on GOOS %s", tt.notGoos)
+			}
+
+			destination := tt.destination
+			if destination != "" {
+				destination = filepath.Join(base, destination)
+			}
+
+			got, err := SanitizeArchivePath(destination, tt.entry)
+			if tt.expectError {
+				if err == nil {
+					t.Fatalf("entry %q was accepted, resolved to %q", tt.entry, got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error for entry %q: %v", tt.entry, err)
+			}
+
+			root, err := filepath.Abs(destination)
+			if err != nil {
+				t.Fatalf("failed to resolve destination: %v", err)
+			}
+			rel, err := filepath.Rel(root, got)
+			if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+				t.Fatalf("entry %q resolved outside the destination: %q is not inside %q", tt.entry, got, root)
 			}
 		})
 	}
