@@ -263,7 +263,11 @@ func (rps *ReverseProxyService) LoadFromDb() error {
 		if len(hostCopy.HttpRoutes) > 0 {
 			for i, route := range hostCopy.HttpRoutes {
 				if route.TargetVmId != "" {
-					vm, err := prl_svc.GetVm(rps.api_ctx, route.TargetVmId)
+					// GetVmFast: start/restart runs inside the 10s operation
+					// timeout, so route targets resolve without the cache
+					// retry loop. VM_STATE_CHANGED events re-resolve routes
+					// that were marked "---".
+					vm, err := prl_svc.GetVmFast(rps.api_ctx, route.TargetVmId)
 					if err != nil || vm.InternalIpAddress == "" || vm.InternalIpAddress == "-" || vm.State != "running" {
 						e := ""
 						if err != nil {
@@ -290,7 +294,7 @@ func (rps *ReverseProxyService) LoadFromDb() error {
 			}
 		}
 		if hostCopy.TcpRoute != nil && hostCopy.TcpRoute.TargetVmId != "" {
-			vm, err := prl_svc.GetVm(rps.api_ctx, hostCopy.TcpRoute.TargetVmId)
+			vm, err := prl_svc.GetVmFast(rps.api_ctx, hostCopy.TcpRoute.TargetVmId)
 			if err != nil || vm.InternalIpAddress == "" || vm.InternalIpAddress == "-" || vm.State != "running" {
 				if err != nil {
 					rps.api_ctx.LogErrorf("Error getting vm %s for reverse proxy tcp route: %s", hostCopy.TcpRoute.TargetVmId, err)
@@ -755,7 +759,7 @@ func (rps *ReverseProxyService) reloadHostFromDb(hostID string) (*data_models.Re
 		if route.TargetVmId == "" {
 			continue
 		}
-		vm, err := prl_svc.GetVm(rps.api_ctx, route.TargetVmId)
+		vm, err := prl_svc.GetVmFast(rps.api_ctx, route.TargetVmId)
 		if err != nil || vm == nil || vm.InternalIpAddress == "" || vm.InternalIpAddress == "-" || vm.State != "running" {
 			hostCopy.HttpRoutes[i].TargetHost = "---"
 		} else {
@@ -763,7 +767,7 @@ func (rps *ReverseProxyService) reloadHostFromDb(hostID string) (*data_models.Re
 		}
 	}
 	if hostCopy.TcpRoute != nil && hostCopy.TcpRoute.TargetVmId != "" {
-		vm, err := prl_svc.GetVm(rps.api_ctx, hostCopy.TcpRoute.TargetVmId)
+		vm, err := prl_svc.GetVmFast(rps.api_ctx, hostCopy.TcpRoute.TargetVmId)
 		if err != nil || vm == nil || vm.InternalIpAddress == "" || vm.InternalIpAddress == "-" || vm.State != "running" {
 			hostCopy.TcpRoute.TargetHost = "---"
 		} else {

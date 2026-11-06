@@ -319,6 +319,10 @@ func (s *ParallelsService) processVmAdded(ctx basecontext.ApiContext, event mode
 	s.Lock()
 	s.cachedLocalVms = append(s.cachedLocalVms, *machine)
 	s.Unlock()
+	// A (re)registered VM must be lookable right away: drop any not-found
+	// backoff recorded under its ID or its name.
+	s.clearVmNotFoundBackoff(event.VMID)
+	s.clearVmNotFoundBackoff(machine.Name)
 	ctx.LogInfof("[ParallelsDesktop] [Events] Added VM %s to cache", event.VMID)
 	VmAddedEvent := models.VmAdded{
 		VmID:  event.VMID,

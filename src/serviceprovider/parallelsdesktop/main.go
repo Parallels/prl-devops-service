@@ -64,7 +64,7 @@ type ParallelsService struct {
 	eventsProcessing bool
 	sync.RWMutex
 	cachedLocalVms []models.ParallelsVM
-	// syncMu protects our Debounce and Cooldown maps
+	// syncMu protects our Debounce, Cooldown and not-found backoff maps
 	syncMu sync.Mutex
 	// pending holds VMs waiting to be synced (inherent deduplication)
 	pending map[string]struct{}
@@ -76,6 +76,16 @@ type ParallelsService struct {
 	// This prevents concurrent SSH logon floods when many cache refreshes and events
 	// fire simultaneously (macOS enforces a hard cap on simultaneous logon attempts).
 	ipLastFetched map[string]time.Time
+	// notFoundVm records when a VM lookup was confirmed missing from both the
+	// cache and the system scan, so repeated lookups for a deleted VM back off
+	// instead of re-running the full retry + refresh cycle (helpers.go).
+	notFoundVm map[string]time.Time
+	// findProbeWait overrides the retry sleep in findVmInCacheAndSystem for
+	// tests; nil means "use the real sleep".
+	findProbeWait func(time.Duration)
+	// findSystemVms overrides the full-system GetVms scan used by
+	// findVmInCacheAndSystem in tests; nil means "use the real GetVms".
+	findSystemVms func(basecontext.ApiContext, string) ([]models.ParallelsVM, error)
 	// ipPokeWorkers holds the cancel funcs of the per-VM IP poke workers (ip_worker.go).
 	ipPokeWorkers map[string]context.CancelFunc
 	// ipProbeWait / ipProbeNow are injectable timing hooks used by the IP poke
@@ -135,6 +145,7 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 		pending:          make(map[string]struct{}),
 		inFlight:         make(map[string]struct{}),
 		cooldown:         make(map[string]time.Time),
+		notFoundVm:       make(map[string]time.Time),
 		ipLastFetched:    make(map[string]time.Time),
 		ipPokeWorkers:    make(map[string]context.CancelFunc),
 		fastStateUpdates: make(map[string]time.Time),
