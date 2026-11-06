@@ -45,6 +45,11 @@ const (
 	DEFAULT_NOTIFICATION_REFRESH_INTERVAL_IN_SEC = 5
 	DEFAULT_VM_CACHE_REFRESH_INTERVAL_SECONDS    = 300 // 5 minutes
 
+	// ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS drives the orchestrator's dedicated
+	// live VM refetch loop (bypassing host caches). Defaults to 5 minutes, mirroring
+	// the host-side VM_CACHE_REFRESH_INTERVAL_SECONDS default.
+	DEFAULT_ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS = 300
+
 	INTERNAL_API_CLIENT                          = "X-INTERNAL-API-CLIENT"
 	ORCHESTRATOR_JOB_ID_HEADER                   = "X-ORCHESTRATOR-JOB-ID"
 	X_CLAIMS_HEADER                              = "X-Claims"
@@ -132,6 +137,7 @@ const (
 	ENABLE_BETA_ENV_VAR                                     = "ENABLE_BETA"
 	DISABLE_VM_CACHE_REFRESH_ENV_VAR                        = "DISABLE_VM_CACHE_REFRESH"
 	VM_CACHE_REFRESH_INTERVAL_SECONDS_ENV_VAR               = "VM_CACHE_REFRESH_INTERVAL_SECONDS"
+	ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS_ENV_VAR        = "ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS"
 	ENABLED_MODULES_ENV_VAR                                 = "ENABLED_MODULES"
 	ENABLE_INSECURE_KEY_SSH_ENV_VAR                         = "ENABLE_SSH_INSECURE_KEY"
 	BASE_URL_ENV_VAR                                        = "BASE_URL"

@@ -250,6 +250,7 @@ func registerVirtualMachinesHandlers(ctx basecontext.ApiContext, version string)
 // @Tags			Machines
 // @Produce		json
 // @Param			filter	header		string	false	"X-Filter"
+// @Param			noCache	query		string	false	"Set to true to bypass the cache and fetch live data from prlctl"
 // @Success		200		{object}	[]models.ParallelsVM
 // @Failure		400		{object}	models.ApiErrorResponse
 // @Failure		401		{object}	models.OAuthErrorResponse
@@ -264,7 +265,19 @@ func GetVirtualMachinesHandler() restapi.ControllerHandler {
 		provider := serviceprovider.Get()
 		svc := provider.ParallelsDesktopService
 
-		vms, err := svc.GetCachedVms(ctx, GetFilterHeader(r))
+		var vms []models.ParallelsVM
+		var err error
+		if r.URL.Query().Get("noCache") == "true" {
+			// Live path: fresh prlctl data (cache entries only merge in as IP
+			// preservation). A live read also arms IP poke workers for VMs that
+			// still need resolution.
+			vms, err = svc.GetVms(ctx, GetFilterHeader(r))
+			if err == nil {
+				svc.NotifyMissingIps(vms)
+			}
+		} else {
+			vms, err = svc.GetCachedVms(ctx, GetFilterHeader(r))
+		}
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -290,6 +303,7 @@ func GetVirtualMachinesHandler() restapi.ControllerHandler {
 // @Tags			Machines
 // @Produce		json
 // @Param			id	path		string	true	"Machine ID"
+// @Param			noCache	query	string	false	"Set to true to bypass the cache and fetch live data from prlctl"
 // @Success		200	{object}	models.ParallelsVM
 // @Failure		400	{object}	models.ApiErrorResponse
 // @Failure		401	{object}	models.OAuthErrorResponse
@@ -307,7 +321,13 @@ func GetVirtualMachineHandler() restapi.ControllerHandler {
 		params := mux.Vars(r)
 		id := params["id"]
 
-		vm, err := svc.GetVmSync(ctx, id)
+		var vm *models.ParallelsVM
+		var err error
+		if r.URL.Query().Get("noCache") == "true" {
+			vm, err = svc.GetVmLive(ctx, id)
+		} else {
+			vm, err = svc.GetVmSync(ctx, id)
+		}
 		if err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return

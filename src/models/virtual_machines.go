@@ -11,6 +11,8 @@ type ParallelsVM struct {
 	HostState             string                 `json:"host_state,omitempty"`
 	HostExternalIpAddress string                 `json:"host_external_ip_address,omitempty"`
 	InternalIpAddress     string                 `json:"internal_ip_address,omitempty"`
+	IpStatus              string                 `json:"ip_status,omitempty"`        // "", pending, resolving, resolved, failed
+	IpStatusDetail        string                 `json:"ip_status_detail,omitempty"` // human-readable detail for the status
 	User                  string                 `json:"user"`
 	Name                  string                 `json:"Name"`
 	Description           string                 `json:"Description"`

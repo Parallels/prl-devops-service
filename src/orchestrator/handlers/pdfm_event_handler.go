@@ -254,6 +254,20 @@ func (h *PDfMEventHandler) handleVmUpdated(ctx basecontext.ApiContext, hostID st
 	dtoVm.Host = host.GetHost()
 	dtoVm.HostUrl = host.GetHostUrl()
 
+	// Keep a stored IP/status that this event's payload cannot provide (never
+	// let an event with silent prlctl data wipe a previously resolved IP).
+	if stored, err := dbService.GetOrchestratorHostVirtualMachine(ctx, hostID, vmUpdated.VmID); err == nil && stored != nil {
+		if vmUpdated.NewVm.InternalIpAddress == "" {
+			if stored.InternalIpAddress != "" {
+				dtoVm.InternalIpAddress = stored.InternalIpAddress
+			}
+			if vmUpdated.NewVm.IpStatus == "" {
+				dtoVm.IpStatus = stored.IpStatus
+				dtoVm.IpStatusDetail = stored.IpStatusDetail
+			}
+		}
+	}
+
 	if err := dbService.UpsertOrchestratorHostVM(ctx, hostID, dtoVm); err != nil {
 		ctx.LogErrorf("[PDfMEventHandler] [orchestrator] Error upserting VM %s: %v", vmUpdated.VmID, err)
 		return

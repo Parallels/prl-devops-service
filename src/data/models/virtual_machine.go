@@ -11,6 +11,8 @@ type VirtualMachine struct {
 	User                  string                             `json:"user,omitempty"`
 	HostExternalIpAddress string                             `json:"host_external_ip_address,omitempty"`
 	InternalIpAddress     string                             `json:"internal_ip_address,omitempty"`
+	IpStatus              string                             `json:"ip_status,omitempty"`
+	IpStatusDetail        string                             `json:"ip_status_detail,omitempty"`
 	Host                  string                             `json:"host,omitempty"`
 	Name                  string                             `json:"name,omitempty"`
 	Description           string                             `json:"description,omitempty"`
@@ -73,6 +75,12 @@ func (m *VirtualMachine) Diff(source VirtualMachine) bool {
 		return true
 	}
 	if m.InternalIpAddress != source.InternalIpAddress {
+		return true
+	}
+	if m.IpStatus != source.IpStatus {
+		return true
+	}
+	if m.IpStatusDetail != source.IpStatusDetail {
 		return true
 	}
 	if m.User != source.User {

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -192,6 +191,8 @@ func (s *ParallelsService) startAutoCacheRefresh(ctx basecontext.ApiContext) {
 				// If we found a mismatch in either check, execute the safe refresh
 				if needsRefresh {
 					// 1. SAFELY SWAP THE CACHE (No nested function calls!)
+					// currentVMs come from GetVms, whose patch engine already keeps
+					// exec-resolved IPs and ip_status from the outgoing cache.
 					s.Lock()
 					s.cachedLocalVms = currentVMs
 					s.Unlock()
@@ -210,6 +211,10 @@ func (s *ParallelsService) startAutoCacheRefresh(ctx basecontext.ApiContext) {
 						}
 					}(currentVMs)
 				}
+
+				// Re-arm IP probing for anything still missing an IP (and give
+				// previously failed VMs a fresh window on every sweep).
+				s.NotifyMissingIps(currentVMs)
 			}
 		}
 	}()
@@ -219,6 +224,7 @@ func (s *ParallelsService) StopListeners() {
 	if s.eventsProcessing {
 		s.ctx.LogInfof("[ParallelsDesktop] [Event] Stopping all Parallels event listeners and workers")
 		s.cancelFunc() // This safely kills both the event tailer AND the Debounce Worker
+		s.stopAllIpPokeWorkers()
 		s.eventsProcessing = false
 	}
 }
@@ -289,25 +295,17 @@ func (s *ParallelsService) processVmStateChanged(ctx basecontext.ApiContext, eve
 		}
 	}()
 
-	// When a macOS VM finishes starting up, kick off async IP resolution.
-	// waitForVMSSHReady will probe SSH readiness before fetching the IP,
-	// so this is safe to call immediately without any extra delay.
+	// Keep IP resolution fresh on state transitions for any guest OS. Arming a
+	// poke worker is idempotent and eligibility-checked internally (running +
+	// missing/unconfirmed IP + tools probably installed).
 	if newState == "running" {
-		s.RLock()
-		var isMacOS bool
-		var vmName string
-		for _, vm := range s.cachedLocalVms {
-			if vm.ID == event.VMID {
-				isMacOS = vm.OS == "macosx" || strings.Contains(strings.ToLower(vm.Name), "mac")
-				vmName = vm.Name
-				break
-			}
-		}
-		s.RUnlock()
-		if isMacOS {
-			ctx.LogInfof("[ParallelsDesktop] [IP] VM %s (%s) is now running, scheduling IP resolution", event.VMID, vmName)
-			go s.updateVMIPInCache(ctx, event.VMID)
-		}
+		ctx.LogInfof("[ParallelsDesktop] [IP] VM %s is now running, checking IP resolution", event.VMID)
+		go s.startIpPokeWorker(ctx, event.VMID)
+	} else {
+		// No longer running: stop poking and reset the resolution status so the VM
+		// re-resolves on its next boot (the last known IP is kept for display).
+		s.stopIpPokeWorker(event.VMID)
+		s.resetIpStatusForStop(ctx, event.VMID)
 	}
 	go s.syncMacVmRunningStatus(ctx)
 }
@@ -346,6 +344,10 @@ func (s *ParallelsService) processVmUnregistered(ctx basecontext.ApiContext, eve
 			s.cachedLocalVms = append(s.cachedLocalVms[:i], s.cachedLocalVms[i+1:]...)
 			s.Unlock()
 			ctx.LogInfof("[ParallelsDesktop] [Events] Removed VM %s from cache", event.VMID)
+			s.stopIpPokeWorker(event.VMID)
+			s.syncMu.Lock()
+			delete(s.ipLastFetched, event.VMID)
+			s.syncMu.Unlock()
 
 			VmRemoved := models.VmRemoved{
 				VmID: event.VMID,
@@ -373,6 +375,8 @@ func (s *ParallelsService) processVmConfigChanged(ctx basecontext.ApiContext, ev
 func (s *ParallelsService) processVmToolsStateChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {
 	ctx.LogInfof("[ParallelsDesktop] [Events] VM %s tools state changed, queuing for sync", event.VMID)
 	s.queueVmForSync(event.VMID, event.EventName)
+	// Tools may have just come up — eligibility for IP probing can now be met.
+	go s.startIpPokeWorker(ctx, event.VMID)
 }
 
 func (s *ParallelsService) processVmSnapshotsTreeChanged(ctx basecontext.ApiContext, event models.ParallelsServiceEvent) {

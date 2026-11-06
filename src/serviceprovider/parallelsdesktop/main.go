@@ -76,8 +76,17 @@ type ParallelsService struct {
 	// This prevents concurrent SSH logon floods when many cache refreshes and events
 	// fire simultaneously (macOS enforces a hard cap on simultaneous logon attempts).
 	ipLastFetched map[string]time.Time
+	// ipPokeWorkers holds the cancel funcs of the per-VM IP poke workers (ip_worker.go).
+	ipPokeWorkers map[string]context.CancelFunc
+	// ipProbeWait / ipProbeNow are injectable timing hooks used by the IP poke
+	// worker tests; nil means "use the real clock/sleep".
+	ipProbeWait func(context.Context, time.Duration) bool
+	ipProbeNow  func() time.Time
+	// ipProbeAttempt overrides attemptResolveVMIP in tests; nil means "use the
+	// real prlctl-based attempt".
+	ipProbeAttempt func(basecontext.ApiContext, string) (string, bool)
 	// sshSem is a semaphore that caps the number of simultaneous prlctl exec SSH
-	// operations (waitForVMSSHReady probes + IP fetches) across all VMs.
+	// operations (IP probes, see ip_worker.go) across all VMs.
 	sshSem chan struct{}
 	// fastStateUpdates is used for the fast state updates that we do not need to the
 	// prlctl command and can update the database
@@ -127,6 +136,7 @@ func New(ctx basecontext.ApiContext) *ParallelsService {
 		inFlight:         make(map[string]struct{}),
 		cooldown:         make(map[string]time.Time),
 		ipLastFetched:    make(map[string]time.Time),
+		ipPokeWorkers:    make(map[string]context.CancelFunc),
 		fastStateUpdates: make(map[string]time.Time),
 		sshSem:           make(chan struct{}, maxConcurrentSSH),
 
@@ -437,7 +447,7 @@ func (s *ParallelsService) InstallFromDmg(asUser, version string, flags map[stri
 		}
 		if asUser != "" {
 			mountCmd.Command = "sudo"
-			mountCmd.Args = append([]string{"-u", asUser, "hdiutil", "attach", "-nobrowse", tmpFile.Name()})
+			mountCmd.Args = []string{"-u", asUser, "hdiutil", "attach", "-nobrowse", tmpFile.Name()}
 		}
 		out, _, _, err := helpers.ExecuteWithOutput(s.ctx.Context(), mountCmd, helpers.ExecutionTimeout)
 		if err != nil {
@@ -472,7 +482,7 @@ func (s *ParallelsService) InstallFromDmg(asUser, version string, flags map[stri
 			}
 			if asUser != "" {
 				unmountCmd.Command = "sudo"
-				unmountCmd.Args = append([]string{"-u", asUser, "hdiutil", "detach", mountPoint})
+				unmountCmd.Args = []string{"-u", asUser, "hdiutil", "detach", mountPoint}
 			}
 			helpers.ExecuteWithNoOutput(s.ctx.Context(), unmountCmd, helpers.ExecutionTimeout)
 		}()
@@ -486,7 +496,7 @@ func (s *ParallelsService) InstallFromDmg(asUser, version string, flags map[stri
 			Args:    []string{"cp", "-R", appSource, "/Applications/"},
 		}
 		if asUser != "" {
-			copyCmd.Args = append([]string{"-u", asUser, "cp", "-R", appSource, "/Applications/"})
+			copyCmd.Args = []string{"-u", asUser, "cp", "-R", appSource, "/Applications/"}
 		}
 
 		_, err = helpers.ExecuteWithNoOutput(s.ctx.Context(), copyCmd, helpers.ExecutionTimeout)
@@ -739,137 +749,20 @@ func (s *ParallelsService) GetVMSnapshotsTreeFromDB(ctx basecontext.ApiContext, 
 	return resp, nil
 }
 
-// waitForVMSSHReady probes a macOS VM's SSH readiness by executing a trivial command
-// via prlctl exec. It retries every 3 seconds for up to 30 seconds total.
-// Returns true as soon as the command succeeds, false if the timeout is exceeded.
-// This is safe to call from any goroutine and has no side-effects on the cache.
-func (s *ParallelsService) waitForVMSSHReady(ctx basecontext.ApiContext, vmID, username string) bool {
-	const (
-		retryInterval = 5 * time.Second
-		totalTimeout  = 30 * time.Second
-	)
-	ctx.LogInfof("[ParallelsDesktop] [SSH] Waiting for VM %s SSH to become ready (timeout: %v)", vmID, totalTimeout)
-	deadline := time.Now().Add(totalTimeout)
-	for time.Now().Before(deadline) {
-		s.sshSem <- struct{}{}
-		cmd := helpers.Command{
-			Command: s.executable,
-			Args:    []string{"exec", vmID, "echo", "hello"},
-		}.AsUser(username)
-		_, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, retryInterval)
-		<-s.sshSem
-		if err == nil {
-			ctx.LogInfof("[ParallelsDesktop] [SSH] VM %s is ready for SSH commands", vmID)
-			return true
-		}
-		ctx.LogDebugf("[ParallelsDesktop] [SSH] VM %s not ready yet (%v), retrying in %v", vmID, err, retryInterval)
-		time.Sleep(retryInterval)
-	}
-	ctx.LogWarnf("[ParallelsDesktop] [SSH] VM %s did not become ready within %v", vmID, totalTimeout)
-	return false
-}
-
-// updateVMIPInCache resolves the internal IP of a macOS VM via `prlctl exec ipconfig getifaddr en0`
-// and updates the entry in the in-memory cache. It must be called in a goroutine as it blocks
-// until SSH is ready (up to 30s). Rate-limited to once per 30s per VM ID.
-func (s *ParallelsService) updateVMIPInCache(ctx basecontext.ApiContext, vmID string) {
-	// Snapshot the VM's username while holding the read lock, so we can release it
-	// before any slow SSH operations.
-	s.RLock()
-	var username string
-	var isMacOS bool
-	for _, vm := range s.cachedLocalVms {
-		if vm.ID == vmID {
-			username = vm.User
-			isMacOS = vm.OS == "macosx" || strings.Contains(strings.ToLower(vm.Name), "mac")
-			break
-		}
-	}
-	s.RUnlock()
-
-	if username == "" {
-		ctx.LogWarnf("[ParallelsDesktop] [IP] VM %s not found in cache, skipping IP update", vmID)
-		return
-	}
-
-	if !isMacOS {
-		// Only macOS VMs need the prlctl exec SSH path; other platforms expose their IP
-		// via prlctl list network info directly.
-		return
-	}
-
-	// Rate-limit: skip if we fetched this VM's IP less than 30 seconds ago.
-	const macOSIPFetchCooldown = 30 * time.Second
-	s.syncMu.Lock()
-	if last, ok := s.ipLastFetched[vmID]; ok && time.Since(last) < macOSIPFetchCooldown {
-		s.syncMu.Unlock()
-		ctx.LogDebugf("[ParallelsDesktop] [IP] Skipping IP fetch for VM %s (in cooldown, last fetched %v ago)", vmID, time.Since(last).Round(time.Second))
-		return
-	}
-	s.ipLastFetched[vmID] = time.Now()
-	s.syncMu.Unlock()
-
-	// Wait until the VM's SSH accepts commands before attempting to fetch the IP.
-	if !s.waitForVMSSHReady(ctx, vmID, username) {
-		ctx.LogWarnf("[ParallelsDesktop] [IP] Giving up on IP fetch for VM %s: SSH not ready within timeout", vmID)
-		return
-	}
-
-	// Fetch the internal IP via prlctl exec, holding the semaphore to avoid
-	// flooding macOS with simultaneous SSH logon attempts.
-	cmd := helpers.Command{
-		Command: s.executable,
-		Args:    []string{"exec", vmID, "ipconfig", "getifaddr", "en0"},
-	}.AsUser(username)
-	ctx.LogDebugf("[ParallelsDesktop] [IP] Fetching internal IP for VM %s: %s", vmID, cmd.String())
-	s.sshSem <- struct{}{}
-	out, err := helpers.ExecuteWithNoOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
-	<-s.sshSem
+// GetVmLive fetches a single VM straight from prlctl, bypassing the in-memory
+// cache (used by GET /v1/machines/{id}?noCache=true). The cache-patch engine in
+// getUserVm preserves an exec-resolved IP when prlctl reports none, and a VM that
+// is still missing its IP gets its poke worker armed (idempotently) so a live
+// read also kick-starts resolution.
+func (s *ParallelsService) GetVmLive(ctx basecontext.ApiContext, id string) (*models.ParallelsVM, error) {
+	vm, err := s.getVmInMachine(ctx, id)
 	if err != nil {
-		ctx.LogErrorf("[ParallelsDesktop] [IP] Failed to get internal IP for VM %s: %v", vmID, err)
-		return
+		return nil, err
 	}
-	ip := strings.TrimSpace(out)
-	if ip == "" {
-		ctx.LogDebugf("[ParallelsDesktop] [IP] Empty IP result for VM %s", vmID)
-		return
+	if vm != nil && shouldProbeIp(*vm) {
+		s.startIpPokeWorker(ctx, vm.ID)
 	}
-	ctx.LogInfof("[ParallelsDesktop] [IP] Resolved internal IP for VM %s: %s", vmID, ip)
-
-	// Update the cache and broadcast the change.
-	s.Lock()
-	var updatedVm *models.ParallelsVM
-	for i, vm := range s.cachedLocalVms {
-		if vm.ID == vmID {
-			s.cachedLocalVms[i].InternalIpAddress = ip
-			// Also update the matching IPv4 entry in NetworkInformation so it stays consistent.
-			for j, addr := range s.cachedLocalVms[i].NetworkInformation.IPAddresses {
-				if strings.ToLower(addr.Type) == "ipv4" {
-					s.cachedLocalVms[i].NetworkInformation.IPAddresses[j].IP = ip
-					break // found and updated the IPv4 entry — done
-				}
-			}
-			copy := s.cachedLocalVms[i]
-			updatedVm = &copy
-			break
-		}
-	}
-	s.Unlock()
-
-	if updatedVm == nil {
-		return
-	}
-	go func() {
-		if ee := eventemitter.Get(); ee != nil && ee.IsRunning() {
-			msg := models.NewEventMessage(constants.EventTypePDFM, "VM_UPDATED", models.VmUpdated{
-				VmID:  vmID,
-				NewVm: *updatedVm,
-			})
-			if err := ee.BroadcastMessage(msg); err != nil {
-				ctx.LogErrorf("[ParallelsDesktop] [IP] Error broadcasting VM_UPDATED: %v", err)
-			}
-		}
-	}()
+	return vm, nil
 }
 
 func (s *ParallelsService) getFilteredUsers(ctx basecontext.ApiContext) ([]models.SystemUser, error) {
@@ -944,25 +837,12 @@ func (s *ParallelsService) refreshCache(ctx basecontext.ApiContext) {
 	}
 	s.Unlock()
 
-	// For every running macOS VM that's already up when we first load the cache,
-	// kick off an async IP resolution so InternalIpAddress is populated quickly.
+	// For every VM that needs an IP when we first load the cache (any guest whose
+	// IP is missing, plus macOS guests whose IP was never confirmed via exec),
+	// arm the IP poke worker with a staggered sweep so InternalIpAddress is
+	// populated quickly without flooding prlctl exec.
 	if err == nil {
-		stagger := 0
-		for _, vm := range vms {
-			if vm.State == "running" &&
-				(vm.OS == "macosx" || strings.Contains(strings.ToLower(vm.Name), "mac")) {
-				ctx.LogInfof("[ParallelsDesktop] [IP] Scheduling IP resolution for running macOS VM %s (%s)", vm.ID, vm.Name)
-				vmID := vm.ID
-				delay := time.Duration(stagger) * 3 * time.Second
-				stagger++
-				go func() {
-					if delay > 0 {
-						time.Sleep(delay)
-					}
-					s.updateVMIPInCache(ctx, vmID)
-				}()
-			}
-		}
+		s.NotifyMissingIps(vms)
 	}
 }
 
@@ -1028,6 +908,15 @@ func (s *ParallelsService) getUserVm(ctx basecontext.ApiContext, username string
 		}
 		if len(syncVms[i].NetworkInformation.IPAddresses) > 0 {
 			syncVms[i].InternalIpAddress = syncVms[i].NetworkInformation.IPAddresses[0].IP
+		}
+	}
+
+	// Do not let prlctl silence erase an exec-resolved IP (or an in-flight/failed
+	// ip_status) for VMs that are still running — prlctl's network info is often
+	// empty or stale for macOS guests.
+	for i := range syncVms {
+		if cached, exists := cacheMap[syncVms[i].ID]; exists {
+			syncVms[i] = preserveResolvedIp(cached, syncVms[i])
 		}
 	}
 

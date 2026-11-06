@@ -275,3 +275,34 @@ func TestShouldDisableHttpWhenTls_ExplicitlyDisabled(t *testing.T) {
 
 	str.False(t, shouldDisable, "HTTP should not be disabled when DISABLE_HTTP_WHEN_TLS=false")
 }
+
+func TestOrchestratorVmRefetchIntervalDefaultsToFiveMinutes(t *testing.T) {
+	unsetEnv(t, constants.ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS_ENV_VAR)
+
+	cfg := New(basecontext.NewBaseContext())
+	cfg.config.Environment = map[string]string{}
+
+	str.Equal(t, 5*time.Minute, cfg.OrchestratorVmRefetchInterval())
+}
+
+func TestOrchestratorVmRefetchIntervalReadsConfigValue(t *testing.T) {
+	unsetEnv(t, constants.ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS_ENV_VAR)
+
+	cfg := New(basecontext.NewBaseContext())
+	cfg.config.Environment = map[string]string{
+		constants.ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS_ENV_VAR: "60",
+	}
+
+	str.Equal(t, time.Minute, cfg.OrchestratorVmRefetchInterval())
+}
+
+func TestOrchestratorVmRefetchIntervalEnvironmentOverridesConfig(t *testing.T) {
+	t.Setenv(constants.ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS_ENV_VAR, "90")
+
+	cfg := New(basecontext.NewBaseContext())
+	cfg.config.Environment = map[string]string{
+		constants.ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS_ENV_VAR: "60",
+	}
+
+	str.Equal(t, 90*time.Second, cfg.OrchestratorVmRefetchInterval())
+}
