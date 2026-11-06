@@ -310,7 +310,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (tag === 'code' && (!node.parentElement || node.parentElement.tagName.toLowerCase() !== 'pre')) {
-      return '`' + node.textContent.replace(/`/g, '\\`') + '`';
+      // CommonMark ignores backslash escapes inside a code span, so a backtick in
+      // the text cannot be escaped with a backslash. Widen the delimiter run
+      // instead, and pad when the content starts or ends with one.
+      const code = node.textContent;
+      let fence = '`';
+      while (code.indexOf(fence) !== -1) { fence += '`'; }
+      const pad = /^`|`$/.test(code) ? ' ' : '';
+      return fence + pad + code + pad + fence;
     }
 
     if (tag === 'a') {
@@ -340,7 +347,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const markdownRows = rows.map(function (row) {
       const cells = Array.prototype.slice.call(row.children);
       return '| ' + cells.map(function (cell) {
-        return inlineMarkdown(cell).trim().replace(/\|/g, '\\|');
+        // Backslash has to be doubled first, otherwise a cell ending in one
+        // swallows the pipe escape that follows it and merges two columns.
+        return inlineMarkdown(cell).trim().replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
       }).join(' | ') + ' |';
     });
 

@@ -37,19 +37,20 @@
   /* ── Initialization ─────────────────────────────────────────────── */
 
   function init() {
-    // Read data from data attribute (avoids jsonify issues with multi-line strings)
-    var dataEl = document.getElementById('uce-flow-container');
-    var rawData = dataEl ? dataEl.getAttribute('data-uce-data') : null;
-    if (!rawData) {
-      console.error('[UCE] No use case data found. Ensure the layout sets data-uce-data.');
+    // The layout emits the use case as a generated global, the same way it emits
+    // __UCE_WALKTHROUGH_DATA__ and __UCE_WHATS_NEXT_DATA__. A copy is taken so
+    // that rendering never mutates the object the page owns, which also keeps
+    // re-initialisation after a navigation honest.
+    if (!window.__UCE_DATA__) {
+      console.error('[UCE] No use case data found. Ensure the layout sets window.__UCE_DATA__.');
       return;
     }
 
     var data;
     try {
-      data = JSON.parse(rawData);
+      data = JSON.parse(JSON.stringify(window.__UCE_DATA__));
     } catch (e) {
-      console.error('[UCE] Failed to parse use case data:', e);
+      console.error('[UCE] Failed to read use case data:', e);
       return;
     }
 
@@ -260,7 +261,7 @@
 
       var iconHtml = '';
       if (rec.icon) {
-        iconHtml = '<i class="fa-solid ' + escapeHtml(rec.icon) + '"></i>';
+        iconHtml = '<i class="fa-solid ' + escapeAttr(rec.icon) + '"></i>';
       }
 
       card.innerHTML =
@@ -905,21 +906,23 @@
   /** Generate a curl command from api_call params. */
   function generateCurlCommand(cfg) {
     var parts = ['curl'];
-    if (cfg.method) parts.push('-X', cfg.method.toUpperCase());
-    if (cfg.url) parts.push('"' + cfg.url + '"');
+    // A method carrying anything but letters would sit unquoted on the preview
+    // line and split it into extra arguments, so it is dropped rather than shown.
+    if (cfg.method && /^[A-Za-z]+$/.test(cfg.method)) parts.push('-X', cfg.method.toUpperCase());
+    if (cfg.url) parts.push(quoteShellArg(cfg.url));
     if (cfg.headers) {
       var h = cfg.headers;
       if (typeof h === 'object') {
         for (var key in h) {
           if (Object.prototype.hasOwnProperty.call(h, key)) {
-            parts.push('-H', '"' + key + ': ' + h[key] + '"');
+            parts.push('-H', quoteShellArg(key + ': ' + h[key]));
           }
         }
       } else if (typeof h === 'string') {
-        parts.push('-H', '"' + h + '"');
+        parts.push('-H', quoteShellArg(h));
       }
     }
-    if (cfg.body) parts.push('-d', '"' + cfg.body.replace(/"/g, '\\"') + '"');
+    if (cfg.body) parts.push('-d', quoteShellArg(cfg.body));
     return parts.join(' ');
   }
 
@@ -974,7 +977,7 @@
               '<span class="mac-window-title">Terminal</span>' +
               (showCopy ? '<button class="mac-window-copy" data-uce-action="copy" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>' : '') +
             '</div>' +
-            '<pre class="mac-window-body"><code class="language-' + (cmdLang || 'bash') + '">' + termCmdHtml + '</code></pre>' +
+            '<pre class="mac-window-body"><code class="language-' + escapeAttr(cmdLang || 'bash') + '">' + termCmdHtml + '</code></pre>' +
           '</div>';
         var outputWindow = termOutputHtml
           ? '<div class="mac-window">' +
@@ -984,7 +987,7 @@
                 '<span class="mac-dot mac-dot--green"></span>' +
                 '<span class="mac-window-title">Output</span>' +
               '</div>' +
-              '<pre class="mac-window-body"><code class="language-' + (outLang || 'plaintext') + '">' + termOutputHtml + '</code></pre>' +
+              '<pre class="mac-window-body"><code class="language-' + escapeAttr(outLang || 'plaintext') + '">' + termOutputHtml + '</code></pre>' +
             '</div>'
           : '';
         div.innerHTML = cmdWindow + outputWindow;
@@ -1077,7 +1080,7 @@
     var html = '<div class="tw-container" id="tw-container' + uid + '">' +
       '<div class="tw-stage">' +
         '<div class="tw-images">' +
-          '<img class="tw-img-main" src="' + window.__UCE_BASEURL__ + '/assets/img/' + escapeHtml(mainImage) + '" alt="' + escapeHtml(tw.title) + ' \u2014 default view" />' +
+          '<img class="tw-img-main" src="' + window.__UCE_BASEURL__ + '/assets/img/' + escapeAttr(mainImage) + '" alt="' + escapeAttr(tw.title) + ' — default view" />' +
         '</div>' +
         '<div class="tw-hotspot-layer"></div>' +
         '<div class="tw-scene-badge" id="tw-scene-badge' + uid + '">' +
@@ -1438,7 +1441,7 @@
         // Selected AND still editable: wrap badge + reset in a flex row
         html += '<div class="uce-branch-actions">' +
           '<span class="uce-branch-badge"><span class="uce-badge uce-badge--selected">SELECTED</span></span>' +
-          '<button class="uce-branch-reset" data-uce-step="' + escapeHtml(stepId) + '" aria-label="Reset choice">&times; Reset</button>' +
+          '<button class="uce-branch-reset" data-uce-step="' + escapeAttr(stepId) + '" aria-label="Reset choice">&times; Reset</button>' +
           '</div>';
       } else if (!isSelected && !isLocked) {
         // Not locked: show Select now button
@@ -1516,8 +1519,14 @@
     var questionEl = document.createElement('p');
     questionEl.className = 'uce-choice-question';
     if (step.icon) {
-      var iconType = step.icon_type || 'fa-solid';
-      questionEl.innerHTML = '<i class="' + iconType + ' ' + step.icon + '"></i> ' + question;
+      // Built through the DOM rather than as a string: icon_type and icon come
+      // from the use case data and used to be concatenated straight into a class
+      // attribute, where a quote in either one closed the tag and started
+      // another.
+      var iconEl = document.createElement('i');
+      iconEl.className = (step.icon_type || 'fa-solid') + ' ' + step.icon;
+      questionEl.appendChild(iconEl);
+      questionEl.appendChild(document.createTextNode(' ' + question));
     } else {
       questionEl.textContent = question;
     }
@@ -2143,6 +2152,7 @@
 
     for (var i = 0; i < sqIds.length; i++) {
       var sqId = sqIds[i];
+      var sqIdAttr = escapeAttr(sqId);
       var sq = findSideQuest(sqId);
       if (!sq) continue;
 
@@ -2192,7 +2202,7 @@
       if (sq.requires && sq.requires.length > 0) {
         var req = document.createElement('p');
         req.className = 'uce-sidequest-req';
-        req.innerHTML = '<strong>Requires:</strong> ' + sq.requires.join(', ');
+        req.innerHTML = '<strong>Requires:</strong> ' + escapeHtml(sq.requires.join(', '));
         body.appendChild(req);
       }
 
@@ -2210,19 +2220,19 @@
         actions.innerHTML =
           '<span class="uce-sidequest-done-label">&#10003; DONE: ' + escapeHtml(sq.title || sqId) + '</span>' +
           (sq.links_to
-            ? '<button class="uce-btn uce-btn--outline uce-sidequest-view-again" data-uce-sq="' + sqId + '">[+ View again]</button>'
+            ? '<button class="uce-btn uce-btn--outline uce-sidequest-view-again" data-uce-sq="' + sqIdAttr + '">[+ View again]</button>'
             : '');
       } else if (tag && tag.status === 'skipped') {
         // Skipped state — show "View again" button
         actions.innerHTML =
-          '<button class="uce-btn uce-btn--secondary uce-sidequest-take-now" data-uce-sq="' + sqId + '"><i class="fa-solid fa-circle-question"></i> Take now!</button>' +
-          '<button class="uce-btn uce-btn--outline uce-sidequest-dismiss" data-uce-sq="' + sqId + '">Dismiss</button>';
+          '<button class="uce-btn uce-btn--secondary uce-sidequest-take-now" data-uce-sq="' + sqIdAttr + '"><i class="fa-solid fa-circle-question"></i> Take now!</button>' +
+          '<button class="uce-btn uce-btn--outline uce-sidequest-dismiss" data-uce-sq="' + sqIdAttr + '">Dismiss</button>';
       } else {
         // Fresh state — show Take/Skip buttons
         var takeLabel = sq.links_to ? 'Take now!' : 'Start!';
         actions.innerHTML =
-          '<button class="uce-btn uce-btn--primary uce-sidequest-take-now" data-uce-sq="' + sqId + '"><i class="fa-solid fa-circle-question"></i> ' + takeLabel + '</button>' +
-          '<button class="uce-btn uce-btn--outline uce-sidequest-skip" data-uce-sq="' + sqId + '">Skip for now</button>';
+          '<button class="uce-btn uce-btn--primary uce-sidequest-take-now" data-uce-sq="' + sqIdAttr + '"><i class="fa-solid fa-circle-question"></i> ' + takeLabel + '</button>' +
+          '<button class="uce-btn uce-btn--outline uce-sidequest-skip" data-uce-sq="' + sqIdAttr + '">Skip for now</button>';
       }
 
       body.appendChild(actions);
@@ -2330,9 +2340,15 @@
       var item = valid[r];
       var row = document.createElement('div');
       row.className = 'uce-resource-item';
+      // Escaping an href does not stop a javascript: URL from running when the
+      // reader clicks it, so the scheme is decided before the link is built. A
+      // resource without a usable URL still shows its title, just not as a link.
+      var itemHref = safeExternalUrl(item.url);
       row.innerHTML =
         '<span class="uce-resource-title">' + escapeHtml(item.title) + '</span>' +
-        '<a class="uce-resource-btn" href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">Go</a>';
+        (itemHref
+          ? '<a class="uce-resource-btn" href="' + escapeAttr(itemHref) + '" target="_blank" rel="noopener noreferrer">Go</a>'
+          : '');
       body.appendChild(row);
     }
 
@@ -2398,7 +2414,7 @@
 
       var iconHtml = '';
       if (rec.icon) {
-        iconHtml = '<i class="fa-solid ' + escapeHtml(rec.icon) + '"></i>';
+        iconHtml = '<i class="fa-solid ' + escapeAttr(rec.icon) + '"></i>';
       }
 
       card.innerHTML =
@@ -2556,7 +2572,12 @@
       if (!breadcrumb) return;
 
       var parentLi = document.createElement('li');
-      parentLi.innerHTML = '<a href="' + (window.__UCE_BASEURL__ || '') + '/tutorials/' + info.from + '">' + escapeHtml(info.from_title) + '</a>';
+      var fromSlug = safeReturnSlug(info.from);
+      if (!fromSlug) return;
+      var backLink = document.createElement('a');
+      backLink.href = (window.__UCE_BASEURL__ || '') + '/tutorials/' + fromSlug;
+      backLink.textContent = info.from_title;
+      parentLi.appendChild(backLink);
 
       // Insert before the first active step (use_case title)
       var activeItem = breadcrumb.querySelector('li.is-active');
@@ -2786,8 +2807,14 @@
         } catch (e) {
           /* fall through to plain text */
         }
-        if (!fbParsed) fbParsed = fbText;
-        fbEl.innerHTML = fbParsed;
+        if (fbParsed) {
+          fbEl.innerHTML = fbParsed;
+        } else {
+          // No marked, or marked declined the text: show it literally. Handing the
+          // authored string to the HTML parser instead would execute any markup
+          // it happens to contain, which is not what a plain-text fallback means.
+          fbEl.textContent = fbText;
+        }
       }
     }
 
@@ -2808,8 +2835,13 @@
     } catch (e) {
       /* fall through to plain text */
     }
-    if (!parsed) parsed = icon + message;
-    fbEl.innerHTML = parsed;
+    if (parsed) {
+      fbEl.innerHTML = parsed;
+    } else {
+      // A plain-text fallback means plain text: if marked is absent or threw, the
+      // message goes into the DOM as text instead of back through the HTML parser.
+      fbEl.textContent = icon + message;
+    }
   }
 
   /* - Code Editor (Monaco) - */
@@ -3508,8 +3540,12 @@
         sessionStorage.setItem('uce_return_to', JSON.stringify(info));
 
         // Redirect back to origin
-        var target = (window.__UCE_BASEURL__ || '') + '/tutorials/' + info.from;
-        window.location.href = target;
+        var fromSlug = safeReturnSlug(info.from);
+        if (!fromSlug) {
+          console.warn('[UCE] Refusing return redirect for unexpected key:', info.from);
+          return;
+        }
+        window.location.href = (window.__UCE_BASEURL__ || '') + '/tutorials/' + fromSlug;
         return;
       }
     } catch (e) { /* noop */ }
@@ -3563,6 +3599,44 @@
     var div = document.createElement('div');
     div.appendChild(document.createTextNode(str));
     return div.innerHTML;
+  }
+
+  // escapeHtml covers what a text node needs. An attribute value additionally
+  // has to neutralise the quote that delimits it, which text-node encoding
+  // deliberately leaves alone.
+  function escapeAttr(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Wraps a value in double quotes for the generated shell previews, which
+  // readers copy straight into a real terminal. Backslashes are doubled first:
+  // escaping only the quotes leaves a trailing backslash able to swallow the
+  // closing one and run the rest of the line as arguments.
+  function quoteShellArg(value) {
+    return '"' + String(value == null ? '' : value)
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g, '\\"') + '"';
+  }
+
+  // Return-to-origin links are rebuilt from a use case key kept in
+  // sessionStorage, which any script on the page can rewrite. A bare slug is
+  // what a key looks like; anything carrying a scheme, a host or a separator
+  // would send the reader somewhere else, so it is refused.
+  function safeReturnSlug(value) {
+    var slug = String(value == null ? '' : value);
+    return /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(slug) ? slug : '';
+  }
+
+  // Allow-list for URLs that become clickable. Markup escaping is not enough
+  // here: javascript:, data: and vbscript: all survive escaping and still run.
+  function safeExternalUrl(value) {
+    var url = String(value == null ? '' : value).trim();
+    return /^(https?:\/\/|mailto:|tel:|\/|\.\/|\.\.\/|#)/i.test(url) ? url : '';
   }
 
   function emitEvent(name, detail) {
