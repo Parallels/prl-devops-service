@@ -302,11 +302,11 @@ func GetVirtualMachinesHandler() restapi.ControllerHandler {
 // @Description	This endpoint returns a virtual machine
 // @Tags			Machines
 // @Produce		json
-// @Param			id	path		string	true	"Machine ID"
-// @Param			noCache	query	string	false	"Set to true to bypass the cache and fetch live data from prlctl"
-// @Success		200	{object}	models.ParallelsVM
-// @Failure		400	{object}	models.ApiErrorResponse
-// @Failure		401	{object}	models.OAuthErrorResponse
+// @Param			id		path		string	true	"Machine ID"
+// @Param			noCache	query		string	false	"Set to true to bypass the cache and fetch live data from prlctl"
+// @Success		200		{object}	models.ParallelsVM
+// @Failure		400		{object}	models.ApiErrorResponse
+// @Failure		401		{object}	models.OAuthErrorResponse
 // @Security		ApiKeyAuth
 // @Security		BearerAuth
 // @Router			/v1/machines/{id} [get]
