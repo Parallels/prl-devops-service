@@ -3,11 +3,11 @@ layout: default
 ---
 {% assign data_key = page.uce_data | default: page.id %}
 {% assign use_case = site.data[data_key] | default: page %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.3.19/marked.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-shell-session.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.3.19/marked.min.js" integrity="sha384-n6w9fxpEmN7Tb5RMj59A3edoDCEwx04XX4Rt54yooBwiFrQl5eKP4Mqxgu+qy1gd" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha384-06z5D//U/xpvxZHuUz92xBvq3DqBBFi7Up53HRrbV7Jlv7Yvh/MZ7oenfUe9iCEt" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-shell-session.min.js" integrity="sha384-raX9ECXyBTKuWD16fdVhIfoW8+QYyLzhUSDstxfaJtZV1Mb5AD793Z3qh0Mj7UPf" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- Use Case Engine Page -->
 <div class="uce-page" data-uce-usecase="{{ use_case.id | default: '' }}">
 
@@ -59,8 +59,11 @@ layout: default
   {% include uce-intro.html data=use_case %}
 
   <!-- Step Flow Container -->
-  <section class="uce-flow" id="uce-flow-container" data-uce-flow
-    data-uce-data='{{ use_case | jsonify | escape }}'>
+  {% comment %} Same channel as __UCE_WALKTHROUGH_DATA__ below. The <\/ guard keeps
+       a "</script>" inside a string from closing this element early. {% endcomment %}
+  {% assign uce_data_json = use_case | jsonify | replace: '</', '<\/' %}
+  <script>window.__UCE_DATA__ = {{ uce_data_json }};</script>
+  <section class="uce-flow" id="uce-flow-container" data-uce-flow>
     <div class="uce-loading" id="uce-loading">
       <div class="uce-spinner"></div>
       <span>Loading…</span>
@@ -119,7 +122,7 @@ layout: default
 </div>
 
 <!-- Monaco Editor — loaded synchronously before engine -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js" integrity="sha384-UcP5/iVWyRzIhnVjcB2o9W1eoYKL5fAhHTRzvFZg8ctOsoAoDeBQyQuyIk+BJ/nh" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <!-- Data passed to JS engine -->
 <script>
@@ -143,4 +146,4 @@ layout: default
   };
 </script>
 <script src="{{ site.baseurl }}/assets/js/uce-state.js?v7"></script>
-<script src="{{ site.baseurl }}/assets/js/uce-engine.js?v111"></script>
+<script src="{{ site.baseurl }}/assets/js/uce-engine.js?v112"></script>
