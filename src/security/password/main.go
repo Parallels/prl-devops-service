@@ -1,8 +1,6 @@
 package password
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
@@ -24,7 +22,6 @@ type PasswordHashingAlgorithm string
 
 const (
 	PasswordHashingAlgorithmBCrypt PasswordHashingAlgorithm = "bcrypt"
-	PasswordHashingAlgorithmSHA256 PasswordHashingAlgorithm = "sha256"
 )
 
 type PasswordService struct {
@@ -65,24 +62,25 @@ func (s *PasswordService) SetOptions(options *PasswordComplexityOptions) {
 	s.options = options
 }
 
+// Hash returns a bcrypt hash of the password.
+//
+// bcrypt is deliberately the only supported algorithm: a fast hash such as SHA-256 lets
+// anyone who obtains the stored value try passwords offline at full speed, salt or no salt.
 func (s *PasswordService) Hash(password string, salt string) (string, error) {
 	switch s.HashingAlgorithm {
 	case PasswordHashingAlgorithmBCrypt:
 		return s.hashBCrypt(password, salt)
-	case PasswordHashingAlgorithmSHA256:
-		return s.hashSHA256(password, salt)
 	default:
 		s.ctx.LogErrorf("Unknown password hashing algorithm: %s", s.HashingAlgorithm)
 		return "", errors.Newf("Unknown password hashing algorithm: %s", s.HashingAlgorithm)
 	}
 }
 
+// Compare reports whether the password matches its stored hash.
 func (s *PasswordService) Compare(password string, salt string, hashedPwd string) error {
 	switch s.HashingAlgorithm {
 	case PasswordHashingAlgorithmBCrypt:
 		return s.compareBCrypt(password, salt, hashedPwd)
-	case PasswordHashingAlgorithmSHA256:
-		return s.sha256Compare(password, salt, hashedPwd)
 	default:
 		s.ctx.LogErrorf("Unknown password hashing algorithm: %s", s.HashingAlgorithm)
 		return errors.Newf("Unknown password hashing algorithm: %s", s.HashingAlgorithm)
@@ -120,31 +118,6 @@ func (s *PasswordService) CheckPasswordComplexity(password string) (bool, *error
 	}
 
 	return !diagnostics.HasErrors(), diagnostics
-}
-
-func (s *PasswordService) hashSHA256(password string, salt string) (string, error) {
-	saltedPwd, err := s.saltPassword(password, salt)
-	if err != nil {
-		return "", err
-	}
-
-	hashedPassword := sha256.Sum256([]byte(saltedPwd))
-	return hex.EncodeToString(hashedPassword[:]), nil
-}
-
-func (s PasswordService) sha256Compare(password string, salt string, hashedPwd string) error {
-	saltedPwd, err := s.saltPassword(password, salt)
-	if err != nil {
-		return err
-	}
-
-	hashedPassword := sha256.Sum256([]byte(saltedPwd))
-	hashedPasswordString := hex.EncodeToString(hashedPassword[:])
-	if hashedPasswordString != hashedPwd {
-		return errors.New("passwords do not match")
-	}
-
-	return nil
 }
 
 func (s *PasswordService) hashBCrypt(password string, salt string) (string, error) {
