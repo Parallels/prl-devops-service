@@ -68,7 +68,7 @@ jobs:
           ./.github/workflow_scripts/get-latest-beta-changelog.sh --repo ${{ github.repository }} --output-to-file --version "${EXT_VERSION}"
           cat release_notes.md
       - name: Create release and upload release asset
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         id: create_release
         with:
           script: |
@@ -293,7 +293,7 @@ jobs:
       actions: write
     steps:
       - name: Dispatch deploy workflow on main
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.actions.createWorkflowDispatch({
@@ -328,7 +328,7 @@ jobs:
       MAJOR_VERSION: ${{ needs.beta-release.outputs.version }}
     steps:
       - name: Remove old beta release
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require("fs");
