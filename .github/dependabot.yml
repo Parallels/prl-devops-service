@@ -1,23 +1,40 @@
 version: 2
 updates:
+  # The Go module lives in src/, not at the repository root.
   - package-ecosystem: "gomod"
-    allow:
-      - dependency-name: "github.com/dependabot-test/go-modules-public"
-        dependency-type: "all"
-    labels: 
-     - "gomod"
-     - "security"
-     - "dependencies"
-    directory: "/"
+    labels:
+      - "go"
+      - "dependencies"
+      - "security"
+    directory: "/src"
     schedule:
       interval: "weekly"
       timezone: "Europe/London"
   - package-ecosystem: "docker"
     directory: "/"
-    labels: 
-     - "docker"
-     - "security"
-     - "dependencies"
+    labels:
+      - "dependencies"
+      - "security"
+    schedule:
+      interval: "weekly"
+      timezone: "Europe/London"
+  # Without this the pinned actions in .github/workflows never get a bump PR,
+  # which is how super-linter came to sit two majors behind.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    labels:
+      - "workflow"
+      - "dependencies"
+      - "security"
+    schedule:
+      interval: "weekly"
+      timezone: "Europe/London"
+  - package-ecosystem: "bundler"
+    directory: "/docs"
+    labels:
+      - "ruby"
+      - "dependencies"
+      - "security"
     schedule:
       interval: "weekly"
       timezone: "Europe/London"
