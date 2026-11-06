@@ -665,6 +665,12 @@ definitions:
         type: string
       internal_ip_address:
         type: string
+      ip_status:
+        description: '"", pending, resolving, resolved, failed'
+        type: string
+      ip_status_detail:
+        description: human-readable detail for the status
+        type: string
       user:
         type: string
     type: object
@@ -2608,7 +2614,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 1.1.7
+  version: 1.1.8
 paths:
   /config/diskspace:
     post:
@@ -4913,6 +4919,10 @@ paths:
         in: header
         name: filter
         type: string
+      - description: Set to true to bypass the cache and fetch live data from prlctl
+        in: query
+        name: noCache
+        type: string
       produces:
       - application/json
       responses:
@@ -5001,6 +5011,10 @@ paths:
         in: path
         name: id
         required: true
+        type: string
+      - description: Set to true to bypass the cache and fetch live data from prlctl
+        in: query
+        name: noCache
         type: string
       produces:
       - application/json

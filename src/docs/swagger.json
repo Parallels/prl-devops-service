@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "1.1.7"
+        "version": "1.1.8"
     },
     "basePath": "/api",
     "paths": {
@@ -3733,6 +3733,12 @@
                         "description": "X-Filter",
                         "name": "filter",
                         "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Set to true to bypass the cache and fetch live data from prlctl",
+                        "name": "noCache",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3943,6 +3949,12 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Set to true to bypass the cache and fetch live data from prlctl",
+                        "name": "noCache",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -11361,6 +11373,14 @@
                     "type": "string"
                 },
                 "internal_ip_address": {
+                    "type": "string"
+                },
+                "ip_status": {
+                    "description": "\"\", pending, resolving, resolved, failed",
+                    "type": "string"
+                },
+                "ip_status_detail": {
+                    "description": "human-readable detail for the status",
                     "type": "string"
                 },
                 "user": {

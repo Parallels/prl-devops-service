@@ -1,0 +1,14 @@
+---
+layout: post
+title:  "Release 1.1.8"
+date:   2026-11-06 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- test: add tests for IP probing eligibility and resolution
+- feat: improve IP resolution handling for macOS VMs
+- refactor: streamline IP worker lifecycle management
+
+

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.8] - 2026-11-06
+
+- test: add tests for IP probing eligibility and resolution
+- feat: improve IP resolution handling for macOS VMs
+- refactor: streamline IP worker lifecycle management
+
 ## [1.1.7] - 2026-11-04
 
 

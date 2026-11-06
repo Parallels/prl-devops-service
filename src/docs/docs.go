@@ -3740,6 +3740,12 @@ const docTemplate = `{
                         "description": "X-Filter",
                         "name": "filter",
                         "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Set to true to bypass the cache and fetch live data from prlctl",
+                        "name": "noCache",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3950,6 +3956,12 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Set to true to bypass the cache and fetch live data from prlctl",
+                        "name": "noCache",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -11370,6 +11382,14 @@ const docTemplate = `{
                 "internal_ip_address": {
                     "type": "string"
                 },
+                "ip_status": {
+                    "description": "\"\", pending, resolving, resolved, failed",
+                    "type": "string"
+                },
+                "ip_status_detail": {
+                    "description": "human-readable detail for the status",
+                    "type": "string"
+                },
                 "user": {
                     "type": "string"
                 }
@@ -14306,7 +14326,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.1.7",
+	Version:          "1.1.8",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},

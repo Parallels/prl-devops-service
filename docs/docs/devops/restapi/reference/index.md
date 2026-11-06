@@ -6049,6 +6049,9 @@ endpoints:
         - name: filter
           required: false
           type: header
+        - name: noCache
+          required: false
+          type: query
       response_blocks:
         - code_block: '{ object }'
           code: "200"
@@ -6129,6 +6132,9 @@ endpoints:
           type: path
           value_type: string
           description: Machine ID
+        - name: noCache
+          required: false
+          type: query
       response_blocks:
         - code_block: '{ object }'
           code: "200"
