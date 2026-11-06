@@ -258,6 +258,20 @@ func (j *JsonDatabase) SaveNow(ctx basecontext.ApiContext) error {
 	return nil
 }
 
+// SaveNowForced writes the in-memory database to disk even when this process is
+// running a one-shot CLI command, which normally suppresses every save (see
+// processSave). Callers must use it only when they deliberately mutate the very
+// database file the service uses, because an unguarded save from a CLI process
+// would otherwise overwrite the newer state held by a running service.
+func (j *JsonDatabase) SaveNowForced(ctx basecontext.ApiContext, reason string) error {
+	ctx.LogDebugf("[Database] Received forced save request: %s", reason)
+	if err := j.processSaveForced(ctx, reason); err != nil {
+		ctx.LogErrorf("[Database] Error saving database: %v", err)
+		return err
+	}
+	return nil
+}
+
 func (j *JsonDatabase) ProcessSaveQueue(ctx basecontext.ApiContext) {
 	defer wg.Done()
 	ctx.LogDebugf("[Database] Received for save request")
@@ -269,13 +283,30 @@ func (j *JsonDatabase) ProcessSaveQueue(ctx basecontext.ApiContext) {
 }
 
 func (j *JsonDatabase) processSave(ctx basecontext.ApiContext) error {
+	return j.writeDatabase(ctx, true, "")
+}
+
+// processSaveForced is processSave without the running-command guard, used by
+// the CLI commands that own a deliberate database mutation.
+func (j *JsonDatabase) processSaveForced(ctx basecontext.ApiContext, reason string) error {
+	return j.writeDatabase(ctx, false, reason)
+}
+
+func (j *JsonDatabase) writeDatabase(ctx basecontext.ApiContext, enforceCommandGuard bool, reason string) error {
 	j.saveMutex.Lock()
 	defer j.saveMutex.Unlock()
 
 	cfg := config.Get()
-	if cfg.GetRunningCommand() != constants.API_COMMAND && cfg.GetRunningCommand() != "" {
-		ctx.LogDebugf("[Database] Skipping save request, command running: %s", cfg.GetRunningCommand())
-		return nil
+	if enforceCommandGuard {
+		// One-shot CLI commands load their own copy of the database, so letting them
+		// save would overwrite whatever a running service has since written. They
+		// must opt in explicitly through SaveNowForced.
+		if cfg.GetRunningCommand() != constants.API_COMMAND && cfg.GetRunningCommand() != "" {
+			ctx.LogDebugf("[Database] Skipping save request, command running: %s", cfg.GetRunningCommand())
+			return nil
+		}
+	} else {
+		ctx.LogInfof("[Database] Saving database bypassing the running-command guard (reason: %s)", reason)
 	}
 
 	if j.filename == "" {

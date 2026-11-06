@@ -127,6 +127,10 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	// Background: periodic full refresh (self-healing) on a longer interval.
 	go s.runFullRefreshLoop()
 
+	// Background: periodic live VM refetch from hosts (bypasses host caches;
+	// ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS, default 5 minutes).
+	go s.runVmRefetchLoop()
+
 	// Background: periodic cleanup of orphaned temp keys (every hour)
 	go func() {
 		cleanupTicker := time.NewTicker(1 * time.Hour)
@@ -362,6 +366,21 @@ func (s *OrchestratorService) fullRefreshHost(host models.OrchestratorHost, load
 		dtoVm.Host = host.GetHost()
 		dtoVm.HostUrl = host.GetHostUrl()
 		host.VirtualMachines = append(host.VirtualMachines, dtoVm)
+	}
+
+	// Never let this bulk replace wipe an IP/status that only the stored record
+	// knows about (e.g. an exec-resolved IP pushed via PDFM events while the
+	// host's prlctl network info stays silent).
+	if stored, err := s.db.GetOrchestratorHostVirtualMachines(s.ctx, host.ID, ""); err == nil {
+		storedByID := make(map[string]models.VirtualMachine, len(stored))
+		for _, svm := range stored {
+			storedByID[svm.ID] = svm
+		}
+		for i := range host.VirtualMachines {
+			if svm, ok := storedByID[host.VirtualMachines[i].ID]; ok {
+				host.VirtualMachines[i] = mergePreservedIp(svm, host.VirtualMachines[i])
+			}
+		}
 	}
 	inventoryIDs := apimodels.ActiveMacVMIDs(vms)
 	if int64(len(inventoryIDs)) > host.Resources.TotalAppleVms {

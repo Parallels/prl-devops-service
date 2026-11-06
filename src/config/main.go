@@ -748,6 +748,16 @@ func (c *Config) ForceCacheRefreshInterval() time.Duration {
 	return time.Duration(c.GetIntKey(constants.VM_CACHE_REFRESH_INTERVAL_SECONDS_ENV_VAR)) * time.Second
 }
 
+// OrchestratorVmRefetchInterval returns how often the orchestrator live-fetches VM
+// data from its hosts (bypassing host caches). Defaults to 5 minutes.
+func (c *Config) OrchestratorVmRefetchInterval() time.Duration {
+	intervalEnvValue := c.GetKey(constants.ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS_ENV_VAR)
+	if intervalEnvValue == "" {
+		return time.Duration(constants.DEFAULT_ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS) * time.Second
+	}
+	return time.Duration(c.GetIntKey(constants.ORCHESTRATOR_VM_REFETCH_INTERVAL_SECONDS_ENV_VAR)) * time.Second
+}
+
 func (c *Config) EnableCredentialsObfuscation() bool {
 	enableObfuscationEnvValue := c.GetKey(constants.CATALOG_ENABLE_PROVIDER_CREDENTIALS_OBFUSCATION_ENV_VAR)
 	if enableObfuscationEnvValue == "" {

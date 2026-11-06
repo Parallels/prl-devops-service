@@ -1,14 +1,18 @@
 package data
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
+	"github.com/Parallels/prl-devops-service/security/password"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -378,4 +382,81 @@ func TestProcessSaveQueue(t *testing.T) {
 	content, err := os.ReadFile(db.Filename())
 	assert.NoError(t, err)
 	assert.NotEmpty(t, content)
+}
+
+// TestSaveNowSkippedForCliCommands locks in the guard that keeps one-shot CLI
+// commands from writing the database file, which would clobber what a running
+// service has since changed.
+func TestSaveNowSkippedForCliCommands(t *testing.T) {
+	db, tmpDir := setupTestDB(t)
+	defer cleanupTestDB(t, tmpDir, db)
+
+	ctx := basecontext.NewBaseContext()
+	ctx.DisableLog()
+
+	cfg := config.Get()
+	cfg.SetRunningCommand(constants.UPDATE_ROOT_PASSWORD_COMMAND)
+	defer cfg.SetRunningCommand("")
+
+	db.dataMutex.Lock()
+	db.data.Users = append(db.data.Users, models.User{
+		ID:       "hardware-id",
+		Username: "root",
+		Email:    "root@localhost",
+		Password: "in-memory-only",
+	})
+	db.dataMutex.Unlock()
+
+	require.NoError(t, db.SaveNow(ctx))
+
+	assert.Empty(t, readPersistedUsers(t, db.Filename()),
+		"a CLI command must not write the database file through SaveNow")
+}
+
+// TestSaveNowForcedPersistsRootPasswordForCliCommands covers the bug where
+// update-root-pass reported success while the new hash never left memory.
+func TestSaveNowForcedPersistsRootPasswordForCliCommands(t *testing.T) {
+	db, tmpDir := setupTestDB(t)
+	defer cleanupTestDB(t, tmpDir, db)
+
+	ctx := basecontext.NewBaseContext()
+	ctx.DisableLog()
+
+	cfg := config.Get()
+	cfg.SetRunningCommand(constants.UPDATE_ROOT_PASSWORD_COMMAND)
+	defer cfg.SetRunningCommand("")
+
+	db.dataMutex.Lock()
+	db.data.Users = append(db.data.Users, models.User{
+		ID:       "hardware-id",
+		Name:     "Root",
+		Username: "root",
+		Email:    "root@localhost",
+		Password: "old-hash",
+	})
+	db.dataMutex.Unlock()
+
+	require.NoError(t, db.UpdateRootPassword(ctx, "N3wRootPassw0rd!"))
+	require.NoError(t, db.SaveNowForced(ctx, constants.UPDATE_ROOT_PASSWORD_COMMAND))
+
+	persisted := readPersistedUsers(t, db.Filename())
+	require.Len(t, persisted, 1)
+	assert.NotEqual(t, "old-hash", persisted[0].Password)
+	assert.True(t, strings.HasPrefix(persisted[0].Password, "$2"),
+		"the hashed password, not the previous one, must reach disk")
+
+	// What landed on disk must be what the login path verifies against.
+	assert.NoError(t, password.Get().Compare("N3wRootPassw0rd!", persisted[0].ID, persisted[0].Password))
+}
+
+func readPersistedUsers(t *testing.T, filename string) []models.User {
+	t.Helper()
+
+	content, err := os.ReadFile(filename)
+	require.NoError(t, err)
+
+	var persistedData Data
+	require.NoError(t, json.Unmarshal(content, &persistedData))
+
+	return persistedData.Users
 }
