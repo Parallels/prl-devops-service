@@ -23,25 +23,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Go 1.21.x
+      - name: Setup Go 1.25.x
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21.x'
-          cache-dependency-path: ${{ github.workspace }}/go.sum
+          go-version: '1.25.x'
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
 
       - name: Clean and Tidy
-        working-directory: ${{ github.workspace }}
+        working-directory: ${{ github.workspace }}/src
         run: |
           go clean -modcache
           go mod tidy
 
       - name: Build
-        working-directory: ${{ github.workspace }}
+        working-directory: ${{ github.workspace }}/src
         run: go build -v ./...
 
       - name: Lint Codebase
         id: super-linter
-        uses: super-linter/super-linter/slim@v6.0.0
+        uses: super-linter/super-linter/slim@v9.0.0
         env:
           DEFAULT_BRANCH: origin/${{ github.head_ref}}
           FILTER_REGEX_EXCLUDE: bin/**/*
