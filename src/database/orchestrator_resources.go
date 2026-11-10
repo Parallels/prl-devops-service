@@ -43,6 +43,10 @@ func (g *GormDatabase) UpdateOrchestratorHostDetails(ctx basecontext.ApiContext,
 	if found == nil {
 		return nil, interfaces.ErrOrchestratorHostNotFound
 	}
+	// RP relations participate in Diff (stored embedded objects) but are
+	// NOT in the Details assignment set — read-attach for diff fidelity,
+	// stored rows untouched.
+	g.orchAttachRP(found)
 	if !host.Diff(*found) {
 		return host, nil // no-diff echoes the INPUT (:331)
 	}
