@@ -511,98 +511,25 @@ func (s *OrchestratorService) getSpecsFromRequest(request models.CreateVirtualMa
 }
 
 func (s *OrchestratorService) validateHost(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest, specs *models.CreateVirtualMachineSpecs) (bool, *models.ApiErrorResponse) {
-	var apiError *models.ApiErrorResponse
-	if !host.Enabled {
-		apiError = &models.ApiErrorResponse{
-			Message: "Host is not enabled",
-			Code:    400,
-		}
-		return false, apiError
-	}
-
-	if host.State != "healthy" {
-		apiError = &models.ApiErrorResponse{
-			Message: "Host is not healthy",
-			Code:    400,
-		}
-		return false, apiError
-	}
-
-	if host.Resources == nil {
-		apiError = &models.ApiErrorResponse{
-			Message: "Host does not have resources information",
-			Code:    400,
-		}
-		return false, apiError
-	}
-
-	if !strings.EqualFold(host.Architecture, request.Architecture) {
-		apiError = &models.ApiErrorResponse{
-			Message: "Host does not have the same architecture",
-			Code:    400,
-		}
-
-		return false, apiError
-	}
-
-	// We will trust that the host has the reserved cpus setup correctly
-	// otherwise we would potentially go above the reserved cpus
-	availableCpus := host.Resources.TotalAvailable.LogicalCpuCount
-	availableMemory := host.Resources.TotalAvailable.MemorySize
-	if specs == nil {
-		return false, &models.ApiErrorResponse{Message: "VM resource requirements are unavailable", Code: 400}
-	}
+	checks := s.checkHostRequirements(host, request, specs)
 	var failures []string
-	if availableCpus < specs.GetCpuCount() {
-		failures = append(failures, fmt.Sprintf("CPU: required %d logical CPUs, available %d", specs.GetCpuCount(), availableCpus))
-	}
-	if availableMemory < specs.GetMemorySize() {
-		failures = append(failures, fmt.Sprintf("Memory: required %.0f MiB, available %.0f MiB", specs.GetMemorySize(), availableMemory))
-	}
-
-	if specs != nil && specs.Size > 0 {
-		diskSpace, diskErr := s.getHostDiskSpace(s.ctx, host, request.Owner)
-		if diskErr != nil {
-			// Host may be running an older version that doesn't expose the disk-space
-			// endpoint. Log a warning and skip the check so the host remains eligible.
-			s.ctx.LogWarnf("[Orchestrator] Could not get disk space info for host %s (may be older version, skipping check): %v", host.Host, diskErr)
-		} else {
-			cacheFolder := ""
-			if host.CacheConfig != nil {
-				cacheFolder = host.CacheConfig.Folder
-			}
-			// Same volume: download + copy to cache + create = 3× size.
-			// Different volumes: only 2× size needed across the two volumes.
-			var requiredSpace int64
-			if isSameVolume(diskSpace.PrlHomePath, cacheFolder) {
-				requiredSpace = 3 * (specs.Size / 1024.0 / 1024.0) // Convert from bytes to MB
-			} else {
-				requiredSpace = 2 * (specs.Size / 1024.0 / 1024.0) // Convert from bytes to MB
-			}
-			if diskSpace.ParallelsHome < requiredSpace {
-				failures = append(failures, fmt.Sprintf("VM disk (%s): required %d MiB, available %d MiB (estimated download/copy space)", diskSpace.PrlHomePath, requiredSpace, diskSpace.ParallelsHome))
-			}
+	for _, check := range checks {
+		if !check.Passed {
+			failures = append(failures, check.Message)
 		}
 	}
-
-	if strings.EqualFold(specs.Type, "macvm") {
-		active, pending := host.Resources.TotalAppleVms, host.Resources.TotalReserved.TotalAppleVms
-		s.ctx.LogInfof("[MacVMCapacity] Scheduling host=%s active=%d pending=%d maximum=%d", host.ID, active, pending, MaxNumberAppleVms)
-		if host.Resources.MacVMInventoryComplete != nil && !*host.Resources.MacVMInventoryComplete {
-			failures = append(failures, "macOS VM inventory is incomplete; run the host service as root to enumerate all users")
-		}
-		if active+pending >= MaxNumberAppleVms {
-			failures = append(failures, fmt.Sprintf("Apple VM limit: current %d, pending %d, maximum %d", active, pending, MaxNumberAppleVms))
-		}
+	if len(failures) == 0 {
+		return true, nil
 	}
-	if len(failures) > 0 {
-		return false, &models.ApiErrorResponse{
-			Message: "Insufficient host resources: " + strings.Join(failures, "; "),
-			Code:    400,
-		}
+	// Legacy short-circuits (host state, architecture, missing specs) are reported
+	// verbatim; resource shortages keep the aggregated message format.
+	if isBlockingRequirementCheck(checks) {
+		return false, &models.ApiErrorResponse{Message: failures[0], Code: 400}
 	}
-
-	return true, nil
+	return false, &models.ApiErrorResponse{
+		Message: "Insufficient host resources: " + strings.Join(failures, "; "),
+		Code:    400,
+	}
 }
 
 func (s *OrchestratorService) getCatalogSpecs(connection string, catalogId string, version string, architecture string) (*models.CreateVirtualMachineSpecs, error) {
