@@ -5,7 +5,6 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"gorm.io/gorm"
-	gormlogger "gorm.io/gorm/logger"
 )
 
 // NewDatabaseConnection opens the backend selected by cfg, applies engine settings,
@@ -48,12 +47,11 @@ func Close(ctx basecontext.ApiContext, db *gorm.DB) {
 	}
 }
 
-// gormConfig is the single construction point for gorm.Config so task 05's
-// logger bridge replaces exactly one call site.
-// TODO(#418 task 05): replace Silent logger with the ctx-bridged gorm logger.
-func gormConfig() *gorm.Config {
+// gormConfig is the single construction point for gorm.Config — the task-03
+// seam, now fulfilled by task 05: every handle gets the ctx-bridged logger.
+func gormConfig(ctx basecontext.ApiContext) *gorm.Config {
 	return &gorm.Config{
-		Logger:         gormlogger.Default.LogMode(gormlogger.Silent),
+		Logger:         NewGormLogger(ctx),
 		TranslateError: false,
 		// NamingStrategy stays default: legacy json tags already define the
 		// column names #419 will tag explicitly.

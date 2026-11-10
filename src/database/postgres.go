@@ -17,7 +17,7 @@ import (
 // gorm.io/driver/postgres is deliberate: the pure-Go constraint (AD-2) is
 // SQLite-only.
 func newPostgresConnection(ctx basecontext.ApiContext, cfg DatabaseConfig) (*gorm.DB, error) {
-	db, err := gorm.Open(postgres.Open(cfg.DSN), gormConfig())
+	db, err := gorm.Open(postgres.Open(cfg.DSN), gormConfig(ctx))
 	if err != nil {
 		// Open dials (see above) — unreachable and misconfiguration both
 		// arrive here at boot; the sentinel wrap keeps #421's errors.Is
@@ -30,11 +30,15 @@ func newPostgresConnection(ctx basecontext.ApiContext, cfg DatabaseConfig) (*gor
 		return nil, errors.NewFromError(err)
 	}
 
-	// TODO(#418 task 05): replace with PingWithRetry (backoff + total budget).
-	sqlDB, _ := db.DB() // applyPool already succeeded, so db.DB() cannot fail here
-	if err := sqlDB.Ping(); err != nil {
+	sqlDB, err := db.DB()
+	if err != nil {
 		Close(ctx, db)
-		return nil, fmt.Errorf("%w (%s): %v", ErrDatabaseUnreachable, RedactDSN(cfg.DSN), err)
+		return nil, errors.NewFromError(err)
+	}
+
+	if err := PingWithRetry(ctx, sqlDB, DefaultPingAttempts, DefaultPingDelay); err != nil {
+		Close(ctx, db)
+		return nil, fmt.Errorf("%w (%s)", err, RedactDSN(cfg.DSN))
 	}
 
 	ctx.LogInfof("PostgreSQL connection established (pool: maxOpen=%d maxIdle=%d lifetime=%s)",
