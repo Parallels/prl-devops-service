@@ -478,7 +478,8 @@ func (s *OrchestratorService) getSpecsFromRequest(request models.CreateVirtualMa
 	case request.CatalogManifest != nil:
 		specs, err = s.getCatalogSpecs(request.CatalogManifest.Connection, request.CatalogManifest.CatalogId, request.CatalogManifest.Version, request.Architecture)
 		if err != nil {
-			return nil, fmt.Errorf("Cannot determine VM requirements for catalog %s/%s; verify catalog connectivity and authentication before retrying", request.CatalogManifest.CatalogId, request.CatalogManifest.Version)
+			s.ctx.LogErrorf("[Orchestrator] Cannot resolve catalog requirements for %s/%s/%s: %v", request.CatalogManifest.CatalogId, request.CatalogManifest.Version, request.Architecture, err)
+			return nil, fmt.Errorf("Cannot determine VM requirements for catalog %s/%s; verify catalog connectivity and authentication before retrying: %v", request.CatalogManifest.CatalogId, request.CatalogManifest.Version, err)
 		}
 		if request.CatalogManifest.Specs != nil {
 			if request.CatalogManifest.Specs.Cpu != "" && request.CatalogManifest.Specs.Cpu != "0" {

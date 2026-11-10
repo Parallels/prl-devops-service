@@ -41,6 +41,8 @@ func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.O
 		result.DetailedResources = &models.HostResources{
 			MacVMInventoryComplete: dto.Resources.MacVMInventoryComplete,
 			TotalAppleVms:          dto.Resources.TotalAppleVms,
+			MaxVmsPerHost:          dto.Resources.MaxVmsPerHost,
+			MaxVmsPerHostMode:      dto.Resources.MaxVmsPerHostMode,
 			SystemReserved:         DtoOrchestratorResourceItemToApi(dto.Resources.SystemReserved),
 			Total:                  DtoOrchestratorResourceItemToApi(dto.Resources.Total),
 			TotalAvailable:         DtoOrchestratorResourceItemToApi(dto.Resources.TotalAvailable),
@@ -117,6 +119,7 @@ func ApiOrchestratorAuthenticationToDto(request models.OrchestratorAuthenticatio
 func DtoOrchestratorResourceItemToApi(dto data_models.HostResourceItem) models.HostResourceItem {
 	result := models.HostResourceItem{
 		TotalAppleVms:    dto.TotalAppleVms,
+		TotalVms:         dto.TotalVms,
 		PhysicalCpuCount: dto.PhysicalCpuCount,
 		LogicalCpuCount:  dto.LogicalCpuCount,
 		MemorySize:       dto.MemorySize,
@@ -133,6 +136,7 @@ func DtoOrchestratorResourceItemToApi(dto data_models.HostResourceItem) models.H
 func ApiOrchestratorResourceItemToDto(request models.HostResourceItem) data_models.HostResourceItem {
 	result := data_models.HostResourceItem{
 		TotalAppleVms:    request.TotalAppleVms,
+		TotalVms:         request.TotalVms,
 		PhysicalCpuCount: request.PhysicalCpuCount,
 		LogicalCpuCount:  request.LogicalCpuCount,
 		MemorySize:       request.MemorySize,

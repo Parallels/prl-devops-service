@@ -322,8 +322,8 @@ func TestMergeDefaultsIntoConfig_PreservesUserValues(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	svcCfg := ApiServiceConfig{
-		Port:    "9999",
-		Prefix:  "/custom",
+		Port:     "9999",
+		Prefix:   "/custom",
 		LogLevel: "DEBUG",
 	}
 	err := writeServiceConfigFile(svcCfg, tmpDir)
@@ -357,6 +357,8 @@ func TestGetDefaultEnvironmentMap_ContainsExpectedKeys(t *testing.T) {
 	assert.Contains(t, defaults, constants.SYSTEM_RESERVED_CPU_ENV_VAR)
 	assert.Contains(t, defaults, constants.SYSTEM_RESERVED_MEMORY_ENV_VAR)
 	assert.Contains(t, defaults, constants.SYSTEM_RESERVED_DISK_ENV_VAR)
+	assert.Contains(t, defaults, constants.MAX_VMS_PER_HOST_ENV_VAR)
+	assert.Contains(t, defaults, constants.MAX_VMS_PER_HOST_MODE_ENV_VAR)
 }
 
 func TestGetDefaultEnvironmentMap_DefaultValues(t *testing.T) {
@@ -370,6 +372,10 @@ func TestGetDefaultEnvironmentMap_DefaultValues(t *testing.T) {
 	assert.Equal(t, "GET,POST,PUT,DELETE,PATCH", defaults[constants.CORS_ALLOWED_METHODS_ENV_VAR])
 	assert.Equal(t, "false", defaults[constants.TLS_ENABLED_ENV_VAR])
 	assert.Equal(t, "true", defaults[constants.LOG_TO_FILE_ENV_VAR])
+	// The VM count cap ships disabled and only becomes meaningful in combination with
+	// its mode, so both defaults must be discoverable in the generated config.
+	assert.Equal(t, "0", defaults[constants.MAX_VMS_PER_HOST_ENV_VAR])
+	assert.Equal(t, constants.DEFAULT_MAX_VMS_PER_HOST_MODE, defaults[constants.MAX_VMS_PER_HOST_MODE_ENV_VAR])
 }
 
 func TestSaveConfig_YamlFormat(t *testing.T) {

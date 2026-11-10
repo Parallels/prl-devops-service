@@ -664,6 +664,8 @@ func getDefaultEnvironmentMap() map[string]string {
 		constants.SYSTEM_RESERVED_CPU_ENV_VAR:                             strconv.Itoa(constants.DEFAULT_SYSTEM_RESERVED_CPU),
 		constants.SYSTEM_RESERVED_MEMORY_ENV_VAR:                          strconv.Itoa(constants.DEFAULT_SYSTEM_RESERVED_MEMORY),
 		constants.SYSTEM_RESERVED_DISK_ENV_VAR:                            strconv.Itoa(constants.DEFAULT_SYSTEM_RESERVED_DISK),
+		constants.MAX_VMS_PER_HOST_ENV_VAR:                                strconv.FormatInt(constants.DEFAULT_MAX_VMS_PER_HOST, 10),
+		constants.MAX_VMS_PER_HOST_MODE_ENV_VAR:                           constants.DEFAULT_MAX_VMS_PER_HOST_MODE,
 		constants.REVERSE_PROXY_PORT_ENV_VAR:                              constants.DEFAULT_REVERSE_PROXY_PORT,
 		constants.REVERSE_PROXY_HOST_ENV_VAR:                              constants.DEFAULT_REVERSE_PROXY_HOST,
 		constants.ORCHESTRATOR_PULL_FREQUENCY_SECONDS_ENV_VAR:             strconv.Itoa(constants.DEFAULT_ORCHESTRATOR_PULL_FREQUENCY_SEC),
