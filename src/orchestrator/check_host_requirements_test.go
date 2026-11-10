@@ -276,6 +276,36 @@ func TestCheckMachineRequirementsCatalogModeResolvesManifest(t *testing.T) {
 	require.Equal(t, 20480, response.Requirements.Disk)
 }
 
+func TestCheckMachineRequirementsCatalogLatestTagResolves(t *testing.T) {
+	db := newCheckTestDatabase(t)
+	ctx := newCheckTestContext()
+	// Manifest stored with a literal version; latest only exists as a tag.
+	_, err := db.CreateCatalogManifest(ctx, dbmodels.CatalogManifest{
+		CatalogId:    "tagged-check-catalog",
+		Name:         "tagged-check-catalog",
+		Version:      "2.1.0",
+		Architecture: "arm64",
+		Type:         "pvm",
+		MinimumSpecRequirements: &dbmodels.MinimumSpecRequirement{
+			Cpu: 2, Memory: 2048, Disk: 10240,
+		},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.DeleteCatalogManifest(ctx, "tagged-check-catalog") })
+	createCheckHost(t, db, "roomy-host", &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 8, MemorySize: 16384}})
+
+	svc := &OrchestratorService{ctx: ctx}
+	response, apiError := svc.CheckMachineRequirements(ctx, models.CheckMachineRequirementsRequest{
+		CatalogId:    "tagged-check-catalog",
+		Version:      "latest",
+		Architecture: "arm64",
+	})
+	require.Nil(t, apiError)
+	require.True(t, response.Passed)
+	require.Equal(t, 2, response.Requirements.Cpu)
+	require.Equal(t, 2048, response.Requirements.Memory)
+}
+
 func TestCheckMachineRequirementsCatalogLookupFailureReturnsBadRequest(t *testing.T) {
 	newCheckTestDatabase(t)
 	ctx := newCheckTestContext()
@@ -324,4 +354,133 @@ func TestCheckMachineRequirementsOldHostDiskCheckIsSkipped(t *testing.T) {
 	require.True(t, ok)
 	require.True(t, disk.Passed)
 	require.Contains(t, disk.Message, "check skipped")
+}
+
+// A host at its configured VM count limit is ineligible even though CPU, memory and
+// disk are all free: that is the whole point of MAX_VMS_PER_HOST.
+func TestCheckHostRequirementsVmCountLimitBlocksPlacement(t *testing.T) {
+	svc := &OrchestratorService{ctx: newCheckTestContext()}
+	request := models.CreateVirtualMachineRequest{Architecture: "arm64"}
+	specs := &models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"}
+	resources := &dbmodels.HostResources{
+		MaxVmsPerHost:  3,
+		TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 64, MemorySize: 131072},
+		Total:          dbmodels.HostResourceItem{TotalVms: 3},
+	}
+	host := dbmodels.OrchestratorHost{Enabled: true, State: "healthy", Architecture: "arm64", Resources: resources}
+
+	checks := svc.checkHostRequirements(host, request, specs)
+	vmCount, ok := requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameVmCount)
+	require.True(t, ok, "a host reporting a limit must carry a vm_count check")
+	require.False(t, vmCount.Passed)
+	require.Equal(t, checkUnitVms, vmCount.Unit)
+	require.EqualValues(t, 3, *vmCount.Required)
+	require.EqualValues(t, 3, *vmCount.Available)
+	require.Equal(t, "VM limit: current 3, pending 0, maximum 3", vmCount.Message)
+
+	// Creates already in flight consume the last slot.
+	resources.Total.TotalVms = 2
+	resources.TotalReserved.TotalVms = 1
+	checks = svc.checkHostRequirements(host, request, specs)
+	vmCount, ok = requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameVmCount)
+	require.True(t, ok)
+	require.False(t, vmCount.Passed)
+	require.Equal(t, "VM limit: current 2, pending 1, maximum 3", vmCount.Message)
+
+	// The shortage keeps the legacy aggregated message: no new error contract.
+	ok, failure := svc.validateHost(host, request, specs)
+	require.False(t, ok)
+	require.Equal(t, "Insufficient host resources: VM limit: current 2, pending 1, maximum 3", failure.Message)
+}
+
+// "running" counts the VMs occupying a hypervisor slot, so a host full of stopped VMs
+// still has room; "any" counts every registered VM.
+func TestCheckHostRequirementsVmCountModeSelectsCountedSet(t *testing.T) {
+	svc := &OrchestratorService{ctx: newCheckTestContext()}
+	request := models.CreateVirtualMachineRequest{Architecture: "arm64"}
+	specs := &models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"}
+	host := dbmodels.OrchestratorHost{Enabled: true, State: "healthy", Architecture: "arm64",
+		Resources: &dbmodels.HostResources{
+			MaxVmsPerHost:     2,
+			MaxVmsPerHostMode: "running",
+			TotalAvailable:    dbmodels.HostResourceItem{LogicalCpuCount: 64, MemorySize: 131072},
+			Total:             dbmodels.HostResourceItem{TotalVms: 40},
+			TotalInUse:        dbmodels.HostResourceItem{TotalVms: 1},
+		}}
+
+	checks := svc.checkHostRequirements(host, request, specs)
+	vmCount, ok := requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameVmCount)
+	require.True(t, ok)
+	require.True(t, vmCount.Passed, "stopped VMs are free capacity in running mode")
+	require.Equal(t, "VM limit: current 1, pending 0, maximum 2", vmCount.Message)
+
+	host.Resources.TotalInUse.TotalVms = 2
+	checks = svc.checkHostRequirements(host, request, specs)
+	vmCount, _ = requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameVmCount)
+	require.False(t, vmCount.Passed)
+
+	host.Resources.MaxVmsPerHostMode = ""
+	checks = svc.checkHostRequirements(host, request, specs)
+	vmCount, _ = requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameVmCount)
+	require.False(t, vmCount.Passed, "the default any mode counts all 40 registered VMs")
+	require.Equal(t, "VM limit: current 40, pending 0, maximum 2", vmCount.Message)
+}
+
+// Hosts that report no limit — unset, or an older host build without the field — must
+// not gain a check, which is what keeps existing behaviour byte-identical.
+func TestCheckHostRequirementsWithoutVmLimitOmitsCheck(t *testing.T) {
+	svc := &OrchestratorService{ctx: newCheckTestContext()}
+	host := dbmodels.OrchestratorHost{Enabled: true, State: "healthy", Architecture: "arm64",
+		Resources: &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 8, MemorySize: 8192}}}
+
+	checks := svc.checkHostRequirements(host, models.CreateVirtualMachineRequest{Architecture: "arm64"},
+		&models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"})
+
+	_, ok := requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameVmCount)
+	require.False(t, ok)
+
+	ok, failure := svc.validateHost(host, models.CreateVirtualMachineRequest{Architecture: "arm64"},
+		&models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"})
+	require.True(t, ok)
+	require.Nil(t, failure)
+}
+
+// Placement across a fleet must skip the host that is full by VM count and pick the
+// one that has room, without a CPU or memory shortage anywhere.
+func TestCheckMachineRequirementsSkipsHostAtVmCountLimit(t *testing.T) {
+	db := newCheckTestDatabase(t)
+	ctx := newCheckTestContext()
+	full := createCheckHost(t, db, "full-host", &dbmodels.HostResources{
+		MaxVmsPerHost:  2,
+		TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 16, MemorySize: 32768},
+		Total:          dbmodels.HostResourceItem{TotalVms: 2},
+	})
+	createCheckHost(t, db, "roomy-host", &dbmodels.HostResources{
+		MaxVmsPerHost:  20,
+		TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 16, MemorySize: 32768},
+		Total:          dbmodels.HostResourceItem{TotalVms: 2},
+	})
+	require.NotNil(t, full)
+
+	svc := &OrchestratorService{ctx: ctx}
+	response, apiError := svc.CheckMachineRequirements(ctx, models.CheckMachineRequirementsRequest{
+		Requirements: &models.MachineRequirements{Cpu: 2, Memory: 2048},
+	})
+	require.Nil(t, apiError)
+	require.True(t, response.Passed, "the host below its VM limit must carry the placement")
+
+	// With the fleet reduced to the full host the pre-flight reports why.
+	fullHost, err := db.GetOrchestratorHost(ctx, full.ID)
+	require.NoError(t, err)
+	fullHost.Enabled = true
+	response, apiError = svc.CheckMachineRequirements(ctx, models.CheckMachineRequirementsRequest{
+		HostId:       fullHost.ID,
+		Requirements: &models.MachineRequirements{Cpu: 2, Memory: 2048},
+	})
+	require.Nil(t, apiError)
+	require.False(t, response.Passed)
+	require.Len(t, response.Hosts, 1)
+	vmCount, ok := requirementsCheckByName(response.Hosts[0], checkNameVmCount)
+	require.True(t, ok)
+	require.False(t, vmCount.Passed)
 }

@@ -106,11 +106,11 @@ type MachineRequirementsHostResult struct {
 
 // RequirementCheckResult is the outcome of a single decision-factor check on a host.
 type RequirementCheckResult struct {
-	Name      string   `json:"name"` // host_state | architecture | cpu | memory | disk | macos_inventory | macos_capacity
+	Name      string   `json:"name"` // host_state | architecture | cpu | memory | disk | vm_count | macos_inventory | macos_capacity
 	Passed    bool     `json:"passed"`
 	Required  *float64 `json:"required,omitempty"`
 	Available *float64 `json:"available,omitempty"`
-	Unit      string   `json:"unit,omitempty"` // logical_cpus | MiB | apple_vms
+	Unit      string   `json:"unit,omitempty"` // logical_cpus | MiB | vms | apple_vms
 	Message   string   `json:"message,omitempty"`
 }
 

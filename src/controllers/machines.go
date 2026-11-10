@@ -822,6 +822,14 @@ func CloneVirtualMachineHandler() restapi.ControllerHandler {
 		params := mux.Vars(r)
 		id := params["id"]
 
+		// Per-host VM count limit: a clone adds one VM to the host.
+		releaseSlot, err := svc.ReserveVmSlot(ctx, "")
+		if err != nil {
+			ReturnApiError(ctx, w, models.NewFromError(err))
+			return
+		}
+		defer releaseSlot()
+
 		if err := svc.CloneVm(ctx, id, strings.TrimSpace(request.CloneName), strings.TrimSpace(request.DestinationPath)); err != nil {
 			ReturnApiError(ctx, w, models.NewFromError(err))
 			return
@@ -1795,6 +1803,14 @@ func createPackerTemplate(ctx basecontext.ApiContext, request models.CreateVirtu
 		}
 	}
 
+	// Per-host VM count limit: admit the create immediately before the VM is built, so
+	// a rejected request has touched nothing.
+	releaseSlot, reserveErr := parallelsDesktopService.ReserveVmSlot(ctx, "")
+	if reserveErr != nil {
+		return nil, reserveErr
+	}
+	defer releaseSlot()
+
 	vm, err := parallelsDesktopService.CreateVm(ctx, *template, request.PackerTemplate.DesiredState)
 	if err != nil {
 		return nil, err
@@ -1816,6 +1832,13 @@ func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMa
 	if !config.GetBoolKey(constants.ENABLE_VAGRANT_PLUGIN_ENV_VAR) {
 		return nil, errors.NewWithCode("Vagrant plugin is not enabled, please enable it before trying", 400)
 	}
+
+	// Per-host VM count limit: admit the create before generating any box.
+	releaseSlot, reserveErr := provider.ParallelsDesktopService.ReserveVmSlot(ctx, "")
+	if reserveErr != nil {
+		return nil, reserveErr
+	}
+	defer releaseSlot()
 
 	vagrantService := provider.VagrantService
 	parallelsDesktopService := provider.ParallelsDesktopService
@@ -1929,6 +1952,14 @@ func createVagrantBox(ctx basecontext.ApiContext, request models.CreateVirtualMa
 
 func createCatalogMachine(ctx basecontext.ApiContext, request models.CreateVirtualMachineRequest, jobID string) (*models.CreateVirtualMachineResponse, error) {
 	provider := serviceprovider.Get()
+
+	// Per-host VM count limit: admit the create before pulling anything, and hold the
+	// slot for the whole operation (this call also runs inside the async goroutines).
+	releaseSlot, err := provider.ParallelsDesktopService.ReserveVmSlot(ctx, jobID)
+	if err != nil {
+		return nil, err
+	}
+	defer releaseSlot()
 
 	parallelsDesktopService := provider.ParallelsDesktopService
 

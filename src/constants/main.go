@@ -40,6 +40,10 @@ const (
 	DEFAULT_SYSTEM_RESERVED_CPU                  = 1
 	DEFAULT_SYSTEM_RESERVED_MEMORY               = 2048
 	DEFAULT_SYSTEM_RESERVED_DISK                 = 20000
+	DEFAULT_MAX_VMS_PER_HOST                     = 0
+	DEFAULT_MAX_VMS_PER_HOST_MODE                = "any"
+	MAX_VMS_PER_HOST_MODE_ANY                    = "any"
+	MAX_VMS_PER_HOST_MODE_RUNNING                = "running"
 	DEFAULT_REVERSE_PROXY_PORT                   = "5080"
 	DEFAULT_REVERSE_PROXY_HOST                   = "0.0.0.0"
 	DEFAULT_NOTIFICATION_REFRESH_INTERVAL_IN_SEC = 5
@@ -124,6 +128,8 @@ const (
 	SYSTEM_RESERVED_CPU_ENV_VAR                             = "SYSTEM_RESERVED_CPU"
 	SYSTEM_RESERVED_MEMORY_ENV_VAR                          = "SYSTEM_RESERVED_MEMORY"
 	SYSTEM_RESERVED_DISK_ENV_VAR                            = "SYSTEM_RESERVED_DISK"
+	MAX_VMS_PER_HOST_ENV_VAR                                = "MAX_VMS_PER_HOST"
+	MAX_VMS_PER_HOST_MODE_ENV_VAR                           = "MAX_VMS_PER_HOST_MODE"
 	SYSTEM_AUTO_RECOVER_DATABASE_ENV_VAR                    = "SYSTEM_AUTO_RECOVER_DATABASE"
 	DISABLE_REVERSE_PROXY_ENV_VAR                           = "DISABLE_REVERSE_PROXY"
 	REVERSE_PROXY_PORT_ENV_VAR                              = "REVERSE_PROXY_PORT"

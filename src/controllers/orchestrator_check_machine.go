@@ -29,8 +29,8 @@ func registerOrchestratorMachineCheckHandlers(ctx basecontext.ApiContext, versio
 // (catalog_id, resolved through the catalog manager exactly like POST machines) or
 // from the request body (requirements, including the OS to know whether this is a
 // macOS VM). When any host has enough resources the response is slim; otherwise it
-// details, per host, exactly what is missing (disk space, CPU, memory, Apple VM
-// capacity, ...).
+// details, per host, exactly what is missing (disk space, CPU, memory, per-host VM
+// count limit, Apple VM capacity, ...).
 //
 // @Summary		Check host requirements before creating a virtual machine
 // @Description	Evaluates the VM scheduling decision factor against the registered hosts. Requirements are resolved from a catalog manifest (catalog_id + version + architecture, served by a catalog manager) or provided directly in the body. The response is slim when resources are sufficient and carries the full per-host missing-resource detail when no host qualifies.

@@ -160,3 +160,41 @@ func TestTaintAndRevokeCatalogManifestVersion(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, revoked.Revoked)
 }
+
+func TestGetCatalogManifestsByCatalogIdVersionAndArchResolvesTags(t *testing.T) {
+	db, tmpDir := setupTestDB(t)
+	defer cleanupTestDB(t, tmpDir, db)
+
+	ctx := basecontext.NewRootBaseContext()
+	ctx.DisableLog()
+
+	// CreateCatalogManifest records the literal version and keeps latest as a tag.
+	manifest := models.CatalogManifest{
+		Name:         "tagged-catalog",
+		CatalogId:    "tagged-catalog",
+		Version:      "2.1.0",
+		Architecture: "arm64",
+	}
+	created, err := db.CreateCatalogManifest(ctx, manifest)
+	require.NoError(t, err)
+	assert.Equal(t, "2.1.0", created.Version)
+	assert.Contains(t, created.Tags, "latest")
+
+	// The literal version matches.
+	byVersion, err := db.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, "tagged-catalog", "2.1.0", "arm64")
+	require.NoError(t, err)
+	assert.Equal(t, created.ID, byVersion.ID)
+
+	// The latest tag resolves to the same manifest even though the version differs.
+	byTag, err := db.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, "tagged-catalog", "latest", "arm64")
+	require.NoError(t, err)
+	assert.Equal(t, created.ID, byTag.ID)
+
+	// Unknown versions that are not tags still fail.
+	_, err = db.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, "tagged-catalog", "9.9.9", "arm64")
+	require.Error(t, err)
+
+	// The tag fallback respects the architecture constraint.
+	_, err = db.GetCatalogManifestsByCatalogIdVersionAndArch(ctx, "tagged-catalog", "latest", "amd64")
+	require.Error(t, err)
+}

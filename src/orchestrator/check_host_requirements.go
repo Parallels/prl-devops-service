@@ -20,6 +20,7 @@ const (
 	checkNameCpu            = "cpu"
 	checkNameMemory         = "memory"
 	checkNameDisk           = "disk"
+	checkNameVmCount        = "vm_count"
 	checkNameMacosInventory = "macos_inventory"
 	checkNameMacosCapacity  = "macos_capacity"
 )
@@ -28,6 +29,7 @@ const (
 const (
 	checkUnitLogicalCpus = "logical_cpus"
 	checkUnitMiB         = "MiB"
+	checkUnitVms         = "vms"
 	checkUnitAppleVms    = "apple_vms"
 )
 
@@ -133,6 +135,30 @@ func (s *OrchestratorService) checkHostRequirements(host data_models.Orchestrato
 			}
 			checks = append(checks, diskCheck)
 		}
+	}
+
+	// Per-host VM count limit configured on the host itself (MAX_VMS_PER_HOST). It is a
+	// hard cap on the number of VMs, evaluated even when CPU, memory and disk are all
+	// sufficient. Hosts reporting no limit — unset, or a host build that does not
+	// publish the field — stay eligible exactly as before.
+	if host.Resources.MaxVmsPerHost > 0 {
+		current := host.Resources.Total.TotalVms
+		if strings.EqualFold(host.Resources.MaxVmsPerHostMode, constants.MAX_VMS_PER_HOST_MODE_RUNNING) {
+			current = host.Resources.TotalInUse.TotalVms
+		}
+		pending := host.Resources.TotalReserved.TotalVms
+		maxVms := host.Resources.MaxVmsPerHost
+		s.ctx.LogInfof("[VmCapacity] Scheduling host=%s current=%d pending=%d maximum=%d mode=%s",
+			host.ID, current, pending, maxVms, host.Resources.MaxVmsPerHostMode)
+
+		checks = append(checks, models.RequirementCheckResult{
+			Name:      checkNameVmCount,
+			Passed:    current+pending < maxVms,
+			Required:  models.NewRequirementCheckValue(float64(maxVms)),
+			Available: models.NewRequirementCheckValue(float64(current + pending)),
+			Unit:      checkUnitVms,
+			Message:   fmt.Sprintf("VM limit: current %d, pending %d, maximum %d", current, pending, maxVms),
+		})
 	}
 
 	if strings.EqualFold(specs.Type, "macvm") {

@@ -11,20 +11,41 @@ func IsMacVM(vm ParallelsVM) bool {
 		strings.EqualFold(vm.Type, "macvm") || strings.EqualFold(vm.OS, "macosx")
 }
 
-// ActiveMacVMIDs includes transitions that still occupy a host slot. A slot
+// OccupiesVmSlot reports whether a VM state still occupies a host slot. A slot
 // becomes available only once the VM is stopped or suspended.
-func ActiveMacVMIDs(vms []ParallelsVM) []string {
+func OccupiesVmSlot(state string) bool {
+	switch strings.ToLower(state) {
+	case "running", "starting", "resuming", "paused", "pausing", "stopping", "suspending":
+		return true
+	}
+	return false
+}
+
+// ActiveVMIDs returns the de-duplicated IDs of every virtual machine occupying a host
+// slot, whatever its type. It is the basis for the "running" mode of the per-host VM
+// limit as well as for the macOS VM slot limit.
+func ActiveVMIDs(vms []ParallelsVM) []string {
 	var ids []string
 	seen := make(map[string]bool)
 	for _, vm := range vms {
-		if !IsMacVM(vm) || vm.ID == "" || seen[vm.ID] {
+		if vm.ID == "" || seen[vm.ID] || !OccupiesVmSlot(vm.State) {
 			continue
 		}
-		switch strings.ToLower(vm.State) {
-		case "running", "starting", "resuming", "paused", "pausing", "stopping", "suspending":
-			ids = append(ids, vm.ID)
-			seen[vm.ID] = true
-		}
+		ids = append(ids, vm.ID)
+		seen[vm.ID] = true
 	}
 	return ids
+}
+
+// ActiveMacVMIDs is ActiveVMIDs restricted to macOS VMs. It includes transitions that
+// still occupy a host slot; a slot becomes available only once the VM is stopped or
+// suspended.
+func ActiveMacVMIDs(vms []ParallelsVM) []string {
+	var macVms []ParallelsVM
+	for _, vm := range vms {
+		if IsMacVM(vm) {
+			macVms = append(macVms, vm)
+		}
+	}
+	return ActiveVMIDs(macVms)
 }

@@ -19,6 +19,7 @@ type HostCatalogCacheItem struct {
 
 type HostResourceItem struct {
 	TotalAppleVms    int64    `json:"total_apple_vms,omitempty"`
+	TotalVms         int64    `json:"total_vms,omitempty"`
 	PhysicalCpuCount int64    `json:"physical_cpu_count,omitempty"`
 	LogicalCpuCount  int64    `json:"logical_cpu_count"`
 	MemorySize       float64  `json:"memory_size"`
@@ -32,6 +33,8 @@ type HostResourceItem struct {
 type HostResources struct {
 	MacVMInventoryComplete *bool            `json:"mac_vm_inventory_complete,omitempty"`
 	TotalAppleVms          int64            `json:"total_apple_vms,omitempty"`
+	MaxVmsPerHost          int64            `json:"max_vms_per_host,omitempty"`
+	MaxVmsPerHostMode      string           `json:"max_vms_per_host_mode,omitempty"`
 	SystemReserved         HostResourceItem `json:"system_reserved,omitempty"`
 	Total                  HostResourceItem `json:"total,omitempty"`
 	TotalAvailable         HostResourceItem `json:"total_available,omitempty"`

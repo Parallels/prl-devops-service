@@ -573,6 +573,50 @@ func (c *Config) SystemReservedDisk() int {
 	return constants.DEFAULT_SYSTEM_RESERVED_DISK
 }
 
+// MaxVmsPerHost returns the hard maximum number of virtual machines this host may
+// host. It is a count limit set on the host itself and is applied even when the host
+// still has free CPU, memory and disk. An absent key, an unparsable value and any
+// value <= 0 all mean "unlimited".
+func (c *Config) MaxVmsPerHost() int64 {
+	raw := strings.TrimSpace(c.GetKey(constants.MAX_VMS_PER_HOST_ENV_VAR))
+	if raw == "" {
+		return constants.DEFAULT_MAX_VMS_PER_HOST
+	}
+
+	val, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		if c.ctx != nil {
+			c.ctx.LogWarnf("Invalid %s value %q; using unlimited", constants.MAX_VMS_PER_HOST_ENV_VAR, raw)
+		}
+		return constants.DEFAULT_MAX_VMS_PER_HOST
+	}
+	if val <= 0 {
+		return constants.DEFAULT_MAX_VMS_PER_HOST
+	}
+
+	return val
+}
+
+// MaxVmsPerHostMode returns which virtual machines the per-host limit counts:
+// "any" (every VM registered on the host, including stopped ones) or "running"
+// (only VMs occupying a hypervisor slot). Unknown values fall back to "any".
+func (c *Config) MaxVmsPerHostMode() string {
+	mode := strings.ToLower(strings.TrimSpace(c.GetKey(constants.MAX_VMS_PER_HOST_MODE_ENV_VAR)))
+	switch mode {
+	case constants.MAX_VMS_PER_HOST_MODE_ANY, constants.MAX_VMS_PER_HOST_MODE_RUNNING:
+		return mode
+	case "":
+		return constants.DEFAULT_MAX_VMS_PER_HOST_MODE
+	}
+
+	if c.ctx != nil {
+		c.ctx.LogWarnf("Invalid %s value %q; using %s",
+			constants.MAX_VMS_PER_HOST_MODE_ENV_VAR, mode, constants.DEFAULT_MAX_VMS_PER_HOST_MODE)
+	}
+
+	return constants.DEFAULT_MAX_VMS_PER_HOST_MODE
+}
+
 func (c *Config) OrchestratorPullFrequency() int {
 	frequency := c.GetKey(constants.ORCHESTRATOR_PULL_FREQUENCY_SECONDS_ENV_VAR)
 	if frequency == "" {

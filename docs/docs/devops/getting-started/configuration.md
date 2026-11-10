@@ -49,6 +49,8 @@ The root object of the configuration file is the environment object, which conta
 | SYSTEM_RESERVED_CPU                             | The number of cpu cores that will be reserved for the system and not used for Orchestrator                                                    | 1                                                                                                 |
 | SYSTEM_RESERVED_MEMORY                          | The amount of memory that will be reserved for the system and not used for Orchestrator in Mb's                                               | 2048                                                                                              |
 | SYSTEM_RESERVED_DISK                            | The amount of disk space that will be reserved for the system and not used for Orchestrator in Mb's                                           | 20000                                                                                             |
+| MAX_VMS_PER_HOST                                | Hard maximum number of virtual machines this host may host, applied even when CPU, memory and disk are still free. `0` means unlimited          | 0                                                                                                 |
+| MAX_VMS_PER_HOST_MODE                           | Which virtual machines the limit counts: `any` (every VM registered on the host, stopped ones included) or `running` (VMs occupying a slot)      | any                                                                                               |
 | SYSTEM_AUTO_RECOVER_DATABASE                    | Specifies whether the system should auto recover the database if it is corrupted                                                              | true                                                                                              |
 | ENABLE_REVERSE_PROXY                            | Specifies whether the reverse proxy should be enabled                                                                                         | false                                                                                             |
 | REVERSE_PROXY_PORT                              | The port that the reverse proxy will listen on                                                                                                | 5080                                                                                              |
@@ -123,6 +125,34 @@ runs every 5 seconds. A timeout publishes a failed job update with the threshold
 and last update timestamp in both `error` and `message`. It does not stop the host
 operation, so check the VM status before retrying. If a host completes successfully
 but the orchestrator times out, check the host's WebSocket event connection.
+
+### Maximum number of VMs per host
+
+Set `MAX_VMS_PER_HOST=10` in the environment of a host to cap the number of virtual
+machines that host may run, regardless of how much CPU, memory and disk are still free.
+The default `0` (also used for invalid or negative values) means unlimited. Configure it
+on the host, not on the orchestrator, and restart the host service.
+
+`MAX_VMS_PER_HOST_MODE` selects which virtual machines the cap counts: `any` (the
+default) counts every VM registered on the host, stopped ones included, while `running`
+counts only the VMs occupying a hypervisor slot, that is running, paused or mid
+transition. Unknown values fall back to `any`.
+
+The limit is enforced in two places. The host service admits each create, clone and
+start, and rejects an operation that would exceed the cap with an HTTP 409 naming the
+current, pending and maximum numbers; concurrent operations cannot slip past the cap.
+The orchestrator additionally refuses to place a new virtual machine on a host that is
+already at its limit, and reports the shortage in the `POST /v1/machines/check`
+pre-flight response as the `vm_count` check.
+
+Each operation is charged once, to the resource it actually consumes: in `any` mode a
+create or a clone takes a slot and a start is free, in `running` mode a start takes a
+slot and a create is free. Lowering the value does not stop or migrate VMs that already
+exist, it only blocks new ones. The limit covers operations submitted to the service:
+virtual machines created directly with `prlctl` or another tool outside the service are
+counted once they are registered on the host, but they are not prevented by it. Hosts
+without a virtualisation inventory, such as Linux and Windows hosts, do not report a
+limit, so the orchestrator keeps placing VMs on them by CPU, memory and disk only.
 
 ### Brute Force Protection
 
