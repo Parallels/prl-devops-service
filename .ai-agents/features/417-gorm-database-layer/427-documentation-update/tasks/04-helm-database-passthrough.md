@@ -87,3 +87,12 @@ stock renders never changed); docs revert trivially.
 **Deployment config examples** AC — helm half (compose half = task 03's snippet per D-4); OQ-4 resolved as
 **shipped**, not written; backward-compat posture proven mechanically, which is the feature's ER-5 spirit
 applied to the deploy surface.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `427-04`.** Cut `slice/427-04` from `sql-migration` HEAD
+(`.worktrees/slice-427-04`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

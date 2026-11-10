@@ -103,3 +103,12 @@ exercise host rows only — 13 §3 create-with-VMs overlap means its parity fixt
 **CRUD via GORM** — 16 methods incl. the two largest write flows in the PBI (full-sync, upsert);
 **Transactions** — D-9 rows `:871-888`, `:907-933`; **Error handling** — D-11; **Legacy bypassed** — after
 this PR the orchestrator domain contains zero delegate paths (structural evidence for 18's audit).
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-14`.** Cut `slice/421-14` from `sql-migration` HEAD
+(`.worktrees/slice-421-14`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

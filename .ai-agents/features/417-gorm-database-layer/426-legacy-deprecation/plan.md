@@ -252,3 +252,10 @@ green (ER-5).
 
 - Deprecation notice copy = D-3 messages + D-6 CHANGELOG bullet; removal version **v2.0.0** must
   appear in README/docs; `DB_TYPE` legacy-value wording per OQ-426-1.
+
+## Execution model — worktree slices + human gate (feature plan §14, ER-6/ER-7)
+
+Every task here executes as an isolated worktree slice `slice/<pbi>-<nn>` cut from **`sql-migration`**,
+passes its spec's Validation inside the worktree, closes with a **test plan + results entry** in
+[`../VERIFICATION.md`](../VERIFICATION.md) and the **human verdict** — only then merges `--no-ff` into
+`sql-migration` and the next slice may start. ER-5's merge boundary = the merge into `sql-migration`.

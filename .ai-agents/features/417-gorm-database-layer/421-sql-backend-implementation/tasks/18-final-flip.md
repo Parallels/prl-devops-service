@@ -113,3 +113,12 @@ The closing PR for every remaining box: **Backend selection** (sqlite/postgres/l
 path** (row a/c), **PostgreSQL** (row d), **Transactions** (D-9 fully live under selection), **Concurrent
 access WAL** (row a, provider handle), **Legacy layer bypassed** (audit + goroutine evidence). Post-merge:
 #424/#425/#426 unblock *for real* — SQL is now the shipping default path.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-18`.** Cut `slice/421-18` from `sql-migration` HEAD
+(`.worktrees/slice-421-18`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

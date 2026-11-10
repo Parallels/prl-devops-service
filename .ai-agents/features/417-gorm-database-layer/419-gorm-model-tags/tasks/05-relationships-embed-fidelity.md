@@ -80,3 +80,12 @@ Revert PR; pure test addition (+ any tag fixes, which revert atomically).
 ## PBI acceptance mapping
 AC2 (joins exercised end-to-end via GORM-created join rows), AC4 (embed fidelity = the AC's core
 claim for embedded collections), D-7 documented by executable test.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `419-05`.** Cut `slice/419-05` from `sql-migration` HEAD
+(`.worktrees/slice-419-05`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

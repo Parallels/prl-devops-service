@@ -132,3 +132,12 @@ Revert commit removes 4 files; `doc.go` keeps deps honest. No consumers yet.
 
 Moves AC “**Connection factory**” (SQLite half + shape) and “**No regressions**”; pre-satisfies
 #421's “File path respected” + “Concurrent access (WAL)” engine requirements.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `418-03`.** Cut `slice/418-03` from `sql-migration` HEAD
+(`.worktrees/slice-418-03`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

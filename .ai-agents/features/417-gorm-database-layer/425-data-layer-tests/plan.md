@@ -334,3 +334,10 @@ existing files: `sqlite.go` +≤5, `pull_request.yml` +~30, `Makefile` +~12).
 | **Error path coverage** | D-4 matrix (task 04) + per-wave scenario error assertions + unreachable-wrapping offline test. |
 | **No flaky tests** | D-3 rules + `-count=5`, `-shuffle=on`, `-race` gates in tasks 01/07; zero-flake definition in task 07 Validation. |
 | *Constraint: ≤ +30 s* | D-9 model + task 01 early measurement + task 07 before/after wall-time evidence. |
+
+## Execution model — worktree slices + human gate (feature plan §14, ER-6/ER-7)
+
+Every task here executes as an isolated worktree slice `slice/<pbi>-<nn>` cut from **`sql-migration`**,
+passes its spec's Validation inside the worktree, closes with a **test plan + results entry** in
+[`../VERIFICATION.md`](../VERIFICATION.md) and the **human verdict** — only then merges `--no-ff` into
+`sql-migration` and the next slice may start. ER-5's merge boundary = the merge into `sql-migration`.

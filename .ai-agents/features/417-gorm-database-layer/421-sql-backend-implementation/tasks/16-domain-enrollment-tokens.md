@@ -75,3 +75,12 @@ Revert restores the delegate; no goroutine existed to stop; zero schema outreach
 **Transactions** — none needed (single-statement domain — grep `dataMutex` in the file to evidence the claim);
 **Legacy bypassed** — domain off-delegate after this PR. With this file, **all 15 domain tasks (05–16) have
 landed: every interface method answers from SQL**, which is 17's precondition.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-16`.** Cut `slice/421-16` from `sql-migration` HEAD
+(`.worktrees/slice-421-16`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

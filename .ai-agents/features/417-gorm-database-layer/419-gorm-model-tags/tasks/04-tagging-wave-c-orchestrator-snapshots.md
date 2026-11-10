@@ -89,3 +89,12 @@ Revert PR. Added `json:"-"` fields are additive struct fields — revert cleanly
 AC1 (rows 14, 17–24… 14/20/22), AC2 (has-many ×2 + has-one declared), AC4 (VM/snapshot golden bytes;
 normalisation loses nothing: every wrapper key lands in a column), ER-2/ER-3 closure of the
 1,018-line trigger.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `419-04`.** Cut `slice/419-04` from `sql-migration` HEAD
+(`.worktrees/slice-419-04`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

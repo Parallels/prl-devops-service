@@ -83,3 +83,12 @@ lines). Nothing structural.
 **Error path coverage** (AC 5) — the D-4 matrix file IS the deliverable; **Existing tests pass / promoted**
 — orchestrator/jobs/config Tier-2 coverage + the ledger makes the claim checkable by a human in one screen;
 **Backend coverage** — matrix structured so task 05 appends Postgres rows without edits; budget logged.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `425-04`.** Cut `slice/425-04` from `sql-migration` HEAD
+(`.worktrees/slice-425-04`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

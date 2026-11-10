@@ -75,3 +75,12 @@ each other within the PBI).
 **Architecture doc + CHANGELOG + README** AC boxes close here; D-5's single-source-of-truth deprecation
 placement completes (page 02 = home, pointer in 01, paragraph here, versions never restated); the newcomer
 path closes. This PR = #427 done = feature #417 documentation contract satisfied.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `427-05`.** Cut `slice/427-05` from `sql-migration` HEAD
+(`.worktrees/slice-427-05`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

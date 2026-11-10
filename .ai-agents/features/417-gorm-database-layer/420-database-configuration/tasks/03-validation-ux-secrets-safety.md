@@ -111,3 +111,12 @@ no dependency from later tasks on the test files themselves (task 04 depends on 
 Moves AC boxes: **Validation and errors** (the actionable-message contract is *this* AC's final
 word; startup delivery proven in task 04), **Secrets safety** (regressions + audit record; runtime
 startup-line evidence in task 04). Hardens **Config file parity** (file-key-only error matrix).
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `420-03`.** Cut `slice/420-03` from `sql-migration` HEAD
+(`.worktrees/slice-420-03`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

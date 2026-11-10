@@ -123,3 +123,12 @@ still applies (pure moves in one package).
 Moves no AC checkbox directly; **unblocks all of them** (ER-3 gate for tasks 02–04, which are the
 AC-bearing PRs). Feature-level: satisfies the ER-3 trigger the feature plan assigns to this PBI's
 task chain.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `420-01`.** Cut `slice/420-01` from `sql-migration` HEAD
+(`.worktrees/slice-420-01`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

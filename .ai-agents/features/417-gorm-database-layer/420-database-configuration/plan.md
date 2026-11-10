@@ -320,3 +320,10 @@ go test ./config/... ./database/... -count=1 -v
 go test ./... -count=1                # full suite, no regressions
 go test -tags integration ./integration_test/... -count=1   # task 04 matrix (needs built binary; see task)
 ```
+
+## Execution model — worktree slices + human gate (feature plan §14, ER-6/ER-7)
+
+Every task here executes as an isolated worktree slice `slice/<pbi>-<nn>` cut from **`sql-migration`**,
+passes its spec's Validation inside the worktree, closes with a **test plan + results entry** in
+[`../VERIFICATION.md`](../VERIFICATION.md) and the **human verdict** — only then merges `--no-ff` into
+`sql-migration` and the next slice may start. ER-5's merge boundary = the merge into `sql-migration`.

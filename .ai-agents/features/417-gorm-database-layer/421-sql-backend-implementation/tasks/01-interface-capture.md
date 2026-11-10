@@ -168,3 +168,12 @@ disappear with the revert.
 
 Foundation for **all CRUD (AC-1)** — freezes the surface (R-1); moves nothing user-visible yet; prerequisite for
 the "Legacy layer bypassed" audit list (AC-6) created by enumerating provider fields.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-01`.** Cut `slice/421-01` from `sql-migration` HEAD
+(`.worktrees/slice-421-01`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

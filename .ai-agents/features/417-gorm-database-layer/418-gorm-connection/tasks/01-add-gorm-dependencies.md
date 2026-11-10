@@ -33,14 +33,17 @@ behaviour of the running service changes.**
 
 ## Implementation spec
 
-1. In `src/` (the module dir; repo root has `go.work` pointing here):
+1. Create `src/database/doc.go` **first** — `go mod tidy` prunes deps with no importer, so with this
+   file in place before the manifest commands, tidy *adds and keeps* the three modules. (Learned
+   executing slice 418-01: the original order — tidy before `doc.go` — silently reverted the `go get`s.)
+2. In `src/` (the module dir; repo root has `go.work` pointing here):
    ```bash
    go get gorm.io/gorm@latest
    go get github.com/glebarez/sqlite@latest
    go get gorm.io/driver/postgres@latest
    go mod tidy
    ```
-2. Create `src/database/doc.go`:
+3. ~~Create `src/database/doc.go`:~~ *(moved to step 1)* Content:
    ```go
    // Package database implements the GORM-based persistence layer of the service
    // (feature #417). This file is created by the dependency-foundation task; the
@@ -87,3 +90,12 @@ no consumers.
 ## PBI acceptance mapping
 
 Moves AC “**GORM added**” (with the AD-2 deviation note) and starts “**No regressions**”.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `418-01`.** Cut `slice/418-01` from `sql-migration` HEAD
+(`.worktrees/slice-418-01`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

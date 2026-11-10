@@ -149,3 +149,12 @@ engine through the delegate — the hybrid design makes this a no-risk revert (D
 | Transactions | D-9 `CreateApiKey` (+ internal-key flow) tx site |
 | Error handling (wrapped, consistent) | Mapping table on `mapGormError` (task 04), sentinel identity preserved |
 | Legacy layer bypassed | Auth hot path `GetUserByApiKey` served from SQL with zero `g.legacy` |
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-07`.** Cut `slice/421-07` from `sql-migration` HEAD
+(`.worktrees/slice-421-07`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

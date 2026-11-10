@@ -107,3 +107,12 @@ folder regardless — the specs folder is the durable record).
 **Removal issue created** AC — the deliverable itself; CHANGELOG completes the operator-facing deprecation
 contract (AC's deprecation-notice spirit), and the issue's checklist encodes every carve-out D-1 promised so
 nothing gets "cleaned up" accidentally at v2.0.0.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `426-04`.** Cut `slice/426-04` from `sql-migration` HEAD
+(`.worktrees/slice-426-04`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

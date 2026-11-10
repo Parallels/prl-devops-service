@@ -44,3 +44,4 @@ package.json
 .claude-flow/swarm/swarm-state.json
 .kilo/
 .gocache/
+.worktrees/

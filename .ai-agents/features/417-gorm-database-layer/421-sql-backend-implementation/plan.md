@@ -335,3 +335,10 @@ go test ./... -count=1                     # full suite green at every merge bou
 - **→ #425**: `parity.RunMatrix` + `AssertSameList` are the extension points; per-domain golden fixtures live next to `database/parity/testdata`.
 - **→ #426**: after task 18, `Legacy()` has exactly the callers enumerated in 18's audit list — annotate those call sites' comments.
 - **→ #427**: config table additions (`DB_TYPE=legacy` undocumented fallback), SQL backup guidance, OQ-421-3 text.
+
+## Execution model — worktree slices + human gate (feature plan §14, ER-6/ER-7)
+
+Every task here executes as an isolated worktree slice `slice/<pbi>-<nn>` cut from **`sql-migration`**,
+passes its spec's Validation inside the worktree, closes with a **test plan + results entry** in
+[`../VERIFICATION.md`](../VERIFICATION.md) and the **human verdict** — only then merges `--no-ff` into
+`sql-migration` and the next slice may start. ER-5's merge boundary = the merge into `sql-migration`.

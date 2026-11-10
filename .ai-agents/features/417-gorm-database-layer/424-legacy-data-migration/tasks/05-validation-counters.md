@@ -104,3 +104,12 @@ Revert PR removes validation + the one-line hook; migration itself unaffected.
 
 Completes **AC-6 Data integrity** (counts + warn-only) and adds the operator-visible
 `validation ok` lines supporting **AC-4**.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `424-05`.** Cut `slice/424-05` from `sql-migration` HEAD
+(`.worktrees/slice-424-05`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

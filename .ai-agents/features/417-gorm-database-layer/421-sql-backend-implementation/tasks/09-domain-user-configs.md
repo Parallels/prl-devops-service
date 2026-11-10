@@ -151,3 +151,12 @@ downstream blocks on it before task 17, so the revert can sit for as long as nee
 | Transactions | "No tx needed" verified against D-9 and recorded (legacy non-atomic parity kept) |
 | Error handling (wrapped, consistent) | Mapping table on `mapGormError`, incl. empty-input sentinel before query |
 | Legacy layer bypassed | Owner-scoped SQL reads, zero `g.legacy`; cross-user leakage asserted |
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-09`.** Cut `slice/421-09` from `sql-migration` HEAD
+(`.worktrees/slice-421-09`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).
