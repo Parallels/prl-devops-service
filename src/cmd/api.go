@@ -32,6 +32,12 @@ func processApi(ctx basecontext.ApiContext, cmd string) {
 	}
 
 	startup.Init(ctx)
+	// startup.Init rebuilds the config singleton (config.New in startup/main.go),
+	// which silently drops the running command registered by cmd.Process. Without
+	// re-arming here, the D-7 exit-1-under-API policy in mustInitGormConnection
+	// never fires on the real boot path (found by the #420 task-04 boot matrix —
+	// it had only ever "passed" in unit tests that set the command by hand).
+	config.Get().SetRunningCommand(cmd)
 	startup.Start(ctx)
 
 	processTelemetry(cmd)

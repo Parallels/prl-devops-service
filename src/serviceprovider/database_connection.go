@@ -14,10 +14,15 @@ import (
 // on the provider. Failure leaves SQLDatabase nil and returns the error — the
 // policy (exit vs warn) belongs to the call site, see mustInitGormConnection.
 //
-// Seam note (#420): DefaultDatabaseConfig is deliberate until the config
-// plumbing lands — #420 swaps this one line to database.FromApplicationConfig().
+// PBI #420: operator settings (DB_TYPE / DB_PATH / DB_DSN / DB_AUTO_MIGRATE —
+// flat config-file keys db_type/… per #420 plan D-1) now drive the connection;
+// unset, FromApplicationConfig returns DefaultDatabaseConfig byte-identically.
 func (s *ServiceProvider) initGormConnection(ctx basecontext.ApiContext) error {
-	cfg := database.DefaultDatabaseConfig()
+	cfg, err := database.FromApplicationConfig()
+	if err != nil {
+		s.SQLDatabase = nil
+		return err // config errors carry no DSN (#420 D-8; task 03 matrix)
+	}
 
 	db, err := database.NewDatabaseConnection(ctx, cfg)
 	if err != nil {
