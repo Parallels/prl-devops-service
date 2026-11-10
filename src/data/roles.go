@@ -4,20 +4,21 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 var (
-	ErrRoleEmptyNameOrId        = errors.NewWithCode("no role specified", 500)
-	ErrRoleEmptyName            = errors.NewWithCode("role name cannot be empty", 500)
-	ErrRoleNotFound             = errors.NewWithCode("role not found", 404)
-	ErrRemoveInternalRole       = errors.NewWithCode("role is internal and cannot be removed", 400)
-	ErrUpdateInternalRole       = errors.NewWithCode("role is internal and cannot be updated", 400)
-	ErrRoleAlreadyContainsClaim = errors.NewWithCode("role already contains claim", 400)
-	ErrRoleDoesNotContainClaim  = errors.NewWithCode("role does not contain claim", 404)
-	ErrRoleHasUsers             = errors.NewWithCode("role has users assigned and cannot be removed", 400)
+	ErrRoleEmptyNameOrId        = interfaces.ErrRoleEmptyNameOrId
+	ErrRoleEmptyName            = interfaces.ErrRoleEmptyName
+	ErrRoleNotFound             = interfaces.ErrRoleNotFound
+	ErrRemoveInternalRole       = interfaces.ErrRemoveInternalRole
+	ErrUpdateInternalRole       = interfaces.ErrUpdateInternalRole
+	ErrRoleAlreadyContainsClaim = interfaces.ErrRoleAlreadyContainsClaim
+	ErrRoleDoesNotContainClaim  = interfaces.ErrRoleDoesNotContainClaim
+	ErrRoleHasUsers             = interfaces.ErrRoleHasUsers
 )
 
 func (j *JsonDatabase) GetRoles(ctx basecontext.ApiContext, filter string) ([]models.Role, error) {

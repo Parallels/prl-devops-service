@@ -82,7 +82,7 @@ func main() {
 			if sp != nil {
 				db := sp.JsonDatabase
 				if db != nil {
-					cleanup(ctx, db)
+					cleanup(ctx, sp.Legacy())
 					retries := 0
 					maxRetries := 10
 					for {

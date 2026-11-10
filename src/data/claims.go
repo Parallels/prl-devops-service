@@ -4,18 +4,19 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 var (
-	ErrClaimEmptyNameOrId  = errors.NewWithCode("no claim specified", 500)
-	ErrClaimEmptyName      = errors.NewWithCode("claim name cannot be empty", 500)
-	ErrClaimNotFound       = errors.NewWithCode("claim not found", 404)
-	ErrRemoveInternalClaim = errors.NewWithCode("claim is internal and cannot be removed", 400)
-	ErrUpdateInternalClaim = errors.NewWithCode("claim is internal and cannot be updated", 400)
-	ErrClaimHasUsers       = errors.NewWithCode("claim has users assigned and cannot be removed", 400)
+	ErrClaimEmptyNameOrId  = interfaces.ErrClaimEmptyNameOrId
+	ErrClaimEmptyName      = interfaces.ErrClaimEmptyName
+	ErrClaimNotFound       = interfaces.ErrClaimNotFound
+	ErrRemoveInternalClaim = interfaces.ErrRemoveInternalClaim
+	ErrUpdateInternalClaim = interfaces.ErrUpdateInternalClaim
+	ErrClaimHasUsers       = interfaces.ErrClaimHasUsers
 )
 
 func (j *JsonDatabase) GetClaims(ctx basecontext.ApiContext, filter string) ([]models.Claim, error) {

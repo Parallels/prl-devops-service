@@ -1,16 +1,16 @@
 package data
 
 import (
-	"errors"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data/models"
 )
 
 var (
-	ErrCatalogManagerNotFound       = errors.New("catalog manager not found")
-	ErrRemoveInternalCatalogManager = errors.New("catalog manager is internal and cannot be removed")
-	ErrUpdateInternalCatalogManager = errors.New("catalog manager is internal and cannot be updated")
+	ErrCatalogManagerNotFound       = interfaces.ErrCatalogManagerNotFound
+	ErrRemoveInternalCatalogManager = interfaces.ErrRemoveInternalCatalogManager
+	ErrUpdateInternalCatalogManager = interfaces.ErrUpdateInternalCatalogManager
 )
 
 func (j *JsonDatabase) GetCatalogManagers() ([]models.CatalogManager, error) {

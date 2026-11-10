@@ -9,7 +9,7 @@ import (
 
 func SeedDefaultVirtualMachineTemplates() error {
 	ctx := basecontext.NewRootBaseContext()
-	svc := serviceprovider.Get().JsonDatabase
+	svc := serviceprovider.Get().Legacy() // #421 S1: packertemplates seed funcs still take the concrete type (task 17 retypes)
 	err := svc.Connect(ctx)
 	if err != nil {
 		common.Logger.Error("Error connecting to database: %s", err.Error())

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -11,12 +12,12 @@ import (
 )
 
 var (
-	ErrOrchestratorHostEmptyIdOrHost          = errors.NewWithCode("no host specified", 500)
-	ErrOrchestratorHostEmptyName              = errors.NewWithCode("host name cannot be empty", 500)
-	ErrOrchestratorHostNotFound               = errors.NewWithCode("host not found", 404)
-	ErrOrchestratorReverseProxyHostNotFound   = errors.NewWithCode("reverse proxy host not found", 404)
-	ErrOrchestratorHostVirtualMachineNotFound = errors.NewWithCode("host virtual machine not found", 404)
-	ErrOrchestratorHostsVMSnapshotsNotFound   = errors.NewWithCode("VM snapshots not found for host", 404)
+	ErrOrchestratorHostEmptyIdOrHost          = interfaces.ErrOrchestratorHostEmptyIdOrHost
+	ErrOrchestratorHostEmptyName              = interfaces.ErrOrchestratorHostEmptyName
+	ErrOrchestratorHostNotFound               = interfaces.ErrOrchestratorHostNotFound
+	ErrOrchestratorReverseProxyHostNotFound   = interfaces.ErrOrchestratorReverseProxyHostNotFound
+	ErrOrchestratorHostVirtualMachineNotFound = interfaces.ErrOrchestratorHostVirtualMachineNotFound
+	ErrOrchestratorHostsVMSnapshotsNotFound   = interfaces.ErrOrchestratorHostsVMSnapshotsNotFound
 )
 
 func (j *JsonDatabase) GetOrchestratorHosts(ctx basecontext.ApiContext, filter string) ([]models.OrchestratorHost, error) {

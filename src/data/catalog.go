@@ -5,14 +5,15 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 var (
-	ErrCatalogManifestNotFound = errors.NewWithCode("catalog manifest not found", 404)
-	ErrCatalogAlreadyExists    = errors.NewWithCode("Catalog Manifest already exists", 404)
+	ErrCatalogManifestNotFound = interfaces.ErrCatalogManifestNotFound
+	ErrCatalogAlreadyExists    = interfaces.ErrCatalogAlreadyExists
 )
 
 func (j *JsonDatabase) GetCatalogManifests(ctx basecontext.ApiContext, filter string) ([]models.CatalogManifest, error) {
