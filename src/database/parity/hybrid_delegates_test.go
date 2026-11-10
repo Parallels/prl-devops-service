@@ -1,10 +1,10 @@
 package parity
 
-// Hybrid-delegate parity (task 04; re-pointed in 05/06/07/08/09/10):
+// Hybrid-delegate parity (task 04; re-pointed in 05/06/07/08/09/10/11):
 // representative UNPORTED domains through GormDatabase must be
 // observationally identical to the legacy handle. Since task 10 the
-// reverse-proxy config domain is the unported representative; packer
-// templates became the zero-reach-through subject (ported reads AND writes
+// reverse-proxy config domain is the unported representative; catalog
+// manifests became the zero-reach-through subject (ported reads AND
 // must stay in the SQL store, never crossing to legacy). Lives here, not in
 // package database: see gorm_database_test.go header for the
 // legacy-goroutine rationale.
@@ -47,30 +47,31 @@ func TestHybridDelegatesMatchLegacy(t *testing.T) {
 		t.Fatalf("delegate write did not reach legacy store: %v %+v", err, lrp2)
 	}
 
-	// Ported domain (packer templates) must NOT reach the delegate in either
-	// direction: the legacy-seeded template stays invisible to SQL, and the
-	// SQL-added template never materialises in the legacy store.
-	if _, err := legacy.AddPackerTemplate(ctx, &models.PackerTemplate{ID: "legacy-tpl", Name: "Legacy"}); err != nil {
-		t.Fatalf("seed legacy tpl: %v", err)
+	// Ported domain (catalog manifests since task 11) must NOT reach the
+	// delegate in either direction: the legacy-seeded manifest stays
+	// invisible to SQL, and the SQL-created manifest never materialises in
+	// the legacy store.
+	if _, err := legacy.CreateCatalogManifest(ctx, models.CatalogManifest{CatalogId: "ghost", Version: "1.0", Architecture: "amd64"}); err != nil {
+		t.Fatalf("seed legacy manifest: %v", err)
 	}
-	root := &parityCtx{auth: &basecontext.AuthorizationContext{AuthorizedBy: "RootAuthorization"}}
-	if n := mustLen(legacy, root); n != 1 {
+	if n := mustManifestCount(legacy); n != 1 {
 		t.Fatalf("legacy probe seed: %d", n)
 	}
-	if n := mustLen(sql, root); n != 0 {
-		t.Errorf("SQL list saw the legacy-store template — reach-through: %d", n)
+	if n := mustManifestCount(sql); n != 0 {
+		t.Errorf("SQL list saw the legacy-store manifest — reach-through: %d", n)
 	}
-	if _, err := sql.AddPackerTemplate(ctx, &models.PackerTemplate{ID: "sql-tpl", Name: "SQL"}); err != nil {
+	if _, err := sql.CreateCatalogManifest(ctx, models.CatalogManifest{CatalogId: "sqlonly", Version: "1.0", Architecture: "amd64"}); err != nil {
 		t.Fatal(err)
 	}
-	if n := mustLen(legacy, root); n != 1 {
+	if n := mustManifestCount(legacy); n != 1 {
 		t.Errorf("legacy store grew through the ported domain — write reach-through: %d", n)
 	}
 }
 
-func mustLen(db interface {
-	GetPackerTemplates(ctx basecontext.ApiContext, filter string) ([]models.PackerTemplate, error)
-}, ctx basecontext.ApiContext) int {
-	rows, _ := db.GetPackerTemplates(ctx, "")
+func mustManifestCount(db interface {
+	GetCatalogManifests(ctx basecontext.ApiContext, filter string) ([]models.CatalogManifest, error)
+}) int {
+	root := &parityCtx{auth: &basecontext.AuthorizationContext{AuthorizedBy: "RootAuthorization"}}
+	rows, _ := db.GetCatalogManifests(root, "")
 	return len(rows)
 }
