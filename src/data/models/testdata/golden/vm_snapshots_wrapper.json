@@ -1,0 +1,1 @@
+{"vm_id":"vm-101","vm_snapshots":[{"id":"snap-1","name":"pre-upgrade","date":"2024-05-01 10:00:00","state":"valid","current":true,"parent":""},{"name":"auto","date":"2024-05-02 10:00:00","state":"valid","current":false,"parent":""}]}
