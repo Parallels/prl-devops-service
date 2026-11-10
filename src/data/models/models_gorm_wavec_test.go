@@ -98,3 +98,12 @@ func TestVirtualMachine_JSONGolden(t *testing.T) {
 func TestVirtualMachineMinimal_JSONGolden(t *testing.T) {
 	assertGoldenB(t, "virtual_machine_minimal.json", waveCTargets()["virtual_machine_minimal.json"]())
 }
+
+// TestVMSnapshot_CarriersLeakNothing — the normalisation carriers (HostID/
+// VMID, added WITH the tags) must never reach the wire: with carriers set,
+// marshal output must still equal the PRE-TAG golden byte-for-byte.
+func TestVMSnapshot_CarriersLeakNothing(t *testing.T) {
+	v := models.VMSnapshot{ID: "snap-1", Name: "pre-upgrade", Date: "2024-05-01 10:00:00",
+		State: "valid", Current: true, Parent: "snap-0", HostID: "h-1", VMID: "vm-101"}
+	assertGoldenB(t, "vm_snapshot.json", v)
+}

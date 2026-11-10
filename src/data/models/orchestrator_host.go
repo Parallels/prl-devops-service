@@ -9,9 +9,9 @@ import (
 )
 
 type OrchestratorHost struct {
-	ID                        string                          `json:"id"`
+	ID                        string                          `json:"id" gorm:"primaryKey"`
 	Enabled                   bool                            `json:"enabled"`
-	Host                      string                          `json:"host"`
+	Host                      string                          `json:"host" gorm:"index"` // uniqueness deferred (plan risk list)
 	Architecture              string                          `json:"architecture"`
 	CpuModel                  string                          `json:"cpu_model,omitempty"`
 	OsVersion                 string                          `json:"os_version,omitempty"`
@@ -19,7 +19,7 @@ type OrchestratorHost struct {
 	ExternalIpAddress         string                          `json:"external_ip_address,omitempty"`
 	DevOpsVersion             string                          `json:"devops_version,omitempty"`
 	Description               string                          `json:"description,omitempty"`
-	Tags                      []string                        `json:"tags,omitempty"`
+	Tags                      []string                        `json:"tags,omitempty" gorm:"serializer:json"`
 	Port                      string                          `json:"port,omitempty"`
 	Schema                    string                          `json:"schema,omitempty"`
 	PathPrefix                string                          `json:"path_prefix,omitempty"`
@@ -27,24 +27,24 @@ type OrchestratorHost struct {
 	ParallelsDesktopLicensed  bool                            `json:"parallels_desktop_licensed,omitempty"`
 	HasWebsocketEvents        bool                            `json:"has_websocket_events"`
 	IsLocal                   bool                            `json:"is_local,omitempty"`
-	Authentication            *OrchestratorHostAuthentication `json:"authentication,omitempty"`
-	Resources                 *HostResources                  `json:"resources,omitempty"`
+	Authentication            *OrchestratorHostAuthentication `json:"authentication,omitempty" gorm:"serializer:json"`
+	Resources                 *HostResources                  `json:"resources,omitempty" gorm:"serializer:json"`
 	State                     string                          `json:"state,omitempty"`
 	LastUnhealthy             string                          `json:"last_seen,omitempty"`
 	LastUnhealthyErrorMessage string                          `json:"last_seen_error_message,omitempty"`
-	HealthCheck               *models.ApiHealthCheck          `json:"-"`
-	VirtualMachines           []VirtualMachine                `json:"virtual_machines,omitempty"`
+	HealthCheck               *models.ApiHealthCheck          `json:"-" gorm:"-:all"`
+	VirtualMachines           []VirtualMachine                `json:"virtual_machines,omitempty" gorm:"foreignKey:HostId;references:ID;constraint:-"`
 	IsReverseProxyEnabled     bool                            `json:"is_reverse_proxy_enabled,omitempty"`
 	IsLogStreamingEnabled     bool                            `json:"is_log_streaming_enabled,omitempty"`
-	EnabledModules            []string                        `json:"enabled_modules,omitempty"`
-	ReverseProxy              *ReverseProxy                   `json:"reverse_proxy,omitempty"`
-	ReverseProxyHosts         []*ReverseProxyHost             `json:"reverse_proxy_hosts,omitempty"`
-	CacheConfig               *models.CatalogCacheConfig      `json:"cache_config,omitempty"`
-	CacheItems                []models.HostCatalogCacheItem   `json:"cache_items,omitempty"`
+	EnabledModules            []string                        `json:"enabled_modules,omitempty" gorm:"serializer:json"`
+	ReverseProxy              *ReverseProxy                   `json:"reverse_proxy,omitempty" gorm:"foreignKey:HostID;references:ID"`
+	ReverseProxyHosts         []*ReverseProxyHost             `json:"reverse_proxy_hosts,omitempty" gorm:"foreignKey:HostID;references:ID;constraint:-"`
+	CacheConfig               *models.CatalogCacheConfig      `json:"cache_config,omitempty" gorm:"serializer:json"`
+	CacheItems                []models.HostCatalogCacheItem   `json:"cache_items,omitempty" gorm:"serializer:json"`
 	CreatedAt                 string                          `json:"created_at,omitempty"`
 	UpdatedAt                 string                          `json:"updated_at,omitempty"`
-	RequiredClaims            []string                        `json:"required_claims,omitempty"`
-	RequiredRoles             []string                        `json:"required_roles,omitempty"`
+	RequiredClaims            []string                        `json:"required_claims,omitempty" gorm:"serializer:json"`
+	RequiredRoles             []string                        `json:"required_roles,omitempty" gorm:"serializer:json"`
 }
 
 func (o OrchestratorHost) GetHost() string {
