@@ -32,9 +32,21 @@ func newSQLiteConnection(ctx basecontext.ApiContext, cfg DatabaseConfig) (*gorm.
 		}
 	}
 
-	db, err := gorm.Open(sqlite.Open(buildSQLiteDSN(path)), gormConfig())
+	db, err := gorm.Open(sqlite.Open(buildSQLiteDSN(path)), gormConfig(ctx))
 	if err != nil {
 		return nil, errors.NewWithCode(fmt.Sprintf("failed to open sqlite database at %s: %v", redactPath(path), err), 500)
+	}
+
+	// D-5 boot verification — uniform with postgres (task 05; sqlite previously
+	// had no explicit ping, the pragma pass below is the deeper proof).
+	sqlDB, err := db.DB()
+	if err != nil {
+		Close(ctx, db)
+		return nil, errors.NewFromError(err)
+	}
+	if err := PingWithRetry(ctx, sqlDB, DefaultPingAttempts, DefaultPingDelay); err != nil {
+		Close(ctx, db)
+		return nil, err
 	}
 
 	// Private in-memory databases support neither WAL nor meaningful persistence

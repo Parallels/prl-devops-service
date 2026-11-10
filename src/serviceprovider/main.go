@@ -25,6 +25,7 @@ import (
 	sql_database "github.com/Parallels/prl-devops-service/sql"
 
 	log "github.com/cjlapao/common-go-logger"
+	"gorm.io/gorm"
 )
 
 type ServiceProvider struct {
@@ -39,6 +40,7 @@ type ServiceProvider struct {
 	SshService              *ssh.SshService
 	MySqlService            *sql_database.MySQLService
 	JsonDatabase            *data.JsonDatabase
+	SQLDatabase             *gorm.DB
 	Services                []interfaces.Service
 	HardwareInfo            *models.ParallelsDesktopInfo
 	SystemHardwareInfo      *models.SystemHardwareInfo
@@ -80,6 +82,7 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
+		globalProvider.mustInitGormConnection(ctx)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
@@ -99,6 +102,7 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
 		}
 		_ = globalProvider.JsonDatabase.Connect(ctx)
+		globalProvider.mustInitGormConnection(ctx)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 
@@ -215,6 +219,7 @@ func InitServices(ctx basecontext.ApiContext) {
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
+		globalProvider.mustInitGormConnection(ctx)
 		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	} else {
@@ -236,6 +241,7 @@ func InitServices(ctx basecontext.ApiContext) {
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
+		globalProvider.mustInitGormConnection(ctx)
 		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
