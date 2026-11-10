@@ -3,8 +3,8 @@ package models
 import "strings"
 
 type CatalogManifest struct {
-	ID                      string                       `json:"id"`
-	CatalogId               string                       `json:"catalog_id"`
+	ID                      string                       `json:"id" gorm:"primaryKey"`
+	CatalogId               string                       `json:"catalog_id" gorm:"index"`
 	Name                    string                       `json:"name"`
 	Version                 string                       `json:"version"`
 	Architecture            string                       `json:"architecture"`
@@ -13,11 +13,11 @@ type CatalogManifest struct {
 	PackFile                string                       `json:"pack_path,omitempty"`
 	MetadataFile            string                       `json:"metadata_path,omitempty"`
 	Type                    string                       `json:"type"`
-	Provider                *CatalogManifestProvider     `json:"provider"`
+	Provider                *CatalogManifestProvider     `json:"provider" gorm:"serializer:json"`
 	Size                    int64                        `json:"size"`
-	RequiredRoles           []string                     `json:"required_roles"`
-	RequiredClaims          []string                     `json:"required_claims"`
-	Tags                    []string                     `json:"tags"`
+	RequiredRoles           []string                     `json:"required_roles" gorm:"serializer:json"`
+	RequiredClaims          []string                     `json:"required_claims" gorm:"serializer:json"`
+	Tags                    []string                     `json:"tags" gorm:"serializer:json"`
 	CreatedAt               string                       `json:"created_at"`
 	UpdatedAt               string                       `json:"updated_at"`
 	LastDownloadedAt        string                       `json:"last_downloaded_at"`
@@ -25,17 +25,18 @@ type CatalogManifest struct {
 	IsCompressed            bool                         `json:"is_compressed"`
 	PackRelativePath        string                       `json:"pack_relative_path"`
 	DownloadCount           int                          `json:"download_count"`
-	VirtualMachineContents  []CatalogManifestContentItem `json:"virtual_machine_contents"`
-	PackContents            []CatalogManifestContentItem `json:"pack_contents"`
+	VirtualMachineContents  []CatalogManifestContentItem `json:"virtual_machine_contents" gorm:"serializer:json"`
+	PackContents            []CatalogManifestContentItem `json:"pack_contents" gorm:"serializer:json"`
 	PackSize                int64                        `json:"pack_size,omitempty"`
-	MinimumSpecRequirements *MinimumSpecRequirement      `json:"minimum_requirements,omitempty"`
-	Tainted                 bool                         `json:"tainted"`
-	TaintedBy               string                       `json:"tainted_by"`
-	UnTaintedBy             string                       `json:"untainted_by"`
-	TaintedAt               string                       `json:"tainted_at"`
-	Revoked                 bool                         `json:"revoked"`
-	RevokedBy               string                       `json:"revoked_by"`
-	RevokedAt               string                       `json:"revoked_at"`
+	MinimumSpecRequirements *MinimumSpecRequirement      `json:"minimum_requirements,omitempty" gorm:"serializer:json"`
+	// Revoked/RevokedBy/RevokedAt + Tainted* stay plain columns — statuses, not soft delete (D-5)
+	Tainted     bool   `json:"tainted"`
+	TaintedBy   string `json:"tainted_by"`
+	UnTaintedBy string `json:"untainted_by"`
+	TaintedAt   string `json:"tainted_at"`
+	Revoked     bool   `json:"revoked"`
+	RevokedBy   string `json:"revoked_by"`
+	RevokedAt   string `json:"revoked_at"`
 }
 
 func (r *CatalogManifest) AddTag(tag string) {

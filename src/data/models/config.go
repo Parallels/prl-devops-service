@@ -1,5 +1,5 @@
 package models
 
 type Configuration struct {
-	ID string `json:"id" yaml:"id"`
+	ID string `json:"id" yaml:"id" gorm:"primaryKey"` // single-row legacy meta (mapping row 25)
 }

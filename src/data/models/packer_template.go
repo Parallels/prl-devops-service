@@ -5,21 +5,21 @@ import (
 )
 
 type PackerTemplate struct {
-	ID             string            `json:"id"`
+	ID             string            `json:"id" gorm:"primaryKey"`
 	Name           string            `json:"name"`
-	Owner          string            `json:"owner"`
+	Owner          string            `json:"owner" gorm:"index"`
 	Hostname       string            `json:"hostname"`
 	Description    string            `json:"description"`
 	PackerFolder   string            `json:"packer_folder"`
-	Variables      map[string]string `json:"variables"`
-	Addons         []string          `json:"addons"`
-	Specs          map[string]string `json:"specs"`
-	Defaults       map[string]string `json:"defaults"`
+	Variables      map[string]string `json:"variables" gorm:"serializer:json"`
+	Addons         []string          `json:"addons" gorm:"serializer:json"`
+	Specs          map[string]string `json:"specs" gorm:"serializer:json"`
+	Defaults       map[string]string `json:"defaults" gorm:"serializer:json"`
 	Internal       bool              `json:"internal,omitempty"`
 	UpdatedAt      string            `json:"updated_at,omitempty"`
 	CreatedAt      string            `json:"created_at,omitempty"`
-	RequiredRoles  []string          `json:"required_roles,omitempty"`
-	RequiredClaims []string          `json:"required_claims,omitempty"`
+	RequiredRoles  []string          `json:"required_roles,omitempty" gorm:"serializer:json"`
+	RequiredClaims []string          `json:"required_claims,omitempty" gorm:"serializer:json"`
 }
 
 func (m *PackerTemplate) Validate() error {
