@@ -108,16 +108,21 @@ func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase 
 	memoryDatabase.RunBackup(ctx)
 
 	// Start ghost job cleanup goroutine to detect and cancel stalled jobs
+	// (#421 task 03: capture the instance instead of re-reading the
+	// memoryDatabase global on every tick — identical behaviour for the
+	// production singleton, and it no longer data-races (or nil-derefs) when
+	// tests reset the singleton between runs.)
+	db := memoryDatabase
 	go func() {
 		ticker := time.NewTicker(time.Duration(constants.GhostJobCheckIntervalSeconds) * time.Second)
 		defer ticker.Stop()
 		for {
 			select {
-			case <-memoryDatabase.cancel:
+			case <-db.cancel:
 				ctx.LogInfof("[Database] Ghost job cleanup stopped")
 				return
 			case <-ticker.C:
-				memoryDatabase.DetectStaleJobs(ctx)
+				db.DetectStaleJobs(ctx)
 			}
 		}
 	}()

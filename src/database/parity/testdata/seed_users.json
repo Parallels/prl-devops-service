@@ -1,0 +1,5 @@
+[
+  {"id": "parity-u-1", "email": "one@parity.test",   "username": "parity1", "name": "Parity One"},
+  {"id": "parity-u-2", "email": "two@parity.test",   "username": "parity2", "name": "Parity Two"},
+  {"id": "parity-u-3", "email": "three@parity.test", "username": "parity3", "name": "Parity Three"}
+]
