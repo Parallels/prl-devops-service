@@ -1,7 +1,7 @@
 package models
 
 type CatalogManager struct {
-	ID                   string   `json:"id" yaml:"id"`
+	ID                   string   `json:"id" yaml:"id" gorm:"primaryKey"`
 	Name                 string   `json:"name" yaml:"name"`
 	URL                  string   `json:"url" yaml:"url"`
 	Internal             bool     `json:"internal" yaml:"internal"`
@@ -11,8 +11,8 @@ type CatalogManager struct {
 	Password             string   `json:"password,omitempty" yaml:"password,omitempty"`
 	ApiKey               string   `json:"api_key,omitempty" yaml:"api_key,omitempty"`
 	Global               bool     `json:"global" yaml:"global"`
-	RequiredClaims       []string `json:"required_claims,omitempty" yaml:"required_claims,omitempty"`
-	OwnerID              string   `json:"owner_id" yaml:"owner_id"`
+	RequiredClaims       []string `json:"required_claims,omitempty" yaml:"required_claims,omitempty" gorm:"serializer:json"`
+	OwnerID              string   `json:"owner_id" yaml:"owner_id" gorm:"index"`
 	CreatedAt            string   `json:"created_at" yaml:"created_at"`
 	UpdatedAt            string   `json:"updated_at" yaml:"updated_at"`
 }

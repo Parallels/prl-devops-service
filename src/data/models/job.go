@@ -3,8 +3,8 @@ package models
 import "github.com/Parallels/prl-devops-service/constants"
 
 type Job struct {
-	ID                 string             `json:"id"`
-	Owner              string             `json:"owner"`
+	ID                 string             `json:"id" gorm:"primaryKey"`
+	Owner              string             `json:"owner" gorm:"index"`
 	OwnerName          string             `json:"owner_name,omitempty"`
 	OwnerEmail         string             `json:"owner_email,omitempty"`
 	State              constants.JobState `json:"state"`
@@ -13,16 +13,16 @@ type Job struct {
 	JobType            string             `json:"job_type"`
 	JobOperation       string             `json:"job_operation"`
 	IsOrchestratorJob  bool               `json:"is_orchestrator_job,omitempty"`
-	Steps              []JobStep          `json:"steps,omitempty"`
+	Steps              []JobStep          `json:"steps,omitempty" gorm:"serializer:json"`
 	Result             string             `json:"result"`
-	ResultRecordId     string             `json:"result_record_id,omitempty"`
+	ResultRecordId     string             `json:"result_record_id,omitempty" gorm:"column:result_record_id;index"`
 	ResultRecordName   string             `json:"result_record_name,omitempty"`
 	ResultRecordType   string             `json:"result_record_type,omitempty"`
 	ResultRecordLinkId string             `json:"result_record_link_id,omitempty"`
 	Error              string             `json:"error"`
 	CreatedAt          string             `json:"created_at"`
 	UpdatedAt          string             `json:"updated_at"`
-	*DbRecord          `json:"db_record"`
+	*DbRecord          `json:"db_record" gorm:"-:all"`
 }
 
 type JobStep struct {
