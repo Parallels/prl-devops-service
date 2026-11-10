@@ -1,8 +1,10 @@
 package database
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -130,7 +132,53 @@ func (p PostgresPoolConfig) IdleTime() time.Duration {
 	return p.ConnMaxIdleTime
 }
 
-// FromApplicationConfig builds the config from the application configuration
-// (DB_TYPE/DB_PATH/DB_DSN/DB_AUTO_MIGRATE). PBI #420 owns that implementation;
-// until then it MUST return DefaultDatabaseConfig() unchanged.
-func FromApplicationConfig() DatabaseConfig { return DefaultDatabaseConfig() }
+// FromApplicationConfig builds DatabaseConfig from DB_TYPE/DB_PATH/DB_DSN/DB_AUTO_MIGRATE
+// resolved through config.Get() — env var > CLI flag > config-file key (Config.GetKey),
+// config-file keys flat lowercase (db_type, db_path, db_dsn, db_auto_migrate; #420 D-1).
+// Unset values keep DefaultDatabaseConfig()'s AD-3 defaults byte-identically (D-5).
+// Errors name the offending setting + allowed values; the DSN never appears in messages (D-8).
+// #420 D-4: the (value, error) signature is adopted atomically with this body —
+// no caller exists yet (task 04 wires the provider), so widening is free now.
+func FromApplicationConfig() (DatabaseConfig, error) {
+	c := config.Get()
+	cfg := DefaultDatabaseConfig()
+
+	if t := strings.ToLower(strings.TrimSpace(c.DatabaseType())); t != "" {
+		cfg.Type = t
+	}
+	if p := strings.TrimSpace(c.DatabasePath()); p != "" {
+		cfg.Path = p // DB_PATH beats DATABASE_FOLDER-derived default (OQ-420-4)
+	}
+	cfg.DSN = strings.TrimSpace(c.DatabaseDSN())
+
+	autoMigrate, err := c.DatabaseAutoMigrate()
+	if err != nil {
+		return DatabaseConfig{}, err
+	}
+	cfg.AutoMigrate = autoMigrate
+
+	switch strings.ToLower(cfg.Type) {
+	case DBTypeSQLite, DBTypePostgres: // constants above, same package
+	default:
+		return DatabaseConfig{}, fmt.Errorf("invalid DB_TYPE %s (config key db_type): %w",
+			quoteCapped(cfg.Type, 64), ErrUnsupportedDatabaseType) // sentinel text names sqlite|postgres
+	}
+	if strings.EqualFold(cfg.Type, DBTypePostgres) && strings.TrimSpace(cfg.DSN) == "" {
+		return DatabaseConfig{}, fmt.Errorf("%w — set DB_DSN (env) or db_dsn (config key db_dsn)",
+			ErrPostgresDSNRequired)
+	}
+	if err := cfg.Validate(); err != nil { // #418 checks stay the single source of truth
+		return DatabaseConfig{}, err
+	}
+	return cfg, nil
+}
+
+// quoteCapped quotes v for an error message, truncated at n bytes so a huge typo
+// can't spam logs. Echoing a user's own setting value back to them is safe; the
+// DSN is never routed through this (D-8).
+func quoteCapped(v string, n int) string {
+	if len(v) > n {
+		v = v[:n] + "…"
+	}
+	return strconv.Quote(v)
+}
