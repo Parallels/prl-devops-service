@@ -1,68 +1,65 @@
 package parity
 
-// Hybrid-delegate parity (task 04; re-pointed in 05/06/07): representative
+// Hybrid-delegate parity (task 04; re-pointed in 05/06/07/08): representative
 // UNPORTED domains through GormDatabase must be observationally identical to
-// the legacy handle. Since task 07 the config-id trio (GetId/SeedId) is the
-// unported representative; api-keys became the zero-reach-through subject.
-// Lives here, not in package database: see gorm_database_test.go header for
-// the legacy-goroutine rationale.
+// the legacy handle. Since task 08 the packer-templates domain is the
+// unported representative; config/schema singletons became the
+// zero-reach-through subjects (seed-on-read must mint per-store identities,
+// never cross engines). Lives here, not in package database: see
+// gorm_database_test.go header for the legacy-goroutine rationale.
 
 import (
 	"testing"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
 )
 
 func TestHybridDelegatesMatchLegacy(t *testing.T) {
 	legacy := NewLegacyEngine(t)
 	ctx := basecontext.NewBaseContext()
-	for _, r := range constants.DefaultRoles {
-		if _, err := legacy.CreateRole(ctx, models.Role{Name: r}); err != nil {
-			t.Fatalf("seed default role: %v", err)
-		}
-	}
-	for _, c := range constants.DefaultClaims {
-		if _, err := legacy.CreateClaim(ctx, models.Claim{Name: c}); err != nil {
-			t.Fatalf("seed default claim: %v", err)
-		}
-	}
-	user := models.User{ID: "delegate-u1", Email: "delegate@test.local", Username: "delegate1", Name: "Delegate One", Password: "x"}
-	if _, err := legacy.CreateUser(ctx, user); err != nil {
-		t.Fatalf("seed user: %v", err)
-	}
-	if _, err := legacy.CreateApiKey(ctx, models.ApiKey{ID: "probe-key", Name: "probe", Key: "k-1", Secret: "s-1", UserID: "delegate-u1"}); err != nil {
-		t.Fatalf("seed api key: %v", err)
+	if _, err := legacy.AddPackerTemplate(ctx, &models.PackerTemplate{ID: "probe-tpl", Name: "Probe Template", Owner: "team-a"}); err != nil {
+		t.Fatalf("seed packer template: %v", err)
 	}
 
 	// Hybrid engine: migrated :memory: SQL + this legacy handle.
 	sql := newSQLTestEngine(t, legacy)
 
-	// Unported domain (config id): the read/write trio must ride the legacy
-	// handle. SetId is single-write on a fresh store; SeedId would then hit
-	// the "ID already exists" guard, so one write through each direction.
-	written, err := sql.SetId(ctx, "hybrid-written-id")
-	if err != nil || written != "hybrid-written-id" {
-		t.Fatalf("hybrid SetId: %v %q", err, written)
+	// Unported domain (packer templates): delegate pass-through must mirror
+	// legacy exactly — same store, same filter, same values. Root ctx: the
+	// domain is authz-wrapped and a bare ctx legitimately sees zero records
+	// on BOTH engines (equal but vacuous).
+	rootCtx := &parityCtx{auth: &basecontext.AuthorizationContext{AuthorizedBy: "RootAuthorization"}}
+	lt, lerr := legacy.GetPackerTemplates(rootCtx, "")
+	gt, gerr := sql.GetPackerTemplates(rootCtx, "")
+	if lerr != nil || gerr != nil {
+		t.Fatalf("GetPackerTemplates: %v %v", lerr, gerr)
 	}
-	legacyId, err := legacy.GetId(ctx)
-	if err != nil || legacyId != "hybrid-written-id" {
-		t.Errorf("delegate write not visible legacy-side: %q (%v)", legacyId, err)
-	}
-	hybridId, err := sql.GetId(ctx)
-	if err != nil || hybridId != "hybrid-written-id" {
-		t.Errorf("delegate read drift: %q (%v)", hybridId, err)
-	}
-	if _, err := legacy.SetId(ctx, "second-write"); err == nil {
-		t.Error("legacy store must reject second write — proves both engines share ONE store")
+	if len(lt) != len(gt) || len(lt) == 0 || lt[0].ID != gt[0].ID {
+		t.Fatalf("packer-template delegate drift: %d vs %d", len(lt), len(gt))
 	}
 
-	// A ported domain (api keys) must NOT touch the delegate: the key was
-	// seeded legacy-side only; the SQL store is empty, so a non-empty result
-	// here would mean reach-through into legacy.
-	empty, err := sql.GetApiKeys(ctx, "")
-	if err != nil || len(empty) != 0 {
-		t.Errorf("ported domain reached through/failed: %v %+v", err, empty)
+	// Ported singleton domains must NOT reach the delegate: the legacy-side
+	// installation id (lazily minted here) must stay independent of the SQL
+	// engine's own seed-on-read id, and legacy store must not mutate.
+	legacyId, err := legacy.GetId(ctx)
+	if err != nil || legacyId == "" {
+		t.Fatalf("legacy GetId seed: %v %q", err, legacyId)
+	}
+	cfg, err := sql.GetConfiguration(ctx)
+	if err != nil || cfg == nil || cfg.ID == "" {
+		t.Fatalf("hybrid GetConfiguration seed-on-read: %v %+v", err, cfg)
+	}
+	if cfg.ID == legacyId {
+		t.Errorf("SQL singleton read the legacy id — reach-through")
+	}
+	if again, _ := legacy.GetId(ctx); again != legacyId {
+		t.Errorf("legacy store mutated through hybrid: %q -> %q", legacyId, again)
+	}
+	if err := sql.UpdateSchemaVersion(ctx, "sql-only-version"); err != nil {
+		t.Fatal(err)
+	}
+	if lv, err := legacy.GetSchemaVersion(ctx); err != nil || lv != "" {
+		t.Errorf("schema version reached into legacy store: %q (%v)", lv, err)
 	}
 }
