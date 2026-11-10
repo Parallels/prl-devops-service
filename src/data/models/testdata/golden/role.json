@@ -1,0 +1,1 @@
+{"id":"r-1","name":"admin","description":"administrators","internal":true,"claims":[{"id":"c-1","name":"vm.read","description":"read virtual machines","internal":true,"group":"vm","resource":"virtual_machine","action":"read"}]}
