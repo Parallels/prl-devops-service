@@ -97,6 +97,7 @@ func (s *StatsService) Run(ctx basecontext.ApiContext, interval time.Duration) {
 		return
 	}
 	s.isRunning = true
+	stop := s.stopChan // capture under lock — Stop() swaps s.stopChan for the next run
 	s.mu.Unlock()
 
 	ctx.LogInfof("[StatsService] Starting stats collection with interval %v", interval)
@@ -105,11 +106,10 @@ func (s *StatsService) Run(ctx basecontext.ApiContext, interval time.Duration) {
 
 	for {
 		select {
-		case <-s.stopChan:
+		case <-stop:
 			ctx.LogInfof("[StatsService] Stopping stats collection")
-			s.mu.Lock()
-			s.isRunning = false
-			s.mu.Unlock()
+			// Stop() already cleared isRunning under its lock; rewriting it here
+			// would race with callers reading the flag right after Stop returns.
 			return
 		case <-ticker.C:
 			s.collectAndBroadcast(ctx)
