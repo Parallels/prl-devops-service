@@ -1,0 +1,1 @@
+{"id":"cm-1","name":"official","url":"https://catalog.example","internal":true,"active":true,"authentication_method":"basic","username":"svc","password":"pw","api_key":"ak","global":true,"required_claims":["catalog.read","catalog.download"],"owner_id":"u-1","created_at":"2024-01-01 00:00:01","updated_at":"2024-01-02 00:00:02"}
