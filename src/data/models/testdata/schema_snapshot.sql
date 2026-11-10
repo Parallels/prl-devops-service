@@ -64,7 +64,6 @@ claims.group TEXT pk=0 notnull=0
 claims.resource TEXT pk=0 notnull=0
 claims.action TEXT pk=0 notnull=0
 configurations.id TEXT pk=1 notnull=0
-database_schemas.version TEXT pk=1 notnull=0
 jobs.id TEXT pk=1 notnull=0
 jobs.owner TEXT pk=0 notnull=0
 jobs.owner_name TEXT pk=0 notnull=0
@@ -157,6 +156,7 @@ roles.id TEXT pk=1 notnull=0
 roles.name TEXT pk=0 notnull=0
 roles.description TEXT pk=0 notnull=0
 roles.internal numeric pk=0 notnull=0
+schema_metadata.version TEXT pk=1 notnull=0
 user_claims.claim_id TEXT pk=1 notnull=0
 user_claims.user_id TEXT pk=2 notnull=0
 user_configs.id TEXT pk=1 notnull=0

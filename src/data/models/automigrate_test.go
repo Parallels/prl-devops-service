@@ -39,7 +39,7 @@ func TestAutoMigrate_Fresh(t *testing.T) {
 	tables := []string{"users", "roles", "claims", "role_claims", "user_roles", "user_claims",
 		"api_keys", "catalog_managers", "catalog_manifests", "jobs", "packer_templates", "user_configs",
 		"orchestrator_enrollment_tokens", "orchestrator_hosts", "reverse_proxies", "reverse_proxy_hosts",
-		"vm_snapshots", "virtual_machines", "configurations", "database_schemas"} // 20 (D-2 confirmed)
+		"vm_snapshots", "virtual_machines", "configurations", "schema_metadata"} // 20 (D-2 confirmed; schema_metadata per #419 OQ-3 naming, pinned in task 08)
 	for _, tbl := range tables {
 		require.Truef(t, m.HasTable(tbl), "missing table %s", tbl)
 	}

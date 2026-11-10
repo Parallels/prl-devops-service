@@ -44,6 +44,14 @@ func newSQLiteConnection(ctx basecontext.ApiContext, cfg DatabaseConfig) (*gorm.
 		Close(ctx, db)
 		return nil, errors.NewFromError(err)
 	}
+	// Single connection, always (task 08 finding): database/sql pooling on a
+	// :memory: DSN FORKS THE DATABASE — every pooled connection is its own
+	// private DB, silently losing the singleton tables (configurations,
+	// schema_metadata) and any in-flight transaction pairing. On file DBs it
+	// additionally matches the legacy engine's single-writer posture and
+	// removes SQLITE_BUSY contention. This is a hard correctness pin, not a
+	// tunable; postgres keeps its real pool.
+	sqlDB.SetMaxOpenConns(1)
 	if err := PingWithRetry(ctx, sqlDB, DefaultPingAttempts, DefaultPingDelay); err != nil {
 		Close(ctx, db)
 		return nil, err

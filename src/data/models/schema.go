@@ -7,3 +7,7 @@ package models
 type DatabaseSchema struct {
 	Version string `json:"version" gorm:"primaryKey"`
 }
+
+// TableName pins the #419 OQ-3 default naming (schema_metadata) used by the
+// PBI #421 task 08 schema-version domain and the D-7 single-row meta row.
+func (DatabaseSchema) TableName() string { return "schema_metadata" }

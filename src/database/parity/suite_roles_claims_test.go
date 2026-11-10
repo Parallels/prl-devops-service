@@ -95,9 +95,16 @@ func assertSameError(t testing.TB, what string, want, got error) {
 	if want != got { // sentinel identity (==) is the preferred contract…
 		w, wok := want.(*repoerrors.SystemError)
 		g, gok := got.(*repoerrors.SystemError)
-		if !wok || !gok || w.Code() != g.Code() || want.Error() != got.Error() {
-			t.Errorf("%s: error mismatch: legacy=%q sql=%q", what, want.Error(), got.Error())
+		if wok && gok && w.Code() == g.Code() && want.Error() == got.Error() {
+			return
 		}
+		// Message-pinned plain errors (e.g. legacy's stdlib "ID already
+		// exists" in SetId, task 08): neither side is a SystemError — the
+		// contract is the exact message.
+		if !wok && !gok && want.Error() == got.Error() {
+			return
+		}
+		t.Errorf("%s: error mismatch: legacy=%q sql=%q", what, want.Error(), got.Error())
 	}
 }
 
