@@ -1,28 +1,23 @@
 package parity
 
-// Hybrid-delegate parity (task 04): representative domains through
-// GormDatabase must be observationally identical to the legacy handle.
-// Lives here, not in package database, because the legacy engine's
-// background save goroutine shares logger/config globals with this
-// package's serialised engine tests — see gorm_database_test.go header.
+// Hybrid-delegate parity (task 04, re-pointed in task 05): representative
+// UNPORTED domains through GormDatabase must be observationally identical to
+// the legacy handle. Roles/claims can no longer serve as the example — they
+// are real SQL since task 05 — so the proof rides the users domain (delegates
+// until task 06). Lives here, not in package database: see
+// gorm_database_test.go header for the legacy-goroutine rationale.
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data/models"
-	"github.com/Parallels/prl-devops-service/database"
 )
 
 func TestHybridDelegatesMatchLegacy(t *testing.T) {
 	legacy := NewLegacyEngine(t)
 	ctx := basecontext.NewBaseContext()
-	if _, err := legacy.CreateRole(ctx, models.Role{Name: "delegate-probe"}); err != nil {
-		t.Fatalf("seed role: %v", err)
-	}
-	// roles/claims required by CreateUser backfill come from the defaults:
 	for _, r := range constants.DefaultRoles {
 		if _, err := legacy.CreateRole(ctx, models.Role{Name: r}); err != nil {
 			t.Fatalf("seed role %s: %v", r, err)
@@ -38,15 +33,11 @@ func TestHybridDelegatesMatchLegacy(t *testing.T) {
 		t.Fatalf("seed user: %v", err)
 	}
 
-	g := database.NewGormDatabase(ctx, nil, legacy)
-	lr, lerr := legacy.GetRoles(ctx, "")
-	gr, gerr := g.GetRoles(ctx, "")
-	if !reflect.DeepEqual(lr, gr) || lerr != nil || gerr != nil {
-		t.Errorf("roles delegate drift: %v vs %v (%v/%v)", roleNames(lr), roleNames(gr), lerr, gerr)
-	}
+	// Hybrid engine: migrated :memory: SQL + this legacy handle.
+	sql := newSQLTestEngine(t, legacy)
 
 	lu, lerr := legacy.GetUsers(ctx, "username=delegate")
-	gu, gerr := g.GetUsers(ctx, "username=delegate")
+	gu, gerr := sql.GetUsers(ctx, "username=delegate")
 	if lerr != nil || gerr != nil {
 		t.Fatalf("GetUsers errors: %v %v", lerr, gerr)
 	}
@@ -54,19 +45,17 @@ func TestHybridDelegatesMatchLegacy(t *testing.T) {
 		t.Errorf("users delegate drift: %v vs %v", lu, gu)
 	}
 
-	// filter language flows through the delegate unchanged too (query parity
-	// of the delegate path is guaranteed by construction — same code).
 	lu2, _ := legacy.GetUsers(ctx, "username=DELEGATE1,i")
-	gu2, _ := g.GetUsers(ctx, "username=DELEGATE1,i")
+	gu2, _ := sql.GetUsers(ctx, "username=DELEGATE1,i")
 	if len(lu2) != len(gu2) {
 		t.Errorf("filter-through-delegate drift: %d vs %d", len(lu2), len(gu2))
 	}
-}
 
-func roleNames(rs []models.Role) []string {
-	out := make([]string, 0, len(rs))
-	for _, r := range rs {
-		out = append(out, r.Name)
+	// A ported domain (roles) must NOT touch the delegate: roles were seeded
+	// legacy-side only (DefaultRoles) — the SQL store is empty, so a non-empty
+	// result here would mean reach-through into legacy.
+	empty, err := sql.GetRoles(ctx, "")
+	if err != nil || len(empty) != 0 {
+		t.Errorf("ported domain reached through/failed: %v %+v", err, empty)
 	}
-	return out
 }
