@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/constants"
 	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
 )
@@ -54,51 +53,44 @@ func (r *recordingTB) Skipped() bool                    { return false }
 func (r *recordingTB) TempDir() string                  { return "" }
 func (r *recordingTB) Setenv(key, value string)         {}
 
-// TestHarness_SelfProof proves the harness plumbing end-to-end: a DomainSuite
-// seeds three users through the exported DatabaseService surface and a Check
-// compares both engines' GetUsers output. Task 04 has not landed yet, so the
-// SQL side is the legacy fallback (identity pair) — the mutation case then
-// proves AssertSameList actually detects drift.
+// TestHarness_SelfProof proves the harness plumbing end-to-end. Since task 05
+// the SQL engine is the real GormDatabase, so the suite seeds and compares a
+// PORTED domain (roles) — unported domains delegate to the SAME legacy store
+// and could not be double-seeded. The mutation case proves AssertSameList
+// detects drift, and the identical-list case proves it tolerates equality.
 func TestHarness_SelfProof(t *testing.T) {
 	corpus := seedCorpus(t)
 
 	RunMatrix(t, DomainSuite{
-		Name: "users-seed",
+		Name: "roles-selfproof",
 		Seed: func(t testing.TB, db datainterfaces.DatabaseService) {
 			ctx := basecontext.NewBaseContext()
-			// CreateUser backfills DefaultRoles/DefaultClaims — they must
-			// exist first; seed them through the exported surface too.
-			for _, roleName := range constants.DefaultRoles {
+			for _, roleName := range []string{"self alpha", "self beta", "self gamma"} {
 				if _, err := db.CreateRole(ctx, models.Role{Name: roleName}); err != nil {
 					t.Fatalf("seed role %s: %v", roleName, err)
 				}
 			}
-			for _, claimName := range constants.DefaultClaims {
+			for _, claimName := range []string{"self_claim_a", "self_claim_b"} {
 				if _, err := db.CreateClaim(ctx, models.Claim{Name: claimName}); err != nil {
 					t.Fatalf("seed claim %s: %v", claimName, err)
-				}
-			}
-			for _, u := range corpus {
-				if _, err := db.CreateUser(ctx, u); err != nil {
-					t.Fatalf("seed user %s: %v", u.ID, err)
 				}
 			}
 		},
 		Checks: []func(t testing.TB, legacy, sql datainterfaces.DatabaseService){
 			func(t testing.TB, legacy, sql datainterfaces.DatabaseService) {
 				ctx := basecontext.NewBaseContext()
-				lu, err := legacy.GetUsers(ctx, "")
+				lr, err := legacy.GetRoles(ctx, "")
 				if err != nil {
-					t.Fatalf("legacy GetUsers: %v", err)
+					t.Fatalf("legacy GetRoles: %v", err)
 				}
-				su, err := sql.GetUsers(ctx, "")
+				sr, err := sql.GetRoles(ctx, "")
 				if err != nil {
-					t.Fatalf("sql GetUsers: %v", err)
+					t.Fatalf("sql GetRoles: %v", err)
 				}
-				if len(lu) != len(corpus) {
-					t.Fatalf("seed did not land: want %d users, got %d", len(corpus), len(lu))
+				if len(lr) != 3 {
+					t.Fatalf("seed did not land: want 3 roles, got %d", len(lr))
 				}
-				AssertSameList(t, "GetUsers(all)", lu, su)
+				AssertSameList(t, "GetRoles(all)", normaliseRoles(lr), normaliseRoles(sr))
 			},
 		},
 	})

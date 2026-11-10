@@ -26,14 +26,14 @@ type DomainSuite struct {
 // legacyMu serialises the legacy singleton factory (see doc.go).
 var legacyMu sync.Mutex
 
-// sqlFactory is registered by task 04 (GormDatabase bootstrap). Until then
-// NewSQLEngine falls back to the legacy engine so the harness itself stays
-// testable (self-proof runs legacy-vs-legacy + a drift-catch assertion).
-var sqlFactory func(t testing.TB) datainterfaces.DatabaseService
+// sqlFactory is registered by the first domain suite (task 05 onward). It
+// receives the test's legacy engine so the SQL side can keep the D-1 hybrid
+// delegates for not-yet-ported domains.
+var sqlFactory func(t testing.TB, legacy *data.JsonDatabase) datainterfaces.DatabaseService
 
-// SetSQLEngineFactory is called from task 04 onward to plug the real SQL
+// SetSQLEngineFactory is called from task 05 onward to plug the real SQL
 // engine into every DomainSuite.
-func SetSQLEngineFactory(f func(t testing.TB) datainterfaces.DatabaseService) {
+func SetSQLEngineFactory(f func(t testing.TB, legacy *data.JsonDatabase) datainterfaces.DatabaseService) {
 	sqlFactory = f
 }
 
@@ -61,7 +61,7 @@ func NewLegacyEngine(t testing.TB) *data.JsonDatabase {
 func NewSQLEngine(t testing.TB, legacyFallback *data.JsonDatabase) datainterfaces.DatabaseService {
 	t.Helper()
 	if sqlFactory != nil {
-		return sqlFactory(t)
+		return sqlFactory(t, legacyFallback)
 	}
 	t.Log("parity: no SQL engine factory registered (task 04 pending) — using legacy fallback")
 	return legacyFallback
