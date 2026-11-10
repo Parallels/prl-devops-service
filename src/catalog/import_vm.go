@@ -27,7 +27,7 @@ func (s *CatalogManifestService) ImportVm(r *models.ImportVmRequest) *models.Imp
 	foundProvider := false
 	response := models.NewImportVmRequestResponse()
 	serviceProvider := serviceprovider.Get()
-	db := serviceProvider.JsonDatabase
+	db := serviceProvider.Legacy() // #421 S1: importClaims/importRoles params stay concrete (task 17 retypes)
 	if db == nil {
 		err := data.ErrDatabaseNotConnected
 		response.AddError(err)

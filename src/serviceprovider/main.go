@@ -11,6 +11,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
+	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -39,7 +40,8 @@ type ServiceProvider struct {
 	VagrantService          *vagrant.VagrantService
 	SshService              *ssh.SshService
 	MySqlService            *sql_database.MySQLService
-	JsonDatabase            *data.JsonDatabase
+	JsonDatabase            datainterfaces.DatabaseService // #421 D-6 S1: was *data.JsonDatabase
+	legacyDatabase          *data.JsonDatabase             // concrete handle, set with every JsonDatabase assignment (Legacy() escape hatch, AD-1)
 	SQLDatabase             *gorm.DB
 	Services                []interfaces.Service
 	HardwareInfo            *models.ParallelsDesktopInfo
@@ -75,10 +77,10 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 		}
 
 		if cfg.DatabaseFolder() != "" {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json"))
+			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json")))
 			dbLocation = cfg.DatabaseFolder()
 		} else {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
+			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json")))
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
@@ -97,9 +99,9 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 
 		if cfg.DatabaseFolder() != "" {
 			dbLocation = cfg.DatabaseFolder()
-			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json"))
+			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json")))
 		} else {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
+			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json")))
 		}
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.mustInitGormConnection(ctx)
@@ -213,14 +215,14 @@ func InitServices(ctx basecontext.ApiContext) {
 
 		if cfg.DatabaseFolder() != "" {
 			dbLocation = cfg.DatabaseFolder()
-			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json"))
+			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json")))
 		} else {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
+			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json")))
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.mustInitGormConnection(ctx)
-		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase)
+		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.legacyDatabase)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
@@ -235,14 +237,14 @@ func InitServices(ctx basecontext.ApiContext) {
 
 		if cfg.DatabaseFolder() != "" {
 			dbLocation = cfg.DatabaseFolder()
-			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json"))
+			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json")))
 		} else {
-			globalProvider.JsonDatabase = data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
+			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json")))
 		}
 
 		_ = globalProvider.JsonDatabase.Connect(ctx)
 		globalProvider.mustInitGormConnection(ctx)
-		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase)
+		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.legacyDatabase)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 
@@ -533,4 +535,16 @@ func getHardwareSecret(key, hid string) string {
 	}
 
 	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s%s", secretKey, secretHid)))
+}
+
+// Legacy returns the concrete legacy database handle — the AD-1 escape hatch
+// for the small set of callers of legacy-only machinery (SaveAs/SaveNow/Backup
+// owners, parallelsdesktop injection). #421 D-6 S1.
+func (s *ServiceProvider) Legacy() *data.JsonDatabase { return s.legacyDatabase }
+
+// setJsonDatabaseLegacy keeps the interface field (S1) and the concrete handle
+// in lockstep — every legacy-database assignment goes through here. #421 D-6 S1.
+func (s *ServiceProvider) setJsonDatabaseLegacy(db *data.JsonDatabase) {
+	s.legacyDatabase = db
+	s.JsonDatabase = db
 }

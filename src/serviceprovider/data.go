@@ -11,8 +11,8 @@ func GetDatabaseService(ctx basecontext.ApiContext) (*data.JsonDatabase, error) 
 		return nil, data.ErrDatabaseNotConnected
 	}
 
-	dbService := provider.JsonDatabase
-	if dbService == nil {
+	dbService, ok := provider.JsonDatabase.(*data.JsonDatabase) // #421 D-6 S1: field is the interface now; assertion until task 17 flips the signature
+	if !ok || dbService == nil {
 		return nil, data.ErrDatabaseNotConnected
 	}
 

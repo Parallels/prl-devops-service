@@ -15,7 +15,7 @@ type MigrationService struct {
 func Init() (*MigrationService, error) {
 	result := MigrationService{}
 	result.Context = basecontext.NewRootBaseContext()
-	result.DbService = serviceprovider.Get().JsonDatabase
+	result.DbService = serviceprovider.Get().Legacy() // #421 S1: MigrationService.DbService stays concrete (task 17 retypes)
 	err := result.DbService.Connect(result.Context)
 	if err != nil {
 		return nil, err
