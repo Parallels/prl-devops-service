@@ -1,11 +1,12 @@
 package parity
 
-// Hybrid-delegate parity (task 04, re-pointed in task 05): representative
+// Hybrid-delegate parity (task 04; re-pointed in 05 and 06): representative
 // UNPORTED domains through GormDatabase must be observationally identical to
-// the legacy handle. Roles/claims can no longer serve as the example — they
-// are real SQL since task 05 — so the proof rides the users domain (delegates
-// until task 06). Lives here, not in package database: see
-// gorm_database_test.go header for the legacy-goroutine rationale.
+// the legacy handle. Since task 06 the users domain is ported too, so the
+// delegate proof rides api-keys (unported until task 07) and the
+// zero-reach-through assertion rides users. Lives here, not in package
+// database: see gorm_database_test.go header for the legacy-goroutine
+// rationale.
 
 import (
 	"testing"
@@ -32,29 +33,31 @@ func TestHybridDelegatesMatchLegacy(t *testing.T) {
 	if _, err := legacy.CreateUser(ctx, user); err != nil {
 		t.Fatalf("seed user: %v", err)
 	}
+	if _, err := legacy.CreateApiKey(ctx, models.ApiKey{ID: "probe-key", Name: "probe", Key: "k-1", Secret: "s-1", UserID: "delegate-u1"}); err != nil {
+		t.Fatalf("seed api key: %v", err)
+	}
 
 	// Hybrid engine: migrated :memory: SQL + this legacy handle.
 	sql := newSQLTestEngine(t, legacy)
 
-	lu, lerr := legacy.GetUsers(ctx, "username=delegate")
-	gu, gerr := sql.GetUsers(ctx, "username=delegate")
+	// Unported domain (api keys): delegate pass-through must mirror legacy,
+	// including the filter string reaching the legacy engine untouched.
+	lk, lerr := legacy.GetApiKeys(ctx, "name=probe")
+	gk, gerr := sql.GetApiKeys(ctx, "name=probe")
 	if lerr != nil || gerr != nil {
-		t.Fatalf("GetUsers errors: %v %v", lerr, gerr)
+		t.Fatalf("GetApiKeys errors: %v %v", lerr, gerr)
 	}
-	if len(lu) != 1 || len(gu) != 1 || lu[0].ID != gu[0].ID {
-		t.Errorf("users delegate drift: %v vs %v", lu, gu)
+	if len(lk) != len(gk) {
+		t.Fatalf("api-keys delegate drift: %d vs %d", len(lk), len(gk))
 	}
-
-	lu2, _ := legacy.GetUsers(ctx, "username=DELEGATE1,i")
-	gu2, _ := sql.GetUsers(ctx, "username=DELEGATE1,i")
-	if len(lu2) != len(gu2) {
-		t.Errorf("filter-through-delegate drift: %d vs %d", len(lu2), len(gu2))
+	if len(lk) > 0 && lk[0].ID != gk[0].ID {
+		t.Errorf("api-keys delegate identity drift: %v vs %v", lk[0].ID, gk[0].ID)
 	}
 
-	// A ported domain (roles) must NOT touch the delegate: roles were seeded
-	// legacy-side only (DefaultRoles) — the SQL store is empty, so a non-empty
-	// result here would mean reach-through into legacy.
-	empty, err := sql.GetRoles(ctx, "")
+	// A ported domain (users) must NOT touch the delegate: the user was seeded
+	// legacy-side only; the SQL store is empty, so a non-empty result here
+	// would mean reach-through into legacy.
+	empty, err := sql.GetUsers(ctx, "")
 	if err != nil || len(empty) != 0 {
 		t.Errorf("ported domain reached through/failed: %v %+v", err, empty)
 	}
