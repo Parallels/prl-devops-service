@@ -27,6 +27,7 @@ import (
 func allAutoMigrateModels() []interface{} {
 	return []interface{}{
 		&models.User{}, &models.Role{}, &models.Claim{}, &models.RoleClaims{}, &models.ApiKey{},
+		&models.DatabaseSchema{},
 		&models.CatalogManager{}, &models.CatalogManifest{}, &models.Job{}, &models.PackerTemplate{},
 		&models.UserConfig{}, &models.ReverseProxy{}, &models.ReverseProxyHost{},
 		&models.OrchestratorEnrollmentToken{}, &models.Configuration{},
