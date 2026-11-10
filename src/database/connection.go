@@ -11,8 +11,9 @@ import (
 // NewDatabaseConnection opens the backend selected by cfg, applies engine settings,
 // and returns a pool-safe handle. Caller owns Close. ctx is for logging.
 //
-// #418 scope: sqlite implemented; postgres case returns ErrPostgresNotWiredYet
-// until task 04 lands it (explicit, greppable — never silently falls back to sqlite).
+// #418 scope: both engines implemented; unknown types are rejected outright —
+// never a silent fallback to sqlite (task 03's interim sentinel was removed
+// when the postgres case landed in task 04).
 func NewDatabaseConnection(ctx basecontext.ApiContext, cfg DatabaseConfig) (*gorm.DB, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -22,7 +23,7 @@ func NewDatabaseConnection(ctx basecontext.ApiContext, cfg DatabaseConfig) (*gor
 	case DBTypeSQLite:
 		return newSQLiteConnection(ctx, cfg)
 	case DBTypePostgres:
-		return nil, ErrPostgresNotWiredYet
+		return newPostgresConnection(ctx, cfg)
 	default:
 		return nil, ErrUnsupportedDatabaseType
 	}

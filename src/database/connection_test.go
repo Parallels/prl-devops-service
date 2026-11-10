@@ -7,13 +7,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewDatabaseConnection_PostgresReturnsNotWired(t *testing.T) {
+func TestNewDatabaseConnection_PostgresRoutesToDial(t *testing.T) {
+	// Task 03's "not wired yet" interim test retired by task 04: the
+	// postgres case now dials. Offline proof of real dialing lives in
+	// postgres_test.go (unreachable host → ErrDatabaseUnreachable wrap).
 	ctx := testCtx()
 
-	_, err := NewDatabaseConnection(ctx, DatabaseConfig{Type: DBTypePostgres, DSN: "host=whatever"})
+	_, err := NewDatabaseConnection(ctx, DatabaseConfig{Type: "postgres", DSN: "postgres://u:p@127.0.0.1:1/db"})
 	require.Error(t, err)
-	// Explicit interim error — never a silent sqlite fallback.
-	assert.ErrorIs(t, err, ErrPostgresNotWiredYet)
+	assert.ErrorIs(t, err, ErrDatabaseUnreachable)
 }
 
 func TestNewDatabaseConnection_InvalidType(t *testing.T) {
