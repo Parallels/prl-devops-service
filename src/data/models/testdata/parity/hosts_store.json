@@ -1,0 +1,20 @@
+{
+  "hosts": [
+    {
+      "id": "h-1", "enabled": true, "host": "10.0.0.9", "architecture": "arm64",
+      "tags": ["gpu", "edge"], "port": "18443", "schema": "https", "has_websocket_events": true,
+      "authentication": {"login": "pd:svc"},
+      "state": "online", "last_seen": "2024-06-01 00:00:00",
+      "health_check": {"this_key": "ignored json:- on both sides"},
+      "is_reverse_proxy_enabled": true, "enabled_modules": ["vm"],
+      "reverse_proxy": {"id": "rp-1", "host_id": "h-1", "enabled": true},
+      "reverse_proxy_hosts": [ {"id": "rph-1", "host_id": "h-1", "host": "app.x", "port": "443", "enabled": true} ],
+      "virtual_machines": [
+        {"ID": "vm-1", "name": "vm-a", "host_id": "h-1", "user": "alice", "state": "running"},
+        {"ID": "vm-2", "name": "vm-b", "host_id": "h-1", "guest_tools": {"version": "2.1"}}
+      ],
+      "created_at": "2024-01-01 00:00:00", "updated_at": "2024-01-02 00:00:00"
+    },
+    {"id": "h-2", "enabled": false, "host": "10.0.0.10", "architecture": "amd64"}
+  ]
+}
