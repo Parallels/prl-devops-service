@@ -4,19 +4,20 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 var (
-	ErrReverseProxyHostEmptyNameOrId           = errors.NewWithCode("no reverse proxy host specified", 500)
-	ErrorReverseProxyHostNotFound              = errors.NewWithCode("reverse proxy host not found", 404)
-	ErrorReverseProxyHttpRouteNotFound         = errors.NewWithCode("reverse proxy host http route not found", 404)
-	ErrorReverseProxyHttpRouteInvalidOrder     = errors.NewWithCode("invalid reverse proxy host http route order", 400)
-	ErrorReverseProxyHttpRouteOrderUpdate      = errors.NewWithCode("cannot update reverse proxy host http route and change order at the same time", 400)
-	ErrorReverseProxyTcpRouteNotFound          = errors.NewWithCode("reverse proxy host tcp route not found", 404)
-	ErrorReverseProxyTcpRouteWithHttpRouteHost = errors.NewWithCode("cannot update reverse proxy TCP route when HTTP routes are present", 400)
+	ErrReverseProxyHostEmptyNameOrId           = interfaces.ErrReverseProxyHostEmptyNameOrId
+	ErrorReverseProxyHostNotFound              = interfaces.ErrorReverseProxyHostNotFound
+	ErrorReverseProxyHttpRouteNotFound         = interfaces.ErrorReverseProxyHttpRouteNotFound
+	ErrorReverseProxyHttpRouteInvalidOrder     = interfaces.ErrorReverseProxyHttpRouteInvalidOrder
+	ErrorReverseProxyHttpRouteOrderUpdate      = interfaces.ErrorReverseProxyHttpRouteOrderUpdate
+	ErrorReverseProxyTcpRouteNotFound          = interfaces.ErrorReverseProxyTcpRouteNotFound
+	ErrorReverseProxyTcpRouteWithHttpRouteHost = interfaces.ErrorReverseProxyTcpRouteWithHttpRouteHost
 )
 
 func normalizeReverseProxyHttpRoutesOrder(routes []*models.ReverseProxyHostHttpRoute) {

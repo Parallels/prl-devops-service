@@ -5,16 +5,16 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
-	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/google/uuid"
 )
 
 var (
-	ErrEnrollmentTokenNotFound = errors.NewWithCode("enrollment token not found", 404)
-	ErrEnrollmentTokenExpired  = errors.NewWithCode("enrollment token has expired", 401)
-	ErrEnrollmentTokenUsed     = errors.NewWithCode("enrollment token has already been used", 401)
+	ErrEnrollmentTokenNotFound = interfaces.ErrEnrollmentTokenNotFound
+	ErrEnrollmentTokenExpired  = interfaces.ErrEnrollmentTokenExpired
+	ErrEnrollmentTokenUsed     = interfaces.ErrEnrollmentTokenUsed
 )
 
 func (j *JsonDatabase) CreateEnrollmentToken(ctx basecontext.ApiContext, hostName string, ttlMinutes int) (*models.OrchestratorEnrollmentToken, error) {

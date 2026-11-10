@@ -4,14 +4,14 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
-	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 var (
-	ErrUserConfigNotFound      = errors.NewWithCode("user config not found", 404)
-	ErrUserConfigAlreadyExists = errors.NewWithCode("user config already exists", 500)
+	ErrUserConfigNotFound      = interfaces.ErrUserConfigNotFound
+	ErrUserConfigAlreadyExists = interfaces.ErrUserConfigAlreadyExists
 )
 
 func (j *JsonDatabase) GetUserConfigs(ctx basecontext.ApiContext, userID string, filter string) ([]models.UserConfig, error) {

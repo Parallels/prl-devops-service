@@ -5,15 +5,15 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
-	"github.com/Parallels/prl-devops-service/errors"
 )
 
 var (
-	ErrPackerTemplateNotFound         = errors.NewWithCode("packer template not found", 404)
-	ErrPackerTemplateAlreadyExists    = errors.NewWithCode("machine template already exists", 400)
-	ErrRemovingInternalPackerTemplate = errors.NewWithCode("cannot remove internal machine template", 400)
-	ErrUpdatingInternalPackerTemplate = errors.NewWithCode("cannot update internal machine template", 400)
+	ErrPackerTemplateNotFound         = interfaces.ErrPackerTemplateNotFound
+	ErrPackerTemplateAlreadyExists    = interfaces.ErrPackerTemplateAlreadyExists
+	ErrRemovingInternalPackerTemplate = interfaces.ErrRemovingInternalPackerTemplate
+	ErrUpdatingInternalPackerTemplate = interfaces.ErrUpdatingInternalPackerTemplate
 )
 
 func (j *JsonDatabase) GetPackerTemplates(ctx basecontext.ApiContext, filter string) ([]models.PackerTemplate, error) {

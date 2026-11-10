@@ -8,13 +8,13 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
-	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 var (
-	ErrJobNotFound = errors.NewWithCode("job not found", 404)
+	ErrJobNotFound = interfaces.ErrJobNotFound
 )
 
 func (j *JsonDatabase) GetJobs(ctx basecontext.ApiContext) ([]models.Job, error) {
