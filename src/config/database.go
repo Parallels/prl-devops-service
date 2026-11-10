@@ -4,9 +4,12 @@ package config
 // change) - see .ai-agents/features/417-gorm-database-layer/420-database-configuration/plan.md D-6
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/errors"
 )
 
 func (c *Config) DbNumberBackupFiles() int {
@@ -65,4 +68,41 @@ func (c *Config) IsDatabaseAutoRecover() bool {
 
 func (c *Config) DatabaseFolder() string {
 	return c.GetKey(constants.DATABASE_FOLDER_ENV_VAR)
+}
+
+// DatabaseType returns the raw DB_TYPE setting ("" = unset → caller defaults to sqlite).
+// Config file key db_type resolves through the same case-insensitive GetKey lookup.
+func (c *Config) DatabaseType() string { return c.GetKey(constants.DB_TYPE_ENV_VAR) }
+
+// DatabasePath returns the raw DB_PATH setting ("" = unset → AD-3 default resolution).
+func (c *Config) DatabasePath() string { return c.GetKey(constants.DB_PATH_ENV_VAR) }
+
+// DatabaseDSN returns the raw DB_DSN setting ("" = unset). Treat as a secret:
+// callers must never embed it in error/log text unredacted (#420 plan D-8).
+func (c *Config) DatabaseDSN() string { return c.GetKey(constants.DB_DSN_ENV_VAR) }
+
+// DatabaseAutoMigrate parses DB_AUTO_MIGRATE. Unset → true (AC: "Defaults to true").
+// Vocabulary extends the repo's tolerant-bool sets (helpers.StringToBool,
+// src/helpers/strings.go:144; IsDatabaseAutoRecover) with an explicit false-set —
+// and, deliberately unlike both, returns a clear error for garbage instead of
+// silently defaulting (AC "Validation and errors").
+func (c *Config) DatabaseAutoMigrate() (bool, error) {
+	raw := strings.ToLower(strings.TrimSpace(c.GetKey(constants.DB_AUTO_MIGRATE_ENV_VAR)))
+	switch raw {
+	case "":
+		return true, nil
+	case "true", "1", "t", "yes", "y", "on", "enabled":
+		return true, nil
+	case "false", "0", "f", "no", "n", "off", "disabled":
+		return false, nil
+	default:
+		// Echo capped at 64 bytes (same guard idea as database.quoteCapped, D-7.1): a
+		// mis-set value is echoed to its owner, but a paste-gone-wrong can't spam logs.
+		echo := raw
+		if len(echo) > 64 {
+			echo = echo[:64] + "…"
+		}
+		return false, errors.NewWithCode(
+			fmt.Sprintf("invalid DB_AUTO_MIGRATE %q (config key db_auto_migrate): expected true or false", echo), 400)
+	}
 }

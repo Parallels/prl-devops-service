@@ -104,5 +104,9 @@ func TestFromApplicationConfig_SeamDelegatesToDefault(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("DATABASE_FOLDER", tmp)
 
-	assert.Equal(t, DefaultDatabaseConfig(), FromApplicationConfig())
+	// #420 D-4: signature widened to (value, error); the delegation property
+	// stands — unset DB_* keys keep DefaultDatabaseConfig() byte-identically.
+	cfg, err := FromApplicationConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, DefaultDatabaseConfig(), cfg)
 }
