@@ -24,17 +24,17 @@ type CollectionSpec struct {
 	Validate func(db *gorm.DB, d *data.Data) (expected, actual int64, err error)
 }
 
-// collectionPlan — order = FK-safe (referenced before referrer), tiebreak by
-// Data-declaration order (src/data/main.go:34-50). Scalar half lands here;
-// task 04 appends relationalPlan().
-func collectionPlan() []CollectionSpec { return append(scalarPlan(), relationalPlan()...) }
+// collectionPlan() lives in mapping_relational.go since task 04 (the full
+// ordered plan needs the relational specs in scope); scalarPlan() stays here
+// as the scalar half, reused by the relational plan and its tests.
 
 func upsertAll[T any](ctx basecontext.ApiContext, tx *gorm.DB, rows []T, pk string, chunk int) (int64, error) {
 	if len(rows) == 0 {
 		return 0, nil
 	}
-	res := tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: pk}}, UpdateAll: true}).
-		CreateInBatches(&rows, chunk) // AC-2: re-run = same PK ⇒ update, never duplicate
+	res := tx.Omit(clause.Associations). // edges are ONLY the edgeSpecs' business: no implicit M2M full-saves from parent Creates (task 04)
+						Clauses(clause.OnConflict{Columns: []clause.Column{{Name: pk}}, UpdateAll: true}).
+						CreateInBatches(&rows, chunk) // AC-2: re-run = same PK ⇒ update, never duplicate
 	// Caveat: RowsAffected ≠ len(rows) on MySQL-family update-in-place;
 	// SQLite/Postgres semantics used here report per-statement affected rows.
 	return res.RowsAffected, res.Error
@@ -126,8 +126,3 @@ func scalarPlan() []CollectionSpec {
 			func(db *gorm.DB) (int64, error) { return countOf[models.UserConfig](db) }),
 	}
 }
-
-// relationalPlan is task 04's half (Users/Claims/Roles, catalog manifests +
-// content, snapshot records, schema row, job steps completion). Declared
-// empty here so collectionPlan()'s shape is final from this slice on.
-func relationalPlan() []CollectionSpec { return nil }

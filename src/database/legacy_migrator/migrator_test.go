@@ -97,7 +97,12 @@ func scalarCounts() map[string]int64 {
 }
 
 func countAllScalars(t *testing.T, db *gorm.DB) map[string]int64 {
-	t.Helper()
+	t.Helper() // name kept from task 03: now covers ALL plan tables (scalar + relational)
+	edge := func(table string) int64 {
+		var n int64
+		require.NoError(t, db.Table(table).Count(&n).Error)
+		return n
+	}
 	return map[string]int64{
 		"Configuration":     countModel(t, db, &models.Configuration{}),
 		"ApiKeys":           countModel(t, db, &models.ApiKey{}),
@@ -109,6 +114,15 @@ func countAllScalars(t *testing.T, db *gorm.DB) map[string]int64 {
 		"Jobs":              countModel(t, db, &models.Job{}),
 		"EnrollmentTokens":  countModel(t, db, &models.OrchestratorEnrollmentToken{}),
 		"UserConfigs":       countModel(t, db, &models.UserConfig{}),
+		"Claims":            countModel(t, db, &models.Claim{}),
+		"Roles":             countModel(t, db, &models.Role{}),
+		"RoleClaims":        countModel(t, db, &models.RoleClaims{}),
+		"Users":             countModel(t, db, &models.User{}),
+		"UserRoles":         edge("user_roles"),
+		"UserClaims":        edge("user_claims"),
+		"ManifestsCatalog":  countModel(t, db, &models.CatalogManifest{}),
+		"VirtualMachines":   countModel(t, db, &models.VirtualMachine{}),
+		"VMSnapshots":       countModel(t, db, &models.VMSnapshot{}),
 		"__marker":          countModel(t, db, &LegacyMigrationMarker{}),
 	}
 }
@@ -122,10 +136,14 @@ func TestRunMigrationGoldenScalars(t *testing.T) {
 	assert.False(t, rep.Skipped)
 	assert.NotEmpty(t, rep.MarkerID)
 
-	require.Len(t, rep.Collections, 10)
+	require.Len(t, rep.Collections, len(collectionPlan()))
+	byName := map[string]CollectionReport{}
 	for _, c := range rep.Collections {
-		assert.Equal(t, scalarCounts()[c.Name], int64(c.LegacyCount), "legacy count for %s", c.Name)
-		assert.Equal(t, scalarCounts()[c.Name], c.WrittenCount, "written count for %s", c.Name)
+		byName[c.Name] = c
+	}
+	for name, want := range scalarCounts() { // the task-03 half, unchanged semantics
+		assert.Equal(t, want, int64(byName[name].LegacyCount), "legacy count for %s", name)
+		assert.Equal(t, want, byName[name].WrittenCount, "written count for %s", name)
 	}
 	got := countAllScalars(t, db)
 	for name, want := range scalarCounts() {
@@ -197,8 +215,9 @@ func TestRunMigrationProgressLogs(t *testing.T) {
 
 	progress := ctx.count(func(l string) bool { return strings.HasPrefix(l, "INFO migrated ") })
 	assert.Equal(t, len(collectionPlan()), progress, "one AC-4 line per collection")
-	assert.Contains(t, strings.Join(ctx.all(), "\n"), "migrated 1/12 Configuration records (total so far 1/12")
-	assert.Contains(t, strings.Join(ctx.all(), "\n"), "migrated 2/12 Jobs records (total so far 10/12")
+	// Enriched golden (task 04): 41 records total; Claims leads, Jobs at 39/41.
+	assert.Contains(t, strings.Join(ctx.all(), "\n"), "migrated 5/41 Claims records (total so far 5/41")
+	assert.Contains(t, strings.Join(ctx.all(), "\n"), "migrated 2/41 Jobs records (total so far 39/41")
 }
 
 func TestRunMigrationMarkerContent(t *testing.T) {
@@ -223,7 +242,7 @@ func TestRunMigrationMarkerContent(t *testing.T) {
 	assert.Equal(t, info.Size(), m.SourceSizeBytes)
 	assert.Equal(t, info.ModTime().Unix(), m.SourceModTimeUnix)
 	assert.Equal(t, wantSha, m.ContentSHA256)
-	assert.Equal(t, int64(12), m.CollectionsTotal)
+	assert.Equal(t, int64(41), m.CollectionsTotal) // task-04 enriched golden: scalar 12 + relational 29
 	assert.NotEmpty(t, m.CompletedAt)
 	assert.Equal(t, rep.MarkerID, m.ID)
 }
@@ -239,7 +258,7 @@ func TestRunMigrationDryRun(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, rep.DryRun)
 	assert.False(t, rep.Skipped)
-	require.Len(t, rep.Collections, 10)
+	require.Len(t, rep.Collections, len(collectionPlan()))
 	for _, c := range rep.Collections {
 		assert.Equal(t, int64(c.LegacyCount), c.WrittenCount, "projection count for %s", c.Name)
 	}

@@ -6,10 +6,13 @@
     { "id": "u-2", "username": "operator", "name": "Ops Person", "email": "ops@example.local", "created_at": "2024-01-03 09:00:00",
       "roles": [
         { "id": "r-1", "name": "Administrator" },
-        { "id": "r-2", "name": "Operator", "claims": [ { "id": "c-10", "name": "vm.launch", "resource": "vm", "action": "launch" }, { "id": "c-11", "name": "vm.list", "resource": "vm", "action": "list" } ] }
+        { "id": "r-2", "name": "Operator", "claims": [ { "id": "c-10", "name": "vm.launch", "resource": "vm", "action": "launch" }, { "id": "c-11", "name": "vm.list", "resource": "vm", "action": "list" } ] },
+        { "id": "r-9", "name": "AdHoc Embedded", "claims": [ { "id": "c-12", "name": "vm.snapshot", "resource": "vm", "action": "snapshot" } ] }
       ],
       "claims": [ { "id": "c-10", "name": "vm.launch", "resource": "vm", "action": "launch" }, { "id": "c-11", "name": "vm.list", "resource": "vm", "action": "list" } ] },
-    { "id": "u-3", "username": "viewer", "name": "Read Only", "email": "ro@example.local", "created_at": "2024-01-04 12:30:00" }
+    { "id": "u-3", "username": "viewer", "name": "Read Only", "email": "ro@example.local", "created_at": "2024-01-04 12:30:00",
+      "roles": [ { "id": "r-2", "name": "Operator" } ],
+      "claims": [ { "id": "c-11", "name": "vm.list", "resource": "vm", "action": "list" } ] }
   ],
   "claims": [
     { "id": "c-1", "name": "vm.launch", "resource": "vm", "action": "launch" },
@@ -30,13 +33,24 @@
   ],
   "catalog_manifests": [
     { "id": "cm-1", "catalog_id": "lin", "version": "2.0", "architecture": "arm64", "name": "lin image",
-      "virtual_machine_contents": [], "created_at": "2024-02-04 00:00:00" }
+      "virtual_machine_contents": [ { "id": "cvi-1", "name": "rootdisk.img", "size": 68719476736 } ],
+      "pack_contents": [ { "id": "cvp-1", "name": "tools.pak", "size": 1048576 } ],
+      "created_at": "2024-02-04 00:00:00" }
   ],
   "orchestrator_hosts": [
-    { "id": "oh-1", "host": "mac-mini-1", "enabled": true, "architecture": "arm64", "external_ip_address": "10.0.0.11", "created_at": "2024-02-05 00:00:00" }
+    { "id": "oh-1", "host": "mac-mini-1", "enabled": true, "architecture": "arm64", "external_ip_address": "10.0.0.11", "created_at": "2024-02-05 00:00:00",
+      "virtual_machines": [
+        { "ID": "vm-101", "host_name": "ci-arm-1", "user": "u-2" },
+        { "ID": "vm-102", "host_id": "oh-1", "host_name": "ci-arm-2", "user": "u-3" }
+      ] }
   ],
   "orchestrator_snapshots": [
-    { "id": "os-1", "host_id": "oh-1", "vm_snapshots": {}, "created_at": "2024-02-06 00:00:00" }
+    { "id": "os-1", "host_id": "oh-1", "created_at": "2024-02-06 00:00:00",
+      "vm_snapshots": {
+        "vm-uuid-b": [ { "id": "os-s-2", "name": "beta-snap", "date": "2024-02-06 10:00:00", "state": "saved", "current": true, "parent": "" } ],
+        "vm-uuid-a": [ { "id": "os-s-1", "name": "alpha-base", "date": "2024-02-06 09:00:00", "state": "saved", "current": false, "parent": "" },
+                      { "id": "os-s-3", "name": "alpha-child", "date": "2024-02-06 11:00:00", "state": "saved", "current": true, "parent": "os-s-1" } ]
+      } }
   ],
   "reverse_proxy": { "id": "rproxy-1", "enabled": true, "host": "0.0.0.0", "port": "8443" },
   "reverse_proxy_hosts": [
@@ -50,7 +64,8 @@
     { "id": "j-2", "owner": "u-2", "owner_name": "Ops Person", "state": "running", "job_type": "vm", "job_operation": "start", "progress": 40, "steps": [ { "name": "poweron", "state": "running" } ], "result": "", "created_at": "2024-02-10 00:00:00" }
   ],
   "vm_snapshots": [
-    { "id": "vs-1", "vm_id": "vm-1", "vm_snapshots": [], "created_at": "2024-02-11 00:00:00" }
+    { "id": "vs-1", "vm_id": "vm-1", "created_at": "2024-02-11 00:00:00",
+      "vm_snapshots": [ { "id": "wvs-1", "name": "wrapper-snap", "date": "2024-02-11 08:00:00", "state": "saved", "current": true, "parent": "" } ] }
   ],
   "enrollment_tokens": [
     { "id": "et-1", "token": "tok-abc", "host_name": "mac-mini-2", "used": false, "expires_at": "2025-02-12 00:00:00", "created_at": "2024-02-12 00:00:00" }
