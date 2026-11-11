@@ -108,6 +108,9 @@ func RunMigration(ctx basecontext.ApiContext, gdb *gorm.DB, opts Options) (Repor
 		ctx.LogErrorf("legacy migration rolled back: %v", err)
 		return Report{DryRun: opts.DryRun}, err
 	}
+	// AC-6/D-8 post-commit, WARN-ONLY: a validation finding never turns into
+	// an error here (dry-run never reaches this line — AC-7 commits nothing).
+	report.Validation = ValidateCounts(ctx, gdb, &legacy, plan)
 	return report, nil
 }
 
