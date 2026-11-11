@@ -111,6 +111,7 @@ const (
 	DB_PATH_ENV_VAR                                         = "DB_PATH"
 	DB_DSN_ENV_VAR                                          = "DB_DSN"
 	DB_AUTO_MIGRATE_ENV_VAR                                 = "DB_AUTO_MIGRATE"
+	MIGRATE_DRY_RUN_ENV_VAR                                 = "DB_MIGRATE_DRY_RUN" // #424 AC-7 (env beats flag, Config.GetKey order)
 	CATALOG_CACHE_FOLDER_ENV_VAR                            = "CATALOG_CACHE_FOLDER"
 	CATALOG_CACHE_KEEP_FREE_DISK_SPACE_ENV_VAR              = "CATALOG_CACHE_KEEP_FREE_DISK_SPACE"
 	CATALOG_CACHE_MAX_SIZE_ENV_VAR                          = "CATALOG_CACHE_MAX_SIZE"
@@ -179,6 +180,7 @@ const (
 	PASSWORD_FLAG                   = "password"
 	USE_ORCHESTRATOR_RESOURCES_FLAG = "use-orchestrator-resources"
 	CONFIG_FILE_FLAG                = "config"
+	MIGRATE_DRY_RUN_FLAG            = "migrate-dry-run" // #424 AC-7; value-taking flag like every repo flag (--migrate-dry-run=true)
 	ORCHESTRATOR_URL_FLAG           = "orchestrator-url"
 	ORCHESTRATOR_TOKEN_FLAG         = "orchestrator-token"
 	HOST_NAME_FLAG                  = "host-name"
