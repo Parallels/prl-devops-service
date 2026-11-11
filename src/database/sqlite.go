@@ -20,7 +20,8 @@ import (
 func newSQLiteConnection(ctx basecontext.ApiContext, cfg DatabaseConfig) (*gorm.DB, error) {
 	path := cfg.Path
 
-	if path != MemoryPath {
+	// #425 task 01: named-memory file:-URIs from testutil pass through untouched
+	if path != MemoryPath && !strings.HasPrefix(path, "file:") {
 		abs, err := filepath.Abs(path) // documented: relative paths resolve against CWD
 		if err != nil {
 			return nil, errors.NewWithCode(fmt.Sprintf("failed to resolve sqlite path %s: %v", redactPath(path), err), 500)
@@ -59,7 +60,9 @@ func newSQLiteConnection(ctx basecontext.ApiContext, cfg DatabaseConfig) (*gorm.
 
 	// Private in-memory databases support neither WAL nor meaningful persistence
 	// checks; file DBs must boot production-real or not at all.
-	if path != MemoryPath {
+	// (#425 task 01: named-memory file:-URIs included — same memory engine,
+	// unique name + shared cache; journal_mode there is "memory".)
+	if path != MemoryPath && !strings.HasPrefix(path, "file:") {
 		if err := verifySQLitePragmas(ctx, db); err != nil {
 			Close(ctx, db) // no leaked -wal/-shm holders
 			return nil, err
@@ -74,6 +77,11 @@ func newSQLiteConnection(ctx basecontext.ApiContext, cfg DatabaseConfig) (*gorm.
 func buildSQLiteDSN(path string) string {
 	if path == MemoryPath {
 		return ":memory:" // glebarez expects exactly this for private memory DBs
+	}
+	if strings.HasPrefix(path, "file:") {
+		// #425 task 01: testutil named-memory URI — join pragmas with & (query
+		// already open); WAL meaningless on memory, FK matches production SQL.
+		return path + "&_pragma=busy_timeout(10000)&_pragma=foreign_keys(ON)"
 	}
 
 	u := url.URL{Scheme: "file", Opaque: path}
