@@ -51,12 +51,15 @@ func orderByPropertyDesc[T interface{}](objects []T, property string) ([]T, erro
 	rv := reflect.ValueOf(objects)
 	// swap := reflect.Swapper(objects)
 
-	// #425 T6: sort.Slice left same-UpdatedAt permutations unstable (unstable
-	// pdqsort over pre-shuffled authz input), so every l[0]/"delete first row"
-	// addressing in the parity suite diverged between engines on full-tie
-	// seeds. Deterministic total order now: property key first, then unique
-	// ID ascending whenever the element exposes an ID string field; absent ID
-	// preserves the old return-false (residual ties fall back to stability).
+	// #425 T6: sort.Slice over pre-shuffled authz input (the map-based
+	// filter/authz wrap scrambles the seed order) left same-key permutations
+	// engine-run-specific, so every l[0]/"delete first row" addressing in
+	// the parity suite could diverge between engines. Deterministic total
+	// order now: property key first, then unique ID ascending whenever the
+	// element exposes an ID string field; absent ID preserves the old
+	// return-false (residual ties fall back to stability). Note: equal
+	// UpdatedAt strings are rare (RFC3339Nano stamps) — the deeper string-
+	// vs-chronological flaw of that format is backlog T14, production scope.
 	sort.SliceStable(objects, func(i, j int) bool {
 		iVal := reflect.Indirect(rv.Index(i)).FieldByName(property).String()
 		jVal := reflect.Indirect(rv.Index(j)).FieldByName(property).String()

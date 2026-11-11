@@ -38,3 +38,11 @@ package parity
 //   - E-2 memory URIs skip the WAL verify + journal pragma (memory DBs
 //     report journal_mode=memory); foreign_keys(ON) IS applied to match
 //     production SQL boots.
+//   - E-3 catalog order-parity is set-based: list comparison sorts by
+//     business key and head-addressing probes assert per-engine self-
+//     consistency, because per-engine ORDER over wall-clock UpdatedAt is a
+//     clock race, not a parity signal — helpers.GetUtcCurrentDateTime
+//     returns RFC3339Nano, whose trailing-zero trimming makes the stored
+//     string lexicographically ≠ chronological (backlog T14, production
+//     scope). Order SEMANTICS parity is covered deterministically by the
+//     order-layer unit tests on both sides (shared tiebreak contract).
