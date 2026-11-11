@@ -87,10 +87,57 @@ func (g *GormDatabase) orchHostUnsafe(ctx basecontext.ApiContext, idOrHost strin
 	}
 	for i := range hosts {
 		if strings.EqualFold(hosts[i].ID, idOrHost) || strings.EqualFold(hosts[i].GetHost(), idOrHost) {
+			g.orchAttachRP(&hosts[i])
 			return &hosts[i], nil
 		}
 	}
 	return nil, interfaces.ErrOrchestratorHostNotFound
+}
+
+// --- reverse-proxy relation rows ------------------------------------------
+// Legacy keeps ReverseProxy/ReverseProxyHosts EMBEDDED on the host object;
+// #419 normalised them into reverse_proxies/reverse_proxy_hosts with the
+// host_id carrier. Reads that return a single host attach them (legacy's
+// shared object exposes them on the wire); LISTS do not (D-7 lineage) —
+// recorded deviation. Empty result keeps nil (legacy embedded-nil shape).
+
+func (g *GormDatabase) rpConfigRowForHost(hostID string) (*models.ReverseProxy, error) {
+	var rows []models.ReverseProxy
+	if err := g.gormDB.Table("reverse_proxies").Where("host_id = ?", hostID).
+		Order("rowid").Find(&rows).Error; err != nil {
+		return nil, mapGormError(err, nil, nil)
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	return &rows[0], nil
+}
+
+func (g *GormDatabase) rpHostRowsForHost(hostID string) ([]*models.ReverseProxyHost, error) {
+	var rows []models.ReverseProxyHost
+	if err := g.gormDB.Table("reverse_proxy_hosts").Where("host_id = ?", hostID).
+		Order("rowid").Find(&rows).Error; err != nil {
+		return nil, mapGormError(err, nil, nil)
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	out := make([]*models.ReverseProxyHost, 0, len(rows))
+	for i := range rows {
+		out = append(out, &rows[i])
+	}
+	return out, nil
+}
+
+func (g *GormDatabase) orchAttachRP(row *models.OrchestratorHost) {
+	cfg, err := g.rpConfigRowForHost(row.ID)
+	if err == nil {
+		row.ReverseProxy = cfg
+	}
+	hosts, err := g.rpHostRowsForHost(row.ID)
+	if err == nil {
+		row.ReverseProxyHosts = hosts
+	}
 }
 
 func (g *GormDatabase) GetOrchestratorHosts(ctx basecontext.ApiContext, filter string) ([]models.OrchestratorHost, error) {
@@ -223,6 +270,9 @@ func (g *GormDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 	if found == nil {
 		return nil, interfaces.ErrOrchestratorHostNotFound
 	}
+	// Diff must SEE the stored RP relations (legacy diffs against the
+	// embedded objects, :253-254 writes them).
+	g.orchAttachRP(found)
 	if !host.Diff(*found) {
 		return host, nil // no-diff echoes the INPUT (:263)
 	}
@@ -250,11 +300,41 @@ func (g *GormDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 		}
 		set[col] = s
 	}
-	// VirtualMachines, HasWebsocketEvents, CreatedAt, ID, IsLocal and the
-	// ReverseProxy relations are EXCLUDED from this set (:241-252 comments
-	// are legacy's own warning against clobbering them).
-	if err := g.gormDB.Table("orchestrator_hosts").Where("id = ?", found.ID).Updates(set).Error; err != nil {
-		return nil, mapGormError(err, interfaces.ErrOrchestratorHostNotFound, nil)
+	// VirtualMachines, HasWebsocketEvents, CreatedAt, ID, IsLocal are
+	// EXCLUDED from the column set (:241-252 comments are legacy's own
+	// warning against clobbering them). The RP relations ARE written
+	// (:253-254) — as replaced rows below, nil input clearing them.
+	err = g.gormDB.Transaction(func(tx *gorm.DB) error {
+		if err := mapGormError(tx.Table("orchestrator_hosts").Where("id = ?", found.ID).
+			Updates(set).Error, interfaces.ErrOrchestratorHostNotFound, nil); err != nil {
+			return err
+		}
+		if err := mapGormError(tx.Table("reverse_proxies").Where("host_id = ?", found.ID).
+			Delete(&models.ReverseProxy{}).Error, nil, nil); err != nil {
+			return err
+		}
+		if host.ReverseProxy != nil {
+			cfg := *host.ReverseProxy
+			cfg.HostID = found.ID
+			if err := mapGormError(tx.Table("reverse_proxies").Create(&cfg).Error, nil, nil); err != nil {
+				return err
+			}
+		}
+		if err := mapGormError(tx.Table("reverse_proxy_hosts").Where("host_id = ?", found.ID).
+			Delete(&models.ReverseProxyHost{}).Error, nil, nil); err != nil {
+			return err
+		}
+		for _, h := range host.ReverseProxyHosts {
+			c := *h
+			c.HostID = found.ID
+			if err := mapGormError(tx.Table("reverse_proxy_hosts").Create(&c).Error, nil, nil); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return g.orchHostByID(found.ID)
 }
@@ -266,6 +346,7 @@ func (g *GormDatabase) orchHostByID(id string) (*models.OrchestratorHost, error)
 	}
 	for i := range rows {
 		if rows[i].ID == id {
+			g.orchAttachRP(&rows[i])
 			return &rows[i], nil
 		}
 	}
