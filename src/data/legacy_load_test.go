@@ -84,7 +84,7 @@ func assertAllCollections(t *testing.T, d Data) {
 	assert.Equal(t, "8443", d.ReverseProxy.Port)
 	assert.Len(t, d.Users, 3)
 	assert.Len(t, d.Claims, 4)
-	assert.Len(t, d.Roles, 2)
+	assert.Len(t, d.Roles, 2) // top-level only — orphan r-9 lives inside Users[1].Roles (task 04 fixture)
 	assert.Len(t, d.ApiKeys, 2)
 	assert.Len(t, d.PackerTemplates, 1)
 	assert.Len(t, d.ManifestsCatalog, 1)
@@ -97,10 +97,16 @@ func assertAllCollections(t *testing.T, d Data) {
 	assert.Len(t, d.EnrollmentTokens, 1)
 	assert.Len(t, d.UserConfigs, 1)
 	// embedded graph survived decode
-	assert.Len(t, d.Users[1].Roles, 2)
+	assert.Len(t, d.Users[1].Roles, 3)
 	assert.Len(t, d.Users[1].Claims, 2)
+	assert.Len(t, d.Users[2].Roles, 1) // shared r-2 across users (task 04)
 	assert.Len(t, d.Roles[0].Claims, 2)
 	assert.Len(t, d.Jobs[0].Steps, 2)
+	assert.Len(t, d.OrchestratorHosts[0].VirtualMachines, 2)
+	assert.Len(t, d.HostsVMSnapshots[0].VMSnapshots, 2) // map keys preserved by decode
+	assert.Len(t, d.VMSnapshots[0].VMSnapshot, 1)
+	assert.Len(t, d.ManifestsCatalog[0].VirtualMachineContents, 1)
+	assert.Len(t, d.ManifestsCatalog[0].PackContents, 1)
 }
 
 func TestLoadLegacyDataPlaintextGolden(t *testing.T) {
