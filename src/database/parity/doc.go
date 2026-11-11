@@ -46,3 +46,61 @@ package parity
 //     string lexicographically ≠ chronological (backlog T14, production
 //     scope). Order SEMANTICS parity is covered deterministically by the
 //     order-layer unit tests on both sides (shared tiebreak contract).
+//   - E-4 pre-Type rows (empty ApiKey.Type): unreachable through
+//     CreateApiKey on either engine (both default "external" at create),
+//     so the old-data scenarios seed them engine-faithfully on the
+//     seed_auth_test.go hook engines — legacy = pre-Write data.json
+//     (loader ingests verbatim), gorm = raw INSERT post-migrate (same
+//     shape legacy_migrator lands). The legacy originals poked private
+//     db.data.ApiKeys; assertions here are those originals verbatim.
+//
+// --- #425 task 02 conversion ledger (auth wave) --------------------------
+// Legacy fn (file) → scenario. "1:1" = body transcribed per the recipe
+// with sentinels/arrangements preserved; ctx posture NewRootBaseContext →
+// tplCtxRoot(), NewBaseContext → authCtxPlain() (both nil-equivalent
+// postures verified in authorize_layer).
+//
+// users_parity_test.go — data/users_test.go:
+//   TestCreateUser→users/create_user · TestCreateUserFailsMissingFields→
+//   users/create_user_fails_missing_fields · TestUpdateUser→users/
+//   update_user (10 ms sleep kept) · TestUpdateUserBlockStatus→users/
+//   update_user_block_status · TestAddAndRemoveRoleToUser→users/
+//   add_and_remove_role_to_user (extended: embedded role Claims slice
+//   round-trip, R-2 canary) · TestDeleteUser→users/delete_user
+//
+// roles_claims_parity_test.go — data/roles_test.go + claims_test.go +
+// roles_claims_test.go: TestCreateRole/TestUpdateRole/TestDeleteRole/
+// TestDeleteInternalRoleFailsWithoutRoot→roles/* (all 1:1); TestCreateClaim
+// /TestUpdateClaim/TestDeleteClaim/TestDeleteInternalClaimFailsWithoutRoot→
+// claims/* (all 1:1); TestAddClaimToRole_{Success,Duplicate,RoleNotFound,
+// ClaimNotFound} + TestRemoveClaimFromRole_{Success,ClaimNotOnRole,
+// RoleNotFound}→roles_claims/* (all 1:1, ErrorIs kept). Lines 115-236
+// (Cascades, FailsWhenAssigned, GetRole(s)_IncludesClaims,
+// CreateRole_With{,Unknown}Claim) are NOT in the task-02 inventory — they
+// stay Tier 1 until their wave.
+//
+// api_key_parity_test.go — data/api_key_test.go: TestCreateApiKeyWith
+// Expiration→api_keys/create_with_expiration · …WithoutExpiration→api_keys/
+// create_without_expiration · TestApiKeyExpirationLogic→api_keys/
+// expiration_logic (no-DB pure leg, both engines) · TestApiKeyWithUser
+// Ownership→api_keys/with_user_ownership · TestGetApiKeysWithUserFiltering→
+// api_keys/get_api_keys_with_user_filtering · TestCreateApiKeyWithout
+// UserIdAutoAssignsToUser→api_keys/create_without_user_id_does_not_auto_
+// assign · TestCreateApiKeyDefaultTypeIsExternal→api_keys/create_default_
+// type_is_external · TestCreateApiKeyExplicitTypePreserved→api_keys/
+// create_explicit_type_preserved · TestGetApiKeyNormalizesType→api_keys/
+// get_api_key_normalizes_type [E-4] · TestGetApiKeysFiltersInternalKeys→
+// api_keys/get_api_keys_filters_internal_keys · TestGetApiKeysNormalizes
+// Types→api_keys/get_api_keys_normalizes_types [E-4] ·
+// TestInternalKeysNotInListButRetrievableByID→api_keys/internal_keys_not_in_
+// list_but_retrievable_by_id · TestBackwardCompatibilityWithOldApiKeys→
+// api_keys/backward_compatibility_with_old_api_keys [E-4].
+// Stay Tier 1 (pure domain fns, engine-agnostic): TestNormalizeApiKeyType,
+// TestFilterInternalKeys.
+//
+// filter_differential_test.go — no legacy counterpart (R-3 net): 20
+// exact-sequence filter expressions (users+keys, regex/case/parse-error
+// corpus) + 3 catalog authz postures (nil-auth / no-roles / InjectedRoles
+// operator — RequiredRoles pairs with HasEffectiveRole, verified
+// authorize_layer.go), non-vacuity-guarded. Order runs reduced per E-3
+// rationale (file header).
