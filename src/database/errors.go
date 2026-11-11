@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/errors"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -33,12 +34,18 @@ func mapGormError(err error, notFound, dup *errors.SystemError) error {
 	return errors.NewWithCode(fmt.Sprintf("database operation failed: %v", err), 500)
 }
 
-// isUniqueViolation recognises constraint errors across drivers. String
-// matching is deliberate until task 18 lands the pg-specific mapping
-// (SQLSTATE 23505 via pgconn); sqlite surfaces "UNIQUE constraint failed: …",
-// the gorm translate driver pre-maps ErrDuplicatedKey.
+// isUniqueViolation recognises constraint errors across drivers: sqlite
+// surfaces "UNIQUE constraint failed: …", the gorm translate driver
+// pre-maps ErrDuplicatedKey, and PostgreSQL reports SQLSTATE 23505 on
+// *pgconn.PgError (the typed check task-18/T2 replaced the interim
+// "duplicate key value" string match with — kept as a belt for drivers
+// that surface the message without the typed error).
 func isUniqueViolation(err error) bool {
 	if stderrors.Is(err, gorm.ErrDuplicatedKey) {
+		return true
+	}
+	var pgErr *pgconn.PgError
+	if stderrors.As(err, &pgErr) && pgErr.Code == "23505" {
 		return true
 	}
 	msg := err.Error()

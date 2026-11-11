@@ -214,7 +214,7 @@ func TestSQLPackerTemplates_UpdateFullReplacement(t *testing.T) {
 
 func TestSQLPackerTemplates_NotConnected(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
-	cold := NewGormDatabase(ctx, nil, nil)
+	cold := NewGormDatabase(ctx, nil)
 
 	if _, err := cold.GetPackerTemplates(ctx, ""); err != interfaces.ErrDatabaseNotConnected {
 		t.Errorf("list guard: %v", err)

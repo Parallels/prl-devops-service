@@ -10,7 +10,6 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
 	"github.com/Parallels/prl-devops-service/catalog/interfaces"
 	"github.com/Parallels/prl-devops-service/catalog/models"
-	"github.com/Parallels/prl-devops-service/data"
 	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
@@ -27,11 +26,11 @@ func (s *CatalogManifestService) ImportVm(r *models.ImportVmRequest) *models.Imp
 
 	foundProvider := false
 	response := models.NewImportVmRequestResponse()
-	serviceProvider := serviceprovider.Get()
-	db := serviceProvider.Legacy() // #421 S1: importClaims/importRoles params stay concrete (task 17 retypes)
-	if db == nil {
-		err := data.ErrDatabaseNotConnected
-		response.AddError(err)
+	// #421 task 18: engine-neutral source — SQL mode runs with a nil legacy
+	// handle; GetDatabaseService's error is the not-connected case.
+	db, dbErr := serviceprovider.GetDatabaseService(s.ctx)
+	if dbErr != nil {
+		response.AddError(dbErr)
 		return response
 	}
 	if err := db.Connect(s.ctx); err != nil {

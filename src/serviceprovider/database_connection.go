@@ -2,10 +2,12 @@ package serviceprovider
 
 import (
 	"os"
+	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/data"
 	"github.com/Parallels/prl-devops-service/database"
 	"gorm.io/gorm"
 )
@@ -60,4 +62,60 @@ func GetSQLDatabase(ctx basecontext.ApiContext) (*gorm.DB, error) {
 		return nil, database.ErrDatabaseUnreachable
 	}
 	return globalProvider.SQLDatabase, nil
+}
+
+// selectDatabaseBackend is the #421 D-6 S3 flip (task 18). The raw
+// DB_TYPE/db_type value selects the engine BEFORE FromApplicationConfig
+// runs — by design, that parser rejects the legacy value (its allowed set
+// is sqlite|postgres), so reading it here is the only way the documented
+// `DB_TYPE=legacy` rollback lever can work at all.
+//
+// legacy mode: byte-identical to pre-flip — the provider builds the JSON
+// engine, Connect starts its goroutines (save queue, stale-job ticker,
+// backup) inside, and no SQL connection is attempted (mustInitGormConnection
+// would exit(1) on the rejected legacy type on API boots).
+//
+// SQL mode (default: DB_TYPE unset ⇒ sqlite via #420 defaults): GormDatabase
+// over the #418 connection becomes the data surface with a NIL legacy
+// handle — NewJsonDatabase never runs, so zero legacy goroutines exist
+// (D-7/D-8; the SQL stale-job watcher is started by startup, not here).
+// A non-API command with a broken SQL config falls back to legacy,
+// mirroring mustInitGormConnection's non-API posture.
+func (s *ServiceProvider) selectDatabaseBackend(ctx basecontext.ApiContext, newLegacy func() *data.JsonDatabase) {
+	if isLegacyBackendSelected() {
+		// #426 adds the deprecation warn for this branch — for now it is
+		// behaviorally identical to today.
+		s.setJsonDatabaseLegacy(newLegacy())
+		_ = s.JsonDatabase.Connect(ctx)
+		return
+	}
+	s.mustInitGormConnection(ctx) // API command exits(1) on broken SQL config
+	if s.SQLDatabase != nil {
+		// DB_AUTO_MIGRATE gates the production schema application
+		// (database.AllGormModels is the registry; default ON per AD-3).
+		// Failure reuses the connection-failure D-7 posture verbatim:
+		// API exits, other commands fall through to the legacy fallback.
+		if am, amErr := config.Get().DatabaseAutoMigrate(); amErr == nil && am {
+			if err := database.RunAutoMigrate(ctx, s.SQLDatabase); err != nil {
+				ctx.LogErrorf("SQL AutoMigrate failed: %v", err)
+				if config.Get().GetRunningCommand() == constants.API_COMMAND {
+					os.Exit(1)
+				}
+				s.SQLDatabase = nil
+			}
+		}
+		if s.SQLDatabase != nil {
+			s.JsonDatabase = database.NewGormDatabase(ctx, s.SQLDatabase)
+			s.legacyDatabase = nil
+			return
+		}
+	}
+	s.setJsonDatabaseLegacy(newLegacy())
+	_ = s.JsonDatabase.Connect(ctx)
+}
+
+// isLegacyBackendSelected reads the raw selection exactly as
+// FromApplicationConfig reads it (lower+trim; env > flag > config key).
+func isLegacyBackendSelected() bool {
+	return strings.EqualFold(strings.TrimSpace(config.Get().DatabaseType()), database.DBTypeLegacy)
 }

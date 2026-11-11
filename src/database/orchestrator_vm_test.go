@@ -270,7 +270,7 @@ func TestSQLOrchestratorUpdate_RPWriteRegression(t *testing.T) {
 }
 
 func TestSQLOrchestratorVMs_ColdGuards(t *testing.T) {
-	cold := NewGormDatabase(basecontext.NewBaseContext(), nil, nil)
+	cold := NewGormDatabase(basecontext.NewBaseContext(), nil)
 	ctx := tplRootCtx()
 	want := interfaces.ErrDatabaseNotConnected
 	var got []error

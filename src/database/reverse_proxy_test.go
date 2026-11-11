@@ -345,7 +345,7 @@ func TestSQLReverseProxy_TcpRoute(t *testing.T) {
 
 func TestSQLReverseProxy_NotConnected(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
-	cold := NewGormDatabase(ctx, nil, nil)
+	cold := NewGormDatabase(ctx, nil)
 	rpHost := models.ReverseProxyHost{}
 	checks := []struct {
 		name string

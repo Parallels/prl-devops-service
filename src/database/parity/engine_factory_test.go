@@ -14,7 +14,6 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data"
 	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
-	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/database"
 )
 
@@ -24,16 +23,7 @@ func init() {
 
 // allGormModels mirrors the data/models test registry; the production
 // AutoMigrate list ships with the task-18 boot wiring.
-func allGormModels() []interface{} {
-	return []interface{}{
-		&models.User{}, &models.Role{}, &models.Claim{}, &models.RoleClaims{}, &models.ApiKey{},
-		&models.DatabaseSchema{},
-		&models.CatalogManager{}, &models.CatalogManifest{}, &models.Job{}, &models.PackerTemplate{},
-		&models.UserConfig{}, &models.ReverseProxy{}, &models.ReverseProxyHost{},
-		&models.OrchestratorEnrollmentToken{}, &models.Configuration{},
-		&models.OrchestratorHost{}, &models.VMSnapshot{}, &models.VirtualMachine{},
-	}
-}
+func allGormModels() []interface{} { return database.AllGormModels() }
 
 func newSQLTestEngine(t testing.TB, legacy *data.JsonDatabase) datainterfaces.DatabaseService {
 	t.Helper()
@@ -50,5 +40,5 @@ func newSQLTestEngine(t testing.TB, legacy *data.JsonDatabase) datainterfaces.Da
 	if err := conn.AutoMigrate(allGormModels()...); err != nil {
 		t.Fatalf("parity sql automigrate: %v", err)
 	}
-	return database.NewGormDatabase(basecontext.NewBaseContext(), conn, legacy)
+	return database.NewGormDatabase(basecontext.NewBaseContext(), conn)
 }

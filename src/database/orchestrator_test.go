@@ -350,7 +350,7 @@ func TestSQLOrchestratorHosts_Aggregations(t *testing.T) {
 		t.Fatalf("system-reserved TotalAppleVms leak: %+v", sys["intel"])
 	}
 	// Guard-free-ness: aggregations answer EMPTY, never error, cold.
-	cold := NewGormDatabase(ctx, nil, nil)
+	cold := NewGormDatabase(ctx, nil)
 	if m := cold.GetOrchestratorAvailableResources(ctx); m == nil || len(m) != 0 {
 		t.Fatalf("cold aggregation must answer empty non-nil map: %#v", m)
 	}
@@ -400,7 +400,7 @@ func TestSQLOrchestratorHosts_HeartbeatDoesNotClobberVMs(t *testing.T) {
 
 func TestSQLOrchestratorHosts_NotConnected(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
-	cold := NewGormDatabase(ctx, nil, nil)
+	cold := NewGormDatabase(ctx, nil)
 	checks := []struct {
 		name string
 		err  error

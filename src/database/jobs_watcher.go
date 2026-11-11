@@ -39,3 +39,17 @@ func (g *GormDatabase) StopStaleJobWatcher() {
 		g.staleCancel <- true
 	}
 }
+
+// StartStaleJobWatcher is the task-18 (D-8) ownership hook: startup calls it
+// once in SQL mode — the SQL replacement for the goroutine the legacy engine
+// starts inside its Connect. The cancel channel is initialised SYNCHRONOUSLY
+// (task-15 lesson: a Stop racing the goroutine's lazy init would no-op).
+// It is deliberately NOT on DatabaseService (R-1 interface set is closed;
+// legacy exposes only DetectStaleJobs there — startup reaches it via a
+// local interface assertion).
+func (g *GormDatabase) StartStaleJobWatcher(ctx basecontext.ApiContext) {
+	if g.staleCancel == nil {
+		g.staleCancel = make(chan bool)
+	}
+	go g.runStaleJobWatcher(ctx)
+}

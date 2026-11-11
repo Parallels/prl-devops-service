@@ -1,0 +1,39 @@
+feat(#421): task 18 — flip the default engine, delete the legacy handle
+
+PBI #421 closing slice (plan D-6 S3, D-7, D-8; ER-6 audit artifacts).
+
+Selection (serviceprovider.selectDatabaseBackend): raw DB_TYPE is read
+BEFORE FromApplicationConfig (which by design rejects "legacy") — the
+documented DB_TYPE=legacy escape hatch reproduces pre-flip behavior
+byte-for-byte and skips SQL init entirely; every other value (default
+unset => sqlite via #420) boots GormDatabase over the #418 connection
+with a NIL legacy handle: NewJsonDatabase never runs, so the JSON save
+queue / backup / ghost-job goroutines never exist in SQL mode. Non-API
+commands with broken SQL config fall back to legacy, mirroring the
+existing mustInitGormConnection posture.
+
+GormDatabase: the `legacy` field and NewGormDatabase delegate parameter
+are DELETED (the plan's closing step; zero reach-through is now a
+type-level fact, not an audit). SaveAs becomes SQL-native: sqlite takes
+VACUUM INTO (absolute-path coercion, quote-doubling — the statement
+takes a literal, not a bind param); postgres logs once and no-ops
+(OQ-421-3 gap -> #427 backup story).
+
+Startup: SQL mode owns RecoverOngoingJobs + the ghost-job watcher
+(StartStaleJobWatcher launcher, channel initialised synchronously —
+task-15 race lesson), always-on per D-8/OQ-421-4 (PO-flagged). Legacy
+schema migrators are gated to legacy mode (AD-4); migrations.Init
+nil-guards. Seeds and catalog import re-anchor to GetDatabaseService.
+cleanup() re-anchors to the active surface (sp.JsonDatabase).
+
+Backlog: T2 pg SQLSTATE 23505 mapped via *pgconn.PgError; production
+AutoMigrate registry (database.AllGormModels) wired at boot behind
+DB_AUTO_MIGRATE; T5 hybrid SaveAs probes retired with the delegate
+(zero_reach_through_test.go keeps the store-isolation pin); census
+197 methods, 0 g.legacy refs.
+
+Tests: database/lifecycle_sql_test.go (vacuum snapshot incl. row
+survival + relative-path cwd + quoted paths; pg warn-noop; cold/unknown
+dialect refusals; watcher rendezvous; AutoMigrate idempotence) and
+integration_test/db_flip_matrix_test.go (rows a-d, opt-in
+PRLDEVOPS_FLIP_MATRIX=1; row d needs POSTGRES_TEST_DSN, CI-skipped).

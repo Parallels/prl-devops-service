@@ -20,7 +20,7 @@ func TestSQLEnrollmentTokens_CRUDValidate(t *testing.T) {
 	t0 := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 	g.nowFn = func() time.Time { return t0 }
 
-	cold := NewGormDatabase(ctx, nil, nil)
+	cold := NewGormDatabase(ctx, nil)
 	if _, err := cold.CreateEnrollmentToken(ctx, "h", 5); !errors.Is(err, interfaces.ErrDatabaseNotConnected) {
 		t.Fatalf("cold create: %v", err)
 	}

@@ -9,8 +9,9 @@ import (
 
 func SeedDefaultVirtualMachineTemplates() error {
 	ctx := basecontext.NewRootBaseContext()
-	svc := serviceprovider.Get().Legacy() // #421 S1: packertemplates seed funcs still take the concrete type (task 17 retypes)
-	err := svc.Connect(ctx)
+	// #421 task 18: engine-neutral source (SQL mode has no legacy handle);
+	// GetDatabaseService carries the Connect guard both engines need.
+	svc, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		common.Logger.Error("Error connecting to database: %s", err.Error())
 		return err
