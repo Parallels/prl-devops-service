@@ -1,14 +1,14 @@
 package parity
 
-// Hybrid-delegate parity (task 04; re-pointed in 05/06/07/08/09/10/11/12/14/15):
+// Hybrid-delegate parity (task 04; re-pointed in 05/06/07/08/09/10/11/12/14/15/16):
 // representative UNPORTED domains through GormDatabase must be
-// observationally identical to the legacy handle. Since task 15 jobs became
-// ported SQL, so enrollment tokens are the unported representative
-// (delegate pair CreateEnrollmentToken/GetEnrollmentToken); reverse-proxy
-// hosts remain the zero-reach-through subject (ported reads AND writes must
-// stay in the SQL store, never crossing to legacy). Lives here, not in
-// package database: see gorm_database_test.go header for the legacy-
-// goroutine rationale.
+// observationally identical to the legacy handle. Since task 16 enrollment
+// tokens became ported SQL, the last true legacy reach-through — SaveAs
+// (file snapshot; SQL side until task 18's VACUUM INTO) — is the
+// representative; reverse-proxy hosts remain the zero-reach-through
+// subject (ported reads AND writes must stay in the SQL store, never
+// crossing to legacy). Lives here, not in package database: see
+// gorm_database_test.go header for the legacy-goroutine rationale.
 
 import (
 	"testing"
@@ -21,28 +21,12 @@ func TestHybridDelegatesMatchLegacy(t *testing.T) {
 	legacy := NewLegacyEngine(t)
 	ctx := basecontext.NewBaseContext()
 
-	// Unported domain (enrollment tokens): delegate pass-through must
-	// mirror the legacy handle exactly — same store, same mutation, both
-	// directions.
-	if _, err := legacy.GetEnrollmentToken(ctx, "none"); err == nil {
-		t.Fatalf("legacy token read should report not-found")
-	}
-
 	// Hybrid engine: migrated :memory: SQL + this legacy handle.
 	sql := newSQLTestEngine(t, legacy)
 
-	tok, err := sql.CreateEnrollmentToken(ctx, "host-x", 15)
-	if err != nil || tok == nil || tok.Token == "" {
-		t.Fatalf("delegate write: %v %+v", err, tok)
-	}
-	ltok, err := legacy.GetEnrollmentToken(ctx, tok.Token)
-	if err != nil || ltok.HostName != "host-x" {
-		t.Fatalf("delegate write did not reach legacy store: %v %+v", err, ltok)
-	}
-	stok, err := sql.GetEnrollmentToken(ctx, tok.Token)
-	if err != nil || stok.ID != ltok.ID {
-		t.Fatalf("delegate read drift: %v %+v vs %+v", err, stok, ltok)
-	}
+	// Unported domain (SaveAs — see probeSaveAsDelegate for the race-tag
+	// split): delegate pass-through proof lives in the build-tagged files.
+	probeSaveAsDelegate(t, ctx, legacy, sql)
 
 	// Ported domain (reverse-proxy hosts since task 12) must NOT reach the
 	// delegate in either direction: the legacy-created host stays invisible
