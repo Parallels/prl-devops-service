@@ -19,6 +19,8 @@ import (
 	"github.com/Parallels/prl-devops-service/errors"
 	sqlitedrv "github.com/glebarez/sqlite"
 	postgresdrv "gorm.io/driver/postgres"
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -31,6 +33,10 @@ type GormDatabase struct {
 	closeOnce    sync.Once
 	warnedBackup atomic.Bool
 	dataSource   string
+	// Task 15 additions (private, additive — R-1 governs the interface set
+	// and delegate shape; the task spec mandates the injected clock):
+	nowFn       func() time.Time // stale-window test hook (nil = real clock)
+	staleCancel chan bool        // watcher cancel, legacy `chan bool` shape
 }
 
 // NewGormDatabase wraps an open GORM connection. legacy is the hybrid
