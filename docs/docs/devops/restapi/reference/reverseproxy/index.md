@@ -855,6 +855,11 @@ categories:
           path: /v1/orchestrator/hosts/{id}/machines/async
           description: This endpoint creates a virtual machine in a specific orchestrator host in the background and returns a Job ID to track progress
           title: Creates a virtual machine in a specific orchestrator host asynchronously
+        - anchor: /v1/orchestrator/machines/check-post
+          method: post
+          path: /v1/orchestrator/machines/check
+          description: Evaluates the VM scheduling decision factor against the registered hosts. Requirements are resolved from a catalog manifest (catalog_id + version + architecture, served by a catalog manager) or provided directly in the body. The response is slim when resources are sufficient and carries the full per-host missing-resource detail when no host qualifies.
+          title: Check host requirements before creating a virtual machine
     - name: Packer Templates
       path: packer_templates
       endpoints:
