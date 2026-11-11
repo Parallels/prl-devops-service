@@ -58,6 +58,10 @@ func AlreadyMigrated(ctx basecontext.ApiContext, db *gorm.DB, det Detection, pat
 		return false, errors.NewFromError(err)
 	}
 	if hit > 0 {
+		// Visible skip (matrix round 3: a silent restart looked like a
+		// missing hook). Every already-migrated path logs; absent/empty
+		// stay silent per AC-1.
+		ctx.LogInfof("legacy store %s already migrated (unchanged since migration)", path)
 		return true, nil
 	}
 	// Step 3: full fingerprint over RAW bytes (encrypted files hash fine).
