@@ -174,7 +174,7 @@ func TestSQLSchema_VersionLifecycle(t *testing.T) {
 
 func TestSQLConfigSchema_NotConnected(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
-	cold := NewGormDatabase(ctx, nil, nil)
+	cold := NewGormDatabase(ctx, nil)
 
 	if _, err := cold.GetConfiguration(ctx); err != datainterfaces.ErrDatabaseNotConnected {
 		t.Errorf("GetConfiguration guard: %v", err)

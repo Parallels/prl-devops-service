@@ -417,7 +417,7 @@ func TestSQLCatalogManagers(t *testing.T) {
 
 func TestSQLCatalog_NotConnected(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
-	cold := NewGormDatabase(ctx, nil, nil)
+	cold := NewGormDatabase(ctx, nil)
 
 	if _, err := cold.GetCatalogManifests(ctx, ""); err != interfaces.ErrDatabaseNotConnected {
 		t.Errorf("list guard: %v", err)

@@ -258,7 +258,7 @@ func TestSQLApiKeys_Mutations(t *testing.T) {
 		t.Errorf("absent delete: %v", err)
 	}
 
-	cold := NewGormDatabase(ctx, nil, nil)
+	cold := NewGormDatabase(ctx, nil)
 	if _, err := cold.GetApiKeys(ctx, ""); err != interfaces.ErrDatabaseNotConnected {
 		t.Errorf("guard: %v", err)
 	}

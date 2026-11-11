@@ -77,14 +77,11 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 		}
 
 		if cfg.DatabaseFolder() != "" {
-			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json")))
 			dbLocation = cfg.DatabaseFolder()
-		} else {
-			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json")))
 		}
-
-		_ = globalProvider.JsonDatabase.Connect(ctx)
-		globalProvider.mustInitGormConnection(ctx)
+		globalProvider.selectDatabaseBackend(ctx, func() *data.JsonDatabase {
+			return data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
+		})
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
@@ -99,12 +96,10 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 
 		if cfg.DatabaseFolder() != "" {
 			dbLocation = cfg.DatabaseFolder()
-			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json")))
-		} else {
-			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json")))
 		}
-		_ = globalProvider.JsonDatabase.Connect(ctx)
-		globalProvider.mustInitGormConnection(ctx)
+		globalProvider.selectDatabaseBackend(ctx, func() *data.JsonDatabase {
+			return data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
+		})
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 
@@ -215,13 +210,10 @@ func InitServices(ctx basecontext.ApiContext) {
 
 		if cfg.DatabaseFolder() != "" {
 			dbLocation = cfg.DatabaseFolder()
-			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json")))
-		} else {
-			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json")))
 		}
-
-		_ = globalProvider.JsonDatabase.Connect(ctx)
-		globalProvider.mustInitGormConnection(ctx)
+		globalProvider.selectDatabaseBackend(ctx, func() *data.JsonDatabase {
+			return data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
+		})
 		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.legacyDatabase)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	} else {
@@ -237,13 +229,10 @@ func InitServices(ctx basecontext.ApiContext) {
 
 		if cfg.DatabaseFolder() != "" {
 			dbLocation = cfg.DatabaseFolder()
-			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(cfg.DatabaseFolder(), "/data.json")))
-		} else {
-			globalProvider.setJsonDatabaseLegacy(data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json")))
 		}
-
-		_ = globalProvider.JsonDatabase.Connect(ctx)
-		globalProvider.mustInitGormConnection(ctx)
+		globalProvider.selectDatabaseBackend(ctx, func() *data.JsonDatabase {
+			return data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
+		})
 		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.legacyDatabase)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}

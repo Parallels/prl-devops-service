@@ -82,7 +82,10 @@ func main() {
 			if sp != nil {
 				db := sp.JsonDatabase
 				if db != nil {
-					cleanup(ctx, sp.Legacy())
+					// #421 task 18: cleanup works on the ACTIVE surface — the
+					// legacy handle is nil in SQL mode (SaveNow no-ops there,
+					// Disconnect closes the pool).
+					cleanup(ctx, db)
 					retries := 0
 					maxRetries := 10
 					for {

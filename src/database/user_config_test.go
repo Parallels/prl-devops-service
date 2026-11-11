@@ -197,7 +197,7 @@ func TestSQLUserConfig_Delete(t *testing.T) {
 
 func TestSQLUserConfigs_NotConnected(t *testing.T) {
 	ctx := basecontext.NewBaseContext()
-	cold := NewGormDatabase(ctx, nil, nil)
+	cold := NewGormDatabase(ctx, nil)
 
 	if _, err := cold.GetUserConfigs(ctx, "u1", ""); err != interfaces.ErrDatabaseNotConnected {
 		t.Errorf("list guard: %v", err)

@@ -22,7 +22,7 @@ func TestSQLJobs_CRUD(t *testing.T) {
 	bare := basecontext.NewBaseContext()
 
 	// Cold guard.
-	cold := NewGormDatabase(bare, nil, nil)
+	cold := NewGormDatabase(bare, nil)
 	if _, err := cold.GetJobs(root); !errors.Is(err, interfaces.ErrDatabaseNotConnected) {
 		t.Fatalf("cold GetJobs: %v", err)
 	}

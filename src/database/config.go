@@ -14,6 +14,11 @@ import (
 const (
 	DBTypeSQLite   = "sqlite"
 	DBTypePostgres = "postgres"
+	// DBTypeLegacy is the #421 S3 rollback lever consumed BEFORE config parsing
+	// (serviceprovider.selectDatabaseBackend): FromApplicationConfig and
+	// Validate intentionally reject it — no DatabaseConfig is ever built
+	// against the legacy engine.
+	DBTypeLegacy = "legacy"
 	// DefaultDatabaseFilename preserves the legacy *folder* convention (AD-3)
 	// with a distinct filename so data.json and prl-devops.db coexist.
 	DefaultDatabaseFilename = "prl-devops.db"

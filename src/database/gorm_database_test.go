@@ -31,7 +31,7 @@ func newMemoryGorm(t *testing.T) *gorm.DB {
 
 func TestNewGormDatabase_ImplementsInterface(t *testing.T) {
 	conn := newMemoryGorm(t)
-	g := NewGormDatabase(basecontext.NewBaseContext(), conn, nil)
+	g := NewGormDatabase(basecontext.NewBaseContext(), conn)
 	if err := g.Connect(basecontext.NewBaseContext()); err != nil {
 		t.Fatalf("Connect on :memory:: %v", err)
 	}
@@ -44,7 +44,7 @@ func TestNewGormDatabase_ImplementsInterface(t *testing.T) {
 }
 
 func TestLifecycleSemantics(t *testing.T) {
-	g := NewGormDatabase(basecontext.NewBaseContext(), newMemoryGorm(t), nil)
+	g := NewGormDatabase(basecontext.NewBaseContext(), newMemoryGorm(t))
 	ctx := basecontext.NewBaseContext()
 
 	if err := g.SaveNow(ctx); err != nil {
@@ -74,7 +74,7 @@ func TestLifecycleSemantics(t *testing.T) {
 }
 
 func TestClose_Idempotent(t *testing.T) {
-	g := NewGormDatabase(basecontext.NewBaseContext(), newMemoryGorm(t), nil)
+	g := NewGormDatabase(basecontext.NewBaseContext(), newMemoryGorm(t))
 	ctx := basecontext.NewBaseContext()
 	if err := g.Connect(ctx); err != nil {
 		t.Fatal(err)

@@ -326,7 +326,7 @@ func TestSQLUsers_DeleteAndConnection(t *testing.T) {
 	}
 
 	// not-connected guard (engine without SQL handle)
-	cold := NewGormDatabase(ctx, nil, nil)
+	cold := NewGormDatabase(ctx, nil)
 	if _, err := cold.GetUsers(ctx, ""); err != interfaces.ErrDatabaseNotConnected {
 		t.Errorf("want ErrDatabaseNotConnected identity, got %v", err)
 	}

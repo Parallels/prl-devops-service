@@ -13,16 +13,7 @@ import (
 
 // allGormModels mirrors data/models test registry (the production AutoMigrate
 // list ships with the task-18 boot wiring; duplicated here until then).
-func allGormModels() []interface{} {
-	return []interface{}{
-		&models.User{}, &models.Role{}, &models.Claim{}, &models.RoleClaims{}, &models.ApiKey{},
-		&models.DatabaseSchema{},
-		&models.CatalogManager{}, &models.CatalogManifest{}, &models.Job{}, &models.PackerTemplate{},
-		&models.UserConfig{}, &models.ReverseProxy{}, &models.ReverseProxyHost{},
-		&models.OrchestratorEnrollmentToken{}, &models.Configuration{},
-		&models.OrchestratorHost{}, &models.VMSnapshot{}, &models.VirtualMachine{},
-	}
-}
+func allGormModels() []interface{} { return AllGormModels() }
 
 // newSQLDB returns a migrated :memory: GormDatabase with NO legacy delegate:
 // every roles/claims code path must be fully SQL (AC-6, zero reach-through).
@@ -40,7 +31,7 @@ func newSQLDB(t *testing.T) *GormDatabase {
 			_ = sqlDB.Close()
 		}
 	})
-	return NewGormDatabase(basecontext.NewBaseContext(), conn, nil)
+	return NewGormDatabase(basecontext.NewBaseContext(), conn)
 }
 
 func TestSQLRoles_CRUD(t *testing.T) {
