@@ -16,6 +16,7 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/database"
 	"github.com/Parallels/prl-devops-service/database/legacy_migrator"
+	"github.com/Parallels/prl-devops-service/serviceprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -112,6 +113,29 @@ func TestDefaultLegacyStoreSourceHonoursDatabaseFolder(t *testing.T) {
 	t.Setenv(constants.DATABASE_FOLDER_ENV_VAR, dir)
 	// provider.JsonDatabase is nil in this process (no provider init ran) ⇒
 	// the convention branch resolves under DATABASE_FOLDER.
+	path, err := defaultLegacyStoreSource()
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(dir, "data.json"), path)
+}
+
+// The macOS boot matrix (run b) proved the real SQL-mode shape: provider
+// LIVE with JsonDatabase = the *GormDatabase engine (Filename() = the SQL
+// datasource!). defaultLegacyStoreSource must ignore that slot — Legacy()
+// is nil there — and resolve the convention path instead. Regression pin
+// for the wrong-slot silent-skip bug fixed before human gate.
+func TestDefaultLegacyStoreSourceIgnoresSQLModeSlot(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(constants.DATABASE_FOLDER_ENV_VAR, dir)
+
+	old := serviceprovider.NewMockProvider()
+	t.Cleanup(func() { serviceprovider.NewMockProvider() })
+	conn, err := database.NewDatabaseConnection(basecontext.NewRootBaseContext(), database.DatabaseConfig{
+		Type: database.DBTypeSQLite, Path: database.MemoryPath,
+	})
+	require.NoError(t, err)
+	old.JsonDatabase = database.NewGormDatabase(basecontext.NewRootBaseContext(), conn)
+	require.Equal(t, database.MemoryPath, old.JsonDatabase.Filename()) // the trap: slot IS filled
+
 	path, err := defaultLegacyStoreSource()
 	require.NoError(t, err)
 	assert.Equal(t, filepath.Join(dir, "data.json"), path)

@@ -20,8 +20,9 @@ import (
 )
 
 // Test seams (overridden in _test.go, restored via t.Cleanup): the real
-// implementations never get constructed by tests. JsonDatabase.filename is
-// unexported, so the escape-hatch path is reached only through Filename().
+// implementations never get constructed by tests. The legacy store's
+// filename is reached via Legacy().Filename() (escape hatch) or the
+// folder convention (SQL mode) — see defaultLegacyStoreSource.
 type migratorFn func(basecontext.ApiContext, *gorm.DB, legacy_migrator.Options) (legacy_migrator.Report, error)
 
 var (
@@ -30,14 +31,19 @@ var (
 	runMigration      migratorFn = legacy_migrator.RunMigration
 )
 
-// defaultLegacyStoreSource resolves <dbLocation>/data.json. Escape-hatch
-// mode (legacy provider live) defers to the provider's own handle; SQL mode
-// — where no legacy engine exists post-#421 — mirrors database
-// .defaultDatabasePath's documented AD-3 duplication of the
-// serviceprovider location convention (DATABASE_FOLDER → /etc/... → home).
+// defaultLegacyStoreSource resolves <dbLocation>/data.json. The escape
+// hatch (DB_TYPE=legacy) defers to the provider's LEGACY handle
+// (Legacy()/legacyDatabase). The slot formerly used here —
+// provider.JsonDatabase — is NOT the legacy store post-#421: in SQL mode
+// it is the *GormDatabase engine, and its Filename() returns the SQL
+// datasource (macOS matrix run b caught this: the sqlite path was stat'd
+// instead of data.json ⇒ silent skip). SQL mode therefore takes the
+// convention branch: database.defaultDatabasePath's documented AD-3
+// duplication of the serviceprovider location convention
+// (DATABASE_FOLDER → /etc/... → home).
 func defaultLegacyStoreSource() (string, error) {
-	if provider := serviceprovider.Get(); provider != nil && provider.JsonDatabase != nil {
-		return provider.JsonDatabase.Filename(), nil
+	if provider := serviceprovider.Get(); provider != nil && provider.Legacy() != nil {
+		return provider.Legacy().Filename(), nil
 	}
 	folder := config.Get().DatabaseFolder()
 	if folder == "" {

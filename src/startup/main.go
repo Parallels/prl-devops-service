@@ -169,7 +169,9 @@ func Start(ctx basecontext.ApiContext) {
 	if svc := serviceprovider.Get(); svc != nil && svc.Legacy() == nil {
 		if am, amErr := config.Get().DatabaseAutoMigrate(); amErr != nil {
 			ctx.LogWarnf("Legacy data migration skipped — DB_AUTO_MIGRATE invalid: %v", amErr)
-		} else if am {
+		} else if !am {
+			ctx.LogInfof("Legacy data migration skipped — DB_AUTO_MIGRATE is disabled")
+		} else {
 			if err := runLegacyDataMigration(ctx); err != nil {
 				ctx.LogErrorf("Legacy data migration failed (all changes rolled back): %v", err)
 				if config.Get().GetRunningCommand() == constants.API_COMMAND {
