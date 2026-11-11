@@ -6,7 +6,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/data"
+	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/mappers"
 	global_models "github.com/Parallels/prl-devops-service/models"
@@ -17,7 +17,7 @@ var globalJobManagerService *JobManagerService
 
 type JobManagerService struct {
 	apiCtx basecontext.ApiContext
-	db     *data.JsonDatabase
+	db     datainterfaces.DatabaseService
 	ctx    context.Context
 	cancel context.CancelFunc
 }

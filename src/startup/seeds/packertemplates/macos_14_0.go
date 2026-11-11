@@ -4,11 +4,11 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/data"
+	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
 )
 
-func AddMacOs14_0Manual(ctx *basecontext.BaseContext, svc *data.JsonDatabase) error {
+func AddMacOs14_0Manual(ctx *basecontext.BaseContext, svc datainterfaces.DatabaseService) error {
 	ubuntu2304Template := models.PackerTemplate{
 		ID:           "macos14_23A344_ipsw",
 		Name:         "macOS Sonoma 14.0",
@@ -41,7 +41,7 @@ func AddMacOs14_0Manual(ctx *basecontext.BaseContext, svc *data.JsonDatabase) er
 		return err
 	} else {
 		if _, err := svc.AddPackerTemplate(ctx, &ubuntu2304Template); err != nil {
-			if err.Error() != data.ErrPackerTemplateAlreadyExists.Error() {
+			if err.Error() != datainterfaces.ErrPackerTemplateAlreadyExists.Error() {
 				common.Logger.Error("Error adding macOS Sonoma 14.0 template: %s", err.Error())
 				return err
 			}
