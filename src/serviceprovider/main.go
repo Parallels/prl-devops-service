@@ -214,7 +214,7 @@ func InitServices(ctx basecontext.ApiContext) {
 		globalProvider.selectDatabaseBackend(ctx, func() *data.JsonDatabase {
 			return data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
 		})
-		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.legacyDatabase)
+		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase) // T11: slot = engine in SQL mode, legacy handle in legacy mode (was legacyDatabase ⇒ nil under SQL)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	} else {
 		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
@@ -233,7 +233,7 @@ func InitServices(ctx basecontext.ApiContext) {
 		globalProvider.selectDatabaseBackend(ctx, func() *data.JsonDatabase {
 			return data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
 		})
-		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.legacyDatabase)
+		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase) // T11: slot = engine in SQL mode, legacy handle in legacy mode (was legacyDatabase ⇒ nil under SQL)
 		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 	}
 

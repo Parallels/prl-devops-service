@@ -13,14 +13,15 @@ import (
 
 func SeedDefaultUsers() error {
 	ctx := basecontext.NewRootBaseContext()
-	db := serviceprovider.Get().JsonDatabase
-	passwordService := password.Get()
-	cfg := config.Get()
-	err := db.Connect(ctx)
+	// T7 (#424 boot matrix): engine-neutral #421-18 guard; no Disconnect —
+	// closing the shared pool here killed every later boot consumer.
+	db, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		common.Logger.Error("Error connecting to database: %s", err.Error())
 		return err
 	}
+	passwordService := password.Get()
+	cfg := config.Get()
 
 	suRole, err := db.GetRole(ctx, constants.SUPER_USER_ROLE)
 	if err != nil {
@@ -77,7 +78,6 @@ func SeedDefaultUsers() error {
 			common.Logger.Info("Updated root user with new data")
 		}
 
-		_ = db.Disconnect(ctx)
 		return nil
 	}
 
@@ -110,8 +110,6 @@ func SeedDefaultUsers() error {
 		common.Logger.Error("Error saving database after adding root user: %s", err.Error())
 		return err
 	}
-
-	_ = db.Disconnect(ctx)
 
 	return nil
 }

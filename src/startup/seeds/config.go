@@ -8,8 +8,10 @@ import (
 
 func SeedDefaultConfig() error {
 	ctx := basecontext.NewRootBaseContext()
-	db := serviceprovider.Get().JsonDatabase
-	err := db.Connect(ctx)
+	// T7 (#424 boot matrix): engine-neutral guard like every #421-18 seed —
+	// GetDatabaseService carries Connect; Disconnect is NEVER ours to call
+	// (post-flip it closes the provider's shared pool permanently).
+	db, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		common.Logger.Error("Error connecting to database: %s", err.Error())
 		return err
@@ -18,8 +20,6 @@ func SeedDefaultConfig() error {
 	if _, err := db.SeedId(ctx); err != nil {
 		return err
 	}
-
-	_ = db.Disconnect(ctx)
 
 	return nil
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
+	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -119,7 +120,7 @@ type ParallelsService struct {
 	cancelFunc       context.CancelFunc
 	listenerCtx      context.Context
 	processLauncher  processlauncher.ProcessLauncher
-	databaseService  *data.JsonDatabase
+	databaseService  datainterfaces.DatabaseService // T11: was the concrete *data.JsonDatabase, which the provider injected as nil in SQL mode ⇒ snapshot mirror dead + boot error noise; only the two interface methods are used
 }
 
 func Get(ctx basecontext.ApiContext) *ParallelsService {
@@ -185,7 +186,7 @@ func (s *ParallelsService) Name() string {
 	return "parallels_desktop"
 }
 
-func (s *ParallelsService) SetDatabaseService(dbService *data.JsonDatabase) {
+func (s *ParallelsService) SetDatabaseService(dbService datainterfaces.DatabaseService) {
 	s.databaseService = dbService
 }
 
