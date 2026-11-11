@@ -35,6 +35,7 @@ type Report struct {
 	DryRun      bool
 	Collections []CollectionReport
 	MarkerID    string
+	Validation  []ValidationIssue // AC-6: empty on the happy path; warn-only by construction (task 05)
 }
 
 const defaultChunkSize = 500 // R-2: bounded statement size & log volume for the jobs table
