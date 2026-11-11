@@ -17,6 +17,8 @@ func (p *PDFileService) Validate() *diagnostics.PDFileDiagnostics {
 	isUsernamePresent := false
 	isPasswordPresent := false
 	isApiKeyPresent := false
+	isExecuteUserPresent := false
+	isExecutePasswordPresent := false
 	runCMD := ""
 
 	for i, line := range p.pdfile.Raw {
@@ -76,6 +78,12 @@ func (p *PDFileService) Validate() *diagnostics.PDFileDiagnostics {
 		case "CLIENT":
 			continue
 		case "EXECUTE":
+			continue
+		case "EXECUTE_USER":
+			isExecuteUserPresent = true
+			continue
+		case "EXECUTE_PASSWORD":
+			isExecutePasswordPresent = true
 			continue
 		case "MINIMUM_REQUIREMENT":
 			continue
@@ -164,6 +172,10 @@ func (p *PDFileService) Validate() *diagnostics.PDFileDiagnostics {
 		if (!isUsernamePresent && !isPasswordPresent && !isApiKeyPresent) && (p.pdfile.Authentication.Username == "" && p.pdfile.Authentication.Password == "" && p.pdfile.Authentication.ApiKey == "") {
 			diag.AddError(fmt.Errorf("authentication was found but username, password or api key was not found"))
 		}
+	}
+
+	if (isExecutePasswordPresent || p.pdfile.ExecutePassword != "") && (!isExecuteUserPresent && p.pdfile.ExecuteUser == "") {
+		diag.AddError(fmt.Errorf("execute password was found but execute user was not found"))
 	}
 
 	if runCMD == "" {

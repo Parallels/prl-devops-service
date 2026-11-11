@@ -182,7 +182,9 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 			counter := 0
 			for {
 				resp, err := provider.ParallelsDesktopService.ExecuteCommandOnVm(ctx, executeMachine, &api_models.VirtualMachineExecuteCommandRequest{
-					Command: "echo 'Waiting for machine to start'",
+					Command:  "echo 'Waiting for machine to start'",
+					User:     p.pdfile.ExecuteUser,
+					Password: p.pdfile.ExecutePassword,
 				})
 				if err == nil && resp.ExitCode == 0 {
 					break
@@ -212,7 +214,9 @@ func (p *PDFileService) runPull(ctx basecontext.ApiContext) (interface{}, *diagn
 				return nil, diag
 			}
 			commandRequest := api_models.VirtualMachineExecuteCommandRequest{
-				Command: command,
+				Command:  command,
+				User:     p.pdfile.ExecuteUser,
+				Password: p.pdfile.ExecutePassword,
 			}
 			r, err := provider.ParallelsDesktopService.ExecuteCommandOnVm(ctx, executeMachine, &commandRequest)
 			if err != nil {
