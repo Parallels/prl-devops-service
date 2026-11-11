@@ -94,7 +94,9 @@ func AlreadyMigrated(ctx basecontext.ApiContext, db *gorm.DB, det Detection, pat
 // completed migration refreshes the row instead of duplicating it (AC-2
 // leans on this).
 func MarkMigrated(db *gorm.DB, m LegacyMigrationMarker) error {
-	m.ID = helpers.GenerateId()
+	if m.ID == "" {
+		m.ID = helpers.GenerateId() // callers that must report the ID (RunMigration) pre-set it
+	}
 	return db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "content_sha256"}},
 		UpdateAll: true,
