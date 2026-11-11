@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
-	"github.com/Parallels/prl-devops-service/data"
+
+	interfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -202,7 +203,7 @@ func (s *OrchestratorService) callGetHostVm(host *models.OrchestratorHost, vmID 
 // refetchHostVmsLive live-fetches all VMs of one host (targeted — other hosts are
 // untouched), merges preserved IPs/statuses and upserts each VM into the DB.
 // Best-effort: on a fetch error it logs and the caller serves the last DB state.
-func (s *OrchestratorService) refetchHostVmsLive(ctx basecontext.ApiContext, dbService *data.JsonDatabase, hostID string) {
+func (s *OrchestratorService) refetchHostVmsLive(ctx basecontext.ApiContext, dbService interfaces.DatabaseService, hostID string) {
 	dbHost, err := dbService.GetOrchestratorHost(ctx, hostID)
 	if err != nil {
 		ctx.LogWarnf("[Orchestrator] Live VM refetch: host %s not found: %v", hostID, err)
@@ -220,7 +221,7 @@ func (s *OrchestratorService) refetchHostVmsLive(ctx basecontext.ApiContext, dbS
 }
 
 // refetchHostVmLive live-fetches a single VM of one host and upserts it into the DB.
-func (s *OrchestratorService) refetchHostVmLive(ctx basecontext.ApiContext, dbService *data.JsonDatabase, hostID, vmID string) {
+func (s *OrchestratorService) refetchHostVmLive(ctx basecontext.ApiContext, dbService interfaces.DatabaseService, hostID, vmID string) {
 	dbHost, err := dbService.GetOrchestratorHost(ctx, hostID)
 	if err != nil {
 		ctx.LogWarnf("[Orchestrator] Live VM refetch: host %s not found: %v", hostID, err)
@@ -236,7 +237,7 @@ func (s *OrchestratorService) refetchHostVmLive(ctx basecontext.ApiContext, dbSe
 
 // upsertLiveVm maps a live host-side VM to the orchestrator DB model and upserts
 // it, keeping any IP/status that only the stored record knows about.
-func (s *OrchestratorService) upsertLiveVm(ctx basecontext.ApiContext, dbService *data.JsonDatabase, host *models.OrchestratorHost, vm api_models.ParallelsVM) {
+func (s *OrchestratorService) upsertLiveVm(ctx basecontext.ApiContext, dbService interfaces.DatabaseService, host *models.OrchestratorHost, vm api_models.ParallelsVM) {
 	dtoVm := mappers.MapDtoVirtualMachineFromApi(vm)
 	dtoVm.HostId = host.ID
 	dtoVm.HostName = getHostName(*host)

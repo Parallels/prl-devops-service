@@ -11,6 +11,7 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/interfaces"
 	"github.com/Parallels/prl-devops-service/catalog/models"
 	"github.com/Parallels/prl-devops-service/data"
+	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -332,7 +333,7 @@ func (s *CatalogManifestService) pushNewCatalogManifest(catalogManifest *models.
 	return nil
 }
 
-func (s *CatalogManifestService) importClaims(dto data_models.CatalogManifest, db *data.JsonDatabase) error {
+func (s *CatalogManifestService) importClaims(dto data_models.CatalogManifest, db datainterfaces.DatabaseService) error {
 	// Importing claims and roles
 	for _, claim := range dto.RequiredClaims {
 		if claim == "" {
@@ -361,7 +362,7 @@ func (s *CatalogManifestService) importClaims(dto data_models.CatalogManifest, d
 	return nil
 }
 
-func (s *CatalogManifestService) importRoles(dto data_models.CatalogManifest, db *data.JsonDatabase) error {
+func (s *CatalogManifestService) importRoles(dto data_models.CatalogManifest, db datainterfaces.DatabaseService) error {
 	for _, role := range dto.RequiredRoles {
 		if role == "" {
 			continue

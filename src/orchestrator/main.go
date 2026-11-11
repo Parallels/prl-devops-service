@@ -9,7 +9,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/data"
+	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/mappers"
 	apimodels "github.com/Parallels/prl-devops-service/models"
@@ -31,7 +31,7 @@ type OrchestratorService struct {
 	fullRefreshInterval time.Duration
 	syncContext         context.Context
 	cancel              context.CancelFunc
-	db                  *data.JsonDatabase
+	db                  datainterfaces.DatabaseService
 	hwQueue             *hardwareUpdateQueue
 }
 
