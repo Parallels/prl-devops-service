@@ -120,6 +120,32 @@ func Start(ctx basecontext.ApiContext) {
 		ds.Start()
 	}
 
+	// Legacy data migration (PBI #424): legacy JSON store → GORM schema,
+	// once, idempotent, marker-gated. SQL mode only (post-#421 flip: the
+	// escape hatch has no SQL handle to migrate into). Gate: DB_AUTO_MIGRATE
+	// (#420). Exit policy mirrors #418 task 05 (src/main.go precedent): the
+	// API command cannot serve half-migrated data — everything else warns
+	// and continues (rollback already happened inside the migrator).
+	// Placed BEFORE seeding (matrix round 3): the migration must land the
+	// frozen legacy rows first so SeedId/SeedDefault* reconcile on top of
+	// them instead of colliding (duplicate config singleton; T9 username
+	// clash), and so RecoverOngoingJobs below sees migrated jobs. AD-4's
+	// schema-loop ordering is untouched (that loop is legacy-mode-only).
+	if svc := serviceprovider.Get(); svc != nil && svc.Legacy() == nil {
+		if am, amErr := config.Get().DatabaseAutoMigrate(); amErr != nil {
+			ctx.LogWarnf("Legacy data migration skipped — DB_AUTO_MIGRATE invalid: %v", amErr)
+		} else if !am {
+			ctx.LogInfof("Legacy data migration skipped — DB_AUTO_MIGRATE is disabled")
+		} else {
+			if err := runLegacyDataMigration(ctx); err != nil {
+				ctx.LogErrorf("Legacy data migration failed (all changes rolled back): %v", err)
+				if config.Get().GetRunningCommand() == constants.API_COMMAND {
+					os.Exit(1) // sole os.Exit in this path; grep-audited like #418's
+				}
+			}
+		}
+	}
+
 	// Seeding defaults
 	ctx.LogInfof("Seeding defaults")
 	if err := SeedDefaults(); err != nil {
@@ -158,27 +184,6 @@ func Start(ctx basecontext.ApiContext) {
 		}
 	} else {
 		ctx.LogInfof("SQL mode: legacy schema migrations skipped (AutoMigrate/#424 own the schema)")
-	}
-
-	// Legacy data migration (PBI #424): legacy JSON store → GORM schema,
-	// once, idempotent, marker-gated. SQL mode only (post-#421 flip: the
-	// escape hatch has no SQL handle to migrate into). Gate: DB_AUTO_MIGRATE
-	// (#420). Exit policy mirrors #418 task 05 (src/main.go precedent): the
-	// API command cannot serve half-migrated data — everything else warns
-	// and continues (rollback already happened inside the migrator).
-	if svc := serviceprovider.Get(); svc != nil && svc.Legacy() == nil {
-		if am, amErr := config.Get().DatabaseAutoMigrate(); amErr != nil {
-			ctx.LogWarnf("Legacy data migration skipped — DB_AUTO_MIGRATE invalid: %v", amErr)
-		} else if !am {
-			ctx.LogInfof("Legacy data migration skipped — DB_AUTO_MIGRATE is disabled")
-		} else {
-			if err := runLegacyDataMigration(ctx); err != nil {
-				ctx.LogErrorf("Legacy data migration failed (all changes rolled back): %v", err)
-				if config.Get().GetRunningCommand() == constants.API_COMMAND {
-					os.Exit(1) // sole os.Exit in this path; grep-audited like #418's
-				}
-			}
-		}
 	}
 
 	// lets import any reverse proxy configuration hosts we have into the db and remove them from the config
