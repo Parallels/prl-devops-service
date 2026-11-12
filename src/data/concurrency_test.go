@@ -207,7 +207,7 @@ func TestConcurrentSaveOperations(t *testing.T) {
 	db2 := NewJsonDatabase(ctx, db.Filename())
 	defer func() {
 		if db2.cancel != nil {
-			close(db2.cancel)
+			db2.closeCancel()
 		}
 	}()
 

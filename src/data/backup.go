@@ -13,7 +13,9 @@ import (
 )
 
 func (j *JsonDatabase) RunBackup(ctx basecontext.ApiContext) {
+	j.saveWg.Add(1)
 	go func() {
+		defer j.saveWg.Done()
 		for {
 			err := j.Backup(ctx)
 			if err != nil {
@@ -21,7 +23,11 @@ func (j *JsonDatabase) RunBackup(ctx basecontext.ApiContext) {
 				ctx.LogErrorf("[Database] Error running backup: %v", err)
 			}
 
-			time.Sleep(j.Config.BackupInterval)
+			select {
+			case <-j.cancel:
+				return
+			case <-time.After(j.Config.BackupInterval):
+			}
 		}
 	}()
 }

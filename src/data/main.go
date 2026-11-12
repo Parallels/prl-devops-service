@@ -61,6 +61,7 @@ type JsonDatabase struct {
 	saveMutex    sync.Mutex
 	dataMutex    sync.RWMutex
 	cancel       chan bool
+	saveWg       sync.WaitGroup // save/backup/ghost daemons; drained by Disconnect
 	data         Data
 	onJobTimeout func(models.Job)
 }
@@ -113,7 +114,9 @@ func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase 
 	// production singleton, and it no longer data-races (or nil-derefs) when
 	// tests reset the singleton between runs.)
 	db := memoryDatabase
+	db.saveWg.Add(1)
 	go func() {
+		defer db.saveWg.Done()
 		ticker := time.NewTicker(time.Duration(constants.GhostJobCheckIntervalSeconds) * time.Second)
 		defer ticker.Stop()
 		for {
@@ -187,8 +190,31 @@ func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
 
 func (j *JsonDatabase) Disconnect(ctx basecontext.ApiContext) error {
 	ctx.LogDebugf("[Database] Disconnecting from database")
-
+	// Stop and drain background daemons (save loop, backup loop, ghost-job
+	// cleaner). Previously cancel was never closed here: every disconnect
+	// leaked all three goroutines, which then raced the config/logger
+	// globals and saved/backed up onto already-removed paths (T12 class).
+	if j.cancel != nil {
+		select {
+		case <-j.cancel: // already closed — idempotent
+		default:
+			close(j.cancel)
+		}
+		j.saveWg.Wait()
+	}
 	return nil
+}
+
+// closeCancel idempotently signals background daemons to stop (safe after
+// Disconnect, which now closes the same channel).
+func (j *JsonDatabase) closeCancel() {
+	if j.cancel != nil {
+		select {
+		case <-j.cancel:
+		default:
+			close(j.cancel)
+		}
+	}
 }
 
 func (j *JsonDatabase) Filename() string {
@@ -229,7 +255,9 @@ func (j *JsonDatabase) SaveAsync(ctx basecontext.ApiContext) error {
 		}
 	}()
 
+	j.saveWg.Add(1)
 	go func() {
+		defer j.saveWg.Done()
 		// recover from panic
 		defer func() {
 			if r := recover(); r != nil {
@@ -243,7 +271,13 @@ func (j *JsonDatabase) SaveAsync(ctx basecontext.ApiContext) error {
 				return
 			default:
 				ctx.LogDebugf("[Database] Enqueuing next save request")
-				time.Sleep(j.Config.SaveInterval)
+				// Cancel-aware sleep: a disconnected engine must not log,
+				// sleep a full interval away, nor save to a removed file.
+				select {
+				case <-j.cancel:
+					return
+				case <-time.After(j.Config.SaveInterval):
+				}
 				wg.Add(1)
 				go j.ProcessSaveQueue(ctx)
 				wg.Wait()
