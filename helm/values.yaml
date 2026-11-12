@@ -136,3 +136,22 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# SQL database backend (#417/#420). Every empty value defers to the
+# service's built-in default — stock renders stay byte-identical.
+database:
+  # Backend: "sqlite" (default) or "postgres". The deprecated legacy JSON
+  # mode is deliberately not offered on new deployments.
+  type: ""
+  # SQLite file path; "" = service default resolution. Distinct from
+  # storage.databasePath (volume mount + legacy data.json home).
+  path: ""
+  # Schema auto-migration: "true"/"false"; "" = service default (true).
+  autoMigrate: ""
+  # PostgreSQL DSN. Routed to the chart Secret, never the ConfigMap.
+  # Prefer dsnSecret below: dsn shows up in release metadata.
+  dsn: ""
+  # Existing-Secret reference for the DSN (takes precedence over dsn).
+  dsnSecret:
+    name: ""
+    key: ""

@@ -34,3 +34,12 @@ data:
   BRUTE_FORCE_INCREMENTAL_WAIT: {{ .Values.security.brute_force.increment_lockout_duration | quote }}
   TLS_DISABLE_VALIDATION: {{ .Values.security.disable_tls_validation | quote }}
   SYSTEM_AUTO_RECOVER_DATABASE: {{ .Values.storage.autoRecover | quote }}
+  {{- if .Values.database.type }}
+  DB_TYPE: {{ .Values.database.type | quote }}
+  {{- end }}
+  {{- if .Values.database.path }}
+  DB_PATH: {{ .Values.database.path | quote }}
+  {{- end }}
+  {{- if .Values.database.autoMigrate }}
+  DB_AUTO_MIGRATE: {{ .Values.database.autoMigrate | quote }}
+  {{- end }}

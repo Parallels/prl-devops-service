@@ -253,6 +253,41 @@ spec:
                   name: {{ include "helm.fullname" . }}
                   key: LOG_FILE_PATH
             {{- end }}
+            {{- if .Values.database.type }}
+            - name: DB_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: DB_TYPE
+            {{- end }}
+            {{- if .Values.database.path }}
+            - name: DB_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: DB_PATH
+            {{- end }}
+            {{- if .Values.database.autoMigrate }}
+            - name: DB_AUTO_MIGRATE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: DB_AUTO_MIGRATE
+            {{- end }}
+            {{- if and .Values.database.dsn (not .Values.database.dsnSecret.name) }}
+            - name: DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "helm.fullname" . }}
+                  key: DB_DSN
+            {{- end }}
+            {{- if and .Values.database.dsnSecret.name .Values.database.dsnSecret.key }}
+            - name: DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.dsnSecret.name }}
+                  key: {{ .Values.database.dsnSecret.key }}
+            {{- end }}
           {{- with .Values.envFrom }}
           envFrom:
             {{- toYaml . | nindent 12 }}
