@@ -54,105 +54,35 @@ package parity
 //     shape legacy_migrator lands). The legacy originals poked private
 //     db.data.ApiKeys; assertions here are those originals verbatim.
 //
-// --- #425 task 02 conversion ledger (auth wave) --------------------------
-// Legacy fn (file) → scenario. "1:1" = body transcribed per the recipe
-// with sentinels/arrangements preserved; ctx posture NewRootBaseContext →
-// tplCtxRoot(), NewBaseContext → authCtxPlain() (both nil-equivalent
-// postures verified in authorize_layer).
+// --- #425 wave map (per-function detail lives in LEDGER.md) --------------
 //
-// users_parity_test.go — data/users_test.go:
-//   TestCreateUser→users/create_user · TestCreateUserFailsMissingFields→
-//   users/create_user_fails_missing_fields · TestUpdateUser→users/
-//   update_user (10 ms sleep kept) · TestUpdateUserBlockStatus→users/
-//   update_user_block_status · TestAddAndRemoveRoleToUser→users/
-//   add_and_remove_role_to_user (extended: embedded role Claims slice
-//   round-trip, R-2 canary) · TestDeleteUser→users/delete_user
+// wave 02 (auth)     : users_parity / roles_claims_parity / api_key_parity
+//                      + filter_differential (R-3 net, no legacy twin)
+// wave 03 (infra)    : catalog_parity / reverse_proxy_parity /
+//                      snapshots_parity / packer_enrollment_parity
+// wave 04 (orch+jobs): orchestrator_parity / jobs_config_parity /
+//                      errors_parity (the D-4 matrix as code)
 //
-// roles_claims_parity_test.go — data/roles_test.go + claims_test.go +
-// roles_claims_test.go: TestCreateRole/TestUpdateRole/TestDeleteRole/
-// TestDeleteInternalRoleFailsWithoutRoot→roles/* (all 1:1); TestCreateClaim
-// /TestUpdateClaim/TestDeleteClaim/TestDeleteInternalClaimFailsWithoutRoot→
-// claims/* (all 1:1); TestAddClaimToRole_{Success,Duplicate,RoleNotFound,
-// ClaimNotFound} + TestRemoveClaimFromRole_{Success,ClaimNotOnRole,
-// RoleNotFound}→roles_claims/* (all 1:1, ErrorIs kept). Lines 115-236
-// (Cascades, FailsWhenAssigned, GetRole(s)_IncludesClaims,
-// CreateRole_With{,Unknown}Claim) are NOT in the task-02 inventory — they
-// stay Tier 1 until their wave.
+// Each *_parity_test.go header carries its scenario list + Tier-1
+// sources. LEDGER.md holds (a) the per-function conversion ledger for
+// every wave, incl. [E-4] hook-engine seeds, and (b) the D-1 file
+// ledger: one row per src/data/*_test.go file with landed-in targets or
+// a one-line exclusion rationale (AC: every legacy test file accounted
+// for). Engine-specific escapes cite LEDGER ids; free-form t.Skip is a
+// review reject.
 //
-// api_key_parity_test.go — data/api_key_test.go: TestCreateApiKeyWith
-// Expiration→api_keys/create_with_expiration · …WithoutExpiration→api_keys/
-// create_without_expiration · TestApiKeyExpirationLogic→api_keys/
-// expiration_logic (no-DB pure leg, both engines) · TestApiKeyWithUser
-// Ownership→api_keys/with_user_ownership · TestGetApiKeysWithUserFiltering→
-// api_keys/get_api_keys_with_user_filtering · TestCreateApiKeyWithout
-// UserIdAutoAssignsToUser→api_keys/create_without_user_id_does_not_auto_
-// assign · TestCreateApiKeyDefaultTypeIsExternal→api_keys/create_default_
-// type_is_external · TestCreateApiKeyExplicitTypePreserved→api_keys/
-// create_explicit_type_preserved · TestGetApiKeyNormalizesType→api_keys/
-// get_api_key_normalizes_type [E-4] · TestGetApiKeysFiltersInternalKeys→
-// api_keys/get_api_keys_filters_internal_keys · TestGetApiKeysNormalizes
-// Types→api_keys/get_api_keys_normalizes_types [E-4] ·
-// TestInternalKeysNotInListButRetrievableByID→api_keys/internal_keys_not_in_
-// list_but_retrievable_by_id · TestBackwardCompatibilityWithOldApiKeys→
-// api_keys/backward_compatibility_with_old_api_keys [E-4].
-// Stay Tier 1 (pure domain fns, engine-agnostic): TestNormalizeApiKeyType,
-// TestFilterInternalKeys.
+// Behaviours pinned as engine-agreed across waves (findings, not
+// defects — LEDGER rows carry detail): create-path ID regeneration
+// (catalog manifests, RP hosts/routes, RP routes), catalog "latest"-tag
+// + upper-case CatalogId normalisation, SQL-only host-snapshot DTO
+// enrichment, "host:port" reverse-proxy lookup key,
+// ReplaceOrchestratorHostVMs full-sync field wipe, healthy+enabled
+// host-level VM filter, ghost-job boot-posture divergence (legacy
+// auto-recovers at Connect; SQL defers to the #421 watcher — terminal
+// states converge).
 //
-// filter_differential_test.go — no legacy counterpart (R-3 net): 20
-// exact-sequence filter expressions (users+keys, regex/case/parse-error
-// corpus) + 3 catalog authz postures (nil-auth / no-roles / InjectedRoles
-// operator — RequiredRoles pairs with HasEffectiveRole, verified
-// authorize_layer.go), non-vacuity-guarded. Order runs reduced per E-3
-// rationale (file header).
-//
-// ---------- task 03 — infra wave ----------
-//
-// catalog_parity_test.go — data/catalog_test.go: TestCreateCatalogManifest
-// +TestUpdateCatalogManifest→catalog/create_read_update_roundtrip (merged;
-// the sleep-10ms UpdatedAt-must-move arrangement kept) ·
-// TestDeleteCatalogManifest→catalog/delete_manifest ·
-// TestUpdateCatalogManifestTags→catalog/serialised_array_columns_fidelity
-// (extended: RequiredRoles/RequiredClaims exact round-trip + append-order
-// pin) · TestTaintAndRevokeCatalogManifestVersion→catalog/
-// taint_untaint_revoke_version; data/catalog_managers_test.go:
-// Test{Add,Update}CatalogManager→managers/add_update_get ·
-// TestDeleteCatalogManager→managers/delete · Test{Update,Delete}Internal
-// …Fails…→managers/internal_guards_without_root (both guards, one ctx
-// posture). PINNED engine-agreed behaviours: CreateCatalogManifest
-// REGENERATES the ID (content hash) and normalises CatalogId to UPPER
-// CASE, and appends the "latest" tag after supplied tags — scenarios key
-// survivors by CatalogId, never caller IDs. TestParityCatalogOrder
-// Differential — no legacy counterpart (D-5): identical out-of-order
-// UpdatedAt stamps pre-seeded on both engines (E-4 pre-Write vs raw
-// INSERT), GetCatalogManifests sequences asserted engine-equal AND pinned
-// UpdatedAt-desc.
-// reverse_proxy_parity_test.go — data/reverse_proxy_test.go: TestEnable
-// AndDisableProxyConfig→rp/config_enable_disable · TestUpdateReverseProxy→
-// rp/config_update_readback · TestCreateAndGet+TestUpdate+TestConfigure
-// TLSAndCORS→rp/host_create_update_tls_cors · (new coverage:
-// rp/tcp_route_on_clean_host pins the guard-order 400/404 sentinel edge) ·
-// TestReorderAndDeleteReverseProxyHostHttpRoute→rp/routes_reorder_and_
-// compacting_delete (gapless {1,2} after delete) ·
-// rp/reorder_concurrent_invariant = #421 TestReorderInvariant_Concurrent
-// rebuilt through DatabaseService methods only · rp/error_edges pins 3
-// D-4 sentinels. PINNED: Create{ReverseProxyHost,HostHttpRoute} REGENERATE
-// entity IDs on both engines — all follow-up calls use returned IDs.
-// snapshots_parity_test.go — data/vm_snapshots_test.go: TestSetListVM
-// SnapshotsByVMId+TestGetListVMSnapshotsByVMId→snapshots/vm_list_replace_
-// per_vm (legacy poked a bare &JsonDatabase{connected:true}; converted to
-// the public ctx-free contract; adds replace-semantics + unknown-VM⇒empty
-// legs). PARITY FINDING (pinned per-engine, see file): snapshots/
-// host_upsert_idempotent — GetHostVMSnapshots on SQL ENRICHES each DTO
-// with HostID+VMID; legacy JSON returns caller values untouched (#421
-// suite normalised the fields away). snapshots/host_unknown_sentinel new.
-// packer_enrollment_parity_test.go — data/packer_template_test.go:
-// TestAddPackerTemplate→packer/add_get · TestUpdatePackerTemplate→packer/
-// update · TestDeletePackerTemplate→packer/delete · (spec "dup-name" lands
-// on the real guard: duplicate REJECTED BY ID, packer/duplicate_rejected)
-// · TestDeleteInternalPackerTemplateFailsWithoutRoot→packer/
-// internal_delete_guard. Enrollment (no legacy Tier-1 tests; #421 SQL pins
-// via public API + E-4 pre-seed, spec §4 ±s no nowFn needed): create_
-// validate_roundtrip · used_gate_wins (Used beats expiry, orchestrator_
-// enrollment_token.go:14ff) · expired_edge · empty_and_garbage_stay_valid ·
-// sweep_prune_matrix (expired/used pruned; empty+unparseable expiries and
-// fresh survive — 5-token matrix, both engines).
+// Deferred (#426/decision scope, tally in the feature ledger): T14
+// RFC3339Nano ordering, T15 legacy concurrent reorder race (legacy leg
+// of rp reorder stays sequential), T12 TempDir flakes → task-07 fix.
+// Task 05 appends Postgres constraint legs to errors_parity_test.go's
+// shape without edits.
