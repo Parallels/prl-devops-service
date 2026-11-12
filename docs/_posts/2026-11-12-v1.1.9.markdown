@@ -1,0 +1,16 @@
+---
+layout: post
+title:  "Release 1.1.9"
+date:   2026-11-12 00:00:00 +0000
+categories: Changelog
+---
+
+# Whats New
+
+- fix: ensure archive entry names are relative and handle leading separators
+- test: add tests for ArchiveEntryName and its behavior with paths
+- feat: add per-host VM count limit functionality
+- feat: implement counting logic for VMs based on state
+- test: add tests for VM count limit functionality
+
+

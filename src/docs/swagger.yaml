@@ -439,11 +439,17 @@ definitions:
         type: integer
       total_apple_vms:
         type: integer
+      total_vms:
+        type: integer
     type: object
   github_com_Parallels_prl-devops-service_models.HostResources:
     properties:
       mac_vm_inventory_complete:
         type: boolean
+      max_vms_per_host:
+        type: integer
+      max_vms_per_host_mode:
+        type: string
       system_reserved:
         $ref: '#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem'
       total:
@@ -1104,6 +1110,38 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.CheckMachineRequirementsRequest:
+    properties:
+      architecture:
+        type: string
+      catalog_id:
+        type: string
+      catalog_manager_id:
+        type: string
+      connection:
+        type: string
+      host_id:
+        type: string
+      owner:
+        type: string
+      requirements:
+        $ref: '#/definitions/models.MachineRequirements'
+      version:
+        type: string
+    type: object
+  models.CheckMachineRequirementsResponse:
+    properties:
+      hosts:
+        items:
+          $ref: '#/definitions/models.MachineRequirementsHostResult'
+        type: array
+      message:
+        type: string
+      passed:
+        type: boolean
+      requirements:
+        $ref: '#/definitions/models.MachineRequirements'
+    type: object
   models.ClaimGroupResourceResponse:
     properties:
       claims:
@@ -1697,6 +1735,40 @@ definitions:
       token:
         type: string
     type: object
+  models.MachineRequirements:
+    properties:
+      cpu:
+        description: logical CPUs
+        type: integer
+      disk:
+        description: MiB (VM disk setting)
+        type: integer
+      memory:
+        description: MiB
+        type: integer
+      os:
+        description: request-only hint; "macos" selects the macvm decision path
+        type: string
+      size:
+        description: pack size in bytes; drives the host free-disk feasibility check
+        type: integer
+      type:
+        description: pvm | macvm (resolved from os)
+        type: string
+    type: object
+  models.MachineRequirementsHostResult:
+    properties:
+      checks:
+        items:
+          $ref: '#/definitions/models.RequirementCheckResult'
+        type: array
+      host:
+        type: string
+      host_id:
+        type: string
+      passed:
+        type: boolean
+    type: object
   models.NetworkInformation:
     properties:
       Conditioned:
@@ -2071,6 +2143,24 @@ definitions:
       new_name:
         type: string
     type: object
+  models.RequirementCheckResult:
+    properties:
+      available:
+        type: number
+      message:
+        type: string
+      name:
+        description: host_state | architecture | cpu | memory | disk | vm_count |
+          macos_inventory | macos_capacity
+        type: string
+      passed:
+        type: boolean
+      required:
+        type: number
+      unit:
+        description: logical_cpus | MiB | vms | apple_vms
+        type: string
+    type: object
   models.ReverseProxyHostCreateRequest:
     properties:
       cors:
@@ -2245,6 +2335,8 @@ definitions:
         type: integer
       prl_home_total_size:
         type: integer
+      total_vms:
+        type: integer
     type: object
   models.SystemUsageResponse:
     properties:
@@ -2268,6 +2360,15 @@ definitions:
         type: boolean
       mac_vm_inventory_complete:
         type: boolean
+      max_vms_per_host:
+        description: |-
+          MaxVmsPerHost is the hard VM count limit configured on this host (0 = none).
+          MaxVmsPerHostMode selects the counted set: "any" (TotalVms) or "running"
+          (RunningVms). TotalVms counts every VM registered on the host, RunningVms the
+          ones occupying a hypervisor slot, PendingVms the creates/starts in flight.
+        type: integer
+      max_vms_per_host_mode:
+        type: string
       os_name:
         type: string
       os_version:
@@ -2278,8 +2379,12 @@ definitions:
         type: string
       pending_mac_vms:
         type: integer
+      pending_vms:
+        type: integer
       reverse_proxy:
         $ref: '#/definitions/models.SystemReverseProxy'
+      running_vms:
+        type: integer
       system_reserved:
         $ref: '#/definitions/models.SystemUsageItem'
       total:
@@ -2290,6 +2395,8 @@ definitions:
         $ref: '#/definitions/models.SystemUsageItem'
       total_reserved:
         $ref: '#/definitions/models.SystemUsageItem'
+      total_vms:
+        type: integer
     type: object
   models.UninstallToolsRequest:
     properties:
@@ -2614,7 +2721,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 1.1.8
+  version: 1.1.9
 paths:
   /config/diskspace:
     post:
@@ -8157,6 +8264,47 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Creates a virtual machine in one of the orchestrator hosts asynchronously
+      tags:
+      - Orchestrator
+  /v1/orchestrator/machines/check:
+    post:
+      consumes:
+      - application/json
+      description: Evaluates the VM scheduling decision factor against the registered
+        hosts. Requirements are resolved from a catalog manifest (catalog_id + version
+        + architecture, served by a catalog manager) or provided directly in the body.
+        The response is slim when resources are sufficient and carries the full per-host
+        missing-resource detail when no host qualifies.
+      parameters:
+      - description: Requirements check request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CheckMachineRequirementsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CheckMachineRequirementsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.OAuthErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ApiErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Check host requirements before creating a virtual machine
       tags:
       - Orchestrator
   /v1/orchestrator/overview/{id}/resources:

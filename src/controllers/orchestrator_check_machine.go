@@ -32,19 +32,19 @@ func registerOrchestratorMachineCheckHandlers(ctx basecontext.ApiContext, versio
 // details, per host, exactly what is missing (disk space, CPU, memory, per-host VM
 // count limit, Apple VM capacity, ...).
 //
-// @Summary		Check host requirements before creating a virtual machine
-// @Description	Evaluates the VM scheduling decision factor against the registered hosts. Requirements are resolved from a catalog manifest (catalog_id + version + architecture, served by a catalog manager) or provided directly in the body. The response is slim when resources are sufficient and carries the full per-host missing-resource detail when no host qualifies.
-// @Tags			Orchestrator
-// @Accept			json
-// @Produce		json
-// @Param			request	body		models.CheckMachineRequirementsRequest	true	"Requirements check request"
-// @Success		200		{object}	models.CheckMachineRequirementsResponse
-// @Failure		400		{object}	models.ApiErrorResponse
-// @Failure		401		{object}	models.OAuthErrorResponse
-// @Failure		404		{object}	models.ApiErrorResponse
-// @Security		ApiKeyAuth
-// @Security		BearerAuth
-// @Router			/v1/orchestrator/machines/check [post]
+//	@Summary		Check host requirements before creating a virtual machine
+//	@Description	Evaluates the VM scheduling decision factor against the registered hosts. Requirements are resolved from a catalog manifest (catalog_id + version + architecture, served by a catalog manager) or provided directly in the body. The response is slim when resources are sufficient and carries the full per-host missing-resource detail when no host qualifies.
+//	@Tags			Orchestrator
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		models.CheckMachineRequirementsRequest	true	"Requirements check request"
+//	@Success		200		{object}	models.CheckMachineRequirementsResponse
+//	@Failure		400		{object}	models.ApiErrorResponse
+//	@Failure		401		{object}	models.OAuthErrorResponse
+//	@Failure		404		{object}	models.ApiErrorResponse
+//	@Security		ApiKeyAuth
+//	@Security		BearerAuth
+//	@Router			/v1/orchestrator/machines/check [post]
 func CheckOrchestratorMachineRequirementsHandler() restapi.ControllerHandler {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
