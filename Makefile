@@ -36,7 +36,7 @@ SECURITY_TOOLS = $(GOSEC)
 .PHONY: help
 help:
   # make version
-	# make test
+	# make test / test-race / test-integration
 	# make lint
 	# make build
 	# make generate-swagger
@@ -49,7 +49,20 @@ version:
 .PHONY: test
 test:
 	@echo "Running tests..."
-	@scripts/test -d ./src
+	@cd src && go test -count=1 ./...
+
+# D-8 (#425): scripts/test never existed in-tree — retargeted to mirror the CI Test step.
+# Integration needs Postgres: docker run --rm -d -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=prl_test -p 127.0.0.1:5432:5432 postgres:16
+.PHONY: test-race
+test-race:
+	@echo "Running tests with race detector..."
+	@cd src && go test -count=1 -race ./...
+
+.PHONY: test-integration
+test-integration:
+	@echo "Running Postgres integration suite..."
+	@cd src && POSTGRES_TEST_DSN=$${POSTGRES_TEST_DSN:-postgres://postgres:postgres@127.0.0.1:5432/prl_test?sslmode=disable} \
+	  go test -tags integration -count=1 ./database/...
 
 .PHONY: coverage
 coverage:
