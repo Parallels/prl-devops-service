@@ -10,11 +10,12 @@ import (
 )
 
 // #426 D-3: the two runtime deprecation strings, verbatim from the record
-// (versions pinned by D-6: effective v1.2.0, removal v2.0.0). Single source of
-// truth — tests assert these constants, call sites must carry no literals.
+// (versions per D-6 as amended by the 2026-11-12 owner decision: effective
+// v1.2.0, removal v1.3.0). Single source of truth — tests assert these
+// constants, call sites must carry no literals.
 const (
 	legacyDeprecationWarnMsg = "[Database] DEPRECATED: legacy JSON data layer selected (DB_TYPE=%s). " +
-		"The legacy layer is deprecated since v1.2.0 and will be removed in v2.0.0 (issues #426/#417). " +
+		"The legacy layer is deprecated since v1.2.0 and will be removed in v1.3.0 (issues #426/#417). " +
 		"Plan migration to DB_TYPE=sqlite — see CHANGELOG."
 	legacyFrozenWarnMsg = "[Database] DEPRECATED: legacy data file %s was already migrated and is now " +
 		"FROZEN/stale — this instance serves stale data; writes here never reach the SQL database. " +

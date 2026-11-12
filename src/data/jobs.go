@@ -17,7 +17,7 @@ var (
 	ErrJobNotFound = interfaces.ErrJobNotFound
 )
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetJobs(ctx basecontext.ApiContext) ([]models.Job, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -35,7 +35,7 @@ func (j *JsonDatabase) GetJobs(ctx basecontext.ApiContext) ([]models.Job, error)
 	return jobs, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetJobsByOwner(ctx basecontext.ApiContext, owner string) ([]models.Job, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -55,7 +55,7 @@ func (j *JsonDatabase) GetJobsByOwner(ctx basecontext.ApiContext, owner string) 
 	return jobs, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetJob(ctx basecontext.ApiContext, id string) (*models.Job, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -74,7 +74,7 @@ func (j *JsonDatabase) GetJob(ctx basecontext.ApiContext, id string) (*models.Jo
 	return nil, ErrJobNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) CreateJob(ctx basecontext.ApiContext, job models.Job) (*models.Job, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -102,7 +102,7 @@ func (j *JsonDatabase) CreateJob(ctx basecontext.ApiContext, job models.Job) (*m
 	return &job, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateJob(ctx basecontext.ApiContext, key models.Job) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -132,7 +132,7 @@ func (j *JsonDatabase) UpdateJob(ctx basecontext.ApiContext, key models.Job) err
 	return ErrJobNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteJob(ctx basecontext.ApiContext, id string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -161,7 +161,7 @@ func (j *JsonDatabase) DeleteJob(ctx basecontext.ApiContext, id string) error {
 	return nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteJobsByState(ctx basecontext.ApiContext, states ...constants.JobState) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -187,7 +187,7 @@ func (j *JsonDatabase) DeleteJobsByState(ctx basecontext.ApiContext, states ...c
 	return nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) RecoverOngoingJobs(ctx basecontext.ApiContext) {
 	if !j.IsConnected() {
 		return
@@ -214,7 +214,7 @@ func (j *JsonDatabase) RecoverOngoingJobs(ctx basecontext.ApiContext) {
 // SetJobTimeoutHandler registers a notification invoked after timed-out jobs
 // are updated, outside the database lock.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) SetJobTimeoutHandler(handler func(models.Job)) {
 	j.dataMutex.Lock()
 	defer j.dataMutex.Unlock()
@@ -224,7 +224,7 @@ func (j *JsonDatabase) SetJobTimeoutHandler(handler func(models.Job)) {
 // DetectStaleJobs marks pending/running jobs as failed after the configured
 // inactivity timeout, preserving their progress, steps, and result metadata.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DetectStaleJobs(ctx basecontext.ApiContext) {
 	if !j.IsConnected() {
 		return

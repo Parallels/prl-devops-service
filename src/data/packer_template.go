@@ -16,7 +16,7 @@ var (
 	ErrUpdatingInternalPackerTemplate = interfaces.ErrUpdatingInternalPackerTemplate
 )
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetPackerTemplates(ctx basecontext.ApiContext, filter string) ([]models.PackerTemplate, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -37,7 +37,7 @@ func (j *JsonDatabase) GetPackerTemplates(ctx basecontext.ApiContext, filter str
 	return result, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetPackerTemplate(ctx basecontext.ApiContext, nameOrId string) (*models.PackerTemplate, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -57,7 +57,7 @@ func (j *JsonDatabase) GetPackerTemplate(ctx basecontext.ApiContext, nameOrId st
 	return nil, ErrPackerTemplateNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) AddPackerTemplate(ctx basecontext.ApiContext, template *models.PackerTemplate) (*models.PackerTemplate, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -89,7 +89,7 @@ func (j *JsonDatabase) AddPackerTemplate(ctx basecontext.ApiContext, template *m
 	return template, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeletePackerTemplate(ctx basecontext.ApiContext, nameOrId string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -114,7 +114,7 @@ func (j *JsonDatabase) DeletePackerTemplate(ctx basecontext.ApiContext, nameOrId
 	return ErrPackerTemplateNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdatePackerTemplate(ctx basecontext.ApiContext, template *models.PackerTemplate) (*models.PackerTemplate, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected

@@ -16,7 +16,7 @@ var (
 	ErrCatalogAlreadyExists    = interfaces.ErrCatalogAlreadyExists
 )
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetCatalogManifests(ctx basecontext.ApiContext, filter string) ([]models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -42,7 +42,7 @@ func (j *JsonDatabase) GetCatalogManifests(ctx basecontext.ApiContext, filter st
 	return orderedResult, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetCatalogManifestByName(ctx basecontext.ApiContext, idOrName string) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -62,7 +62,7 @@ func (j *JsonDatabase) GetCatalogManifestByName(ctx basecontext.ApiContext, idOr
 	return nil, ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetCatalogManifestByTag(ctx basecontext.ApiContext, catalogId string, tag string) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -86,7 +86,7 @@ func (j *JsonDatabase) GetCatalogManifestByTag(ctx basecontext.ApiContext, catal
 	return nil, ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetCatalogManifestsByCatalogId(ctx basecontext.ApiContext, catalogId string) ([]models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -109,7 +109,7 @@ func (j *JsonDatabase) GetCatalogManifestsByCatalogId(ctx basecontext.ApiContext
 	return result, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetCatalogManifestsByCatalogIdAndVersion(ctx basecontext.ApiContext, catalogId string, version string) ([]models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -137,7 +137,7 @@ func (j *JsonDatabase) GetCatalogManifestsByCatalogIdAndVersion(ctx basecontext.
 	return result, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetCatalogManifestsByCatalogIdVersionAndArch(ctx basecontext.ApiContext, catalogId string, version string, arch string) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -161,7 +161,7 @@ func (j *JsonDatabase) GetCatalogManifestsByCatalogIdVersionAndArch(ctx basecont
 	return nil, ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifest models.CatalogManifest) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -221,7 +221,7 @@ func (j *JsonDatabase) CreateCatalogManifest(ctx basecontext.ApiContext, manifes
 	return &manifest, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, catalogIdOrId string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -267,7 +267,7 @@ func (j *JsonDatabase) DeleteCatalogManifest(ctx basecontext.ApiContext, catalog
 	return nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteCatalogManifestVersion(ctx basecontext.ApiContext, catalogIdOrId string, version string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -298,7 +298,7 @@ func (j *JsonDatabase) DeleteCatalogManifestVersion(ctx basecontext.ApiContext, 
 	return ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteCatalogManifestVersionArch(ctx basecontext.ApiContext, catalogIdOrId string, version string, architecture string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -329,7 +329,7 @@ func (j *JsonDatabase) DeleteCatalogManifestVersionArch(ctx basecontext.ApiConte
 	return ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateCatalogManifest(ctx basecontext.ApiContext, record models.CatalogManifest) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -368,7 +368,7 @@ func (j *JsonDatabase) UpdateCatalogManifest(ctx basecontext.ApiContext, record 
 	return nil, ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateCatalogManifestTags(ctx basecontext.ApiContext, record models.CatalogManifest) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -385,7 +385,7 @@ func (j *JsonDatabase) UpdateCatalogManifestTags(ctx basecontext.ApiContext, rec
 	return ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateCatalogManifestRequiredRoles(ctx basecontext.ApiContext, recordId string, roles ...string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -414,7 +414,7 @@ func (j *JsonDatabase) UpdateCatalogManifestRequiredRoles(ctx basecontext.ApiCon
 	return ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) AddCatalogManifestRequiredClaims(ctx basecontext.ApiContext, recordId string, claims ...string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -443,7 +443,7 @@ func (j *JsonDatabase) AddCatalogManifestRequiredClaims(ctx basecontext.ApiConte
 	return ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) RemoveCatalogManifestRequiredClaims(ctx basecontext.ApiContext, recordId string, claims ...string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -471,7 +471,7 @@ func (j *JsonDatabase) RemoveCatalogManifestRequiredClaims(ctx basecontext.ApiCo
 	return ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) AddCatalogManifestRequiredRoles(ctx basecontext.ApiContext, recordId string, roles ...string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -500,7 +500,7 @@ func (j *JsonDatabase) AddCatalogManifestRequiredRoles(ctx basecontext.ApiContex
 	return ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) RemoveCatalogManifestRequiredRoles(ctx basecontext.ApiContext, recordId string, roles ...string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -529,7 +529,7 @@ func (j *JsonDatabase) RemoveCatalogManifestRequiredRoles(ctx basecontext.ApiCon
 	return ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) AddCatalogManifestTags(ctx basecontext.ApiContext, recordId string, tags ...string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -558,7 +558,7 @@ func (j *JsonDatabase) AddCatalogManifestTags(ctx basecontext.ApiContext, record
 	return ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) RemoveCatalogManifestTags(ctx basecontext.ApiContext, recordId string, tags ...string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -587,7 +587,7 @@ func (j *JsonDatabase) RemoveCatalogManifestTags(ctx basecontext.ApiContext, rec
 	return ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateCatalogManifestDownloadCount(ctx basecontext.ApiContext, catalogId, version string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -612,7 +612,7 @@ func (j *JsonDatabase) UpdateCatalogManifestDownloadCount(ctx basecontext.ApiCon
 	return ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) TaintCatalogManifestVersion(ctx basecontext.ApiContext, catalogId string, version string) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -637,7 +637,7 @@ func (j *JsonDatabase) TaintCatalogManifestVersion(ctx basecontext.ApiContext, c
 	return nil, ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UnTaintCatalogManifestVersion(ctx basecontext.ApiContext, catalogId string, version string) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -663,7 +663,7 @@ func (j *JsonDatabase) UnTaintCatalogManifestVersion(ctx basecontext.ApiContext,
 	return nil, ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) RevokeCatalogManifestVersion(ctx basecontext.ApiContext, catalogId string, version string) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -688,7 +688,7 @@ func (j *JsonDatabase) RevokeCatalogManifestVersion(ctx basecontext.ApiContext, 
 	return nil, ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateCatalogManifestMetadata(ctx basecontext.ApiContext, catalogId, version, architecture string, description *string, tags, claims, roles []string) (*models.CatalogManifest, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -723,7 +723,7 @@ func (j *JsonDatabase) UpdateCatalogManifestMetadata(ctx basecontext.ApiContext,
 	return nil, ErrCatalogManifestNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateCatalogManifestProvider(ctx basecontext.ApiContext, recordId string, provider models.CatalogManifestProvider) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected

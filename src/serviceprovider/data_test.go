@@ -47,7 +47,7 @@ func TestLegacyWarns_SelectionOnly(t *testing.T) { // row a
 		"legacy selection must emit exactly the pinned selection warn")
 	// Version drift pin (D-6): the strings carry the deprecation/removal versions.
 	assert.Contains(t, fmt.Sprint(warns(rec)), "v1.2.0")
-	assert.Contains(t, fmt.Sprint(warns(rec)), "v2.0.0")
+	assert.Contains(t, fmt.Sprint(warns(rec)), "v1.3.0") // owner decision 2026-11-12 (D-6 amended)
 }
 
 func TestLegacyWarns_FrozenStore(t *testing.T) { // row b

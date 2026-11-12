@@ -53,7 +53,7 @@ func filterInternalKeys(keys []models.ApiKey) []models.ApiKey {
 	return result
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetApiKeys(ctx basecontext.ApiContext, filter string) ([]models.ApiKey, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -89,7 +89,7 @@ func (j *JsonDatabase) GetApiKeys(ctx basecontext.ApiContext, filter string) ([]
 // GetAllApiKeysIncludingInternal returns all API keys including internal ones
 // This is used for administrative tasks like cleanup and should NOT be exposed via API
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetAllApiKeysIncludingInternal(ctx basecontext.ApiContext) ([]models.ApiKey, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -110,7 +110,7 @@ func (j *JsonDatabase) GetAllApiKeysIncludingInternal(ctx basecontext.ApiContext
 	return result, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetApiKey(ctx basecontext.ApiContext, idOrName string) (*models.ApiKey, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -139,7 +139,7 @@ func (j *JsonDatabase) GetApiKey(ctx basecontext.ApiContext, idOrName string) (*
 // GetUserByApiKey retrieves a user linked to an API key. If the key has no associated user
 // or the user doesn't exist, it returns the system root user.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetUserByApiKey(ctx basecontext.ApiContext, apiKey string) (*models.User, error) {
 	apiKeyRec, err := j.GetApiKey(ctx, apiKey)
 	if err != nil {
@@ -160,7 +160,7 @@ func (j *JsonDatabase) GetUserByApiKey(ctx basecontext.ApiContext, apiKey string
 	return j.GetUser(ctx, constants.ROOT_USER_ID)
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) CreateApiKey(ctx basecontext.ApiContext, apiKey models.ApiKey) (*models.ApiKey, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -193,7 +193,7 @@ func (j *JsonDatabase) CreateApiKey(ctx basecontext.ApiContext, apiKey models.Ap
 	return &apiKey, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteApiKey(ctx basecontext.ApiContext, id string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -221,7 +221,7 @@ func (j *JsonDatabase) DeleteApiKey(ctx basecontext.ApiContext, id string) error
 	return ErrApiKeyNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateKey(ctx basecontext.ApiContext, key models.ApiKey) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -250,7 +250,7 @@ func (j *JsonDatabase) UpdateKey(ctx basecontext.ApiContext, key models.ApiKey) 
 	return ErrApiKeyNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) RevokeKey(ctx basecontext.ApiContext, id string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected

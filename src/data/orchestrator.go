@@ -20,7 +20,7 @@ var (
 	ErrOrchestratorHostsVMSnapshotsNotFound   = interfaces.ErrOrchestratorHostsVMSnapshotsNotFound
 )
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorHosts(ctx basecontext.ApiContext, filter string) ([]models.OrchestratorHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -57,7 +57,7 @@ func (j *JsonDatabase) getOrchestratorHostsLocked(ctx basecontext.ApiContext, fi
 	return orderedResult, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetActiveOrchestratorHosts(ctx basecontext.ApiContext, filter string) ([]models.OrchestratorHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -93,7 +93,7 @@ func (j *JsonDatabase) GetActiveOrchestratorHosts(ctx basecontext.ApiContext, fi
 	return orderedResult, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorHost(ctx basecontext.ApiContext, idOrHost string) (*models.OrchestratorHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -122,7 +122,7 @@ func (j *JsonDatabase) getOrchestratorHostUnsafe(ctx basecontext.ApiContext, idO
 	return nil, ErrOrchestratorHostNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) CreateOrchestratorHost(ctx basecontext.ApiContext, host models.OrchestratorHost) (*models.OrchestratorHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -149,7 +149,7 @@ func (j *JsonDatabase) CreateOrchestratorHost(ctx basecontext.ApiContext, host m
 	return &host, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteOrchestratorHost(ctx basecontext.ApiContext, idOrHost string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -173,7 +173,7 @@ func (j *JsonDatabase) DeleteOrchestratorHost(ctx basecontext.ApiContext, idOrHo
 	return ErrOrchestratorHostNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteOrchestratorVirtualMachine(ctx basecontext.ApiContext, idOrHost string, vmIdOrName string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -204,7 +204,7 @@ func (j *JsonDatabase) DeleteOrchestratorVirtualMachine(ctx basecontext.ApiConte
 	return ErrOrchestratorHostNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *models.OrchestratorHost) (*models.OrchestratorHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -286,7 +286,7 @@ func (j *JsonDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 	return result, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateOrchestratorHostDetails(ctx basecontext.ApiContext, host *models.OrchestratorHost) (*models.OrchestratorHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -348,7 +348,7 @@ func (j *JsonDatabase) UpdateOrchestratorHostDetails(ctx basecontext.ApiContext,
 // UpdateOrchestratorHostTimestamp updates only the timestamp and health-related fields
 // without performing a Diff check. This is optimized for WebSocket pong responses.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateOrchestratorHostTimestamp(ctx basecontext.ApiContext, hostID string, timestamp string, state string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -381,7 +381,7 @@ func (j *JsonDatabase) UpdateOrchestratorHostTimestamp(ctx basecontext.ApiContex
 
 // UpdateOrchestratorHostWebsocketStatus updates only the HasWebsocketEvents field
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateOrchestratorHostWebsocketStatus(ctx basecontext.ApiContext, hostID string, hasWebsocketEvents bool) (bool, error) {
 	if !j.IsConnected() {
 		return false, ErrDatabaseNotConnected
@@ -408,7 +408,7 @@ func (j *JsonDatabase) UpdateOrchestratorHostWebsocketStatus(ctx basecontext.Api
 	return false, ErrOrchestratorHostNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorAvailableResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
 	j.dataMutex.RLock()
 	defer j.dataMutex.RUnlock()
@@ -436,7 +436,7 @@ func (j *JsonDatabase) GetOrchestratorAvailableResources(ctx basecontext.ApiCont
 	return result
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorTotalResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
 	j.dataMutex.RLock()
 	defer j.dataMutex.RUnlock()
@@ -464,7 +464,7 @@ func (j *JsonDatabase) GetOrchestratorTotalResources(ctx basecontext.ApiContext)
 	return result
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorInUseResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
 	j.dataMutex.RLock()
 	defer j.dataMutex.RUnlock()
@@ -492,7 +492,7 @@ func (j *JsonDatabase) GetOrchestratorInUseResources(ctx basecontext.ApiContext)
 	return result
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorReservedResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
 	j.dataMutex.RLock()
 	defer j.dataMutex.RUnlock()
@@ -521,7 +521,7 @@ func (j *JsonDatabase) GetOrchestratorReservedResources(ctx basecontext.ApiConte
 	return result
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorSystemReservedResources(ctx basecontext.ApiContext) map[string]models.HostResourceItem {
 	j.dataMutex.RLock()
 	defer j.dataMutex.RUnlock()
@@ -548,7 +548,7 @@ func (j *JsonDatabase) GetOrchestratorSystemReservedResources(ctx basecontext.Ap
 	return result
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorHostResources(ctx basecontext.ApiContext, hostId string) (*models.HostResources, error) {
 	j.dataMutex.RLock()
 	defer j.dataMutex.RUnlock()
@@ -564,7 +564,7 @@ func (j *JsonDatabase) GetOrchestratorHostResources(ctx basecontext.ApiContext, 
 	return host.Resources, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorVirtualMachines(ctx basecontext.ApiContext, filter string) ([]models.VirtualMachine, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -599,7 +599,7 @@ func (j *JsonDatabase) GetOrchestratorVirtualMachines(ctx basecontext.ApiContext
 	return filteredData, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorHostVirtualMachines(ctx basecontext.ApiContext, hostId string, filter string) ([]models.VirtualMachine, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -626,7 +626,7 @@ func (j *JsonDatabase) GetOrchestratorHostVirtualMachines(ctx basecontext.ApiCon
 	return filteredData, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorHostVirtualMachine(ctx basecontext.ApiContext, hostId string, machineId string) (*models.VirtualMachine, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -649,7 +649,7 @@ func (j *JsonDatabase) GetOrchestratorHostVirtualMachine(ctx basecontext.ApiCont
 	return nil, ErrOrchestratorHostVirtualMachineNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorReverseProxyHosts(ctx basecontext.ApiContext, hostId string, filter string) ([]*models.ReverseProxyHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -676,7 +676,7 @@ func (j *JsonDatabase) GetOrchestratorReverseProxyHosts(ctx basecontext.ApiConte
 	return filteredData, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorReverseProxyHost(ctx basecontext.ApiContext, hostId string, rpIdOrName string) (*models.ReverseProxyHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -706,7 +706,7 @@ func (j *JsonDatabase) GetOrchestratorReverseProxyHost(ctx basecontext.ApiContex
 	return nil, ErrOrchestratorReverseProxyHostNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetOrchestratorReverseProxyConfig(ctx basecontext.ApiContext, hostId string) (*models.ReverseProxy, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -727,7 +727,7 @@ func (j *JsonDatabase) GetOrchestratorReverseProxyConfig(ctx basecontext.ApiCont
 // If a VM with the same ID exists it is replaced in-place; otherwise it is appended.
 // Holds dataMutex for the entire read-modify-write to eliminate concurrent races.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpsertOrchestratorHostVM(ctx basecontext.ApiContext, hostID string, vm models.VirtualMachine) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -757,7 +757,7 @@ func (j *JsonDatabase) UpsertOrchestratorHostVM(ctx basecontext.ApiContext, host
 // RemoveOrchestratorHostVM atomically removes a single VM from a host.
 // Idempotent: returns nil if the VM is not found.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) RemoveOrchestratorHostVM(ctx basecontext.ApiContext, hostID string, vmID string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -787,7 +787,7 @@ func (j *JsonDatabase) RemoveOrchestratorHostVM(ctx basecontext.ApiContext, host
 
 // UpdateOrchestratorHostVMState atomically updates only the State field of a single VM.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateOrchestratorHostVMState(ctx basecontext.ApiContext, hostID string, vmID string, state string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -815,7 +815,7 @@ func (j *JsonDatabase) UpdateOrchestratorHostVMState(ctx basecontext.ApiContext,
 
 // UpdateOrchestratorHostVMUptime atomically updates only the Uptime field of a single VM.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateOrchestratorHostVMUptime(ctx basecontext.ApiContext, hostID string, vmID string, uptime string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -851,7 +851,7 @@ func (j *JsonDatabase) UpdateOrchestratorHostVMUptime(ctx basecontext.ApiContext
 // Does NOT call SaveNow — this is called on every VM event; the periodic
 // background save is sufficient.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateOrchestratorHostResources(ctx basecontext.ApiContext, hostID string, resources *models.HostResources) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -879,7 +879,7 @@ func (j *JsonDatabase) UpdateOrchestratorHostResources(ctx basecontext.ApiContex
 // of a host record. Called by HardwareUpdateQueue alongside UpdateOrchestratorHostResources
 // so that cache configuration stays current after background hardware fetches.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateOrchestratorHostCacheConfig(ctx basecontext.ApiContext, hostID string, cacheConfig *apimodels.CatalogCacheConfig) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -906,7 +906,7 @@ func (j *JsonDatabase) UpdateOrchestratorHostCacheConfig(ctx basecontext.ApiCont
 // ReplaceOrchestratorHostVMs atomically replaces the entire VM list for a host.
 // Used by fullRefreshHost after a complete VM sync from the host API.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) ReplaceOrchestratorHostVMs(ctx basecontext.ApiContext, hostID string, vms []models.VirtualMachine) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -926,7 +926,7 @@ func (j *JsonDatabase) ReplaceOrchestratorHostVMs(ctx basecontext.ApiContext, ho
 	return ErrOrchestratorHostNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetHostVMSnapshots(ctx basecontext.ApiContext, hostId string) (*models.HostsVMSnapshotsRecord, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -944,7 +944,7 @@ func (j *JsonDatabase) GetHostVMSnapshots(ctx basecontext.ApiContext, hostId str
 	return nil, ErrOrchestratorHostsVMSnapshotsNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) SetHostVMSnapshots(ctx basecontext.ApiContext, hostId string, snapshots models.VMSnapshots) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
