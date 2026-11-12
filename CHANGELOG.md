@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.9] - 2026-11-12
+
+- fix: ensure archive entry names are relative and handle leading separators
+- test: add tests for ArchiveEntryName and its behavior with paths
+- feat: add per-host VM count limit functionality
+- feat: implement counting logic for VMs based on state
+- test: add tests for VM count limit functionality
+
 ## [1.1.8] - 2026-11-06
 
 - test: add tests for IP probing eligibility and resolution

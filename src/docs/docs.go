@@ -7969,6 +7969,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/orchestrator/machines/check": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Evaluates the VM scheduling decision factor against the registered hosts. Requirements are resolved from a catalog manifest (catalog_id + version + architecture, served by a catalog manager) or provided directly in the body. The response is slim when resources are sufficient and carries the full per-host missing-resource detail when no host qualifies.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orchestrator"
+                ],
+                "summary": "Check host requirements before creating a virtual machine",
+                "parameters": [
+                    {
+                        "description": "Requirements check request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CheckMachineRequirementsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.CheckMachineRequirementsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.OAuthErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ApiErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/orchestrator/machines/{id}": {
             "get": {
                 "security": [
@@ -11036,6 +11096,9 @@ const docTemplate = `{
                 },
                 "total_apple_vms": {
                     "type": "integer"
+                },
+                "total_vms": {
+                    "type": "integer"
                 }
             }
         },
@@ -11044,6 +11107,12 @@ const docTemplate = `{
             "properties": {
                 "mac_vm_inventory_complete": {
                     "type": "boolean"
+                },
+                "max_vms_per_host": {
+                    "type": "integer"
+                },
+                "max_vms_per_host_mode": {
+                    "type": "string"
                 },
                 "system_reserved": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.HostResourceItem"
@@ -12050,6 +12119,55 @@ const docTemplate = `{
                 }
             }
         },
+        "models.CheckMachineRequirementsRequest": {
+            "type": "object",
+            "properties": {
+                "architecture": {
+                    "type": "string"
+                },
+                "catalog_id": {
+                    "type": "string"
+                },
+                "catalog_manager_id": {
+                    "type": "string"
+                },
+                "connection": {
+                    "type": "string"
+                },
+                "host_id": {
+                    "type": "string"
+                },
+                "owner": {
+                    "type": "string"
+                },
+                "requirements": {
+                    "$ref": "#/definitions/models.MachineRequirements"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CheckMachineRequirementsResponse": {
+            "type": "object",
+            "properties": {
+                "hosts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.MachineRequirementsHostResult"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "passed": {
+                    "type": "boolean"
+                },
+                "requirements": {
+                    "$ref": "#/definitions/models.MachineRequirements"
+                }
+            }
+        },
         "models.ClaimGroupResourceResponse": {
             "type": "object",
             "properties": {
@@ -12934,6 +13052,55 @@ const docTemplate = `{
                 }
             }
         },
+        "models.MachineRequirements": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "description": "logical CPUs",
+                    "type": "integer"
+                },
+                "disk": {
+                    "description": "MiB (VM disk setting)",
+                    "type": "integer"
+                },
+                "memory": {
+                    "description": "MiB",
+                    "type": "integer"
+                },
+                "os": {
+                    "description": "request-only hint; \"macos\" selects the macvm decision path",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "pack size in bytes; drives the host free-disk feasibility check",
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "pvm | macvm (resolved from os)",
+                    "type": "string"
+                }
+            }
+        },
+        "models.MachineRequirementsHostResult": {
+            "type": "object",
+            "properties": {
+                "checks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.RequirementCheckResult"
+                    }
+                },
+                "host": {
+                    "type": "string"
+                },
+                "host_id": {
+                    "type": "string"
+                },
+                "passed": {
+                    "type": "boolean"
+                }
+            }
+        },
         "models.NetworkInformation": {
             "type": "object",
             "properties": {
@@ -13490,6 +13657,31 @@ const docTemplate = `{
                 }
             }
         },
+        "models.RequirementCheckResult": {
+            "type": "object",
+            "properties": {
+                "available": {
+                    "type": "number"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "name": {
+                    "description": "host_state | architecture | cpu | memory | disk | vm_count | macos_inventory | macos_capacity",
+                    "type": "string"
+                },
+                "passed": {
+                    "type": "boolean"
+                },
+                "required": {
+                    "type": "number"
+                },
+                "unit": {
+                    "description": "logical_cpus | MiB | vms | apple_vms",
+                    "type": "string"
+                }
+            }
+        },
         "models.ReverseProxyHostCreateRequest": {
             "type": "object",
             "properties": {
@@ -13756,6 +13948,9 @@ const docTemplate = `{
                 },
                 "prl_home_total_size": {
                     "type": "integer"
+                },
+                "total_vms": {
+                    "type": "integer"
                 }
             }
         },
@@ -13792,6 +13987,13 @@ const docTemplate = `{
                 "mac_vm_inventory_complete": {
                     "type": "boolean"
                 },
+                "max_vms_per_host": {
+                    "description": "MaxVmsPerHost is the hard VM count limit configured on this host (0 = none).\nMaxVmsPerHostMode selects the counted set: \"any\" (TotalVms) or \"running\"\n(RunningVms). TotalVms counts every VM registered on the host, RunningVms the\nones occupying a hypervisor slot, PendingVms the creates/starts in flight.",
+                    "type": "integer"
+                },
+                "max_vms_per_host_mode": {
+                    "type": "string"
+                },
                 "os_name": {
                     "type": "string"
                 },
@@ -13807,8 +14009,14 @@ const docTemplate = `{
                 "pending_mac_vms": {
                     "type": "integer"
                 },
+                "pending_vms": {
+                    "type": "integer"
+                },
                 "reverse_proxy": {
                     "$ref": "#/definitions/models.SystemReverseProxy"
+                },
+                "running_vms": {
+                    "type": "integer"
                 },
                 "system_reserved": {
                     "$ref": "#/definitions/models.SystemUsageItem"
@@ -13824,6 +14032,9 @@ const docTemplate = `{
                 },
                 "total_reserved": {
                     "$ref": "#/definitions/models.SystemUsageItem"
+                },
+                "total_vms": {
+                    "type": "integer"
                 }
             }
         },
@@ -14326,7 +14537,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.1.8",
+	Version:          "1.1.9",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
