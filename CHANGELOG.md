@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - Unreleased
+
+- deprecated: **legacy JSON data layer (`src/data` engine + `JsonDatabase`)** is deprecated and scheduled for removal in v1.3.0 (#426, feature #417). Default storage is now GORM-backed: SQLite (`DB_TYPE=sqlite`, file `prl-devops.db`) or PostgreSQL (`DB_TYPE=postgres` + `DB_DSN`). Existing `data.json` files are migrated automatically on first start (#424) and become frozen source-of-past. `DB_TYPE=legacy` remains available until v1.3.0 as a documented escape hatch; using it logs a deprecation warning at startup. See the configuration & upgrade guides (#427 docs) for details.
+
 ## [1.1.8] - 2026-11-06
 
 - test: add tests for IP probing eligibility and resolution
