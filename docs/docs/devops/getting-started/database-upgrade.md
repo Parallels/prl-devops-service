@@ -9,7 +9,7 @@ toc: true
 
 The service now stores its data in a SQL database: SQLite by default (a
 single file next to your existing data), or PostgreSQL for orchestrated
-deployments:
+deployments (backend enablement in progress):
 
 [PostgreSQL Setup]({{ site.baseurl }}/docs/devops/getting-started/postgresql/)
 

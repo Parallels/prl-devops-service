@@ -62,8 +62,9 @@ The root object of the configuration file is the environment object, which conta
 ### Database
 
 The service stores its state either in a local SQLite database file (the
-default, zero configuration) or in a PostgreSQL server. These settings
-select and configure the backend. The legacy JSON data store
+default, zero configuration) or in a PostgreSQL server (enablement in
+progress — SQLite is the supported backend today). These settings select
+and configure the backend. The legacy JSON data store
 (`data.json`) is deprecated; see the _Upgrading to the SQL database_
 page for what happens on the first start after an upgrade, and the
 project changelog for the planned removal version.
