@@ -49,6 +49,7 @@ type SystemService struct {
 	dependencies   []interfaces.Service
 	cache          SystemServiceCache
 	hardwareMu     sync.Mutex
+	cacheMu        sync.Mutex // guards s.cache.{SystemUsers,OperatingSystem,CurrentUser,UniqueId}
 }
 
 func Get() *SystemService {
@@ -114,9 +115,12 @@ func (s *SystemService) Installed() bool {
 }
 
 func (s *SystemService) GetSystemUsers(ctx basecontext.ApiContext) ([]models.SystemUser, error) {
-	if len(s.cache.SystemUsers) > 0 {
+	s.cacheMu.Lock()
+	cachedUsers := s.cache.SystemUsers
+	s.cacheMu.Unlock()
+	if len(cachedUsers) > 0 {
 		ctx.LogDebugf("[SYSTEM] Returning cached system users")
-		return s.cache.SystemUsers, nil
+		return cachedUsers, nil
 	}
 
 	response := []models.SystemUser{}
@@ -132,7 +136,9 @@ func (s *SystemService) GetSystemUsers(ctx basecontext.ApiContext) ([]models.Sys
 		return nil, errors.New("Not implemented")
 	}
 
+	s.cacheMu.Lock()
 	s.cache.SystemUsers = response
+	s.cacheMu.Unlock()
 	return response, err
 }
 
@@ -244,8 +250,11 @@ func (s *SystemService) getWindowsSystemUsers(ctx basecontext.ApiContext) ([]mod
 }
 
 func (s *SystemService) GetOperatingSystem() string {
-	if s.cache.OperatingSystem != "" {
-		return s.cache.OperatingSystem
+	s.cacheMu.Lock()
+	cachedOs := s.cache.OperatingSystem
+	s.cacheMu.Unlock()
+	if cachedOs != "" {
+		return cachedOs
 	}
 
 	runningOs := ""
@@ -260,7 +269,9 @@ func (s *SystemService) GetOperatingSystem() string {
 		runningOs = "unknown"
 	}
 
+	s.cacheMu.Lock()
 	s.cache.OperatingSystem = runningOs
+	s.cacheMu.Unlock()
 	return runningOs
 }
 
@@ -394,29 +405,39 @@ func (s *SystemService) getUserIdWindows(ctx basecontext.ApiContext, user string
 }
 
 func (s *SystemService) GetCurrentUser(ctx basecontext.ApiContext) (string, error) {
-	if s.cache.CurrentUser != "" {
+	s.cacheMu.Lock()
+	cachedUser := s.cache.CurrentUser
+	s.cacheMu.Unlock()
+	if cachedUser != "" {
 		ctx.LogDebugf("[SYSTEM] Returning cached current user")
-		return s.cache.CurrentUser, nil
+		return cachedUser, nil
 	}
 
+	// Computed outside cacheMu: helpers may shell out.
 	currentUser, err := helpers.GetCurrentSystemUser()
 	if err != nil {
 		return "", err
 	}
 
+	s.cacheMu.Lock()
 	s.cache.CurrentUser = currentUser
+	s.cacheMu.Unlock()
 	return currentUser, nil
 }
 
 func (s *SystemService) GetUniqueId(ctx basecontext.ApiContext) (string, error) {
-	if s.cache.UniqueId != "" {
+	s.cacheMu.Lock()
+	cachedId := s.cache.UniqueId
+	s.cacheMu.Unlock()
+	if cachedId != "" {
 		ctx.LogDebugf("[SYSTEM] Returning cached unique id")
-		return s.cache.UniqueId, nil
+		return cachedId, nil
 	}
 
 	uniqueId := ""
 	var err error
 
+	// Computed outside cacheMu: getUniqueId* shell out and re-enter the cache.
 	switch s.GetOperatingSystem() {
 	case "macos":
 		uniqueId, err = s.getUniqueIdMac(ctx)
@@ -426,7 +447,9 @@ func (s *SystemService) GetUniqueId(ctx basecontext.ApiContext) (string, error) 
 		return "", errors.New("Not implemented")
 	}
 
+	s.cacheMu.Lock()
 	s.cache.UniqueId = uniqueId
+	s.cacheMu.Unlock()
 	return uniqueId, err
 }
 

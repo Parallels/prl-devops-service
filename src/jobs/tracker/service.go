@@ -65,8 +65,10 @@ func GetProgressService() *JobProgressService {
 }
 
 func (p *JobProgressService) EnableSingleLineOutput() *JobProgressService {
+	p.mu.Lock()
 	p.clearLineOnUpdate = true
 	p.forceClearLine = true
+	p.mu.Unlock()
 	return p
 }
 
@@ -479,32 +481,37 @@ func (p *JobProgressService) processInflightQueue(inflight map[string]map[string
 }
 
 func (p *JobProgressService) processSingleMessage(msg JobMessage) {
+	// The rest of this function works on the local msg copy: p.CurrentMessage
+	// exists for visibility under p.mu (CleanupProgress may clear it) and the
+	// worker must not observe a half-reset shared struct mid-processing.
+	p.mu.Lock()
 	p.CurrentMessage = msg
+	p.mu.Unlock()
 	shouldLog := false
 
-	if p.CurrentMessage.IsProgress {
+	if msg.IsProgress {
 		p.mu.Lock()
-		pt, exists := p.activeProgress[p.CurrentMessage.CorrelationId()]
+		pt, exists := p.activeProgress[msg.CorrelationId()]
 		if !exists {
-			if p.CurrentMessage.CurrentProgress < 100 {
+			if msg.CurrentProgress < 100 {
 				pt = &ProgressTracker{
 					StartTime:              time.Now(),
-					Prefix:                 p.CurrentMessage.Message,
-					CurrentProgress:        p.CurrentMessage.CurrentProgress,
-					JobPercentage:          p.CurrentMessage.JobPercentage,
+					Prefix:                 msg.Message,
+					CurrentProgress:        msg.CurrentProgress,
+					JobPercentage:          msg.JobPercentage,
 					LastJobPercentageSent:  -1.0,
-					LastStepPercentageSent: p.CurrentMessage.CurrentProgress,
+					LastStepPercentageSent: msg.CurrentProgress,
 					LastLogPercentageSent:  -1.0,
-					JobId:                  p.CurrentMessage.JobId,
-					CurrentAction:          p.CurrentMessage.CurrentAction,
-					CurrentActionStep:      p.CurrentMessage.CurrentActionStep,
-					Filename:               p.CurrentMessage.Filename,
+					JobId:                  msg.JobId,
+					CurrentAction:          msg.CurrentAction,
+					CurrentActionStep:      msg.CurrentActionStep,
+					Filename:               msg.Filename,
 					LastUpdateTime:         time.Now(),
-					CurrentSize:            p.CurrentMessage.currentSize,
-					TotalSize:              p.CurrentMessage.totalSize,
+					CurrentSize:            msg.currentSize,
+					TotalSize:              msg.totalSize,
 					RateSamples:            make([]RateSample, 0, 60),
 				}
-				p.activeProgress[p.CurrentMessage.CorrelationId()] = pt
+				p.activeProgress[msg.CorrelationId()] = pt
 				shouldLog = true
 
 				// First message for this step: seed the workflow step progress so
@@ -546,21 +553,21 @@ func (p *JobProgressService) processSingleMessage(msg JobMessage) {
 						p.publishJobSteps(pt.JobId)
 					}
 				}
-			} else if p.CurrentMessage.JobId != "" {
+			} else if msg.JobId != "" {
 				// Progress == 100 with no existing tracker: instant-complete step.
 				transient := &ProgressTracker{
-					JobId:         p.CurrentMessage.JobId,
-					CurrentAction: p.CurrentMessage.CurrentAction,
+					JobId:         msg.JobId,
+					CurrentAction: msg.CurrentAction,
 				}
-				if workflow, hasWorkflow := p.activeWorkflows[p.CurrentMessage.JobId]; hasWorkflow {
+				if workflow, hasWorkflow := p.activeWorkflows[msg.JobId]; hasWorkflow {
 					autoSkipPreviousSteps(&workflow, transient.CurrentAction)
 					workflow.StepProgress[transient.CurrentAction] = 100.0
-					if p.CurrentMessage.totalSize > 0 {
-						workflow.StepTotal[transient.CurrentAction] = p.CurrentMessage.totalSize
-						workflow.StepValue[transient.CurrentAction] = p.CurrentMessage.totalSize
+					if msg.totalSize > 0 {
+						workflow.StepTotal[transient.CurrentAction] = msg.totalSize
+						workflow.StepValue[transient.CurrentAction] = msg.totalSize
 					}
-					if p.CurrentMessage.Filename != "" {
-						workflow.StepFilename[transient.CurrentAction] = p.CurrentMessage.Filename
+					if msg.Filename != "" {
+						workflow.StepFilename[transient.CurrentAction] = msg.Filename
 					}
 
 					var calculatedJobPercentage float64
@@ -573,13 +580,13 @@ func (p *JobProgressService) processSingleMessage(msg JobMessage) {
 						calculatedJobPercentage = 100
 					}
 					transient.JobPercentage = calculatedJobPercentage
-					p.activeWorkflows[p.CurrentMessage.JobId] = workflow
+					p.activeWorkflows[msg.JobId] = workflow
 
 					if p.OnUpdateJobProgressAndSteps != nil && int(calculatedJobPercentage) > 0 {
-						dtos := p.buildStepDTOs(p.CurrentMessage.JobId)
-						p.OnUpdateJobProgressAndSteps(p.CurrentMessage.JobId, int(calculatedJobPercentage), "running", dtos)
+						dtos := p.buildStepDTOs(msg.JobId)
+						p.OnUpdateJobProgressAndSteps(msg.JobId, int(calculatedJobPercentage), "running", dtos)
 					} else {
-						p.publishJobSteps(p.CurrentMessage.JobId)
+						p.publishJobSteps(msg.JobId)
 						if transient.JobPercentage > 0 && p.OnUpdateJobProgress != nil {
 							p.OnUpdateJobProgress(transient.JobId, int(transient.JobPercentage), "running")
 						}
@@ -590,23 +597,23 @@ func (p *JobProgressService) processSingleMessage(msg JobMessage) {
 		} else {
 			// If the action changed (e.g. compression tracker reused for upload), reset
 			// progress so the new step starts from 0 instead of inheriting the old 100%.
-			if pt.CurrentAction != p.CurrentMessage.CurrentAction && p.CurrentMessage.CurrentAction != "" {
+			if pt.CurrentAction != msg.CurrentAction && msg.CurrentAction != "" {
 				pt.CurrentProgress = 0
 				pt.CurrentSize = 0
 				pt.TotalSize = 0
 				pt.StartTime = time.Now()
 				pt.RateSamples = make([]RateSample, 0, 60)
 			}
-			p.updateProgressTracker(pt, p.CurrentMessage.CurrentProgress, p.CurrentMessage.currentSize)
+			p.updateProgressTracker(pt, msg.CurrentProgress, msg.currentSize)
 			// Propagate the message's total size so the new step's Total reflects the
 			// actual transfer size rather than a prior step's (e.g. compressed pack vs. raw VM).
-			if p.CurrentMessage.totalSize > 0 {
-				pt.TotalSize = p.CurrentMessage.totalSize
+			if msg.totalSize > 0 {
+				pt.TotalSize = msg.totalSize
 			}
 
-			pt.CurrentAction = p.CurrentMessage.CurrentAction
-			pt.CurrentActionStep = p.CurrentMessage.CurrentActionStep
-			pt.Filename = p.CurrentMessage.Filename
+			pt.CurrentAction = msg.CurrentAction
+			pt.CurrentActionStep = msg.CurrentActionStep
+			pt.Filename = msg.Filename
 
 			if pt.JobId != "" {
 				if workflow, hasWorkflow := p.activeWorkflows[pt.JobId]; hasWorkflow {
@@ -648,67 +655,69 @@ func (p *JobProgressService) processSingleMessage(msg JobMessage) {
 						}
 					}
 				} else {
-					pt.JobPercentage = p.CurrentMessage.JobPercentage
+					pt.JobPercentage = msg.JobPercentage
 				}
 			} else {
-				pt.JobPercentage = p.CurrentMessage.JobPercentage
+				pt.JobPercentage = msg.JobPercentage
 			}
 
 			shouldLog = true
 		}
 
 		shouldDelete := false
-		if p.CurrentMessage.Closed() {
+		if msg.Closed() {
 			shouldDelete = true
 		} else if pt != nil && pt.JobId != "" && len(p.activeWorkflows[pt.JobId].Steps) > 0 {
 			if pt.JobPercentage >= 100 {
 				shouldDelete = true
 			}
-		} else if p.CurrentMessage.CurrentProgress >= 100 {
+		} else if msg.CurrentProgress >= 100 {
 			shouldDelete = true
 		}
 
 		if shouldDelete {
-			delete(p.activeProgress, p.CurrentMessage.CorrelationId())
+			delete(p.activeProgress, msg.CorrelationId())
 			if pt != nil && pt.JobId != "" {
 				delete(p.activeWorkflows, pt.JobId)
 			}
 		}
 		p.mu.Unlock()
 	} else {
-		if p.CurrentMessage.Message != "" {
+		if msg.Message != "" {
 			shouldLog = true
 		}
 
-		if p.CurrentMessage.JobId != "" {
+		if msg.JobId != "" {
 			p.mu.Lock()
-			if workflow, hasWorkflow := p.activeWorkflows[p.CurrentMessage.JobId]; hasWorkflow {
-				if p.CurrentMessage.CurrentAction != "" {
-					if p.CurrentMessage.Level == JobMessageLevelError {
-						workflow.StepError[p.CurrentMessage.CurrentAction] = p.CurrentMessage.Message
+			if workflow, hasWorkflow := p.activeWorkflows[msg.JobId]; hasWorkflow {
+				if msg.CurrentAction != "" {
+					if msg.Level == JobMessageLevelError {
+						workflow.StepError[msg.CurrentAction] = msg.Message
 					} else {
-						workflow.StepMessage[p.CurrentMessage.CurrentAction] = p.CurrentMessage.Message
+						workflow.StepMessage[msg.CurrentAction] = msg.Message
 					}
-					p.activeWorkflows[p.CurrentMessage.JobId] = workflow
-					p.publishJobSteps(p.CurrentMessage.JobId)
+					p.activeWorkflows[msg.JobId] = workflow
+					p.publishJobSteps(msg.JobId)
 				} else {
-					workflow.Message = p.CurrentMessage.Message
-					p.activeWorkflows[p.CurrentMessage.JobId] = workflow
+					workflow.Message = msg.Message
+					p.activeWorkflows[msg.JobId] = workflow
 					if p.OnUpdateJobMessage != nil {
-						p.OnUpdateJobMessage(p.CurrentMessage.JobId, p.CurrentMessage.Message)
+						p.OnUpdateJobMessage(msg.JobId, msg.Message)
 					}
 				}
-			} else if p.CurrentMessage.CurrentAction == "" && p.OnUpdateJobMessage != nil {
-				p.OnUpdateJobMessage(p.CurrentMessage.JobId, p.CurrentMessage.Message)
+			} else if msg.CurrentAction == "" && p.OnUpdateJobMessage != nil {
+				p.OnUpdateJobMessage(msg.JobId, msg.Message)
 			}
 			p.mu.Unlock()
 		}
 	}
 
-	if p.CurrentMessage.Message != p.previousMessage.Message && !p.forceClearLine {
-		p.previousMessage = p.CurrentMessage
+	p.mu.Lock()
+	if msg.Message != p.previousMessage.Message && !p.forceClearLine {
+		p.previousMessage = msg
 		p.clearLineOnUpdate = false
 	}
+	p.mu.Unlock()
 
 	if !p.ctx.Verbose() {
 		shouldLog = false
@@ -721,29 +730,32 @@ func (p *JobProgressService) processSingleMessage(msg JobMessage) {
 			printMsg = fmt.Sprintf("[%s] ", requestId)
 		}
 
-		if p.CurrentMessage.IsProgress {
+		if msg.IsProgress {
 			p.mu.RLock()
-			pt, exists := p.activeProgress[p.CurrentMessage.CorrelationId()]
+			pt, exists := p.activeProgress[msg.CorrelationId()]
 			p.mu.RUnlock()
 			if exists {
-				baseMsg := p.CurrentMessage.Message
+				baseMsg := msg.Message
 				if baseMsg == "" {
 					baseMsg = pt.Prefix
 				}
 				printMsg += baseMsg + " "
-				printMsg += formatProgressMessage(&p.CurrentMessage, pt)
+				printMsg += formatProgressMessage(&msg, pt)
 			} else {
-				printMsg += fmt.Sprintf("%s (%.1f%%)", p.CurrentMessage.Message, p.CurrentMessage.CurrentProgress)
+				printMsg += fmt.Sprintf("%s (%.1f%%)", msg.Message, msg.CurrentProgress)
 			}
 		} else {
-			printMsg += p.CurrentMessage.Message
+			printMsg += msg.Message
 		}
 
-		if p.clearLineOnUpdate {
+		p.mu.RLock()
+		doClear := p.clearLineOnUpdate
+		p.mu.RUnlock()
+		if doClear {
 			ClearLine()
 			fmt.Printf("\r%s", printMsg)
 		} else {
-			switch p.CurrentMessage.Level {
+			switch msg.Level {
 			case JobMessageLevelError:
 				p.ctx.LogErrorf("%s", printMsg)
 			case JobMessageLevelWarning:
@@ -1370,15 +1382,13 @@ func (p *JobProgressService) cleanupProgressByEncodedID(encodedID string) {
 
 	p.mu.Lock()
 	delete(p.activeProgress, encodedID)
-	p.mu.Unlock()
-
 	if p.previousMessage.correlationId == encodedID {
 		p.previousMessage = JobMessage{}
 	}
-
 	if p.CurrentMessage.correlationId == encodedID {
 		p.CurrentMessage = JobMessage{}
 	}
+	p.mu.Unlock()
 }
 
 func (p *JobProgressService) GetActiveProgressCount() int {

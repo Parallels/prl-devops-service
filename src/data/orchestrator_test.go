@@ -742,7 +742,7 @@ func TestOrchestratorHostNotConnected(t *testing.T) {
 	defer cleanupTestDB(t, tmpDir, db)
 
 	// Disconnect the database
-	db.connected = false
+	db.connected.Store(false)
 
 	// All operations should fail with ErrDatabaseNotConnected
 	_, err := db.GetOrchestratorHosts(ctx, "")
@@ -944,7 +944,7 @@ func TestUpdateOrchestratorHostTimestamp_NotConnected(t *testing.T) {
 	defer cleanupTestDB(t, tmpDir, db)
 
 	// Disconnect the database
-	db.connected = false
+	db.connected.Store(false)
 
 	// Try to update timestamp
 	err := db.UpdateOrchestratorHostTimestamp(ctx, "some-id", "2025-11-28T12:30:23.646623Z", "healthy")

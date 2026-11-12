@@ -45,6 +45,11 @@ func TestHostSelectionPreservesResourceFailuresInJobs(t *testing.T) {
 	ctx := basecontext.NewRootBaseContext()
 	ctx.DisableLog()
 	db := data.NewJsonDatabase(ctx, filepath.Join(t.TempDir(), "resource-failures.json"))
+	// Drain the save/backup daemons before TempDir cleanup runs (cleanups
+	// are LIFO, so this fires first). Without it the daemons keep writing
+	// into the temp dir and RemoveAll fails with ENOTEMPTY (T12 class).
+	//nolint:staticcheck // legacy engine drain by design; the whole engine retires in v1.3.0 (#426)
+	t.Cleanup(func() { _ = db.Disconnect(ctx) })
 	serviceprovider.NewMockProvider().JsonDatabase = db
 	manager := jobs.New(ctx)
 	svc := &OrchestratorService{ctx: ctx}
