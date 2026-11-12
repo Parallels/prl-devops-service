@@ -1,9 +1,13 @@
 package testutil
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data"
@@ -71,6 +75,47 @@ func GormEngine() Engine {
 			svc := database.NewGormDatabase(ctx, gdb)
 			require.NoError(t, svc.Connect(ctx))
 			return svc, func() { _ = svc.Disconnect(ctx) }
+		},
+		Capabilities: EngineCapabilities{HasNotConnectedSemantics: true, IsFileEngine: false},
+	}
+}
+
+// PostgresEngine — the #425 task-05 integration leg (plan D-6 leg (b)).
+// Lives untagged so the integration-tagged parity file can name it; New
+// t.Skip-fires when POSTGRES_TEST_DSN is unset, so default runs are
+// unaffected. Isolation: each engine instance gets a unique schema
+// (search_path=prl_t425_<nanos>) created fresh and DROPped CASCADE on
+// cleanup — concurrent CI runs cannot collide. The schema DROP runs
+// inside the returned cleanup BEFORE Disconnect so it executes while the
+// pool is still open.
+func PostgresEngine() Engine {
+	return Engine{
+		Name: "postgres",
+		New: func(t *testing.T) (datainterfaces.DatabaseService, func()) {
+			ctx := WithCleanConfig(t)
+			dsn := os.Getenv("POSTGRES_TEST_DSN")
+			if dsn == "" {
+				t.Skip("POSTGRES_TEST_DSN unset — Postgres legs skipped (#425 D-6: CI service container / make test-integration only)")
+			}
+			schema := fmt.Sprintf("prl_t425_%d", time.Now().UnixNano())
+			sep := "?"
+			if strings.Contains(dsn, "?") {
+				sep = "&"
+			}
+			gdb, err := database.NewDatabaseConnection(ctx, database.DatabaseConfig{
+				Type: database.DBTypePostgres,
+				DSN:  dsn + sep + "search_path=" + schema,
+			})
+			require.NoErrorf(t, err, "postgres boot failed on %s", schema)
+			t.Cleanup(func() { database.Close(ctx, gdb) })
+			require.NoError(t, gdb.Exec("CREATE SCHEMA IF NOT EXISTS "+schema).Error)
+			require.NoError(t, database.RunAutoMigrate(ctx, gdb))
+			svc := database.NewGormDatabase(ctx, gdb)
+			require.NoError(t, svc.Connect(ctx))
+			return svc, func() {
+				require.NoError(t, gdb.Exec("DROP SCHEMA IF EXISTS "+schema+" CASCADE").Error)
+				_ = svc.Disconnect(ctx)
+			}
 		},
 		Capabilities: EngineCapabilities{HasNotConnectedSemantics: true, IsFileEngine: false},
 	}
