@@ -8,6 +8,8 @@
       link: /docs/devops/getting-started/installation/
     - name: Configuration
       link: /docs/devops/getting-started/configuration/
+    - name: Upgrading to SQL
+      link: /docs/devops/getting-started/database-upgrade/
     - name: Docker Container
       link: /docs/devops/getting-started/docker/
     - name: Kubernetes
