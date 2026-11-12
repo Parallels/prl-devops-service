@@ -43,6 +43,7 @@ var (
 // (DATABASE_FOLDER → /etc/... → home).
 func defaultLegacyStoreSource() (string, error) {
 	if provider := serviceprovider.Get(); provider != nil && provider.Legacy() != nil {
+		//nolint:staticcheck // #426: legacy escape hatch — remove with the legacy layer (removal issue TBD-04)
 		return provider.Legacy().Filename(), nil
 	}
 	folder := config.Get().DatabaseFolder()
