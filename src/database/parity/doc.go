@@ -104,3 +104,55 @@ package parity
 // operator — RequiredRoles pairs with HasEffectiveRole, verified
 // authorize_layer.go), non-vacuity-guarded. Order runs reduced per E-3
 // rationale (file header).
+//
+// ---------- task 03 — infra wave ----------
+//
+// catalog_parity_test.go — data/catalog_test.go: TestCreateCatalogManifest
+// +TestUpdateCatalogManifest→catalog/create_read_update_roundtrip (merged;
+// the sleep-10ms UpdatedAt-must-move arrangement kept) ·
+// TestDeleteCatalogManifest→catalog/delete_manifest ·
+// TestUpdateCatalogManifestTags→catalog/serialised_array_columns_fidelity
+// (extended: RequiredRoles/RequiredClaims exact round-trip + append-order
+// pin) · TestTaintAndRevokeCatalogManifestVersion→catalog/
+// taint_untaint_revoke_version; data/catalog_managers_test.go:
+// Test{Add,Update}CatalogManager→managers/add_update_get ·
+// TestDeleteCatalogManager→managers/delete · Test{Update,Delete}Internal
+// …Fails…→managers/internal_guards_without_root (both guards, one ctx
+// posture). PINNED engine-agreed behaviours: CreateCatalogManifest
+// REGENERATES the ID (content hash) and normalises CatalogId to UPPER
+// CASE, and appends the "latest" tag after supplied tags — scenarios key
+// survivors by CatalogId, never caller IDs. TestParityCatalogOrder
+// Differential — no legacy counterpart (D-5): identical out-of-order
+// UpdatedAt stamps pre-seeded on both engines (E-4 pre-Write vs raw
+// INSERT), GetCatalogManifests sequences asserted engine-equal AND pinned
+// UpdatedAt-desc.
+// reverse_proxy_parity_test.go — data/reverse_proxy_test.go: TestEnable
+// AndDisableProxyConfig→rp/config_enable_disable · TestUpdateReverseProxy→
+// rp/config_update_readback · TestCreateAndGet+TestUpdate+TestConfigure
+// TLSAndCORS→rp/host_create_update_tls_cors · (new coverage:
+// rp/tcp_route_on_clean_host pins the guard-order 400/404 sentinel edge) ·
+// TestReorderAndDeleteReverseProxyHostHttpRoute→rp/routes_reorder_and_
+// compacting_delete (gapless {1,2} after delete) ·
+// rp/reorder_concurrent_invariant = #421 TestReorderInvariant_Concurrent
+// rebuilt through DatabaseService methods only · rp/error_edges pins 3
+// D-4 sentinels. PINNED: Create{ReverseProxyHost,HostHttpRoute} REGENERATE
+// entity IDs on both engines — all follow-up calls use returned IDs.
+// snapshots_parity_test.go — data/vm_snapshots_test.go: TestSetListVM
+// SnapshotsByVMId+TestGetListVMSnapshotsByVMId→snapshots/vm_list_replace_
+// per_vm (legacy poked a bare &JsonDatabase{connected:true}; converted to
+// the public ctx-free contract; adds replace-semantics + unknown-VM⇒empty
+// legs). PARITY FINDING (pinned per-engine, see file): snapshots/
+// host_upsert_idempotent — GetHostVMSnapshots on SQL ENRICHES each DTO
+// with HostID+VMID; legacy JSON returns caller values untouched (#421
+// suite normalised the fields away). snapshots/host_unknown_sentinel new.
+// packer_enrollment_parity_test.go — data/packer_template_test.go:
+// TestAddPackerTemplate→packer/add_get · TestUpdatePackerTemplate→packer/
+// update · TestDeletePackerTemplate→packer/delete · (spec "dup-name" lands
+// on the real guard: duplicate REJECTED BY ID, packer/duplicate_rejected)
+// · TestDeleteInternalPackerTemplateFailsWithoutRoot→packer/
+// internal_delete_guard. Enrollment (no legacy Tier-1 tests; #421 SQL pins
+// via public API + E-4 pre-seed, spec §4 ±s no nowFn needed): create_
+// validate_roundtrip · used_gate_wins (Used beats expiry, orchestrator_
+// enrollment_token.go:14ff) · expired_edge · empty_and_garbage_stay_valid ·
+// sweep_prune_matrix (expired/used pruned; empty+unparseable expiries and
+// fresh survive — 5-token matrix, both engines).
