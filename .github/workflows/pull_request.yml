@@ -87,7 +87,7 @@ jobs:
 
       - name: Add Coverage PR Comment
         if: false
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           recreate: true
           path: code-coverage-results.md
