@@ -5,10 +5,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/jobs/tracker"
 )
 
@@ -59,7 +59,10 @@ func Compress(ctx basecontext.ApiContext, path string, compressedFilename string
 		}
 		defer f.Close()
 
-		relPath := strings.TrimPrefix(machineFilePath, path)
+		relPath, err := helpers.ArchiveEntryName(path, machineFilePath)
+		if err != nil {
+			return err
+		}
 		hdr := &tar.Header{
 			Name: relPath,
 			Mode: int64(info.Mode()),

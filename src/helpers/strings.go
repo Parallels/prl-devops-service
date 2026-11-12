@@ -119,16 +119,29 @@ func CleanOutputString(s string) string {
 // SanitizeArchivePath joins an archive entry name onto a destination directory and
 // verifies that the result stays lexically inside that directory.
 //
-// Entry names come from untrusted archive headers, so absolute paths, volume names
-// and any name that resolves above the destination are rejected. The containment test
-// is done with filepath.Rel rather than a string prefix test: a prefix test accepts
-// sibling directories (destination /tmp/dest would happily accept /tmp/dest-evil/x).
+// Entry names come from untrusted archive headers, so any name that resolves above the
+// destination is rejected. A volume name or a leading separator is stripped first and
+// the remaining name is taken as relative, the way GNU tar removes a leading "/" from
+// member names: writers that derive entry names by trimming a root off each walked
+// path leave a leading separator on every entry, and rejecting those outright breaks
+// extraction of the archives they produced. The containment test is done with
+// filepath.Rel rather than a string prefix test: a prefix test accepts sibling
+// directories (destination /tmp/dest would happily accept /tmp/dest-evil/x).
 func SanitizeArchivePath(d, t string) (v string, err error) {
 	if d == "" {
 		return "", fmt.Errorf("%s: %s", "content filepath has no destination", t)
 	}
 
-	if filepath.IsAbs(t) || filepath.VolumeName(t) != "" {
+	// Archive entries are slash separated on every platform. A volume name or leading
+	// separators pin a name outside the destination, so they are stripped and what is
+	// left is treated as relative. A name left empty by the strip ("/", "C:") has no
+	// file to extract.
+	name := filepath.ToSlash(t)
+	if vol := filepath.ToSlash(filepath.VolumeName(t)); vol != "" {
+		name = strings.TrimPrefix(name, vol)
+	}
+	name = strings.TrimLeft(name, "/")
+	if name == "" {
 		return "", fmt.Errorf("%s: %s", "content filepath is tainted", t)
 	}
 
@@ -137,8 +150,7 @@ func SanitizeArchivePath(d, t string) (v string, err error) {
 		return "", fmt.Errorf("%s: %s", "content filepath is tainted", t)
 	}
 
-	// Archive entries are slash separated on every platform.
-	v = filepath.Join(root, filepath.FromSlash(t))
+	v = filepath.Join(root, filepath.FromSlash(name))
 
 	rel, err := filepath.Rel(root, v)
 	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
@@ -146,6 +158,20 @@ func SanitizeArchivePath(d, t string) (v string, err error) {
 	}
 
 	return v, nil
+}
+
+// ArchiveEntryName returns the slash separated relative name of filePath inside root,
+// the shape the tar format specifies for entry names. Deriving a name by trimming the
+// root off a walked path instead leaves a leading separator on every entry; going
+// through filepath.Rel yields the plain relative name and refuses anything not below
+// the root.
+func ArchiveEntryName(root, filePath string) (string, error) {
+	rel, err := filepath.Rel(root, filePath)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("archive entry %q is not inside root %q", filePath, root)
+	}
+
+	return filepath.ToSlash(rel), nil
 }
 
 func ObfuscateString(value string) string {

@@ -412,7 +412,10 @@ func (s *CatalogManifestService) compressMachine(path string, machineFileName st
 		}
 		defer f.Close()
 
-		relPath := strings.TrimPrefix(machineFilePath, path)
+		relPath, err := helpers.ArchiveEntryName(path, machineFilePath)
+		if err != nil {
+			return err
+		}
 		hdr := &tar.Header{
 			Name: relPath,
 			Mode: int64(info.Mode()),
