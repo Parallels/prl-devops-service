@@ -1,7 +1,7 @@
 // Package data implements the legacy JSON-file data layer (JsonDatabase engine):
 // persistence, save/backup loops, file locks and record locking.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 package data
 
 import (
@@ -35,7 +35,7 @@ var (
 	mutexLock         sync.Mutex
 )
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 type Data struct {
 	Schema            models.DatabaseSchema                `json:"schema"`
 	Configuration     *models.Configuration                `json:"configuration"`
@@ -56,7 +56,7 @@ type Data struct {
 	UserConfigs       []models.UserConfig                  `json:"user_configs"`
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 type JsonDatabase struct {
 	ctx          basecontext.ApiContext
 	Config       JsonDatabaseConfig
@@ -72,7 +72,7 @@ type JsonDatabase struct {
 	onJobTimeout func(models.Job)
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 type JsonDatabaseConfig struct {
 	DatabaseFilename    string        `json:"database_filename"`
 	NumberOfBackupFiles int           `json:"number_of_backup_files"`
@@ -81,7 +81,7 @@ type JsonDatabaseConfig struct {
 	AutoRecover         bool          `json:"auto_recover"`
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase {
 	if memoryDatabase != nil {
 		return memoryDatabase
@@ -141,14 +141,14 @@ func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase 
 	return memoryDatabase
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) Connect(ctx basecontext.ApiContext) error {
 	ctx.LogDebugf("[Database] Connecting to database %s", j.filename)
 	j.connected = true
 	return nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
 	ctx.LogInfof("[Database] Loading database from %s", j.filename)
 	if j.Config.AutoRecover {
@@ -198,7 +198,7 @@ func (j *JsonDatabase) Load(ctx basecontext.ApiContext) error {
 	}
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) Disconnect(ctx basecontext.ApiContext) error {
 	ctx.LogDebugf("[Database] Disconnecting from database")
 	// Stop and drain background daemons (save loop, backup loop, ghost-job
@@ -228,17 +228,17 @@ func (j *JsonDatabase) closeCancel() {
 	}
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) Filename() string {
 	return j.filename
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) IsConnected() bool {
 	return j.connected
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) SaveAs(ctx basecontext.ApiContext, filename string) error {
 	oldFilename := j.filename
 	baseDbDir := filepath.Dir(oldFilename)
@@ -262,7 +262,7 @@ func (j *JsonDatabase) SaveAs(ctx basecontext.ApiContext, filename string) error
 	return nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) SaveAsync(ctx basecontext.ApiContext) error {
 	defer func() {
 		if r := recover(); r != nil {
@@ -304,7 +304,7 @@ func (j *JsonDatabase) SaveAsync(ctx basecontext.ApiContext) error {
 	return nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) SaveNow(ctx basecontext.ApiContext) error {
 	ctx.LogDebugf("[Database] Received for save request")
 	if err := j.processSave(ctx); err != nil {
@@ -320,7 +320,7 @@ func (j *JsonDatabase) SaveNow(ctx basecontext.ApiContext) error {
 // database file the service uses, because an unguarded save from a CLI process
 // would otherwise overwrite the newer state held by a running service.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) SaveNowForced(ctx basecontext.ApiContext, reason string) error {
 	ctx.LogDebugf("[Database] Received forced save request: %s", reason)
 	if err := j.processSaveForced(ctx, reason); err != nil {
@@ -330,7 +330,7 @@ func (j *JsonDatabase) SaveNowForced(ctx basecontext.ApiContext, reason string) 
 	return nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) ProcessSaveQueue(ctx basecontext.ApiContext) {
 	defer wg.Done()
 	ctx.LogDebugf("[Database] Received for save request")
@@ -486,7 +486,7 @@ func (l *fileLock) release() {
 	_ = l.f.Close()
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func IsRecordLocked(dbRecord *models.DbRecord) bool {
 	if dbRecord == nil {
 		return false
@@ -494,7 +494,7 @@ func IsRecordLocked(dbRecord *models.DbRecord) bool {
 	return dbRecord.IsLocked
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func LockRecord(ctx basecontext.ApiContext, dbRecord *models.DbRecord) {
 	mutexLock.Lock()
 	if dbRecord == nil {
@@ -508,7 +508,7 @@ func LockRecord(ctx basecontext.ApiContext, dbRecord *models.DbRecord) {
 	mutexLock.Unlock()
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func UnlockRecord(ctx basecontext.ApiContext, dbRecord *models.DbRecord) {
 	mutexLock.Lock()
 	if dbRecord == nil {
@@ -707,7 +707,7 @@ func (j *JsonDatabase) loadFromEmpty(ctx basecontext.ApiContext) error {
 	return nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) IsDataFileEmpty(ctx basecontext.ApiContext) (bool, error) {
 	// Retry opening the file every 200ms for 10 times
 	retryCount := 0

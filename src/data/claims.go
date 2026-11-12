@@ -19,7 +19,7 @@ var (
 	ErrClaimHasUsers       = interfaces.ErrClaimHasUsers
 )
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetClaims(ctx basecontext.ApiContext, filter string) ([]models.Claim, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -56,7 +56,7 @@ func (j *JsonDatabase) GetClaims(ctx basecontext.ApiContext, filter string) ([]m
 	return filteredData, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetClaim(ctx basecontext.ApiContext, idOrName string) (*models.Claim, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -91,7 +91,7 @@ func (j *JsonDatabase) GetClaim(ctx basecontext.ApiContext, idOrName string) (*m
 	return nil, ErrClaimNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) CreateClaim(ctx basecontext.ApiContext, claim models.Claim) (*models.Claim, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -113,7 +113,7 @@ func (j *JsonDatabase) CreateClaim(ctx basecontext.ApiContext, claim models.Clai
 	return &claim, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteClaim(ctx basecontext.ApiContext, idOrName string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -168,7 +168,7 @@ func (j *JsonDatabase) DeleteClaim(ctx basecontext.ApiContext, idOrName string) 
 // claim without triggering the internal-claim guard. Used on startup to
 // backfill existing installations with display metadata.
 //
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateClaimMetadata(ctx basecontext.ApiContext, idOrName, description, group, resource, action string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -188,7 +188,7 @@ func (j *JsonDatabase) UpdateClaimMetadata(ctx basecontext.ApiContext, idOrName,
 	return ErrClaimNotFound
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateClaim(ctx basecontext.ApiContext, claim *models.Claim) (*models.Claim, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected

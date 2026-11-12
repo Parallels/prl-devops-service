@@ -83,10 +83,12 @@ func GetSQLDatabase(ctx basecontext.ApiContext) (*gorm.DB, error) {
 // mirroring mustInitGormConnection's non-API posture.
 func (s *ServiceProvider) selectDatabaseBackend(ctx basecontext.ApiContext, newLegacy func() *data.JsonDatabase) {
 	if isLegacyBackendSelected() {
-		// #426 adds the deprecation warn for this branch — for now it is
-		// behaviorally identical to today.
-		s.setJsonDatabaseLegacy(newLegacy())
-		_ = s.JsonDatabase.Connect(ctx)
+		// #426 D-3: deprecation warn (+ OQ-1 frozen probe) landed here —
+		// warn-only additive, selection behaviour unchanged.
+		legacyDb := newLegacy()
+		s.setJsonDatabaseLegacy(legacyDb)
+		_ = legacyDb.Connect(ctx)
+		s.warnLegacySelection(ctx, legacyDb.Filename())
 		return
 	}
 	s.mustInitGormConnection(ctx) // API command exits(1) on broken SQL config
@@ -110,8 +112,10 @@ func (s *ServiceProvider) selectDatabaseBackend(ctx basecontext.ApiContext, newL
 			return
 		}
 	}
-	s.setJsonDatabaseLegacy(newLegacy())
-	_ = s.JsonDatabase.Connect(ctx)
+	legacyDb := newLegacy()
+	s.setJsonDatabaseLegacy(legacyDb)
+	_ = legacyDb.Connect(ctx)
+	s.warnLegacySelection(ctx, legacyDb.Filename())
 }
 
 // isLegacyBackendSelected reads the raw selection exactly as

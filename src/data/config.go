@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetConfiguration(ctx basecontext.ApiContext) (*models.Configuration, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -24,7 +24,7 @@ func (j *JsonDatabase) GetConfiguration(ctx basecontext.ApiContext) (*models.Con
 	return j.data.Configuration, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetId(ctx basecontext.ApiContext) (string, error) {
 	if !j.IsConnected() {
 		return "", ErrDatabaseNotConnected
@@ -39,7 +39,7 @@ func (j *JsonDatabase) GetId(ctx basecontext.ApiContext) (string, error) {
 	return j.data.Configuration.ID, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) SeedId(ctx basecontext.ApiContext) (string, error) {
 	if !j.IsConnected() {
 		return "", ErrDatabaseNotConnected
@@ -57,7 +57,7 @@ func (j *JsonDatabase) SeedId(ctx basecontext.ApiContext) (string, error) {
 	return j.data.Configuration.ID, nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) SetId(ctx basecontext.ApiContext, id string) (string, error) {
 	if !j.IsConnected() {
 		return "", ErrDatabaseNotConnected

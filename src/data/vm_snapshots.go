@@ -4,7 +4,7 @@ import (
 	"github.com/Parallels/prl-devops-service/data/models"
 )
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) SetListVMSnapshotsByVMId(vmID string, newVmSnap models.VMSnapshots) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -23,7 +23,7 @@ func (j *JsonDatabase) SetListVMSnapshotsByVMId(vmID string, newVmSnap models.VM
 	return nil
 }
 
-// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetListVMSnapshotsByVMId(vmID string) ([]models.VMSnapshot, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
