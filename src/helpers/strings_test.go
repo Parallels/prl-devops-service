@@ -104,11 +104,16 @@ func TestSanitizeArchivePath(t *testing.T) {
 		{name: "nested file", destination: "dest", entry: "a/b/file.txt"},
 		{name: "entry for the destination itself", destination: "dest", entry: "."},
 		{name: "dot slash prefixed", destination: "dest", entry: "./file.txt"},
+		{name: "leading separator is made relative", destination: "dest", entry: "/VmInfo.pvi"},
+		{name: "absolute path is made relative", destination: "dest", entry: "/etc/passwd"},
+		{name: "double leading separator is made relative", destination: "dest", entry: "//etc/passwd"},
 		{name: "walks above the destination", destination: "dest", entry: "../../etc/passwd", expectError: true},
 		{name: "walks above after descending", destination: "dest", entry: "a/../../outside.txt", expectError: true},
+		{name: "walks above after the leading separator", destination: "dest", entry: "/../../etc/passwd", expectError: true},
 		{name: "sibling sharing the destination prefix", destination: "dest", entry: "../dest-evil/x.txt", expectError: true},
-		{name: "absolute path", destination: "dest", entry: "/etc/passwd", expectError: true, notGoos: "windows"},
-		{name: "windows volume path", destination: "dest", entry: `C:\Windows\win.ini`, expectError: true, goos: "windows"},
+		{name: "empty filepath after the strip", destination: "dest", entry: "/", expectError: true},
+		{name: "windows volume path", destination: "dest", entry: `C:\Windows\win.ini`, goos: "windows"},
+		{name: "windows volume only", destination: "dest", entry: "C:", expectError: true, goos: "windows"},
 		{name: "no destination given", destination: "", entry: "file.txt", expectError: true},
 	}
 
@@ -144,6 +149,43 @@ func TestSanitizeArchivePath(t *testing.T) {
 			rel, err := filepath.Rel(root, got)
 			if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 				t.Fatalf("entry %q resolved outside the destination: %q is not inside %q", tt.entry, got, root)
+			}
+		})
+	}
+}
+
+// Tar entry names are relative by the format's own definition. Trimming the walked
+// root off a path instead leaves a leading separator on every entry, which older
+// extractors only tolerated by accident, so writers must go through this helper.
+func TestArchiveEntryName(t *testing.T) {
+	tests := []struct {
+		name        string
+		root        string
+		filePath    string
+		want        string
+		expectError bool
+	}{
+		{name: "top level file", root: "/pack", filePath: "/pack/VmInfo.pvi", want: "VmInfo.pvi"},
+		{name: "nested file", root: "/pack", filePath: "/pack/sub/dir/file.txt", want: "sub/dir/file.txt"},
+		{name: "the root itself", root: "/pack", filePath: "/pack", expectError: true},
+		{name: "outside the root", root: "/pack", filePath: "/pack/../outside.txt", expectError: true},
+		{name: "sibling sharing the root prefix", root: "/pack", filePath: "/pack-evil/x.txt", expectError: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ArchiveEntryName(tt.root, tt.filePath)
+			if tt.expectError {
+				if err == nil {
+					t.Fatalf("path %q inside root %q was accepted, produced %q", tt.filePath, tt.root, got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error for %q: %v", tt.filePath, err)
+			}
+			if got != tt.want {
+				t.Errorf("ArchiveEntryName(%q, %q) = %q, want %q", tt.root, tt.filePath, got, tt.want)
 			}
 		})
 	}
