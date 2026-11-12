@@ -5,6 +5,7 @@ import (
 	"sort"
 )
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 type OrderDirection int
 
 const (
@@ -12,11 +13,13 @@ const (
 	OrderDirectionDesc
 )
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 type Order struct {
 	Property  string
 	Direction OrderDirection
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func OrderByProperty[T interface{}](objects []T, order *Order) ([]T, error) {
 	if order == nil {
 		return objects, nil

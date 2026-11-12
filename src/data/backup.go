@@ -12,6 +12,7 @@ import (
 	"github.com/cjlapao/common-go/helper"
 )
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) RunBackup(ctx basecontext.ApiContext) {
 	j.saveWg.Add(1)
 	go func() {
@@ -32,6 +33,7 @@ func (j *JsonDatabase) RunBackup(ctx basecontext.ApiContext) {
 	}()
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) Backup(ctx basecontext.ApiContext) error {
 	backupFiles, err := findBackupFiles(j.filename)
 	if err != nil {
