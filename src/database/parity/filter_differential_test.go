@@ -137,7 +137,21 @@ func TestParityFilterOrderAuthDifferential(t *testing.T) {
 			g, gerr := gormSvc.GetCatalogManifests(a.ctx, "")
 			assert.Equal(t, lerr, gerr)
 			lk, gk := manifestTriples(l), manifestTriples(g)
-			assert.Equal(t, lk, gk, "authz-visible agreement (empty-vs-shown)")
+			// ElementsMatch, NOT Equal: this row pins authz VISIBILITY
+			// (empty-vs-shown), not sequence — the catalog listing orders
+			// UpdatedAt desc over per-engine wall-clock stamps, which is
+			// the E-3 exclusion this header already declares (line 9).
+			// macOS coarse clock ticks tie the back-to-back seed stamps on
+			// the fast legacy engine; the T6 tiebreak is ID ascending and
+			// CreateCatalogManifest DISCARDS the seed ID for a random
+			// GenerateId (data/catalog.go:162, database/catalog.go:200),
+			// so a tied stamp orders by per-engine random bytes — an
+			// engine-local coin flip (found at the 425-06 human-gate
+			// macOS run, -count=5 -shuffle=on). Cross-engine SEQUENCE
+			// equality on an order surface is pinned deterministically by
+			// TestParityCatalogOrderDifferential (explicit distinct
+			// UpdatedAt, IDs preserved by raw-table seeds).
+			assert.ElementsMatch(t, lk, gk, "authz-visible agreement (empty-vs-shown)")
 		})
 	}
 	// Non-vacuity: the operator ctx must see strictly more than the no-roles
