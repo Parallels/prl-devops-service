@@ -2,6 +2,7 @@ package data
 
 import "encoding/json"
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func Diff(a interface{}, b interface{}) bool {
 	jsonA, err := json.Marshal(a)
 	if err != nil {

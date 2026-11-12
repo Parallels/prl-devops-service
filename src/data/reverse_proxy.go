@@ -26,6 +26,7 @@ func normalizeReverseProxyHttpRoutesOrder(routes []*models.ReverseProxyHostHttpR
 	}
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) GetReverseProxyConfig(ctx basecontext.ApiContext) (*models.ReverseProxy, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -34,6 +35,7 @@ func (j *JsonDatabase) GetReverseProxyConfig(ctx basecontext.ApiContext) (*model
 	return j.data.ReverseProxy, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) EnableProxyConfig(ctx basecontext.ApiContext) (*models.ReverseProxy, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -49,6 +51,7 @@ func (j *JsonDatabase) EnableProxyConfig(ctx basecontext.ApiContext) (*models.Re
 	return j.data.ReverseProxy, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) DisableProxyConfig(ctx basecontext.ApiContext) (*models.ReverseProxy, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -64,6 +67,7 @@ func (j *JsonDatabase) DisableProxyConfig(ctx basecontext.ApiContext) (*models.R
 	return j.data.ReverseProxy, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) UpdateReverseProxy(ctx basecontext.ApiContext, rp models.ReverseProxy) (*models.ReverseProxy, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -84,6 +88,7 @@ func (j *JsonDatabase) UpdateReverseProxy(ctx basecontext.ApiContext, rp models.
 	return &rp, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) GetReverseProxyHosts(ctx basecontext.ApiContext, filter string) ([]models.ReverseProxyHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -102,6 +107,7 @@ func (j *JsonDatabase) GetReverseProxyHosts(ctx basecontext.ApiContext, filter s
 	return filteredData, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) GetReverseProxyHost(ctx basecontext.ApiContext, idOrName string) (*models.ReverseProxyHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -122,6 +128,7 @@ func (j *JsonDatabase) GetReverseProxyHost(ctx basecontext.ApiContext, idOrName 
 	return nil, ErrorReverseProxyHostNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) CreateReverseProxyHost(ctx basecontext.ApiContext, rpHost models.ReverseProxyHost) (*models.ReverseProxyHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -152,6 +159,7 @@ func (j *JsonDatabase) CreateReverseProxyHost(ctx basecontext.ApiContext, rpHost
 	return &rpHost, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) DeleteReverseProxyHost(ctx basecontext.ApiContext, idOrName string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -172,6 +180,7 @@ func (j *JsonDatabase) DeleteReverseProxyHost(ctx basecontext.ApiContext, idOrNa
 	return ErrorReverseProxyHostNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) UpdateReverseProxyHost(ctx basecontext.ApiContext, rpHost *models.ReverseProxyHost) (*models.ReverseProxyHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -213,6 +222,7 @@ func (j *JsonDatabase) UpdateReverseProxyHost(ctx basecontext.ApiContext, rpHost
 	return nil, ErrorReverseProxyHostNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) ConfigureReverseProxyHostTls(ctx basecontext.ApiContext, rpHostId string, tlsConfig models.ReverseProxyHostTls) (*models.ReverseProxyHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -232,6 +242,7 @@ func (j *JsonDatabase) ConfigureReverseProxyHostTls(ctx basecontext.ApiContext, 
 	return rpHost, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) ConfigureReverseProxyHostCors(ctx basecontext.ApiContext, rpHostId string, corsConfig models.ReverseProxyHostCors) (*models.ReverseProxyHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -251,6 +262,7 @@ func (j *JsonDatabase) ConfigureReverseProxyHostCors(ctx basecontext.ApiContext,
 	return rpHost, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) CreateReverseProxyHostHttpRoute(ctx basecontext.ApiContext, rpHostId string, route models.ReverseProxyHostHttpRoute) (*models.ReverseProxyHostHttpRoute, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -275,6 +287,7 @@ func (j *JsonDatabase) CreateReverseProxyHostHttpRoute(ctx basecontext.ApiContex
 	return &route, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) DeleteReverseProxyHostHttpRoute(ctx basecontext.ApiContext, rpHostId, routeId string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -310,6 +323,7 @@ func (j *JsonDatabase) DeleteReverseProxyHostHttpRoute(ctx basecontext.ApiContex
 	return ErrorReverseProxyHttpRouteNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) UpdateReverseProxyHostHttpRoute(ctx basecontext.ApiContext, rpHostId string, route models.ReverseProxyHostHttpRoute) (*models.ReverseProxyHostHttpRoute, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -340,6 +354,7 @@ func (j *JsonDatabase) UpdateReverseProxyHostHttpRoute(ctx basecontext.ApiContex
 	return nil, ErrorReverseProxyHostNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) ReorderReverseProxyHostHttpRoute(ctx basecontext.ApiContext, rpHostId, routeId string, newOrder int) (*models.ReverseProxyHost, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -393,6 +408,7 @@ func (j *JsonDatabase) ReorderReverseProxyHostHttpRoute(ctx basecontext.ApiConte
 	return nil, ErrorReverseProxyHostNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) UpdateReverseProxyHostTcpRoute(ctx basecontext.ApiContext, rpHostId string, route models.ReverseProxyHostTcpRoute) (*models.ReverseProxyHostTcpRoute, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected

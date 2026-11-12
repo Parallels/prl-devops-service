@@ -14,6 +14,7 @@ var (
 	ErrUserConfigAlreadyExists = interfaces.ErrUserConfigAlreadyExists
 )
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) GetUserConfigs(ctx basecontext.ApiContext, userID string, filter string) ([]models.UserConfig, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -39,6 +40,7 @@ func (j *JsonDatabase) GetUserConfigs(ctx basecontext.ApiContext, userID string,
 	return filteredData, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) GetUserConfig(ctx basecontext.ApiContext, userID string, idOrSlug string) (*models.UserConfig, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -54,6 +56,7 @@ func (j *JsonDatabase) GetUserConfig(ctx basecontext.ApiContext, userID string, 
 	return nil, ErrUserConfigNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) CreateUserConfig(ctx basecontext.ApiContext, cfg models.UserConfig) (*models.UserConfig, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -76,6 +79,7 @@ func (j *JsonDatabase) CreateUserConfig(ctx basecontext.ApiContext, cfg models.U
 	return &cfg, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) UpsertUserConfig(ctx basecontext.ApiContext, cfg models.UserConfig) (*models.UserConfig, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -90,6 +94,7 @@ func (j *JsonDatabase) UpsertUserConfig(ctx basecontext.ApiContext, cfg models.U
 	return j.UpdateUserConfig(ctx, cfg)
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) UpdateUserConfig(ctx basecontext.ApiContext, cfg models.UserConfig) (*models.UserConfig, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -121,6 +126,7 @@ func (j *JsonDatabase) UpdateUserConfig(ctx basecontext.ApiContext, cfg models.U
 	return nil, ErrUserConfigNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v2.0.0.
 func (j *JsonDatabase) DeleteUserConfig(ctx basecontext.ApiContext, userID string, idOrSlug string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
