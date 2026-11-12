@@ -152,6 +152,26 @@ See the
 [Kubernetes setup guide]({{ site.baseurl }}/docs/devops/getting-started/kubernetes/)
 for the chart walkthrough.
 
+### Helm values
+
+The chart also accepts first-class database values, keeping the DSN in
+an existing Secret you manage:
+
+```yaml
+database:
+  type: postgres
+  dsnSecret:
+    name: devops-db
+    key: dsn
+```
+
+These render to the same `DB_*` environment variables as the manual
+setup above; the full block lives in the chart's `values.yaml`.
+With a SQL backend set `storage.databasePath: ""` — the PVC and its
+mount are skipped entirely.
+
+<!-- gated in helm/templates/deployment.yaml:46-50 and 282-285 -->
+
 ## Docker Compose
 
 Add to the `environment:` block of your `docker-compose.yml` (the
