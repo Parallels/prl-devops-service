@@ -6,7 +6,7 @@ require (
 	github.com/Azure/azure-storage-blob-go v0.15.0
 	github.com/amplitude/analytics-go v1.0.1
 	github.com/aws/aws-sdk-go v1.55.5
-	github.com/briandowns/spinner v1.23.0
+	github.com/briandowns/spinner v1.23.2
 	github.com/cjlapao/common-go v0.0.49
 	github.com/cjlapao/common-go-cryptorand v0.0.6
 	github.com/cjlapao/common-go-logger v0.0.10
