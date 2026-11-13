@@ -81,9 +81,55 @@ jobs:
       - name: Parse version from package.json
         run: |
           echo "VERSION=$(cat ./VERSION)" >> "$GITHUB_ENV"
+      - name: Validate changelog entry
+        run: |
+          chmod +x ./.github/workflow_scripts/validate-changelog-version.sh
+          ./.github/workflow_scripts/validate-changelog-version.sh
       - name: Generate release notes
         run: |
-          ./.github/workflow_scripts/get-latest-changelog.sh --output-to-file
+          set -euo pipefail
+          chmod +x ./.github/workflow_scripts/generate-changelog.sh
+          ./.github/workflow_scripts/generate-changelog.sh \
+            --mode RELEASE \
+            --repo "${{ github.repository }}" \
+            --version "${VERSION}" \
+            --from-changelog \
+            --output-to-file \
+            --file release_notes.md
+
+          cat >> release_notes.md <<EOF
+
+          ## Release Details
+
+          **Version**: v${VERSION}
+          **Release Date**: $(date '+%Y-%m-%d')
+
+          ## Docker
+
+          The image is published to the GitHub Container Registry:
+
+          \`\`\`
+          docker pull ghcr.io/parallels/prl-devops-service:${VERSION}
+          \`\`\`
+
+          ## Helm
+
+          The chart is published to the GitHub Pages Helm repository:
+
+          \`\`\`
+          helm repo add prl-devops-service https://parallels.github.io/prl-devops-service/charts
+          helm repo update
+          helm upgrade --install devops-service prl-devops-service/parallels-devops-service \\
+            --version ${VERSION}
+          \`\`\`
+
+          ## Artifacts
+
+          - Linux binaries (386, amd64, arm64) with MD5 checksums
+          - Windows binaries (386, amd64, arm64)
+          - macOS binaries (amd64, arm64), code-signed and notarized, with MD5 checksums
+          - Helm chart (parallels-devops-service-${VERSION}.tgz)
+          EOF
           cat release_notes.md
       - name: Create release and upload release asset
         uses: actions/github-script@v7

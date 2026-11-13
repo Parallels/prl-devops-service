@@ -1,0 +1,94 @@
+name: Update Dev Integration PR
+
+# CONVENTIONS (dev branch workflow):
+# - Big features merge into `dev`; `main` is synced back into `dev` automatically.
+# - When dev work is ready, a human opens the `dev` -> `main` PR ("Integrate …").
+# - THIS workflow captures every PR merged into `dev` since the last merged
+#   dev-integration PR and writes the bullets into that PR's `## Changelog`
+#   section — `dev` itself never touches CHANGELOG.md.
+# - At release time, Create Release PR collects entries from PRs merged into
+#   `main` (base main), so the captured bullets land in CHANGELOG.md and the
+#   GitHub release alongside the main-based bug fixes. Do not hand-edit the
+#   captured section — it is regenerated on every push to the PR branch.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: dev-integration-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  capture-dev-changelog:
+    name: Capture merged dev PRs into PR body
+    if: github.base_ref == 'main' && github.head_ref == 'dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Capture and inject changelog section
+        env:
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+
+          # Boundary label must exist before we can attach it (idempotent).
+          gh label create dev-integration \
+            --repo "$REPO" \
+            --color "7057ff" \
+            --description "Dev integration PR — changelog section is auto-managed" \
+            || true
+
+          chmod +x ./.github/workflow_scripts/generate-changelog.sh
+          ENTRIES=$(./.github/workflow_scripts/generate-changelog.sh \
+            --mode ENTRIES \
+            --repo "$REPO" \
+            --base dev \
+            --boundary-label dev-integration \
+            --verbose) || { echo "::error::Failed to collect dev changelog entries"; exit 1; }
+
+          gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label dev-integration
+
+          if [ -z "$ENTRIES" ]; then
+            echo "No new dev entries to capture."
+            exit 0
+          fi
+
+          gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq '.body // ""' > body.md
+          printf '%s\n' "$ENTRIES" > entries.txt
+
+          # Replace the content of the ## Changelog section (create it if absent),
+          # leaving every other part of the body untouched.
+          if ! grep -q '^## Changelog' body.md; then
+            printf '\n## Changelog\n' >> body.md
+          fi
+          awk '
+            /^## Changelog/ {
+              print
+              print ""
+              print "<!-- managed automatically by update-dev-integration-pr.yml — manual edits here are overwritten -->"
+              print ""
+              while ((getline line < "entries.txt") > 0) print line
+              close("entries.txt")
+              in_section=1
+              next
+            }
+            in_section && /^## / { in_section=0 }
+            in_section { next }
+            { print }
+          ' body.md > body_new.md
+
+          gh pr edit "$PR_NUMBER" --repo "$REPO" --body-file body_new.md
+
+          {
+            echo "### Captured dev entries"
+            echo ""
+            printf '%s\n' "$ENTRIES"
+          } >> "$GITHUB_STEP_SUMMARY"

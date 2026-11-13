@@ -39,6 +39,8 @@ RUN --mount=type=secret,id=amplitude_api_key \
   CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=canary'" -o /go/bin/prl-devops-service; \
   elif [ "$BUILD_ENV" = "beta" ]; then \
   CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=beta'" -o /go/bin/prl-devops-service; \
+  elif [ "$BUILD_ENV" = "dev" ]; then \
+  CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=dev'" -o /go/bin/prl-devops-service; \
   else \
   CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=stable'" -o /go/bin/prl-devops-service; \
   fi

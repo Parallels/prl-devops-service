@@ -1,0 +1,101 @@
+name: Dev Preview Deploy
+
+# CONVENTIONS (dev branch workflow):
+# - Fast staging test lane for code on `dev`: builds ghcr.io/parallels/prl-devops-service:dev-<sha>
+#   and deploys it to stg. No GitHub release, no version bump, no changelog,
+#   no Discord announcement, and `:latest` is untouched.
+# - Run this workflow from the `dev` ref. The Helm chart still comes from `main`
+#   (see the header comment in deploy-aks.yml) — chart changes take effect for
+#   staging only after they are integrated into `main`.
+# - Closer-to-production cycles remain available by dispatching
+#   release_beta.yml / release_canary.yml from the `dev` ref.
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_orchestrator:
+        description: "Deploy Orchestrator"
+        required: false
+        type: boolean
+        default: true
+      deploy_catalog:
+        description: "Deploy Catalog"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  packages: write
+  actions: write
+
+concurrency:
+  group: dev-preview
+  cancel-in-progress: false
+
+jobs:
+  build-preview:
+    name: Build preview image
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_REPOSITORY: ghcr.io/parallels/prl-devops-service
+      AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
+    outputs:
+      image_tag: ${{ steps.tag.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute preview tag
+        id: tag
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=dev-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            VERSION=dev-${{ steps.tag.outputs.short_sha }}
+            BUILD_ENV=dev
+            GIT_COMMIT=${{ github.sha }}
+          secrets: |
+            amplitude_api_key=${{ secrets.AMPLITUDE_API_KEY }}
+          tags: |
+            ${{ env.IMAGE_REPOSITORY }}:dev-${{ steps.tag.outputs.short_sha }}
+
+  deploy-stg:
+    name: Deploy preview to staging
+    needs: build-preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch deploy workflow on main
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-aks.yml',
+              ref: 'main',
+              inputs: {
+                environment: 'stg',
+                image_tag: '${{ needs.build-preview.outputs.image_tag }}',
+                namespace: 'prl-devops-services',
+                deploy_orchestrator: "${{ inputs.deploy_orchestrator && 'true' || 'false' }}",
+                deploy_catalog: "${{ inputs.deploy_catalog && 'true' || 'false' }}"
+              }
+            });
+            console.log('Dispatched deploy-aks.yml on main for stg with tag ${{ needs.build-preview.outputs.image_tag }}');
