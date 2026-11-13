@@ -34,17 +34,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-preview:
-    name: Build preview image (linux/${{ matrix.arch }})
-    # One job per architecture, each on a native runner for that architecture:
-    # no QEMU emulation, so the arm64 leg is no longer a fraction of amd64
-    # speed. Images are pushed by digest only; publish-preview below assembles
-    # them into the tagged multi-arch preview image.
-    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [amd64, arm64]
+  build-preview-amd64:
+    name: Build preview image (linux/amd64)
+    runs-on: ubuntu-latest
     env:
       IMAGE_REPOSITORY: ghcr.io/parallels/prl-devops-service
       AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
@@ -74,7 +66,52 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/${{ matrix.arch }}
+          platforms: linux/amd64
+          build-args: |
+            VERSION=dev-${{ steps.tag.outputs.short_sha }}
+            BUILD_ENV=dev
+            GIT_COMMIT=${{ github.sha }}
+          secrets: |
+            amplitude_api_key=${{ secrets.AMPLITUDE_API_KEY }}
+          outputs: type=image,name=${{ env.IMAGE_REPOSITORY }},push-by-digest=true,name-canonical=true,push=true
+
+  build-preview-arm64:
+    # Native arm64 runner: the whole image (base layers, apk, go build) runs
+    # without QEMU emulation, and the two legs build in parallel.
+    # Images are pushed by digest only; publish-preview below assembles them
+    # into the tagged multi-arch preview image.
+    name: Build preview image (linux/arm64)
+    runs-on: ubuntu-24.04-arm
+    env:
+      IMAGE_REPOSITORY: ghcr.io/parallels/prl-devops-service
+      AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute preview short SHA
+        id: tag
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push preview image by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/arm64
           build-args: |
             VERSION=dev-${{ steps.tag.outputs.short_sha }}
             BUILD_ENV=dev
@@ -85,7 +122,9 @@ jobs:
 
   publish-preview:
     name: Publish multi-arch preview image
-    needs: build-preview
+    needs:
+      - build-preview-amd64
+      - build-preview-arm64
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -101,20 +140,14 @@ jobs:
           SHORT_SHA="${GITHUB_SHA::7}"
           echo "image_tag=dev-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
-      - name: Collect platform digests
-        id: digests
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // Matrix job outputs are aggregated into one JSON object keyed by
-            // matrix value; pull the manifest digests out of it.
-            const raw = `${{ needs.build-preview.outputs.digest }}`
-            const digests = [...new Set(raw.match(/sha256:[a-f0-9]{64}/g) || [])]
-            if (digests.length !== 2) {
-              core.setFailed(`Expected 2 platform digests, got ${digests.length}: ${raw}`)
-              return
-            }
-            core.setOutput('digests', digests.join(','))
+      - name: Verify platform digests
+        run: |
+          amd64='${{ needs.build-preview-amd64.outputs.digest }}'
+          arm64='${{ needs.build-preview-arm64.outputs.digest }}'
+          if ! [[ "$amd64" =~ ^sha256:[a-f0-9]{64}$ ]] || ! [[ "$arm64" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "::error::Missing or malformed platform digests (amd64='$amd64' arm64='$arm64')"
+            exit 1
+          fi
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v4
@@ -129,7 +162,7 @@ jobs:
           push: true
           provenance: false
           keep-gitcontext: false
-          digests: ${{ steps.digests.outputs.digests }}
+          digests: ${{ needs.build-preview-amd64.outputs.digest }},${{ needs.build-preview-arm64.outputs.digest }}
           tags: |
             ${{ env.IMAGE_REPOSITORY }}:${{ steps.tag.outputs.image_tag }}
 

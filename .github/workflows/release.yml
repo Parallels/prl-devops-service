@@ -222,18 +222,10 @@ jobs:
         if: always()
         run: |
           security delete-keychain temp.keychain
-  build-containers:
+  build-containers-amd64:
     needs: release
-    name: Build Docker Image (linux/${{ matrix.arch }})
-    # One job per architecture, each on a native runner for that architecture:
-    # no QEMU emulation, so the arm64 leg is no longer a fraction of amd64
-    # speed. Images are pushed by digest only; the docker-manifest job below
-    # assembles them into the tagged multi-arch image.
-    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [amd64, arm64]
+    name: Build Docker Image (linux/amd64)
+    runs-on: ubuntu-latest
     env:
       EXT_VERSION: ${{ needs.release.outputs.version }}
       AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
@@ -257,7 +249,47 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/${{ matrix.arch }}
+          platforms: linux/amd64
+          build-args: |
+            VERSION=${{ env.EXT_VERSION }}
+            BUILD_ENV=production
+            GIT_COMMIT=${{ github.sha }}
+          secrets: |
+            amplitude_api_key=${{ secrets.AMPLITUDE_API_KEY }}
+          outputs: type=image,name=${{ env.IMAGE_REPOSITORY }},push-by-digest=true,name-canonical=true,push=true
+
+  build-containers-arm64:
+    # Native arm64 runner: the whole image (base layers, apk, go build) runs
+    # without QEMU emulation, and the two legs build in parallel.
+    # Images are pushed by digest only; the docker-manifest job below assembles
+    # them into the tagged multi-arch image.
+    needs: release
+    name: Build Docker Image (linux/arm64)
+    runs-on: ubuntu-24.04-arm
+    env:
+      EXT_VERSION: ${{ needs.release.outputs.version }}
+      AmplitudeApiKey: ${{ secrets.AMPLITUDE_API_KEY }}
+      IMAGE_REPOSITORY: ghcr.io/parallels/prl-devops-service
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push image by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/arm64
           build-args: |
             VERSION=${{ env.EXT_VERSION }}
             BUILD_ENV=production
@@ -270,7 +302,8 @@ jobs:
     name: Publish multi-arch image
     needs:
       - release
-      - build-containers
+      - build-containers-amd64
+      - build-containers-arm64
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -279,20 +312,14 @@ jobs:
       EXT_VERSION: ${{ needs.release.outputs.version }}
       IMAGE_REPOSITORY: ghcr.io/parallels/prl-devops-service
     steps:
-      - name: Collect platform digests
-        id: digests
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // Matrix job outputs are aggregated into one JSON object keyed by
-            // matrix value; pull the manifest digests out of it.
-            const raw = `${{ needs.build-containers.outputs.digest }}`
-            const digests = [...new Set(raw.match(/sha256:[a-f0-9]{64}/g) || [])]
-            if (digests.length !== 2) {
-              core.setFailed(`Expected 2 platform digests, got ${digests.length}: ${raw}`)
-              return
-            }
-            core.setOutput('digests', digests.join(','))
+      - name: Verify platform digests
+        run: |
+          amd64='${{ needs.build-containers-amd64.outputs.digest }}'
+          arm64='${{ needs.build-containers-arm64.outputs.digest }}'
+          if ! [[ "$amd64" =~ ^sha256:[a-f0-9]{64}$ ]] || ! [[ "$arm64" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "::error::Missing or malformed platform digests (amd64='$amd64' arm64='$arm64')"
+            exit 1
+          fi
       - uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -304,7 +331,7 @@ jobs:
           push: true
           provenance: false
           keep-gitcontext: false
-          digests: ${{ steps.digests.outputs.digests }}
+          digests: ${{ needs.build-containers-amd64.outputs.digest }},${{ needs.build-containers-arm64.outputs.digest }}
           tags: |
             ${{ env.IMAGE_REPOSITORY }}:latest
             ${{ env.IMAGE_REPOSITORY }}:${{ env.EXT_VERSION }}
