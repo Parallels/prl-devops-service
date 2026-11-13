@@ -37,7 +37,12 @@ func setupDB(t *testing.T) func() {
 	jobs.New(ctx)
 
 	return func() {
-		// Nothing to clean up — the temp dir is removed by t.TempDir automatically.
+		// Drain the legacy save/backup daemons BEFORE t.TempDir removal (T18):
+		// the daemon goroutines outlive the test otherwise and their queued
+		// writes land in the retired dir — the ENOTEMPTY flake of the T1
+		// family (sighted ~3/8 whole-package loads on the merged tip).
+		// Disconnect's drain semantics were fixed in #425 (fc7fcf6).
+		_ = db.Disconnect(ctx) //nolint:staticcheck // legacy engine drain by design; the whole engine retires in v1.3.0 (#426)
 	}
 }
 
