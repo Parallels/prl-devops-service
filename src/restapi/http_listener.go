@@ -438,9 +438,12 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 
 			if config.IsCorsEnabled() {
 				l.Logger.Info("Enabling CORS for HTTPS")
+				// Serve a private clone: ListenAndServeTLS("", "") lets
+				// net/http2 configure the server's TLSConfig in place; the
+				// caller's config must stay read-only afterwards.
 				sslSrv = &http.Server{
 					Addr:              ":" + l.Options.TLSPort,
-					TLSConfig:         tlsConfig,
+					TLSConfig:         tlsConfig.Clone(),
 					Handler:           buildCORSHandler(config, l.Router),
 					ReadHeaderTimeout: time.Duration(30) * time.Second,
 					ReadTimeout:       time.Duration(5) * time.Hour,
@@ -450,7 +453,7 @@ func (l *HttpListener) Start(serviceName string, serviceVersion string) {
 			} else {
 				sslSrv = &http.Server{
 					Addr:              ":" + l.Options.TLSPort,
-					TLSConfig:         tlsConfig,
+					TLSConfig:         tlsConfig.Clone(),
 					Handler:           l.Router,
 					ReadHeaderTimeout: time.Duration(30) * time.Second,
 					ReadTimeout:       time.Duration(5) * time.Hour,

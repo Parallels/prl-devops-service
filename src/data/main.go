@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -60,7 +61,7 @@ type Data struct {
 type JsonDatabase struct {
 	ctx          basecontext.ApiContext
 	Config       JsonDatabaseConfig
-	connected    bool
+	connected    atomic.Bool
 	isSaving     bool
 	saveProcess  chan bool
 	filename     string
@@ -97,7 +98,6 @@ func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase 
 			AutoRecover:         cfg.IsDatabaseAutoRecover(),
 		},
 		ctx:         ctx,
-		connected:   false,
 		isSaving:    false,
 		filename:    filename,
 		saveProcess: make(chan bool),
@@ -144,7 +144,7 @@ func NewJsonDatabase(ctx basecontext.ApiContext, filename string) *JsonDatabase 
 // Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) Connect(ctx basecontext.ApiContext) error {
 	ctx.LogDebugf("[Database] Connecting to database %s", j.filename)
-	j.connected = true
+	j.connected.Store(true)
 	return nil
 }
 
@@ -235,7 +235,7 @@ func (j *JsonDatabase) Filename() string {
 
 // Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) IsConnected() bool {
-	return j.connected
+	return j.connected.Load()
 }
 
 // Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
@@ -562,7 +562,7 @@ func (j *JsonDatabase) recoverFromResidualSaveFiles(ctx basecontext.ApiContext, 
 		}
 		j.dataMutex.Lock()
 		j.data = data
-		j.connected = true
+		j.connected.Store(true)
 		j.dataMutex.Unlock()
 
 		ctx.LogInfof("[Database] Successfully recovered data from save file %s", latestSaveFile)
@@ -664,7 +664,7 @@ func (j *JsonDatabase) loadFromFile(ctx basecontext.ApiContext) error {
 
 	j.dataMutex.Lock()
 	j.data = data
-	j.connected = true
+	j.connected.Store(true)
 	j.dataMutex.Unlock()
 
 	// Handle recovery of ongoing jobs
@@ -703,7 +703,7 @@ func (j *JsonDatabase) loadFromEmpty(ctx basecontext.ApiContext) error {
 		return err
 	}
 
-	j.connected = true
+	j.connected.Store(true)
 	return nil
 }
 

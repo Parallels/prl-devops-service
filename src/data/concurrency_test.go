@@ -208,6 +208,8 @@ func TestConcurrentSaveOperations(t *testing.T) {
 	defer func() {
 		if db2.cancel != nil {
 			db2.closeCancel()
+			// Drain daemons before the temp dir goes away (ENOTEMPTY).
+			db2.saveWg.Wait()
 		}
 	}()
 

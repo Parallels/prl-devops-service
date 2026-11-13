@@ -131,6 +131,9 @@ func TestLoadSave(t *testing.T) {
 	defer func() {
 		if db2.cancel != nil {
 			db2.closeCancel()
+			// Wait for the daemons: RemoveAll in cleanupTestDB races a
+			// daemon mid-write into the temp dir (ENOTEMPTY).
+			db2.saveWg.Wait()
 		}
 	}()
 
@@ -277,6 +280,9 @@ func TestLoadWithEncryption(t *testing.T) {
 	defer func() {
 		if db2.cancel != nil {
 			db2.closeCancel()
+			// Wait for the daemons: RemoveAll in cleanupTestDB races a
+			// daemon mid-write into the temp dir (ENOTEMPTY).
+			db2.saveWg.Wait()
 		}
 	}()
 
