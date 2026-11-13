@@ -75,7 +75,8 @@ Rules (§14): slices are serial by default; `sql-migration` must never receive a
 | 58 | **merge hardening-02** — clean; tip: ancestry ✓ build ✓ suite 41/41 retry, `-race` database+controllers green; worktrees/branches swept | `slice/hardening-02` | **MERGED** `06ecd91` (tally 39 — `sql-migration` TIP) | 2026-11-13 |
 | 59 | `hardening-03` **T18** — `setupDB` daemon drain (last T1-family flake); 10/10 fresh loads 0 strikes, focused ×10, `-race`, lint delta 0, suite 41/41 | `slice/hardening-03` | **GATE PASSED** macOS → **MERGED** `3aa5815` (row 60) | 2026-11-13 |
 | 60 | **merge hardening-03 + ship** — tally 40 tip `3aa5815`; owner pushes FF (remote at `06ecd91` from owner's push); PR → `dev` via prefilled URL + body; no auto-close | `sql-migration` | **SHIPPING** (owner: final push + open PR) | 2026-11-13 |
-| 61 | `security-01` — credential-shape removal (5 helpers, 33 files, golden re-capture) + CI `secrets.CI_POSTGRES_PASSWORD` wiring + docs placeholders **+ guard action v6→v7**; suite 41/41, lint delta 0, depguard 0 | `slice/security-01` | **PENDING HUMAN APPROVAL** (`cc35ebc`+`899f5b3`) | 2026-11-13 |
+| 61 | `security-01` — credential-shape removal (5 helpers, 33 files, golden re-capture) + CI `secrets.CI_POSTGRES_PASSWORD` wiring + docs placeholders **+ guard action v6→v7**; suite 41/41, lint delta 0, depguard 0 | `slice/security-01` | **MERGED** `676f842` (tally 41; owner GO: "lets push everything…") | 2026-11-13 |
+| 62 | `ci-386-drop` — windows/386 excluded in 4 matrices + release notes **+ depguard rule-desc removal for `config verify`** (v2 jsonschema); 7/7 legs cross-green, verify exit 0, guard 0 issues | `slice/ci-386-drop` | **MERGED** `ce0680f` (tally 42) | 2026-11-13 |
 
 ---
 
@@ -3882,7 +3883,21 @@ hardening-03 merged clean (`3aa5815`; smoke: build + 3× fresh `tests/controller
 
 **Post-report CI fix (same branch, `899f5b3`)**: legacy-import-guard went red on first real CI run — `golangci-lint-action@v6` hard-rejects v2 version strings, while the repo config is v2 schema (synced upstream) requiring the v2 binary. Action bumped to **v7** (the v2-supporting action line); the #426-era comment ("v6 documents v2 passthrough") was wrong and is corrected in-file. Guard logic proven locally with the identical toolchain (golangci-lint 2.14.0): `--enable-only=depguard ./...` → **0 issues, exit 0** — no new legacy callers from security-01's own churn.
 
-**VERDICT**: **PENDING HUMAN APPROVAL** — branch `slice/security-01` = `cc35ebc` + `899f5b3`, one gate covering both. Owner follow-up outside git: create `CI_POSTGRES_PASSWORD` repo secret + triage existing alerts as "not a real secret / used in tests".
+**VERDICT**: **MERGED** — owner GO ("lets push everything to the feature branch for testing the pipelines") executed as the gate; merge `676f842` (tally 41), post-merge smoke green (build, 8/8 touched packages, depguard 0). Owner follow-up outside git: create `CI_POSTGRES_PASSWORD` repo secret + triage existing alerts as "not a real secret / used in tests".
+
+## Slice ci-386-drop — windows/386 removed from build matrices (`d3a76f7`)
+
+**Trigger**: PR build pipeline red — `modernc.org/sqlite@v1.23.1/lib` "undefined: sqlite3_index_*" under `GOOS=windows GOARCH=386`. Owner directive: "so lets remove that build".
+
+**Analysis**: the failure was reproduced byte-for-byte locally. modernc.org/sqlite ships **no windows/386 port** (generated arch files absent) — permanent, not fixable by version bump; any tree importing `database/` (sqlite engine, this feature) can never build that pair. Probed every other combo with the pinned toolchain: **all seven pass** (linux/386 survives — modernc has that port). Surgical exclusion, not an arch ban.
+
+**Change**: `- goarch: "386" / goos: windows` excluded in pull_request.yml, release.yml, release_canary.yml, release_beta.yml (reason commented in-file; legacy darwin+386 excludes kept); header comments + publish_release.yml artifact-notes updated ("Windows binaries (amd64, arm64)").
+
+**Self-gate**: 7/7 remaining legs `go build ./...` clean cross-compiled · all five workflows parse via yaml.v3 · diff limited to workflow YAML.
+
+**Second CI iteration (same wave, `6de42dc`)**: after the v7 bump reached CI, the action's stricter pre-step `golangci-lint config verify` rejected `linters.settings.depguard.rules.main.desc` — rule objects have no `desc` in the v2 jsonschema (the deny-entry `desc` is legal; kept). Reproduced byte-identical locally, moved the rule description to a YAML comment, `config verify` exit 0, guard replay still 0 issues. Why local gates had passed: `golangci-lint run` silently ignores the unknown key; only the action's verify step rejects it. Guard workflow confirmed the sole golangci consumer repo-wide.
+
+**VERDICT**: **MERGED** `ce0680f` (tally 42) — owner's "I cannot see any changes here and it still failed remotely" executed as ship order (fix had never been merged; merged + cleaned same turn, `config verify` exit 0 re-proved on the merged tree).
 
 ## Deferred backlog (tracked follow-ups)
 
