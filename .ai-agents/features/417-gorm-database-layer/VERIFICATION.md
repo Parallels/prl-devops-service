@@ -75,6 +75,7 @@ Rules (§14): slices are serial by default; `sql-migration` must never receive a
 | 58 | **merge hardening-02** — clean; tip: ancestry ✓ build ✓ suite 41/41 retry, `-race` database+controllers green; worktrees/branches swept | `slice/hardening-02` | **MERGED** `06ecd91` (tally 39 — `sql-migration` TIP) | 2026-11-13 |
 | 59 | `hardening-03` **T18** — `setupDB` daemon drain (last T1-family flake); 10/10 fresh loads 0 strikes, focused ×10, `-race`, lint delta 0, suite 41/41 | `slice/hardening-03` | **GATE PASSED** macOS → **MERGED** `3aa5815` (row 60) | 2026-11-13 |
 | 60 | **merge hardening-03 + ship** — tally 40 tip `3aa5815`; owner pushes FF (remote at `06ecd91` from owner's push); PR → `dev` via prefilled URL + body; no auto-close | `sql-migration` | **SHIPPING** (owner: final push + open PR) | 2026-11-13 |
+| 61 | `security-01` — credential-shape removal (5 test-only helpers, 32 files, golden re-capture w/ zero-entropy placeholder) + CI `secrets.CI_POSTGRES_PASSWORD` wiring + docs placeholders; suite 41/41, lint delta 0 | `slice/security-01` | **PENDING HUMAN APPROVAL** (`cc35ebc`, 32 files +182/−86) | 2026-11-13 |
 
 ---
 
@@ -3868,6 +3869,18 @@ cd src && for i in 1 2 3 4 5; do go test ./tests/controllers/ -count=1; done
 hardening-03 merged clean (`3aa5815`; smoke: build + 3× fresh `tests/controllers` ok; all worktrees swept, zero slice branches left). Push state: sandbox has **no GitHub credentials at all** (https remote, no helper, no ssh/gh/brew) — transport is the owner's: remote advanced to `06ecd91` by the owner's earlier push; `3aa5815` follows with one more fast-forward push (`git push origin sql-migration`, still FF). PR `sql-migration` → **`dev`** (not main): base verified sane — `dev` = main + `54a9198` ("Updating development process", which committed the current VERIFICATION.md + max-vms-per-host brief); ledger three-way is clean by construction (`sql` side == merge-base ⇒ PR never touches VERIFICATION.md; `dev` keeps the live copy). Body built on the repo template: Description + automation-fed `## Changelog` prefixed bullets + type + checklist; **no auto-close refs** — the #417–#427 close-out remains a deliberate commented sweep after merge.
 
 **VERDICT**: **SHIPPING** — open items: owner's final FF push + PR open from prefilled URL; post-merge issue sweep pending its own GO.
+
+## Slice security-01 — credential-shape removal + CI GitHub-secrets wiring (`cc35ebc`)
+
+**Trigger**: owner — security scan tripped by integration-test passwords. Forensics: no real credential anywhere; detectors match SHAPES. Populations: (1) CI postgres job `POSTGRES_PASSWORD: ci-pg` + inline DSN (ours, `cf0b24c6` task-05); (2) ~40 `Password: "literal"` fixtures across parity/database/data/models; (3) DSN-shaped URL literals (parse tests, doc comments, docs guides); (4) keyword-form `password=<value>` redact-table inputs; (5) golden `user.json` with embedded password value.
+
+**Fix**: five test-only helpers (`shape_security_test.go`; database/parity/data/models/config) — `fixtureSecret` (runtime sha256-derived, deterministic per seed) + `testDSN` (assembles URLs from opaque parts); 32 files rewritten; verbatim-comparison sites (bcrypt `Compare`, `== input` anti-asserts) call the same derivation so semantics are identical; `pwCanary` → derived var; unicode redact case preserved via split literals; models golden re-captured under `GOLDEN_CAPTURE=1` with **zero-entropy placeholder** value (`placeholder-hashed`) — committed test data must not resemble secrets either. CI: service password + `POSTGRES_TEST_DSN` read `secrets.CI_POSTGRES_PASSWORD || 'ci-ephemeral'` (owner must create the repo secret for real value; fork/no-secret runs keep working — container is per-job ephemeral, no data). Docs: `<db-user>:<db-password>` placeholders (postgresql.md, configuration.md, 425-plan; already-masked `***` examples kept). Integration doc-comments de-shaped in both twins.
+
+**Not in scope**: pre-existing main-era literals in untouched files (frozen-legacy policy); VERIFICATION.md historical DSN quotes (triage as test-code if alerted); `Key:`/id-shaped values.
+
+**Self-gate**: build ✓ · gofmt ✓ · suite **41/41** (twice: pre/post golden recapture) · lint comm-delta: zero new attributable (untouched legacy errcheck multiplicity artifact documented) · runtime digests never appear in committed files (grep 0).
+
+**VERDICT**: **PENDING HUMAN APPROVAL** — slice `cc35ebc` awaits the owner's literal gate. Owner follow-up outside git: create `CI_POSTGRES_PASSWORD` repo secret + triage existing alerts as "not a real secret / used in tests".
 
 ## Deferred backlog (tracked follow-ups)
 
