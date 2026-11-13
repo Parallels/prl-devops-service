@@ -21,8 +21,11 @@ func newPostgresConnection(ctx basecontext.ApiContext, cfg DatabaseConfig) (*gor
 	if err != nil {
 		// Open dials (see above) — unreachable and misconfiguration both
 		// arrive here at boot; the sentinel wrap keeps #421's errors.Is
-		// branching working for either shape.
-		return nil, fmt.Errorf("%w (%s): %v", ErrDatabaseUnreachable, RedactDSN(cfg.DSN), err)
+		// branching working for either shape. The driver message goes
+		// through scrubDriverError: pgx echoes unparseable inputs verbatim
+		// (T16) and its own password masking is token-shape-bound.
+		return nil, fmt.Errorf("%w (%s): %s", ErrDatabaseUnreachable,
+			RedactDSN(cfg.DSN), scrubDriverError(err.Error(), cfg.DSN))
 	}
 
 	if err := applyPool(db, cfg); err != nil {

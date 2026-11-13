@@ -96,23 +96,35 @@ func TestPostgresOffline_DSNFormsTypedOutcomes(t *testing.T) {
 		_, err := NewDatabaseConnection(ctx, DatabaseConfig{Type: DBTypePostgres, DSN: "d5junk-not-a-dsn"})
 		require.Error(t, err)
 		assert.True(t, errors.Is(err, ErrDatabaseUnreachable))
-		assert.Contains(t, err.Error(), "d5junk-not-a-dsn",
-			"pgx parse-failure echoes the raw input through the wrap — observed behaviour")
+		assert.NotContains(t, err.Error(), "d5junk-not-a-dsn",
+			"T16 fix (hardening-02): the pgx verbatim echo is scrubbed at the wrap site")
 	})
-	t.Run("t16_parse_failure_secret_leak_PINNED", func(t *testing.T) {
-		// PRODUCTION FINDING (T16, backlog): the unreachable wrap redacts
-		// the DSN, but a PARSE failure embeds pgx's raw-input echo ⇒ an
-		// unparseable DSN that carries a password leaks it into logs.
-		// Asserting the leak EXISTING (pin, not blessing): fix shape =
-		// scrub the driver message at the wrap site — production change,
-		// out of #425's file list ⇒ deferred to #426 decision.
-		t.Log("quirk preserved, see backlog T16 — D-8 gap on the parse-failure path")
+	t.Run("t16_parse_failure_secret_leak_FIXED", func(t *testing.T) {
+		// T16 (backlog): the wrap used to embed pgx's raw-input echo, so an
+		// unparseable DSN carrying a password leaked it into boot logs.
+		// Was pinned as leaking EXISTING through 425-05; hardening-02 fixed
+		// it at the wrap site (scrubDriverError) — pin flipped to absence.
 		ctx := testCtx()
 		leaky := d5Secret + "-not-a-dsn-at-all"
 		_, err := NewDatabaseConnection(ctx, DatabaseConfig{Type: DBTypePostgres, DSN: leaky})
 		require.Error(t, err)
 		assert.True(t, errors.Is(err, ErrDatabaseUnreachable))
-		assert.Contains(t, err.Error(), d5Secret, "T16: raw echo currently survives (pinned)")
+		assert.NotContains(t, err.Error(), d5Secret, "T16: raw echo scrubbed")
+		assert.Contains(t, err.Error(), "[redacted-dsn]", "fail-closed placeholder present")
+	})
+	t.Run("t16b_keyword_junk_with_secret", func(t *testing.T) {
+		// Adversarial sibling of the pin: junk that CARRIES an "=" (so the
+		// keyword-form RedactDSN pass would keep the prose) with the secret
+		// OUTSIDE any password= token — pgx echoes it raw and masks nothing.
+		// Regression pin for the fail-open hole scrubDriverError's exact-
+		// input replacement closes.
+		ctx := testCtx()
+		_, err := NewDatabaseConnection(ctx, DatabaseConfig{Type: DBTypePostgres,
+			DSN: d5Secret + " host=broken="})
+		require.Error(t, err)
+		assert.True(t, errors.Is(err, ErrDatabaseUnreachable))
+		assert.NotContains(t, err.Error(), d5Secret,
+			"T16 fail-open hole: secret riding in keyword-ish junk echo must not survive")
 	})
 }
 
