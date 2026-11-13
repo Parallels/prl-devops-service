@@ -94,10 +94,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
+        # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/amd64, darwin/amd64, darwin/arm64
         goos: [linux, windows]
         goarch: ["386", amd64, arm64]
         exclude:
+          # modernc.org/sqlite (pure-Go engine, feature #417) has no windows/386
+          # port — the leg cannot compile while database/ imports it. All seven
+          # remaining combos cross-compile clean (verified 2026-11-13).
+          - goarch: "386"
+            goos: windows
           - goarch: "386"
             goos: darwin
     steps:
