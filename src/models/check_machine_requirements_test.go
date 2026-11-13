@@ -37,6 +37,30 @@ func TestCheckMachineRequirementsRequestValidation(t *testing.T) {
 	require.Equal(t, 2048, request.Requirements.Memory)
 }
 
+func TestCheckMachineRequirementsRequestTargetTags(t *testing.T) {
+	// A clean list survives validation untouched.
+	request := CheckMachineRequirementsRequest{Requirements: &MachineRequirements{}, TargetTags: []string{"pool=build", "os=sonoma"}}
+	require.NoError(t, request.Validate())
+	require.Equal(t, []string{"pool=build", "os=sonoma"}, request.TargetTags)
+
+	// Entries are trimmed and deduplicated case-insensitively, first spelling
+	// and order kept.
+	request = CheckMachineRequirementsRequest{Requirements: &MachineRequirements{}, TargetTags: []string{" Pool=Build ", "pool=build"}}
+	require.NoError(t, request.Validate())
+	require.Equal(t, []string{"Pool=Build"}, request.TargetTags)
+
+	// An entry that is empty after trimming is a client error.
+	request = CheckMachineRequirementsRequest{Requirements: &MachineRequirements{}, TargetTags: []string{"pool=build", "  "}}
+	err := request.Validate()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "target_tags cannot contain empty values")
+
+	// An empty list normalizes to nil: no constraint, never match-nothing.
+	request = CheckMachineRequirementsRequest{Requirements: &MachineRequirements{}, TargetTags: []string{}}
+	require.NoError(t, request.Validate())
+	require.Nil(t, request.TargetTags)
+}
+
 func TestMachineRequirementsGetSpecsType(t *testing.T) {
 	require.Equal(t, "pvm", (&MachineRequirements{}).GetSpecsType())
 	require.Equal(t, "macvm", (&MachineRequirements{Os: "macos"}).GetSpecsType())

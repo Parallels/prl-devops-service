@@ -325,6 +325,12 @@ func (s *OrchestratorService) pingHostForLatency(host data_models.OrchestratorHo
 	return duration
 }
 
+// filterAndSortHosts orders the hosts that already passed validateHost (which
+// enforces the hard target_tags constraint first, inside checkHostRequirements
+// — tag-mismatched hosts are rejected before the capacity checks and never get
+// here, so cache locality and latency sorting only ever see tag-eligible
+// hosts). What runs here is the legacy selection_tags OR filter plus the
+// opportunistic cache-locality and latency ordering.
 func filterAndSortHosts(validHosts []data_models.OrchestratorHost, request models.CreateVirtualMachineRequest, getPing func(host data_models.OrchestratorHost) time.Duration) ([]data_models.OrchestratorHost, *models.ApiErrorResponse) {
 	// Stage 2: Selection Tags Filter
 	if len(request.SelectionTags) > 0 {
@@ -411,6 +417,9 @@ func filterAndSortHosts(validHosts []data_models.OrchestratorHost, request model
 // endpoint and returns the host job response immediately (HTTP 202).
 // jobID is the orchestrator job ID; when non-empty it is forwarded to the host
 // so the host can complete the orchestrator job directly (same-process case).
+// The request is forwarded verbatim — placement fields such as target_tags
+// ride along and are ignored by the host's local create: placement is the
+// orchestrator's exclusive responsibility.
 func (s *OrchestratorService) CallCreateHostVirtualMachineAsync(host data_models.OrchestratorHost, jobID string, request models.CreateVirtualMachineRequest) (*models.JobResponse, error) {
 	httpClient := s.getApiClient(host)
 	httpClient.WithTimeout(30 * time.Second)

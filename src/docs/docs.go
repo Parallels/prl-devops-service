@@ -12143,6 +12143,13 @@ const docTemplate = `{
                 "requirements": {
                     "$ref": "#/definitions/models.MachineRequirements"
                 },
+                "target_tags": {
+                    "description": "TargetTags mirrors the create request's hard host-tag placement\nconstraint: only hosts carrying ALL listed tags (case-insensitive)\npass the host_tags check. Absent means no tag constraint.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "version": {
                     "type": "string"
                 }
@@ -12468,6 +12475,13 @@ const docTemplate = `{
                 },
                 "start_on_create": {
                     "type": "boolean"
+                },
+                "target_tags": {
+                    "description": "TargetTags is a hard placement constraint: when present, only hosts that\ncarry ALL the listed host tags (case-insensitive exact match) are\neligible for placement and the pre-flight check. Absent or empty means\nno tag constraint. Unlike SelectionTags (legacy OR semantics: a host\nmatching at least one tag survives), every entry must match.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "vagrant_box": {
                     "$ref": "#/definitions/models.CreateVagrantMachineRequest"
@@ -13373,6 +13387,13 @@ const docTemplate = `{
                 },
                 "schema": {
                     "type": "string"
+                },
+                "tags": {
+                    "description": "Tags replaces the host's placement tags when provided: absent/null\nleaves them untouched, an empty array clears them. Entries are trimmed\nand deduplicated (case-insensitive, first spelling wins) at validation.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -13667,7 +13688,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "description": "host_state | architecture | cpu | memory | disk | vm_count | macos_inventory | macos_capacity",
+                    "description": "host_tags | host_state | architecture | cpu | memory | disk | vm_count | macos_inventory | macos_capacity",
                     "type": "string"
                 },
                 "passed": {
@@ -14534,7 +14555,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.1.8",
+	Version:          "1.1.9",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},

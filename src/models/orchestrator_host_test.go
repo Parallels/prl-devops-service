@@ -34,3 +34,21 @@ func TestOrchestratorHostUpdateRequestValidate_SchemelessHostWithPort(t *testing
 	assert.Equal(t, "http", req.Schema)
 	assert.Equal(t, "/api", req.Prefix)
 }
+
+// The tags field distinguishes "leave untouched" (nil) from "clear" (empty):
+// Validate normalizes entries but must never collapse an explicit empty list
+// into nil, and must never turn an absent field into one.
+func TestOrchestratorHostUpdateRequestValidate_Tags(t *testing.T) {
+	req := &OrchestratorHostUpdateRequest{}
+	require.NoError(t, req.Validate())
+	assert.Nil(t, req.Tags, "absent tags stay nil")
+
+	req = &OrchestratorHostUpdateRequest{Tags: []string{}}
+	require.NoError(t, req.Validate())
+	require.NotNil(t, req.Tags, "an explicit clear must survive validation")
+	assert.Empty(t, req.Tags)
+
+	req = &OrchestratorHostUpdateRequest{Tags: []string{" Pool=Build ", "", "pool=build", "os=sonoma"}}
+	require.NoError(t, req.Validate())
+	assert.Equal(t, []string{"Pool=Build", "os=sonoma"}, req.Tags, "trimmed, blanks dropped, case-insensitive dedupe keeping the first spelling")
+}

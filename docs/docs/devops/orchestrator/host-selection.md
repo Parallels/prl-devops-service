@@ -11,6 +11,25 @@ toc: true
 
 When a virtual machine creation request arrives at the orchestrator, it goes through a multi-stage pipeline to select the best available host. This document describes each stage in order.
 
+---
+
+## Stage 0: Hard Tag Constraint (`target_tags`)
+
+If the request includes `target_tags`, placement is restricted to hosts that carry **every** one of the requested host tags (case-insensitive exact match; see [Tag format](#tag-format)). This is the first filter applied: tag-mismatched hosts are rejected before any capacity evaluation or disk-space probe, so they cost neither scheduling effort nor network calls.
+
+- `pool=build` + `os=sonoma` selects hosts tagged with **both** labels.
+- Absent or empty `target_tags` imposes no constraint (all hosts remain eligible).
+- If no host carries all the tags, the request fails with HTTP 400 naming the missing tags per host.
+- The pre-flight check (`POST /v1/orchestrator/machines/check`) accepts the same `target_tags` field and reports a `host_tags` check with the missing tags for each evaluated host.
+- The explicit-host endpoints (`POST /v1/orchestrator/hosts/{id}/machines[/async]`) also enforce the constraint: naming a host that lacks a required tag fails with HTTP 400.
+- Only **host** tags participate. Tags attached to catalog VM manifests never influence placement.
+
+### Tag format
+
+Host tags are free-form labels managed by the operator: set at registration (`--tags=pool=build,os=sonoma`) or via `PUT /v1/orchestrator/hosts` (`tags` field — absent leaves tags untouched, an empty array clears them). `key=value` is a naming convention, not a parsed structure: `pool=build` matches only the identical tag (ignoring case), there is no key-only or wildcard matching. Tags cannot contain commas, because the registration flag splits the list on `,`.
+
+---
+
 ## Stage 1: Basic Host Validation
 
 Every registered host is evaluated against a set of baseline criteria. A host is skipped if any of the following is true:
@@ -43,6 +62,8 @@ Hosts running an older API version that does not expose the disk-space endpoint 
 
 If the request includes `selection_tags`, only hosts whose tag list contains **at least one** of the requested tags (case-insensitive) are kept. If tags are specified but no host matches, the request fails with HTTP 400.
 
+`selection_tags` is the legacy OR-style filter; prefer `target_tags` (Stage 0) for hard placement rules. The two can be combined: a host must satisfy the `target_tags` AND-constraint **and** match at least one `selection_tags` entry.
+
 ---
 
 ## Stage 3: Cache Locality
@@ -67,11 +88,27 @@ If every host in the list rejects the request, the orchestrator returns an error
 
 ---
 
+## Related placement rules
+
+| Need | Mechanism |
+|------|-----------|
+| Hard tag-based placement | `target_tags` on the create request (Stage 0) |
+| Check feasibility before creating | `target_tags` on `POST /v1/orchestrator/machines/check` — reported as the `host_tags` check |
+| Pin to a specific host | Explicit-host endpoints `POST /v1/orchestrator/hosts/{id}/machines[/async]` (still enforce `target_tags`) |
+| Preferred hosts / soft affinity / anti-affinity | Not supported today |
+
+---
+
 ## Summary
 
 ```
 All registered hosts
         │
+        ▼
+┌─────────────────────────┐
+│  Stage 0: Target Tags   │  target_tags (optional) — host must carry ALL requested tags
+└─────────────────────────┘
+        │ tag-eligible hosts
         ▼
 ┌─────────────────────────┐
 │  Stage 1: Validation    │  enabled, healthy, architecture, CPU, memory, disk, Apple VM limit

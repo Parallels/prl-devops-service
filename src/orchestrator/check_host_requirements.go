@@ -14,6 +14,7 @@ import (
 
 // Names of the individual decision-factor checks reported by the pre-flight endpoint.
 const (
+	checkNameHostTags       = "host_tags"
 	checkNameHostState      = "host_state"
 	checkNameArchitecture   = "architecture"
 	checkNameVmRequirements = "vm_requirements"
@@ -40,6 +41,27 @@ const (
 // missing specs) exactly like the original validateHost, returning a single failing
 // check so validateHost can preserve its legacy single-message error responses.
 func (s *OrchestratorService) checkHostRequirements(host data_models.OrchestratorHost, request models.CreateVirtualMachineRequest, specs *models.CreateVirtualMachineSpecs) []models.RequirementCheckResult {
+	// Hard placement constraint (target_tags): the host must carry EVERY
+	// requested tag. Evaluated first so tag-mismatched hosts short-circuit
+	// before any further state probing or the disk-space network call — the
+	// selector therefore filters by tags before it spends effort on capacity.
+	// Host tags are free-form labels (pool=build is a convention, never
+	// parsed); matching is case-insensitive exact equality, same posture as
+	// the legacy selection_tags filter. Only HOST tags participate: catalog
+	// manifest VM tags never influence placement.
+	var hostTagsCheck *models.RequirementCheckResult
+	if len(request.TargetTags) > 0 {
+		if missing := missingHostTags(host.Tags, request.TargetTags); len(missing) > 0 {
+			return []models.RequirementCheckResult{failedCheck(checkNameHostTags,
+				fmt.Sprintf("Host is missing required tags: %s", strings.Join(missing, ", ")))}
+		}
+		hostTagsCheck = &models.RequirementCheckResult{
+			Name:    checkNameHostTags,
+			Passed:  true,
+			Message: fmt.Sprintf("Host carries all %d required tags", len(request.TargetTags)),
+		}
+	}
+
 	// Host state: enabled, healthy and reporting resources (legacy short-circuit order).
 	if !host.Enabled {
 		return []models.RequirementCheckResult{failedCheck(checkNameHostState, "Host is not enabled")}
@@ -73,6 +95,9 @@ func (s *OrchestratorService) checkHostRequirements(host data_models.Orchestrato
 	}
 
 	checks := []models.RequirementCheckResult{stateCheck, archCheck}
+	if hostTagsCheck != nil {
+		checks = append([]models.RequirementCheckResult{*hostTagsCheck}, checks...)
+	}
 
 	// We will trust that the host has the reserved cpus setup correctly
 	// otherwise we would potentially go above the reserved cpus
@@ -227,7 +252,7 @@ func (s *OrchestratorService) CheckMachineRequirements(ctx basecontext.ApiContex
 	archUnspecified := strings.TrimSpace(request.Architecture) == ""
 	failedHosts := make([]models.MachineRequirementsHostResult, 0, len(hosts))
 	for _, host := range hosts {
-		vmRequest := models.CreateVirtualMachineRequest{Architecture: request.Architecture, Owner: request.Owner}
+		vmRequest := models.CreateVirtualMachineRequest{Architecture: request.Architecture, Owner: request.Owner, TargetTags: request.TargetTags}
 		if archUnspecified {
 			// No architecture constraint requested: match the host so the decision
 			// factor keeps its semantics, and drop the trivial pass from the report.
@@ -336,6 +361,29 @@ func failedCheck(name, message string) models.RequirementCheckResult {
 	return models.RequirementCheckResult{Name: name, Passed: false, Message: message}
 }
 
+// missingHostTags returns the required tags the host does not carry. Matching is
+// case-insensitive exact string equality over trimmed entries — the same
+// posture as the legacy selection_tags filter. The required list arrives
+// pre-normalized from request validation (trimmed, deduped, non-empty); the
+// host's stored tags are only operator-managed labels, so they are trimmed
+// defensively here.
+func missingHostTags(hostTags, required []string) []string {
+	if len(required) == 0 {
+		return nil
+	}
+	carried := make(map[string]bool, len(hostTags))
+	for _, tag := range hostTags {
+		carried[strings.ToLower(strings.TrimSpace(tag))] = true
+	}
+	var missing []string
+	for _, tag := range required {
+		if !carried[strings.ToLower(strings.TrimSpace(tag))] {
+			missing = append(missing, tag)
+		}
+	}
+	return missing
+}
+
 // dropRequirementCheck removes the named check from the result list.
 func dropRequirementCheck(checks []models.RequirementCheckResult, name string) []models.RequirementCheckResult {
 	filtered := make([]models.RequirementCheckResult, 0, len(checks))
@@ -349,14 +397,15 @@ func dropRequirementCheck(checks []models.RequirementCheckResult, name string) [
 }
 
 // isBlockingRequirementCheck reports whether the check list is a legacy short-circuit:
-// a single failing host_state/architecture/vm_requirements check that must be reported
-// verbatim instead of inside the aggregated "Insufficient host resources" message.
+// a single failing host_tags/host_state/architecture/vm_requirements check that must
+// be reported verbatim instead of inside the aggregated "Insufficient host resources"
+// message.
 func isBlockingRequirementCheck(checks []models.RequirementCheckResult) bool {
 	if len(checks) != 1 || checks[0].Passed {
 		return false
 	}
 	switch checks[0].Name {
-	case checkNameHostState, checkNameArchitecture, checkNameVmRequirements:
+	case checkNameHostTags, checkNameHostState, checkNameArchitecture, checkNameVmRequirements:
 		return true
 	}
 	return false

@@ -1126,6 +1126,14 @@ definitions:
         type: string
       requirements:
         $ref: '#/definitions/models.MachineRequirements'
+      target_tags:
+        description: |-
+          TargetTags mirrors the create request's hard host-tag placement
+          constraint: only hosts carrying ALL listed tags (case-insensitive)
+          pass the host_tags check. Absent means no tag constraint.
+        items:
+          type: string
+        type: array
       version:
         type: string
     type: object
@@ -1339,6 +1347,16 @@ definitions:
         type: array
       start_on_create:
         type: boolean
+      target_tags:
+        description: |-
+          TargetTags is a hard placement constraint: when present, only hosts that
+          carry ALL the listed host tags (case-insensitive exact match) are
+          eligible for placement and the pre-flight check. Absent or empty means
+          no tag constraint. Unlike SelectionTags (legacy OR semantics: a host
+          matching at least one tag survives), every entry must match.
+        items:
+          type: string
+        type: array
       vagrant_box:
         $ref: '#/definitions/models.CreateVagrantMachineRequest'
     type: object
@@ -1957,6 +1975,14 @@ definitions:
         type: string
       schema:
         type: string
+      tags:
+        description: |-
+          Tags replaces the host's placement tags when provided: absent/null
+          leaves them untouched, an empty array clears them. Entries are trimmed
+          and deduplicated (case-insensitive, first spelling wins) at validation.
+        items:
+          type: string
+        type: array
     type: object
   models.PackerTemplateResponse:
     properties:
@@ -2150,8 +2176,8 @@ definitions:
       message:
         type: string
       name:
-        description: host_state | architecture | cpu | memory | disk | vm_count |
-          macos_inventory | macos_capacity
+        description: host_tags | host_state | architecture | cpu | memory | disk |
+          vm_count | macos_inventory | macos_capacity
         type: string
       passed:
         type: boolean
@@ -2719,7 +2745,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 1.1.8
+  version: 1.1.9
 paths:
   /config/diskspace:
     post:

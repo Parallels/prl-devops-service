@@ -43,6 +43,10 @@ type CheckMachineRequirementsRequest struct {
 	HostId           string               `json:"host_id,omitempty"`
 	Owner            string               `json:"owner,omitempty"`
 	Requirements     *MachineRequirements `json:"requirements,omitempty"`
+	// TargetTags mirrors the create request's hard host-tag placement
+	// constraint: only hosts carrying ALL listed tags (case-insensitive)
+	// pass the host_tags check. Absent means no tag constraint.
+	TargetTags []string `json:"target_tags,omitempty"`
 }
 
 func (r *CheckMachineRequirementsRequest) Validate() error {
@@ -79,6 +83,12 @@ func (r *CheckMachineRequirementsRequest) Validate() error {
 		}
 	}
 
+	targetTags, err := NormalizeTagConstraints(r.TargetTags)
+	if err != nil {
+		return err
+	}
+	r.TargetTags = targetTags
+
 	if r.Owner == "" {
 		r.Owner = os.Getenv(constants.CURRENT_USER_ENV_VAR)
 	}
@@ -106,7 +116,7 @@ type MachineRequirementsHostResult struct {
 
 // RequirementCheckResult is the outcome of a single decision-factor check on a host.
 type RequirementCheckResult struct {
-	Name      string   `json:"name"` // host_state | architecture | cpu | memory | disk | vm_count | macos_inventory | macos_capacity
+	Name      string   `json:"name"` // host_tags | host_state | architecture | cpu | memory | disk | vm_count | macos_inventory | macos_capacity
 	Passed    bool     `json:"passed"`
 	Required  *float64 `json:"required,omitempty"`
 	Available *float64 `json:"available,omitempty"`

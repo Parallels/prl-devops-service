@@ -9,7 +9,17 @@ import (
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 )
 
-func (s *OrchestratorService) UpdateHost(ctx basecontext.ApiContext, host *models.OrchestratorHost) (*models.OrchestratorHost, error) {
+// UpdateHost persists a host record change. tagsProvided/overrideTags express an
+// explicit tag replacement from the caller: when tagsProvided is true, host.Tags
+// is set to overrideTags and the stored tags are NOT merged back in below —
+// otherwise replace or clear would silently resurrect the previously stored
+// tags through the merge. When tagsProvided is false, today's merge semantics
+// stand. Engine-agnostic: both DatabaseService implementations persist the
+// whole tags field through UpdateOrchestratorHostDetails.
+func (s *OrchestratorService) UpdateHost(ctx basecontext.ApiContext, host *models.OrchestratorHost, overrideTags []string, tagsProvided bool) (*models.OrchestratorHost, error) {
+	if tagsProvided {
+		host.Tags = overrideTags
+	}
 	dbService, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		return nil, err
@@ -88,7 +98,7 @@ func (s *OrchestratorService) UpdateHost(ctx basecontext.ApiContext, host *model
 			}
 		}
 	}
-	if len(dbHost.Tags) > 0 {
+	if !tagsProvided && len(dbHost.Tags) > 0 {
 		for _, dbTag := range dbHost.Tags {
 			if dbTag != "" {
 				found := false

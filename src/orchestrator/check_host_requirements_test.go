@@ -484,3 +484,162 @@ func TestCheckMachineRequirementsSkipsHostAtVmCountLimit(t *testing.T) {
 	require.True(t, ok)
 	require.False(t, vmCount.Passed)
 }
+
+// createCheckHostWithTags registers a host carrying the given placement tags.
+func createCheckHostWithTags(t *testing.T, db *data.JsonDatabase, name string, tags []string, resources *dbmodels.HostResources) *dbmodels.OrchestratorHost {
+	ctx := newCheckTestContext()
+	host, err := db.CreateOrchestratorHost(ctx, dbmodels.OrchestratorHost{
+		Host:         name,
+		Enabled:      true,
+		State:        "healthy",
+		Architecture: "arm64",
+		Tags:         tags,
+		Resources:    resources,
+	})
+	require.NoError(t, err)
+	// Tests share the database singleton; leave no residue behind.
+	t.Cleanup(func() { _ = db.DeleteOrchestratorHost(newCheckTestContext(), host.ID) })
+	return host
+}
+
+// target_tags is a hard AND-constraint evaluated before any other decision
+// factor: only a host carrying every tag — here the one that is otherwise
+// capacity-eligible as well — keeps the fleet check passing.
+func TestCheckMachineRequirementsFleetHonorTargetTags(t *testing.T) {
+	db := newCheckTestDatabase(t)
+	ctx := newCheckTestContext()
+	rich := &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 16, MemorySize: 32768}}
+	createCheckHostWithTags(t, db, "test-host", []string{"pool=test"}, rich)
+	createCheckHostWithTags(t, db, "build-host", []string{"pool=build", "OS=Sonoma"}, rich)
+
+	svc := &OrchestratorService{ctx: ctx}
+	response, apiError := svc.CheckMachineRequirements(ctx, models.CheckMachineRequirementsRequest{
+		Requirements: &models.MachineRequirements{Cpu: 2, Memory: 2048},
+		TargetTags:   []string{"POOL=BUILD", "os=sonoma"}, // case-insensitive AND match
+	})
+	require.Nil(t, apiError)
+	require.True(t, response.Passed, "the host carrying both tags must carry the placement")
+	require.Empty(t, response.Hosts, "a passing verdict stays slim")
+}
+
+// With no tag match anywhere the verdict fails and every evaluated host
+// reports the host_tags check naming exactly what it was missing.
+func TestCheckMachineRequirementsFleetWithoutTagMatchReportsHostTags(t *testing.T) {
+	db := newCheckTestDatabase(t)
+	ctx := newCheckTestContext()
+	rich := &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 16, MemorySize: 32768}}
+	build := createCheckHostWithTags(t, db, "build-host", []string{"pool=build"}, rich)
+	test := createCheckHostWithTags(t, db, "test-host", nil, rich)
+
+	svc := &OrchestratorService{ctx: ctx}
+	response, apiError := svc.CheckMachineRequirements(ctx, models.CheckMachineRequirementsRequest{
+		Requirements: &models.MachineRequirements{Cpu: 2, Memory: 2048},
+		TargetTags:   []string{"pool=gold", "os=sonoma"},
+	})
+	require.Nil(t, apiError)
+	require.False(t, response.Passed)
+	require.Equal(t, "No host meets the requirements", response.Message)
+	require.Len(t, response.Hosts, 2)
+
+	byId := map[string]models.MachineRequirementsHostResult{}
+	for _, h := range response.Hosts {
+		byId[h.HostId] = h
+	}
+	buildResult, ok := byId[build.ID]
+	require.True(t, ok)
+	require.Len(t, buildResult.Checks, 1, "a tag short-circuit reports only the tag failure")
+	require.Equal(t, checkNameHostTags, buildResult.Checks[0].Name)
+	require.False(t, buildResult.Checks[0].Passed)
+	require.Equal(t, "Host is missing required tags: pool=gold, os=sonoma", buildResult.Checks[0].Message)
+
+	testResult, ok := byId[test.ID]
+	require.True(t, ok)
+	require.Equal(t, "Host is missing required tags: pool=gold, os=sonoma", testResult.Checks[0].Message)
+}
+
+// An explicit host that lacks a required tag fails with the tag breakdown —
+// naming a host does not bypass the placement constraint.
+func TestCheckMachineRequirementsExplicitHostTagMismatch(t *testing.T) {
+	db := newCheckTestDatabase(t)
+	ctx := newCheckTestContext()
+	rich := &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 16, MemorySize: 32768}}
+	host := createCheckHostWithTags(t, db, "test-host", []string{"pool=test"}, rich)
+
+	svc := &OrchestratorService{ctx: ctx}
+	response, apiError := svc.CheckMachineRequirements(ctx, models.CheckMachineRequirementsRequest{
+		HostId:       host.ID,
+		Requirements: &models.MachineRequirements{Cpu: 2, Memory: 2048},
+		TargetTags:   []string{"pool=build"},
+	})
+	require.Nil(t, apiError)
+	require.False(t, response.Passed)
+	require.Len(t, response.Hosts, 1)
+	require.Equal(t, "Host is missing required tags: pool=build", response.Hosts[0].Checks[0].Message)
+}
+
+// The hard tag check runs before the disk-space probe and short-circuits: a
+// mismatched host never reaches the network.
+func TestCheckHostRequirementsHostTagsShortCircuitBeforeDiskProbe(t *testing.T) {
+	probes := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		probes++
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(models.DiskSpaceAvailable{ParallelsHome: 100, PrlHomePath: "/Users/test/Parallels"})
+	}))
+	defer server.Close()
+
+	svc := &OrchestratorService{ctx: newCheckTestContext()}
+	host := dbmodels.OrchestratorHost{Host: server.URL, Enabled: true, State: "healthy", Architecture: "arm64",
+		Tags:      []string{"pool=test"},
+		Resources: &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 8, MemorySize: 8192}}}
+	request := models.CreateVirtualMachineRequest{Architecture: "arm64", TargetTags: []string{"pool=build", "os=sonoma"}}
+	specs := &models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048", Size: 1024}
+
+	checks := svc.checkHostRequirements(host, request, specs)
+	require.Len(t, checks, 1)
+	require.Equal(t, checkNameHostTags, checks[0].Name)
+	require.False(t, checks[0].Passed)
+	require.Zero(t, probes, "tag-mismatched hosts are rejected before the disk probe")
+
+	// The scheduling path reports the blocking failure verbatim, not wrapped
+	// in the aggregated "Insufficient host resources" message.
+	ok, failure := svc.validateHost(host, request, specs)
+	require.False(t, ok)
+	require.NotNil(t, failure)
+	require.Equal(t, "Host is missing required tags: pool=build, os=sonoma", failure.Message)
+}
+
+// A host carrying every requested tag (case-insensitively) gains a passing
+// host_tags check and stays eligible for the remaining decision factors.
+func TestCheckHostRequirementsHostTagsPassReported(t *testing.T) {
+	svc := &OrchestratorService{ctx: newCheckTestContext()}
+	host := dbmodels.OrchestratorHost{Host: "tagged.local", Enabled: true, State: "healthy", Architecture: "arm64",
+		Tags:      []string{"pool=build", "OS=Sonoma ", "lab"},
+		Resources: &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 8, MemorySize: 8192}}}
+	request := models.CreateVirtualMachineRequest{Architecture: "arm64", TargetTags: []string{"POOL=BUILD", "os=sonoma"}}
+
+	checks := svc.checkHostRequirements(host, request, &models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"})
+
+	require.Equal(t, checkNameHostTags, checks[0].Name, "the tag check leads the breakdown")
+	require.True(t, checks[0].Passed)
+	require.Contains(t, checks[0].Message, "all 2 required tags")
+
+	ok, failure := svc.validateHost(host, request, &models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"})
+	require.True(t, ok)
+	require.Nil(t, failure)
+}
+
+// Without target_tags the check list must not gain a host_tags entry — the
+// response shape stays byte-identical for requests that don't use the feature.
+func TestCheckHostRequirementsWithoutTargetTagsOmitsHostTagsCheck(t *testing.T) {
+	svc := &OrchestratorService{ctx: newCheckTestContext()}
+	host := dbmodels.OrchestratorHost{Host: "plain.local", Enabled: true, State: "healthy", Architecture: "arm64",
+		Tags:      []string{"pool=build"},
+		Resources: &dbmodels.HostResources{TotalAvailable: dbmodels.HostResourceItem{LogicalCpuCount: 8, MemorySize: 8192}}}
+
+	checks := svc.checkHostRequirements(host, models.CreateVirtualMachineRequest{Architecture: "arm64"},
+		&models.CreateVirtualMachineSpecs{Type: "pvm", Cpu: "2", Memory: "2048"})
+
+	_, ok := requirementsCheckByName(models.MachineRequirementsHostResult{Checks: checks}, checkNameHostTags)
+	require.False(t, ok)
+}

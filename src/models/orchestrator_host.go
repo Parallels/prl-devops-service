@@ -154,6 +154,10 @@ type OrchestratorHostUpdateRequest struct {
 	Prefix         string                      `json:"prefix"`
 	Description    string                      `json:"description,omitempty"`
 	Authentication *OrchestratorAuthentication `json:"authentication,omitempty"`
+	// Tags replaces the host's placement tags when provided: absent/null
+	// leaves them untouched, an empty array clears them. Entries are trimmed
+	// and deduplicated (case-insensitive, first spelling wins) at validation.
+	Tags []string `json:"tags,omitempty"`
 }
 
 func (o *OrchestratorHostUpdateRequest) Validate() error {
@@ -184,6 +188,27 @@ func (o *OrchestratorHostUpdateRequest) Validate() error {
 
 	if o.Authentication != nil && o.Authentication.Username != "" && o.Authentication.Password == "" {
 		return errors.NewWithCode("Authentication password cannot be empty", 400)
+	}
+
+	if o.Tags != nil {
+		// Cleaning must keep the slice non-nil even when nothing survives:
+		// nil (leave tags untouched) and empty (clear the tags) are different
+		// instructions downstream.
+		tags := make([]string, 0, len(o.Tags))
+		seen := make(map[string]bool, len(o.Tags))
+		for _, tag := range o.Tags {
+			tag = strings.TrimSpace(tag)
+			if tag == "" {
+				continue
+			}
+			key := strings.ToLower(tag)
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			tags = append(tags, tag)
+		}
+		o.Tags = tags
 	}
 
 	return nil
