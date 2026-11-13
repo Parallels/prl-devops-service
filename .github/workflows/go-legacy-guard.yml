@@ -19,9 +19,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: src/go.mod
-      # action v6: the version whose README documents v2 config + `--enable-only`
-      # passthrough (no other workflow pins an action version to match).
-      - uses: golangci/golangci-lint-action@v6
+      # action v7+: the golangci-lint v2 line (required — the repo config is
+      # v2 schema). v6 hard-fails on v2 version strings ("invalid version
+      # string 'v2.14.0'"); this pin caused the guard's first CI red.
+      - uses: golangci/golangci-lint-action@v7
         with:
           version: v2.14.0
           working-directory: src
