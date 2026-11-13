@@ -4,11 +4,11 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/data"
+	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
 )
 
-func AddUbuntu23_04(ctx *basecontext.BaseContext, svc *data.JsonDatabase) error {
+func AddUbuntu23_04(ctx *basecontext.BaseContext, svc datainterfaces.DatabaseService) error {
 	ubuntu2304Template := models.PackerTemplate{
 		ID:           "ubuntu-23.04",
 		Name:         "Ubuntu 23.04",
@@ -44,7 +44,7 @@ func AddUbuntu23_04(ctx *basecontext.BaseContext, svc *data.JsonDatabase) error 
 		return err
 	} else {
 		if _, err := svc.AddPackerTemplate(ctx, &ubuntu2304Template); err != nil {
-			if err.Error() != data.ErrPackerTemplateAlreadyExists.Error() {
+			if err.Error() != datainterfaces.ErrPackerTemplateAlreadyExists.Error() {
 				common.Logger.Error("Error adding Ubuntu 23.04 template: %s", err.Error())
 				return err
 			}

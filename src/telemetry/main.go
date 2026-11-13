@@ -55,12 +55,11 @@ func New(ctx basecontext.ApiContext) *TelemetryService {
 }
 
 func Get() *TelemetryService {
+	lock.Lock()
+	defer lock.Unlock()
 	if globalTelemetryService == nil {
-		lock.Lock()
 		ctx := basecontext.NewBaseContext()
 		globalTelemetryService = New(ctx)
-		lock.Unlock()
-		return globalTelemetryService
 	}
 
 	return globalTelemetryService

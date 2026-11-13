@@ -1,0 +1,29 @@
+# PBI #426 (feature #417): the live no-new-callers lock. Runs EXACTLY one
+# linter on the canonical .golangci.yml rule, so this lane fails only on new
+# imports of the deprecated legacy data engine — never on the repo's
+# pre-existing lint debt. (linter.yml is dead infrastructure — if: false,
+# super-linter, Go 1.21 — intentionally untouched by this PR; its removal is
+# separate repo hygiene.)
+name: legacy-import-guard
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - ".golangci.yml"
+      - ".github/workflows/go-legacy-guard.yml"
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/go.mod
+      # action v7+: the golangci-lint v2 line (required — the repo config is
+      # v2 schema). v6 hard-fails on v2 version strings ("invalid version
+      # string 'v2.14.0'"); this pin caused the guard's first CI red.
+      - uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.14.0
+          working-directory: src
+          args: -c ../.golangci.yml --enable-only=depguard ./...

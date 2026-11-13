@@ -5,17 +5,18 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
-	"github.com/Parallels/prl-devops-service/errors"
 )
 
 var (
-	ErrPackerTemplateNotFound         = errors.NewWithCode("packer template not found", 404)
-	ErrPackerTemplateAlreadyExists    = errors.NewWithCode("machine template already exists", 400)
-	ErrRemovingInternalPackerTemplate = errors.NewWithCode("cannot remove internal machine template", 400)
-	ErrUpdatingInternalPackerTemplate = errors.NewWithCode("cannot update internal machine template", 400)
+	ErrPackerTemplateNotFound         = interfaces.ErrPackerTemplateNotFound
+	ErrPackerTemplateAlreadyExists    = interfaces.ErrPackerTemplateAlreadyExists
+	ErrRemovingInternalPackerTemplate = interfaces.ErrRemovingInternalPackerTemplate
+	ErrUpdatingInternalPackerTemplate = interfaces.ErrUpdatingInternalPackerTemplate
 )
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetPackerTemplates(ctx basecontext.ApiContext, filter string) ([]models.PackerTemplate, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -36,6 +37,7 @@ func (j *JsonDatabase) GetPackerTemplates(ctx basecontext.ApiContext, filter str
 	return result, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetPackerTemplate(ctx basecontext.ApiContext, nameOrId string) (*models.PackerTemplate, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -55,6 +57,7 @@ func (j *JsonDatabase) GetPackerTemplate(ctx basecontext.ApiContext, nameOrId st
 	return nil, ErrPackerTemplateNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) AddPackerTemplate(ctx basecontext.ApiContext, template *models.PackerTemplate) (*models.PackerTemplate, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -86,6 +89,7 @@ func (j *JsonDatabase) AddPackerTemplate(ctx basecontext.ApiContext, template *m
 	return template, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeletePackerTemplate(ctx basecontext.ApiContext, nameOrId string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -110,6 +114,7 @@ func (j *JsonDatabase) DeletePackerTemplate(ctx basecontext.ApiContext, nameOrId
 	return ErrPackerTemplateNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdatePackerTemplate(ctx basecontext.ApiContext, template *models.PackerTemplate) (*models.PackerTemplate, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected

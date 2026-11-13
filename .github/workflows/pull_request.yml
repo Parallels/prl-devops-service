@@ -16,10 +16,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/386, windows/amd64, darwin/amd64, darwin/arm64
+        # build and publish in parallel: linux/386, linux/amd64, linux/arm64, windows/amd64, darwin/amd64, darwin/arm64
         goos: [linux, windows, darwin]
         goarch: ["386", amd64, arm64]
         exclude:
+          # modernc.org/sqlite (pure-Go engine, feature #417) has no windows/386
+          # port — the leg cannot compile while database/ imports it. All seven
+          # remaining combos cross-compile clean (verified 2026-11-13).
+          - goarch: "386"
+            goos: windows
           - goarch: "386"
             goos: darwin
     steps:
@@ -108,3 +113,39 @@ jobs:
         run: |
           helm lint ./helm
           make build-helm-chart
+  test-postgres-integration:
+    name: Postgres integration tests
+    runs-on: ubuntu-latest
+    needs: []                      # parallel with the unit job — D-6 budget defence
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          # Ephemeral single-job container; real value comes from the repo
+          # secret when configured (Settings → Secrets → Actions →
+          # CI_POSTGRES_PASSWORD). The inline default exists only so the
+          # leg keeps working for forks and unset secrets — it guards a
+          # container that lives for one CI job and holds no data.
+          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD || 'ci-ephemeral' }}
+          POSTGRES_DB: prl_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-retries 10 --health-timeout 5s
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: ${{ github.workspace }}/src/go.mod
+          cache: true
+          cache-dependency-path: ${{ github.workspace }}/src/go.sum
+      - name: Download modules
+        working-directory: ${{ github.workspace }}/src
+        run: |
+          go mod download
+      - name: Postgres integration suite
+        working-directory: ${{ github.workspace }}/src
+        env:
+          POSTGRES_TEST_DSN: postgres://postgres:${{ secrets.CI_POSTGRES_PASSWORD || 'ci-ephemeral' }}@localhost:5432/prl_test?sslmode=disable
+        run: go test -tags integration -count=1 ./database/...

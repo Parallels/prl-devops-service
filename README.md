@@ -35,6 +35,10 @@ once you have purchased the Parallels Desktop Business license.
 
 The project documentation, including examples and quick starts, can be found [here](https://parallels.github.io/prl-devops-service/).
 
+- Data-layer guides: [Configuration](docs/docs/devops/getting-started/configuration.md),
+  [Database upgrade](docs/docs/devops/getting-started/database-upgrade.md)
+  and [PostgreSQL Setup](docs/docs/devops/getting-started/postgresql.md).
+
 ## Contributing
 
 If you want to contribute to this project, please read the [contributing guidelines](CONTRIBUTING.md).

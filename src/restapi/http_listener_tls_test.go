@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"net/http"
@@ -78,7 +79,10 @@ func TestHttpListenerStart_HTTPSOnlyRegistersControllers(t *testing.T) {
 	require.Len(t, listener.Servers, 1, "HTTPS-only mode must not start HTTP")
 	require.NotNil(t, listener.Servers[0].TLSConfig)
 	server := httptest.NewUnstartedServer(listener.Servers[0].Handler)
-	server.TLS = listener.Servers[0].TLSConfig.Clone()
+	// Build the probe server from the test's own fixture cert: the listener's
+	// live TLSConfig is owned by net/http2 once serving started (it configures
+	// NextProtos in place) and must not be read from a test goroutine.
+	server.TLS = &tls.Config{Certificates: []tls.Certificate{certificate}}
 	server.StartTLS()
 	defer server.Close()
 	client := server.Client()

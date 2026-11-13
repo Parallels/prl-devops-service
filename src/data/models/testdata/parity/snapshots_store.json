@@ -1,0 +1,14 @@
+{
+  "records": [
+    {"host_id": "h-1", "vm_snapshots": {
+      "vm-a": [
+        {"id": "s-1", "name": "pre-upgrade", "date": "2024-05-01", "state": "valid", "current": true, "parent": ""},
+        {"id": "s-2", "name": "auto", "date": "2024-05-02", "state": "valid", "current": false, "parent": "s-1"}
+      ],
+      "vm-b": [ {"id": "s-3", "name": "clean", "date": "2024-05-03", "state": "valid", "current": true, "parent": ""} ]
+    }},
+    {"host_id": "h-2", "vm_snapshots": {
+      "vm-c": [ {"id": "s-4", "name": "base", "date": "2024-05-04", "state": "valid", "current": true, "parent": ""} ]
+    }}
+  ]
+}

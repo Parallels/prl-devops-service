@@ -19,7 +19,7 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/data"
+	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/mappers"
@@ -76,7 +76,7 @@ type ReverseProxyService struct {
 	port              string
 	State             reverseProxyServiceState
 	forwarding_hosts  []*data_models.ReverseProxyHost
-	db                *data.JsonDatabase
+	db                datainterfaces.DatabaseService
 	api_ctx           basecontext.ApiContext
 	ctx               context.Context
 	cancelFunc        context.CancelFunc

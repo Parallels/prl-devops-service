@@ -12,7 +12,7 @@ import (
 	"github.com/Parallels/prl-devops-service/cmd"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
-	"github.com/Parallels/prl-devops-service/data"
+	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
 	eventemitter "github.com/Parallels/prl-devops-service/serviceprovider/eventEmitter"
 	"github.com/Parallels/prl-devops-service/telemetry"
@@ -82,6 +82,9 @@ func main() {
 			if sp != nil {
 				db := sp.JsonDatabase
 				if db != nil {
+					// #421 task 18: cleanup works on the ACTIVE surface — the
+					// legacy handle is nil in SQL mode (SaveNow no-ops there,
+					// Disconnect closes the pool).
 					cleanup(ctx, db)
 					retries := 0
 					maxRetries := 10
@@ -117,7 +120,7 @@ func main() {
 	cmd.Process()
 }
 
-func cleanup(ctx basecontext.ApiContext, db *data.JsonDatabase) {
+func cleanup(ctx basecontext.ApiContext, db datainterfaces.DatabaseService) {
 	if emitter := eventemitter.Get(); emitter != nil && emitter.IsRunning() {
 		ctx.LogInfof("[Core] Shutting down EventEmitter service")
 		emitter.Shutdown()

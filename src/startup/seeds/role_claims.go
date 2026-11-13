@@ -13,12 +13,13 @@ import (
 // present on a role are silently skipped.
 func SeedDefaultRoleClaims() error {
 	ctx := basecontext.NewRootBaseContext()
-	db := serviceprovider.Get().JsonDatabase
-	if err := db.Connect(ctx); err != nil {
+	// T7 (#424 boot matrix): engine-neutral #421-18 guard; no Disconnect —
+	// the `defer` here would close the provider's shared pool permanently.
+	db, err := serviceprovider.GetDatabaseService(ctx)
+	if err != nil {
 		common.Logger.Error("Error connecting to database: %s", err.Error())
 		return err
 	}
-	defer db.Disconnect(ctx)
 
 	hasUpdates := false
 

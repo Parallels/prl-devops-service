@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - Unreleased
+
+- feat: **GORM-backed SQL data layer** — records now live in SQLite by
+  default (`prl-devops.db`) or in a PostgreSQL server
+  (`DB_TYPE`/`DB_PATH`/`DB_DSN`/`DB_AUTO_MIGRATE`, flat `db_*` config
+  keys); legacy `data.json` is migrated automatically on first start,
+  with a completion marker written in the new database (#417, #424).
+  PostgreSQL enablement is in progress — SQLite is the supported
+  backend today. Guides: Configuration, Upgrading to the SQL Database,
+  PostgreSQL Setup (docs site). See also the Deprecated entry below
+  (#426).
+
+- deprecated: **legacy JSON data layer (`src/data` engine + `JsonDatabase`)** is deprecated and scheduled for removal in v1.3.0 (#426, feature #417). Default storage is now GORM-backed: SQLite (`DB_TYPE=sqlite`, file `prl-devops.db`) or PostgreSQL (`DB_TYPE=postgres` + `DB_DSN`). Existing `data.json` files are migrated automatically on first start (#424) and become frozen source-of-past. `DB_TYPE=legacy` remains available until v1.3.0 as a documented escape hatch; using it logs a deprecation warning at startup. See the configuration & upgrade guides (#427 docs) for details.
+
 ## [1.1.9] - 2026-11-12
 
 - fix: ensure archive entry names are relative and handle leading separators

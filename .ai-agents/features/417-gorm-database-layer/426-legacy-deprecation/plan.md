@@ -190,6 +190,16 @@ exclusion removal, doc links), cross-links to #426 and #417. Body content is aut
 spec (fenced, copy-paste ready); creation itself is a human-approved action (it's a public side
 effect, not a file write).
 
+**AMENDMENT (2026-11-12, human gate on task 02) — removal version is v1.3.0, not v2.0.0.**
+Directed verbatim: *"lets change the removed version to 1.3.0"*. Everything above keeps its shape
+with the version swapped: marker/warn strings, the CHANGELOG bullet's removal mention, and the
+removal issue's target v1.3.0. Rationale shift to state honestly in docs and the issue body:
+removal now lands on a **minor** bump (v1.1.4 → v1.2.0 deprecates → v1.3.0 removes), so the
+deprecation window is one release, not an open-ended major cycle — the CHANGELOG entry and the
+runtime warns are the operator notice, and the removal issue must stay merge-blocking-visible on
+the v1.3.0 milestone. Superseded wording ("removal in v2.0.0") in tasks 01–02 and in the D-1/D-2/D-3
+records above is historical plan text; v1.3.0 governs. #427 docs take v1.3.0.
+
 ## Target files & layout
 
 ```

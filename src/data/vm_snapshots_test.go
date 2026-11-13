@@ -11,9 +11,8 @@ import (
 
 func TestSetListVMSnapshotsByVMId(t *testing.T) {
 	//1. Create a new JsonDatabase
-	jsonDatabase := &JsonDatabase{
-		connected: true,
-	}
+	jsonDatabase := &JsonDatabase{}
+	jsonDatabase.connected.Store(true)
 
 	//2. Set list of snapshots for a VM
 	apiSnapshots := []apiModels.VMSnapshot{
@@ -42,9 +41,8 @@ func TestSetListVMSnapshotsByVMId(t *testing.T) {
 }
 func TestGetListVMSnapshotsByVMId(t *testing.T) {
 	//1. Create a new JsonDatabase
-	jsonDatabase := &JsonDatabase{
-		connected: true,
-	}
+	jsonDatabase := &JsonDatabase{}
+	jsonDatabase.connected.Store(true)
 
 	//2. Set list of snapshots for a VM
 	apiSnapshots := []apiModels.VMSnapshot{

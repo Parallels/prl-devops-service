@@ -86,22 +86,22 @@ func TestTrackEvent(t *testing.T) {
 	t.Run("Telemetry service available", func(t *testing.T) {
 		var amplitudeTrackItem types.Event
 		mockClient := telemetry_test.NewMockAmplitudeClient()
+		svc := &TelemetryService{
+			ctx:             &basecontext.BaseContext{},
+			EnableTelemetry: true,
+			client:          mockClient,
+			CallBackChan:    make(chan types.ExecuteResult),
+		}
+		globalTelemetryService = svc
 		mockClient.On("Track", func(args ...interface{}) {
 			if item, ok := args[0].(types.Event); ok {
 				amplitudeTrackItem = item
 			}
 			go func() {
 				time.Sleep(1 * time.Second)
-				globalTelemetryService.Callback(types.ExecuteResult{Code: 200, Message: "Success"})
+				svc.Callback(types.ExecuteResult{Code: 200, Message: "Success"})
 			}()
 		})
-
-		globalTelemetryService = &TelemetryService{
-			ctx:             &basecontext.BaseContext{},
-			EnableTelemetry: true,
-			client:          mockClient,
-			CallBackChan:    make(chan types.ExecuteResult),
-		}
 
 		// Create a test telemetry item
 		item := TelemetryItem{
@@ -119,22 +119,22 @@ func TestTrackEvent(t *testing.T) {
 	t.Run("Telemetry service available, error response", func(t *testing.T) {
 		var amplitudeTrackItem types.Event
 		mockClient := telemetry_test.NewMockAmplitudeClient()
+		svc := &TelemetryService{
+			ctx:             &basecontext.BaseContext{},
+			EnableTelemetry: true,
+			client:          mockClient,
+			CallBackChan:    make(chan types.ExecuteResult),
+		}
+		globalTelemetryService = svc
 		mockClient.On("Track", func(args ...interface{}) {
 			if item, ok := args[0].(types.Event); ok {
 				amplitudeTrackItem = item
 			}
 			go func() {
 				time.Sleep(1 * time.Second)
-				globalTelemetryService.Callback(types.ExecuteResult{Code: 400, Message: "Bad Request"})
+				svc.Callback(types.ExecuteResult{Code: 400, Message: "Bad Request"})
 			}()
 		})
-
-		globalTelemetryService = &TelemetryService{
-			ctx:             &basecontext.BaseContext{},
-			EnableTelemetry: true,
-			client:          mockClient,
-			CallBackChan:    make(chan types.ExecuteResult),
-		}
 
 		// Create a test telemetry item
 		item := TelemetryItem{

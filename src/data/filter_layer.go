@@ -7,12 +7,14 @@ import (
 	"strings"
 )
 
+// NOTE(#426, 2026-11-12 audit: still live at parallelsdesktop): relocated out of package data at removal (see removal issue).
 type Filter struct {
 	Property string
 	Value    string
 	Options  []FilterOptions
 }
 
+// NOTE(#426, 2026-11-12 audit: still live at parallelsdesktop): relocated out of package data at removal (see removal issue).
 type FilterOptions int
 
 const (
@@ -20,6 +22,7 @@ const (
 	FilterOptionsCaseInsensitive
 )
 
+// NOTE(#426, 2026-11-12 audit: still live at parallelsdesktop): relocated out of package data at removal (see removal issue).
 func ParseFilter(filter string) (*Filter, error) {
 	if filter == "" {
 		return nil, nil
@@ -56,6 +59,7 @@ func ParseFilter(filter string) (*Filter, error) {
 	}
 }
 
+// NOTE(#426, 2026-11-12 audit: still live at parallelsdesktop): relocated out of package data at removal (see removal issue).
 func FilterByProperty[T interface{}](objects []T, filter *Filter) ([]T, error) {
 	if filter == nil {
 		return objects, nil

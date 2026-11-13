@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func GetRecordIndex[T interface{}](objects []T, propertyIndexer string, propertyValue string) (int, error) {
 	index := -1
 	propertyName := propertyIndexer

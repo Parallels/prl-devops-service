@@ -5,11 +5,13 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 )
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 type AuthorizedRecord interface {
 	GetRequiredClaims() []string
 	GetRequiredRoles() []string
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func GetAuthorizedRecords[T AuthorizedRecord](ctx basecontext.ApiContext, t ...T) []T {
 	result := make([]T, 0)
 	for _, record := range t {
@@ -21,6 +23,7 @@ func GetAuthorizedRecords[T AuthorizedRecord](ctx basecontext.ApiContext, t ...T
 	return result
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func IsRootUser(ctx basecontext.ApiContext) bool {
 	authContext := ctx.GetAuthorizationContext()
 	if authContext == nil {
@@ -36,6 +39,7 @@ func IsRootUser(ctx basecontext.ApiContext) bool {
 	return false
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func IsAuthorized[T AuthorizedRecord](ctx basecontext.ApiContext, t T) bool {
 	authContext := ctx.GetAuthorizationContext()
 	if authContext == nil {

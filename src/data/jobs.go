@@ -8,39 +8,51 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
-	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 var (
-	ErrJobNotFound = errors.NewWithCode("job not found", 404)
+	ErrJobNotFound = interfaces.ErrJobNotFound
 )
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetJobs(ctx basecontext.ApiContext) ([]models.Job, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
 	}
 
+	j.dataMutex.RLock()
 	jobs := make([]models.Job, len(j.data.Jobs))
-	for i, job := range j.data.Jobs {
-		if owner, err := j.GetUser(ctx, job.Owner); err == nil {
-			job.OwnerName = owner.Name
-			job.OwnerEmail = owner.Email
+	copy(jobs, j.data.Jobs)
+	j.dataMutex.RUnlock()
+
+	// Enrichment touches the users table (its own locking) — keep it out of
+	// the Jobs read lock.
+	for i := range jobs {
+		if owner, err := j.GetUser(ctx, jobs[i].Owner); err == nil {
+			jobs[i].OwnerName = owner.Name
+			jobs[i].OwnerEmail = owner.Email
 		}
-		jobs[i] = job
 	}
 
 	return jobs, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetJobsByOwner(ctx basecontext.ApiContext, owner string) ([]models.Job, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
 	}
 
+	j.dataMutex.RLock()
+	snapshot := make([]models.Job, len(j.data.Jobs))
+	copy(snapshot, j.data.Jobs)
+	j.dataMutex.RUnlock()
+
 	var jobs []models.Job
-	for _, job := range j.data.Jobs {
+	for _, job := range snapshot {
 		if strings.EqualFold(job.Owner, owner) {
 			if user, err := j.GetUser(ctx, job.Owner); err == nil {
 				job.OwnerName = user.Name
@@ -53,24 +65,36 @@ func (j *JsonDatabase) GetJobsByOwner(ctx basecontext.ApiContext, owner string) 
 	return jobs, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetJob(ctx basecontext.ApiContext, id string) (*models.Job, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
 	}
 
+	j.dataMutex.RLock()
+	var found models.Job
+	var ok bool
 	for _, job := range j.data.Jobs {
 		if strings.EqualFold(job.ID, id) {
-			if user, err := j.GetUser(ctx, job.Owner); err == nil {
-				job.OwnerName = user.Name
-				job.OwnerEmail = user.Email
-			}
-			return &job, nil
+			found = job
+			ok = true
+			break
 		}
+	}
+	j.dataMutex.RUnlock()
+
+	if ok {
+		if user, err := j.GetUser(ctx, found.Owner); err == nil {
+			found.OwnerName = user.Name
+			found.OwnerEmail = user.Email
+		}
+		return &found, nil
 	}
 
 	return nil, ErrJobNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) CreateJob(ctx basecontext.ApiContext, job models.Job) (*models.Job, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -87,7 +111,9 @@ func (j *JsonDatabase) CreateJob(ctx basecontext.ApiContext, job models.Job) (*m
 		job.State = constants.JobStatePending
 	}
 
+	j.dataMutex.Lock()
 	j.data.Jobs = append(j.data.Jobs, job)
+	j.dataMutex.Unlock()
 
 	// Enrich the returned struct so the immediately emitted event has the names
 	if user, err := j.GetUser(ctx, job.Owner); err == nil {
@@ -98,6 +124,7 @@ func (j *JsonDatabase) CreateJob(ctx basecontext.ApiContext, job models.Job) (*m
 	return &job, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateJob(ctx basecontext.ApiContext, key models.Job) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -127,6 +154,7 @@ func (j *JsonDatabase) UpdateJob(ctx basecontext.ApiContext, key models.Job) err
 	return ErrJobNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteJob(ctx basecontext.ApiContext, id string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -155,6 +183,7 @@ func (j *JsonDatabase) DeleteJob(ctx basecontext.ApiContext, id string) error {
 	return nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteJobsByState(ctx basecontext.ApiContext, states ...constants.JobState) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -165,6 +194,7 @@ func (j *JsonDatabase) DeleteJobsByState(ctx basecontext.ApiContext, states ...c
 		stateMap[s] = true
 	}
 
+	j.dataMutex.Lock()
 	var newJobs []models.Job
 	for i, job := range j.data.Jobs {
 		if stateMap[job.State] {
@@ -176,10 +206,12 @@ func (j *JsonDatabase) DeleteJobsByState(ctx basecontext.ApiContext, states ...c
 
 	// We replace the entire slice
 	j.data.Jobs = newJobs
+	j.dataMutex.Unlock()
 
 	return nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) RecoverOngoingJobs(ctx basecontext.ApiContext) {
 	if !j.IsConnected() {
 		return
@@ -205,6 +237,8 @@ func (j *JsonDatabase) RecoverOngoingJobs(ctx basecontext.ApiContext) {
 
 // SetJobTimeoutHandler registers a notification invoked after timed-out jobs
 // are updated, outside the database lock.
+//
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) SetJobTimeoutHandler(handler func(models.Job)) {
 	j.dataMutex.Lock()
 	defer j.dataMutex.Unlock()
@@ -213,6 +247,8 @@ func (j *JsonDatabase) SetJobTimeoutHandler(handler func(models.Job)) {
 
 // DetectStaleJobs marks pending/running jobs as failed after the configured
 // inactivity timeout, preserving their progress, steps, and result metadata.
+//
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DetectStaleJobs(ctx basecontext.ApiContext) {
 	if !j.IsConnected() {
 		return

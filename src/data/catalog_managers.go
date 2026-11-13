@@ -1,18 +1,19 @@
 package data
 
 import (
-	"errors"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/data/models"
 )
 
 var (
-	ErrCatalogManagerNotFound       = errors.New("catalog manager not found")
-	ErrRemoveInternalCatalogManager = errors.New("catalog manager is internal and cannot be removed")
-	ErrUpdateInternalCatalogManager = errors.New("catalog manager is internal and cannot be updated")
+	ErrCatalogManagerNotFound       = interfaces.ErrCatalogManagerNotFound
+	ErrRemoveInternalCatalogManager = interfaces.ErrRemoveInternalCatalogManager
+	ErrUpdateInternalCatalogManager = interfaces.ErrUpdateInternalCatalogManager
 )
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetCatalogManagers() ([]models.CatalogManager, error) {
 	j.dataMutex.RLock()
 	defer j.dataMutex.RUnlock()
@@ -20,6 +21,7 @@ func (j *JsonDatabase) GetCatalogManagers() ([]models.CatalogManager, error) {
 	return j.data.CatalogManagers, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetCatalogManager(id string) (*models.CatalogManager, error) {
 	j.dataMutex.RLock()
 	defer j.dataMutex.RUnlock()
@@ -33,6 +35,7 @@ func (j *JsonDatabase) GetCatalogManager(id string) (*models.CatalogManager, err
 	return nil, ErrCatalogManagerNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) AddCatalogManager(ctx basecontext.ApiContext, mgr models.CatalogManager) error {
 	j.dataMutex.Lock()
 	if j.data.CatalogManagers == nil {
@@ -48,6 +51,7 @@ func (j *JsonDatabase) AddCatalogManager(ctx basecontext.ApiContext, mgr models.
 	return nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateCatalogManager(ctx basecontext.ApiContext, mgr models.CatalogManager) error {
 	j.dataMutex.Lock()
 	defer j.dataMutex.Unlock()
@@ -71,6 +75,7 @@ func (j *JsonDatabase) UpdateCatalogManager(ctx basecontext.ApiContext, mgr mode
 	return ErrCatalogManagerNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteCatalogManager(ctx basecontext.ApiContext, id string) error {
 	j.dataMutex.Lock()
 	defer j.dataMutex.Unlock()

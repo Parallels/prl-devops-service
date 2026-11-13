@@ -79,6 +79,23 @@ linters:
       rules:
         - name: unused-parameter
           disabled: true
+    # PBI #426 (feature #417): no new importers of the deprecated legacy data
+    # engine. The `$` anchor was verified on v2.14.0: it matches the engine
+    # package exactly and provably ignores the live /data/models and
+    # /data/interfaces imports. CI lane: go-legacy-guard.yml (--enable-only
+    # keeps pre-existing lint debt out of it). Grandfathered paths below.
+    depguard:
+      rules:
+        # PBI #426 — no new importers of the deprecated legacy data engine
+        # (removal issue links here). NOTE: rule objects carry no `desc`
+        # field in the golangci-lint v2 jsonschema — `config verify` (run
+        # by the CI action, stricter than `run`) rejects unknown keys;
+        # the deny-entry desc below is schema-legal and stays.
+        main:
+          files: ["**/*"]
+          deny:
+            - pkg: github.com/Parallels/prl-devops-service/data$
+              desc: "legacy JSON data layer is deprecated (#426): use serviceprovider.GetDatabaseService()/interfaces.DatabaseService; see removal issue"
   exclusions:
     generated: lax
     presets:
@@ -92,6 +109,45 @@ linters:
           - goconst
           - gosec
         path: .*_test\.go
+      # ---- #426 grandfather (feature #417): the importers that legitimately
+      # exist at landing. Generated 2026-11-12 at 7a60e39 by the task-03 audit
+      # command (grep -rln '"github.com/…/data"' src --include='*.go' |
+      # grep -v '^src/data/' | sed 's|^src/||; s|/[^/]*\.go$|/**|' | sort -u),
+      # each pattern anchored. Verified on v2.14.0: reported paths are
+      # config-dir-relative, so every pattern carries the src/ prefix (and
+      # serviceprovider/ covers its parallelsdesktop/ subtree — the audit's
+      # nested duplicate collapsed). The removal issue owns shrinking this
+      # list to zero — never add an entry to fix a new import.
+      - linters: [depguard]
+        path: ^src/data/ # self-exclusion (always-list): the package lives here
+      - linters: [depguard]
+        path: ^src/catalog/ # #426 grandfather — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/cmd/ # #426 grandfather — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/controllers/ # #426 grandfather — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/database/legacy_migrator/ # #426 grandfather — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/database/parity/ # #426 grandfather — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/database/query/ # #426 grandfather — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/database/testutil/ # #426 grandfather — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/integration_test/ # #426 grandfather — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/orchestrator/ # #426 grandfather — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/restapi/ # #426 grandfather — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/serviceprovider/ # #426 grandfather (incl. parallelsdesktop/) — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/startup/migrations/ # #426 grandfather (AD-4) — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/startup/seeds/ # #426 grandfather — shrink via removal issue
+      - linters: [depguard]
+        path: ^src/tests/controllers/ # #426 grandfather — shrink via removal issue
     paths:
       - third_party$
       - builtin$

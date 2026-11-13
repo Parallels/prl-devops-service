@@ -4,22 +4,24 @@ import (
 	"strings"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 )
 
 var (
-	ErrRoleEmptyNameOrId        = errors.NewWithCode("no role specified", 500)
-	ErrRoleEmptyName            = errors.NewWithCode("role name cannot be empty", 500)
-	ErrRoleNotFound             = errors.NewWithCode("role not found", 404)
-	ErrRemoveInternalRole       = errors.NewWithCode("role is internal and cannot be removed", 400)
-	ErrUpdateInternalRole       = errors.NewWithCode("role is internal and cannot be updated", 400)
-	ErrRoleAlreadyContainsClaim = errors.NewWithCode("role already contains claim", 400)
-	ErrRoleDoesNotContainClaim  = errors.NewWithCode("role does not contain claim", 404)
-	ErrRoleHasUsers             = errors.NewWithCode("role has users assigned and cannot be removed", 400)
+	ErrRoleEmptyNameOrId        = interfaces.ErrRoleEmptyNameOrId
+	ErrRoleEmptyName            = interfaces.ErrRoleEmptyName
+	ErrRoleNotFound             = interfaces.ErrRoleNotFound
+	ErrRemoveInternalRole       = interfaces.ErrRemoveInternalRole
+	ErrUpdateInternalRole       = interfaces.ErrUpdateInternalRole
+	ErrRoleAlreadyContainsClaim = interfaces.ErrRoleAlreadyContainsClaim
+	ErrRoleDoesNotContainClaim  = interfaces.ErrRoleDoesNotContainClaim
+	ErrRoleHasUsers             = interfaces.ErrRoleHasUsers
 )
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetRoles(ctx basecontext.ApiContext, filter string) ([]models.Role, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -56,6 +58,7 @@ func (j *JsonDatabase) GetRoles(ctx basecontext.ApiContext, filter string) ([]mo
 	return filteredData, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetRole(ctx basecontext.ApiContext, idOrName string) (*models.Role, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -89,6 +92,7 @@ func (j *JsonDatabase) GetRole(ctx basecontext.ApiContext, idOrName string) (*mo
 	return nil, ErrRoleNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) CreateRole(ctx basecontext.ApiContext, role models.Role) (*models.Role, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -123,6 +127,7 @@ func (j *JsonDatabase) CreateRole(ctx basecontext.ApiContext, role models.Role) 
 	return &role, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) AddClaimToRole(ctx basecontext.ApiContext, roleIdOrName string, claimIdOrName string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -151,6 +156,7 @@ func (j *JsonDatabase) AddClaimToRole(ctx basecontext.ApiContext, roleIdOrName s
 	return ErrRoleNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) RemoveClaimFromRole(ctx basecontext.ApiContext, roleIdOrName string, claimIdOrName string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -174,6 +180,7 @@ func (j *JsonDatabase) RemoveClaimFromRole(ctx basecontext.ApiContext, roleIdOrN
 	return ErrRoleNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteRole(ctx basecontext.ApiContext, idOrName string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -207,6 +214,8 @@ func (j *JsonDatabase) DeleteRole(ctx basecontext.ApiContext, idOrName string) e
 
 // UpdateRoleInternalFlag sets the Internal field on a role without triggering
 // the internal-role guard. Used on startup to correct seeded roles.
+//
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateRoleInternalFlag(ctx basecontext.ApiContext, idOrName string, internal bool) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -225,6 +234,8 @@ func (j *JsonDatabase) UpdateRoleInternalFlag(ctx basecontext.ApiContext, idOrNa
 
 // UpdateRoleDescription sets the Description field on a role without triggering
 // the internal-role guard. Used on startup to backfill existing installations.
+//
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateRoleDescription(ctx basecontext.ApiContext, idOrName, description string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -241,6 +252,7 @@ func (j *JsonDatabase) UpdateRoleDescription(ctx basecontext.ApiContext, idOrNam
 	return ErrRoleNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateRole(ctx basecontext.ApiContext, role *models.Role) (*models.Role, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected

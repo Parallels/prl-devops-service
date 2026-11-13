@@ -1,0 +1,23 @@
+{
+  "objects": [
+    {"name": "alice",   "email": "alice@example.com",  "active": true,  "failed_logins": 0, "tags": ["linux", "dev"],  "secret": null,            "authentication": {"username": "u-alice", "kind": "password"}, "meta": {"k1": "v1"},               "counts": {"K1": 1},             "nested": {"deep": "d1"}},
+    {"name": "Bob",     "email": "bob@root.example",   "active": false, "failed_logins": 3, "tags": ["win"],            "secret": "s3cret",        "authentication": {"username": "U-BOB",   "kind": "key"},      "meta": {"k2": "v2"},               "counts": {"K2": 2},             "nested": {"deep": "d2"}},
+    {"name": "carlos9", "email": "carlos9@example.com","active": true,  "failed_logins": 3, "tags": [],                 "secret": null,            "authentication": null,                  "meta": {},                     "counts": {},                  "nested": {"deep": "d3"}},
+    {"name": "root",    "email": "root@root.example",  "active": true,  "failed_logins": 12,"tags": ["root", "admin"],   "secret": "t0psecret",     "authentication": {"username": "u-root",  "kind": "password"}, "meta": {"k1": "shared"},           "counts": {"k1": 7},             "nested": {"deep": "d4"}},
+    {"name": "e",       "email": "e@e.e",              "active": false, "failed_logins": 30,"tags": ["e"],               "secret": null,            "authentication": {"username": "single",  "kind": "key"},      "meta": {"single": "yes"},          "counts": {"single": 0},         "nested": {"deep": "d5"}}
+  ],
+  "filters": ["", "name=alice", "name=e", "email=^ro", "name=[0-9]$", "name=BOB,i", "name=x,i,i", "failed_logins=3", "failed_logins=^3$", "tags=a", "auth.username=u", "AUTHENTICATION.USERNAME=u", "username=u-root", "Meta.k1", "Counts.K1", "Counts.k1", "secret=s3cret", "secret=nil", "active=true", "deep", "name=((", "name=a,b=c", "name"],
+  "orders": [
+    {"property": "Name",         "direction": 0},
+    {"property": "Name",         "direction": 1},
+    {"property": "FailedLogins", "direction": 0},
+    {"property": "NoSuchField",  "direction": 0}
+  ],
+  "indexes": [
+    {"property": "Name",   "value": "BOB"},
+    {"property": "Name",   "value": "carlos9"},
+    {"property": "Name",   "value": "nobody"},
+    {"property": "FailedLogins", "value": "3"},
+    {"property": "Active", "value": "true"}
+  ]
+}

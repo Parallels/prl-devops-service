@@ -50,6 +50,37 @@ aligns macOS and Windows workflows with modern DevOps practices.
 * **Language:** Go (services & CLI)
 * **Packaging:** Multi‑arch Docker images published to **GitHub Container Registry**
 * **API:** "Open" REST + websocket communication
-* **Database:** Json file (pluggable—MySQL support in roadmap)
+* **Database:** SQLite (default) or PostgreSQL via GORM — see
+  Data Persistence below (#417)
 * **AuthN/Z:** OIDC (JWT) + role‑based access control
 * **Deployment:** Helm charts for Kubernetes, Docker Compose for PoC, fully air‑gapped option
+
+## Data Persistence
+
+The service persists its records through a GORM data layer (#417):
+
+* **SQLite (default; supported today):** a single file (`prl-devops.db`)
+  in the configured database folder, opened in WAL mode with foreign
+  keys enforced.
+  <!-- engine default + filename: src/database/config.go
+  DefaultDatabaseConfig / DefaultDatabaseFilename; WAL pragmas:
+  src/database/sqlite.go -->
+* **PostgreSQL (enablement in progress):** selected by DSN; the
+  data-access layer still relies on SQLite-specific row ordering, so
+  running the service end-to-end on PostgreSQL is not yet supported —
+  #417 tracks the gap. Settings and setup reference live on the
+  PostgreSQL Setup page.
+  <!-- driver wiring: src/database/postgres.go; settings parse:
+  src/database/config.go FromApplicationConfig -->
+* **Legacy JSON store (`data.json`):** deprecated input for the
+  automatic first-start migration; afterwards it is a frozen snapshot.
+  See the
+  [upgrade guide]({{ site.baseurl }}/docs/devops/getting-started/database-upgrade/).
+  <!-- migration + marker table: src/database/legacy_migrator/;
+  frozen/selection warnings: src/serviceprovider/data.go; the removal
+  version lives in the CHANGELOG only -->
+* **Backups:** no built-in SQL backup. SQLite: copy the file
+  (`sqlite3 <file> ".backup <dest>"`); PostgreSQL: your operations
+  runbook. The built-in backup settings covered the legacy file only.
+  <!-- posture gap per OQ-421-3; legacy-only backup code:
+  src/data/backup.go -->

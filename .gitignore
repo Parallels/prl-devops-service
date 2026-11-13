@@ -44,4 +44,6 @@ package.json
 .claude-flow/swarm/swarm-state.json
 .kilo/
 .gocache/
+# Slice gate scratch (GOTMPDIR) — never tracked
+.gotmp/
 .worktrees/

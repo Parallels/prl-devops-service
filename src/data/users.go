@@ -5,6 +5,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/constants"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -12,20 +13,21 @@ import (
 )
 
 var (
-	ErrUserNotFound              = errors.NewWithCode("user not found", 404)
-	ErrUserAlreadyExists         = errors.NewWithCode("user already exists", 400)
-	ErrUserEmailCannotBeEmpty    = errors.NewWithCode("user email cannot be empty", 400)
-	ErrUserUsernameCannotBeEmpty = errors.NewWithCode("user username cannot be empty", 400)
-	ErrUserNameCannotBeEmpty     = errors.NewWithCode("user name cannot be empty", 400)
-	ErrUserIDCannotBeEmpty       = errors.NewWithCode("user ID cannot be empty", 400)
-	ErrRoleIDCannotBeEmpty       = errors.NewWithCode("role ID cannot be empty", 400)
-	ErrClaimIDCannotBeEmpty      = errors.NewWithCode("claim ID cannot be empty", 400)
-	ErrCannotUpdateRootUser      = errors.NewWithCode("cannot update root user", 400)
-	ErrCannotRemoveRootUser      = errors.NewWithCode("cannot remove root user", 400)
-	ErrUserAlreadyContainsRole   = errors.NewWithCode("user already contains role", 400)
-	ErrUserAlreadyContainsClaim  = errors.NewWithCode("user already contains claim", 400)
+	ErrUserNotFound              = interfaces.ErrUserNotFound
+	ErrUserAlreadyExists         = interfaces.ErrUserAlreadyExists
+	ErrUserEmailCannotBeEmpty    = interfaces.ErrUserEmailCannotBeEmpty
+	ErrUserUsernameCannotBeEmpty = interfaces.ErrUserUsernameCannotBeEmpty
+	ErrUserNameCannotBeEmpty     = interfaces.ErrUserNameCannotBeEmpty
+	ErrUserIDCannotBeEmpty       = interfaces.ErrUserIDCannotBeEmpty
+	ErrRoleIDCannotBeEmpty       = interfaces.ErrRoleIDCannotBeEmpty
+	ErrClaimIDCannotBeEmpty      = interfaces.ErrClaimIDCannotBeEmpty
+	ErrCannotUpdateRootUser      = interfaces.ErrCannotUpdateRootUser
+	ErrCannotRemoveRootUser      = interfaces.ErrCannotRemoveRootUser
+	ErrUserAlreadyContainsRole   = interfaces.ErrUserAlreadyContainsRole
+	ErrUserAlreadyContainsClaim  = interfaces.ErrUserAlreadyContainsClaim
 )
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetUsers(ctx basecontext.ApiContext, filter string) ([]models.User, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -58,6 +60,7 @@ func (j *JsonDatabase) GetUsers(ctx basecontext.ApiContext, filter string) ([]mo
 	return filteredData, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetUser(ctx basecontext.ApiContext, idOrEmail string) (*models.User, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -77,6 +80,7 @@ func (j *JsonDatabase) GetUser(ctx basecontext.ApiContext, idOrEmail string) (*m
 	return nil, ErrUserNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) CreateUser(ctx basecontext.ApiContext, user models.User) (*models.User, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -156,6 +160,7 @@ func (j *JsonDatabase) CreateUser(ctx basecontext.ApiContext, user models.User) 
 	return &user, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateUser(ctx basecontext.ApiContext, key models.User) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -199,6 +204,7 @@ func (j *JsonDatabase) UpdateUser(ctx basecontext.ApiContext, key models.User) e
 	return ErrUserNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateUserBlockStatus(ctx basecontext.ApiContext, key models.User) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -219,6 +225,7 @@ func (j *JsonDatabase) UpdateUserBlockStatus(ctx basecontext.ApiContext, key mod
 	return ErrUserNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) UpdateRootPassword(ctx basecontext.ApiContext, newPassword string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -241,6 +248,7 @@ func (j *JsonDatabase) UpdateRootPassword(ctx basecontext.ApiContext, newPasswor
 	return ErrUserNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteUser(ctx basecontext.ApiContext, id string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -265,6 +273,7 @@ func (j *JsonDatabase) DeleteUser(ctx basecontext.ApiContext, id string) error {
 	return ErrUserNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) AddRoleToUser(ctx basecontext.ApiContext, userId string, roleId string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -305,6 +314,7 @@ func (j *JsonDatabase) AddRoleToUser(ctx basecontext.ApiContext, userId string, 
 	return ErrUserNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) RemoveRoleFromUser(ctx basecontext.ApiContext, userId string, roleId string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -343,6 +353,7 @@ func (j *JsonDatabase) RemoveRoleFromUser(ctx basecontext.ApiContext, userId str
 	return ErrRoleNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) AddClaimToUser(ctx basecontext.ApiContext, userId string, claimId string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -383,6 +394,7 @@ func (j *JsonDatabase) AddClaimToUser(ctx basecontext.ApiContext, userId string,
 	return ErrClaimNotFound
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) RemoveClaimFromUser(ctx basecontext.ApiContext, userId string, claimId string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected

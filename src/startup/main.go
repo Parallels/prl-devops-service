@@ -2,6 +2,7 @@ package startup
 
 import (
 	"encoding/base64"
+	"os"
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
@@ -119,24 +120,70 @@ func Start(ctx basecontext.ApiContext) {
 		ds.Start()
 	}
 
+	// Legacy data migration (PBI #424): legacy JSON store → GORM schema,
+	// once, idempotent, marker-gated. SQL mode only (post-#421 flip: the
+	// escape hatch has no SQL handle to migrate into). Gate: DB_AUTO_MIGRATE
+	// (#420). Exit policy mirrors #418 task 05 (src/main.go precedent): the
+	// API command cannot serve half-migrated data — everything else warns
+	// and continues (rollback already happened inside the migrator).
+	// Placed BEFORE seeding (matrix round 3): the migration must land the
+	// frozen legacy rows first so SeedId/SeedDefault* reconcile on top of
+	// them instead of colliding (duplicate config singleton; T9 username
+	// clash), and so RecoverOngoingJobs below sees migrated jobs. AD-4's
+	// schema-loop ordering is untouched (that loop is legacy-mode-only).
+	if svc := serviceprovider.Get(); svc != nil && svc.Legacy() == nil {
+		if am, amErr := config.Get().DatabaseAutoMigrate(); amErr != nil {
+			ctx.LogWarnf("Legacy data migration skipped — DB_AUTO_MIGRATE invalid: %v", amErr)
+		} else if !am {
+			ctx.LogInfof("Legacy data migration skipped — DB_AUTO_MIGRATE is disabled")
+		} else {
+			if err := runLegacyDataMigration(ctx); err != nil {
+				ctx.LogErrorf("Legacy data migration failed (all changes rolled back): %v", err)
+				if config.Get().GetRunningCommand() == constants.API_COMMAND {
+					os.Exit(1) // sole os.Exit in this path; grep-audited like #418's
+				}
+			}
+		}
+	}
+
 	// Seeding defaults
 	ctx.LogInfof("Seeding defaults")
 	if err := SeedDefaults(); err != nil {
 		panic(err)
 	}
 
-	// Clean up expired/used enrollment tokens at startup
+	// Startup data housekeeping (engine-neutral: GetDatabaseService routes
+	// to whichever backend S3 selected).
 	if dbService, err := serviceprovider.GetDatabaseService(ctx); err == nil {
+		// #421 D-8/OQ-421-4 (SQL mode only): the legacy engine ran
+		// RecoverOngoingJobs and the ghost-job ticker INSIDE Connect
+		// (data/main.go:117/:615); the SQL engine has no such side effects,
+		// so startup owns both — Recover always-on per the plan decision
+		// (flagged for PO in the PR), watcher via a LOCAL interface
+		// assertion (R-1 keeps DatabaseService closed).
+		if serviceprovider.Get().Legacy() == nil {
+			dbService.RecoverOngoingJobs(ctx)
+			if sw, ok := dbService.(interface{ StartStaleJobWatcher(basecontext.ApiContext) }); ok {
+				sw.StartStaleJobWatcher(ctx)
+			}
+		}
 		if err := dbService.DeleteExpiredEnrollmentTokens(ctx); err != nil {
 			ctx.LogWarnf("Could not purge expired enrollment tokens: %v", err)
 		}
 	}
 
-	ctx.LogInfof("Applying migrations")
-	for _, migration := range schemaMigrations {
-		if err := migration.Apply(); err != nil {
-			ctx.LogErrorf("Error applying migration: %v", err)
+	// Legacy schema migrators are file-store-only (AD-4). SQL mode: the
+	// schema belongs to AutoMigrate + #424; SchemaVersion stays consistent
+	// through the schema_metadata row (task 08).
+	if serviceprovider.Get().Legacy() != nil {
+		ctx.LogInfof("Applying migrations")
+		for _, migration := range schemaMigrations {
+			if err := migration.Apply(); err != nil {
+				ctx.LogErrorf("Error applying migration: %v", err)
+			}
 		}
+	} else {
+		ctx.LogInfof("SQL mode: legacy schema migrations skipped (AutoMigrate/#424 own the schema)")
 	}
 
 	// lets import any reverse proxy configuration hosts we have into the db and remove them from the config

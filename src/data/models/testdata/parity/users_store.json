@@ -1,0 +1,35 @@
+{
+  "users": [
+    {
+      "id": "u-1", "username": "alice", "name": "Alice", "email": "a@x.io",
+      "password": "hashed-x", "created_at": "2024-01-01 10:00:00", "updated_at": "2024-01-02 10:00:00",
+      "roles": [
+        {"id": "r-1", "name": "admin", "internal": true, "claims": []},
+        {"id": "r-2", "name": "dev", "internal": false}
+      ],
+      "claims": [
+        {"id": "c-1", "name": "user.read", "internal": true, "group": "users"}
+      ]
+    },
+    {
+      "id": "u-2", "username": "bob", "name": "Bob", "email": "b@x.io",
+      "created_at": "2024-01-03 10:00:00",
+      "roles": [ {"id": "r-2", "name": "dev", "internal": false, "claims": [{"id": "stale-gone", "name": "was.revoked"}]} ]
+    }
+  ],
+  "roles": [
+    {"id": "r-1", "name": "admin", "internal": true,
+     "claims": [
+       {"id": "c-1", "name": "user.read", "internal": true, "group": "users"},
+       {"id": "c-2", "name": "vm.create", "group": "vms", "resource": "vm", "action": "create"}
+     ]},
+    {"id": "r-2", "name": "dev", "internal": false,
+     "claims": [
+       {"id": "c-2", "name": "vm.create", "group": "vms", "resource": "vm", "action": "create"}
+     ]}
+  ],
+  "claims": [
+    {"id": "c-1", "name": "user.read", "internal": true, "group": "users"},
+    {"id": "c-2", "name": "vm.create", "group": "vms", "resource": "vm", "action": "create"}
+  ]
+}

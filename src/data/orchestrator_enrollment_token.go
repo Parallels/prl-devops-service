@@ -5,18 +5,19 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
+	"github.com/Parallels/prl-devops-service/data/interfaces"
 	"github.com/Parallels/prl-devops-service/data/models"
-	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/google/uuid"
 )
 
 var (
-	ErrEnrollmentTokenNotFound = errors.NewWithCode("enrollment token not found", 404)
-	ErrEnrollmentTokenExpired  = errors.NewWithCode("enrollment token has expired", 401)
-	ErrEnrollmentTokenUsed     = errors.NewWithCode("enrollment token has already been used", 401)
+	ErrEnrollmentTokenNotFound = interfaces.ErrEnrollmentTokenNotFound
+	ErrEnrollmentTokenExpired  = interfaces.ErrEnrollmentTokenExpired
+	ErrEnrollmentTokenUsed     = interfaces.ErrEnrollmentTokenUsed
 )
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) CreateEnrollmentToken(ctx basecontext.ApiContext, hostName string, ttlMinutes int) (*models.OrchestratorEnrollmentToken, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -42,6 +43,7 @@ func (j *JsonDatabase) CreateEnrollmentToken(ctx basecontext.ApiContext, hostNam
 	return token, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) GetEnrollmentToken(ctx basecontext.ApiContext, token string) (*models.OrchestratorEnrollmentToken, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -62,6 +64,8 @@ func (j *JsonDatabase) GetEnrollmentToken(ctx basecontext.ApiContext, token stri
 
 // ValidateEnrollmentToken checks that the token exists, is not used, and is not expired.
 // Returns the token record on success, or an error describing the failure.
+//
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) ValidateEnrollmentToken(ctx basecontext.ApiContext, token string) (*models.OrchestratorEnrollmentToken, error) {
 	if !j.IsConnected() {
 		return nil, ErrDatabaseNotConnected
@@ -86,6 +90,7 @@ func (j *JsonDatabase) ValidateEnrollmentToken(ctx basecontext.ApiContext, token
 	return t, nil
 }
 
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) MarkEnrollmentTokenUsed(ctx basecontext.ApiContext, id string) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected
@@ -113,6 +118,8 @@ func (j *JsonDatabase) MarkEnrollmentTokenUsed(ctx basecontext.ApiContext, id st
 }
 
 // DeleteExpiredEnrollmentTokens removes tokens that have expired or been used.
+//
+// Deprecated: legacy JSON data layer (#426); use the GORM-backed database.GormDatabase via serviceprovider.GetDatabaseService() — scheduled for removal in v1.3.0.
 func (j *JsonDatabase) DeleteExpiredEnrollmentTokens(ctx basecontext.ApiContext) error {
 	if !j.IsConnected() {
 		return ErrDatabaseNotConnected

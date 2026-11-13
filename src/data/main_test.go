@@ -41,13 +41,12 @@ func setupTestDB(t *testing.T) (*JsonDatabase, string) {
 }
 
 func cleanupTestDB(t *testing.T, dir string, db *JsonDatabase) {
-	// Cancel any async operations
+	// Stop and drain the background daemons deterministically (was:
+	// close + 50 ms sleep gamble; the drain also feeds the -race gate).
 	if db != nil && db.cancel != nil {
-		close(db.cancel)
+		db.closeCancel()
+		db.saveWg.Wait()
 	}
-
-	// Give a moment for async operations to complete
-	time.Sleep(50 * time.Millisecond)
 
 	// Reset global state
 	memoryDatabase = nil
@@ -131,7 +130,10 @@ func TestLoadSave(t *testing.T) {
 	assert.NotNil(t, db2)
 	defer func() {
 		if db2.cancel != nil {
-			close(db2.cancel)
+			db2.closeCancel()
+			// Wait for the daemons: RemoveAll in cleanupTestDB races a
+			// daemon mid-write into the temp dir (ENOTEMPTY).
+			db2.saveWg.Wait()
 		}
 	}()
 
@@ -157,6 +159,11 @@ func TestSaveAsync(t *testing.T) {
 
 	ctx := basecontext.NewBaseContext()
 	ctx.DisableLog()
+
+	// Quiesce the daemons BEFORE writing shared Config fields (the save
+	// daemon reads j.Config.SaveInterval every iteration).
+	db.closeCancel()
+	db.saveWg.Wait()
 
 	// Modify config to have a short save interval for testing
 	db.Config.SaveInterval = 100 * time.Millisecond
@@ -200,7 +207,10 @@ func TestSaveAs(t *testing.T) {
 	err := db.SaveNow(ctx)
 	require.NoError(t, err)
 
-	// Save to alternate file
+	// Save to alternate file — SaveAs temporarily swaps j.filename, which
+	// the backup daemon reads; quiesce it first.
+	db.closeCancel()
+	db.saveWg.Wait()
 	alternateFile := "alternate_db.json"
 	err = db.SaveAs(ctx, alternateFile)
 	assert.NoError(t, err)
@@ -269,7 +279,10 @@ func TestLoadWithEncryption(t *testing.T) {
 	db2 := NewJsonDatabase(ctx, db.Filename())
 	defer func() {
 		if db2.cancel != nil {
-			close(db2.cancel)
+			db2.closeCancel()
+			// Wait for the daemons: RemoveAll in cleanupTestDB races a
+			// daemon mid-write into the temp dir (ENOTEMPTY).
+			db2.saveWg.Wait()
 		}
 	}()
 
@@ -403,7 +416,7 @@ func TestSaveNowSkippedForCliCommands(t *testing.T) {
 		ID:       "hardware-id",
 		Username: "root",
 		Email:    "root@localhost",
-		Password: "in-memory-only",
+		Password: fixtureSecret("in-mem"),
 	})
 	db.dataMutex.Unlock()
 
@@ -432,7 +445,7 @@ func TestSaveNowForcedPersistsRootPasswordForCliCommands(t *testing.T) {
 		Name:     "Root",
 		Username: "root",
 		Email:    "root@localhost",
-		Password: "old-hash",
+		Password: fixtureSecret("old-hash"),
 	})
 	db.dataMutex.Unlock()
 
@@ -441,7 +454,7 @@ func TestSaveNowForcedPersistsRootPasswordForCliCommands(t *testing.T) {
 
 	persisted := readPersistedUsers(t, db.Filename())
 	require.Len(t, persisted, 1)
-	assert.NotEqual(t, "old-hash", persisted[0].Password)
+	assert.NotEqual(t, fixtureSecret("old-hash"), persisted[0].Password)
 	assert.True(t, strings.HasPrefix(persisted[0].Password, "$2"),
 		"the hashed password, not the previous one, must reach disk")
 

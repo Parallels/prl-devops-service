@@ -1,0 +1,1 @@
+{"id":"k-1","name":"ci-key","key":"pub-key-material","secret":"secret-material","revoked":true,"created_at":"2024-04-05 06:07:08","updated_at":"2024-05-06 07:08:09","revoked_at":"2024-06-07 08:09:10","expires_at":"2025-07-08 09:10:11","user_id":"u-1","type":"internal","db_record":{"is_locked":true,"locked_by":"u-1","locked_at":"2024-08-09 10:11:12"}}

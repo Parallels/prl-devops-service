@@ -6,8 +6,8 @@ import (
 )
 
 type ReverseProxy struct {
-	ID      string `json:"id,omitempty"`
-	HostID  string `json:"host_id,omitempty"`
+	ID      string `json:"id,omitempty" gorm:"primaryKey"`
+	HostID  string `json:"host_id,omitempty" gorm:"column:host_id;index"`
 	Enabled bool   `json:"enabled"`
 	Host    string `json:"host,omitempty"`
 	Port    string `json:"port,omitempty"`
@@ -34,15 +34,15 @@ func (o *ReverseProxy) Diff(source ReverseProxy) bool {
 }
 
 type ReverseProxyHost struct {
-	ID         string                       `json:"id"`
+	ID         string                       `json:"id" gorm:"primaryKey"`
 	Name       string                       `json:"name,omitempty"`
-	HostID     string                       `json:"host_id,omitempty"`
+	HostID     string                       `json:"host_id,omitempty" gorm:"column:host_id;index"`
 	Host       string                       `json:"host"`
 	Port       string                       `json:"port"`
-	Tls        *ReverseProxyHostTls         `json:"tls,omitempty"`
-	Cors       *ReverseProxyHostCors        `json:"cors,omitempty"`
-	HttpRoutes []*ReverseProxyHostHttpRoute `json:"http_routes,omitempty"`
-	TcpRoute   *ReverseProxyHostTcpRoute    `json:"tcp_route,omitempty"`
+	Tls        *ReverseProxyHostTls         `json:"tls,omitempty" gorm:"serializer:json"`
+	Cors       *ReverseProxyHostCors        `json:"cors,omitempty" gorm:"serializer:json"`
+	HttpRoutes []*ReverseProxyHostHttpRoute `json:"http_routes,omitempty" gorm:"serializer:json"` // array order preserved; RegexpPattern json:"-" never serialises
+	TcpRoute   *ReverseProxyHostTcpRoute    `json:"tcp_route,omitempty" gorm:"serializer:json"`
 }
 
 func (o *ReverseProxyHost) GetHost() string {

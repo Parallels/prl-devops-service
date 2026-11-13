@@ -10,7 +10,7 @@ import (
 	"github.com/Parallels/prl-devops-service/catalog/cleanupservice"
 	"github.com/Parallels/prl-devops-service/catalog/interfaces"
 	"github.com/Parallels/prl-devops-service/catalog/models"
-	"github.com/Parallels/prl-devops-service/data"
+	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
 	data_models "github.com/Parallels/prl-devops-service/data/models"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
@@ -26,11 +26,11 @@ func (s *CatalogManifestService) ImportVm(r *models.ImportVmRequest) *models.Imp
 
 	foundProvider := false
 	response := models.NewImportVmRequestResponse()
-	serviceProvider := serviceprovider.Get()
-	db := serviceProvider.JsonDatabase
-	if db == nil {
-		err := data.ErrDatabaseNotConnected
-		response.AddError(err)
+	// #421 task 18: engine-neutral source — SQL mode runs with a nil legacy
+	// handle; GetDatabaseService's error is the not-connected case.
+	db, dbErr := serviceprovider.GetDatabaseService(s.ctx)
+	if dbErr != nil {
+		response.AddError(dbErr)
 		return response
 	}
 	if err := db.Connect(s.ctx); err != nil {
@@ -332,7 +332,7 @@ func (s *CatalogManifestService) pushNewCatalogManifest(catalogManifest *models.
 	return nil
 }
 
-func (s *CatalogManifestService) importClaims(dto data_models.CatalogManifest, db *data.JsonDatabase) error {
+func (s *CatalogManifestService) importClaims(dto data_models.CatalogManifest, db datainterfaces.DatabaseService) error {
 	// Importing claims and roles
 	for _, claim := range dto.RequiredClaims {
 		if claim == "" {
@@ -361,7 +361,7 @@ func (s *CatalogManifestService) importClaims(dto data_models.CatalogManifest, d
 	return nil
 }
 
-func (s *CatalogManifestService) importRoles(dto data_models.CatalogManifest, db *data.JsonDatabase) error {
+func (s *CatalogManifestService) importRoles(dto data_models.CatalogManifest, db datainterfaces.DatabaseService) error {
 	for _, role := range dto.RequiredRoles {
 		if role == "" {
 			continue

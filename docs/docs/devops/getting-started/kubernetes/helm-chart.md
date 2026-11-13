@@ -151,4 +151,15 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# SQL database backend (#417/#420); empty values defer to the service
+# defaults, so stock installs are unchanged.
+database:
+  type: ""          # "" (service default: sqlite) | postgres
+  path: ""          # sqlite file path; "" = service default
+  autoMigrate: ""   # "" (default true) | "true" | "false"
+  dsn: ""           # postgres DSN — stored in the chart Secret
+  dsnSecret:
+    name: ""        # existing Secret name (takes precedence over dsn)
+    key: ""         # key holding the DSN inside that Secret
 ```

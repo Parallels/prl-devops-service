@@ -10,8 +10,9 @@ import (
 
 func SeedDefaultRoles() error {
 	ctx := basecontext.NewRootBaseContext()
-	db := serviceprovider.Get().JsonDatabase
-	err := db.Connect(ctx)
+	// T7 (#424 boot matrix): engine-neutral #421-18 guard; no Disconnect —
+	// closing the shared pool here killed every later boot consumer.
+	db, err := serviceprovider.GetDatabaseService(ctx)
 	if err != nil {
 		common.Logger.Error("Error connecting to database: %s", err.Error())
 		return err
@@ -62,8 +63,6 @@ func SeedDefaultRoles() error {
 		common.Logger.Error("Error saving roles: %s", err.Error())
 		return err
 	}
-
-	_ = db.Disconnect(ctx)
 
 	return nil
 }

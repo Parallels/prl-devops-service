@@ -1,5 +1,8 @@
 package models
 
+// Aggregate/DTO types: never an AutoMigrate root; they persist indirectly via
+// the orchestrator_hosts.resources JSON blob (D-3 row 16). No tags by design.
+
 type HostResourceOverviewResponseItem struct {
 	CpuType        string            `json:"cpu_type,omitempty"`
 	CpuBrand       string            `json:"cpu_brand,omitempty"`

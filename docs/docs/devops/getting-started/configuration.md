@@ -61,6 +61,36 @@ The root object of the configuration file is the environment object, which conta
 | ENABLE_CANARY                                   | Specifies whether the canary feature should be enabled                                                                                        | false                                                                                             |
 | ENABLE_BETA                                     | Specifies whether the beta feature should be enabled                                                                                          | false                                                                                             |
 
+### Database
+
+The service stores its state either in a local SQLite database file (the
+default, zero configuration) or in a PostgreSQL server (enablement in
+progress — SQLite is the supported backend today). These settings select
+and configure the backend. The legacy JSON data store
+(`data.json`) is deprecated; see the _Upgrading to the SQL database_
+page for what happens on the first start after an upgrade, and the
+project changelog for the planned removal version.
+
+| Flag            | Description                                                                                                                       | Default Value                     |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| DB_TYPE         | The database backend to use. One of `sqlite` or `postgres`                                                                        | sqlite                            |
+| DB_PATH         | Full file path of the SQLite database file. Only used when DB_TYPE is `sqlite`; ignored when DB_TYPE is `postgres`                | `<DATABASE_FOLDER>/prl-devops.db` |
+| DB_DSN          | The PostgreSQL connection string (URL or keyword/value form). Required when DB_TYPE is `postgres`. Passwords are redacted in logs |                                   |
+| DB_AUTO_MIGRATE | Specifies whether the service creates or updates the database schema automatically on startup                                     | true                              |
+
+These settings can also be set in the configuration file under the
+`environment` object, using the same keys in lower case:
+
+```yaml
+environment:
+  db_type: postgres
+  db_dsn: postgres://<db-user>:<db-password>@db.example.com:5432/devops?sslmode=require
+  db_auto_migrate: true
+```
+
+Environment variables always take precedence over configuration file
+values, as described above.
+
 ### Rest API
 
 | Flag                                | Description                                                                                                                                      | Default Value                                   |
