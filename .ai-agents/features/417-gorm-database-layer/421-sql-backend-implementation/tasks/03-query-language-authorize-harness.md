@@ -115,3 +115,12 @@ Delete `query/authz.go`, `parity/` — no production importers.
 
 Foundation slice of AC-1 for every authorized `Get*`; builds the R-3 differential harness that every later task's
 parity proof (and AC-6's per-domain evidence) depends on.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-03`.** Cut `slice/421-03` from `sql-migration` HEAD
+(`.worktrees/slice-421-03`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

@@ -111,3 +111,12 @@ Revert: rule + workflow + nolints vanish; nothing behavioural; grandfather list 
 **No new callers** AC — CI half (the CI-check option the AC explicitly allows, on infrastructure that
 actually runs); IDE half via SA1019 from 01 + the D-1 import-line flag forms the double-lock; every
 exclusion entry is a dated, linked debt item the removal issue tracks to zero.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `426-03`.** Cut `slice/426-03` from `sql-migration` HEAD
+(`.worktrees/slice-426-03`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

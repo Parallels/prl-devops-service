@@ -165,3 +165,12 @@ their marker + data harmlessly (GORM path keeps working; legacy file untouched b
 
 Completes **AC-1 Detection** (wired, silent skip), **AC-3** exit semantics, **AC-7 Dry-run** (flag +
 env + report), and realises the "automatic, no manual steps" user story.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `424-06`.** Cut `slice/424-06` from `sql-migration` HEAD
+(`.worktrees/slice-424-06`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

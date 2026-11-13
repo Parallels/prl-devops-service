@@ -193,3 +193,10 @@ task's Validation.
 | OQ-427-2 | CHANGELOG heading version for the feature entry (VERSION=1.1.4 now; #426 plans next-minor) — release manager's call at merge. | task 05 |
 | OQ-427-3 | Postgres floor (guide says "currently supported stable") and driver `sslmode` default — guide mandates explicit `sslmode` either way; confirm driver default from merged dep only if it changes the recommendation. | task 03 |
 | OQ-427-4 | Did #420 ship pool overrides (`DB_PG_*`)? Connection-budget paragraph in 03 branches on the merged answer; if absent, it states pool sizes are fixed defaults in this release. | task 03 |
+
+## Execution model — worktree slices + human gate (feature plan §14, ER-6/ER-7)
+
+Every task here executes as an isolated worktree slice `slice/<pbi>-<nn>` cut from **`sql-migration`**,
+passes its spec's Validation inside the worktree, closes with a **test plan + results entry** in
+[`../VERIFICATION.md`](../VERIFICATION.md) and the **human verdict** — only then merges `--no-ff` into
+`sql-migration` and the next slice may start. ER-5's merge boundary = the merge into `sql-migration`.

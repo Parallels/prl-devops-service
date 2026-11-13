@@ -96,3 +96,12 @@ domain to legacy; zero schema risk (AutoMigrate columns are additive and unused 
 **CRUD via GORM (SQLite parity)** — 16/16 methods; **Transactions** — reorder/compaction tx (D-9
 `reverse_proxy.go:312-394` row); **Error handling** — D-11 table instantiated; **Concurrent access** —
 invariant stress pre-proves what task 18 verifies end-to-end on WAL.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-12`.** Cut `slice/421-12` from `sql-migration` HEAD
+(`.worktrees/slice-421-12`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

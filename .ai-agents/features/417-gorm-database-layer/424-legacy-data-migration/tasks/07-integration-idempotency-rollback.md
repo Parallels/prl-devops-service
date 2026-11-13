@@ -94,3 +94,12 @@ Revert PR removes integration files + fixture additions; production code untouch
 Final proof for **AC-1…AC-7** as a system (each row above names its AC), and discharges the PBI-brief
 DoD link: "first-run upgrade … exercised in CI (`//go:build integration`)". Hands fixture builders + the
 compose hook to **#425**.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `424-07`.** Cut `slice/424-07` from `sql-migration` HEAD
+(`.worktrees/slice-424-07`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

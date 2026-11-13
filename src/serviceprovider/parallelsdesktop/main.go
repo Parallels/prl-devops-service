@@ -106,6 +106,14 @@ type ParallelsService struct {
 	macVMsRunningMu  sync.RWMutex
 	macAdmissionMu   sync.Mutex
 	macReservations  map[string]string // operation ID -> VM ID (empty before registration)
+	// vmAdmissionMu guards the per-host VM count limit reservations: vmCreateSlots for
+	// creates/clones in flight, vmStartSlots for starts in flight (vm_capacity.go).
+	vmAdmissionMu sync.Mutex
+	vmCreateSlots map[string]struct{}
+	vmStartSlots  map[string]struct{}
+	// vmInventoryFn overrides the VM inventory used by the VM count limit in tests;
+	// nil means "use the live prlctl inventory".
+	vmInventoryFn    func(basecontext.ApiContext) ([]models.ParallelsVM, error)
 	executable       string
 	serverExecutable string
 	Info             *models.ParallelsDesktopInfo
@@ -1185,6 +1193,15 @@ func (s *ParallelsService) SetVmState(ctx basecontext.ApiContext, id string, des
 	}
 	if models.IsMacVM(*vm) && (desiredState == ParallelsVirtualMachineDesiredStateStart || desiredState == ParallelsVirtualMachineDesiredStateResume) {
 		release, admissionErr := s.reserveMacVMStart(ctx, id)
+		if admissionErr != nil {
+			return admissionErr
+		}
+		defer release()
+	}
+	// Per-host VM count limit: only the "running" mode counts starts, and the guard is
+	// a no-op when no limit is configured (vm_capacity.go).
+	if desiredState == ParallelsVirtualMachineDesiredStateStart || desiredState == ParallelsVirtualMachineDesiredStateResume {
+		release, admissionErr := s.reserveVmStartSlot(ctx, id)
 		if admissionErr != nil {
 			return admissionErr
 		}
@@ -2800,6 +2817,14 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	ctx.LogDebugf("[MacVMCapacity] Hardware snapshot: active=%d pending=%d ids=%v inventory_complete=%v", len(result.TotalInUse.MacVMsRunning), result.PendingMacVMs, result.TotalInUse.MacVMsRunning, complete)
 
 	cfg := config.Get()
+	// Per-host VM count limit and the counts it applies to, derived from the same
+	// inventory snapshot as CPU and memory so the orchestrator never sees a limit
+	// without its matching counts.
+	result.MaxVmsPerHost = cfg.MaxVmsPerHost()
+	result.MaxVmsPerHostMode = cfg.MaxVmsPerHostMode()
+	result.TotalVms = CountVmsForMode(vms, constants.MAX_VMS_PER_HOST_MODE_ANY)
+	result.RunningVms = CountVmsForMode(vms, constants.MAX_VMS_PER_HOST_MODE_RUNNING)
+	result.PendingVms = s.PendingVmSlots()
 	systemSrv := system.Get()
 	systemInfo, err := systemSrv.GetHardwareInfo(ctx)
 	if err != nil {

@@ -176,3 +176,12 @@ Revert PR: deletes 5 brand-new files; nothing else referenced them ⇒ zero blas
 
 Moves **AC-1 Detection** (logic complete; wiring lands in 06) and **AC-5 Completion marker** (storage
 half; the write half lands in 03). Provides the idempotency gate AC-2 leans on.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `424-01`.** Cut `slice/424-01` from `sql-migration` HEAD
+(`.worktrees/slice-424-01`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

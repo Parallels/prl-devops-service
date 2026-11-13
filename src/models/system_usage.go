@@ -1,7 +1,16 @@
 package models
 
 type SystemUsageResponse struct {
-	PendingMacVMs            int64               `json:"pending_mac_vms"`
+	PendingMacVMs int64 `json:"pending_mac_vms"`
+	// MaxVmsPerHost is the hard VM count limit configured on this host (0 = none).
+	// MaxVmsPerHostMode selects the counted set: "any" (TotalVms) or "running"
+	// (RunningVms). TotalVms counts every VM registered on the host, RunningVms the
+	// ones occupying a hypervisor slot, PendingVms the creates/starts in flight.
+	MaxVmsPerHost            int64               `json:"max_vms_per_host,omitempty"`
+	MaxVmsPerHostMode        string              `json:"max_vms_per_host_mode,omitempty"`
+	TotalVms                 int64               `json:"total_vms,omitempty"`
+	RunningVms               int64               `json:"running_vms,omitempty"`
+	PendingVms               int64               `json:"pending_vms,omitempty"`
 	MacVMInventoryComplete   *bool               `json:"mac_vm_inventory_complete,omitempty"`
 	CpuType                  string              `json:"cpu_type,omitempty"`
 	CpuBrand                 string              `json:"cpu_brand,omitempty"`
@@ -24,6 +33,7 @@ type SystemUsageResponse struct {
 }
 
 type SystemUsageItem struct {
+	TotalVms         int64    `json:"total_vms,omitempty"`
 	PhysicalCpuCount int64    `json:"physical_cpu_count,omitempty"`
 	LogicalCpuCount  int64    `json:"logical_cpu_count"`
 	MemorySize       float64  `json:"memory_size"`

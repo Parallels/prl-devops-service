@@ -78,3 +78,12 @@ Delete the four files + the wave's ledger rows; harness and wave-auth untouched.
 in `orchestrator_test.go`, `vm_snapshots_test.go`, `packer_template_test.go`) gain dual-engine equivalents;
 **In-memory SQLite** (all new legs via unique-DSN harness); **Error paths** (inline D-4 identities);
 constraint budget tracked per run.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `425-03`.** Cut `slice/425-03` from `sql-migration` HEAD
+(`.worktrees/slice-425-03`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

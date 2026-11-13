@@ -208,3 +208,12 @@ push-down experiment misbehaves, revert **that commit** — the Go-side ordering
 | Transactions | D-9 `DeleteCatalogManifest*` cascades = 3 tx sites; #7/#25 outcomes recorded |
 | Error handling (wrapped, consistent) | Mapping table on `mapGormError`, guard sentinels by identity before cascades |
 | Legacy layer bypassed | Manifest reads/authoring + managers served from SQL, zero `g.legacy`; `SaveNow` no-op reliance documented (D-7) |
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-11`.** Cut `slice/421-11` from `sql-migration` HEAD
+(`.worktrees/slice-421-11`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

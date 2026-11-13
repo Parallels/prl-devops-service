@@ -98,6 +98,16 @@ transactions; it never parses `data.json` by hand.
   Behaviour-changing flips (e.g. #421 switching a domain to GORM) ship behind the config default
   (`sqlite`/legacy selection) only after the fallback path is proven.
 
+- **ER-6 — Worktree-per-slice, merged to `sql-migration`.** Every task ("slice") is implemented in a
+  dedicated git worktree cut from the `sql-migration` feature branch (worktree `.worktrees/slice-<pbi>-<nn>`,
+  branch `slice/<pbi>-<nn>`) and merged into `sql-migration` with `--no-ff` only after its gate passes —
+  full recipe in §14. `main` receives nothing until the whole feature is accepted; **ER-5's "merge
+  boundary" is the merge into `sql-migration`**, which must therefore be green at every slice.
+- **ER-7 — Human validation gate at the end of every slice.** A slice is not done when its tests pass: it
+  ends with a written **test plan + observed results** appended to [`VERIFICATION.md`](./VERIFICATION.md),
+  presented to the human, who runs/judges it and records a verdict. The next slice starts **only after**
+  that verdict. No self-approval; "approved with follow-ups" spawns notes, not blockers.
+
 ### Pre-seeded ER-3 trigger list (measured 2026-11-03 — re-run `wc -l` before implementing)
 
 | File | Lines | Trigger |
@@ -181,6 +191,8 @@ index/authorize layers as its foundation tasks.
    edit the same file.
 6. Stop and present to the human for review before the next PBI starts. Implementation of a PBI
    may begin task-by-task as its tasks get approved — but never ahead of the sequence.
+7. **Execution (when planning is approved):** each task runs as a worktree slice on `sql-migration` per
+   §14 (ER-6) and closes with the human validation gate (ER-7) before the next slice starts.
 
 ## 11. Document & task templates (canonical)
 
@@ -205,6 +217,7 @@ PR hint).
 ## Validation                  numbered commands + behavioural checks (checkboxes)
 ## Rollback                    revert surface / feature-flag off
 ## PBI acceptance mapping      which AC checkboxes this task moves
+## Slice gate                  (ER-6/ER-7) worktree + human-validation protocol — feature §14
 ```
 
 ## 12. Test strategy (summary — #425 owns the details)
@@ -227,3 +240,30 @@ PR hint).
 | OQ-3 | Table naming: keep GORM defaults (snake_case plural) or add `TableName()` overrides mirroring legacy JSON collection names? (proposal: GORM defaults; document mapping) | #419 |
 | OQ-4 | Docker/Helm: does the chart need a `DB_TYPE`/`DB_DSN` values surface in this feature? (proposal: yes, minimal, #427 docs + helm values passthrough env) | #427 |
 | OQ-5 | #418 AC names `gorm.io/driver/sqlite` literally — AD-2 deviation needs a comment on the issue so closure is honest. Post it during task 01's PR. | #418 |
+
+## 14. Execution model — worktree slices on `sql-migration`, human gate (operational since 2026-11-10)
+
+Feature branch **`sql-migration`** exists (local + origin). It is the **only** merge target during the
+build; `main` gets a single PR when the whole feature is accepted. ER-5 applies at every
+`slice → sql-migration` merge.
+
+Slice lifecycle (one task spec = one slice; **serial by default** — ER-7 gate closes each before the next
+opens; concurrency only if the human explicitly allows it):
+
+1. **Cut** — from repo root:
+   `git worktree add .worktrees/slice-<pbi>-<nn> -b slice/<pbi>-<nn> sql-migration`
+   (`.worktrees/` is git-ignored; always cut from current `sql-migration` HEAD; `<pbi>-<nn>` e.g. `418-01`.)
+2. **Build** — implement exactly the task spec inside the worktree (Go commands from `src/`).
+3. **Self-gate** — every `## Validation` checkbox green, plus
+   `cd src && go build ./... && go test ./... -count=1`.
+4. **Report** — append the slice entry to [`VERIFICATION.md`](./VERIFICATION.md): commit range +
+   `git diff --stat`, **test plan for the human** (exact commands/steps + expected outputs + one
+   end-to-end smoke where user-observable), observed results, deviations/OQ changes.
+5. **Human gate (ER-7)** — present the test plan, ask for results; **stop** until the verdict is recorded.
+6. **Merge** — `git checkout sql-migration && git merge --no-ff slice/<pbi>-<nn>`; then
+   `git worktree remove .worktrees/slice-<pbi>-<nn>` + delete the slice branch. Push only when asked.
+7. **Failures** — fix inside the worktree, re-run steps 3–5; `sql-migration` never receives a red merge.
+
+Ordering law unchanged: feature §8 PBI order + each PBI plan's task-index dependency column; the gate
+makes execution serial without altering the graph (leaves like #421 08/10/16 may batch into one *human-
+approved* concurrent round, each keeping its own entry and gate).

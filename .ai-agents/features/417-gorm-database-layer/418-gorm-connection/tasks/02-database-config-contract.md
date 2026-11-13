@@ -149,3 +149,12 @@ Revert commit; package still just `doc.go` — no consumers.
 ## PBI acceptance mapping
 
 Foundation for AC “Connection factory” (config input shape) and, later, #420's ACs through the seam.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `418-02`.** Cut `slice/418-02` from `sql-migration` HEAD
+(`.worktrees/slice-418-02`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

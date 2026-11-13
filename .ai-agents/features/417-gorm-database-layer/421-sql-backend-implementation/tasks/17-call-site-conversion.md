@@ -82,3 +82,12 @@ Single revert; consumers re-grab concrete type; no data or schema surface touche
 **Legacy layer bypassed** (half 1 of 2): after this PR *no consumer can reach legacy-only methods without an
 explicit escape hatch* — the type system enforces the bypass; **file path / backend selection** untouched
 (ER-5: legacy still the running engine); **D-10 decision recorded** for the feature's ER-3 ledger.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-17`.** Cut `slice/421-17` from `sql-migration` HEAD
+(`.worktrees/slice-421-17`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

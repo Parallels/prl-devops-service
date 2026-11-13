@@ -854,6 +854,11 @@ categories:
           path: /v1/orchestrator/hosts/{id}/machines/async
           description: This endpoint creates a virtual machine in a specific orchestrator host in the background and returns a Job ID to track progress
           title: Creates a virtual machine in a specific orchestrator host asynchronously
+        - anchor: /v1/orchestrator/machines/check-post
+          method: post
+          path: /v1/orchestrator/machines/check
+          description: Evaluates the VM scheduling decision factor against the registered hosts. Requirements are resolved from a catalog manifest (catalog_id + version + architecture, served by a catalog manager) or provided directly in the body. The response is slim when resources are sufficient and carries the full per-host missing-resource detail when no host qualifies.
+          title: Check host requirements before creating a virtual machine
     - name: Packer Templates
       path: packer_templates
       endpoints:
@@ -14524,6 +14529,96 @@ endpoints:
 
             func main() {
               url := "http://localhost/api/v1/orchestrator/hosts/{id}/machines/async"
+              method := "post"
+              payload := strings.NewReader(`{ object }`)
+              client := &http.Client{}
+              req, err := http.NewRequest(method, url, payload)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              req.Header.Add("Content-Type", "application/json")
+
+              req.Header.Add("Authorization", "••••••")
+              res, err := client.Do(req)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              defer res.Body.Close()
+              body, err := io.ReadAll(res.Body)
+              if err != nil {
+                fmt.Println(err)
+                return
+              }
+              fmt.Println(string(body))
+            }
+          title: Go
+          language: go
+    - title: Check host requirements before creating a virtual machine
+      description: Evaluates the VM scheduling decision factor against the registered hosts. Requirements are resolved from a catalog manifest (catalog_id + version + architecture, served by a catalog manager) or provided directly in the body. The response is slim when resources are sufficient and carries the full per-host missing-resource detail when no host qualifies.
+      requires_authorization: true
+      category: Orchestrator
+      category_path: orchestrator
+      path: /v1/orchestrator/machines/check
+      method: post
+      parameters:
+        - name: request
+          required: false
+          type: body
+          value_type: object
+          description: Requirements check request
+          body: '{ object }'
+      response_blocks:
+        - code_block: '{ object }'
+          code: "200"
+          code_description: OK
+          title: models.CheckMachineRequirementsResponse
+          language: json
+        - code_block: '{ object }'
+          code: "400"
+          code_description: Bad Request
+          title: models.ApiErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "401"
+          code_description: Unauthorized
+          title: models.OAuthErrorResponse
+          language: json
+        - code_block: '{ object }'
+          code: "404"
+          code_description: Not Found
+          title: models.ApiErrorResponse
+          language: json
+      example_blocks:
+        - code_block: "curl --location 'http://localhost/api/v1/orchestrator/machines/check' \n--header 'Authorization ••••••'\n--header 'Content-Type: application/json' \n--data '{ object }'\n"
+          title: cURL
+          language: powershell
+        - code_block: |
+            var client = new HttpClient();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost/api/v1/orchestrator/machines/check");
+            request.Headers.Add("Authorization", "••••••");
+            request.Headers.Add("Content-Type", "application/json");
+            request.Content = new StringContent("{ object }");
+            request.Content = content;
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+          title: C#
+          language: csharp
+        - code_block: |
+            package main
+
+            import (
+              "fmt"
+              "net/http"
+              "strings"
+              "io"
+            )
+
+            func main() {
+              url := "http://localhost/api/v1/orchestrator/machines/check"
               method := "post"
               payload := strings.NewReader(`{ object }`)
               client := &http.Client{}

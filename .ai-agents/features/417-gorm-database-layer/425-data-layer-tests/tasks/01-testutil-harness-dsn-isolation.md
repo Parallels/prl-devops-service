@@ -175,3 +175,12 @@ reverts too — zero blast radius on shipped code paths.
 Moves **AC 2** (in-memory SQLite, unique-DSN isolation, no disk — harness + `TestNoDiskWrites`),
 **AC 6** (isolation rules + `-count=5 -shuffle=on -race` evidence), starts **AC 1** (first legacy
 function's parity twin executing), seeds the **≤ +30 s** evidence chain (cost measurement).
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `425-01`.** Cut `slice/425-01` from `sql-migration` HEAD
+(`.worktrees/slice-425-01`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

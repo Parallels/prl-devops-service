@@ -372,3 +372,10 @@ go test -tags integration ./database/legacy_migrator/... -count=1   # task 07 on
 - #426: frozen-legacy warn should read `legacy_migration_marker` (D-4 gives path + sha256); no new state needed.
 - #427: document `--migrate-dry-run=true` / `DB_MIGRATE_DRY_RUN=true`, boot-time expectations, and the
   "legacy file is kept, never modified" guarantee.
+
+## Execution model — worktree slices + human gate (feature plan §14, ER-6/ER-7)
+
+Every task here executes as an isolated worktree slice `slice/<pbi>-<nn>` cut from **`sql-migration`**,
+passes its spec's Validation inside the worktree, closes with a **test plan + results entry** in
+[`../VERIFICATION.md`](../VERIFICATION.md) and the **human verdict** — only then merges `--no-ff` into
+`sql-migration` and the next slice may start. ER-5's merge boundary = the merge into `sql-migration`.

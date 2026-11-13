@@ -158,6 +158,21 @@ func (j *JsonDatabase) GetCatalogManifestsByCatalogIdVersionAndArch(ctx basecont
 		}
 	}
 
+	// The requested version may be a tag (e.g. latest) instead of a literal version:
+	// CreateCatalogManifest keeps exactly one tag holder per catalog item and version,
+	// so resolving by tag selects the manifest the tag points to.
+	if strings.TrimSpace(version) != "" {
+		for _, manifest := range catalogManifests {
+			if (strings.EqualFold(manifest.ID, helpers.NormalizeString(catalogId)) ||
+				strings.EqualFold(manifest.CatalogId, helpers.NormalizeString(catalogId)) ||
+				strings.EqualFold(manifest.Name, helpers.NormalizeString(catalogId))) &&
+				strings.EqualFold(manifest.Architecture, arch) &&
+				manifest.HasTag(version) {
+				return &manifest, nil
+			}
+		}
+	}
+
 	return nil, ErrCatalogManifestNotFound
 }
 

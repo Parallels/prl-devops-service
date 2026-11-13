@@ -86,3 +86,12 @@ tests #424 from outside ⇒ zero coupling to its internals beyond exported API �
 `#424 AC<n>` tags); **No flaky tests** — `-shuffle=on -count=5` gate here; **≤+30 s** — memory targets keep
 it AutoMigrate-bound (measured gate 01→07); **Existing tests pass** — legacy `main_test.go` file-engine
 paths stay the Tier-1 home of file behaviour (excluded list unchanged).
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `425-06`.** Cut `slice/425-06` from `sql-migration` HEAD
+(`.worktrees/slice-425-06`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

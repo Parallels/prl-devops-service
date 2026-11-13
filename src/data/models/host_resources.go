@@ -21,11 +21,16 @@ type HostResources struct {
 	CpuBrand               string            `json:"cpu_brand,omitempty"`
 	ReverseProxy           *HostReverseProxy `json:"reverse_proxy,omitempty"`
 	TotalAppleVms          int64             `json:"total_apple_vms,omitempty"`
-	SystemReserved         HostResourceItem  `json:"system_reserved,omitempty"`
-	Total                  HostResourceItem  `json:"total,omitempty"`
-	TotalAvailable         HostResourceItem  `json:"total_available,omitempty"`
-	TotalInUse             HostResourceItem  `json:"total_in_use,omitempty"`
-	TotalReserved          HostResourceItem  `json:"total_reserved,omitempty"`
+	// MaxVmsPerHost is the hard per-host VM count limit configured on the host itself
+	// (0 means the host imposes none). MaxVmsPerHostMode selects what is counted:
+	// "any" (every VM) or "running" (VMs occupying a hypervisor slot).
+	MaxVmsPerHost     int64            `json:"max_vms_per_host,omitempty"`
+	MaxVmsPerHostMode string           `json:"max_vms_per_host_mode,omitempty"`
+	SystemReserved    HostResourceItem `json:"system_reserved,omitempty"`
+	Total             HostResourceItem `json:"total,omitempty"`
+	TotalAvailable    HostResourceItem `json:"total_available,omitempty"`
+	TotalInUse        HostResourceItem `json:"total_in_use,omitempty"`
+	TotalReserved     HostResourceItem `json:"total_reserved,omitempty"`
 }
 
 func (c *HostResources) Diff(source HostResources) bool {
@@ -40,6 +45,12 @@ func (c *HostResources) Diff(source HostResources) bool {
 		return true
 	}
 	if c.TotalAppleVms != source.TotalAppleVms {
+		return true
+	}
+	if c.MaxVmsPerHost != source.MaxVmsPerHost {
+		return true
+	}
+	if c.MaxVmsPerHostMode != source.MaxVmsPerHostMode {
 		return true
 	}
 	if c.ReverseProxy == nil && source.ReverseProxy != nil {
@@ -76,6 +87,7 @@ func (c *HostResources) Diff(source HostResources) bool {
 type HostResourceItem struct {
 	CpuType          string   `json:"cpu_type,omitempty"`
 	TotalAppleVms    int64    `json:"total_apple_vms,omitempty"`
+	TotalVms         int64    `json:"total_vms,omitempty"`
 	PhysicalCpuCount int64    `json:"physical_cpu_count,omitempty"`
 	LogicalCpuCount  int64    `json:"logical_cpu_count"`
 	MemorySize       float64  `json:"memory_size,omitempty"`
@@ -103,6 +115,9 @@ func (c *HostResourceItem) Diff(source HostResourceItem) bool {
 		return true
 	}
 	if c.TotalAppleVms != source.TotalAppleVms {
+		return true
+	}
+	if c.TotalVms != source.TotalVms {
 		return true
 	}
 	if len(c.MacVmsRunning) != len(source.MacVmsRunning) {

@@ -90,3 +90,12 @@ Revert PR — tags are additive-only; no data touched.
 ## PBI acceptance mapping
 AC1 (rows 6–13, 16–19), AC4 (golden bytes incl. nil-vs-empty serializer edge), AC5 evidence
 reinforced (Revoked columns kept as statuses), ER-2 table above.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `419-03`.** Cut `slice/419-03` from `sql-migration` HEAD
+(`.worktrees/slice-419-03`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

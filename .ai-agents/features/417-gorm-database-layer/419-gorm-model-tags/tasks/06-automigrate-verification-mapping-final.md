@@ -78,3 +78,12 @@ Revert PR — test + doc only (unless gap-fixes shipped, which are additive tag/
 AC3 (**primary**), AC1 (gap pass closes stragglers), AC4 (schema covers every mapped column —
 finalisation pass is its proof), AC5 (evidence recorded — deliberately skipped), D-2 table list
 confirmed = 20.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `419-06`.** Cut `slice/419-06` from `sql-migration` HEAD
+(`.worktrees/slice-419-06`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

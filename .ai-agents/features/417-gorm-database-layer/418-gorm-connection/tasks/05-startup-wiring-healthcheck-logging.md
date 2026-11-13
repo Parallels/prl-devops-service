@@ -151,3 +151,12 @@ unaffected (they have no runtime presence). Zero user impact since nothing consu
 Moves AC “**Health check**” (ping on startup + clear error + graceful exit per repo precedent),
 “**Logging**” (bridge + silent-in-tests), finishes “**No regressions**”. After this PR merges, all
 six #418 ACs are demonstrably addressed → close #418 with the AD-2 deviation comment linked.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `418-05`.** Cut `slice/418-05` from `sql-migration` HEAD
+(`.worktrees/slice-418-05`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

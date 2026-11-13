@@ -46,3 +46,4 @@ package.json
 .gocache/
 # Slice gate scratch (GOTMPDIR) — never tracked
 .gotmp/
+.worktrees/

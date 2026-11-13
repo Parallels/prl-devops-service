@@ -127,3 +127,12 @@ reverted (task 03's markers are removed — note this in the revert PR so #421's
 
 Moves AC “**Connection pool**” (settings + applied + offline-proven), completes “**Connection
 factory**” (both backends), and pre-arms #420's AC “**Secrets safety**”.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `418-04`.** Cut `slice/418-04` from `sql-migration` HEAD
+(`.worktrees/slice-418-04`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

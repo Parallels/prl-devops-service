@@ -231,3 +231,12 @@ Moves AC boxes: **Backend selection** (full resolution + default, contract-level
 error; startup exit proof lands in task 04), **Auto-migrate flag** (parse + default true + garbage
 error), **Config file parity** (parity + env precedence proven per key). Contributes AC "Validation
 and errors" (message authoring, finalized in task 03).
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `420-02`.** Cut `slice/420-02` from `sql-migration` HEAD
+(`.worktrees/slice-420-02`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

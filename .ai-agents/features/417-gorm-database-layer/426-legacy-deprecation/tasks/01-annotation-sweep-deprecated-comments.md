@@ -89,3 +89,12 @@ annotations (task 03's audit decides those, D-5), test files.
 **Annotation** AC (the 175 + package doc, script-mechanical, carve-outs evidenced) and the **diagnostics**
 half of **No new callers** (SA1019 fires in IDE/lint — depguard, task 03, is the CI half); removal-version
 strings appear exactly as D-6 fixed them.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `426-01`.** Cut `slice/426-01` from `sql-migration` HEAD
+(`.worktrees/slice-426-01`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

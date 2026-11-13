@@ -102,3 +102,12 @@ dependency note but only *tests* this file's paths — no rollback ordering prob
 **CRUD via GORM** — 15 host methods; **Transactions** — create-with-VMs + delete-cascade (D-9
 `orchestrator.go:121-146` row); **Error handling** — D-11; **Concurrent access** — heartbeat/VM-write
 interleaving test (the domain's sharpest race, proven before WAL verification in 18).
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-13`.** Cut `slice/421-13` from `sql-migration` HEAD
+(`.worktrees/slice-421-13`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

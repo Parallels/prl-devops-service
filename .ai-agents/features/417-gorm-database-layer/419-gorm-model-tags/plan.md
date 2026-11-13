@@ -255,3 +255,10 @@ func allAutoMigrateModels() []any { return []any{ // 18 roots → 20 tables
    #424 may replace with `migration_meta` (rows documented so the decision is reversible).
 4. **`users.email` uniqueness** deliberately deferred to a plain index (empty-string legacy rows
    would violate UNIQUE); revisit with data profiling in #424.
+
+## Execution model — worktree slices + human gate (feature plan §14, ER-6/ER-7)
+
+Every task here executes as an isolated worktree slice `slice/<pbi>-<nn>` cut from **`sql-migration`**,
+passes its spec's Validation inside the worktree, closes with a **test plan + results entry** in
+[`../VERIFICATION.md`](../VERIFICATION.md) and the **human verdict** — only then merges `--no-ff` into
+`sql-migration` and the next slice may start. ER-5's merge boundary = the merge into `sql-migration`.

@@ -32,6 +32,7 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 	registerUserConfigsHandlers(ctx, version)
 	if config.Get().IsOrchestrator() {
 		registerOrchestratorHostsHandlers(ctx, version)
+		registerOrchestratorMachineCheckHandlers(ctx, version)
 	}
 	registerSshHandlers(ctx, version)
 	registerPerformanceHandlers(ctx, version)

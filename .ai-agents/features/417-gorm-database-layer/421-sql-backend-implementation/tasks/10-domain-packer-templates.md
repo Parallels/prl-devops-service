@@ -155,3 +155,12 @@ the chain (05→06→…) proceeds unaffected while it is out.
 | Transactions | "No tx needed" verified against D-9 and recorded |
 | Error handling (wrapped, consistent) | Mapping table on `mapGormError`; invalid-filter parity pinned |
 | Legacy layer bypassed | List + lookups served from SQL through the ported query layer, zero `g.legacy` |
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-10`.** Cut `slice/421-10` from `sql-migration` HEAD
+(`.worktrees/slice-421-10`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

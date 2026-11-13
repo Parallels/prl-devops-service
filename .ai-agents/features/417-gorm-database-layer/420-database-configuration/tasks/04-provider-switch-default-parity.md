@@ -148,3 +148,12 @@ flag** (operator-visible behavior), final proof for **Validation and errors** (s
 and **Secrets safety** (matrix row c), and the whole of **Config file parity** + **Validation** at
 process level; this is the task where AC "default configuration produces identical behaviour"
 (constraint) becomes *demonstrated*, not asserted.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `420-04`.** Cut `slice/420-04` from `sql-migration` HEAD
+(`.worktrees/slice-420-04`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

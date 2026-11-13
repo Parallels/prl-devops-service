@@ -91,3 +91,12 @@ outreach.
 **CRUD via GORM** — 10 methods; **Transactions** — the two check-then-act pairs (recorded against D-9);
 **Error handling** — D-11; **Legacy bypassed** — jobs domain fully off-delegate after this PR; **D-8
 pre-work** — task 18 only wires what this proves.
+
+## Slice gate — execution protocol (feature plan §14 · ER-6/ER-7)
+
+**Slice id: `421-15`.** Cut `slice/421-15` from `sql-migration` HEAD
+(`.worktrees/slice-421-15`) → implement this spec only → pass `## Validation` inside the
+worktree → append the slice entry (diff summary + **human test plan** with expected outputs + observed
+results + deviations) to [`VERIFICATION.md`](../../VERIFICATION.md) → **STOP for the human gate**.
+Approved ⇒ `git merge --no-ff` into `sql-migration`, remove worktree + branch, next slice.
+Rejected ⇒ fix in-worktree, re-report. `sql-migration` never takes a red merge (ER-5).

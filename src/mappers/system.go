@@ -19,6 +19,14 @@ func MapHostResourcesFromSystemUsageResponse(m models.SystemUsageResponse) data_
 	result.TotalInUse.TotalAppleVms = result.TotalAppleVms
 	result.TotalReserved.TotalAppleVms = m.PendingMacVMs
 	result.MacVMInventoryComplete = m.MacVMInventoryComplete
+	// VM count capacity: Total is every VM registered on the host, TotalInUse the ones
+	// occupying a hypervisor slot, TotalReserved the creates/starts in flight. Which set
+	// the host limit counts is decided by MaxVmsPerHostMode.
+	result.MaxVmsPerHost = m.MaxVmsPerHost
+	result.MaxVmsPerHostMode = m.MaxVmsPerHostMode
+	result.Total.TotalVms = m.TotalVms
+	result.TotalInUse.TotalVms = m.RunningVms
+	result.TotalReserved.TotalVms = m.PendingVms
 
 	return result
 }
@@ -28,6 +36,7 @@ func MapHostResourceItemFromSystemUsageItem(m *models.SystemUsageItem) data_mode
 		return data_models.HostResourceItem{}
 	}
 	result := data_models.HostResourceItem{
+		TotalVms:         m.TotalVms,
 		PhysicalCpuCount: m.PhysicalCpuCount,
 		LogicalCpuCount:  m.LogicalCpuCount,
 		MemorySize:       m.MemorySize,
@@ -60,6 +69,11 @@ func MapSystemUsageResponseFromHostResources(m data_models.HostResources) *model
 	result := models.SystemUsageResponse{
 		PendingMacVMs:          m.TotalReserved.TotalAppleVms,
 		MacVMInventoryComplete: m.MacVMInventoryComplete,
+		MaxVmsPerHost:          m.MaxVmsPerHost,
+		MaxVmsPerHostMode:      m.MaxVmsPerHostMode,
+		TotalVms:               m.Total.TotalVms,
+		RunningVms:             m.TotalInUse.TotalVms,
+		PendingVms:             m.TotalReserved.TotalVms,
 		CpuType:                m.CpuType,
 		CpuBrand:               m.CpuBrand,
 		SystemReserved:         MapSystemUsageItemFromHostResourceItem(&m.SystemReserved),
@@ -75,6 +89,7 @@ func MapSystemUsageResponseFromHostResources(m data_models.HostResources) *model
 func MapSystemUsageItemFromHostResourceItem(m *data_models.HostResourceItem) *models.SystemUsageItem {
 	result := models.SystemUsageItem{
 		MacVMsRunning:    m.MacVmsRunning,
+		TotalVms:         m.TotalVms,
 		PhysicalCpuCount: m.PhysicalCpuCount,
 		LogicalCpuCount:  m.LogicalCpuCount,
 		MemorySize:       m.MemorySize,
