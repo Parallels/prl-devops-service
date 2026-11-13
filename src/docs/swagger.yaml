@@ -2649,12 +2649,10 @@ definitions:
         additionalProperties:
           type: string
         type: object
+      password:
+        type: string
       script:
         $ref: '#/definitions/models.VirtualMachineExecuteCommandScript'
-      use_ssh:
-        type: boolean
-      use_sudo:
-        type: boolean
       user:
         type: string
     type: object
@@ -2721,7 +2719,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: Parallels Desktop DevOps Service
-  version: 1.1.9
+  version: 1.1.8
 paths:
   /config/diskspace:
     post:
