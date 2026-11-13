@@ -27,6 +27,8 @@ func NewPDFileService(ctx basecontext.ApiContext, pdFile *models.PDFile) *PDFile
 			&processors.DescriptionCommandProcessor{},
 			&processors.DestinationCommandProcessor{},
 			&processors.ExecuteCommandProcessor{},
+			&processors.ExecuteUserCommandProcessor{},
+			&processors.ExecutePasswordCommandProcessor{},
 			&processors.FromToCommandProcessor{},
 			&processors.InsecureCommandProcessor{},
 			&processors.LocalPathCommandProcessor{},

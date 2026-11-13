@@ -29,6 +29,8 @@ type PDFile struct {
 	MinimumSpecRequirements *PdFileMinimumSpecRequirement `json:"MINIMUM_REQUIREMENTS,omitempty" yaml:"MINIMUM_REQUIREMENTS,omitempty"`
 	Command                 string                        `json:"COMMAND,omitempty" yaml:"COMMAND,omitempty"`
 	Execute                 []string                      `json:"EXECUTE,omitempty" yaml:"EXECUTE,omitempty"`
+	ExecuteUser             string                        `json:"EXECUTE_USER,omitempty" yaml:"EXECUTE_USER,omitempty"`
+	ExecutePassword         string                        `json:"EXECUTE_PASSWORD,omitempty" yaml:"EXECUTE_PASSWORD,omitempty"`
 	Clone                   bool                          `json:"CLONE,omitempty" yaml:"CLONE,omitempty"`
 	CloneTo                 string                        `json:"CLONE_TO,omitempty" yaml:"CLONE_TO,omitempty"`
 	CloneToDestination      string                        `json:"CLONE_TO_DESTINATION,omitempty" yaml:"CLONE_TO_DESTINATION,omitempty"`

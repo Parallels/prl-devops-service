@@ -14423,14 +14423,11 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "password": {
+                    "type": "string"
+                },
                 "script": {
                     "$ref": "#/definitions/models.VirtualMachineExecuteCommandScript"
-                },
-                "use_ssh": {
-                    "type": "boolean"
-                },
-                "use_sudo": {
-                    "type": "boolean"
                 },
                 "user": {
                     "type": "string"
@@ -14537,7 +14534,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.1.9",
+	Version:          "1.1.8",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},

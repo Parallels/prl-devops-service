@@ -2,13 +2,16 @@ package models
 
 import "github.com/Parallels/prl-devops-service/errors"
 
+// VirtualMachineExecuteCommandRequest mirrors the `prlctl exec` interface:
+// when User is set it maps to `--user` (guest login) and Password maps to
+// `--password`. When neither is set the command runs in the default prlctl
+// exec context for the guest, without any extra options.
 type VirtualMachineExecuteCommandRequest struct {
 	EnvironmentVariables map[string]string                   `json:"environment_variables,omitempty"`
 	Command              string                              `json:"command"`
 	Script               *VirtualMachineExecuteCommandScript `json:"script,omitempty"`
-	UseSudo              bool                                `json:"use_sudo,omitempty"`
-	UseSSH               bool                                `json:"use_ssh,omitempty"`
 	User                 string                              `json:"user,omitempty"`
+	Password             string                              `json:"password,omitempty"`
 }
 
 func (r *VirtualMachineExecuteCommandRequest) Validate() error {
@@ -18,6 +21,10 @@ func (r *VirtualMachineExecuteCommandRequest) Validate() error {
 		}
 
 		return errors.NewWithCode("missing command", 400)
+	}
+
+	if r.Password != "" && r.User == "" {
+		return errors.NewWithCode("password requires user", 400)
 	}
 
 	return nil

@@ -2568,6 +2568,41 @@ func (s *ParallelsService) LocalUploadToVm(ctx basecontext.ApiContext, id string
 	return &response, nil
 }
 
+// buildExecArgs assembles the prlctl exec argument vector, mirroring the
+// prlctl exec interface:
+//
+//	prlctl exec <vm> [--user <user> [--password <password>]] <command>
+//
+// Options go after the VM id and before the command, matching prlctl's own
+// usage. With no user and password this is exactly the plain `exec <vm>
+// <command>` form, which runs in prlctl's default context for the guest.
+func buildExecArgs(vmId string, user string, password string, command string) []string {
+	args := make([]string, 0, 6)
+	args = append(args, "exec", vmId)
+	if user != "" {
+		args = append(args, "--user", user)
+		if password != "" {
+			args = append(args, "--password", password)
+		}
+	}
+	return append(args, command)
+}
+
+// redactExecArgs renders an exec argument vector for logging with any
+// --password value masked, so guest credentials never reach the service logs.
+func redactExecArgs(args []string) string {
+	masked := make([]string, len(args))
+	copy(masked, args)
+	for i, arg := range masked {
+		if strings.HasPrefix(arg, "--password=") {
+			masked[i] = "--password=****"
+		} else if arg == "--password" && i+1 < len(masked) {
+			masked[i+1] = "****"
+		}
+	}
+	return strings.Join(masked, " ")
+}
+
 func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id string, r *models.VirtualMachineExecuteCommandRequest) (*models.VirtualMachineExecuteCommandResponse, error) {
 	response := &models.VirtualMachineExecuteCommandResponse{}
 	vm, err := s.findVmSync(ctx, id)
@@ -2585,36 +2620,23 @@ func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id str
 	}
 	ctx.LogInfof("Preparing to execute command %s on VM %s", r.Command, vm.ID)
 	envVars := ""
-	bashCommand := ""
-	commandParts := strings.Split(r.Command, " ")
-	command := ""
-	if r.UseSudo {
-		command = fmt.Sprintf("sudo %s", command)
-	}
-	if len(commandParts) > 1 {
-		command = strings.Join(commandParts, " ")
-	} else {
-		command = commandParts[0]
-	}
+	command := r.Command
 
 	for key, value := range r.EnvironmentVariables {
 		envVars += fmt.Sprintf(`%s='%s' `, key, value)
 	}
 
+	bashCommand := command
 	envVars = strings.TrimSpace(envVars)
 	if envVars != "" {
 		bashCommand = fmt.Sprintf("env %s bash -c '%s'", envVars, command)
-	} else {
-		bashCommand = command
 	}
 	cmd := helpers.Command{
 		Command: s.executable,
 	}
-	cmd.Args = make([]string, 0)
-
-	cmd.Args = append(cmd.Args, "exec", vm.ID, bashCommand)
+	cmd.Args = buildExecArgs(vm.ID, r.User, r.Password, bashCommand)
 	cmd = cmd.AsUser(vm.User)
-	ctx.LogInfof("Executing command %s %s", cmd.Command, strings.Join(cmd.Args, " "))
+	ctx.LogInfof("Executing command %s %s", cmd.Command, redactExecArgs(cmd.Args))
 	s.sshSem <- struct{}{}
 	stdout, stderr, exitCode, cmdError := helpers.ExecuteWithOutput(s.ctx.Context(), cmd, helpers.ExecutionTimeout)
 	<-s.sshSem
@@ -2625,7 +2647,7 @@ func (s *ParallelsService) ExecuteCommandOnVm(ctx basecontext.ApiContext, id str
 		response.Error = cmdError.Error()
 	}
 
-	ctx.LogInfof("Command %s %s executed with exit code %v", cmd.Command, strings.Join(cmd.Args, " "), exitCode)
+	ctx.LogInfof("Command %s %s executed with exit code %v", cmd.Command, redactExecArgs(cmd.Args), exitCode)
 	return response, nil
 }
 

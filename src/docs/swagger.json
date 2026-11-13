@@ -13,7 +13,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "1.1.9"
+        "version": "1.1.8"
     },
     "basePath": "/api",
     "paths": {
@@ -14416,14 +14416,11 @@
                         "type": "string"
                     }
                 },
+                "password": {
+                    "type": "string"
+                },
                 "script": {
                     "$ref": "#/definitions/models.VirtualMachineExecuteCommandScript"
-                },
-                "use_ssh": {
-                    "type": "boolean"
-                },
-                "use_sudo": {
-                    "type": "boolean"
                 },
                 "user": {
                     "type": "string"
