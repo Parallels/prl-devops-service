@@ -75,7 +75,7 @@ Rules (§14): slices are serial by default; `sql-migration` must never receive a
 | 58 | **merge hardening-02** — clean; tip: ancestry ✓ build ✓ suite 41/41 retry, `-race` database+controllers green; worktrees/branches swept | `slice/hardening-02` | **MERGED** `06ecd91` (tally 39 — `sql-migration` TIP) | 2026-11-13 |
 | 59 | `hardening-03` **T18** — `setupDB` daemon drain (last T1-family flake); 10/10 fresh loads 0 strikes, focused ×10, `-race`, lint delta 0, suite 41/41 | `slice/hardening-03` | **GATE PASSED** macOS → **MERGED** `3aa5815` (row 60) | 2026-11-13 |
 | 60 | **merge hardening-03 + ship** — tally 40 tip `3aa5815`; owner pushes FF (remote at `06ecd91` from owner's push); PR → `dev` via prefilled URL + body; no auto-close | `sql-migration` | **SHIPPING** (owner: final push + open PR) | 2026-11-13 |
-| 61 | `security-01` — credential-shape removal (5 test-only helpers, 32 files, golden re-capture w/ zero-entropy placeholder) + CI `secrets.CI_POSTGRES_PASSWORD` wiring + docs placeholders; suite 41/41, lint delta 0 | `slice/security-01` | **PENDING HUMAN APPROVAL** (`cc35ebc`, 32 files +182/−86) | 2026-11-13 |
+| 61 | `security-01` — credential-shape removal (5 helpers, 33 files, golden re-capture) + CI `secrets.CI_POSTGRES_PASSWORD` wiring + docs placeholders **+ guard action v6→v7**; suite 41/41, lint delta 0, depguard 0 | `slice/security-01` | **PENDING HUMAN APPROVAL** (`cc35ebc`+`899f5b3`) | 2026-11-13 |
 
 ---
 
@@ -3880,7 +3880,9 @@ hardening-03 merged clean (`3aa5815`; smoke: build + 3× fresh `tests/controller
 
 **Self-gate**: build ✓ · gofmt ✓ · suite **41/41** (twice: pre/post golden recapture) · lint comm-delta: zero new attributable (untouched legacy errcheck multiplicity artifact documented) · runtime digests never appear in committed files (grep 0).
 
-**VERDICT**: **PENDING HUMAN APPROVAL** — slice `cc35ebc` awaits the owner's literal gate. Owner follow-up outside git: create `CI_POSTGRES_PASSWORD` repo secret + triage existing alerts as "not a real secret / used in tests".
+**Post-report CI fix (same branch, `899f5b3`)**: legacy-import-guard went red on first real CI run — `golangci-lint-action@v6` hard-rejects v2 version strings, while the repo config is v2 schema (synced upstream) requiring the v2 binary. Action bumped to **v7** (the v2-supporting action line); the #426-era comment ("v6 documents v2 passthrough") was wrong and is corrected in-file. Guard logic proven locally with the identical toolchain (golangci-lint 2.14.0): `--enable-only=depguard ./...` → **0 issues, exit 0** — no new legacy callers from security-01's own churn.
+
+**VERDICT**: **PENDING HUMAN APPROVAL** — branch `slice/security-01` = `cc35ebc` + `899f5b3`, one gate covering both. Owner follow-up outside git: create `CI_POSTGRES_PASSWORD` repo secret + triage existing alerts as "not a real secret / used in tests".
 
 ## Deferred backlog (tracked follow-ups)
 
