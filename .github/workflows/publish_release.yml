@@ -126,7 +126,7 @@ jobs:
           ## Artifacts
 
           - Linux binaries (386, amd64, arm64) with MD5 checksums
-          - Windows binaries (386, amd64, arm64)
+          - Windows binaries (amd64, arm64)
           - macOS binaries (amd64, arm64), code-signed and notarized, with MD5 checksums
           - Helm chart (parallels-devops-service-${VERSION}.tgz)
           EOF
