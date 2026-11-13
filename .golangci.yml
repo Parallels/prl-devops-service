@@ -86,8 +86,12 @@ linters:
     # keeps pre-existing lint debt out of it). Grandfathered paths below.
     depguard:
       rules:
+        # PBI #426 — no new importers of the deprecated legacy data engine
+        # (removal issue links here). NOTE: rule objects carry no `desc`
+        # field in the golangci-lint v2 jsonschema — `config verify` (run
+        # by the CI action, stricter than `run`) rejects unknown keys;
+        # the deny-entry desc below is schema-legal and stays.
         main:
-          desc: "PBI #426 — no new importers of the deprecated legacy data engine (removal issue links here)"
           files: ["**/*"]
           deny:
             - pkg: github.com/Parallels/prl-devops-service/data$
