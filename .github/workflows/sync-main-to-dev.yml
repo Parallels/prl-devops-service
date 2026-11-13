@@ -1,0 +1,60 @@
+name: Sync main into dev
+
+# CONVENTIONS (dev branch workflow):
+# - Bug fixes and small work merge straight into `main`.
+# - THIS workflow keeps the long-lived `dev` branch current: after every push
+#   to `main` (including release PRs that bump VERSION/CHANGELOG.md), main is
+#   merged into dev with a merge commit. `dev` is never rebased or force-pushed.
+# - On merge conflicts the sync fails loudly; resolve manually
+#   (`git checkout dev && git merge main`) or re-run this workflow afterwards.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-main-to-dev
+  cancel-in-progress: false
+
+jobs:
+  merge-main-into-dev:
+    name: Merge main into dev
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          persist-credentials: false
+          token: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+
+      - name: Merge main into dev
+        env:
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch origin main dev
+          git checkout dev
+          git reset --hard origin/dev
+
+          if git merge-base --is-ancestor origin/main origin/dev; then
+            echo "dev already contains main — nothing to sync."
+            exit 0
+          fi
+
+          if ! git merge --no-edit origin/main; then
+            git merge --abort || true
+            echo "::error::Automatic sync of main into dev hit conflicts. Merge main into dev manually (git checkout dev && git merge main), or re-run this workflow once resolved."
+            exit 1
+          fi
+
+          git push origin dev
+          echo "Synced main into dev ($(git rev-parse --short origin/main))." >> "$GITHUB_STEP_SUMMARY"

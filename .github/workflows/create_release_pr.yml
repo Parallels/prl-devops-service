@@ -22,7 +22,7 @@ jobs:
       contents: write
       pull-requests: write
     env:
-      new_version: ""
+      NEW_VERSION: "" # will be set in the workflow
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
@@ -33,42 +33,37 @@ jobs:
         with:
           go-version: "1.21.x"
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
-      - name: Check for Changes to the Changelog
-        id: diff
-        if: false
+
+      # ── Compute next version ───────────────────────────────────────────────
+      - name: Compute next version
+        id: version
         run: |
           NEW_VERSION=$(./.github/workflow_scripts/increment-version.sh -t ${{ inputs.version }} -f VERSION)
-          LAST_CHANGELOG_VERSION=$(./.github/workflow_scripts/get-latest-changelog-version.sh)
-          if [ "$NEW_VERSION" != "$LAST_CHANGELOG_VERSION" ]; then
-            echo "Changelog not updated for version $NEW_VERSION lastest version is $LAST_CHANGELOG_VERSION"
-            exit 1
-          fi
-      - name: Bump version and push
-        env:
-          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+          echo "NEW_VERSION=${NEW_VERSION}" >> "$GITHUB_ENV"
+
+      # ── Create release branch ──────────────────────────────────────────────
+      - name: Create release branch
         run: |
           git config --global user.email "cjlapao@gmail.com"
           git config --global user.name "cjlapao"
+          git checkout -b release/${{ env.NEW_VERSION }}
 
-          NEW_VERSION=$(./.github/workflow_scripts/increment-version.sh -t ${{ inputs.version }} -f VERSION)
-          echo "$NEW_VERSION" > ./VERSION
-          sed -i "/^version:/c\version: \"$NEW_VERSION\"" ./helm/Chart.yaml
-          sed -i "/^appVersion:/c\appVersion: \"$NEW_VERSION\"" ./helm/Chart.yaml
-          sed -i "/^var ver =/c\\var ver = \"$NEW_VERSION\"" ./src/main.go
-          sed -i "/^\/\/	@version/c\\//	@version $NEW_VERSION" ./src/main.go
-
-          git checkout -b release/"$NEW_VERSION"
+      # ── Bump version files and regenerate docs ─────────────────────────────
+      - name: Bump version and generate docs
+        run: |
+          echo "${{ env.NEW_VERSION }}" > ./VERSION
+          sed -i "/^version:/c\version: \"${{ env.NEW_VERSION }}\"" ./helm/Chart.yaml
+          sed -i "/^appVersion:/c\appVersion: \"${{ env.NEW_VERSION }}\"" ./helm/Chart.yaml
+          sed -i "/^var ver =/c\\var ver = \"${{ env.NEW_VERSION }}\"" ./src/main.go
+          sed -i "/^\/\/	@version/c\\//	@version ${{ env.NEW_VERSION }}" ./src/main.go
 
           go install github.com/swaggo/swag/cmd/swag@latest
-          
+
           # Update dependencies
           cd src && go mod tidy && cd ..
 
           # Generate all documentation (Swagger, Postman, API Reference)
           make generate-all-docs
-
-          # Generate changelog for the new version
-          ./.github/workflow_scripts/generate-changelog.sh --repo ${{ github.repository }} --version $NEW_VERSION
 
           # Generate blog records for the new version
           ./.github/workflow_scripts/generate-blog-records.sh
@@ -76,29 +71,58 @@ jobs:
           # Generate Helm Chart
           make build-helm-chart
 
+      # ── Generate changelog ─────────────────────────────────────────────────
+      - name: Generate changelog
+        env:
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          chmod +x ./.github/workflow_scripts/generate-changelog.sh
+          ./.github/workflow_scripts/generate-changelog.sh \
+            --mode GENERATE \
+            --repo ${{ github.repository }} \
+            --version ${{ env.NEW_VERSION }} \
+            --verbose
+
+      # ── Commit and push ────────────────────────────────────────────────────
+      - name: Commit and push release branch
+        run: |
           git add VERSION CHANGELOG.md \
             ./src/main.go ./src/go.mod ./src/go.sum ./src/docs/* \
             ./helm/Chart.yaml \
             ./docs/charts/* ./docs/_posts/* \
             ./docs/Parallels_Desktop_API.postman_collection.json \
             ./docs/docs/devops/restapi/reference/*
-          
+
           git add -u ./src/
 
-          git commit -m "Release extension version $NEW_VERSION"
+          git commit -m "Release extension version ${{ env.NEW_VERSION }}"
 
-          git push --set-upstream origin release/$NEW_VERSION
+          git push --set-upstream origin release/${{ env.NEW_VERSION }}
 
-          echo "new_version=$NEW_VERSION" >> "$GITHUB_ENV"
-
-      - name: Create PR
-        run: |
-          ./.github/workflow_scripts/generate-changelog.sh --mode RELEASE --repo ${{ github.repository }} --version ${{ env.new_version }} --output-to-file 
-          gh pr create \
-            --title "Release version ${{ env.new_version }}" \
-            --body-file release_notes.md \
-            --base main \
-            --head release/${{ env.new_version }}
-          gh pr edit --add-label release-request
+      # ── Generate PR body ───────────────────────────────────────────────────
+      - name: Generate release PR body
         env:
           GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          chmod +x ./.github/workflow_scripts/generate-changelog.sh
+          ./.github/workflow_scripts/generate-changelog.sh \
+            --mode RELEASE \
+            --repo ${{ github.repository }} \
+            --version ${{ env.NEW_VERSION }} \
+            --output-to-file \
+            --file release_notes.md \
+            --verbose
+
+      # ── Open pull request ──────────────────────────────────────────────────
+      - name: Create PR
+        env:
+          GH_TOKEN: ${{ secrets.PARALLELS_WORKFLOW_PAT }}
+        run: |
+          gh pr create \
+            --title "Release version ${{ env.NEW_VERSION }}" \
+            --body-file release_notes.md \
+            --base main \
+            --head release/${{ env.NEW_VERSION }} \
+            --label release-request
