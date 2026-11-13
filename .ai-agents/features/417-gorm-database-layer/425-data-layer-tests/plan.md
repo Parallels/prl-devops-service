@@ -158,7 +158,7 @@ fixing codes is an API behaviour change, out of #417):
 | not-found (no code!) | `ErrCatalogManagerNotFound = errors.New(...)` (`catalog_managers.go:11`) | gorm leg returns the *same sentinel identity*; assert no code panic — mirror the quirk. |
 | duplicate → 400 | `ErrUserAlreadyExists`(400), `ErrPackerTemplateAlreadyExists`(400), `ErrRoleAlreadyContainsClaim`(400), `ErrUserAlreadyContainsRole/Claim`(400), codef'd 400s in claims/roles/orchestrator/reverse_proxy create paths | Insert existing ID/name → assert same sentinel/code, **not** raw unique-violation text. SQLite leg forces `constraint failed`; Postgres leg (integration) forces `SQLSTATE 23505` — same assertion ⇒ the `TranslateError`/mapping in #421 is what's under test. |
 | quirk duplicates | `ErrApiKeyAlreadyExists`(500!), `ErrCatalogAlreadyExists`(404!), `ErrUserConfigAlreadyExists`(500!) | Mirror as-is + `t.Log` the quirk; comment links this row so nobody "fixes" it. |
-| unreachable | `database.ErrDatabaseUnreachable` (wraps `#418` factory/ping errors, D-5 of #418) | `NewDatabaseConnection` against `postgres://u:p@127.0.0.1:1/db` → `errors.Is(err, ErrDatabaseUnreachable)` true; message contains redacted DSN (no `p` leak). Offline, no network beyond loopback. |
+| unreachable | `database.ErrDatabaseUnreachable` (wraps `#418` factory/ping errors, D-5 of #418) | `NewDatabaseConnection` against `postgres://<u>:<p>@127.0.0.1:1/db` → `errors.Is(err, ErrDatabaseUnreachable)` true; message contains redacted DSN (no `p` leak). Offline, no network beyond loopback. |
 
 Lives in `src/database/parity/errors_parity_test.go` (task 04) + wave-embedded per-domain assertions
 (each scenario asserts legacy-identical error by construction — that's what "same scenario, both

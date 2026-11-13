@@ -416,7 +416,7 @@ func TestSaveNowSkippedForCliCommands(t *testing.T) {
 		ID:       "hardware-id",
 		Username: "root",
 		Email:    "root@localhost",
-		Password: "in-memory-only",
+		Password: fixtureSecret("in-mem"),
 	})
 	db.dataMutex.Unlock()
 
@@ -445,7 +445,7 @@ func TestSaveNowForcedPersistsRootPasswordForCliCommands(t *testing.T) {
 		Name:     "Root",
 		Username: "root",
 		Email:    "root@localhost",
-		Password: "old-hash",
+		Password: fixtureSecret("old-hash"),
 	})
 	db.dataMutex.Unlock()
 
@@ -454,7 +454,7 @@ func TestSaveNowForcedPersistsRootPasswordForCliCommands(t *testing.T) {
 
 	persisted := readPersistedUsers(t, db.Filename())
 	require.Len(t, persisted, 1)
-	assert.NotEqual(t, "old-hash", persisted[0].Password)
+	assert.NotEqual(t, fixtureSecret("old-hash"), persisted[0].Password)
 	assert.True(t, strings.HasPrefix(persisted[0].Password, "$2"),
 		"the hashed password, not the previous one, must reach disk")
 

@@ -90,7 +90,7 @@ func seedUsers(t testing.TB, db datainterfaces.DatabaseService) {
 		}
 	}
 	u := func(id, username, email, name string, extra ...func(*models.User)) {
-		nu := models.User{ID: id, Username: username, Email: email, Name: name, Password: "Seed-Pass-1!"}
+		nu := models.User{ID: id, Username: username, Email: email, Name: name, Password: fixtureSecret("seed")}
 		for _, e := range extra {
 			e(&nu)
 		}
@@ -224,17 +224,17 @@ func checkUserUpdates(t testing.TB, legacy, sql datainterfaces.DatabaseService) 
 		if err := eng.UpdateUserBlockStatus(ctx, models.User{ID: "u3"}); err != nil { // clear
 			t.Fatal(err)
 		}
-		if err := eng.UpdateUser(ctx, models.User{ID: "u2", Password: "Rotated-2!"}); err != nil {
+		if err := eng.UpdateUser(ctx, models.User{ID: "u2", Password: fixtureSecret("rotated-2")}); err != nil {
 			t.Fatal(err)
 		}
 	}
 	// the rotated hash must verify against the engine's own stored copy
 	lu, _ := legacy.GetUser(ctx, "u2")
 	su, _ := sql.GetUser(ctx, "u2")
-	if err := password.Get().Compare("Rotated-2!", "u2", lu.Password); err != nil {
+	if err := password.Get().Compare(fixtureSecret("rotated-2"), "u2", lu.Password); err != nil {
 		t.Errorf("legacy rotated hash fails verification: %v", err)
 	}
-	if err := password.Get().Compare("Rotated-2!", "u2", su.Password); err != nil {
+	if err := password.Get().Compare(fixtureSecret("rotated-2"), "u2", su.Password); err != nil {
 		t.Errorf("sql rotated hash fails verification: %v", err)
 	}
 	if lu.Username != "user2" || su.Username != "user2" {
@@ -249,7 +249,7 @@ func checkRootFlows(t testing.TB, legacy, sql datainterfaces.DatabaseService) {
 	ctx := basecontext.NewBaseContext()
 	for _, eng := range []datainterfaces.DatabaseService{legacy, sql} {
 		if _, err := eng.CreateUser(ctx, models.User{ID: "the-root", Username: "rooty",
-			Email: "root@localhost", Name: "Root Admin", Password: "Seed-Pass-1!"}); err != nil {
+			Email: "root@localhost", Name: "Root Admin", Password: fixtureSecret("seed")}); err != nil {
 			t.Fatal(err)
 		}
 	}

@@ -56,8 +56,8 @@ exercises:
 
 | DSN form      | Example (password always fake)                                                               |
 | ------------- | -------------------------------------------------------------------------------------------- |
-| URL           | `postgres://devops:change-me@db.example.com:5432/devops?sslmode=require`                     |
-| keyword/value | `host=db.example.com port=5432 user=devops password=change-me dbname=devops sslmode=require` |
+| URL           | `postgres://<db-user>:<db-password>@db.example.com:5432/devops?sslmode=require`                     |
+| keyword/value | `host=db.example.com port=5432 user=<db-user> password=<db-password> dbname=devops sslmode=require` |
 
 If you created a dedicated schema, add `search_path=devops_service` to
 the DSN: as `&search_path=devops_service` in URL form, or as the
@@ -65,7 +65,7 @@ the DSN: as `&search_path=devops_service` in URL form, or as the
 
 ```bash
 export DB_TYPE=postgres
-export DB_DSN='postgres://devops:change-me@db:5432/devops?sslmode=require'
+export DB_DSN='postgres://<db-user>:<db-password>@db:5432/devops?sslmode=require'
 export DB_AUTO_MIGRATE=true   # default; set false once the schema exists
 ```
 
@@ -136,7 +136,7 @@ file:
 
 ```bash
 kubectl create secret generic devops-db \
-  --from-literal=DB_DSN='postgres://devops:...@db:5432/devops?sslmode=require'
+  --from-literal=DB_DSN='postgres://<db-user>:<db-password>@db:5432/devops?sslmode=require'
 ```
 
 and inject it with the chart's generic environment passthrough
@@ -181,7 +181,7 @@ database variables are yours to add):
 ```yaml
 environment:
   DB_TYPE: "postgres"
-  DB_DSN: "postgres://devops:change-me@db:5432/devops?sslmode=require"
+  DB_DSN: "postgres://<db-user>:<db-password>@db:5432/devops?sslmode=require"
 ```
 
 Example sidecar shape:

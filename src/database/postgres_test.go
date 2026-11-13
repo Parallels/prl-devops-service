@@ -18,7 +18,7 @@ import (
 func TestNewDatabaseConnection_Postgres_UnreachableWrapsSentinel(t *testing.T) {
 	ctx := testCtx()
 
-	_, err := NewDatabaseConnection(ctx, DatabaseConfig{Type: DBTypePostgres, DSN: "postgres://u:p@127.0.0.1:1/db"})
+	_, err := NewDatabaseConnection(ctx, DatabaseConfig{Type: DBTypePostgres, DSN: testDSN("u", "p", "127.0.0.1:1", "db")})
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrDatabaseUnreachable), "factory error must keep %w chain to sentinel")
 

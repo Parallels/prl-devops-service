@@ -40,11 +40,11 @@ func TestParityFilterOrderAuthDifferential(t *testing.T) {
 	for _, db := range []dbT{legacySvc, gormSvc} {
 		ctx := tplCtxRoot()
 		seedDefaultRolesClaims(ctx, db) // CreateUser resolves default roles (fidelity of every legacy body)
-		_, err := db.CreateUser(ctx, models.User{ID: "seed-u1", Username: "user1", Name: "User One", Email: "u1@example.com", Password: "password123"})
+		_, err := db.CreateUser(ctx, models.User{ID: "seed-u1", Username: "user1", Name: "User One", Email: "u1@example.com", Password: fixtureSecret("seed-user")})
 		require.NoError(t, err)
-		_, err = db.CreateUser(ctx, models.User{ID: "seed-u3", Username: "User3", Name: "user three", Email: "u3@example.com", Password: "password123"})
+		_, err = db.CreateUser(ctx, models.User{ID: "seed-u3", Username: "User3", Name: "user three", Email: "u3@example.com", Password: fixtureSecret("seed-user")})
 		require.NoError(t, err)
-		_, err = db.CreateUser(ctx, models.User{ID: "seed-u2", Username: "user2", Name: "User Two", Email: "u2@other.org", Password: "password123"})
+		_, err = db.CreateUser(ctx, models.User{ID: "seed-u2", Username: "user2", Name: "User Two", Email: "u2@other.org", Password: fixtureSecret("seed-user")})
 		require.NoError(t, err)
 		for _, k := range []models.ApiKey{
 			{ID: "k-a", Name: "Alpha Key", Key: "KA", Secret: "s", Type: "external"},

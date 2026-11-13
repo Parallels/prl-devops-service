@@ -24,7 +24,7 @@ func fixtureUser(full bool) models.User {
 	if !full {
 		return u
 	}
-	u.Password = "hashed-secret"
+	u.Password = fixtureSecret("hashed")
 	u.CreatedAt = "2024-01-02 03:04:05"
 	u.UpdatedAt = "2024-02-03 04:05:06"
 	u.Roles = []models.Role{fixtureRole(true)}

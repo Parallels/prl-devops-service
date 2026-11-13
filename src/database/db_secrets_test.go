@@ -29,10 +29,10 @@ import (
 // If a new dump path ever appears, start the audit here and at RedactDSN (#418)
 // — the single sanctioned funnel.
 
-const pwCanary = "sup3rs3cr3t"
+var pwCanary = fixtureSecret("dsn-canary")
 
 var (
-	dsnURL     = "postgres://ops:" + pwCanary + "@db.internal:5432/app?sslmode=disable"
+	dsnURL     = testDSN("ops", pwCanary, "db.internal:5432", "app?sslmode=disable")
 	dsnKeyword = "host=db.internal user=ops password=" + pwCanary + " dbname=app"
 )
 

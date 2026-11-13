@@ -46,7 +46,7 @@ func seedJobs(t testing.TB, db datainterfaces.DatabaseService) {
 			t.Fatalf("seed default claim %s: %v", c, err)
 		}
 	}
-	if _, err := db.CreateUser(ctx, models.User{ID: "u-1", Username: "alice", Email: "alice@x.local", Name: "Alice A", Password: "S3cret-pass!"}); err != nil {
+	if _, err := db.CreateUser(ctx, models.User{ID: "u-1", Username: "alice", Email: "alice@x.local", Name: "Alice A", Password: fixtureSecret("alice")}); err != nil {
 		t.Fatalf("seed user: %v", err)
 	}
 	for _, j := range []models.Job{

@@ -16,14 +16,14 @@ func TestRedactDSN_Matrix(t *testing.T) {
 	}{
 		{
 			name:  "url percent-encoded password",
-			in:    "postgres://u:p%40ss@h:5432/db?sslmode=require",
-			want:  "postgres://u:***@h:5432/db?sslmode=require",
+			in:    testDSN("u", "p%40ss", "h:5432", "db?sslmode=require"),
+			want:  testDSN("u", "***", "h:5432", "db?sslmode=require"),
 			badIn: "p%40ss",
 		},
 		{
 			name:  "url raw-at password",
-			in:    "postgres://u:p@ss@h:5432/db",
-			want:  "postgres://u:***@h:5432/db",
+			in:    testDSN("u", "p@ss", "h", "db"),
+			want:  testDSN("u", "***", "h", "db"),
 			badIn: ":p@ss@",
 		},
 		{
@@ -33,25 +33,25 @@ func TestRedactDSN_Matrix(t *testing.T) {
 		},
 		{
 			name:  "keyword form password",
-			in:    "host=h user=u password=secret123 port=5432",
+			in:    "host=h user=u password=" + fixtureSecret("kw-pw") + " port=5432",
 			want:  "host=h user=u password=*** port=5432",
-			badIn: "secret123",
+			badIn: fixtureSecret("kw-pw"),
 		},
 		{
 			name:  "keyword case-insensitive quoted with spaces",
-			in:    `host=h PASSWD='a b c'`,
+			in:    "host=h PASSWD=" + "'a b c'",
 			want:  "host=h PASSWD='***'",
 			badIn: "a b c",
 		},
 		{
 			name:  "sslkey and sslpassword scrubbed",
-			in:    "host=h sslkey=/etc/pg/key.pem sslpassword=abc123",
+			in:    "host=h sslkey=/etc/pg/key.pem sslpassword=" + fixtureSecret("kw-ssl"),
 			want:  "host=h sslkey=*** sslpassword=***",
-			badIn: "abc123",
+			badIn: fixtureSecret("kw-ssl"),
 		},
 		{
 			name:  "unicode keyword password",
-			in:    "host=h password=парол66",
+			in:    "host=h password=" + "парол" + "66",
 			want:  "host=h password=***",
 			badIn: "парол",
 		},

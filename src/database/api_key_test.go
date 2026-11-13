@@ -51,7 +51,7 @@ func authCtx(userID string, claims ...string) basecontext.ApiContext {
 }
 
 func newKey(id, name, key, owner, typ string) models.ApiKey {
-	return models.ApiKey{ID: id, Name: name, Key: key, Secret: "secret-value", UserID: owner, Type: typ}
+	return models.ApiKey{ID: id, Name: name, Key: key, Secret: fixtureSecret("api-key"), UserID: owner, Type: typ}
 }
 
 func seedKeys(t *testing.T, g *GormDatabase) basecontext.ApiContext {
@@ -203,10 +203,10 @@ func TestSQLApiKeys_Mutations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if created.Secret == "secret-value" || created.Secret == "" {
+	if created.Secret == fixtureSecret("api-key") || created.Secret == "" {
 		t.Errorf("secret must be hashed: %q", created.Secret)
 	}
-	if err := password.Get().Compare("secret-value", "k6", created.Secret); err != nil {
+	if err := password.Get().Compare(fixtureSecret("api-key"), "k6", created.Secret); err != nil {
 		t.Errorf("hash must verify with (secret, keyID) salt: %v", err)
 	}
 	if created.CreatedAt == "" || created.UpdatedAt == "" {

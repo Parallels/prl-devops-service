@@ -78,7 +78,7 @@ func apiKeyScenarios() []testutil.Scenario {
 			ctx := tplCtxRoot()
 			seedDefaultRolesClaims(ctx, db)
 			user := models.User{ID: helpers.GenerateId(), Username: "testuser",
-				Name: "Test User", Email: "test@example.com", Password: "password123"}
+				Name: "Test User", Email: "test@example.com", Password: fixtureSecret("pw123")}
 			_, err := db.CreateUser(ctx, user)
 			require.NoError(t, err)
 			createdKey, err := db.CreateApiKey(ctx, models.ApiKey{
@@ -95,11 +95,11 @@ func apiKeyScenarios() []testutil.Scenario {
 			ctx := tplCtxRoot()
 			seedDefaultRolesClaims(ctx, db)
 			user1 := models.User{ID: helpers.GenerateId(), Username: "user1",
-				Name: "User One", Email: "user1@example.com", Password: "password123"}
+				Name: "User One", Email: "user1@example.com", Password: fixtureSecret("pw123")}
 			_, err := db.CreateUser(ctx, user1)
 			require.NoError(t, err)
 			user2 := models.User{ID: helpers.GenerateId(), Username: "user2",
-				Name: "User Two", Email: "user2@example.com", Password: "password456"}
+				Name: "User Two", Email: "user2@example.com", Password: fixtureSecret("pw456")}
 			_, err = db.CreateUser(ctx, user2)
 			require.NoError(t, err)
 			for _, k := range []models.ApiKey{
@@ -128,7 +128,7 @@ func apiKeyScenarios() []testutil.Scenario {
 			ctx := tplCtxRoot()
 			seedDefaultRolesClaims(ctx, db)
 			user := models.User{ID: helpers.GenerateId(), Username: "testuser",
-				Name: "Test User", Email: "test@example.com", Password: "password123"}
+				Name: "Test User", Email: "test@example.com", Password: fixtureSecret("pw123")}
 			_, err := db.CreateUser(ctx, user)
 			require.NoError(t, err)
 			createdKey, err := db.CreateApiKey(ctx, models.ApiKey{
@@ -195,13 +195,13 @@ func apiKeyScenarios() []testutil.Scenario {
 			ctx := authCtxPlain()
 			_, err := db.CreateApiKey(ctx, models.ApiKey{
 				ID: "local-catalog-job123", Name: "local-catalog-job123",
-				Key: "local-catalog-job123", Secret: "temporary-secret",
+				Key: "local-catalog-job123", Secret: fixtureSecret("tmp-sec"),
 				Type: "internal", ExpiresAt: time.Now().Add(2 * time.Hour).Format(time.RFC3339),
 			})
 			require.NoError(t, err)
 			_, err = db.CreateApiKey(ctx, models.ApiKey{
 				ID: "regular-key", Name: "Regular Key", Key: "REGULAR_KEY",
-				Secret: "regular-secret", Type: "external",
+				Secret: fixtureSecret("reg-sec"), Type: "external",
 			})
 			require.NoError(t, err)
 			allKeys, err := db.GetApiKeys(ctx, "")
