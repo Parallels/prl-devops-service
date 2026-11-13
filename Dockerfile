@@ -19,8 +19,11 @@ RUN go get -d -v
 ARG BUILD_ENV=production
 ARG VERSION
 ARG GIT_COMMIT=unknown
-ARG OS=linux
-ARG ARCHITECTURE=amd64
+# BuildKit predefined args: buildx sets these to the target platform, so each
+# per-arch build job cross-compiles the right binary (defaults keep plain
+# `docker build` working on an amd64 host).
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 
 # Update version in main.go for swagger documentation
 RUN sed -i "/@version/c\//\t@version\t\t$VERSION" ./main.go
@@ -34,15 +37,15 @@ RUN --mount=type=secret,id=amplitude_api_key \
   BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) && \
   BASE_FLAGS="-s -w -X 'github.com/Parallels/prl-devops-service/version.buildVersion=$VERSION' -X 'github.com/Parallels/prl-devops-service/version.buildDate=$BUILD_DATE' -X 'github.com/Parallels/prl-devops-service/version.buildCommit=$GIT_COMMIT' -X 'github.com/Parallels/prl-devops-service/constants.AmplitudeApiKey=$AMPLITUDE_API_KEY'" && \
   if [ "$BUILD_ENV" = "production" ]; then \
-  CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=stable'" -o /go/bin/prl-devops-service; \
+  CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=stable'" -o /go/bin/prl-devops-service; \
   elif [ "$BUILD_ENV" = "canary" ]; then \
-  CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=canary'" -o /go/bin/prl-devops-service; \
+  CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=canary'" -o /go/bin/prl-devops-service; \
   elif [ "$BUILD_ENV" = "beta" ]; then \
-  CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=beta'" -o /go/bin/prl-devops-service; \
+  CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=beta'" -o /go/bin/prl-devops-service; \
   elif [ "$BUILD_ENV" = "dev" ]; then \
-  CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=dev'" -o /go/bin/prl-devops-service; \
+  CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=dev'" -o /go/bin/prl-devops-service; \
   else \
-  CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCHITECTURE go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=stable'" -o /go/bin/prl-devops-service; \
+  CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="$BASE_FLAGS -X 'github.com/Parallels/prl-devops-service/version.buildChannel=stable'" -o /go/bin/prl-devops-service; \
   fi
 
 ############################
