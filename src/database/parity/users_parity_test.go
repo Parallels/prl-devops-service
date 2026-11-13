@@ -28,13 +28,13 @@ func usersScenarios() []testutil.Scenario {
 			seedDefaultRolesClaims(ctx, db)
 			created, err := db.CreateUser(ctx, models.User{
 				Username: "testuser", Email: "testuser@example.com",
-				Name: "Test User", Password: "password123",
+				Name: "Test User", Password: fixtureSecret("pw123"),
 			})
 			require.NoError(t, err)
 			assert.NotEmpty(t, created.ID)
 			assert.NotEmpty(t, created.CreatedAt)
 			assert.Equal(t, "testuser", created.Username)
-			assert.NotEqual(t, "password123", created.Password) // encryption at rest
+			assert.NotEqual(t, fixtureSecret("pw123"), created.Password) // encryption at rest
 			assert.NotEmpty(t, created.Password)
 			loaded, err := db.GetUser(ctx, "testuser@example.com")
 			require.NoError(t, err)
@@ -42,10 +42,10 @@ func usersScenarios() []testutil.Scenario {
 		}},
 		{Name: "users/create_user_fails_missing_fields", Run: func(t *testing.T, _ ctxT, db dbT) {
 			ctx := tplCtxRoot()
-			_, err := db.CreateUser(ctx, models.User{Username: "testuser", Name: "Test User", Password: "password123"})
+			_, err := db.CreateUser(ctx, models.User{Username: "testuser", Name: "Test User", Password: fixtureSecret("pw123")})
 			require.Error(t, err)
 			assert.Equal(t, data.ErrUserEmailCannotBeEmpty, err)
-			_, err = db.CreateUser(ctx, models.User{Username: "testuser", Email: "testuser@example.com", Password: "password123"})
+			_, err = db.CreateUser(ctx, models.User{Username: "testuser", Email: "testuser@example.com", Password: fixtureSecret("pw123")})
 			require.Error(t, err)
 			assert.Equal(t, data.ErrUserNameCannotBeEmpty, err)
 		}},

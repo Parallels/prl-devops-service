@@ -186,9 +186,9 @@ func dup400Rows() []d4Row {
 		{"user_exists", datainterfaces.ErrUserAlreadyExists, 400, func(t *testing.T, db dbT) error {
 			ctx := tplCtxRoot()
 			seedDefaultRolesClaims(ctx, db) // CreateUser assigns default roles (must exist)
-			_, err := db.CreateUser(ctx, models.User{Username: "d4dup", Email: "d4dup@example.com", Name: "D", Password: "pw12345678"})
+			_, err := db.CreateUser(ctx, models.User{Username: "d4dup", Email: "d4dup@example.com", Name: "D", Password: fixtureSecret("pw8")})
 			require.NoError(t, err)
-			_, err = db.CreateUser(ctx, models.User{Username: "d4dup", Email: "d4dup2@example.com", Name: "D2", Password: "pw12345678"})
+			_, err = db.CreateUser(ctx, models.User{Username: "d4dup", Email: "d4dup2@example.com", Name: "D2", Password: fixtureSecret("pw8")})
 			return err
 		}},
 		{"packer_exists", datainterfaces.ErrPackerTemplateAlreadyExists, 400, func(t *testing.T, db dbT) error {
@@ -210,7 +210,7 @@ func dup400Rows() []d4Row {
 		{"user_role_dup", datainterfaces.ErrUserAlreadyContainsRole, 400, func(t *testing.T, db dbT) error {
 			ctx := tplCtxRoot()
 			seedDefaultRolesClaims(ctx, db)
-			u, err := db.CreateUser(ctx, models.User{Username: "d4ur", Email: "d4ur@example.com", Name: "U", Password: "pw12345678"})
+			u, err := db.CreateUser(ctx, models.User{Username: "d4ur", Email: "d4ur@example.com", Name: "U", Password: fixtureSecret("pw8")})
 			require.NoError(t, err)
 			r, err := db.CreateRole(ctx, models.Role{Name: "d4-role2"})
 			require.NoError(t, err)
@@ -220,7 +220,7 @@ func dup400Rows() []d4Row {
 		{"user_claim_dup", datainterfaces.ErrUserAlreadyContainsClaim, 400, func(t *testing.T, db dbT) error {
 			ctx := tplCtxRoot()
 			seedDefaultRolesClaims(ctx, db)
-			u, err := db.CreateUser(ctx, models.User{Username: "d4uc", Email: "d4uc@example.com", Name: "U", Password: "pw12345678"})
+			u, err := db.CreateUser(ctx, models.User{Username: "d4uc", Email: "d4uc@example.com", Name: "U", Password: fixtureSecret("pw8")})
 			require.NoError(t, err)
 			c, err := db.CreateClaim(ctx, models.Claim{Name: "d4-claim2"})
 			require.NoError(t, err)
@@ -262,10 +262,10 @@ func testD4Unreachable(t *testing.T) {
 	ctx := tplCtxRoot()
 	_, err := database.NewDatabaseConnection(ctx, database.DatabaseConfig{
 		Type: database.DBTypePostgres,
-		DSN:  "postgres://d4user:sup3rs3cr3t@127.0.0.1:1/d4nope",
+		DSN:  testDSN("d4user", fixtureSecret("d4"), "127.0.0.1:1", "d4nope"),
 	})
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, database.ErrDatabaseUnreachable), "unreachable wrap identity")
-	assert.NotContains(t, err.Error(), "sup3rs3cr3t", "password redacted (D-8)")
+	assert.NotContains(t, err.Error(), fixtureSecret("d4"), "password redacted (D-8)")
 	assert.Contains(t, err.Error(), "127.0.0.1:1", "host:port kept for ops triage")
 }

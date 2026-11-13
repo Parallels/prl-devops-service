@@ -25,7 +25,7 @@ func TestFromApplicationConfig_UnsetMatchesDefaultByteIdentical(t *testing.T) {
 func TestFromApplicationConfig_PostgresDSNPassthrough(t *testing.T) {
 	resetConfig(t)
 	t.Setenv("DB_TYPE", "postgres")
-	dsn := "postgres://u:p@db.internal:5432/devops?sslmode=require"
+	dsn := testDSN("u", "p", "db.internal:5432", "devops?sslmode=require")
 	t.Setenv("DB_DSN", dsn)
 	cfg, err := FromApplicationConfig()
 	require.NoError(t, err)

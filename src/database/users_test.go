@@ -28,7 +28,7 @@ func seedDefaults(t *testing.T, g *GormDatabase, ctx basecontext.ApiContext) {
 }
 
 func sqlUser(id, username, email, name string) models.User {
-	return models.User{ID: id, Username: username, Email: email, Name: name, Password: "S3cret-pass!"}
+	return models.User{ID: id, Username: username, Email: email, Name: name, Password: fixtureSecret("users")}
 }
 
 func TestSQLUsers_CRUD(t *testing.T) {
@@ -43,10 +43,10 @@ func TestSQLUsers_CRUD(t *testing.T) {
 	if created.CreatedAt == "" || created.UpdatedAt == "" {
 		t.Errorf("timestamps not stamped: %+v", created)
 	}
-	if created.Password == "S3cret-pass!" {
+	if created.Password == fixtureSecret("users") {
 		t.Error("password stored unhashed")
 	}
-	if err := password.Get().Compare("S3cret-pass!", "u1", created.Password); err != nil {
+	if err := password.Get().Compare(fixtureSecret("users"), "u1", created.Password); err != nil {
 		t.Errorf("hash does not verify with (pw, ID) salt: %v", err)
 	}
 
@@ -96,13 +96,13 @@ func TestSQLUsers_CRUD(t *testing.T) {
 
 	// unknown role/claim on explicit lists ⇒ constructed 400 (message+code)
 	_, err = g.CreateUser(ctx, models.User{ID: "u9", Username: "u9", Email: "u9@x.io", Name: "Nine",
-		Password: "pw12345678", Roles: []models.Role{{ID: "ghost-role", Name: "Ghostly"}}})
+		Password: fixtureSecret("ghost"), Roles: []models.Role{{ID: "ghost-role", Name: "Ghostly"}}})
 	if err == nil || err == interfaces.ErrRoleNotFound ||
 		!strings.Contains(err.Error(), "role Ghostly does not exist") {
 		t.Errorf("want 400 role Ghostly does not exist, got %v", err)
 	}
 	_, err = g.CreateUser(ctx, models.User{ID: "u9", Username: "u9", Email: "u9@x.io", Name: "Nine",
-		Password: "pw12345678", Claims: []models.Claim{{ID: "ghost-claim", Name: "Ghosty"}}})
+		Password: fixtureSecret("ghost"), Claims: []models.Claim{{ID: "ghost-claim", Name: "Ghosty"}}})
 	if err == nil || !strings.Contains(err.Error(), "claim Ghosty does not exist") {
 		t.Errorf("want 400 claim Ghosty does not exist, got %v", err)
 	}
@@ -227,11 +227,11 @@ func TestSQLUsers_Updates(t *testing.T) {
 	}
 
 	// password rotation verifies with (pw, key.ID) salt
-	if err := g.UpdateUser(ctx, models.User{ID: "u1", Password: "Rotated-1!"}); err != nil {
+	if err := g.UpdateUser(ctx, models.User{ID: "u1", Password: fixtureSecret("rotated-1")}); err != nil {
 		t.Fatal(err)
 	}
 	u, _ = g.GetUser(ctx, "u1")
-	if err := password.Get().Compare("Rotated-1!", "u1", u.Password); err != nil {
+	if err := password.Get().Compare(fixtureSecret("rotated-1"), "u1", u.Password); err != nil {
 		t.Errorf("rotated hash does not verify: %v", err)
 	}
 
@@ -348,7 +348,7 @@ func TestSQLUsers_LiveRoleClaims(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := g.CreateUser(ctx, models.User{ID: "u1", Username: "user1", Email: "u1@x.io", Name: "One",
-		Password: "pw12345678", Roles: []models.Role{{ID: "AUDITOR"}}}); err != nil {
+		Password: fixtureSecret("ghost"), Roles: []models.Role{{ID: "AUDITOR"}}}); err != nil {
 		t.Fatal(err)
 	}
 	u, _ := g.GetUser(ctx, "u1")

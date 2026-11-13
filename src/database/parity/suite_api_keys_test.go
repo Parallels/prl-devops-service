@@ -83,9 +83,9 @@ func seedApiKeys(t testing.TB, db datainterfaces.DatabaseService) {
 		}
 	}
 	for _, u := range []models.User{
-		{ID: "root", Username: "root", Email: "root@localhost", Name: "root", Password: "Seed-Pass-1!"},
-		{ID: "u1", Username: "user1", Email: "u1@x.io", Name: "User One", Password: "Seed-Pass-1!"},
-		{ID: "u2", Username: "user2", Email: "u2@x.io", Name: "User Two", Password: "Seed-Pass-1!"},
+		{ID: "root", Username: "root", Email: "root@localhost", Name: "root", Password: fixtureSecret("seed")},
+		{ID: "u1", Username: "user1", Email: "u1@x.io", Name: "User One", Password: fixtureSecret("seed")},
+		{ID: "u2", Username: "user2", Email: "u2@x.io", Name: "User Two", Password: fixtureSecret("seed")},
 	} {
 		if _, err := db.CreateUser(ctx, u); err != nil {
 			t.Fatalf("seed user %s: %v", u.ID, err)
@@ -93,7 +93,7 @@ func seedApiKeys(t testing.TB, db datainterfaces.DatabaseService) {
 	}
 	k := func(id, name, key, owner, typ string) {
 		if _, err := db.CreateApiKey(ctx, models.ApiKey{ID: id, Name: name, Key: key,
-			Secret: "Seed-Secret-1!", UserID: owner, Type: typ}); err != nil {
+			Secret: fixtureSecret("seed-sec"), UserID: owner, Type: typ}); err != nil {
 			t.Fatalf("seed key %s: %v", id, err)
 		}
 	}
@@ -218,18 +218,18 @@ func checkKeyCreate(t testing.TB, legacy, sql datainterfaces.DatabaseService) {
 	_, d4 := sql.CreateApiKey(ctx, models.ApiKey{ID: "k9", Name: "Legacy KEY", Key: "key-x", Secret: "s"})
 	assertSameError(t, "create dup name", d3, d4)
 
-	lc, lerr := legacy.CreateApiKey(ctx, models.ApiKey{ID: "k6", Name: "sixth", Key: "key-six", Secret: "Rotated-Secret-1!", UserID: "u2", Type: "internal"})
-	sc, serr := sql.CreateApiKey(ctx, models.ApiKey{ID: "k6", Name: "sixth", Key: "key-six", Secret: "Rotated-Secret-1!", UserID: "u2", Type: "internal"})
+	lc, lerr := legacy.CreateApiKey(ctx, models.ApiKey{ID: "k6", Name: "sixth", Key: "key-six", Secret: fixtureSecret("rotated-sec"), UserID: "u2", Type: "internal"})
+	sc, serr := sql.CreateApiKey(ctx, models.ApiKey{ID: "k6", Name: "sixth", Key: "key-six", Secret: fixtureSecret("rotated-sec"), UserID: "u2", Type: "internal"})
 	if lerr != nil || serr != nil {
 		t.Fatalf("create k6: %v / %v", lerr, serr)
 	}
-	if lc.Secret == "Rotated-Secret-1!" || sc.Secret == "Rotated-Secret-1!" {
+	if lc.Secret == fixtureSecret("rotated-sec") || sc.Secret == fixtureSecret("rotated-sec") {
 		t.Error("secret stored unhashed")
 	}
-	if err := password.Get().Compare("Rotated-Secret-1!", "k6", lc.Secret); err != nil {
+	if err := password.Get().Compare(fixtureSecret("rotated-sec"), "k6", lc.Secret); err != nil {
 		t.Errorf("legacy secret hash fails verification: %v", err)
 	}
-	if err := password.Get().Compare("Rotated-Secret-1!", "k6", sc.Secret); err != nil {
+	if err := password.Get().Compare(fixtureSecret("rotated-sec"), "k6", sc.Secret); err != nil {
 		t.Errorf("sql secret hash fails verification: %v", err)
 	}
 	lk, _ := legacy.GetApiKeys(ctx, "")

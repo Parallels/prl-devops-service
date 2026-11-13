@@ -43,7 +43,7 @@ func seedUserConfigs(t testing.TB, db datainterfaces.DatabaseService) {
 		}
 	}
 	for _, id := range []string{"u1", "u2"} {
-		if _, err := db.CreateUser(ctx, models.User{ID: id, Username: id, Email: id + "@x.io", Name: id, Password: "Seed-Pass-1!"}); err != nil {
+		if _, err := db.CreateUser(ctx, models.User{ID: id, Username: id, Email: id + "@x.io", Name: id, Password: fixtureSecret("seed")}); err != nil {
 			t.Fatalf("seed user %s: %v", id, err)
 		}
 	}

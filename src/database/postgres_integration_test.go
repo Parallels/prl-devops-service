@@ -3,9 +3,9 @@
 // Real-server suite for the postgres branch. Canonical run (snippet shared
 // with #425's integration job — keep the two copies in sync there):
 //
-//	docker run --rm -d --name prl-pg418 -e POSTGRES_PASSWORD=*** \
+//	docker run --rm -d --name prl-pg418 -e POSTGRES_PASSWORD=*** your chosen local test password> \
 //	  -e POSTGRES_DB=prl_test -p 5432:5432 postgres:16
-//	POSTGRES_TEST_DSN='postgres://postgres:prl@127.0.0.1:5432/prl_test?sslmode=disable' \
+//	POSTGRES_TEST_DSN='postgres://<user>:<password>@127.0.0.1:5432/prl_test?sslmode=disable' \
 //	  go test -tags integration ./database/... -v
 //
 // Skips cleanly when POSTGRES_TEST_DSN is unset.

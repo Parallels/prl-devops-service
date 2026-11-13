@@ -25,12 +25,12 @@ func TestDatabaseGetters_ReadFlatConfigKeys(t *testing.T) {
 	cfg := seedCfg(t, map[string]string{
 		"db_type":         "postgres",
 		"db_path":         "/srv/prl.db",
-		"db_dsn":          "postgres://user:pw@h/d",
+		"db_dsn":          testDSN("user", "pw", "h", "d"),
 		"db_auto_migrate": "false",
 	})
 	str.Equal(t, "postgres", cfg.DatabaseType())
 	str.Equal(t, "/srv/prl.db", cfg.DatabasePath())
-	str.Equal(t, "postgres://user:pw@h/d", cfg.DatabaseDSN())
+	str.Equal(t, testDSN("user", "pw", "h", "d"), cfg.DatabaseDSN())
 	v, err := cfg.DatabaseAutoMigrate()
 	str.NoError(t, err)
 	str.False(t, v)

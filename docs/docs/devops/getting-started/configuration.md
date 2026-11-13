@@ -84,7 +84,7 @@ These settings can also be set in the configuration file under the
 ```yaml
 environment:
   db_type: postgres
-  db_dsn: postgres://devops:change-me@db.example.com:5432/devops?sslmode=require
+  db_dsn: postgres://<db-user>:<db-password>@db.example.com:5432/devops?sslmode=require
   db_auto_migrate: true
 ```
 

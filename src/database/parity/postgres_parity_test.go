@@ -5,9 +5,9 @@
 // shared verbatim with #418's postgres_integration_test.go, keep the two
 // copies in sync:
 //
-//	docker run --rm -d --name prl-pg418 -e POSTGRES_PASSWORD=*** \
+//	docker run --rm -d --name prl-pg418 -e POSTGRES_PASSWORD=*** your chosen local test password> \
 //	  -e POSTGRES_DB=prl_test -p 5432:5432 postgres:16
-//	POSTGRES_TEST_DSN='postgres://postgres:prl@127.0.0.1:5432/prl_test?sslmode=disable' \
+//	POSTGRES_TEST_DSN='postgres://<user>:<password>@127.0.0.1:5432/prl_test?sslmode=disable' \
 //	  go test -tags integration ./database/... -v
 //
 // Skips cleanly when POSTGRES_TEST_DSN is unset (every engine leg via
@@ -57,7 +57,7 @@ func pgScenarios() []testutil.Scenario {
 			ctx := tplCtxRoot()
 			seedDefaultRolesClaims(ctx, db)
 			u, err := db.CreateUser(ctx, models.User{
-				Username: "pguser", Email: "pguser@example.com", Name: "PG", Password: "pw12345678",
+				Username: "pguser", Email: "pguser@example.com", Name: "PG", Password: fixtureSecret("pg-pw"),
 			})
 			require.NoError(t, err)
 			got, err := db.GetUser(ctx, u.ID)
@@ -106,9 +106,9 @@ func pgScenarios() []testutil.Scenario {
 			require.NoError(t, err)
 			_, err = db.AddPackerTemplate(ctx, &models.PackerTemplate{ID: "pg-tpl", Name: "T"})
 			assert.Equal(t, datainterfaces.ErrPackerTemplateAlreadyExists, err, "23505 ⇒ same sentinel")
-			_, err = db.CreateUser(ctx, models.User{Username: "pgdup", Email: "a@b.c", Name: "A", Password: "pw12345678"})
+			_, err = db.CreateUser(ctx, models.User{Username: "pgdup", Email: "a@b.c", Name: "A", Password: fixtureSecret("pg-pw")})
 			require.NoError(t, err)
-			_, err = db.CreateUser(ctx, models.User{Username: "pgdup", Email: "d@e.f", Name: "B", Password: "pw12345678"})
+			_, err = db.CreateUser(ctx, models.User{Username: "pgdup", Email: "d@e.f", Name: "B", Password: fixtureSecret("pg-pw")})
 			assert.Equal(t, datainterfaces.ErrUserAlreadyExists, err)
 			_, err = db.CreateApiKey(ctx, models.ApiKey{ID: "pg-k1", Name: "k", Key: "SAMEKEY", Secret: "s"})
 			require.NoError(t, err)

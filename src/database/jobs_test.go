@@ -39,7 +39,7 @@ func TestSQLJobs_CRUD(t *testing.T) {
 
 	// Owner for the enrichment path (default roles must exist for CreateUser).
 	seedDefaults(t, g, root)
-	if _, err := g.CreateUser(root, models.User{ID: "u-1", Username: "alice", Name: "Alice A", Email: "alice@x.local", Password: "S3cret-pass!"}); err != nil {
+	if _, err := g.CreateUser(root, models.User{ID: "u-1", Username: "alice", Name: "Alice A", Email: "alice@x.local", Password: fixtureSecret("alice")}); err != nil {
 		t.Fatal(err)
 	}
 

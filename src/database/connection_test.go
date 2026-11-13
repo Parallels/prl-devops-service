@@ -13,7 +13,7 @@ func TestNewDatabaseConnection_PostgresRoutesToDial(t *testing.T) {
 	// postgres_test.go (unreachable host → ErrDatabaseUnreachable wrap).
 	ctx := testCtx()
 
-	_, err := NewDatabaseConnection(ctx, DatabaseConfig{Type: "postgres", DSN: "postgres://u:p@127.0.0.1:1/db"})
+	_, err := NewDatabaseConnection(ctx, DatabaseConfig{Type: "postgres", DSN: testDSN("u", "p", "127.0.0.1:1", "db")})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrDatabaseUnreachable)
 }

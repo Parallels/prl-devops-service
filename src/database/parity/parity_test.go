@@ -35,7 +35,7 @@ func TestParityUsersSmoke(t *testing.T) {
 					Username: username,
 					Email:    username + "@parity.local",
 					Name:     username,
-					Password: "parity-password-1",
+					Password: fixtureSecret("parity"),
 				})
 				require.NoErrorf(t, err, "seed %s", username)
 				require.NotEmpty(t, u.ID)
