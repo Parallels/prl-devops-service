@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 )
 
 const (
@@ -60,29 +61,39 @@ func DefaultDatabaseConfig() DatabaseConfig {
 	}
 }
 
-// defaultDatabasePath mirrors the legacy data.json location logic in
-// src/serviceprovider/main.go:69-104 (documented duplication per AD-3; #420
-// may centralise). Resolution order: configured DATABASE_FOLDER → root
-// (/etc/parallels-devops) → user home (~/.parallels-devops). On home lookup
-// failure it falls back to the root path; no ctx exists here, so the caller
-// logs (same posture as the legacy block, which panics via
-// CreateDirIfNotExist callers instead — here nothing is created).
-func defaultDatabasePath() string {
-	if folder := config.Get().DatabaseFolder(); folder != "" {
-		return filepath.Join(folder, DefaultDatabaseFilename)
-	}
-	return filepath.Join(legacyDefaultFolder(), DefaultDatabaseFilename)
-}
+// LegacyDataFolder is the pre-unification root data folder. No longer a
+// default; kept only as a legacy-migration store discovery candidate, so
+// #424 imports data.json on boxes built before the folders were unified.
+const LegacyDataFolder = "/etc/parallels-devops"
 
-func legacyDefaultFolder() string {
+// DefaultDataFolder is the single source of truth for where an installation
+// keeps its data — the legacy data.json AND the SQL database. It replaces
+// the AD-3 duplication (two provider inits in serviceprovider/main.go,
+// this file, startup/legacy_migration.go), which had drifted into three
+// different answers for the root case. Resolution order: explicit
+// DATABASE_FOLDER (a pin always wins, never falls back) → root:
+// constants.ServiceDefaultDirectory (/etc/prl-devops-service — the service
+// folder the installer, config resolution, catalog cache and host-agent
+// installs already use) → non-root: ~/.parallels-devops → home lookup
+// failure: ServiceDefaultDirectory. Nothing here creates directories;
+// callers keep that posture (panic on failure / caller-visible fallback).
+func DefaultDataFolder() string {
+	if folder := config.Get().DatabaseFolder(); folder != "" {
+		return folder
+	}
 	if os.Getuid() == 0 {
-		return "/etc/parallels-devops"
+		return constants.ServiceDefaultDirectory
 	}
 	if home, err := os.UserHomeDir(); err == nil {
 		return filepath.Join(home, ".parallels-devops")
 	}
-	// Home lookup failure: caller-visible fallback, no logging without ctx.
-	return "/etc/parallels-devops"
+	return constants.ServiceDefaultDirectory
+}
+
+// defaultDatabasePath resolves the SQLite file inside DefaultDataFolder
+// (AD-3 resolved: the folder logic lived in four places; it now lives here).
+func defaultDatabasePath() string {
+	return filepath.Join(DefaultDataFolder(), DefaultDatabaseFilename)
 }
 
 // Validate checks the config shape without touching the filesystem or network.

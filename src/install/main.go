@@ -163,6 +163,12 @@ func writeServiceConfigFile(cfg ApiServiceConfig, outputDir string) error {
 		envMap[constants.LOG_TO_FILE_ENV_VAR] = "true"
 	}
 
+	// Pin the unified data folder (the installer's own outputDir): data.json
+	// and prl-devops.db coexist there, and future default changes can never
+	// move an installed store. Migration still discovers pre-unification
+	// data.json in historical folders.
+	envMap[constants.DATABASE_FOLDER_ENV_VAR] = outputDir
+
 	if cfg.TLSPort != "" {
 		envMap[constants.TLS_PORT_ENV_VAR] = cfg.TLSPort
 	}

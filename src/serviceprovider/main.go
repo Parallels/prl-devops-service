@@ -9,9 +9,9 @@ import (
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/common"
 	"github.com/Parallels/prl-devops-service/config"
-	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/Parallels/prl-devops-service/data"
 	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
+	"github.com/Parallels/prl-devops-service/database"
 	"github.com/Parallels/prl-devops-service/errors"
 	"github.com/Parallels/prl-devops-service/helpers"
 	"github.com/Parallels/prl-devops-service/models"
@@ -56,7 +56,6 @@ type ServiceProvider struct {
 var globalProvider *ServiceProvider
 
 func InitCatalogServices(ctx basecontext.ApiContext) {
-	cfg := config.Get()
 	globalProvider = &ServiceProvider{
 		Logger: common.Logger,
 	}
@@ -69,39 +68,17 @@ func InitCatalogServices(ctx basecontext.ApiContext) {
 	globalProvider.CurrentSystemUser = currentUser
 	globalProvider.RunningUser = currentUser
 
-	if globalProvider.RunningUser == "root" {
-		dbLocation := "/etc/parallels-devops"
-		err := helpers.CreateDirIfNotExist(dbLocation)
-		if err != nil {
-			panic(err)
-		}
-
-		if cfg.DatabaseFolder() != "" {
-			dbLocation = cfg.DatabaseFolder()
-		}
-		globalProvider.selectDatabaseBackend(ctx, func() *data.JsonDatabase {
-			return data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
-		})
-		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
-	} else {
-		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
-		if err != nil {
-			panic(err)
-		}
-		dbLocation := userHome + "/.parallels-devops"
-		err = helpers.CreateDirIfNotExist(dbLocation)
-		if err != nil {
-			panic(err)
-		}
-
-		if cfg.DatabaseFolder() != "" {
-			dbLocation = cfg.DatabaseFolder()
-		}
-		globalProvider.selectDatabaseBackend(ctx, func() *data.JsonDatabase {
-			return data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
-		})
-		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
+	// Unified data folder (AD-3 duplication resolved): one resolver for the
+	// legacy store and the SQL database alike — see database.DefaultDataFolder.
+	// Directory-creation posture unchanged (panic on failure).
+	dbLocation := database.DefaultDataFolder()
+	if err := helpers.CreateDirIfNotExist(dbLocation); err != nil {
+		panic(err)
 	}
+	globalProvider.selectDatabaseBackend(ctx, func() *data.JsonDatabase {
+		return data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
+	})
+	ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 
 	key := "00000000-0000-0000-0000-000000000000"
 	hid := "XXX00000000000000000000000000000000"
@@ -201,41 +178,19 @@ func InitServices(ctx basecontext.ApiContext) {
 	globalProvider.CurrentSystemUser = currentUser
 	globalProvider.RunningUser = currentUser
 
-	if globalProvider.RunningUser == "root" {
-		dbLocation := constants.ServiceDefaultDirectory
-		err := helpers.CreateDirIfNotExist(dbLocation)
-		if err != nil {
-			panic(err)
-		}
-
-		if cfg.DatabaseFolder() != "" {
-			dbLocation = cfg.DatabaseFolder()
-		}
-		globalProvider.selectDatabaseBackend(ctx, func() *data.JsonDatabase {
-			return data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
-		})
-		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase) // T11: slot = engine in SQL mode, legacy handle in legacy mode (was legacyDatabase ⇒ nil under SQL)
-		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
-	} else {
-		userHome, err := globalProvider.System.GetUserHome(ctx, currentUser)
-		if err != nil {
-			panic(err)
-		}
-		dbLocation := userHome + "/.parallels-devops"
-		err = helpers.CreateDirIfNotExist(dbLocation)
-		if err != nil {
-			panic(err)
-		}
-
-		if cfg.DatabaseFolder() != "" {
-			dbLocation = cfg.DatabaseFolder()
-		}
-		globalProvider.selectDatabaseBackend(ctx, func() *data.JsonDatabase {
-			return data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
-		})
-		globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase) // T11: slot = engine in SQL mode, legacy handle in legacy mode (was legacyDatabase ⇒ nil under SQL)
-		ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
+	// Unified data folder — see database.DefaultDataFolder. Replaces the old
+	// root(/etc/prl-devops-service)/home split here: os identity now steers
+	// the folder exactly like the SQL and migration sides (identity source
+	// changed from System.GetUserHome to os.UserHomeDir by unification).
+	dbLocation := database.DefaultDataFolder()
+	if err := helpers.CreateDirIfNotExist(dbLocation); err != nil {
+		panic(err)
 	}
+	globalProvider.selectDatabaseBackend(ctx, func() *data.JsonDatabase {
+		return data.NewJsonDatabase(ctx, filepath.Join(dbLocation, "/data.json"))
+	})
+	globalProvider.ParallelsDesktopService.SetDatabaseService(globalProvider.JsonDatabase) // T11: slot = engine in SQL mode, legacy handle in legacy mode (was legacyDatabase ⇒ nil under SQL)
+	ctx.LogInfof("Running as %s, using %s/data.json file", globalProvider.RunningUser, dbLocation)
 
 	key := "00000000-0000-0000-0000-000000000000"
 	hid := "XXX00000000000000000000000000000000"

@@ -57,9 +57,10 @@ func scalarSpec[T any](name string, pk string,
 	}
 }
 
-// pointerSpec renders the two one-row pointer collections (Configuration,
-// ReverseProxy): nil ⇒ 0 rows; else a one-element slice through the same
-// engine.
+// pointerSpec renders the one-row pointer collections (ReverseProxy):
+// nil ⇒ 0 rows; else a one-element slice through the same engine.
+// (Configuration moved to configurationSpec — a PK upsert cannot hold its
+// singleton invariant once the app has seeded a placeholder row.)
 func pointerSpec[T any](name string, pk string,
 	row func(d *data.Data) *T,
 	count func(db *gorm.DB) (int64, error),
@@ -90,11 +91,53 @@ func countOf[M any](db *gorm.DB) (int64, error) {
 	return n, err
 }
 
+// configurationSpec handles the configurations singleton beyond PK upsert.
+// SQL mode seed-on-reads the installation id on first read
+// (database/configuration.go), so a legacy store arriving or changing AFTER
+// that seeding re-migrates (fingerprint differs ⇒ marker gate opens) and a
+// PK-keyed upsert sees two different ids: it INSERTs the legacy row beside
+// the seeded placeholder — exactly the "singleton table holds 2 rows"
+// corruption takeConfiguration warns about. The legacy id IS the
+// installation identity, so the frozen legacy row REPLACES the table
+// wholesale (idempotent: re-runs keep one row). nil legacy ⇒ no-op — there
+// is nothing to reconcile against, the seeded row stays.
+func configurationSpec() CollectionSpec {
+	legacyRow := func(d *data.Data) *models.Configuration { return d.Configuration }
+	legacyCount := func(d *data.Data) int {
+		if legacyRow(d) == nil {
+			return 0
+		}
+		return 1
+	}
+	return CollectionSpec{
+		Name:        "Configuration",
+		LegacyCount: legacyCount,
+		Migrate: func(ctx basecontext.ApiContext, tx *gorm.DB, d *data.Data, chunk int) (int64, error) {
+			r := legacyRow(d)
+			if r == nil {
+				return 0, nil
+			}
+			// GORM refuses a WHERE-less DELETE; the whole (singleton) table
+			// is the target by design. Also repairs an already-duplicated
+			// table when the marker gate re-opens on a changed source.
+			if err := tx.Where("1 = 1").Delete(&models.Configuration{}).Error; err != nil {
+				return 0, err
+			}
+			if err := tx.Omit(clause.Associations).Create(r).Error; err != nil {
+				return 0, err
+			}
+			return 1, nil
+		},
+		Validate: func(db *gorm.DB, d *data.Data) (int64, int64, error) {
+			a, err := countOf[models.Configuration](db)
+			return int64(legacyCount(d)), a, err
+		},
+	}
+}
+
 func scalarPlan() []CollectionSpec {
 	return []CollectionSpec{
-		pointerSpec("Configuration", "id",
-			func(d *data.Data) *models.Configuration { return d.Configuration },
-			func(db *gorm.DB) (int64, error) { return countOf[models.Configuration](db) }),
+		configurationSpec(), // singleton-aware replace, see configurationSpec doc
 		// Data-declaration-order stretch: ApiKeys, PackerTemplates …
 		scalarSpec("ApiKeys", "id",
 			func(d *data.Data) []models.ApiKey { return d.ApiKeys },

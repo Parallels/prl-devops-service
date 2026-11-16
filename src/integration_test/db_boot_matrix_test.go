@@ -156,7 +156,7 @@ func TestBootMatrix(t *testing.T) {
 	probeOut, _, _ := runAPI(t, nil, 8*time.Second)
 	if strings.Contains(probeOut, "failed to create directory") || strings.Contains(probeOut, "panic:") {
 		t.Skipf("boot matrix not feasible here (pre-existing bootstrap requires %s; probe output head: %.160s) — run on macOS/CI posture",
-			"/etc/parallels-devops", probeOut)
+			"/etc/prl-devops-service", probeOut)
 	}
 
 	const canary = "sup3rs3cr3t"

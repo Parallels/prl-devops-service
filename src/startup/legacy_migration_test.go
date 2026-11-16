@@ -140,3 +140,36 @@ func TestDefaultLegacyStoreSourceIgnoresSQLModeSlot(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, filepath.Join(dir, "data.json"), path)
 }
+
+// Unification discovery: with no explicit pin, an existing data.json under a
+// non-unified (legacy) candidate is FOUND anyway — the import happens
+// wherever a pre-unification install left the file, while the SQL
+// destination stays the unified folder.
+func TestDefaultLegacyStoreSourceDiscoversLegacyStore(t *testing.T) {
+	t.Setenv(constants.DATABASE_FOLDER_ENV_VAR, "")
+	tmp := t.TempDir()
+	unified := filepath.Join(tmp, "unified", "data.json")
+	legacy := filepath.Join(tmp, "legacy", "data.json")
+	require.NoError(t, os.MkdirAll(filepath.Dir(legacy), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Dir(unified), 0o755))
+	require.NoError(t, os.WriteFile(legacy, []byte("{}"), 0o600))
+
+	oldCands := legacyStoreCandidates
+	t.Cleanup(func() { legacyStoreCandidates = oldCands })
+	legacyStoreCandidates = func() []string { return []string{unified, legacy} }
+
+	path, err := defaultLegacyStoreSource()
+	require.NoError(t, err)
+	assert.Equal(t, legacy, path, "legacy folder found when the unified one holds no store")
+
+	require.NoError(t, os.WriteFile(unified, []byte("{}"), 0o600))
+	path, err = defaultLegacyStoreSource()
+	require.NoError(t, err)
+	assert.Equal(t, unified, path, "unified wins once the import landed there (reboot stability)")
+
+	require.NoError(t, os.Remove(legacy))
+	require.NoError(t, os.Remove(unified))
+	path, err = defaultLegacyStoreSource()
+	require.NoError(t, err)
+	assert.Equal(t, unified, path, "nothing on disk: first candidate reported (absent-skip posture)")
+}

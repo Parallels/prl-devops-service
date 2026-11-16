@@ -20,6 +20,7 @@ package database
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	datainterfaces "github.com/Parallels/prl-devops-service/data/interfaces"
@@ -53,7 +54,9 @@ func (g *GormDatabase) takeConfiguration() (*models.Configuration, error) {
 	}
 	var n int64
 	if err := g.gormDB.Table("configurations").Count(&n).Error; err == nil && n > 1 {
-		log.Get().Log("configurations singleton table holds %d rows (corruption); using first by rowid", log.Warning, n)
+		// %s not %d on purpose: the logger stringifies every arg before the
+		// final Sprintf, so %d receives "2" and prints %!d(string=2).
+		log.Get().Log("configurations singleton table holds %s rows (corruption); using first by rowid", log.Warning, strconv.FormatInt(n, 10))
 	}
 	return &cfg, nil
 }

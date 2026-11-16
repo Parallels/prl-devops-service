@@ -8,6 +8,7 @@ import (
 
 	"github.com/Parallels/prl-devops-service/basecontext"
 	"github.com/Parallels/prl-devops-service/config"
+	"github.com/Parallels/prl-devops-service/constants"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +33,7 @@ func TestDefaultDatabaseConfig_UsesDatabaseFolder(t *testing.T) {
 
 func TestDefaultDatabaseConfig_UsesHomeWhenFolderUnset(t *testing.T) {
 	if os.Getuid() == 0 {
-		t.Skip("root defaults to /etc/parallels-devops by design; HOME path covered only for non-root")
+		t.Skip("root defaults to /etc/prl-devops-service (ServiceDefaultDirectory) by design; HOME path covered only for non-root")
 	}
 	resetConfig(t)
 	tmp := t.TempDir()
@@ -51,7 +52,34 @@ func TestDefaultDatabaseConfig_RootUsesEtc(t *testing.T) {
 	t.Setenv("DATABASE_FOLDER", "")
 
 	cfg := DefaultDatabaseConfig()
-	assert.Equal(t, filepath.Join("/etc/parallels-devops", DefaultDatabaseFilename), cfg.Path)
+	assert.Equal(t, filepath.Join(constants.ServiceDefaultDirectory, DefaultDatabaseFilename), cfg.Path)
+}
+
+func TestDefaultDataFolder_ExplicitPinWinsEverywhere(t *testing.T) {
+	resetConfig(t)
+	tmp := t.TempDir()
+	t.Setenv("DATABASE_FOLDER", tmp)
+	assert.Equal(t, tmp, DefaultDataFolder())
+}
+
+func TestDefaultDataFolder_NonRootHome(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root posture covered by TestDefaultDataFolder_RootUsesServiceDir")
+	}
+	resetConfig(t)
+	tmp := t.TempDir()
+	t.Setenv("DATABASE_FOLDER", "")
+	t.Setenv("HOME", tmp)
+	assert.Equal(t, filepath.Join(tmp, ".parallels-devops"), DefaultDataFolder())
+}
+
+func TestDefaultDataFolder_RootUsesServiceDir(t *testing.T) {
+	if os.Getuid() != 0 {
+		t.Skip("root-only branch")
+	}
+	resetConfig(t)
+	t.Setenv("DATABASE_FOLDER", "")
+	assert.Equal(t, constants.ServiceDefaultDirectory, DefaultDataFolder())
 }
 
 func TestValidate(t *testing.T) {

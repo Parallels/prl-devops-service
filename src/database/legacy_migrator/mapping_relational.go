@@ -43,9 +43,7 @@ func collectionPlan() []CollectionSpec {
 		scalarSpec("ApiKeys", "id",
 			func(d *data.Data) []models.ApiKey { return d.ApiKeys },
 			countOf[models.ApiKey]),
-		pointerSpec("Configuration", "id",
-			func(d *data.Data) *models.Configuration { return d.Configuration },
-			countOf[models.Configuration]),
+		configurationSpec(), // singleton-aware replace, see configurationSpec doc
 		scalarSpec("PackerTemplates", "id",
 			func(d *data.Data) []models.PackerTemplate { return d.PackerTemplates },
 			countOf[models.PackerTemplate]),

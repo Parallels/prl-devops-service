@@ -308,3 +308,41 @@ func TestRunMigrationNoSourcePath(t *testing.T) {
 		assert.Contains(t, err.Error(), "SourcePath is required")
 	})
 }
+
+// Late-arriving legacy store: a SQL-mode boot already seed-on-read the
+// configurations placeholder (id != legacy id), then data.json appears or
+// changes ⇒ the marker gate re-opens. The PK upsert saw two different ids
+// and INSERTed a second row — the "singleton table holds 2 rows (corruption)"
+// log. The singleton spec must REPLACE the table with the legacy identity.
+func TestRunMigration_ConfigSingletonLateArrival(t *testing.T) {
+	db := migDB(t)
+	require.NoError(t, db.Create(&models.Configuration{ID: "seeded-placeholder"}).Error)
+
+	rep, err := RunMigration(basecontext.NewRootBaseContext(), db, Options{SourcePath: goldenAt(t)})
+	require.NoError(t, err)
+	require.False(t, rep.Skipped)
+
+	var ids []string
+	require.NoError(t, db.Model(&models.Configuration{}).Pluck("id", &ids).Error)
+	assert.Equal(t, []string{"config-1"}, ids, "legacy identity wins, exactly one row")
+
+	// Repair of the corruption state itself: with an extra row present (as
+	// the old upsert left behind), replaying the spec — what happens when a
+	// changed source reopens the marker gate — must collapse back to the
+	// legacy singleton (direct Migrate replay, idempotency-test style).
+	require.NoError(t, db.Create(&models.Configuration{ID: "duplicate-row"}).Error)
+	var spec CollectionSpec
+	for _, s := range collectionPlan() {
+		if s.Name == "Configuration" {
+			spec = s
+		}
+	}
+	require.NotNil(t, spec.Migrate)
+	legacy, err := data.LoadLegacyData(basecontext.NewRootBaseContext(), goldenAt(t))
+	require.NoError(t, err)
+	_, err = spec.Migrate(basecontext.NewRootBaseContext(), db, &legacy, defaultChunkSize)
+	require.NoError(t, err)
+	ids = nil
+	require.NoError(t, db.Model(&models.Configuration{}).Pluck("id", &ids).Error)
+	assert.Equal(t, []string{"config-1"}, ids, "replay repairs the duplicated singleton")
+}

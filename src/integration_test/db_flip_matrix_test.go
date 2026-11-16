@@ -111,7 +111,7 @@ func flipFeasible(t *testing.T) {
 	if saw {
 		return // this host CAN boot SQL mode
 	}
-	if strings.Contains(out, "/etc/parallels-devops") &&
+	if (strings.Contains(out, "/etc/parallels-devops") || strings.Contains(out, "/etc/prl-devops-service")) &&
 		(strings.Contains(out, "permission denied") || strings.Contains(out, "read-only")) {
 		t.Skipf("pre-existing environment gate (see #420 boot-matrix note): %s", firstLines(out, 3))
 	}
