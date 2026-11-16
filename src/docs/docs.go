@@ -13356,6 +13356,10 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.ReverseProxyHost"
                     }
                 },
+                "sql_database_type": {
+                    "description": "SqlDatabaseType is the live SQL engine reported by the host\n(\"sqlite\" | \"postgres\"); absent when the host runs the legacy JSON store.",
+                    "type": "string"
+                },
                 "state": {
                     "type": "string"
                 },
@@ -14038,6 +14042,10 @@ const docTemplate = `{
                 },
                 "running_vms": {
                     "type": "integer"
+                },
+                "sql_database_type": {
+                    "description": "SqlDatabaseType is the live SQL engine (\"sqlite\" | \"postgres\");\nempty means the legacy JSON store is in use (no sql_database module).",
+                    "type": "string"
                 },
                 "system_reserved": {
                     "$ref": "#/definitions/models.SystemUsageItem"

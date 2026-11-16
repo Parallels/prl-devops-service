@@ -288,6 +288,7 @@ func (g *GormDatabase) UpdateOrchestratorHost(ctx basecontext.ApiContext, host *
 		"parallels_desktop_licensed":   host.ParallelsDesktopLicensed,
 		"is_reverse_proxy_enabled":     host.IsReverseProxyEnabled,
 		"is_log_streaming_enabled":     host.IsLogStreamingEnabled,
+		"sql_database_type":            host.SqlDatabaseType,
 	}
 	for col, v := range map[string]interface{}{
 		"authentication": host.Authentication, "resources": host.Resources,

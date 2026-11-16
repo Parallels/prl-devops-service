@@ -24,6 +24,7 @@ func DtoOrchestratorHostToApiResponse(dto data_models.OrchestratorHost) models.O
 		IsReverseProxyEnabled:    dto.IsReverseProxyEnabled,
 		IsLogStreamingEnabled:    dto.IsLogStreamingEnabled,
 		EnabledModules:           dto.EnabledModules,
+		SqlDatabaseType:          dto.SqlDatabaseType,
 		Tags:                     dto.Tags,
 		RequiredClaims:           dto.RequiredClaims,
 		RequiredRoles:            dto.RequiredRoles,

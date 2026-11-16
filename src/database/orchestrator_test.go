@@ -155,7 +155,7 @@ func TestSQLOrchestratorHosts_UpdateSemantics(t *testing.T) {
 	// Update: writes OsVersion, must NOT touch HasWebsocketEvents / VM rows
 	// / CreatedAt / ID.
 	in := models.OrchestratorHost{ID: h.ID, Host: "u.local", Port: "1", OsVersion: "23H2",
-		HasWebsocketEvents: true, Enabled: true, CreatedAt: "FORGED"}
+		SqlDatabaseType: "sqlite", HasWebsocketEvents: true, Enabled: true, CreatedAt: "FORGED"}
 	// Diff must fire (OsVersion differs) — input has NO VM payload; the
 	// legacy set never assigns VirtualMachines, so payload-less input must
 	// not empty the relation either.
@@ -163,7 +163,7 @@ func TestSQLOrchestratorHosts_UpdateSemantics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if after.OsVersion != "23H2" || !after.HasWebsocketEvents || after.CreatedAt != before.CreatedAt || after.ID != h.ID {
+	if after.OsVersion != "23H2" || after.SqlDatabaseType != "sqlite" || !after.HasWebsocketEvents || after.CreatedAt != before.CreatedAt || after.ID != h.ID {
 		t.Fatalf("Update field set violated: %+v", after)
 	}
 	var n int64

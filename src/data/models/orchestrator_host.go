@@ -37,14 +37,17 @@ type OrchestratorHost struct {
 	IsReverseProxyEnabled     bool                            `json:"is_reverse_proxy_enabled,omitempty"`
 	IsLogStreamingEnabled     bool                            `json:"is_log_streaming_enabled,omitempty"`
 	EnabledModules            []string                        `json:"enabled_modules,omitempty" gorm:"serializer:json"`
-	ReverseProxy              *ReverseProxy                   `json:"reverse_proxy,omitempty" gorm:"foreignKey:HostID;references:ID;constraint:-"` // T8: "" host_id is the standalone-install sentinel (rp service writes it at boot); real FK would make every standalone boot violate it — same posture as the two sibling tags
-	ReverseProxyHosts         []*ReverseProxyHost             `json:"reverse_proxy_hosts,omitempty" gorm:"foreignKey:HostID;references:ID;constraint:-"`
-	CacheConfig               *models.CatalogCacheConfig      `json:"cache_config,omitempty" gorm:"serializer:json"`
-	CacheItems                []models.HostCatalogCacheItem   `json:"cache_items,omitempty" gorm:"serializer:json"`
-	CreatedAt                 string                          `json:"created_at,omitempty"`
-	UpdatedAt                 string                          `json:"updated_at,omitempty"`
-	RequiredClaims            []string                        `json:"required_claims,omitempty" gorm:"serializer:json"`
-	RequiredRoles             []string                        `json:"required_roles,omitempty" gorm:"serializer:json"`
+	// SqlDatabaseType is the engine the host reports as its live SQL backend
+	// ("sqlite" | "postgres"); empty = legacy JSON store (pre-report or legacy).
+	SqlDatabaseType   string                        `json:"sql_database_type,omitempty"`
+	ReverseProxy      *ReverseProxy                 `json:"reverse_proxy,omitempty" gorm:"foreignKey:HostID;references:ID;constraint:-"` // T8: "" host_id is the standalone-install sentinel (rp service writes it at boot); real FK would make every standalone boot violate it — same posture as the two sibling tags
+	ReverseProxyHosts []*ReverseProxyHost           `json:"reverse_proxy_hosts,omitempty" gorm:"foreignKey:HostID;references:ID;constraint:-"`
+	CacheConfig       *models.CatalogCacheConfig    `json:"cache_config,omitempty" gorm:"serializer:json"`
+	CacheItems        []models.HostCatalogCacheItem `json:"cache_items,omitempty" gorm:"serializer:json"`
+	CreatedAt         string                        `json:"created_at,omitempty"`
+	UpdatedAt         string                        `json:"updated_at,omitempty"`
+	RequiredClaims    []string                      `json:"required_claims,omitempty" gorm:"serializer:json"`
+	RequiredRoles     []string                      `json:"required_roles,omitempty" gorm:"serializer:json"`
 }
 
 func (o OrchestratorHost) GetHost() string {
@@ -240,6 +243,10 @@ func (o *OrchestratorHost) Diff(source OrchestratorHost) bool {
 		if m != source.EnabledModules[i] {
 			return true
 		}
+	}
+
+	if o.SqlDatabaseType != source.SqlDatabaseType {
+		return true
 	}
 
 	if o.HasWebsocketEvents != source.HasWebsocketEvents {

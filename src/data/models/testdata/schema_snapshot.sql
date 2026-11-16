@@ -115,6 +115,7 @@ orchestrator_hosts.last_unhealthy_error_message TEXT pk=0 notnull=0
 orchestrator_hosts.is_reverse_proxy_enabled numeric pk=0 notnull=0
 orchestrator_hosts.is_log_streaming_enabled numeric pk=0 notnull=0
 orchestrator_hosts.enabled_modules TEXT pk=0 notnull=0
+orchestrator_hosts.sql_database_type TEXT pk=0 notnull=0
 orchestrator_hosts.cache_config TEXT pk=0 notnull=0
 orchestrator_hosts.cache_items TEXT pk=0 notnull=0
 orchestrator_hosts.created_at TEXT pk=0 notnull=0
