@@ -22,6 +22,23 @@ import (
 
 var globalConfig *Config
 
+// overrideResolver supplies database-backed configuration overrides that
+// take precedence over config file, CLI flags and environment variables —
+// the central settings service (see src/settings) registers it once at boot,
+// after the SQL connection is up. A nil resolver keeps GetKey behavior
+// byte-identical to the pre-settings posture (boot phase, legacy JSON mode).
+// The settings package owns the thread-safety of the lookup it registers.
+var overrideResolver func(key string) (string, bool)
+
+// SetOverrideResolver installs (or with nil, removes) the database override
+// hook consulted by GetKey with top priority. It returns the previous
+// resolver so tests can restore the prior state.
+func SetOverrideResolver(fn func(key string) (string, bool)) func(key string) (string, bool) {
+	previous := overrideResolver
+	overrideResolver = fn
+	return previous
+}
+
 var (
 	extensions = []string{
 		".local.yaml",
@@ -294,7 +311,31 @@ func (c *Config) GetKey(key string) string {
 		value = envValue
 	}
 
+	// Database-backed overrides win over everything above (central settings
+	// service). Found-semantics matter: a present-but-empty override is a
+	// deliberate clear of the environment value, hence the found check.
+	if overrideResolver != nil {
+		if override, found := overrideResolver(key); found {
+			return override
+		}
+	}
+
 	return value
+}
+
+// ConfigFileValue reports whether a key is set in the loaded config file
+// (case-insensitive), exposing the lowest GetKey layer for source display
+// by the settings service. CLI flags are folded into the same layer.
+func (c *Config) ConfigFileValue(key string) (string, bool) {
+	for k, v := range c.config.Environment {
+		if strings.EqualFold(k, key) {
+			return v, true
+		}
+	}
+	if flagValue := helper.GetFlagValue(key, ""); flagValue != "" {
+		return flagValue, true
+	}
+	return "", false
 }
 
 func (c *Config) GetIntKey(key string) int {

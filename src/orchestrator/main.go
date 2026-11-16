@@ -16,6 +16,7 @@ import (
 	"github.com/Parallels/prl-devops-service/orchestrator/handlers"
 	"github.com/Parallels/prl-devops-service/restapi"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/settings"
 	"github.com/Parallels/prl-devops-service/telemetry"
 )
 
@@ -75,7 +76,12 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	// Initialize WebSocket Manager and Handlers
 	manager := NewHostWebSocketManager(s.ctx)
 	pdfmHandler := handlers.NewPDfMEventHandler(manager)
-	handlers.NewHostHealthHandler(manager)
+	healthHandler := handlers.NewHostHealthHandler(manager)
+	// Healthy transition (first pong after boot/recovery) → diff-sync the
+	// settings bundle if the host is not current (no-op when in sync).
+	healthHandler.SetOnHealthyTransition(func(hostID string) {
+		settings.OnHostOnline(s.ctx, hostID)
+	})
 	statsHandler := handlers.NewHostStatsHandler(manager)
 	statsHandler.SetResourceUpdater(s)
 	handlers.NewHostLogsHandler(manager)
@@ -95,6 +101,11 @@ func (s *OrchestratorService) Start(waitForInit bool) {
 	if hosts, err := s.db.GetOrchestratorHosts(s.ctx, ""); err == nil {
 		manager.RefreshConnections(hosts)
 	}
+
+	// Settings convergence at boot: push current bundles to any host whose
+	// stored fingerprint is stale (idempotent; in-sync hosts are skipped
+	// without an HTTP round-trip). Background so boot never waits on hosts.
+	go settings.SyncAllNow(s.ctx, "")
 
 	// Start periodic connection monitor (checks every 30 seconds)
 	manager.StartConnectionMonitor(30 * time.Second)

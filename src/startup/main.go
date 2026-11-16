@@ -28,6 +28,7 @@ import (
 	providerlogs "github.com/Parallels/prl-devops-service/serviceprovider/logs"
 	"github.com/Parallels/prl-devops-service/serviceprovider/stats"
 	"github.com/Parallels/prl-devops-service/serviceprovider/system"
+	"github.com/Parallels/prl-devops-service/settings"
 	"github.com/Parallels/prl-devops-service/startup/migrations"
 	"github.com/Parallels/prl-devops-service/telemetry"
 	cryptorand "github.com/cjlapao/common-go-cryptorand"
@@ -150,6 +151,15 @@ func Start(ctx basecontext.ApiContext) {
 	ctx.LogInfof("Seeding defaults")
 	if err := SeedDefaults(); err != nil {
 		panic(err)
+	}
+
+	// Central settings service (DB-backed overrides beating env/flag/file,
+	// applied live through the config override resolver). Non-fatal by
+	// design: legacy JSON mode has no SQL handle — log and stay inert.
+	if _, err := settings.InitService(ctx); err != nil {
+		ctx.LogWarnf("Settings service unavailable, feature inert: %v", err)
+	} else if cfg.IsOrchestrator() {
+		settings.StartSyncEngine(ctx)
 	}
 
 	// Startup data housekeeping (engine-neutral: GetDatabaseService routes

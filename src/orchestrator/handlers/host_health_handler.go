@@ -14,6 +14,18 @@ import (
 
 type HostHealthHandler struct {
 	registrar interfaces.HostRegistrar
+	// onHealthyTransition is called when a host flips to healthy (first
+	// pong after unhealthiness/boot). Wiring-injected (setter) to keep this
+	// package free of feature imports — the orchestrator plugs in the
+	// settings sync trigger.
+	onHealthyTransition func(hostID string)
+}
+
+// SetOnHealthyTransition installs the healthy-transition callback (nil-safe,
+// may be set after construction; see the statsHandler.SetResourceUpdater
+// precedent).
+func (h *HostHealthHandler) SetOnHealthyTransition(fn func(hostID string)) {
+	h.onHealthyTransition = fn
 }
 
 var (
@@ -97,6 +109,9 @@ func (h *HostHealthHandler) handlePong(ctx basecontext.ApiContext, hostID string
 	if host.State != "healthy" {
 		newState = "healthy"
 		stateChanged = true
+		if h.onHealthyTransition != nil {
+			h.onHealthyTransition(hostID)
+		}
 		if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
 			msg := models.NewEventMessage(constants.EventTypeOrchestrator, "HOST_HEALTH_UPDATE", models.HostHealthUpdate{
 				HostID: host.ID,
