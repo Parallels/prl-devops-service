@@ -64,6 +64,36 @@ func GetSQLDatabase(ctx basecontext.ApiContext) (*gorm.DB, error) {
 	return globalProvider.SQLDatabase, nil
 }
 
+// GetSQLDatabaseType reports the engine actually driving the live SQL
+// connection ("sqlite" / "postgres"), or "" when no SQL backend is running
+// (legacy JSON mode, or a failed open on a non-API command). Derived from the
+// connection's dialector, so it answers "what is running", not "what was
+// configured" — which is exactly what the sql_database module report needs.
+func GetSQLDatabaseType() string {
+	if globalProvider == nil || globalProvider.SQLDatabase == nil || globalProvider.SQLDatabase.Dialector == nil {
+		return ""
+	}
+	return globalProvider.SQLDatabase.Dialector.Name()
+}
+
+// EnabledModulesForReport returns the operator-facing module list for
+// reporting surfaces (hardware endpoint, host records). It mirrors
+// GetEnabledModules and appends the runtime-derived sql_database module when
+// a SQL connection is live. Deliberately NOT persisted through
+// EnableModule/DisableModule: sql_database reflects which backend the process
+// opened, not something operators toggle.
+func EnabledModulesForReport() []string {
+	cfg := config.Get()
+	if cfg == nil {
+		return []string{}
+	}
+	modules := cfg.GetEnabledModules()
+	if GetSQLDatabaseType() != "" {
+		modules = append(modules, constants.SQL_DATABASE_MODE)
+	}
+	return modules
+}
+
 // selectDatabaseBackend is the #421 D-6 S3 flip (task 18). The raw
 // DB_TYPE/db_type value selects the engine BEFORE FromApplicationConfig
 // runs — by design, that parser rejects the legacy value (its allowed set

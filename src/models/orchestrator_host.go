@@ -116,33 +116,36 @@ func (o *OrchestratorHostRequest) Validate() error {
 }
 
 type OrchestratorHostResponse struct {
-	ID                       string                 `json:"id"`
-	Enabled                  bool                   `json:"enabled"`
-	Host                     string                 `json:"host"`
-	Architecture             string                 `json:"architecture"`
-	CpuModel                 string                 `json:"cpu_model"`
-	OsVersion                string                 `json:"os_version,omitempty"`
-	OsName                   string                 `json:"os_name,omitempty"`
-	ExternalIpAddress        string                 `json:"external_ip_address,omitempty"`
-	DevOpsVersion            string                 `json:"devops_version,omitempty"`
-	Description              string                 `json:"description,omitempty"`
-	Tags                     []string               `json:"tags,omitempty"`
-	State                    string                 `json:"state,omitempty"`
-	ParallelsDesktopVersion  string                 `json:"parallels_desktop_version,omitempty"`
-	ParallelsDesktopLicensed bool                   `json:"parallels_desktop_licensed,omitempty"`
-	HasWebsocketEvents       bool                   `json:"has_websocket_events"`
-	IsLocal                  bool                   `json:"is_local,omitempty"`
-	IsReverseProxyEnabled    bool                   `json:"is_reverse_proxy_enabled"`
-	IsLogStreamingEnabled    bool                   `json:"is_log_streaming_enabled"`
-	EnabledModules           []string               `json:"enabled_modules,omitempty"`
-	ReverseProxy             *HostReverseProxy      `json:"reverse_proxy,omitempty"`
-	ReverseProxyHosts        []*ReverseProxyHost    `json:"reverse_proxy_hosts,omitempty"`
-	Resources                HostResourceItem       `json:"resources,omitempty"`
-	DetailedResources        *HostResources         `json:"detailed_resources,omitempty"`
-	CacheConfig              *CatalogCacheConfig    `json:"cache_config,omitempty"`
-	CacheItems               []HostCatalogCacheItem `json:"cache_items,omitempty"`
-	RequiredClaims           []string               `json:"required_claims,omitempty"`
-	RequiredRoles            []string               `json:"required_roles,omitempty"`
+	ID                       string   `json:"id"`
+	Enabled                  bool     `json:"enabled"`
+	Host                     string   `json:"host"`
+	Architecture             string   `json:"architecture"`
+	CpuModel                 string   `json:"cpu_model"`
+	OsVersion                string   `json:"os_version,omitempty"`
+	OsName                   string   `json:"os_name,omitempty"`
+	ExternalIpAddress        string   `json:"external_ip_address,omitempty"`
+	DevOpsVersion            string   `json:"devops_version,omitempty"`
+	Description              string   `json:"description,omitempty"`
+	Tags                     []string `json:"tags,omitempty"`
+	State                    string   `json:"state,omitempty"`
+	ParallelsDesktopVersion  string   `json:"parallels_desktop_version,omitempty"`
+	ParallelsDesktopLicensed bool     `json:"parallels_desktop_licensed,omitempty"`
+	HasWebsocketEvents       bool     `json:"has_websocket_events"`
+	IsLocal                  bool     `json:"is_local,omitempty"`
+	IsReverseProxyEnabled    bool     `json:"is_reverse_proxy_enabled"`
+	IsLogStreamingEnabled    bool     `json:"is_log_streaming_enabled"`
+	EnabledModules           []string `json:"enabled_modules,omitempty"`
+	// SqlDatabaseType is the live SQL engine reported by the host
+	// ("sqlite" | "postgres"); absent when the host runs the legacy JSON store.
+	SqlDatabaseType   string                 `json:"sql_database_type,omitempty"`
+	ReverseProxy      *HostReverseProxy      `json:"reverse_proxy,omitempty"`
+	ReverseProxyHosts []*ReverseProxyHost    `json:"reverse_proxy_hosts,omitempty"`
+	Resources         HostResourceItem       `json:"resources,omitempty"`
+	DetailedResources *HostResources         `json:"detailed_resources,omitempty"`
+	CacheConfig       *CatalogCacheConfig    `json:"cache_config,omitempty"`
+	CacheItems        []HostCatalogCacheItem `json:"cache_items,omitempty"`
+	RequiredClaims    []string               `json:"required_claims,omitempty"`
+	RequiredRoles     []string               `json:"required_roles,omitempty"`
 }
 
 type OrchestratorHostUpdateRequest struct {

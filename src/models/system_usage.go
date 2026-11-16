@@ -30,6 +30,9 @@ type SystemUsageResponse struct {
 	TotalReserved            *SystemUsageItem    `json:"total_reserved,omitempty"`
 	CacheConfig              *CatalogCacheConfig `json:"cache_config,omitempty"`
 	EnabledModules           []string            `json:"enabled_modules,omitempty"`
+	// SqlDatabaseType is the live SQL engine ("sqlite" | "postgres");
+	// empty means the legacy JSON store is in use (no sql_database module).
+	SqlDatabaseType string `json:"sql_database_type,omitempty"`
 }
 
 type SystemUsageItem struct {

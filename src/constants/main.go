@@ -73,6 +73,7 @@ const (
 	CACHE_MODE                     = "cache"
 	CORS_MODE                      = "cors"
 	VM_FORCE_CACHE_REFRESH         = true
+	SQL_DATABASE_MODE              = "sql_database" // runtime-derived: the SQL (GORM) backend is the live data layer
 
 	DEFAULT_LOG_FILE_NAME = "prldevops.log"
 )

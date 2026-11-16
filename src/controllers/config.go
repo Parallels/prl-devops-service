@@ -307,7 +307,8 @@ func GetHardwareInfo() restapi.ControllerHandler {
 			hardwareInfo, err = provider.System.GetHardwareUsage(ctx)
 		}
 
-		hardwareInfo.EnabledModules = cfg.GetEnabledModules()
+		hardwareInfo.EnabledModules = serviceprovider.EnabledModulesForReport()
+		hardwareInfo.SqlDatabaseType = serviceprovider.GetSQLDatabaseType()
 
 		if cfg.IsReverseProxyEnabled() {
 			hardwareInfo.IsReverseProxyEnabled = true
