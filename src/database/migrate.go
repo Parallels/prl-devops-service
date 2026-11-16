@@ -24,6 +24,10 @@ func AllGormModels() []interface{} {
 		&models.UserConfig{}, &models.ReverseProxy{}, &models.ReverseProxyHost{},
 		&models.OrchestratorEnrollmentToken{}, &models.Configuration{},
 		&models.OrchestratorHost{}, &models.VMSnapshot{}, &models.VirtualMachine{},
+		// Settings domain (centralized config overrides + host sync) — the
+		// model list additions ride the domain that owns them (header rule).
+		&models.SettingDefinition{}, &models.SettingValue{}, &models.SettingSyncState{},
+		&models.NodeSetting{}, &models.SettingMeta{},
 	}
 }
 

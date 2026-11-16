@@ -137,4 +137,9 @@ var ClaimDescriptionMap = map[string]string{
 
 	// ── SSH ───────────────────────────────────────────────────────────────
 	EXECUTE_SSH_CLAIM: "Open SSH connections to hosts and virtual machines.",
+
+	// ── Administration › Settings ─────────────────────────────────────────
+	LIST_SETTINGS_CLAIM:   "View the centralized configuration, effective values and host sync drift.",
+	UPDATE_SETTINGS_CLAIM: "Change configuration overrides for the orchestrator, hosts or a single host.",
+	SYNC_SETTINGS_CLAIM:   "Push configuration overrides to hosts on demand.",
 }

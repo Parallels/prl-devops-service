@@ -20,6 +20,9 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 
 	if config.Get().IsHost() {
 		registerCacheHandlers(ctx, version)
+		// Host-side settings surface: local edits for a directly-connected
+		// UI + the orchestrator bundle apply endpoint.
+		registerHostSettingsHandlers(ctx, version)
 	}
 	if config.Get().IsCatalog() {
 		registerCatalogManifestHandlers(ctx, version)
@@ -33,6 +36,7 @@ func RegisterV1Handlers(ctx basecontext.ApiContext) error {
 	if config.Get().IsOrchestrator() {
 		registerOrchestratorHostsHandlers(ctx, version)
 		registerOrchestratorMachineCheckHandlers(ctx, version)
+		registerSettingsHandlers(ctx, version)
 	}
 	registerSshHandlers(ctx, version)
 	registerPerformanceHandlers(ctx, version)

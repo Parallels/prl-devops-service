@@ -7,6 +7,7 @@ import (
 	"github.com/Parallels/prl-devops-service/mappers"
 	apimodels "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/settings"
 )
 
 func (s *OrchestratorService) RegisterHost(ctx basecontext.ApiContext, host *models.OrchestratorHost) (*models.OrchestratorHost, error) {
@@ -62,6 +63,10 @@ func (s *OrchestratorService) RegisterHost(ctx basecontext.ApiContext, host *mod
 	if manager != nil {
 		manager.ProbeAndConnect(*dbHost)
 	}
+
+	// Deliver the settings bundle to the freshly registered host (background,
+	// idempotent; no-op when nothing host-scoped is configured).
+	settings.OnHostOnline(ctx, dbHost.ID)
 
 	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
 		msg := apimodels.NewEventMessage(constants.EventTypeOrchestrator, "HOST_ADDED", apimodels.HostAddedEvent{

@@ -28,6 +28,7 @@ const (
 	ClaimActionImport    = "import"
 	ClaimActionRevert    = "revert"
 	ClaimActionConfigure = "configure"
+	ClaimActionSync      = "sync"
 )
 
 // ClaimGroupOrder defines the canonical display order for groups in the matrix.
@@ -189,4 +190,9 @@ var ClaimCategoryMap = map[string]ClaimCategory{
 
 	// ── SSH ───────────────────────────────────────────────────────────────
 	EXECUTE_SSH_CLAIM: {ClaimGroupSSH, "SSH", ClaimActionExecute},
+
+	// ── Administration › Settings ─────────────────────────────────────────
+	LIST_SETTINGS_CLAIM:   {ClaimGroupAdministration, "Settings", ClaimActionRead},
+	UPDATE_SETTINGS_CLAIM: {ClaimGroupAdministration, "Settings", ClaimActionUpdate},
+	SYNC_SETTINGS_CLAIM:   {ClaimGroupAdministration, "Settings", ClaimActionSync},
 }

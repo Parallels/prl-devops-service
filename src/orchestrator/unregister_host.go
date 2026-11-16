@@ -5,6 +5,7 @@ import (
 	"github.com/Parallels/prl-devops-service/constants"
 	apimodels "github.com/Parallels/prl-devops-service/models"
 	"github.com/Parallels/prl-devops-service/serviceprovider"
+	"github.com/Parallels/prl-devops-service/settings"
 )
 
 func (s *OrchestratorService) UnregisterHost(ctx basecontext.ApiContext, hostId string) error {
@@ -18,6 +19,14 @@ func (s *OrchestratorService) UnregisterHost(ctx basecontext.ApiContext, hostId 
 	err = dbService.DeleteOrchestratorHost(ctx, hostId)
 	if err != nil {
 		return err
+	}
+
+	// Settings cleanup: drop the host's per-host overrides and its sync
+	// state so re-enrolling starts from a clean slate.
+	if svc := settings.Get(); svc != nil {
+		if err := svc.ClearHost(hostId); err != nil {
+			ctx.LogWarnf("[Orchestrator] Failed to clear settings for host %s: %v", hostId, err)
+		}
 	}
 
 	if emitter := serviceprovider.GetEventEmitter(); emitter != nil && emitter.IsRunning() {
