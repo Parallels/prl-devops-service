@@ -638,6 +638,22 @@ func (s *ParallelsService) IsLicensed() bool {
 	return s.isLicensed
 }
 
+// RefreshInfo clears the cached hardware/license snapshot and re-probes
+// prlsrvctl. InitServices calls GetInfo once at boot; a license activated
+// after service start (fresh install, reinstallation) would otherwise stay
+// invisible for the whole process lifetime, since GetInfo short-circuits on
+// the cached Info. isLicensed keeps its sticky semantics: it is only set true
+// on a valid license, so a transient probe failure cannot tear down an
+// established availability state.
+func (s *ParallelsService) RefreshInfo() {
+	s.Lock()
+	defer s.Unlock()
+	s.Info = nil
+	if _, err := s.GetInfo(); err != nil {
+		s.ctx.LogWarnf("Parallels Desktop info refresh failed: %v", err)
+	}
+}
+
 func (s *ParallelsService) updateVmInCache(ctx basecontext.ApiContext, newVm *models.ParallelsVM, syncStartTime time.Time) {
 	s.Lock()
 	defer s.Unlock()

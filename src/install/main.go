@@ -52,6 +52,23 @@ func normalizeModules(input string) string {
 	return strings.Join(result, ",")
 }
 
+// modeNamesPrimaryRole reports whether a legacy MODE value names a primary
+// role worth preserving when the installer translates MODE into an explicit
+// ENABLED_MODULES pin. Values like "api", or the agent nodes' "agent" (not a
+// module at all), must NOT pin a list: a pinned list suppresses the runtime
+// auto-detect that is OS- and Parallels-Desktop-aware (it re-adds host on
+// macOS), so pinning a non-role MODE silently strips host-mode routes
+// (/cache, /virtualmachines, host settings) from macOS nodes.
+func modeNamesPrimaryRole(mode string) bool {
+	for _, m := range strings.Split(mode, ",") {
+		switch strings.ToLower(strings.TrimSpace(m)) {
+		case constants.HOST_MODE, constants.ORCHESTRATOR_MODE, constants.CATALOG_MODE:
+			return true
+		}
+	}
+	return false
+}
+
 func getRawFlagValue(flagName string) string {
 	longFlag := "--" + strings.TrimSpace(flagName)
 
@@ -488,8 +505,10 @@ func getConfigFromEnv() ApiServiceConfig {
 		config.EnabledModules = normalizeModules(modules)
 	} else if cfg.GetKey(constants.ENABLED_MODULES_ENV_VAR) != "" {
 		config.EnabledModules = normalizeModules(cfg.GetKey(constants.ENABLED_MODULES_ENV_VAR))
-	} else if cfg.GetKey(constants.MODE_ENV_VAR) != "" {
-		// Backward compatibility: MODE contains a single mode value
+	} else if cfg.GetKey(constants.MODE_ENV_VAR) != "" && modeNamesPrimaryRole(cfg.GetKey(constants.MODE_ENV_VAR)) {
+		// Backward compatibility: MODE names a primary role (host,
+		// orchestrator, catalog). Any other value (api, agent, …) is left
+		// unpinned so runtime auto-detect keeps working (see modeNamesPrimaryRole).
 		config.EnabledModules = normalizeModules(cfg.GetKey(constants.MODE_ENV_VAR))
 	}
 	// If neither is set, leave EnabledModules empty so the plist omits the key
@@ -552,7 +571,7 @@ func getConfigFromFile(filePath string) (ApiServiceConfig, error) {
 	// auto-detects modules based on OS and PD availability.
 	if result.EnabledModules != "" {
 		result.EnabledModules = normalizeModules(result.EnabledModules)
-	} else if result.Mode != "" {
+	} else if result.Mode != "" && modeNamesPrimaryRole(result.Mode) {
 		result.EnabledModules = normalizeModules(result.Mode)
 	}
 

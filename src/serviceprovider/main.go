@@ -255,6 +255,25 @@ func (p *ServiceProvider) IsParallelsDesktopAvailable() bool {
 	return true
 }
 
+// HasParallelsDesktop reports whether the Parallels Desktop executables are
+// present on disk, independent of license/VM-service readiness. Used to decide
+// whether re-probing Parallels state after boot is worthwhile.
+func (p *ServiceProvider) HasParallelsDesktop() bool {
+	return p.ParallelsDesktopService != nil && p.ParallelsDesktopService.Installed()
+}
+
+// RefreshParallelsDesktopState re-runs the Parallels info probe and reports
+// whether the desktop is now available (installed + licensed). Returns false
+// without probing when the executables are absent, so PD-free Macs never pay
+// the cost of repeated prlsrvctl calls.
+func (p *ServiceProvider) RefreshParallelsDesktopState() bool {
+	if !p.HasParallelsDesktop() {
+		return false
+	}
+	p.ParallelsDesktopService.RefreshInfo()
+	return p.IsParallelsDesktopAvailable()
+}
+
 func (p *ServiceProvider) IsBrewAvailable() bool {
 	if p.Brew == nil {
 		return false

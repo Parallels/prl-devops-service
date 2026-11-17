@@ -71,20 +71,21 @@ func Start(ctx basecontext.ApiContext) {
 	// We check both directions so that a freshly deployed agent that just had
 	// PD installed (and may not have included "host" in ENABLED_MODULES, or
 	// where PD was not ready at the previous boot) gets the module enabled
-	// automatically.
+	// automatically. A single availability snapshot is not trusted when it
+	// says "unavailable" while the PD binaries are on disk — at boot the VM
+	// service or the license activation may still be in flight, so the probe
+	// is re-run a bounded number of times before the module decision. A
+	// runtime watcher also recovers PD that becomes available long after
+	// startup by enabling the module and exiting cleanly so the KeepAlive
+	// service unit restarts the process with host-mode routes registered.
 	if system.GetOperatingSystem() == "macos" || system.GetOperatingSystem() == "darwin" {
 		provider := serviceprovider.Get()
-		pdAvailable := provider.IsParallelsDesktopAvailable()
-		if cfg.IsModuleEnabled(constants.HOST_MODE) && !pdAvailable {
-			ctx.LogWarnf("Parallels Desktop is not available, disabling host module")
-			cfg.DisableModule(constants.HOST_MODE)
-		} else if !cfg.IsModuleEnabled(constants.HOST_MODE) && pdAvailable {
-			ctx.LogInfof("Parallels Desktop is available; auto-enabling host module")
-			cfg.EnableModule(constants.HOST_MODE)
-			// Persist the updated module list to the service config file so
-			// the setting survives a service restart.
-			install.PersistEnabledModules(ctx)
-		}
+		persistModules := func() { install.PersistEnabledModules(ctx) }
+		syncHostModuleWithParallelsDesktop(ctx, cfg, provider, pdBootRecheckAttempts, pdBootRecheckDelay, persistModules)
+		go watchHostModuleRecovery(ctx, cfg, provider, pdAvailabilityWatchInterval, persistModules, func() {
+			ctx.LogWarnf("Restarting service so host-mode routes are registered")
+			os.Exit(0)
+		})
 	}
 
 	ctx.LogInfof("Enabled Modules: %v", cfg.GetEnabledModules())
