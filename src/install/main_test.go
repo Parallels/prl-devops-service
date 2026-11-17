@@ -423,3 +423,43 @@ func TestSaveConfig_JsonFormat(t *testing.T) {
 	assert.Contains(t, string(readContent), "json_key")
 	assert.Contains(t, string(readContent), "json_value")
 }
+
+// MODE values that are not primary roles (the agent nodes' "agent", plain
+// "api", anything invalid) must not pin ENABLED_MODULES: the pinned list
+// suppresses runtime auto-detect, which is what stripped host-mode routes
+// (/cache etc.) from macOS agent nodes after a migration reinstall.
+func TestGetConfigFromEnv_AgentModeDoesNotPinModules(t *testing.T) {
+	config.New(basecontext.NewBaseContext())
+	t.Setenv(constants.ENABLED_MODULES_ENV_VAR, "")
+	t.Setenv(constants.MODE_ENV_VAR, "agent")
+
+	cfg := getConfigFromEnv()
+
+	assert.Empty(t, cfg.EnabledModules)
+}
+
+// MODE naming a primary role keeps the backward-compat pin intact.
+func TestGetConfigFromEnv_PrimaryModeStillPinsModules(t *testing.T) {
+	config.New(basecontext.NewBaseContext())
+	t.Setenv(constants.ENABLED_MODULES_ENV_VAR, "")
+	t.Setenv(constants.MODE_ENV_VAR, "orchestrator")
+
+	cfg := getConfigFromEnv()
+
+	assert.Equal(t, "api,orchestrator", cfg.EnabledModules)
+}
+
+func TestGetConfigFromFile_AgentModeDoesNotPinButPrimaryDoes(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "service_config.json")
+
+	require.NoError(t, os.WriteFile(path, []byte(`{"mode":"agent","port":"3080"}`), 0o644))
+	cfg, err := getConfigFromFile(path)
+	require.NoError(t, err)
+	assert.Empty(t, cfg.EnabledModules)
+
+	require.NoError(t, os.WriteFile(path, []byte(`{"mode":"host"}`), 0o644))
+	cfg, err = getConfigFromFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "api,host", cfg.EnabledModules)
+}
