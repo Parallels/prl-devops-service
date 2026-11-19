@@ -21,7 +21,7 @@ require (
 	github.com/jfrog/jfrog-client-go v1.55.0
 	github.com/klauspost/pgzip v1.2.6
 	github.com/stretchr/testify v1.11.1
-	github.com/swaggo/files/v2 v2.0.0
+	github.com/swaggo/files/v2 v2.0.2
 	github.com/swaggo/swag v1.16.3
 	golang.org/x/crypto v0.53.0
 	golang.org/x/sync v0.25.0
