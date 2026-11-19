@@ -103,7 +103,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@v6
         with:
           go-version-file: '${{ github.workspace }}/src/go.mod'
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
@@ -154,7 +154,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@v6
         with:
           go-version-file: '${{ github.workspace }}/src/go.mod'
           cache-dependency-path: ${{ github.workspace }}/src/go.sum
