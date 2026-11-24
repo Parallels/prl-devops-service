@@ -860,15 +860,15 @@ func (s *SystemService) getUniversalExternalIp(ctx basecontext.ApiContext) (stri
 	// first lets try to get the external ip using the ifconfig.me service and curl
 	cmd := helpers.Command{
 		Command: "curl",
-		Args:    []string{"ifconfig.me"},
+		Args:    []string{"--fail", "--silent", "--show-error", "--connect-timeout", "3", "--max-time", "5", "https://ifconfig.me/ip"},
 	}
-	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+	out, err := helpers.ExecuteWithNoOutput(ctx.Context(), cmd, 5*time.Second)
 	if err != nil {
 		cmd = helpers.Command{
 			Command: "wget",
-			Args:    []string{"-qO-", "ifconfig.me"},
+			Args:    []string{"-qO-", "--timeout=5", "--tries=1", "https://ifconfig.me/ip"},
 		}
-		out, err = helpers.ExecuteWithNoOutput(ctx.Context(), cmd, helpers.ExecutionTimeout)
+		out, err = helpers.ExecuteWithNoOutput(ctx.Context(), cmd, 5*time.Second)
 		if err != nil {
 			return "", err
 		}
