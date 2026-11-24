@@ -1,5 +1,10 @@
 package models
 
+import (
+	"encoding/json"
+	"regexp"
+)
+
 type ParallelsVMs []ParallelsVM
 
 type ParallelsVM struct {
@@ -94,16 +99,194 @@ type GuestTools struct {
 	Version string `json:"version,omitempty"`
 }
 
+// Hardware is the "Hardware" section of the prlctl JSON. Devices are dynamic
+// keyed entries (hdd0..n, cdrom0..n, net0..n, sound0..n, fdd0..n), so they are
+// held in typed maps keyed by the device name instead of fixed single-slot
+// fields — devices added with prlctl --device-add are never dropped. Unknown
+// keys (serial/parallel devices, future prlctl additions) are preserved
+// verbatim in Extras. The custom JSON codec below keeps the wire format flat
+// and identical to prlctl output.
 type Hardware struct {
-	CPU         CPU         `json:"cpu"`
-	Memory      Memory      `json:"memory"`
-	Video       Video       `json:"video"`
-	MemoryQuota MemoryQuota `json:"memory_quota"`
-	Hdd0        Hdd0        `json:"hdd0"`
-	Cdrom0      Cdrom0      `json:"cdrom0"`
-	USB         Expiration  `json:"usb"`
-	Net0        Net0        `json:"net0"`
-	Sound0      Sound0      `json:"sound0"`
+	CPU         CPU                        `json:"cpu"`
+	Memory      Memory                     `json:"memory"`
+	Video       Video                      `json:"video"`
+	MemoryQuota MemoryQuota                `json:"memory_quota"`
+	USB         Expiration                 `json:"usb"`
+	Hdds        map[string]Hdd             `json:"-"`
+	CdRoms      map[string]Cdrom           `json:"-"`
+	Nets        map[string]Net             `json:"-"`
+	Sounds      map[string]Sound           `json:"-"`
+	Fdds        map[string]Fdd             `json:"-"`
+	Extras      map[string]json.RawMessage `json:"-"`
+}
+
+// hardwareDeviceKey matches the dynamic prlctl device keys (hdd0, cdrom1,
+// net0, sound0, fdd0, ...).
+var hardwareDeviceKey = regexp.MustCompile(`^(hdd|cdrom|net|sound|fdd)[0-9]+$`)
+
+// UnmarshalJSON decodes the flat prlctl hardware object: the known scalar
+// groups (cpu, memory, video, memory_quota, usb) fill their typed fields,
+// every device key lands in the matching typed map keyed by the device name,
+// and anything else is preserved as raw JSON in Extras.
+func (h *Hardware) UnmarshalJSON(data []byte) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	*h = Hardware{}
+	for key, value := range raw {
+		switch key {
+		case "cpu":
+			if err := json.Unmarshal(value, &h.CPU); err != nil {
+				return err
+			}
+		case "memory":
+			if err := json.Unmarshal(value, &h.Memory); err != nil {
+				return err
+			}
+		case "video":
+			if err := json.Unmarshal(value, &h.Video); err != nil {
+				return err
+			}
+		case "memory_quota":
+			if err := json.Unmarshal(value, &h.MemoryQuota); err != nil {
+				return err
+			}
+		case "usb":
+			if err := json.Unmarshal(value, &h.USB); err != nil {
+				return err
+			}
+		default:
+			if match := hardwareDeviceKey.FindStringSubmatch(key); match != nil {
+				switch match[1] {
+				case "hdd":
+					var device Hdd
+					if err := json.Unmarshal(value, &device); err != nil {
+						return err
+					}
+					if h.Hdds == nil {
+						h.Hdds = map[string]Hdd{}
+					}
+					h.Hdds[key] = device
+				case "cdrom":
+					var device Cdrom
+					if err := json.Unmarshal(value, &device); err != nil {
+						return err
+					}
+					if h.CdRoms == nil {
+						h.CdRoms = map[string]Cdrom{}
+					}
+					h.CdRoms[key] = device
+				case "net":
+					var device Net
+					if err := json.Unmarshal(value, &device); err != nil {
+						return err
+					}
+					if h.Nets == nil {
+						h.Nets = map[string]Net{}
+					}
+					h.Nets[key] = device
+				case "sound":
+					var device Sound
+					if err := json.Unmarshal(value, &device); err != nil {
+						return err
+					}
+					if h.Sounds == nil {
+						h.Sounds = map[string]Sound{}
+					}
+					h.Sounds[key] = device
+				case "fdd":
+					var device Fdd
+					if err := json.Unmarshal(value, &device); err != nil {
+						return err
+					}
+					if h.Fdds == nil {
+						h.Fdds = map[string]Fdd{}
+					}
+					h.Fdds[key] = device
+				}
+				continue
+			}
+			if h.Extras == nil {
+				h.Extras = map[string]json.RawMessage{}
+			}
+			h.Extras[key] = append(json.RawMessage(nil), value...)
+		}
+	}
+
+	return nil
+}
+
+// MarshalJSON re-emits the flat prlctl-shaped hardware object from the typed
+// device maps, including the unknown keys captured in Extras. encoding/json
+// sorts map keys, so the output is deterministic (golden tests depend on it).
+func (h Hardware) MarshalJSON() ([]byte, error) {
+	out := map[string]interface{}{
+		"cpu":          h.CPU,
+		"memory":       h.Memory,
+		"video":        h.Video,
+		"memory_quota": h.MemoryQuota,
+		"usb":          h.USB,
+	}
+	for key, device := range h.Hdds {
+		out[key] = device
+	}
+	for key, device := range h.CdRoms {
+		out[key] = device
+	}
+	for key, device := range h.Nets {
+		out[key] = device
+	}
+	for key, device := range h.Sounds {
+		out[key] = device
+	}
+	for key, device := range h.Fdds {
+		out[key] = device
+	}
+	for key, raw := range h.Extras {
+		if _, taken := out[key]; !taken {
+			out[key] = raw
+		}
+	}
+
+	return json.Marshal(out)
+}
+
+type Cdrom struct {
+	Enabled bool   `json:"enabled"`
+	Port    string `json:"port"`
+	Image   string `json:"image"`
+	State   string `json:"state,omitempty"`
+}
+
+type Hdd struct {
+	Enabled       bool   `json:"enabled"`
+	Port          string `json:"port"`
+	Image         string `json:"image"`
+	Type          string `json:"type"`
+	Size          string `json:"size"`
+	OnlineCompact string `json:"online-compact"`
+}
+
+type Fdd struct {
+	Enabled bool   `json:"enabled"`
+	Port    string `json:"port"`
+	Image   string `json:"image"`
+	State   string `json:"state,omitempty"`
+}
+
+type Net struct {
+	Enabled bool   `json:"enabled"`
+	Type    string `json:"type"`
+	MAC     string `json:"mac"`
+	Card    string `json:"card"`
+}
+
+type Sound struct {
+	Enabled bool   `json:"enabled"`
+	Output  string `json:"output"`
+	Mixer   string `json:"mixer"`
 }
 
 type CPU struct {
@@ -116,22 +299,6 @@ type CPU struct {
 	Type    string `json:"type"`
 }
 
-type Cdrom0 struct {
-	Enabled bool   `json:"enabled"`
-	Port    string `json:"port"`
-	Image   string `json:"image"`
-	State   string `json:"state,omitempty"`
-}
-
-type Hdd0 struct {
-	Enabled       bool   `json:"enabled"`
-	Port          string `json:"port"`
-	Image         string `json:"image"`
-	Type          string `json:"type"`
-	Size          string `json:"size"`
-	OnlineCompact string `json:"online-compact"`
-}
-
 type Memory struct {
 	Size    string `json:"size"`
 	Auto    string `json:"auto"`
@@ -140,19 +307,6 @@ type Memory struct {
 
 type MemoryQuota struct {
 	Auto string `json:"auto"`
-}
-
-type Net0 struct {
-	Enabled bool   `json:"enabled"`
-	Type    string `json:"type"`
-	MAC     string `json:"mac"`
-	Card    string `json:"card"`
-}
-
-type Sound0 struct {
-	Enabled bool   `json:"enabled"`
-	Output  string `json:"output"`
-	Mixer   string `json:"mixer"`
 }
 
 type Video struct {

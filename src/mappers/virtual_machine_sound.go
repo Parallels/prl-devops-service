@@ -5,8 +5,8 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 )
 
-func MapDtoVirtualMachineSoundFromApi(m models.Sound0) data_models.VirtualMachineSound0 {
-	mapped := data_models.VirtualMachineSound0{
+func MapDtoVirtualMachineSoundFromApi(m models.Sound) data_models.VirtualMachineSound {
+	mapped := data_models.VirtualMachineSound{
 		Enabled: m.Enabled,
 		Output:  m.Output,
 		Mixer:   m.Mixer,
@@ -15,8 +15,8 @@ func MapDtoVirtualMachineSoundFromApi(m models.Sound0) data_models.VirtualMachin
 	return mapped
 }
 
-func MapDtoVirtualMachineSoundToApi(m data_models.VirtualMachineSound0) models.Sound0 {
-	mapped := models.Sound0{
+func MapDtoVirtualMachineSoundToApi(m data_models.VirtualMachineSound) models.Sound {
+	mapped := models.Sound{
 		Enabled: m.Enabled,
 		Output:  m.Output,
 		Mixer:   m.Mixer,

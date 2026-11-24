@@ -10925,7 +10925,8 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_Parallels_prl-devops-service_models.Cdrom0": {
+        "github_com_Parallels_prl-devops-service_models.Cdrom": {
+            "description": "CD/DVD drive device (wire keys cdrom0, cdrom1, ... on models.Hardware).",
             "type": "object",
             "properties": {
                 "enabled": {
@@ -10964,6 +10965,24 @@ const docTemplate = `{
             "properties": {
                 "enabled": {
                     "type": "boolean"
+                }
+            }
+        },
+        "github_com_Parallels_prl-devops-service_models.Fdd": {
+            "description": "Floppy drive device (wire keys fdd0, fdd1, ... on models.Hardware).",
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
                 }
             }
         },
@@ -11010,28 +11029,17 @@ const docTemplate = `{
             }
         },
         "github_com_Parallels_prl-devops-service_models.Hardware": {
+            "description": "Hardware as reported by prlctl. Devices are dynamic keys placed directly on this object next to the scalar groups: hdd0..n (see models.Hdd), cdrom0..n (models.Cdrom), net0..n (models.Net), sound0..n (models.Sound), fdd0..n (models.Fdd); unknown prlctl device types are passed through verbatim. VMs whose disks were added with prlctl --device-add therefore expose hdd1, hdd2, ... in addition to hdd0.",
             "type": "object",
             "properties": {
-                "cdrom0": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Cdrom0"
-                },
                 "cpu": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.CPU"
-                },
-                "hdd0": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Hdd0"
                 },
                 "memory": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Memory"
                 },
                 "memory_quota": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.MemoryQuota"
-                },
-                "net0": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Net0"
-                },
-                "sound0": {
-                    "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Sound0"
                 },
                 "usb": {
                     "$ref": "#/definitions/github_com_Parallels_prl-devops-service_models.Expiration"
@@ -11041,7 +11049,8 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_Parallels_prl-devops-service_models.Hdd0": {
+        "github_com_Parallels_prl-devops-service_models.Hdd": {
+            "description": "Hard disk device (wire keys hdd0, hdd1, ... on models.Hardware).",
             "type": "object",
             "properties": {
                 "enabled": {
@@ -11251,7 +11260,8 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_Parallels_prl-devops-service_models.Net0": {
+        "github_com_Parallels_prl-devops-service_models.Net": {
+            "description": "Network adapter device (wire keys net0, net1, ... on models.Hardware).",
             "type": "object",
             "properties": {
                 "card": {
@@ -11731,7 +11741,8 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_Parallels_prl-devops-service_models.Sound0": {
+        "github_com_Parallels_prl-devops-service_models.Sound": {
+            "description": "Sound card device (wire keys sound0, sound1, ... on models.Hardware).",
             "type": "object",
             "properties": {
                 "enabled": {

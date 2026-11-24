@@ -179,10 +179,10 @@ func hostNamesForSyncStates(ctx basecontext.ApiContext, states []data_models.Set
 // @Description	Creates or updates one override for the orchestrator ("orchestrator"), all hosts ("hosts") or a single host ("host:<hostId>"). Only catalogued keys are accepted; host-scoped changes are pushed to the hosts automatically.
 // @Tags			Settings
 // @Accept			json
-// @Produce			json
-// @Param			scope	path	string						true	"orchestrator | hosts | host:<hostId>"
-// @Param			key		path	string						true	"Catalogued setting key"
-// @Param			value	body	models.SettingValueRequest	true	"Override value"
+// @Produce		json
+// @Param			scope	path		string						true	"orchestrator | hosts | host:<hostId>"
+// @Param			key		path		string						true	"Catalogued setting key"
+// @Param			value	body		models.SettingValueRequest	true	"Override value"
 // @Success		200		{object}	models.SettingValueResponse
 // @Failure		400		{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401		{object}	models.ApiErrorDiagnosticsResponse
@@ -245,7 +245,7 @@ func validateSettingScopeForOrchestrator(scope string) error {
 // @Summary		Removes a scoped settings override
 // @Description	Hard-removes one override; the key falls back to the next layer. Host-scoped removals are re-pushed to the host automatically.
 // @Tags			Settings
-// @Produce			json
+// @Produce		json
 // @Param			scope	path	string	true	"orchestrator | hosts | host:<hostId>"
 // @Param			key		path	string	true	"Catalogued setting key"
 // @Success		202
@@ -291,7 +291,7 @@ func DeleteSettingValueHandler() restapi.ControllerHandler {
 // @Description	Shows exactly what the given host will hold after the next successful sync (hosts-global plus per-host overrides, host wins) together with its drift state.
 // @Tags			Settings
 // @Produce		json
-// @Param			id	path	string	true	"Host ID"
+// @Param			id	path		string	true	"Host ID"
 // @Success		200	{object}	models.SettingsHostEffectiveResponse
 // @Failure		401	{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		404	{object}	models.ApiErrorDiagnosticsResponse
@@ -356,8 +356,8 @@ func GetHostEffectiveSettingsHandler() restapi.ControllerHandler {
 // @Description	Immediately pushes the current managed bundles to all hosts or to a single host ("host:<hostId>"). Idempotent: hosts already holding the current bundle answer unchanged.
 // @Tags			Settings
 // @Accept			json
-// @Produce			json
-// @Param			target	body	models.SettingsSyncTargetRequest	true	"Sync target"
+// @Produce		json
+// @Param			target	body		models.SettingsSyncTargetRequest	true	"Sync target"
 // @Success		200		{object}	[]models.SettingsSyncResult
 // @Failure		400		{object}	models.ApiErrorDiagnosticsResponse
 // @Failure		401		{object}	models.ApiErrorDiagnosticsResponse

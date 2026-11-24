@@ -5,8 +5,8 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 )
 
-func MapDtoVirtualMachineCdromFromApi(m models.Cdrom0) data_models.VirtualMachineCdrom0 {
-	mapped := data_models.VirtualMachineCdrom0{
+func MapDtoVirtualMachineCdromFromApi(m models.Cdrom) data_models.VirtualMachineCdrom {
+	mapped := data_models.VirtualMachineCdrom{
 		Enabled: m.Enabled,
 		Port:    m.Port,
 		Image:   m.Image,
@@ -16,8 +16,8 @@ func MapDtoVirtualMachineCdromFromApi(m models.Cdrom0) data_models.VirtualMachin
 	return mapped
 }
 
-func MapDtoVirtualMachineCdromToApi(m data_models.VirtualMachineCdrom0) models.Cdrom0 {
-	mapped := models.Cdrom0{
+func MapDtoVirtualMachineCdromToApi(m data_models.VirtualMachineCdrom) models.Cdrom {
+	mapped := models.Cdrom{
 		Enabled: m.Enabled,
 		Port:    m.Port,
 		Image:   m.Image,

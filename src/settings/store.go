@@ -74,9 +74,11 @@ func (s *store) bumpRevision(tx *gorm.DB) (int64, error) {
 
 // ── definitions ─────────────────────────────────────────────────────────────
 
-// seedDefinitions inserts catalog rows that do not exist yet — insert-if-
-// absent only; previously seeded rows keep their stored description/default
-// (operators may have local tweaks, upgrades add new keys without churn).
+// seedDefinitions syncs the compiled catalog into the table: missing rows are
+// inserted, existing rows get their catalog-owned metadata (type, default,
+// allow-list, description, applies_to, requires_restart) refreshed so changes
+// made in Catalog() propagate on release upgrades. Operator-set data lives in
+// setting_values, never here, so nothing user-configured is ever clobbered.
 func (s *store) seedDefinitions(defs []models.SettingDefinition) error {
 	if !s.available() {
 		return ErrStoreUnavailable
@@ -87,12 +89,23 @@ func (s *store) seedDefinitions(defs []models.SettingDefinition) error {
 		if err := s.db.Table("setting_definitions").Where("key = ?", def.Key).Count(&n).Error; err != nil {
 			return err
 		}
-		if n > 0 {
-			continue
-		}
 		def.CreatedAt = now
 		def.UpdatedAt = now
-		if err := s.db.Table("setting_definitions").Create(&def).Error; err != nil {
+		if n == 0 {
+			if err := s.db.Table("setting_definitions").Create(&def).Error; err != nil {
+				return err
+			}
+			continue
+		}
+		if err := s.db.Table("setting_definitions").Where("key = ?", def.Key).Updates(map[string]interface{}{
+			"type":             def.Type,
+			"default_value":    def.DefaultValue,
+			"valid_values":     def.ValidValues,
+			"description":      def.Description,
+			"applies_to":       def.AppliesTo,
+			"requires_restart": def.RequiresRestart,
+			"updated_at":       now,
+		}).Error; err != nil {
 			return err
 		}
 	}

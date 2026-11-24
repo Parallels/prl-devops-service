@@ -5,8 +5,8 @@ import (
 	"github.com/Parallels/prl-devops-service/models"
 )
 
-func MapDtoVirtualMachineHddFromApi(m models.Hdd0) data_models.VirtualMachineHdd0 {
-	mapped := data_models.VirtualMachineHdd0{
+func MapDtoVirtualMachineHddFromApi(m models.Hdd) data_models.VirtualMachineHdd {
+	mapped := data_models.VirtualMachineHdd{
 		Enabled:       m.Enabled,
 		Port:          m.Port,
 		Image:         m.Image,
@@ -18,8 +18,8 @@ func MapDtoVirtualMachineHddFromApi(m models.Hdd0) data_models.VirtualMachineHdd
 	return mapped
 }
 
-func MapDtoVirtualMachineHddToApi(m data_models.VirtualMachineHdd0) models.Hdd0 {
-	mapped := models.Hdd0{
+func MapDtoVirtualMachineHddToApi(m data_models.VirtualMachineHdd) models.Hdd {
+	mapped := models.Hdd{
 		Enabled:       m.Enabled,
 		Port:          m.Port,
 		Image:         m.Image,

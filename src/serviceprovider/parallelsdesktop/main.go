@@ -2792,6 +2792,45 @@ func (s *ParallelsService) RunCustomCommand(ctx basecontext.ApiContext, vm *mode
 	return nil
 }
 
+// accumulateVmHardwareUsage adds one VM's reserved hardware to the capacity
+// snapshot. Every disk in the dynamic hardware hdd map counts toward DiskSize,
+// not just the first slot, so disks added with --device-add hdd are fully
+// charged against host capacity.
+func accumulateVmHardwareUsage(result *models.SystemUsageResponse, vm models.ParallelsVM) error {
+	running := vm.State == "running"
+	target := result.TotalReserved
+	if running {
+		target = result.TotalInUse
+	}
+	if target == nil {
+		target = &models.SystemUsageItem{}
+		if running {
+			result.TotalInUse = target
+		} else {
+			result.TotalReserved = target
+		}
+	}
+
+	target.LogicalCpuCount += vm.Hardware.CPU.Cpus
+	memorySizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Memory.Size)
+	if err != nil {
+		return err
+	}
+	target.MemorySize += helpers.ConvertByteToMegabyte(memorySizeInt)
+	for _, disk := range vm.Hardware.Hdds {
+		if disk.Size == "" {
+			continue
+		}
+		hddSizeInt, err := helpers.GetSizeByteFromString(disk.Size)
+		if err != nil {
+			return err
+		}
+		target.DiskSize += helpers.ConvertByteToMegabyte(hddSizeInt)
+	}
+
+	return nil
+}
+
 func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models.SystemUsageResponse, error) {
 	result := &models.SystemUsageResponse{
 		TotalInUse:     &models.SystemUsageItem{},
@@ -2807,40 +2846,8 @@ func (s *ParallelsService) GetHardwareUsage(ctx basecontext.ApiContext) (*models
 	}
 
 	for _, vm := range vms {
-		if vm.State == "running" {
-			if result.TotalInUse == nil {
-				result.TotalInUse = &models.SystemUsageItem{}
-			}
-			result.TotalInUse.LogicalCpuCount += vm.Hardware.CPU.Cpus
-			memorySizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Memory.Size)
-			if err != nil {
-				return nil, err
-			}
-			result.TotalInUse.MemorySize += helpers.ConvertByteToMegabyte(memorySizeInt)
-			if vm.Hardware.Hdd0.Size != "" {
-				hddSizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Hdd0.Size)
-				if err != nil {
-					return nil, err
-				}
-				result.TotalInUse.DiskSize += helpers.ConvertByteToMegabyte(hddSizeInt)
-			}
-		} else {
-			if result.TotalReserved == nil {
-				result.TotalReserved = &models.SystemUsageItem{}
-			}
-			result.TotalReserved.LogicalCpuCount += vm.Hardware.CPU.Cpus
-			memorySizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Memory.Size)
-			if err != nil {
-				return nil, err
-			}
-			result.TotalReserved.MemorySize += helpers.ConvertByteToMegabyte(memorySizeInt)
-			if vm.Hardware.Hdd0.Size != "" {
-				hddSizeInt, err := helpers.GetSizeByteFromString(vm.Hardware.Hdd0.Size)
-				if err != nil {
-					return nil, err
-				}
-				result.TotalReserved.DiskSize += helpers.ConvertByteToMegabyte(hddSizeInt)
-			}
+		if err := accumulateVmHardwareUsage(result, vm); err != nil {
+			return nil, err
 		}
 	}
 	// Derive the IDs from the same inventory snapshot as CPU and memory.
